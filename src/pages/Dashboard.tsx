@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardHome from '@/components/dashboard/DashboardHome';
 import PromptsGrid from '@/components/dashboard/PromptsGrid';
@@ -19,7 +19,7 @@ const Dashboard = () => {
           <Routes>
             <Route index element={<DashboardHome />} />
             <Route path="prompts" element={<PromptsGrid />} />
-            <Route path="favorites" element={<PromptsGrid showFavoritesOnly />} />
+            <Route path="favorites" element={<Navigate to="/dashboard/prompts" replace />} />
             <Route path="tools" element={<AIToolsSection />} />
             <Route path="ai-accounts" element={<AIAccountsSection />} />
             <Route path="billing" element={<BillingSection />} />
