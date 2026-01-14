@@ -27,7 +27,6 @@ const PurchasesManagement = () => {
       .select('*')
       .order('purchased_at', { ascending: false });
 
-    // Fetch profiles separately
     const { data: profilesData } = await supabase.from('profiles').select('user_id, email, full_name');
     
     const profilesMap = new Map((profilesData || []).map(p => [p.user_id, p]));
@@ -51,7 +50,7 @@ const PurchasesManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
     );
   }
@@ -64,9 +63,9 @@ const PurchasesManagement = () => {
 
       {/* Stats */}
       <div className="grid md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-gray-800 rounded-xl p-6">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-600/20 rounded-xl">
+            <div className="p-3 bg-green-500/20 rounded-xl">
               <DollarSign size={24} className="text-green-400" />
             </div>
             <div>
@@ -76,9 +75,9 @@ const PurchasesManagement = () => {
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-xl p-6">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-purple-600/20 rounded-xl">
+            <div className="p-3 bg-purple-500/20 rounded-xl">
               <TrendingUp size={24} className="text-purple-400" />
             </div>
             <div>
@@ -90,19 +89,19 @@ const PurchasesManagement = () => {
       </div>
 
       {/* Purchases Table */}
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
+      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-900">
+          <thead className="bg-white/5">
             <tr>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">User</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Amount</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Status</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Date</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">User</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Amount</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Status</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Date</th>
             </tr>
           </thead>
           <tbody>
             {purchases.map((purchase) => (
-              <tr key={purchase.id} className="border-t border-gray-700">
+              <tr key={purchase.id} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors">
                 <td className="px-6 py-4">
                   <div>
                     <p className="text-white font-medium">
@@ -117,8 +116,8 @@ const PurchasesManagement = () => {
                 <td className="px-6 py-4">
                   <span className={`px-3 py-1 text-xs rounded-full ${
                     purchase.payment_status === 'completed'
-                      ? 'bg-green-900/50 text-green-400'
-                      : 'bg-yellow-900/50 text-yellow-400'
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'bg-yellow-500/20 text-yellow-400'
                   }`}>
                     {purchase.payment_status}
                   </span>

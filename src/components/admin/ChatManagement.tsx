@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Send, Users, Search, Check, CheckCheck } from 'lucide-react';
+import { MessageCircle, Send, Users, Search, Check, CheckCheck, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -30,6 +30,8 @@ const ChatManagement = () => {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+  const [deletingAllChat, setDeletingAllChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,7 +58,6 @@ const ChatManagement = () => {
   const fetchChatUsers = async () => {
     setLoading(true);
     
-    // Get all unique users who have sent messages
     const { data: messagesData, error } = await supabase
       .from('support_messages')
       .select('user_id, message, sender_type, is_read, created_at')
@@ -68,7 +69,6 @@ const ChatManagement = () => {
       return;
     }
 
-    // Group by user_id and get stats
     const userMap = new Map<string, { 
       user_id: string; 
       unread_count: number; 
@@ -92,7 +92,6 @@ const ChatManagement = () => {
       }
     });
 
-    // Fetch user profiles
     const userIds = Array.from(userMap.keys());
     if (userIds.length === 0) {
       setUsers([]);
@@ -118,7 +117,6 @@ const ChatManagement = () => {
       };
     });
 
-    // Sort by unread count, then by last message time
     chatUsers.sort((a, b) => {
       if (b.unread_count !== a.unread_count) {
         return b.unread_count - a.unread_count;
@@ -150,7 +148,6 @@ const ChatManagement = () => {
       .eq('sender_type', 'user')
       .eq('is_read', false);
 
-    // Update local state
     setUsers(prev => prev.map(u => 
       u.user_id === userId ? { ...u, unread_count: 0 } : u
     ));
@@ -204,6 +201,69 @@ const ChatManagement = () => {
     setSending(false);
   };
 
+  // Check if message can be deleted (older than 1 day)
+  const canDeleteMessage = (createdAt: string): boolean => {
+    const messageDate = new Date(createdAt);
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    return messageDate < oneDayAgo;
+  };
+
+  const handleDeleteMessage = async (messageId: string, createdAt: string) => {
+    if (!canDeleteMessage(createdAt)) {
+      toast.error('Can only delete messages older than 1 day');
+      return;
+    }
+    
+    if (!confirm('Delete this message?')) return;
+    
+    setDeletingMessageId(messageId);
+    
+    const { error } = await supabase
+      .from('support_messages')
+      .delete()
+      .eq('id', messageId);
+    
+    setDeletingMessageId(null);
+    
+    if (error) {
+      toast.error('Failed to delete message');
+      console.error(error);
+    } else {
+      toast.success('Message deleted');
+      if (selectedUser) {
+        fetchMessages(selectedUser.user_id);
+      }
+      fetchChatUsers();
+    }
+  };
+
+  const handleDeleteAllChat = async () => {
+    if (!selectedUser) return;
+    
+    if (!confirm('Delete entire chat history with this user? Only messages older than 1 day will be deleted.')) return;
+    
+    setDeletingAllChat(true);
+    
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    
+    const { error } = await supabase
+      .from('support_messages')
+      .delete()
+      .eq('user_id', selectedUser.user_id)
+      .lt('created_at', oneDayAgo);
+    
+    setDeletingAllChat(false);
+    
+    if (error) {
+      toast.error('Failed to delete chat');
+      console.error(error);
+    } else {
+      toast.success('Old messages deleted');
+      fetchMessages(selectedUser.user_id);
+      fetchChatUsers();
+    }
+  };
+
   const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -215,7 +275,7 @@ const ChatManagement = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white">Support Chats</h1>
+          <h1 className="text-2xl font-bold text-white">Support Chats</h1>
           <p className="text-gray-400 mt-1">Manage customer support conversations</p>
         </div>
         {totalUnread > 0 && (
@@ -226,11 +286,11 @@ const ChatManagement = () => {
         )}
       </div>
 
-      <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden flex" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Users List */}
-        <div className="w-80 border-r border-gray-800 flex flex-col">
+        <div className="w-80 border-r border-white/10 flex flex-col">
           {/* Search */}
-          <div className="p-4 border-b border-gray-800">
+          <div className="p-4 border-b border-white/10">
             <div className="relative">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
@@ -238,7 +298,7 @@ const ChatManagement = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search users..."
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
               />
             </div>
           </div>
@@ -247,7 +307,7 @@ const ChatManagement = () => {
           <div className="flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center h-32">
-                <div className="w-8 h-8 rounded-full border-2 border-gray-600 border-t-violet-500 animate-spin" />
+                <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-white animate-spin" />
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="p-6 text-center">
@@ -259,16 +319,16 @@ const ChatManagement = () => {
                 <button
                   key={user.user_id}
                   onClick={() => setSelectedUser(user)}
-                  className={`w-full p-4 text-left transition-all border-b border-gray-800/50 ${
+                  className={`w-full p-4 text-left transition-all border-b border-white/5 ${
                     selectedUser?.user_id === user.user_id
-                      ? 'bg-violet-500/20 border-l-2 border-l-violet-500'
-                      : 'hover:bg-gray-800/50'
+                      ? 'bg-white text-black'
+                      : 'hover:bg-white/5'
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-white truncate">
+                        <span className={`font-semibold truncate ${selectedUser?.user_id === user.user_id ? 'text-black' : 'text-white'}`}>
                           {user.full_name || user.email.split('@')[0]}
                         </span>
                         {user.unread_count > 0 && (
@@ -277,10 +337,10 @@ const ChatManagement = () => {
                           </span>
                         )}
                       </div>
-                      <p className="text-gray-500 text-sm truncate">{user.email}</p>
-                      <p className="text-gray-400 text-sm truncate mt-1">{user.last_message}</p>
+                      <p className={`text-sm truncate ${selectedUser?.user_id === user.user_id ? 'text-black/60' : 'text-gray-500'}`}>{user.email}</p>
+                      <p className={`text-sm truncate mt-1 ${selectedUser?.user_id === user.user_id ? 'text-black/70' : 'text-gray-400'}`}>{user.last_message}</p>
                     </div>
-                    <span className="text-gray-600 text-xs whitespace-nowrap ml-2">
+                    <span className={`text-xs whitespace-nowrap ml-2 ${selectedUser?.user_id === user.user_id ? 'text-black/50' : 'text-gray-600'}`}>
                       {format(new Date(user.last_message_at), 'MMM d')}
                     </span>
                   </div>
@@ -295,70 +355,129 @@ const ChatManagement = () => {
           {selectedUser ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-gray-800 bg-gray-800/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
-                    <span className="text-violet-400 font-bold">
-                      {(selectedUser.full_name || selectedUser.email)[0].toUpperCase()}
-                    </span>
+              <div className="p-4 border-b border-white/10 bg-white/[0.02]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                      <span className="text-white font-bold">
+                        {(selectedUser.full_name || selectedUser.email)[0].toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">
+                        {selectedUser.full_name || selectedUser.email.split('@')[0]}
+                      </h3>
+                      <p className="text-gray-500 text-sm">{selectedUser.email}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-white">
-                      {selectedUser.full_name || selectedUser.email.split('@')[0]}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{selectedUser.email}</p>
-                  </div>
+                  
+                  {/* Delete All Chat Button */}
+                  <button
+                    onClick={handleDeleteAllChat}
+                    disabled={deletingAllChat}
+                    className="flex items-center gap-2 px-3 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors text-sm"
+                  >
+                    {deletingAllChat ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
+                    Delete Old Messages
+                  </button>
                 </div>
               </div>
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
-                  >
+                {messages.map((msg) => {
+                  const isDeletable = canDeleteMessage(msg.created_at);
+                  
+                  return (
                     <div
-                      className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                        msg.sender_type === 'admin'
-                          ? 'bg-violet-500 text-white'
-                          : 'bg-gray-800 text-white'
-                      }`}
+                      key={msg.id}
+                      className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'} group`}
                     >
-                      <p className="whitespace-pre-wrap">{msg.message}</p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <span className="text-xs opacity-60">
-                          {format(new Date(msg.created_at), 'h:mm a')}
-                        </span>
-                        {msg.sender_type === 'admin' && (
-                          msg.is_read ? (
-                            <CheckCheck size={14} className="opacity-60" />
-                          ) : (
-                            <Check size={14} className="opacity-60" />
-                          )
+                      <div className="flex items-end gap-2">
+                        {/* Delete button for user messages */}
+                        {msg.sender_type === 'user' && isDeletable && (
+                          <button
+                            onClick={() => handleDeleteMessage(msg.id, msg.created_at)}
+                            disabled={deletingMessageId === msg.id}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
+                            title="Delete message (older than 1 day)"
+                          >
+                            {deletingMessageId === msg.id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={14} />
+                            )}
+                          </button>
+                        )}
+                        
+                        <div
+                          className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                            msg.sender_type === 'admin'
+                              ? 'bg-white text-black'
+                              : 'bg-white/10 text-white'
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">{msg.message}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className={`text-xs ${msg.sender_type === 'admin' ? 'text-black/50' : 'text-white/50'}`}>
+                              {format(new Date(msg.created_at), 'h:mm a')}
+                            </span>
+                            {isDeletable && (
+                              <span title="Can be deleted">
+                                <AlertTriangle size={10} className={msg.sender_type === 'admin' ? 'text-black/30' : 'text-white/30'} />
+                              </span>
+                            )}
+                            {msg.sender_type === 'admin' && (
+                              msg.is_read ? (
+                                <CheckCheck size={14} className="text-black/50" />
+                              ) : (
+                                <Check size={14} className="text-black/50" />
+                              )
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Delete button for admin messages */}
+                        {msg.sender_type === 'admin' && isDeletable && (
+                          <button
+                            onClick={() => handleDeleteMessage(msg.id, msg.created_at)}
+                            disabled={deletingMessageId === msg.id}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
+                            title="Delete message (older than 1 day)"
+                          >
+                            {deletingMessageId === msg.id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={14} />
+                            )}
+                          </button>
                         )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={messagesEndRef} />
               </div>
 
               {/* Input */}
-              <div className="p-4 border-t border-gray-800">
+              <div className="p-4 border-t border-white/10">
                 <div className="flex gap-3">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type your reply..."
-                    className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                     onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                   />
                   <button
                     onClick={sendMessage}
                     disabled={!newMessage.trim() || sending}
-                    className="bg-violet-500 hover:bg-violet-600 text-white px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-white text-black px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
                   >
                     <Send size={18} />
                     Send
