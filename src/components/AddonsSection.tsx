@@ -137,7 +137,7 @@ const AddonsSection = () => {
 
               {/* CTA Button */}
               <button className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm">
-                Learn More
+                Unlock Prompt
                 <img src={btnArrow} alt="Arrow" className="w-4 h-4" />
               </button>
 
