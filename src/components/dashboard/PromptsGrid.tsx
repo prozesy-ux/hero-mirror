@@ -317,13 +317,13 @@ const PromptsGrid = () => {
   return (
     <div className="space-y-8 section-prompts animate-fade-up">
       {/* Tab Navigation */}
-      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 inline-flex gap-1">
+      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 flex gap-2">
         <button
           onClick={() => setActiveTab('all')}
-          className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
+          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
             activeTab === 'all'
-              ? 'bg-white text-black'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-black shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
           }`}
         >
           <Layers size={16} />
@@ -331,10 +331,10 @@ const PromptsGrid = () => {
         </button>
         <button
           onClick={() => setActiveTab('trending')}
-          className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
+          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
             activeTab === 'trending'
-              ? 'bg-white text-black'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-black shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
           }`}
         >
           <TrendingUp size={16} />
@@ -349,10 +349,10 @@ const PromptsGrid = () => {
         </button>
         <button
           onClick={() => setActiveTab('saved')}
-          className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
+          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
             activeTab === 'saved'
-              ? 'bg-white text-black'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-black shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
           }`}
         >
           <Bookmark size={16} />
@@ -367,10 +367,10 @@ const PromptsGrid = () => {
         </button>
         <button
           onClick={() => setActiveTab('categories')}
-          className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
+          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
             activeTab === 'categories'
-              ? 'bg-white text-black'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-black shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
           }`}
         >
           <FolderOpen size={16} />

@@ -204,13 +204,13 @@ const AIAccountsSection = () => {
   return (
     <div className="animate-fade-up">
       {/* Tab Navigation */}
-      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 inline-flex gap-1">
+      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 flex gap-2">
         <button
           onClick={() => setActiveTab('browse')}
-          className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
+          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
             activeTab === 'browse'
-              ? 'bg-white text-black'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-black shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
           }`}
         >
           <ShoppingCart size={16} />
@@ -218,10 +218,10 @@ const AIAccountsSection = () => {
         </button>
         <button
           onClick={() => setActiveTab('purchases')}
-          className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
+          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
             activeTab === 'purchases'
-              ? 'bg-white text-black'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-black shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
           }`}
         >
           <Package size={16} />
@@ -236,10 +236,10 @@ const AIAccountsSection = () => {
         </button>
         <button
           onClick={() => setActiveTab('stats')}
-          className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
+          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
             activeTab === 'stats'
-              ? 'bg-white text-black'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-black shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
           }`}
         >
           <BarChart3 size={16} />
