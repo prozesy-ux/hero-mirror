@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, Lock, Unlock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, Filter, Eye, ChevronDown, FolderOpen, Sparkles, Star, BarChart3 } from 'lucide-react';
+import { Heart, Lock, Unlock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, Filter, Eye, ChevronDown, FolderOpen, Sparkles, Star, BarChart3, Bookmark } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -26,7 +26,7 @@ interface Category {
   icon: string | null;
 }
 
-type TabType = 'all' | 'trending' | 'favorites' | 'categories';
+type TabType = 'all' | 'trending' | 'saved' | 'categories';
 
 const PromptsGrid = () => {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -338,10 +338,10 @@ const PromptsGrid = () => {
         </div>
         <div className="bg-[#141418] rounded-2xl p-5 border border-white/10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-red-500/10 rounded-lg">
-              <Heart size={16} className="text-red-400" />
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <Bookmark size={16} className="text-blue-400" />
             </div>
-            <span className="text-gray-400 text-sm">Favorites</span>
+            <span className="text-gray-400 text-sm">Saved Prompts</span>
           </div>
           <p className="text-2xl font-bold text-white">{totalFavorites}</p>
         </div>
@@ -388,18 +388,18 @@ const PromptsGrid = () => {
           )}
         </button>
         <button
-          onClick={() => setActiveTab('favorites')}
+          onClick={() => setActiveTab('saved')}
           className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
-            activeTab === 'favorites'
+            activeTab === 'saved'
               ? 'bg-white text-black'
               : 'text-gray-400 hover:text-white hover:bg-white/5'
           }`}
         >
-          <Heart size={16} />
-          Favorites
+          <Bookmark size={16} />
+          Saved Prompts
           {favoritePrompts.length > 0 && (
             <span className={`px-2 py-0.5 text-xs rounded-full ${
-              activeTab === 'favorites' ? 'bg-black text-white' : 'bg-white/10 text-white'
+              activeTab === 'saved' ? 'bg-black text-white' : 'bg-white/10 text-white'
             }`}>
               {favoritePrompts.length}
             </span>
@@ -421,6 +421,23 @@ const PromptsGrid = () => {
       {/* All Prompts Tab */}
       {activeTab === 'all' && (
         <>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-r from-gray-700 to-gray-800 rounded-xl">
+                <Layers size={20} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">All Prompts</h2>
+                <p className="text-gray-500 text-sm">Browse and discover prompts</p>
+              </div>
+            </div>
+            <div className="px-4 py-2 bg-white/5 rounded-full border border-white/10">
+              <span className="text-white font-semibold">{filteredPrompts.length}</span>
+              <span className="text-gray-400 ml-1">results</span>
+            </div>
+          </div>
+
           {/* Filter Bar */}
           <div className="bg-[#141418] rounded-2xl p-6 border border-white/10">
             {/* Search */}
@@ -482,6 +499,22 @@ const PromptsGrid = () => {
                 </select>
                 <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
               </div>
+
+              {/* Clear Filters Button */}
+              {(searchQuery || selectedCategory !== 'all' || selectedTool !== 'all' || showLocked !== 'all') && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedCategory('all');
+                    setSelectedTool('all');
+                    setShowLocked('all');
+                  }}
+                  className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full text-red-400 text-sm font-medium transition-all flex items-center gap-2"
+                >
+                  <X size={14} />
+                  Clear Filters
+                </button>
+              )}
             </div>
           </div>
 
@@ -536,18 +569,18 @@ const PromptsGrid = () => {
         </>
       )}
 
-      {/* Favorites Tab */}
-      {activeTab === 'favorites' && (
+      {/* Saved Prompts Tab */}
+      {activeTab === 'saved' && (
         <>
           {favoritePrompts.length > 0 ? (
             <>
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl">
-                  <Heart size={20} className="text-white" />
+                <div className="p-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl">
+                  <Bookmark size={20} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Your Favorites</h2>
-                  <p className="text-gray-500 text-sm">{favoritePrompts.length} saved prompts</p>
+                  <h2 className="text-xl font-bold text-white">Your Saved Prompts</h2>
+                  <p className="text-gray-500 text-sm">{favoritePrompts.length} prompts saved</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -559,10 +592,10 @@ const PromptsGrid = () => {
           ) : (
             <div className="text-center py-16 bg-[#141418] rounded-2xl border border-white/10">
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Heart size={24} className="text-gray-500" />
+                <Bookmark size={24} className="text-gray-500" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">No favorites yet</h3>
-              <p className="text-gray-500 mb-6">Start adding prompts to your favorites</p>
+              <h3 className="text-lg font-bold text-white mb-2">No saved prompts yet</h3>
+              <p className="text-gray-500 mb-6">Start saving prompts for quick access</p>
               <button
                 onClick={() => setActiveTab('all')}
                 className="bg-white text-black font-semibold px-6 py-3 rounded-xl hover:bg-gray-100 transition-all"
