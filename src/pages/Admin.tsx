@@ -7,10 +7,9 @@ import PromptsManagement from '@/components/admin/PromptsManagement';
 import UsersManagement from '@/components/admin/UsersManagement';
 import PurchasesManagement from '@/components/admin/PurchasesManagement';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, FileText, FolderOpen, DollarSign, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
+import { Users, FileText, FolderOpen, DollarSign, TrendingUp } from 'lucide-react';
 
 const AdminDashboardHome = () => {
-  const { hasAdminRole, adminUser } = useAdmin();
   const [stats, setStats] = useState({
     users: 0,
     prompts: 0,
@@ -54,37 +53,6 @@ const AdminDashboardHome = () => {
   return (
     <div>
       <h1 className="text-3xl font-bold text-white mb-8">Admin Dashboard</h1>
-
-      {/* Auth Status Banner */}
-      {!hasAdminRole ? (
-        <div className="mb-6 flex items-center gap-3 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400">
-          <AlertCircle size={20} />
-          <div className="flex-1">
-            <p className="font-medium">Database Access Limited</p>
-            <p className="text-sm">
-              {adminUser 
-                ? "Your account doesn't have admin role. Some operations may fail."
-                : "Please sign in with your admin account (mdmerajul614@gmail.com) to manage content."
-              }
-            </p>
-          </div>
-          <a 
-            href="/signin" 
-            target="_blank"
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            Sign In
-          </a>
-        </div>
-      ) : (
-        <div className="mb-6 flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400">
-          <CheckCircle size={20} />
-          <div>
-            <p className="font-medium">Admin Access Active</p>
-            <p className="text-sm">Signed in as {adminUser?.email} with full admin permissions.</p>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-gray-800 rounded-xl p-6">
