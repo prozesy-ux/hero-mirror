@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Loader2, Search, TrendingUp, Clock, BadgeCheck, ShieldCheck, Check } from 'lucide-react';
+import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { useCountdown } from '@/hooks/useCountdown';
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -21,50 +20,10 @@ interface AIAccount {
   stock: number | null;
 }
 
-// Fake purchase social proof component
-const FakePurchaseNotification = () => {
-  const [visible, setVisible] = useState(true);
-  const [currentPurchase, setCurrentPurchase] = useState({
-    name: 'John D.',
-    product: 'ChatGPT Plus',
-    timeAgo: 2
-  });
-
-  const names = ['John D.', 'Sarah M.', 'Alex K.', 'Emma R.', 'David L.', 'Lisa P.', 'Mike T.', 'Anna S.'];
-  const products = ['ChatGPT Plus', 'Claude Pro', 'Midjourney Pro', 'Gemini Advanced'];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setCurrentPurchase({
-          name: names[Math.floor(Math.random() * names.length)],
-          product: products[Math.floor(Math.random() * products.length)],
-          timeAgo: Math.floor(Math.random() * 5) + 1
-        });
-        setVisible(true);
-      }, 500);
-    }, 8000 + Math.random() * 7000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className={`fixed bottom-6 left-6 z-50 transition-all duration-500 ${visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
-      <div className="bg-white rounded-2xl shadow-2xl p-4 flex items-center gap-3 border border-gray-100 max-w-xs">
-        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-          <Check size={20} className="text-green-600" />
-        </div>
-        <div>
-          <p className="text-gray-900 font-semibold text-sm">
-            {currentPurchase.name} just purchased
-          </p>
-          <p className="text-gray-600 text-sm">{currentPurchase.product}</p>
-          <p className="text-gray-400 text-xs">{currentPurchase.timeAgo} minutes ago</p>
-        </div>
-      </div>
-    </div>
-  );
+// Generate stable random purchase count per account
+const getPurchaseCount = (accountId: string) => {
+  const hash = accountId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return 150 + (hash % 350);
 };
 
 const AIAccountsSection = () => {
@@ -73,10 +32,7 @@ const AIAccountsSection = () => {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Countdown timer - ends in 2 hours from now
-  const targetDate = new Date(Date.now() + 2 * 60 * 60 * 1000);
-  const countdown = useCountdown(targetDate);
+  const [hoveredAccount, setHoveredAccount] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAccounts();
@@ -129,7 +85,7 @@ const AIAccountsSection = () => {
       case 'chatgpt': return chatgptLogo;
       case 'midjourney': return midjourneyLogo;
       case 'gemini': return geminiLogo;
-      case 'claude': return chatgptLogo; // fallback
+      case 'claude': return chatgptLogo;
       default: return chatgptLogo;
     }
   };
@@ -138,8 +94,6 @@ const AIAccountsSection = () => {
     account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     account.category?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const formatTime = (num: number) => num.toString().padStart(2, '0');
 
   if (loading) {
     return (
@@ -151,44 +105,29 @@ const AIAccountsSection = () => {
 
   return (
     <div className="animate-fade-up">
-      {/* Fake Purchase Notification */}
-      <FakePurchaseNotification />
-
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight mb-2">AI Accounts</h1>
-        <p className="text-gray-400 font-medium">Premium AI tool accounts at affordable prices</p>
-      </div>
-
       {/* Premium Search Bar */}
       <div className="relative mb-8">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/10 rounded-lg">
+          <Search size={18} className="text-gray-400" />
+        </div>
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search AI accounts..."
-          className="w-full bg-[#0f0f12] border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 transition-all font-medium"
+          className="w-full bg-[#0f0f12] border border-white/10 rounded-2xl pl-14 pr-4 py-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 transition-all font-medium text-lg"
         />
       </div>
 
-      {/* Top Selling Section with Timer */}
+      {/* Top Selling Section */}
       <div className="bg-[#1a1a1f] rounded-2xl p-6 mb-8 border border-white/5">
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-white rounded-xl">
-              <TrendingUp size={20} className="text-gray-900" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Top Selling</h2>
-              <p className="text-gray-500 text-sm">Limited time offer - ends soon</p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-white rounded-xl">
+            <TrendingUp size={20} className="text-gray-900" />
           </div>
-          <div className="flex items-center gap-2 bg-black rounded-xl px-4 py-2.5">
-            <Clock size={16} className="text-white" />
-            <span className="text-white font-bold tracking-tight text-lg">
-              {formatTime(countdown.hours)}:{formatTime(countdown.minutes)}:{formatTime(countdown.seconds)}
-            </span>
+          <div>
+            <h2 className="text-lg font-bold text-white tracking-tight">Top Selling</h2>
+            <p className="text-gray-500 text-sm">Most popular AI accounts this month</p>
           </div>
         </div>
       </div>
@@ -209,12 +148,17 @@ const AIAccountsSection = () => {
               className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             >
               {/* Product Image Header */}
-              <div className="h-32 bg-gray-50 p-6 flex items-center justify-center">
+              <div className="h-32 bg-gray-50 p-6 flex items-center justify-center relative">
                 <img 
                   src={getProductImage(account.category)} 
                   alt={account.name}
                   className="h-16 w-16 object-contain"
                 />
+                {/* Purchase Count Badge */}
+                <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg shadow-sm border border-gray-100">
+                  <Users size={12} className="text-gray-600" />
+                  <span className="text-xs font-semibold text-gray-700">{getPurchaseCount(account.id)} sold</span>
+                </div>
               </div>
 
               {/* Content */}
@@ -251,33 +195,52 @@ const AIAccountsSection = () => {
                     <span className="text-gray-400 text-sm ml-1">one-time</span>
                   </div>
 
-                  <button
-                    onClick={() => handlePurchase(account)}
-                    disabled={purchasing === account.id}
-                    className="bg-black hover:bg-gray-900 text-white font-semibold px-5 py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {purchasing === account.id ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Processing
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart className="w-4 h-4" />
-                        Buy Now
-                      </>
-                    )}
-                  </button>
-                </div>
+                  <div className="flex items-center gap-2">
+                    {/* View Button */}
+                    <div 
+                      className="relative"
+                      onMouseEnter={() => setHoveredAccount(account.id)}
+                      onMouseLeave={() => setHoveredAccount(null)}
+                    >
+                      <button className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all">
+                        <Eye size={18} className="text-gray-700" />
+                      </button>
+                      
+                      {/* Hover Tooltip */}
+                      {hoveredAccount === account.id && (
+                        <div className="absolute bottom-full right-0 mb-2 w-64 p-4 bg-white rounded-xl shadow-xl border border-gray-100 z-20 animate-fade-up">
+                          <h4 className="font-bold text-gray-900 mb-1">{account.name}</h4>
+                          <p className="text-gray-600 text-sm mb-3">
+                            {account.description || 'Premium AI account with full access to all features and capabilities.'}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-3">
+                            <ShieldCheck size={12} className="text-green-600" />
+                            <span>Instant delivery • Secure payment • 24/7 support</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
-                {account.stock !== null && account.stock <= 5 && (
-                  <div className="mt-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
-                    <p className="text-amber-700 text-xs font-medium flex items-center gap-1.5">
-                      <Clock size={12} />
-                      Only {account.stock} left in stock!
-                    </p>
+                    {/* Buy Now Button */}
+                    <button
+                      onClick={() => handlePurchase(account)}
+                      disabled={purchasing === account.id}
+                      className="bg-black hover:bg-gray-900 text-white font-semibold px-5 py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {purchasing === account.id ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Processing
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="w-4 h-4" />
+                          Buy Now
+                        </>
+                      )}
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           ))}
