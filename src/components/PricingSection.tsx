@@ -26,13 +26,6 @@ const PricingSection = () => {
       </div>
 
       <div className="max-w-4xl mx-auto relative z-10">
-        {/* Urgency Banner */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 text-white text-sm font-bold rounded-full animate-bounce">
-            <Clock className="w-4 h-4" />
-            LIMITED TIME OFFER - HURRY!
-          </div>
-        </div>
 
         {/* Countdown Timer */}
         <div className="flex justify-center gap-4 mb-12">
