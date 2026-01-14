@@ -156,9 +156,16 @@ const ProfileSection = () => {
   const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-lime-500', 'bg-green-500'];
 
   return (
-    <div className="max-w-2xl mx-auto animate-fade-up">
-      <h2 className="text-3xl font-bold text-white mb-2">Profile Settings</h2>
-      <p className="text-gray-400 mb-8">Manage your account settings and preferences</p>
+    <div className="max-w-2xl mx-auto animate-fade-up section-profile">
+      <div className="flex items-center gap-4 mb-8">
+        <div className="p-4 bg-gradient-to-br from-pink-400 to-rose-500 rounded-2xl shadow-lg shadow-pink-500/30">
+          <User size={28} className="text-white" />
+        </div>
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900">Profile Settings</h2>
+          <p className="text-gray-500">Manage your account settings and preferences</p>
+        </div>
+      </div>
 
       {/* Avatar Section */}
       <GlassCard variant="glow" className="mb-6">

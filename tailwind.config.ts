@@ -105,6 +105,22 @@ export default {
           "0%": { transform: "scale(0.95)", opacity: "0" },
           "100%": { transform: "scale(1)", opacity: "1" },
         },
+        "hover-lift": {
+          "0%": { transform: "translateY(0)", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" },
+          "100%": { transform: "translateY(-4px)", boxShadow: "0 12px 24px rgba(0,0,0,0.1)" },
+        },
+        "shimmer-white": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "card-glow": {
+          "0%, 100%": { boxShadow: "0 0 20px rgba(139, 92, 246, 0.1)" },
+          "50%": { boxShadow: "0 0 30px rgba(139, 92, 246, 0.2)" },
+        },
+        "bounce-subtle": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-4px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -117,6 +133,10 @@ export default {
         "shimmer": "shimmer 2s infinite",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "scale-in": "scale-in 0.2s ease-out",
+        "hover-lift": "hover-lift 0.3s ease-out forwards",
+        "shimmer-white": "shimmer-white 2s linear infinite",
+        "card-glow": "card-glow 2s ease-in-out infinite",
+        "bounce-subtle": "bounce-subtle 2s ease-in-out infinite",
       },
     },
   },

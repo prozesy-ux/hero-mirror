@@ -19,8 +19,11 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <DashboardSidebar />
-      <main className="lg:ml-60 pt-16 lg:pt-0 min-h-screen">
-        <div className="p-6 lg:p-8">
+      <main className="lg:ml-60 pt-16 lg:pt-0 min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dashboard-content">
+        {/* Subtle pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.015] pointer-events-none" 
+             style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, black 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+        <div className="relative p-6 lg:p-8">
           <Routes>
             <Route index element={<DashboardHome />} />
             <Route path="prompts" element={<PromptsGrid />} />
