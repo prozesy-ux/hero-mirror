@@ -118,13 +118,6 @@ const PricingSection = () => {
           </div>
         </div>
 
-        {/* Guarantee Badge */}
-        <div className="text-center mt-8">
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-green-50 border border-green-200 rounded-full">
-            <Shield className="w-5 h-5 text-green-600" />
-            <span className="text-green-700 font-medium">30-Day Money-Back Guarantee</span>
-          </div>
-        </div>
       </div>
     </section>
   );
