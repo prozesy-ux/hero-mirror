@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, Check, Sparkles, Crown, Zap, XCircle, RefreshCcw, Loader2, AlertTriangle, Shield, Star } from 'lucide-react';
+import { CreditCard, Check, Sparkles, Crown, Zap, XCircle, RefreshCcw, Loader2, AlertTriangle, Shield, Wallet, Plus, ArrowUpRight, History, DollarSign, IndianRupee, Smartphone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { GlassCard } from '@/components/ui/glass-card';
+import { useSearchParams } from 'react-router-dom';
 
 interface Purchase {
   id: string;
@@ -25,8 +26,25 @@ interface CancellationRequest {
   created_at: string;
 }
 
+interface WalletData {
+  balance: number;
+}
+
+interface WalletTransaction {
+  id: string;
+  type: string;
+  amount: number;
+  payment_gateway: string;
+  status: string;
+  description: string;
+  created_at: string;
+}
+
+type PaymentGateway = 'stripe' | 'bkash' | 'upi';
+
 const BillingSection = () => {
   const { user, isPro } = useAuthContext();
+  const [searchParams] = useSearchParams();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
   const [cancellationRequest, setCancellationRequest] = useState<CancellationRequest | null>(null);
@@ -36,13 +54,30 @@ const BillingSection = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [refundReason, setRefundReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  
+  // Wallet states
+  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [showTopupModal, setShowTopupModal] = useState(false);
+  const [topupAmount, setTopupAmount] = useState<number>(10);
+  const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>('stripe');
+  const [processingTopup, setProcessingTopup] = useState(false);
+  const [bkashNumber, setBkashNumber] = useState('');
+  const [upiId, setUpiId] = useState('');
 
   useEffect(() => {
     if (user) {
       fetchData();
       subscribeToUpdates();
+      
+      // Check for topup success
+      const topupStatus = searchParams.get('topup');
+      const amount = searchParams.get('amount');
+      if (topupStatus === 'success' && amount) {
+        handleStripeTopupSuccess(parseFloat(amount));
+      }
     }
-  }, [user]);
+  }, [user, searchParams]);
 
   const fetchData = async () => {
     const { data: purchasesData } = await supabase
@@ -70,6 +105,25 @@ const BillingSection = () => {
       .single();
     
     setCancellationRequest(cancellationData);
+
+    // Fetch wallet
+    const { data: walletData } = await supabase
+      .from('user_wallets')
+      .select('balance')
+      .eq('user_id', user?.id)
+      .single();
+    
+    setWallet(walletData || { balance: 0 });
+
+    // Fetch transactions
+    const { data: txData } = await supabase
+      .from('wallet_transactions')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    setTransactions(txData || []);
   };
 
   const subscribeToUpdates = () => {
@@ -77,9 +131,67 @@ const BillingSection = () => {
       .channel('billing-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'refund_requests', filter: `user_id=eq.${user?.id}` }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cancellation_requests', filter: `user_id=eq.${user?.id}` }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets', filter: `user_id=eq.${user?.id}` }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_transactions', filter: `user_id=eq.${user?.id}` }, fetchData)
       .subscribe();
 
     return () => supabase.removeChannel(channel);
+  };
+
+  const handleStripeTopupSuccess = async (amount: number) => {
+    try {
+      const { error } = await supabase.functions.invoke('process-topup', {
+        body: { amount, gateway: 'stripe', transactionId: `stripe_${Date.now()}` }
+      });
+      
+      if (error) throw error;
+      toast.success(`Successfully added $${amount} to your wallet!`);
+      fetchData();
+    } catch (error: any) {
+      console.error('Error processing topup:', error);
+    }
+  };
+
+  const handleTopup = async () => {
+    if (!user) return;
+    setProcessingTopup(true);
+
+    try {
+      if (selectedGateway === 'stripe') {
+        const { data, error } = await supabase.functions.invoke('create-topup', {
+          body: { amount: topupAmount }
+        });
+        
+        if (error) throw error;
+        if (data?.url) {
+          window.open(data.url, '_blank');
+        }
+      } else {
+        // For bKash and UPI, simulate payment process
+        const transactionId = selectedGateway === 'bkash' 
+          ? `bkash_${bkashNumber}_${Date.now()}`
+          : `upi_${upiId}_${Date.now()}`;
+        
+        const { error } = await supabase.functions.invoke('process-topup', {
+          body: { 
+            amount: topupAmount, 
+            gateway: selectedGateway, 
+            transactionId 
+          }
+        });
+        
+        if (error) throw error;
+        toast.success(`Successfully added $${topupAmount} to your wallet via ${selectedGateway.toUpperCase()}!`);
+        fetchData();
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to process payment');
+    } finally {
+      setProcessingTopup(false);
+      setShowTopupModal(false);
+      setBkashNumber('');
+      setUpiId('');
+    }
   };
 
   const handleUpgrade = async () => {
@@ -170,6 +282,13 @@ const BillingSection = () => {
   };
 
   const hasPendingCancellation = cancellationRequest?.status === 'pending';
+  const quickAmounts = [5, 10, 25, 50, 100];
+
+  const gatewayInfo = {
+    stripe: { name: 'Stripe', icon: CreditCard, color: 'from-purple-500 to-indigo-500', desc: 'Credit/Debit Card' },
+    bkash: { name: 'bKash', icon: Smartphone, color: 'from-pink-500 to-rose-500', desc: 'Mobile Banking (BD)' },
+    upi: { name: 'UPI', icon: IndianRupee, color: 'from-green-500 to-emerald-500', desc: 'India Payments' },
+  };
 
   const proFeatures = [
     '10,000+ Premium AI Prompts',
@@ -181,12 +300,88 @@ const BillingSection = () => {
     'Priority Support',
     'Commercial License',
   ];
-  const FileText = () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">
-      <h2 className="text-3xl font-bold text-white mb-2">Billing & Subscription</h2>
-      <p className="text-gray-400 mb-8">Manage your subscription and payment history</p>
+      <h2 className="text-3xl font-bold text-white mb-2">Billing & Wallet</h2>
+      <p className="text-gray-400 mb-8">Manage your wallet, subscription and payments</p>
+
+      {/* Wallet Card */}
+      <GlassCard variant="glow" className="mb-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 animate-glow-pulse">
+              <Wallet size={28} className="text-white" />
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Wallet Balance</p>
+              <h3 className="text-4xl font-bold text-white">
+                ${(wallet?.balance || 0).toFixed(2)}
+              </h3>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowTopupModal(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-semibold rounded-xl transition-all"
+          >
+            <Plus size={20} />
+            Add Funds
+          </button>
+        </div>
+      </GlassCard>
+
+      {/* Transaction History */}
+      {transactions.length > 0 && (
+        <GlassCard className="mb-6">
+          <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <History className="text-purple-400" size={20} />
+            Recent Transactions
+          </h3>
+          <div className="space-y-3">
+            {transactions.map((tx) => (
+              <div
+                key={tx.id}
+                className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${
+                    tx.type === 'topup' ? 'bg-green-500/20 text-green-400' :
+                    tx.type === 'purchase' ? 'bg-red-500/20 text-red-400' :
+                    'bg-blue-500/20 text-blue-400'
+                  }`}>
+                    {tx.type === 'topup' ? <ArrowUpRight size={16} /> :
+                     tx.type === 'purchase' ? <DollarSign size={16} /> :
+                     <RefreshCcw size={16} />}
+                  </div>
+                  <div>
+                    <p className="text-white font-medium capitalize">{tx.description || tx.type}</p>
+                    <p className="text-gray-500 text-sm">
+                      {new Date(tx.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={`font-semibold ${tx.type === 'topup' ? 'text-green-400' : 'text-red-400'}`}>
+                    {tx.type === 'topup' ? '+' : '-'}${tx.amount.toFixed(2)}
+                  </p>
+                  <span className={`text-xs px-2 py-0.5 rounded ${
+                    tx.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                    tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-red-500/20 text-red-400'
+                  }`}>
+                    {tx.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      )}
 
       {/* Current Plan */}
       <GlassCard variant={isPro ? "glow" : "default"} className="mb-6">
@@ -237,7 +432,6 @@ const BillingSection = () => {
       {/* Upgrade Card (if not Pro) */}
       {!isPro && (
         <GlassCard variant="gradient" className="mb-6 relative overflow-hidden">
-          {/* Background Glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl" />
           
@@ -258,7 +452,6 @@ const BillingSection = () => {
                 <div 
                   key={index} 
                   className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 group hover:bg-white/10 transition-all"
-                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400 group-hover:scale-110 transition-transform">
                     <Check size={16} />
@@ -361,6 +554,120 @@ const BillingSection = () => {
           </div>
         )}
       </GlassCard>
+
+      {/* Topup Modal */}
+      {showTopupModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#111] rounded-2xl p-6 w-full max-w-lg border border-white/10 animate-scale-in max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-green-500/20 rounded-xl">
+                <Wallet className="text-green-400" size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-white">Add Funds to Wallet</h3>
+            </div>
+
+            {/* Quick Amount Buttons */}
+            <div className="mb-6">
+              <p className="text-gray-400 text-sm mb-3">Select amount</p>
+              <div className="grid grid-cols-5 gap-2">
+                {quickAmounts.map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => setTopupAmount(amount)}
+                    className={`py-3 rounded-xl font-semibold transition-all ${
+                      topupAmount === amount
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+                        : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    ${amount}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3">
+                <input
+                  type="number"
+                  value={topupAmount}
+                  onChange={(e) => setTopupAmount(Math.max(1, parseInt(e.target.value) || 0))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                  min="1"
+                />
+              </div>
+            </div>
+
+            {/* Payment Gateway Selection */}
+            <div className="mb-6">
+              <p className="text-gray-400 text-sm mb-3">Select payment method</p>
+              <div className="grid grid-cols-3 gap-3">
+                {(Object.keys(gatewayInfo) as PaymentGateway[]).map((gateway) => {
+                  const info = gatewayInfo[gateway];
+                  const Icon = info.icon;
+                  return (
+                    <button
+                      key={gateway}
+                      onClick={() => setSelectedGateway(gateway)}
+                      className={`p-4 rounded-xl border transition-all text-center ${
+                        selectedGateway === gateway
+                          ? `bg-gradient-to-br ${info.color} border-transparent`
+                          : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <Icon size={24} className="mx-auto mb-2" />
+                      <p className="text-white font-medium text-sm">{info.name}</p>
+                      <p className="text-gray-400 text-xs">{info.desc}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Gateway Specific Fields */}
+            {selectedGateway === 'bkash' && (
+              <div className="mb-6">
+                <label className="text-gray-400 text-sm mb-2 block">bKash Number</label>
+                <input
+                  type="tel"
+                  value={bkashNumber}
+                  onChange={(e) => setBkashNumber(e.target.value)}
+                  placeholder="01XXXXXXXXX"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                />
+              </div>
+            )}
+
+            {selectedGateway === 'upi' && (
+              <div className="mb-6">
+                <label className="text-gray-400 text-sm mb-2 block">UPI ID</label>
+                <input
+                  type="text"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
+                  placeholder="yourname@upi"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                />
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowTopupModal(false)}
+                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl transition-all font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleTopup}
+                disabled={processingTopup || (selectedGateway === 'bkash' && !bkashNumber) || (selectedGateway === 'upi' && !upiId)}
+                className={`flex-1 bg-gradient-to-r ${gatewayInfo[selectedGateway].color} text-white py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium`}
+              >
+                {processingTopup ? <Loader2 className="animate-spin" size={18} /> : null}
+                Add ${topupAmount}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cancel Plan Modal */}
       {showCancelModal && (
