@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -9,7 +9,11 @@ import {
   LogOut,
   Menu,
   X,
-  Shield
+  Shield,
+  Bot,
+  Package,
+  RefreshCcw,
+  XCircle
 } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import promptheroIcon from '@/assets/prompthero-icon.png';
@@ -48,6 +52,10 @@ const AdminSidebar = () => {
     { icon: <FolderOpen size={20} />, label: 'Categories', to: '/admin/categories' },
     { icon: <Users size={20} />, label: 'Users', to: '/admin/users' },
     { icon: <CreditCard size={20} />, label: 'Purchases', to: '/admin/purchases' },
+    { icon: <Bot size={20} />, label: 'AI Accounts', to: '/admin/ai-accounts' },
+    { icon: <Package size={20} />, label: 'Account Orders', to: '/admin/account-orders' },
+    { icon: <RefreshCcw size={20} />, label: 'Refund Requests', to: '/admin/refunds' },
+    { icon: <XCircle size={20} />, label: 'Cancellations', to: '/admin/cancellations' },
   ];
 
   const SidebarContent = () => (
