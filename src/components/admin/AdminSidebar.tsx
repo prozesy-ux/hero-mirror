@@ -16,7 +16,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
-import promptheroIcon from '@/assets/prompthero-icon.png';
+import theLogo from '@/assets/the-logo.png';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -62,13 +62,10 @@ const AdminSidebar = () => {
     <>
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-6 border-b border-gray-800">
-        <img src={promptheroIcon} alt="PromptHero" className="w-10 h-10 rounded-lg" />
-        <div>
-          <span className="text-xl font-bold text-white block">PromptHero</span>
-          <span className="text-xs text-red-400 flex items-center gap-1">
-            <Shield size={12} /> Admin Panel
-          </span>
-        </div>
+        <img src={theLogo} alt="THE" className="h-8" />
+        <span className="text-xs text-red-400 flex items-center gap-1">
+          <Shield size={12} /> Admin Panel
+        </span>
       </div>
 
       {/* Navigation */}
@@ -103,7 +100,7 @@ const AdminSidebar = () => {
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src={promptheroIcon} alt="PromptHero" className="w-8 h-8 rounded-lg" />
+          <img src={theLogo} alt="THE" className="h-6" />
           <span className="text-lg font-bold text-white">Admin</span>
         </div>
         <button
