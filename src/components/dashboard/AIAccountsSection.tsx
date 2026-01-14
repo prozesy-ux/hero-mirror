@@ -348,73 +348,76 @@ const AIAccountsSection = () => {
 
   return (
     <div className="animate-fade-up">
-      {/* Header with Wallet Balance */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">AI Accounts</h2>
-          <p className="text-gray-400 text-sm">Browse and purchase premium AI accounts</p>
-        </div>
-        
-        {/* Wallet Balance Display */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-violet-500/20 border border-violet-500/30 px-4 py-2.5 rounded-xl">
-            <Wallet size={18} className="text-violet-400" />
-            <span className="text-violet-400 font-bold text-lg">
-              ${wallet?.balance?.toFixed(2) || '0.00'}
-            </span>
-          </div>
-          <button
-            onClick={() => navigate('/dashboard/billing')}
-            className="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white px-4 py-2.5 rounded-xl font-medium transition-colors"
-          >
-            <Plus size={18} />
-            Add Funds
-          </button>
-        </div>
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-white tracking-tight">AI Accounts</h2>
+        <p className="text-gray-400 text-sm">Browse and purchase premium AI accounts</p>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 flex gap-2">
-        <button
-          onClick={() => setActiveTab('browse')}
-          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
-            activeTab === 'browse'
-              ? 'bg-white text-black shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
-          }`}
-        >
-          <ShoppingCart size={16} />
-          Browse Accounts
-        </button>
-        <button
-          onClick={() => setActiveTab('purchases')}
-          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
-            activeTab === 'purchases'
-              ? 'bg-white text-black shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
-          }`}
-        >
-          <Package size={16} />
-          My Purchases
-          {purchases.length > 0 && (
-            <span className={`px-2 py-0.5 text-xs rounded-full ${
-              activeTab === 'purchases' ? 'bg-black text-white' : 'bg-white/10 text-white'
-            }`}>
-              {purchases.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('stats')}
-          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
-            activeTab === 'stats'
-              ? 'bg-white text-black shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
-          }`}
-        >
-          <BarChart3 size={16} />
-          Stats
-        </button>
+      {/* Tab Navigation with Wallet Balance */}
+      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          {/* Tab buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('browse')}
+              className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+                activeTab === 'browse'
+                  ? 'bg-white text-black shadow-lg'
+                  : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+              }`}
+            >
+              <ShoppingCart size={16} />
+              Browse Accounts
+            </button>
+            <button
+              onClick={() => setActiveTab('purchases')}
+              className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+                activeTab === 'purchases'
+                  ? 'bg-white text-black shadow-lg'
+                  : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+              }`}
+            >
+              <Package size={16} />
+              My Purchases
+              {purchases.length > 0 && (
+                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                  activeTab === 'purchases' ? 'bg-black text-white' : 'bg-white/10 text-white'
+                }`}>
+                  {purchases.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('stats')}
+              className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+                activeTab === 'stats'
+                  ? 'bg-white text-black shadow-lg'
+                  : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+              }`}
+            >
+              <BarChart3 size={16} />
+              Stats
+            </button>
+          </div>
+          
+          {/* Wallet Balance & Add Funds */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-violet-500/20 border border-violet-500/30 px-3 py-2 rounded-xl">
+              <Wallet size={16} className="text-violet-400" />
+              <span className="text-violet-400 font-bold">
+                ${wallet?.balance?.toFixed(2) || '0.00'}
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/dashboard/billing')}
+              className="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white px-4 py-2 rounded-xl font-medium transition-all hover:scale-105 active:scale-95"
+            >
+              <Plus size={16} />
+              Add Funds
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Browse Accounts Tab */}
