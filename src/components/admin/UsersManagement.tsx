@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Crown, User as UserIcon } from 'lucide-react';
+import { Crown, User as UserIcon, Trash2, Search, Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface UserProfile {
   id: string;
@@ -14,6 +15,9 @@ interface UserProfile {
 const UsersManagement = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -29,10 +33,63 @@ const UsersManagement = () => {
     setLoading(false);
   };
 
+  const handleDeleteUser = async (userId: string, userIdAuth: string) => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+
+    setDeletingId(userId);
+    
+    try {
+      // Delete from user_roles first
+      await supabase.from('user_roles').delete().eq('user_id', userIdAuth);
+      
+      // Delete from profiles
+      const { error } = await supabase.from('profiles').delete().eq('id', userId);
+      
+      if (error) {
+        toast.error('Failed to delete user');
+        console.error(error);
+      } else {
+        toast.success('User deleted successfully');
+        fetchUsers();
+      }
+    } catch (err) {
+      toast.error('An error occurred');
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleTogglePro = async (userId: string, currentStatus: boolean) => {
+    setTogglingId(userId);
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_pro: !currentStatus })
+      .eq('id', userId);
+    
+    if (error) {
+      toast.error('Failed to update user status');
+    } else {
+      toast.success(`User ${!currentStatus ? 'upgraded to Pro' : 'downgraded to Free'}`);
+      fetchUsers();
+    }
+    
+    setTogglingId(null);
+  };
+
+  const filteredUsers = users.filter(user =>
+    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const proCount = users.filter(u => u.is_pro).length;
+  const freeCount = users.filter(u => !u.is_pro).length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
     );
   }
@@ -41,22 +98,50 @@ const UsersManagement = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-white">Users Management</h2>
-        <p className="text-gray-400">{users.length} total users</p>
       </div>
 
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+          <div className="text-gray-400 text-sm">Total Users</div>
+          <div className="text-2xl font-bold text-white">{users.length}</div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+          <div className="text-gray-400 text-sm">Pro Users</div>
+          <div className="text-2xl font-bold text-amber-400">{proCount}</div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+          <div className="text-gray-400 text-sm">Free Users</div>
+          <div className="text-2xl font-bold text-gray-400">{freeCount}</div>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative mb-6">
+        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by name or email..."
+          className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+        />
+      </div>
+
+      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-900">
+          <thead className="bg-white/5">
             <tr>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">User</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Email</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Plan</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Joined</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">User</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Email</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Plan</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Joined</th>
+              <th className="text-right px-6 py-4 text-gray-400 font-medium text-sm">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
-              <tr key={user.id} className="border-t border-gray-700">
+            {filteredUsers.map((user) => (
+              <tr key={user.id} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
@@ -68,11 +153,11 @@ const UsersManagement = () => {
                 <td className="px-6 py-4 text-gray-400">{user.email}</td>
                 <td className="px-6 py-4">
                   {user.is_pro ? (
-                    <span className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full w-fit">
+                    <span className="flex items-center gap-1 px-3 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full w-fit">
                       <Crown size={12} /> Pro
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 px-3 py-1 bg-gray-700 text-gray-300 text-xs rounded-full w-fit">
+                    <span className="flex items-center gap-1 px-3 py-1 bg-white/10 text-gray-300 text-xs rounded-full w-fit">
                       <UserIcon size={12} /> Free
                     </span>
                   )}
@@ -80,14 +165,48 @@ const UsersManagement = () => {
                 <td className="px-6 py-4 text-gray-400">
                   {new Date(user.created_at).toLocaleDateString()}
                 </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => handleTogglePro(user.id, user.is_pro)}
+                      disabled={togglingId === user.id}
+                      className={`p-2 rounded-lg transition-all ${
+                        user.is_pro 
+                          ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' 
+                          : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                      }`}
+                      title={user.is_pro ? 'Downgrade to Free' : 'Upgrade to Pro'}
+                    >
+                      {togglingId === user.id ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : user.is_pro ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(user.id, user.user_id)}
+                      disabled={deletingId === user.id}
+                      className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
+                      title="Delete User"
+                    >
+                      {deletingId === user.id ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={18} />
+                      )}
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {users.length === 0 && (
+        {filteredUsers.length === 0 && (
           <div className="text-center py-12 text-gray-400">
-            No users found
+            {searchQuery ? 'No users found matching your search' : 'No users found'}
           </div>
         )}
       </div>

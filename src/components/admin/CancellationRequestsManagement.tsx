@@ -33,7 +33,6 @@ const CancellationRequestsManagement = () => {
       .order('created_at', { ascending: false });
 
     if (!error && requestsData) {
-      // Fetch user profiles
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, email, full_name');
@@ -91,7 +90,6 @@ const CancellationRequestsManagement = () => {
     if (error) {
       toast.error(`Failed to ${action} cancellation`);
     } else {
-      // If approved, downgrade user from Pro
       if (action === 'approved') {
         await supabase
           .from('profiles')
@@ -111,7 +109,7 @@ const CancellationRequestsManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
     );
   }
@@ -129,7 +127,7 @@ const CancellationRequestsManagement = () => {
       </div>
 
       {requests.length === 0 ? (
-        <div className="bg-gray-800 rounded-xl p-12 text-center">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
           <XCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No Cancellation Requests</h3>
           <p className="text-gray-400">Plan cancellation requests will appear here</p>
@@ -139,8 +137,8 @@ const CancellationRequestsManagement = () => {
           {requests.map((request) => (
             <div
               key={request.id}
-              className={`bg-gray-800 rounded-xl p-5 border ${
-                request.status === 'pending' ? 'border-yellow-500/30' : 'border-gray-700'
+              className={`bg-white/5 border rounded-xl p-5 ${
+                request.status === 'pending' ? 'border-yellow-500/30' : 'border-white/10'
               }`}
             >
               <div className="flex items-start justify-between mb-4">
@@ -173,7 +171,7 @@ const CancellationRequestsManagement = () => {
               </div>
 
               {request.reason && (
-                <div className="p-3 bg-gray-900 rounded-lg mb-4">
+                <div className="p-3 bg-white/5 rounded-xl mb-4">
                   <p className="text-sm text-gray-300">
                     <span className="text-gray-500">Reason: </span>
                     {request.reason}
@@ -188,13 +186,13 @@ const CancellationRequestsManagement = () => {
                     value={adminNotes[request.id] || ''}
                     onChange={(e) => setAdminNotes(prev => ({ ...prev, [request.id]: e.target.value }))}
                     placeholder="Admin notes (optional)"
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                   />
                   <div className="flex gap-3">
                     <button
                       onClick={() => handleProcess(request.id, 'approved')}
                       disabled={processing === request.id}
-                      className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl transition-colors disabled:opacity-50"
                     >
                       {processing === request.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -206,7 +204,7 @@ const CancellationRequestsManagement = () => {
                     <button
                       onClick={() => handleProcess(request.id, 'rejected')}
                       disabled={processing === request.id}
-                      className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition-colors disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl transition-colors disabled:opacity-50"
                     >
                       {processing === request.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -220,7 +218,7 @@ const CancellationRequestsManagement = () => {
               )}
 
               {request.admin_notes && request.status !== 'pending' && (
-                <div className="p-3 bg-gray-900 rounded-lg mt-3">
+                <div className="p-3 bg-white/5 rounded-xl mt-3">
                   <p className="text-sm text-gray-400">
                     <span className="text-gray-500">Admin Notes: </span>
                     {request.admin_notes}

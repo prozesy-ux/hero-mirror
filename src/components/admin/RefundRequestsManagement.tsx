@@ -43,7 +43,6 @@ const RefundRequestsManagement = () => {
       .order('created_at', { ascending: false });
 
     if (!error && requestsData) {
-      // Fetch user profiles
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, email, full_name');
@@ -58,7 +57,6 @@ const RefundRequestsManagement = () => {
 
       setRequests(enrichedRequests as RefundRequest[]);
 
-      // Calculate stats
       const pending = enrichedRequests.filter(r => r.status === 'pending').length;
       const approved = enrichedRequests.filter(r => r.status === 'approved').length;
       const rejected = enrichedRequests.filter(r => r.status === 'rejected').length;
@@ -117,7 +115,6 @@ const RefundRequestsManagement = () => {
     if (error) {
       toast.error(`Failed to ${action} refund`);
     } else {
-      // If approved and it's a Pro plan refund, downgrade user
       if (action === 'approved' && request.purchase_type === 'pro_plan') {
         await supabase
           .from('profiles')
@@ -135,7 +132,7 @@ const RefundRequestsManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
     );
   }
@@ -146,23 +143,23 @@ const RefundRequestsManagement = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-gray-800 rounded-xl p-4">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Total Requests</div>
           <div className="text-2xl font-bold text-white">{stats.total}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl p-4">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Pending</div>
           <div className="text-2xl font-bold text-yellow-400">{stats.pending}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl p-4">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Approved</div>
           <div className="text-2xl font-bold text-green-400">{stats.approved}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl p-4">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Rejected</div>
           <div className="text-2xl font-bold text-red-400">{stats.rejected}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl p-4">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Total Refunded</div>
           <div className="text-2xl font-bold text-purple-400">${stats.totalRefunded.toFixed(2)}</div>
         </div>
@@ -170,7 +167,7 @@ const RefundRequestsManagement = () => {
 
       {/* Requests List */}
       {requests.length === 0 ? (
-        <div className="bg-gray-800 rounded-xl p-12 text-center">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
           <RefreshCcw className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No Refund Requests</h3>
           <p className="text-gray-400">Refund requests will appear here</p>
@@ -180,15 +177,15 @@ const RefundRequestsManagement = () => {
           {requests.map((request) => (
             <div
               key={request.id}
-              className={`bg-gray-800 rounded-xl p-5 border ${
-                request.status === 'pending' ? 'border-yellow-500/30' : 'border-gray-700'
+              className={`bg-white/5 border rounded-xl p-5 ${
+                request.status === 'pending' ? 'border-yellow-500/30' : 'border-white/10'
               }`}
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-white">{request.user_email}</h3>
-                    <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded capitalize">
+                    <span className="text-xs bg-white/10 text-gray-300 px-2 py-0.5 rounded capitalize">
                       {request.purchase_type.replace('_', ' ')}
                     </span>
                   </div>
@@ -225,7 +222,7 @@ const RefundRequestsManagement = () => {
               </div>
 
               {request.reason && (
-                <div className="p-3 bg-gray-900 rounded-lg mb-4">
+                <div className="p-3 bg-white/5 rounded-xl mb-4">
                   <p className="text-sm text-gray-300">
                     <span className="text-gray-500">Reason: </span>
                     {request.reason}
@@ -240,13 +237,13 @@ const RefundRequestsManagement = () => {
                     value={adminNotes[request.id] || ''}
                     onChange={(e) => setAdminNotes(prev => ({ ...prev, [request.id]: e.target.value }))}
                     placeholder="Admin notes (optional)"
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                   />
                   <div className="flex gap-3">
                     <button
                       onClick={() => handleProcess(request.id, 'approved')}
                       disabled={processing === request.id}
-                      className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl transition-colors disabled:opacity-50"
                     >
                       {processing === request.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -258,7 +255,7 @@ const RefundRequestsManagement = () => {
                     <button
                       onClick={() => handleProcess(request.id, 'rejected')}
                       disabled={processing === request.id}
-                      className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition-colors disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl transition-colors disabled:opacity-50"
                     >
                       {processing === request.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -272,7 +269,7 @@ const RefundRequestsManagement = () => {
               )}
 
               {request.admin_notes && request.status !== 'pending' && (
-                <div className="p-3 bg-gray-900 rounded-lg mt-3">
+                <div className="p-3 bg-white/5 rounded-xl mt-3">
                   <p className="text-sm text-gray-400">
                     <span className="text-gray-500">Admin Notes: </span>
                     {request.admin_notes}
