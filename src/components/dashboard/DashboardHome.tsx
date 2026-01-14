@@ -180,23 +180,23 @@ const DashboardHome = () => {
   }
 
   return (
-    <div className="space-y-10 animate-fade-up">
+    <div className="space-y-8 lg:space-y-10 animate-fade-up">
       {/* Trending Prompts Section - Horizontal Scroll */}
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="p-2.5 bg-black border border-white/10 rounded-xl">
-              <TrendingUp size={20} className="text-white" />
+        <div className="flex items-center justify-between mb-4 lg:mb-6">
+          <div className="flex items-center gap-2 lg:gap-3 flex-wrap">
+            <div className="p-2 lg:p-2.5 bg-black border border-white/10 rounded-xl">
+              <TrendingUp size={18} className="text-white lg:w-5 lg:h-5" />
             </div>
-            <h2 className="text-xl font-bold text-white">Trending Prompts</h2>
-            <span className="px-3 py-1 bg-emerald-500 text-white rounded-full text-xs font-bold">Popular</span>
+            <h2 className="text-lg lg:text-xl font-bold text-white">Trending Prompts</h2>
+            <span className="px-2 lg:px-3 py-1 bg-emerald-500 text-white rounded-full text-[10px] lg:text-xs font-bold">Popular</span>
           </div>
           <Link 
             to="/dashboard/prompts" 
-            className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm font-medium text-gray-400 hover:text-white transition-colors"
           >
             View All
-            <ArrowRight size={16} />
+            <ArrowRight size={14} className="lg:w-4 lg:h-4" />
           </Link>
         </div>
 
@@ -205,7 +205,9 @@ const DashboardHome = () => {
             ref={promptsScrollRef}
             onMouseEnter={() => setIsPromptsPaused(true)}
             onMouseLeave={() => setIsPromptsPaused(false)}
-            className="flex gap-5 overflow-x-auto pb-4 scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600"
+            onTouchStart={() => setIsPromptsPaused(true)}
+            onTouchEnd={() => setIsPromptsPaused(false)}
+            className="flex gap-3 lg:gap-5 overflow-x-auto pb-4 scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600 -mx-4 px-4 lg:mx-0 lg:px-0"
             style={{ scrollbarWidth: 'thin' }}
           >
             {trendingPrompts.map((prompt) => {
@@ -215,7 +217,7 @@ const DashboardHome = () => {
               return (
                 <div
                   key={prompt.id}
-                  className="group flex-shrink-0 w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  className="group flex-shrink-0 w-[240px] lg:w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
                   {/* Large Image Section */}
                   <div className="relative aspect-[4/3] overflow-hidden">
@@ -318,20 +320,20 @@ const DashboardHome = () => {
 
       {/* AI Accounts Section - Horizontal Scroll */}
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="p-2.5 bg-black border border-white/10 rounded-xl">
-              <Bot size={20} className="text-white" />
+        <div className="flex items-center justify-between mb-4 lg:mb-6">
+          <div className="flex items-center gap-2 lg:gap-3 flex-wrap">
+            <div className="p-2 lg:p-2.5 bg-black border border-white/10 rounded-xl">
+              <Bot size={18} className="text-white lg:w-5 lg:h-5" />
             </div>
-            <h2 className="text-xl font-bold text-white">Popular AI Accounts</h2>
-            <span className="px-3 py-1 bg-yellow-500 text-black rounded-full text-xs font-bold">Cheap Accounts</span>
+            <h2 className="text-lg lg:text-xl font-bold text-white">Popular AI Accounts</h2>
+            <span className="px-2 lg:px-3 py-1 bg-yellow-500 text-black rounded-full text-[10px] lg:text-xs font-bold">Cheap</span>
           </div>
           <Link 
             to="/dashboard/ai-accounts" 
-            className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm font-medium text-gray-400 hover:text-white transition-colors"
           >
             View All
-            <ArrowRight size={16} />
+            <ArrowRight size={14} className="lg:w-4 lg:h-4" />
           </Link>
         </div>
 
@@ -340,7 +342,9 @@ const DashboardHome = () => {
             ref={accountsScrollRef}
             onMouseEnter={() => setIsAccountsPaused(true)}
             onMouseLeave={() => setIsAccountsPaused(false)}
-            className="flex gap-5 overflow-x-auto pb-4 scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600"
+            onTouchStart={() => setIsAccountsPaused(true)}
+            onTouchEnd={() => setIsAccountsPaused(false)}
+            className="flex gap-3 lg:gap-5 overflow-x-auto pb-4 scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600 -mx-4 px-4 lg:mx-0 lg:px-0"
             style={{ scrollbarWidth: 'thin' }}
           >
             {aiAccounts.map((account) => {
@@ -349,7 +353,7 @@ const DashboardHome = () => {
               return (
                 <div
                   key={account.id}
-                  className="group flex-shrink-0 w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  className="group flex-shrink-0 w-[240px] lg:w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
                   {/* Large Image Section */}
                   <div className="relative aspect-[4/3] overflow-hidden">

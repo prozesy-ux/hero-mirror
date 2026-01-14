@@ -291,13 +291,13 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
 SidebarContent.displayName = 'SidebarContent';
 
 const DashboardSidebar = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('sidebar-collapsed') === 'true';
     }
     return false;
   });
+  const location = useLocation();
 
   const toggleCollapse = () => {
     const newState = !isCollapsed;
@@ -307,32 +307,34 @@ const DashboardSidebar = () => {
 
   return (
     <SidebarContext.Provider value={{ isCollapsed, toggleCollapse }}>
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a] border-b border-white/5 px-4 py-3">
-        <div className="flex items-center justify-end">
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-            className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+      {/* Mobile Header - Fixed Bottom Navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a] border-t border-white/10 px-2 py-2 safe-area-bottom">
+        <div className="flex items-center justify-around">
+          {[
+            { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Home' },
+            { to: '/dashboard/prompts', icon: <FileText size={20} />, label: 'Prompts' },
+            { to: '/dashboard/ai-accounts', icon: <Bot size={20} />, label: 'Accounts' },
+            { to: '/dashboard/billing', icon: <CreditCard size={20} />, label: 'Billing' },
+            { to: '/dashboard/profile', icon: <User size={20} />, label: 'Profile' },
+          ].map((item) => {
+            const isActive = location.pathname === item.to || (item.to === '/dashboard' && location.pathname === '/dashboard/');
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
+                  isActive 
+                    ? 'text-white bg-white/10' 
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {item.icon}
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
-
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 z-40 bg-black/80 backdrop-blur-sm"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Mobile Sidebar */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-[#0a0a0a] border-r border-white/5 pt-16 animate-slide-in-left">
-          <SidebarContent onNavClick={() => setMobileMenuOpen(false)} />
-        </div>
-      )}
 
       {/* Desktop Sidebar */}
       <div 

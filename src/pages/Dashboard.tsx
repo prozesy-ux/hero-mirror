@@ -29,14 +29,14 @@ const DashboardContent = () => {
 
   return (
     <main 
-      className={`pt-16 lg:pt-0 min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#0f0f18] to-[#12121f] transition-all duration-300 ease-in-out ${
+      className={`pb-20 lg:pb-0 min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#0f0f18] to-[#12121f] transition-all duration-300 ease-in-out ${
         isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-72'
       }`}
     >
       {/* Subtle grid pattern overlay */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(139, 92, 246, 0.5) 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-      <div className="relative p-6 lg:p-8">
+      <div className="relative p-4 lg:p-8">
         <Routes>
           <Route index element={<DashboardHome />} />
           <Route path="prompts" element={<PromptsGrid />} />
