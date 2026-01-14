@@ -1,4 +1,5 @@
-import { Star, ArrowRight } from 'lucide-react';
+import { useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import madeForNotion from '@/assets/made-for-notion.avif';
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
 import midjourneyLogo from '@/assets/midjourney-logo.avif';
@@ -95,21 +96,56 @@ const products = [
 ];
 
 const MidjourneyPromptsSection = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = 280;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <section className="py-8 md:py-12 px-4 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <img src={midjourneyLogo} alt="Midjourney" className="w-7 h-7 rounded" />
-          <h2 className="text-xl md:text-2xl font-bold text-black tracking-tight">Midjourney Prompts <span className="font-normal">&gt;</span></h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <img src={midjourneyLogo} alt="Midjourney" className="w-7 h-7 rounded" />
+            <h2 className="text-xl md:text-2xl font-bold text-black tracking-tight">
+              Midjourney Prompts <span className="font-normal">&gt;</span>
+            </h2>
+          </div>
+          {/* Scroll buttons */}
+          <div className="hidden md:flex items-center gap-2">
+            <button 
+              onClick={() => scroll('left')}
+              className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 border border-gray-200 flex items-center justify-center transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 text-gray-600" />
+            </button>
+            <button 
+              onClick={() => scroll('right')}
+              className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 border border-gray-200 flex items-center justify-center transition-colors"
+            >
+              <ChevronRight className="w-4 h-4 text-gray-600" />
+            </button>
+          </div>
         </div>
 
-        {/* Products Grid - 6 columns on xl */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {/* Horizontal Scroll Container */}
+        <div 
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto pb-4 scroll-smooth"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
           {products.map((product, index) => (
             <div
               key={index}
-              className="bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative group flex flex-col"
+              className="bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative group flex flex-col flex-shrink-0 w-[260px]"
             >
               {/* AI Logos Row */}
               <div className="flex items-center gap-1 mb-3">
@@ -129,7 +165,7 @@ const MidjourneyPromptsSection = () => {
               <img src={madeForNotion} alt="Made for Notion" className="h-5 w-auto mb-3" />
 
               {/* Title */}
-              <h3 className="text-sm font-medium text-black mb-2 leading-tight">
+              <h3 className="text-sm text-black mb-2 leading-tight">
                 {product.title} <span className="font-bold">{product.titleBold}</span>
               </h3>
 
