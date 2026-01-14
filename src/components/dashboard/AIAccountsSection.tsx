@@ -590,12 +590,20 @@ const AIAccountsSection = () => {
                     className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                   >
                     {/* Product Image Header */}
-                    <div className="h-32 bg-gray-50 p-6 flex items-center justify-center relative">
-                      <img 
-                        src={getProductImage(account.category)} 
-                        alt={account.name}
-                        className="h-16 w-16 object-contain"
-                      />
+                    <div className="h-32 bg-gray-50 flex items-center justify-center relative overflow-hidden">
+                      {account.icon_url ? (
+                        <img 
+                          src={account.icon_url} 
+                          alt={account.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img 
+                          src={getProductImage(account.category)} 
+                          alt={account.name}
+                          className="h-16 w-16 object-contain"
+                        />
+                      )}
                       {/* Purchase Count Badge */}
                       <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg shadow-sm border border-gray-100">
                         <Users size={12} className="text-gray-600" />
