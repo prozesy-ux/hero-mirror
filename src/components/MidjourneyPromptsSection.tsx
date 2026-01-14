@@ -100,8 +100,8 @@ const MidjourneyPromptsSection = () => {
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="flex items-center gap-3 mb-6">
-          <img src={midjourneyLogo} alt="Midjourney" className="w-6 h-6 rounded" />
-          <h2 className="text-lg md:text-xl font-bold text-black">Midjourney Prompts &gt;</h2>
+          <img src={midjourneyLogo} alt="Midjourney" className="w-7 h-7 rounded" />
+          <h2 className="text-xl md:text-2xl font-bold text-black tracking-tight">Midjourney Prompts <span className="font-normal">&gt;</span></h2>
         </div>
 
         {/* Products Grid - 6 columns on xl */}
@@ -129,8 +129,8 @@ const MidjourneyPromptsSection = () => {
               <img src={madeForNotion} alt="Made for Notion" className="h-5 w-auto mb-3" />
 
               {/* Title */}
-              <h3 className="text-sm font-bold text-black mb-2 leading-tight">
-                {product.title} <span className="font-extrabold">{product.titleBold}</span>
+              <h3 className="text-sm font-medium text-black mb-2 leading-tight">
+                {product.title} <span className="font-bold">{product.titleBold}</span>
               </h3>
 
               {/* Delivery Note */}
