@@ -9,7 +9,6 @@ import FreeProductsSection from "@/components/FreeProductsSection";
 import PromptsSection from "@/components/PromptsSection";
 import BundleSection from "@/components/BundleSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
-import PricingSection from "@/components/PricingSection";
 
 const Index = () => {
   return (
@@ -26,7 +25,6 @@ const Index = () => {
         <PromptsSection />
         <BundleSection />
         <TestimonialsSection />
-        <PricingSection />
       </main>
     </div>
   );
