@@ -130,27 +130,8 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     return (
       <TooltipProvider>
         <div ref={ref} className="flex flex-col h-full overflow-y-auto premium-scrollbar">
-          {/* Collapse Toggle Button - Desktop Only */}
-          {onToggleCollapse && (
-            <div className={`p-3 flex ${isCollapsed ? 'justify-center' : 'justify-end'}`}>
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={onToggleCollapse}
-                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all duration-300"
-                  >
-                    {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
-                  {isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          )}
-
           {/* User Card */}
-          <div className={`mx-3 mb-4 ${onToggleCollapse ? '' : 'mt-4'} bg-white/5 rounded-xl border border-white/10 ${isCollapsed ? 'p-2' : 'p-4'}`}>
+          <div className={`mx-3 mb-4 mt-4 bg-white/5 rounded-xl border border-white/10 ${isCollapsed ? 'p-2' : 'p-4'}`}>
             <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3.5'}`}>
               <div className="relative flex-shrink-0">
                 {profile?.avatar_url ? (
@@ -255,31 +236,51 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
             </div>
           )}
 
-          {/* Sign Out */}
+          {/* Sign Out + Collapse Toggle */}
           <div className={`p-4 border-t border-white/5 ${isCollapsed ? 'px-2' : ''}`}>
-            {isCollapsed ? (
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={signOut}
-                    className="flex items-center justify-center p-3 w-full text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-300"
-                  >
-                    <LogOut size={22} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
-                  Sign Out
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <button
-                onClick={signOut}
-                className="flex items-center gap-3.5 px-4 py-3 w-full text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-300"
-              >
-                <LogOut size={22} />
-                <span className="font-medium text-base">Sign Out</span>
-              </button>
-            )}
+            <div className={`flex items-center ${isCollapsed ? 'flex-col gap-2' : 'gap-2'}`}>
+              {/* Sign Out Button */}
+              {isCollapsed ? (
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={signOut}
+                      className="flex items-center justify-center p-3 w-full text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-300"
+                    >
+                      <LogOut size={22} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
+                    Sign Out
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <button
+                  onClick={signOut}
+                  className="flex items-center gap-3.5 px-4 py-3 flex-1 text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-300"
+                >
+                  <LogOut size={22} />
+                  <span className="font-medium text-base">Sign Out</span>
+                </button>
+              )}
+              
+              {/* Collapse Toggle Button */}
+              {onToggleCollapse && (
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={onToggleCollapse}
+                      className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all duration-300 flex-shrink-0"
+                    >
+                      {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
+                    {isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           </div>
         </div>
       </TooltipProvider>
