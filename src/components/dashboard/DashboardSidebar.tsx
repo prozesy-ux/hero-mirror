@@ -6,45 +6,29 @@ import {
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 
-// Meta Logo SVG Component
-const MetaLogo = ({ className = "w-5 h-5" }: { className?: string }) => (
-  <svg viewBox="0 0 100 100" fill="none" className={className}>
+// Meta Logo SVG Component (Official Infinity Logo)
+const MetaLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg viewBox="0 0 36 36" fill="none" className={className}>
     <path 
-      d="M50 20C35 20 27 30 20 45C13 60 10 75 10 75C10 75 15 85 30 85C45 85 50 65 50 65C50 65 55 85 70 85C85 85 90 75 90 75C90 75 87 60 80 45C73 30 65 20 50 20Z" 
-      fill="currentColor"
-    />
-    <path 
-      d="M30 55C30 55 35 45 45 45C55 45 50 65 50 65" 
-      stroke="currentColor" 
-      strokeWidth="8" 
+      d="M7.5 18c0-4.5 2.5-9 6-9 2.5 0 4 1.5 5.5 4l1 1.5 1-1.5c1.5-2.5 3-4 5.5-4 3.5 0 6 4.5 6 9s-2.5 9-6 9c-2.5 0-4-1.5-5.5-4l-1-1.5-1 1.5c-1.5 2.5-3 4-5.5 4-3.5 0-6-4.5-6-9z" 
+      stroke="white"
+      strokeWidth="2.5"
       strokeLinecap="round"
-      fill="none"
-    />
-    <path 
-      d="M70 55C70 55 65 45 55 45C45 45 50 65 50 65" 
-      stroke="currentColor" 
-      strokeWidth="8" 
-      strokeLinecap="round"
+      strokeLinejoin="round"
       fill="none"
     />
   </svg>
 );
 
-// Google Ads Logo SVG Component (Official Colors)
-const GoogleAdsLogo = ({ className = "w-5 h-5" }: { className?: string }) => (
-  <svg viewBox="0 0 192 192" className={className}>
+// Google Ads Logo SVG Component (Official Triangle Design)
+const GoogleAdsLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg viewBox="0 0 48 48" className={className}>
     {/* Yellow bar */}
-    <path 
-      d="M24.4 144.5L78.1 55.6L120.9 80.3L67.2 169.2C55.4 188.6 30.1 195.1 10.7 183.4C-8.7 171.6 0.6 163.9 24.4 144.5Z" 
-      fill="#FBBC04"
-    />
+    <rect x="4" y="28" width="16" height="40" rx="8" transform="rotate(-60 4 28)" fill="#FBBC04"/>
     {/* Blue bar */}
-    <path 
-      d="M167.6 144.5L113.9 55.6L71.1 80.3L124.8 169.2C136.6 188.6 161.9 195.1 181.3 183.4C200.7 171.6 191.4 163.9 167.6 144.5Z" 
-      fill="#4285F4"
-    />
+    <rect x="28" y="8" width="16" height="40" rx="8" transform="rotate(60 28 8)" fill="#4285F4"/>
     {/* Green circle */}
-    <circle cx="96" cy="36" r="28" fill="#34A853"/>
+    <circle cx="12" cy="38" r="6" fill="#34A853"/>
   </svg>
 );
 
