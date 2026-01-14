@@ -35,6 +35,119 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_account_purchases: {
+        Row: {
+          account_credentials: string | null
+          ai_account_id: string
+          amount: number
+          delivered_at: string | null
+          delivery_status: string | null
+          id: string
+          payment_status: string | null
+          purchased_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_credentials?: string | null
+          ai_account_id: string
+          amount: number
+          delivered_at?: string | null
+          delivery_status?: string | null
+          id?: string
+          payment_status?: string | null
+          purchased_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_credentials?: string | null
+          ai_account_id?: string
+          amount?: number
+          delivered_at?: string | null
+          delivery_status?: string | null
+          id?: string
+          payment_status?: string | null
+          purchased_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_account_purchases_ai_account_id_fkey"
+            columns: ["ai_account_id"]
+            isOneToOne: false
+            referencedRelation: "ai_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_accounts: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          icon_url: string | null
+          id: string
+          is_available: boolean | null
+          name: string
+          price: number
+          stock: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          is_available?: boolean | null
+          name: string
+          price?: number
+          stock?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          is_available?: boolean | null
+          name?: string
+          price?: number
+          stock?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cancellation_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          id: string
+          processed_at: string | null
+          reason: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          reason?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          reason?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string | null
@@ -194,6 +307,45 @@ export type Database = {
           payment_intent_id?: string | null
           payment_status?: string | null
           purchased_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      refund_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          created_at: string | null
+          id: string
+          processed_at: string | null
+          purchase_id: string | null
+          purchase_type: string
+          reason: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          purchase_id?: string | null
+          purchase_type?: string
+          reason?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          purchase_id?: string | null
+          purchase_type?: string
+          reason?: string | null
+          status?: string | null
           user_id?: string
         }
         Relationships: []
