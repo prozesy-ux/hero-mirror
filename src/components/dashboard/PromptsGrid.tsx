@@ -317,7 +317,7 @@ const PromptsGrid = () => {
   return (
     <div className="space-y-8 section-prompts animate-fade-up">
       {/* Tab Navigation */}
-      <div className="bg-[#1a1a1f] rounded-2xl p-2 border border-white/5 inline-flex gap-1 flex-wrap">
+      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 inline-flex gap-1">
         <button
           onClick={() => setActiveTab('all')}
           className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
