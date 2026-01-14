@@ -13,7 +13,8 @@ import {
   Bot,
   Package,
   RefreshCcw,
-  XCircle
+  XCircle,
+  MessageCircle
 } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 
@@ -55,6 +56,7 @@ const AdminSidebar = () => {
     { icon: <Package size={20} />, label: 'Account Orders', to: '/admin/account-orders' },
     { icon: <RefreshCcw size={20} />, label: 'Refund Requests', to: '/admin/refunds' },
     { icon: <XCircle size={20} />, label: 'Cancellations', to: '/admin/cancellations' },
+    { icon: <MessageCircle size={20} />, label: 'Support Chats', to: '/admin/chats' },
   ];
 
   const SidebarContent = () => (

@@ -9,6 +9,7 @@ import AIAccountsManagement from '@/components/admin/AIAccountsManagement';
 import AccountOrdersManagement from '@/components/admin/AccountOrdersManagement';
 import RefundRequestsManagement from '@/components/admin/RefundRequestsManagement';
 import CancellationRequestsManagement from '@/components/admin/CancellationRequestsManagement';
+import ChatManagement from '@/components/admin/ChatManagement';
 
 const AdminDashboard = () => (
   <div>
@@ -56,6 +57,7 @@ const Admin = () => {
             <Route path="account-orders" element={<AccountOrdersManagement />} />
             <Route path="refunds" element={<RefundRequestsManagement />} />
             <Route path="cancellations" element={<CancellationRequestsManagement />} />
+            <Route path="chats" element={<ChatManagement />} />
           </Routes>
         </div>
       </main>

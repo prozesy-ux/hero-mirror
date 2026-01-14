@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, Plus, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, Plus, X, MessageCircle, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -44,13 +45,22 @@ interface InsufficientFundsModal {
   accountName?: string;
 }
 
+interface SupportMessage {
+  id: string;
+  user_id: string;
+  message: string;
+  sender_type: 'user' | 'admin';
+  is_read: boolean;
+  created_at: string;
+}
+
 // Generate stable random purchase count per account
 const getPurchaseCount = (accountId: string) => {
   const hash = accountId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return 150 + (hash % 350);
 };
 
-type TabType = 'browse' | 'purchases' | 'stats';
+type TabType = 'browse' | 'purchases' | 'stats' | 'chat';
 type CategoryFilter = 'all' | 'chatgpt' | 'midjourney' | 'claude' | 'gemini';
 
 const AIAccountsSection = () => {
@@ -74,6 +84,13 @@ const AIAccountsSection = () => {
     shortfall: 0
   });
 
+  // Chat state
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     fetchAccounts();
   }, []);
@@ -82,14 +99,103 @@ const AIAccountsSection = () => {
     if (user) {
       fetchPurchases();
       fetchWallet();
+      fetchChatMessages();
+      fetchUnreadCount();
       const unsubscribe = subscribeToUpdates();
       const unsubscribeWallet = subscribeToWallet();
+      const unsubscribeChat = subscribeToChatMessages();
       return () => {
         unsubscribe();
         unsubscribeWallet();
+        unsubscribeChat();
       };
     }
   }, [user]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const fetchChatMessages = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('support_messages')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+
+    if (!error && data) {
+      setMessages(data as SupportMessage[]);
+    }
+  };
+
+  const fetchUnreadCount = async () => {
+    if (!user) return;
+    
+    const { count, error } = await supabase
+      .from('support_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('sender_type', 'admin')
+      .eq('is_read', false);
+
+    if (!error) {
+      setUnreadCount(count || 0);
+    }
+  };
+
+  const subscribeToChatMessages = () => {
+    if (!user) return () => {};
+
+    const channel = supabase
+      .channel('user-support-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'support_messages',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchChatMessages();
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const sendChatMessage = async () => {
+    if (!newMessage.trim() || !user) return;
+
+    setSendingMessage(true);
+    const { error } = await supabase
+      .from('support_messages')
+      .insert({
+        user_id: user.id,
+        message: newMessage.trim(),
+        sender_type: 'user'
+      });
+
+    if (error) {
+      toast.error('Failed to send message');
+      console.error('Error sending message:', error);
+    } else {
+      setNewMessage('');
+      toast.success('Message sent!');
+      fetchChatMessages();
+    }
+    setSendingMessage(false);
+  };
 
   const fetchWallet = async () => {
     if (!user) return;
@@ -348,17 +454,11 @@ const AIAccountsSection = () => {
 
   return (
     <div className="animate-fade-up">
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white tracking-tight">AI Accounts</h2>
-        <p className="text-gray-400 text-sm">Browse and purchase premium AI accounts</p>
-      </div>
-
       {/* Tab Navigation with Wallet Balance */}
       <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           {/* Tab buttons */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setActiveTab('browse')}
               className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
@@ -398,6 +498,22 @@ const AIAccountsSection = () => {
             >
               <BarChart3 size={16} />
               Stats
+            </button>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+                activeTab === 'chat'
+                  ? 'bg-white text-black shadow-lg'
+                  : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+              }`}
+            >
+              <MessageCircle size={16} />
+              Chat
+              {unreadCount > 0 && (
+                <span className="px-2 py-0.5 text-xs rounded-full bg-red-500 text-white font-bold">
+                  {unreadCount}
+                </span>
+              )}
             </button>
           </div>
           
@@ -815,6 +931,78 @@ const AIAccountsSection = () => {
             )}
           </div>
         </>
+      )}
+
+      {/* Chat Tab */}
+      {activeTab === 'chat' && (
+        <div className="bg-[#1a1a1f] rounded-2xl border border-white/5 overflow-hidden">
+          {/* Chat Header */}
+          <div className="p-4 border-b border-white/10 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
+              <MessageCircle className="text-violet-400" size={20} />
+            </div>
+            <div>
+              <h3 className="text-white font-semibold">Support Chat</h3>
+              <p className="text-gray-400 text-sm">We typically reply within a few hours</p>
+            </div>
+          </div>
+          
+          {/* Messages Area */}
+          <div className="h-96 overflow-y-auto p-4 space-y-4">
+            {messages.length === 0 ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center">
+                  <MessageCircle className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-400">No messages yet</p>
+                  <p className="text-gray-500 text-sm">Send us a message and we'll get back to you</p>
+                </div>
+              </div>
+            ) : (
+              messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                      msg.sender_type === 'user'
+                        ? 'bg-violet-500 text-white'
+                        : 'bg-gray-800 text-white'
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{msg.message}</p>
+                    <span className="text-xs opacity-60 mt-1 block">
+                      {format(new Date(msg.created_at), 'h:mm a')}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+          
+          {/* Input Area */}
+          <div className="p-4 border-t border-white/10">
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1 bg-gray-800 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendChatMessage()}
+              />
+              <button
+                onClick={sendChatMessage}
+                disabled={!newMessage.trim() || sendingMessage}
+                className="bg-violet-500 hover:bg-violet-600 text-white px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send size={18} />
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Insufficient Funds Modal */}
