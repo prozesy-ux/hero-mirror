@@ -5,7 +5,6 @@ import ProfileSection from '@/components/dashboard/ProfileSection';
 import BillingSection from '@/components/dashboard/BillingSection';
 import AIToolsSection from '@/components/dashboard/AIToolsSection';
 import AIAccountsSection from '@/components/dashboard/AIAccountsSection';
-import MyPurchasedAccounts from '@/components/dashboard/MyPurchasedAccounts';
 
 const DashboardHome = () => {
   return (
@@ -30,7 +29,6 @@ const Dashboard = () => {
             <Route path="favorites" element={<PromptsGrid showFavoritesOnly />} />
             <Route path="tools" element={<AIToolsSection />} />
             <Route path="ai-accounts" element={<AIAccountsSection />} />
-            <Route path="my-accounts" element={<MyPurchasedAccounts />} />
             <Route path="billing" element={<BillingSection />} />
             <Route path="profile" element={<ProfileSection />} />
           </Routes>
