@@ -1,18 +1,11 @@
 import { Routes, Route } from 'react-router-dom';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
+import DashboardHome from '@/components/dashboard/DashboardHome';
 import PromptsGrid from '@/components/dashboard/PromptsGrid';
 import ProfileSection from '@/components/dashboard/ProfileSection';
 import BillingSection from '@/components/dashboard/BillingSection';
 import AIToolsSection from '@/components/dashboard/AIToolsSection';
 import AIAccountsSection from '@/components/dashboard/AIAccountsSection';
-
-const DashboardHome = () => {
-  return (
-    <div className="animate-fade-up">
-      <PromptsGrid />
-    </div>
-  );
-};
 
 const Dashboard = () => {
   return (
