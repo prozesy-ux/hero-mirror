@@ -45,6 +45,27 @@ const PromptsGrid = ({ showFavoritesOnly = false }: PromptsGridProps) => {
 
   useEffect(() => {
     fetchData();
+
+    // Subscribe to realtime updates for prompts
+    const channel = supabase
+      .channel('prompts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'prompts'
+        },
+        () => {
+          // Refetch data when prompts change
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const fetchData = async () => {
