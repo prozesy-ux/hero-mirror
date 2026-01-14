@@ -3,7 +3,6 @@ import HeroSection from "@/components/HeroSection";
 import AsSeenIn from "@/components/AsSeenIn";
 import CompleteBundleCard from "@/components/CompleteBundleCard";
 import ChatGPTPromptsSection from "@/components/ChatGPTPromptsSection";
-import MidjourneyPromptsSection from "@/components/MidjourneyPromptsSection";
 import AddonsSection from "@/components/AddonsSection";
 import FreeProductsSection from "@/components/FreeProductsSection";
 import PromptsSection from "@/components/PromptsSection";
@@ -19,7 +18,6 @@ const Index = () => {
         <AsSeenIn />
         <CompleteBundleCard />
         <ChatGPTPromptsSection />
-        <MidjourneyPromptsSection />
         <AddonsSection />
         <FreeProductsSection />
         <PromptsSection />

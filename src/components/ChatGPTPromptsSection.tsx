@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef } from 'react';
 import madeForNotion from '@/assets/made-for-notion.avif';
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
 import checkIcon from '@/assets/check-icon.svg';
@@ -12,12 +12,14 @@ import productivityIcon from '@/assets/productivity-icon.webp';
 import seoIcon from '@/assets/seo-icon.avif';
 import chatgptBundleIcon from '@/assets/chatgpt-bundle-icon.avif';
 import marketingIcon from '@/assets/marketing-icon.png';
+import midjourneyLogo from '@/assets/midjourney-logo.avif';
 
 const products = [
   {
     title: "ChatGPT Mega-Prompt",
     titleBold: "Bundle",
     icon: chatgptBundleIcon,
+    logo: chatgptLogo,
     features: [
       "10K+ AI Prompts",
       "All Premium Prompts In One",
@@ -28,9 +30,24 @@ const products = [
     isNew: false,
   },
   {
+    title: "Midjourney Prompt",
+    titleBold: "Bundle",
+    icon: midjourneyLogo,
+    logo: midjourneyLogo,
+    features: [
+      "10000+ Midjourney AI Prompts",
+      "How-to Guides, Tips & Tricks",
+      "Create Custom Logos, Banners & More!"
+    ],
+    rating: 4.8,
+    reviews: 89,
+    isNew: false,
+  },
+  {
     title: "Mega-Prompts for",
     titleBold: "Business",
     icon: businessIcon,
+    logo: chatgptLogo,
     features: [
       "200+ mega-prompts for business",
       "How-to guides & tips",
@@ -41,9 +58,24 @@ const products = [
     isNew: false,
   },
   {
+    title: "Midjourney for",
+    titleBold: "Architecture",
+    icon: midjourneyLogo,
+    logo: midjourneyLogo,
+    features: [
+      "2000+ Midjourney Prompts",
+      "Prompt Templates, Tips & Tricks",
+      "Innovate in Architecture!"
+    ],
+    rating: 4.7,
+    reviews: 110,
+    isNew: false,
+  },
+  {
     title: "Mega-Prompts for",
     titleBold: "E-Commerce",
     icon: businessIcon,
+    logo: chatgptLogo,
     features: [
       "200+ AI prompts for e-commerce",
       "How-to guides & tips",
@@ -54,9 +86,24 @@ const products = [
     isNew: true,
   },
   {
+    title: "Midjourney for",
+    titleBold: "Art & Design",
+    icon: midjourneyLogo,
+    logo: midjourneyLogo,
+    features: [
+      "2000+ Midjourney Prompts",
+      "Prompt Templates, Tips & Tricks",
+      "Inspire Your Creativity!"
+    ],
+    rating: 4.8,
+    reviews: 137,
+    isNew: true,
+  },
+  {
     title: "Mega-Prompts for",
     titleBold: "Education",
     icon: educationIcon,
+    logo: chatgptLogo,
     features: [
       "200+ mega-prompts for education",
       "How-to guides & tips",
@@ -67,9 +114,24 @@ const products = [
     isNew: true,
   },
   {
+    title: "Midjourney for",
+    titleBold: "Marketing",
+    icon: midjourneyLogo,
+    logo: midjourneyLogo,
+    features: [
+      "2000+ Midjourney Prompts",
+      "Prompt Templates, Tips & Tricks",
+      "Automate Visual Content Creation!"
+    ],
+    rating: 4.9,
+    reviews: 49,
+    isNew: true,
+  },
+  {
     title: "AI Prompts for",
     titleBold: "Finance",
     icon: financeIcon,
+    logo: chatgptLogo,
     features: [
       "200+ AI prompts for finance",
       "How-to guides & tips",
@@ -80,9 +142,24 @@ const products = [
     isNew: true,
   },
   {
+    title: "Midjourney for",
+    titleBold: "Photography",
+    icon: midjourneyLogo,
+    logo: midjourneyLogo,
+    features: [
+      "2000+ Midjourney Prompts",
+      "Prompt Templates, Tips & Tricks",
+      "Create Stunning Photographs!"
+    ],
+    rating: 4.5,
+    reviews: 67,
+    isNew: true,
+  },
+  {
     title: "Mega-Prompts for",
     titleBold: "Marketing",
     icon: marketingIcon,
+    logo: chatgptLogo,
     features: [
       "200+ AI prompts for marketing",
       "How-to guides & tips",
@@ -93,9 +170,24 @@ const products = [
     isNew: true,
   },
   {
+    title: "Midjourney for",
+    titleBold: "Web Design",
+    icon: midjourneyLogo,
+    logo: midjourneyLogo,
+    features: [
+      "1500+ Midjourney Prompts",
+      "Prompt Templates, Tips & Tricks",
+      "Automate Web Design Mock-Ups!"
+    ],
+    rating: 4.7,
+    reviews: 70,
+    isNew: true,
+  },
+  {
     title: "Mega-Prompts for",
     titleBold: "Productivity",
     icon: productivityIcon,
+    logo: chatgptLogo,
     features: [
       "200+ AI prompts for productivity",
       "How-to guides & tips",
@@ -109,6 +201,7 @@ const products = [
     title: "Mega-Prompts for",
     titleBold: "SEO",
     icon: seoIcon,
+    logo: chatgptLogo,
     features: [
       "200+ mega-prompts for SEO",
       "How-to guides & tips",
@@ -122,6 +215,7 @@ const products = [
     title: "Mega-Prompts for",
     titleBold: "Sales",
     icon: businessIcon,
+    logo: chatgptLogo,
     features: [
       "200+ AI prompts for sales",
       "How-to guides & tips",
@@ -135,6 +229,7 @@ const products = [
     title: "Mega-Prompts for",
     titleBold: "Solopreneurs",
     icon: businessIcon,
+    logo: chatgptLogo,
     features: [
       "200+ AI prompts for solopreneurs",
       "How-to guides & tips",
@@ -181,7 +276,7 @@ const ChatGPTPromptsSection = () => {
               {/* Top Row: Logos in single row */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <img src={chatgptLogo} alt="ChatGPT" className="w-8 h-8 rounded-lg" />
+                  <img src={product.logo} alt="Logo" className="w-8 h-8 rounded-lg" />
                   <img src={product.icon} alt="Product" className="w-8 h-8 rounded-lg object-contain" />
                   {product.isNew && (
                     <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded">
