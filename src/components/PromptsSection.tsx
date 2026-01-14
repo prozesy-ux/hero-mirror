@@ -1,283 +1,376 @@
 import { useState } from 'react';
+import { Heart, Unlock, Lock, Check, SlidersHorizontal, X, Eye } from 'lucide-react';
 
 const categories = [
-  { name: 'Explore all tools', active: true },
-  { name: 'Art', active: false },
-  { name: 'Business', active: false },
-  { name: 'Fun', active: false },
-  { name: 'Generators', active: false },
-  { name: 'Images', active: false },
-  { name: 'Marketing', active: false },
-  { name: 'Planning', active: false },
-  { name: 'Text', active: false },
+  'Artworks',
+  'Photography', 
+  '3D & Game Dev',
+  'Design & Identity',
+  'Logos & Icons',
+  'Business & Tech',
+  'Tools',
+  'Writing & Education',
+  'Unique Styles',
 ];
 
-const sortOptions = ['Newest', 'A-Z', 'Z-A', 'FREE first'];
+const aiTools = [
+  { name: 'ChatGPT', count: 150 },
+  { name: 'Midjourney', count: 200 },
+  { name: 'DALL-E', count: 120 },
+  { name: 'Gemini', count: 80 },
+  { name: 'Claude', count: 100 },
+  { name: 'Stable Diffusion', count: 180 },
+  { name: 'Nano Banana', count: 95 },
+  { name: 'Ideogram', count: 60 },
+  { name: 'Leonardo AI', count: 90 },
+  { name: 'Sora', count: 45 },
+];
+
+const sortOptions = [
+  { id: 'trending', label: 'Trending' },
+  { id: 'featured', label: 'Featured' },
+  { id: 'newest', label: 'Newest' },
+  { id: 'popular', label: 'Most Popular' },
+];
 
 const prompts = [
   {
     id: 1,
-    title: 'Princess Name Generator',
-    description: 'Princess Name Generator',
-    image: 'https://promptsideas.b-cdn.net/generators/69/abQW_ebYFqqY_Lk3Sbty.png',
-    category: 'TEXT',
-    subcategory: 'GENERATORS',
-    version: '1',
-    rating: 0,
+    title: 'Viral Faceless Scripts: Done-for-you viral scripts for YouTube 2026',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_695d1bb5c47ee1767709621.jpg',
+    tool: 'Claude',
+    category: 'Writing & Education',
     unlocked: false,
   },
   {
     id: 2,
-    title: 'AI Image Generator',
-    description: 'Create stunning images in just a few clicks',
-    image: 'https://promptsideas.b-cdn.net/generators/68/H43wkJwwepEQCDzG2XSE.png',
-    category: 'IMAGES',
-    subcategory: 'GENERATORS',
-    version: '1.0',
-    rating: 0,
+    title: 'Nurturing Focus: A Gentle Listening-Themed Illustration Prompt',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6937dcc9b76f01765268681.jpg',
+    tool: 'Gemini',
+    category: 'Artworks',
     unlocked: true,
   },
   {
     id: 3,
-    title: 'Leonardo AI Image Generator',
-    description: 'Create stunning visuals with just a few clicks',
-    image: 'https://promptsideas.b-cdn.net/generators/67/kEh53xxqgmDlpt59sj7I.png',
-    category: 'IMAGES',
-    subcategory: 'GENERATORS',
-    version: '1.32',
-    rating: 4,
+    title: 'Surreal Editorial Portrait Generator: The "Miniature Clones" Concept',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b76a083731765193578.jpg',
+    tool: 'Nano Banana',
+    category: 'Photography',
     unlocked: false,
   },
   {
     id: 4,
-    title: 'Logo & Slogan Generator',
-    description: 'Customized slogans and logos for your company.',
-    image: 'https://promptsideas.b-cdn.net/generators/66/vgkSFLCYSXj7rjfkqLze.png',
-    category: 'IMAGES',
-    subcategory: 'BUSINESS',
-    version: '1.1',
-    rating: 4,
-    unlocked: true,
-  },
-  {
-    id: 5,
-    title: 'Free ChatGPT',
-    description: 'Ask anything and get the best results in seconds.',
-    image: 'https://promptsideas.b-cdn.net/generators/65/NrJKtcT9hQ_YOSq0jG1u.png',
-    category: 'TEXT',
-    subcategory: 'GENERATORS',
-    version: '1.21',
-    rating: 4,
+    title: '3D Blind Box Diorama: Product-Shaped Miniature Brand Stores',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b610e489f1765193232.jpg',
+    tool: 'Nano Banana',
+    category: '3D & Game Dev',
     unlocked: false,
   },
   {
-    id: 6,
-    title: 'Album Cover Generator',
-    description: 'Create unique album covers for your music',
-    image: 'https://promptsideas.b-cdn.net/generators/64/jd8_HxKCkK9C5mB_OQQM.png',
-    category: 'IMAGES',
-    subcategory: 'ART',
-    version: '1.0',
-    rating: 5,
+    id: 5,
+    title: 'Typographic Logo Generator: Text Shaped as Objects',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b5162349b1765192982.jpg',
+    tool: 'Nano Banana',
+    category: 'Logos & Icons',
     unlocked: true,
   },
   {
+    id: 6,
+    title: 'Photorealistic Miniature City held in Hand (8k Macro Render)',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b459ee99c1765192793.jpg',
+    tool: 'Nano Banana',
+    category: '3D & Game Dev',
+    unlocked: false,
+  },
+  {
     id: 7,
-    title: 'AI Story Generator',
-    description: 'Generate creative stories with AI assistance',
-    image: 'https://promptsideas.b-cdn.net/generators/63/XYZabc123def456.png',
-    category: 'TEXT',
-    subcategory: 'GENERATORS',
-    version: '2.0',
-    rating: 5,
+    title: 'Masterful Biro Sketch Portraits on Graph Paper (Hyper-Realistic Ink)',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b31271f0d1765192466.jpg',
+    tool: 'Nano Banana',
+    category: 'Artworks',
     unlocked: false,
   },
   {
     id: 8,
-    title: 'Business Plan Creator',
-    description: 'Create professional business plans instantly',
-    image: 'https://promptsideas.b-cdn.net/generators/62/business_plan_gen.png',
-    category: 'TEXT',
-    subcategory: 'BUSINESS',
-    version: '1.5',
-    rating: 4,
+    title: 'Premium Gashapon Capsule Generator: Miniature Character Dioramas',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b12ee01de1765191982.jpg',
+    tool: 'Nano Banana',
+    category: '3D & Game Dev',
     unlocked: true,
   },
   {
     id: 9,
-    title: 'Social Media Post Generator',
-    description: 'Generate engaging social media content',
-    image: 'https://promptsideas.b-cdn.net/generators/61/social_media_gen.png',
-    category: 'TEXT',
-    subcategory: 'MARKETING',
-    version: '1.3',
-    rating: 5,
+    title: 'Ultra-Realistic Character Sticker Pack Generator (Sheet View)',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936aed93d08e1765191385.jpg',
+    tool: 'Nano Banana',
+    category: 'Design & Identity',
     unlocked: false,
   },
   {
     id: 10,
-    title: 'AI Avatar Creator',
-    description: 'Create unique AI-generated avatars',
-    image: 'https://promptsideas.b-cdn.net/generators/60/avatar_creator.png',
-    category: 'IMAGES',
-    subcategory: 'ART',
-    version: '2.1',
-    rating: 5,
+    title: 'Annotated Cyborg Split-Figure: Macro Toy Photography Prompt',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936ad39728ef1765190969.jpg',
+    tool: 'Nano Banana',
+    category: 'Photography',
+    unlocked: false,
+  },
+  {
+    id: 11,
+    title: 'Sci-Fi Hologram Generator: Futuristic 3D Blueprint Visualizations',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936ac40736291765190720.jpg',
+    tool: 'Nano Banana',
+    category: 'Business & Tech',
+    unlocked: false,
+  },
+  {
+    id: 12,
+    title: 'Magical Miniature Worlds: Cities Rising from Vintage Books',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936ab594d87d1765190489.jpg',
+    tool: 'Nano Banana',
+    category: 'Artworks',
     unlocked: true,
+  },
+  {
+    id: 13,
+    title: 'Viral 3D Anamorphic Billboard Generator (Hyper-Realistic CGI)',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936a9dd4929c1765190109.jpg',
+    tool: 'Nano Banana',
+    category: 'Business & Tech',
+    unlocked: false,
+  },
+  {
+    id: 14,
+    title: 'Dynamic Educational Scene Generator – Character, Color, Action & Learning-Themed',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6934f5843be621765078404.jpg',
+    tool: 'Gemini',
+    category: 'Writing & Education',
+    unlocked: false,
+  },
+  {
+    id: 15,
+    title: 'Advanced UI/UX Website Design System Prompt – Modern Interface Blueprint',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_693421866284f1765024134.jpg',
+    tool: 'Gemini',
+    category: 'Business & Tech',
+    unlocked: false,
   },
 ];
 
 const PromptsSection = () => {
-  const [activeCategory, setActiveCategory] = useState('Explore all tools');
-  const [activeSort, setActiveSort] = useState('Newest');
+  const [selectedTools, setSelectedTools] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState('trending');
+  const [showFilters, setShowFilters] = useState(false);
+  const [favorites, setFavorites] = useState<number[]>([]);
 
-  const renderStars = (rating: number) => {
-    if (rating === 0) return null;
-    return (
-      <div className="flex gap-0.5">
-        {[...Array(5)].map((_, i) => (
-          <svg
-            key={i}
-            className={`w-3 h-3 ${i < rating ? 'text-yellow-400' : 'text-gray-600'}`}
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-        ))}
-      </div>
+  const toggleTool = (tool: string) => {
+    setSelectedTools(prev =>
+      prev.includes(tool) ? prev.filter(t => t !== tool) : [...prev, tool]
     );
   };
 
+  const toggleFavorite = (id: number) => {
+    setFavorites(prev =>
+      prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedTools([]);
+    setSelectedCategory(null);
+    setSortBy('trending');
+  };
+
+  const filteredPrompts = prompts.filter(prompt => {
+    if (selectedTools.length > 0 && !selectedTools.includes(prompt.tool)) return false;
+    if (selectedCategory && prompt.category !== selectedCategory) return false;
+    return true;
+  });
+
   return (
-    <section className="py-16 px-4 bg-[#0a0f1a]">
+    <section className="py-16 px-4 bg-gradient-to-b from-gray-900 to-black min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-10">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Free AI Tools
-          </h2>
-          <p className="text-gray-400 max-w-3xl mx-auto text-lg">
-            Welcome to the digital playground where cutting-edge tech meets practicality. 
-            Dive into our treasure trove of free AI tools designed to streamline your work and amplify your creativity.
-          </p>
-        </div>
-
-        {/* Category Pills */}
-        <div className="flex flex-wrap justify-center gap-3 mb-8">
-          {categories.map((category) => (
-            <button
-              key={category.name}
-              onClick={() => setActiveCategory(category.name)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeCategory === category.name
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-[#1a2332] text-gray-300 hover:bg-[#242d3d] border border-gray-700'
-              }`}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Sort Options */}
-        <div className="flex justify-center items-center gap-4 mb-10">
-          <span className="text-gray-400 text-sm">Sort by:</span>
-          <div className="flex gap-2">
-            {sortOptions.map((option) => (
+        <div className="mb-8">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Premium AI Prompts</h2>
+          
+          {/* Category Pills */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {categories.map((cat) => (
               <button
-                key={option}
-                onClick={() => setActiveSort(option)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  activeSort === option
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-400 hover:text-white'
+                key={cat}
+                onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  selectedCategory === cat
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
                 }`}
               >
-                {option}
+                {cat}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Prompts Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
-          {prompts.map((prompt) => (
-            <div
-              key={prompt.id}
-              className="bg-[#111827] rounded-xl overflow-hidden border border-gray-800 hover:border-blue-500/50 transition-all duration-300 group"
-            >
-              {/* Image Container */}
-              <div className="relative aspect-[4/3] overflow-hidden">
-                <img
-                  src={prompt.image}
-                  alt={prompt.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop';
-                  }}
-                />
-                {/* Category Badge */}
-                <div className="absolute top-3 left-3">
-                  <span className="px-2.5 py-1 bg-[#1a2332]/90 text-gray-300 text-xs font-medium rounded-md border border-gray-700">
-                    {prompt.category}
-                  </span>
-                </div>
-                {/* Unlocked Badge */}
-                {prompt.unlocked && (
-                  <div className="absolute top-3 right-3">
-                    <span className="px-2.5 py-1 bg-green-600/90 text-white text-xs font-medium rounded-md">
-                      Unlocked
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="p-4">
-                {/* Subcategory & Rating */}
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-blue-400 text-xs font-medium">
-                    | {prompt.subcategory}
-                  </span>
-                  {renderStars(prompt.rating)}
-                </div>
-
-                {/* Title */}
-                <h3 className="text-white font-semibold text-base mb-1 line-clamp-1">
-                  {prompt.title}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Filter Sidebar */}
+          <div className={`lg:w-72 flex-shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10 sticky top-4">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <SlidersHorizontal className="w-5 h-5" />
+                  Filter Prompts
                 </h3>
-
-                {/* Version */}
-                <p className="text-blue-400 text-xs mb-2">
-                  Version: {prompt.version}
-                </p>
-
-                {/* Description */}
-                <p className="text-gray-400 text-sm mb-4 line-clamp-2">
-                  {prompt.description}
-                </p>
-
-                {/* Action Button */}
                 <button
-                  className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    prompt.unlocked
-                      ? 'bg-transparent border-2 border-blue-500 text-blue-400 hover:bg-blue-500/10'
-                      : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
-                  }`}
+                  onClick={clearFilters}
+                  className="text-sm text-purple-400 hover:text-purple-300"
                 >
-                  {prompt.unlocked ? 'View Prompt' : 'Try It Free'}
+                  Clear Filter
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
 
-        {/* Load More */}
-        <div className="text-center mt-12">
-          <button className="px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
-            Load More Tools
+              {/* Sort By */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-300 mb-3">Sort by</h4>
+                <div className="space-y-2">
+                  {sortOptions.map((option) => (
+                    <label
+                      key={option.id}
+                      className="flex items-center gap-3 cursor-pointer group"
+                      onClick={() => setSortBy(option.id)}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                          sortBy === option.id
+                            ? 'bg-purple-500 border-purple-500'
+                            : 'border-gray-500 group-hover:border-gray-400'
+                        }`}
+                      >
+                        {sortBy === option.id && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <span className="text-gray-300 group-hover:text-white text-sm">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Tool */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-300 mb-3">AI Tool</h4>
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
+                  {aiTools.map((tool) => (
+                    <label
+                      key={tool.name}
+                      className="flex items-center justify-between cursor-pointer group"
+                      onClick={() => toggleTool(tool.name)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                            selectedTools.includes(tool.name)
+                              ? 'bg-purple-500 border-purple-500'
+                              : 'border-gray-500 group-hover:border-gray-400'
+                          }`}
+                        >
+                          {selectedTools.includes(tool.name) && (
+                            <Check className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                        <span className="text-gray-300 group-hover:text-white text-sm">
+                          {tool.name}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">{tool.count}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Filter Button */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="lg:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-purple-500 rounded-full flex items-center justify-center shadow-lg"
+          >
+            {showFilters ? <X className="w-6 h-6 text-white" /> : <SlidersHorizontal className="w-6 h-6 text-white" />}
           </button>
+
+          {/* Prompts Grid */}
+          <div className="flex-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPrompts.map((prompt) => (
+                <div
+                  key={prompt.id}
+                  className="group bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10 hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10"
+                >
+                  {/* Image */}
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    <img
+                      src={prompt.image}
+                      alt={prompt.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    
+                    {/* Tool Badge */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1 bg-black/60 backdrop-blur-sm rounded-full">
+                      <span className="w-2 h-2 bg-purple-400 rounded-full" />
+                      <span className="text-white text-xs font-medium">{prompt.tool}</span>
+                    </div>
+
+                    {/* Favorite Button */}
+                    <button
+                      onClick={() => toggleFavorite(prompt.id)}
+                      className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                        favorites.includes(prompt.id)
+                          ? 'bg-red-500 text-white'
+                          : 'bg-black/60 backdrop-blur-sm text-gray-300 hover:text-white'
+                      }`}
+                    >
+                      <Heart className={`w-4 h-4 ${favorites.includes(prompt.id) ? 'fill-current' : ''}`} />
+                    </button>
+
+                    {/* Lock/Unlock Indicator */}
+                    {prompt.unlocked && (
+                      <div className="absolute bottom-3 right-3 px-2 py-1 bg-green-500/80 backdrop-blur-sm rounded-full flex items-center gap-1">
+                        <Unlock className="w-3 h-3 text-white" />
+                        <span className="text-white text-xs font-medium">Unlocked</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 group-hover:text-purple-300 transition-colors mb-4">
+                      {prompt.title}
+                    </h3>
+
+                    {/* Action Button */}
+                    {prompt.unlocked ? (
+                      <button className="w-full py-2.5 bg-green-500/20 hover:bg-green-500 text-green-400 hover:text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-green-500/30 hover:border-green-500">
+                        <Eye className="w-4 h-4" />
+                        View Prompt
+                      </button>
+                    ) : (
+                      <button className="w-full py-2.5 bg-purple-500/20 hover:bg-purple-500 text-purple-400 hover:text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-purple-500/30 hover:border-purple-500">
+                        <Lock className="w-4 h-4" />
+                        Unlock Prompt
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Load More */}
+            <div className="text-center mt-10">
+              <button className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-full transition-colors">
+                Load More Prompts
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
