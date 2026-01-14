@@ -190,10 +190,6 @@ const DashboardHome = () => {
             </div>
             <h2 className="text-xl font-bold text-white">Trending Prompts</h2>
             <span className="px-3 py-1 bg-emerald-500 text-white rounded-full text-xs font-bold">Popular</span>
-            <span className="px-3 py-1 bg-white/10 text-gray-300 rounded-full text-xs font-medium">{trendingPrompts.length} Prompts</span>
-            <span className="px-3 py-1 bg-white/10 text-red-400 rounded-full text-xs font-medium flex items-center gap-1">
-              <Heart size={12} /> {favorites.length} Favorites
-            </span>
           </div>
           <Link 
             to="/dashboard/prompts" 
@@ -329,9 +325,6 @@ const DashboardHome = () => {
             </div>
             <h2 className="text-xl font-bold text-white">Popular AI Accounts</h2>
             <span className="px-3 py-1 bg-yellow-500 text-black rounded-full text-xs font-bold">Cheap Accounts</span>
-            <span className="px-3 py-1 bg-white/10 text-gray-300 rounded-full text-xs font-medium flex items-center gap-1">
-              <Bot size={12} /> {aiAccounts.length} Accounts
-            </span>
           </div>
           <Link 
             to="/dashboard/ai-accounts" 
@@ -359,14 +352,18 @@ const DashboardHome = () => {
                   className="group flex-shrink-0 w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
                   {/* Large Image Section */}
-                  <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                    <div className="w-full h-full flex items-center justify-center p-8">
-                      <img 
-                        src={account.icon_url || getProductImage(account.category)} 
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    {account.icon_url ? (
+                      <img
+                        src={account.icon_url}
                         alt={account.name}
-                        className="w-24 h-24 object-contain transition-transform duration-500 group-hover:scale-110"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
-                    </div>
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                        <Bot size={40} className="text-gray-400" />
+                      </div>
+                    )}
 
                     {/* Category Badge - overlaid on image */}
                     <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold uppercase shadow-lg">
