@@ -2,7 +2,7 @@ import { useState, forwardRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, FileText, Heart, CreditCard, User, LogOut, Menu, X, 
-  Crown, Wrench, Bot, ShoppingBag, Megaphone, ExternalLink, Sparkles
+  Crown, Wrench, Bot, ShoppingBag, Megaphone, ExternalLink, Zap
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 
@@ -22,7 +22,7 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
       onClick={onClick}
       className={`group flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-300 ${
         isActive 
-          ? 'nav-item-active' 
+          ? 'bg-white text-black' 
           : 'text-gray-400 hover:bg-white/5 hover:text-white'
       }`}
     >
@@ -31,7 +31,7 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
       </span>
       <span className="font-medium text-sm">{label}</span>
       {isActive && (
-        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-black" />
       )}
     </Link>
   )
@@ -60,36 +60,35 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     ];
 
     return (
-      <div ref={ref} className="flex flex-col h-full premium-scrollbar overflow-y-auto">
+      <div ref={ref} className="flex flex-col h-full overflow-y-auto">
         {/* Logo Section */}
         <div className="p-4 border-b border-white/5">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="relative">
-              <Sparkles size={20} className="text-purple-400 animate-pulse-glow" />
-              <div className="absolute inset-0 blur-lg bg-purple-500/30" />
+            <div className="p-1.5 bg-white rounded-lg">
+              <Zap size={18} className="text-black" />
             </div>
-            <span className="text-xl font-bold gradient-text">PromptHero</span>
+            <span className="text-xl font-bold text-white">PromptHero</span>
           </Link>
         </div>
 
         {/* User Card */}
-        <div className="p-3 mx-3 my-3 glass-card rounded-xl">
+        <div className="p-3 mx-3 my-3 bg-white/5 rounded-xl border border-white/10">
           <div className="flex items-center gap-2">
             <div className="relative flex-shrink-0">
               {profile?.avatar_url ? (
                 <img 
                   src={profile.avatar_url} 
                   alt="Avatar" 
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-purple-500/50"
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-white/20"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold ring-2 ring-purple-500/50">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black text-sm font-bold ring-2 ring-white/20">
                   {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
                 </div>
               )}
               {profile?.is_pro && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
-                  <Crown size={8} className="text-white" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center">
+                  <Crown size={8} className="text-black" />
                 </div>
               )}
             </div>
@@ -99,8 +98,8 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
             </div>
           </div>
           {profile?.is_pro && (
-            <div className="mt-2 px-2 py-1 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-lg border border-purple-500/20">
-              <span className="text-xs font-medium text-purple-300 flex items-center gap-1">
+            <div className="mt-2 px-2 py-1 bg-amber-400/10 rounded-lg border border-amber-400/20">
+              <span className="text-xs font-medium text-amber-400 flex items-center gap-1">
                 <Crown size={10} />
                 PRO Member
               </span>
@@ -124,9 +123,9 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
 
         {/* Ads Agency Section */}
         <div className="mx-4 mb-4">
-          <div className="glass-card p-4 rounded-xl border border-purple-500/20 bg-gradient-to-br from-purple-900/20 to-pink-900/20">
+          <div className="p-4 rounded-xl border border-white/10 bg-white/5">
             <div className="flex items-center gap-2 mb-3">
-              <Megaphone size={18} className="text-purple-400" />
+              <Megaphone size={18} className="text-white" />
               <span className="text-sm font-semibold text-white">Ads Agency Service</span>
             </div>
             <p className="text-xs text-gray-400 mb-3">
@@ -154,7 +153,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
             </div>
             <a
               href="mailto:contact@agency.com"
-              className="block w-full text-center px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-semibold rounded-lg transition-all glow-purple-hover"
+              className="block w-full text-center px-3 py-2 bg-white hover:bg-gray-100 text-black text-xs font-semibold rounded-lg transition-all"
             >
               Contact Agency →
             </a>
@@ -184,11 +183,13 @@ const DashboardSidebar = () => {
   return (
     <>
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/5 px-4 py-3">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a] border-b border-white/5 px-4 py-3">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Sparkles size={20} className="text-purple-400" />
-            <span className="text-xl font-bold gradient-text">PromptHero</span>
+            <div className="p-1.5 bg-white rounded-lg">
+              <Zap size={16} className="text-black" />
+            </div>
+            <span className="text-xl font-bold text-white">PromptHero</span>
           </Link>
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
