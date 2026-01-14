@@ -302,14 +302,17 @@ const BillingSection = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto animate-fade-up section-billing">
+    <div className="max-w-4xl mx-auto animate-fade-up">
       <div className="flex items-center gap-4 mb-8">
-        <div className="p-4 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl shadow-lg shadow-amber-500/30">
-          <Wallet size={28} className="text-white" />
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl blur-lg opacity-50" />
+          <div className="relative p-4 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl shadow-lg">
+            <Wallet size={28} className="text-white" />
+          </div>
         </div>
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Billing & Wallet</h2>
-          <p className="text-gray-500">Manage your wallet, subscription and payments</p>
+          <h2 className="text-3xl font-bold text-white">Billing & Wallet</h2>
+          <p className="text-gray-400">Manage your wallet, subscription and payments</p>
         </div>
       </div>
 
