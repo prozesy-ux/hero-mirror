@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, ShoppingCart, Check, SlidersHorizontal, X } from 'lucide-react';
+import { Heart, Unlock, Lock, Check, SlidersHorizontal, X, Eye } from 'lucide-react';
 
 const categories = [
   'Artworks',
@@ -20,108 +20,139 @@ const aiTools = [
   { name: 'Gemini', count: 80 },
   { name: 'Claude', count: 100 },
   { name: 'Stable Diffusion', count: 180 },
+  { name: 'Nano Banana', count: 95 },
   { name: 'Ideogram', count: 60 },
   { name: 'Leonardo AI', count: 90 },
+  { name: 'Sora', count: 45 },
 ];
 
 const sortOptions = [
   { id: 'trending', label: 'Trending' },
   { id: 'featured', label: 'Featured' },
   { id: 'newest', label: 'Newest' },
-  { id: 'price-low', label: 'Price: Low to High' },
-  { id: 'price-high', label: 'Price: High to Low' },
+  { id: 'popular', label: 'Most Popular' },
 ];
 
 const prompts = [
   {
     id: 1,
-    title: 'Viral Faceless Scripts: YouTube Automation 2025',
-    image: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=300&fit=crop',
-    price: 13.50,
-    author: 'kefpreneur',
+    title: 'Viral Faceless Scripts: Done-for-you viral scripts for YouTube 2026',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_695d1bb5c47ee1767709621.jpg',
     tool: 'Claude',
-    verified: true,
     category: 'Writing & Education',
+    unlocked: false,
   },
   {
     id: 2,
-    title: 'Cinematic Portrait Generator: Editorial Style',
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=300&fit=crop',
-    price: 4.99,
-    author: 'artmaster',
-    tool: 'Midjourney',
-    verified: true,
-    category: 'Photography',
+    title: 'Nurturing Focus: A Gentle Listening-Themed Illustration Prompt',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6937dcc9b76f01765268681.jpg',
+    tool: 'Gemini',
+    category: 'Artworks',
+    unlocked: true,
   },
   {
     id: 3,
-    title: 'Surreal 3D Product Mockups: Floating Objects',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop',
-    price: 1.99,
-    author: 'designpro',
-    tool: 'DALL-E',
-    verified: true,
-    category: '3D & Game Dev',
+    title: 'Surreal Editorial Portrait Generator: The "Miniature Clones" Concept',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b76a083731765193578.jpg',
+    tool: 'Nano Banana',
+    category: 'Photography',
+    unlocked: false,
   },
   {
     id: 4,
-    title: 'Neon Cyberpunk City Backgrounds Pack',
-    image: 'https://images.unsplash.com/photo-1515705576963-95cad62945b6?w=400&h=300&fit=crop',
-    price: 7.99,
-    author: 'neonwave',
-    tool: 'Stable Diffusion',
-    verified: false,
-    category: 'Artworks',
+    title: '3D Blind Box Diorama: Product-Shaped Miniature Brand Stores',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b610e489f1765193232.jpg',
+    tool: 'Nano Banana',
+    category: '3D & Game Dev',
+    unlocked: false,
   },
   {
     id: 5,
-    title: 'Professional Logo Concepts Generator',
-    image: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=400&h=300&fit=crop',
-    price: 9.99,
-    author: 'brandcraft',
-    tool: 'Ideogram',
-    verified: true,
+    title: 'Typographic Logo Generator: Text Shaped as Objects',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b5162349b1765192982.jpg',
+    tool: 'Nano Banana',
     category: 'Logos & Icons',
+    unlocked: true,
   },
   {
     id: 6,
-    title: 'AI Business Presentation Templates',
-    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
-    price: 14.99,
-    author: 'bizpro',
-    tool: 'ChatGPT',
-    verified: true,
-    category: 'Business & Tech',
+    title: 'Photorealistic Miniature City held in Hand (8k Macro Render)',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b459ee99c1765192793.jpg',
+    tool: 'Nano Banana',
+    category: '3D & Game Dev',
+    unlocked: false,
   },
   {
     id: 7,
-    title: 'Fantasy Character Design Prompts',
-    image: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&h=300&fit=crop',
-    price: 5.99,
-    author: 'fantasycreator',
-    tool: 'Midjourney',
-    verified: true,
-    category: '3D & Game Dev',
+    title: 'Masterful Biro Sketch Portraits on Graph Paper (Hyper-Realistic Ink)',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b31271f0d1765192466.jpg',
+    tool: 'Nano Banana',
+    category: 'Artworks',
+    unlocked: false,
   },
   {
     id: 8,
-    title: 'Social Media Carousel Templates',
-    image: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=300&fit=crop',
-    price: 3.99,
-    author: 'socialpro',
-    tool: 'ChatGPT',
-    verified: false,
-    category: 'Design & Identity',
+    title: 'Premium Gashapon Capsule Generator: Miniature Character Dioramas',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936b12ee01de1765191982.jpg',
+    tool: 'Nano Banana',
+    category: '3D & Game Dev',
+    unlocked: true,
   },
   {
     id: 9,
-    title: 'Minimalist Icon Set Generator',
-    image: 'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=400&h=300&fit=crop',
-    price: 2.99,
-    author: 'iconmaster',
-    tool: 'DALL-E',
-    verified: true,
-    category: 'Logos & Icons',
+    title: 'Ultra-Realistic Character Sticker Pack Generator (Sheet View)',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936aed93d08e1765191385.jpg',
+    tool: 'Nano Banana',
+    category: 'Design & Identity',
+    unlocked: false,
+  },
+  {
+    id: 10,
+    title: 'Annotated Cyborg Split-Figure: Macro Toy Photography Prompt',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936ad39728ef1765190969.jpg',
+    tool: 'Nano Banana',
+    category: 'Photography',
+    unlocked: false,
+  },
+  {
+    id: 11,
+    title: 'Sci-Fi Hologram Generator: Futuristic 3D Blueprint Visualizations',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936ac40736291765190720.jpg',
+    tool: 'Nano Banana',
+    category: 'Business & Tech',
+    unlocked: false,
+  },
+  {
+    id: 12,
+    title: 'Magical Miniature Worlds: Cities Rising from Vintage Books',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936ab594d87d1765190489.jpg',
+    tool: 'Nano Banana',
+    category: 'Artworks',
+    unlocked: true,
+  },
+  {
+    id: 13,
+    title: 'Viral 3D Anamorphic Billboard Generator (Hyper-Realistic CGI)',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6936a9dd4929c1765190109.jpg',
+    tool: 'Nano Banana',
+    category: 'Business & Tech',
+    unlocked: false,
+  },
+  {
+    id: 14,
+    title: 'Dynamic Educational Scene Generator – Character, Color, Action & Learning-Themed',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_6934f5843be621765078404.jpg',
+    tool: 'Gemini',
+    category: 'Writing & Education',
+    unlocked: false,
+  },
+  {
+    id: 15,
+    title: 'Advanced UI/UX Website Design System Prompt – Modern Interface Blueprint',
+    image: 'https://promptbazaar.ai/assets/images/prompt/thumb_693421866284f1765024134.jpg',
+    tool: 'Gemini',
+    category: 'Business & Tech',
+    unlocked: false,
   },
 ];
 
@@ -161,12 +192,7 @@ const PromptsSection = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <nav className="flex items-center gap-2 text-sm text-gray-400 mb-4">
-            <span className="hover:text-white cursor-pointer">Home</span>
-            <span>/</span>
-            <span className="text-purple-400">Prompts</span>
-          </nav>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">AI Prompts</h1>
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Premium AI Prompts</h2>
           
           {/* Category Pills */}
           <div className="flex flex-wrap gap-2 mb-6">
@@ -211,6 +237,7 @@ const PromptsSection = () => {
                     <label
                       key={option.id}
                       className="flex items-center gap-3 cursor-pointer group"
+                      onClick={() => setSortBy(option.id)}
                     >
                       <div
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
@@ -232,11 +259,12 @@ const PromptsSection = () => {
               {/* AI Tool */}
               <div>
                 <h4 className="text-sm font-semibold text-gray-300 mb-3">AI Tool</h4>
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
                   {aiTools.map((tool) => (
                     <label
                       key={tool.name}
                       className="flex items-center justify-between cursor-pointer group"
+                      onClick={() => toggleTool(tool.name)}
                     >
                       <div className="flex items-center gap-3">
                         <div
@@ -245,7 +273,6 @@ const PromptsSection = () => {
                               ? 'bg-purple-500 border-purple-500'
                               : 'border-gray-500 group-hover:border-gray-400'
                           }`}
-                          onClick={() => toggleTool(tool.name)}
                         >
                           {selectedTools.includes(tool.name) && (
                             <Check className="w-3 h-3 text-white" />
@@ -304,34 +331,34 @@ const PromptsSection = () => {
                     >
                       <Heart className={`w-4 h-4 ${favorites.includes(prompt.id) ? 'fill-current' : ''}`} />
                     </button>
+
+                    {/* Lock/Unlock Indicator */}
+                    {prompt.unlocked && (
+                      <div className="absolute bottom-3 right-3 px-2 py-1 bg-green-500/80 backdrop-blur-sm rounded-full flex items-center gap-1">
+                        <Unlock className="w-3 h-3 text-white" />
+                        <span className="text-white text-xs font-medium">Unlocked</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Content */}
                   <div className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-3">
-                      <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 group-hover:text-purple-300 transition-colors">
-                        {prompt.title}
-                      </h3>
-                      <span className="text-purple-400 font-bold text-lg flex-shrink-0">
-                        ${prompt.price.toFixed(2)}
-                      </span>
-                    </div>
+                    <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 group-hover:text-purple-300 transition-colors mb-4">
+                      {prompt.title}
+                    </h3>
 
-                    {/* Author */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="text-gray-400 text-sm">@{prompt.author}</span>
-                      {prompt.verified && (
-                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                          <Check className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Add to Cart Button */}
-                    <button className="w-full py-2.5 bg-purple-500/20 hover:bg-purple-500 text-purple-400 hover:text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-purple-500/30 hover:border-purple-500">
-                      <ShoppingCart className="w-4 h-4" />
-                      Add to cart
-                    </button>
+                    {/* Action Button */}
+                    {prompt.unlocked ? (
+                      <button className="w-full py-2.5 bg-green-500/20 hover:bg-green-500 text-green-400 hover:text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-green-500/30 hover:border-green-500">
+                        <Eye className="w-4 h-4" />
+                        View Prompt
+                      </button>
+                    ) : (
+                      <button className="w-full py-2.5 bg-purple-500/20 hover:bg-purple-500 text-purple-400 hover:text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-purple-500/30 hover:border-purple-500">
+                        <Lock className="w-4 h-4" />
+                        Unlock Prompt
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
