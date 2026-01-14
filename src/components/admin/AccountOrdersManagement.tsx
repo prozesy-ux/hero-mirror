@@ -1,0 +1,261 @@
+import { useState, useEffect } from 'react';
+import { Loader2, Package, CheckCircle, Clock, Send, Eye } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface AccountOrder {
+  id: string;
+  user_id: string;
+  amount: number;
+  payment_status: string;
+  delivery_status: string;
+  account_credentials: string | null;
+  purchased_at: string;
+  delivered_at: string | null;
+  ai_accounts: {
+    name: string;
+    category: string | null;
+  } | null;
+  user_email?: string;
+  user_name?: string;
+}
+
+const AccountOrdersManagement = () => {
+  const [orders, setOrders] = useState<AccountOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [delivering, setDelivering] = useState<string | null>(null);
+  const [credentials, setCredentials] = useState<Record<string, string>>({});
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    delivered: 0,
+    revenue: 0
+  });
+
+  useEffect(() => {
+    fetchOrders();
+    subscribeToOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    const { data: ordersData, error } = await supabase
+      .from('ai_account_purchases')
+      .select(`
+        *,
+        ai_accounts (name, category)
+      `)
+      .order('purchased_at', { ascending: false });
+
+    if (!error && ordersData) {
+      // Fetch user profiles
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, email, full_name');
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      const enrichedOrders = ordersData.map(order => ({
+        ...order,
+        user_email: profileMap.get(order.user_id)?.email || 'Unknown',
+        user_name: profileMap.get(order.user_id)?.full_name || 'Unknown'
+      }));
+
+      setOrders(enrichedOrders as AccountOrder[]);
+
+      // Calculate stats
+      const pending = enrichedOrders.filter(o => o.delivery_status === 'pending').length;
+      const delivered = enrichedOrders.filter(o => o.delivery_status === 'delivered').length;
+      const revenue = enrichedOrders
+        .filter(o => o.payment_status === 'completed')
+        .reduce((sum, o) => sum + o.amount, 0);
+
+      setStats({
+        total: enrichedOrders.length,
+        pending,
+        delivered,
+        revenue
+      });
+    }
+    setLoading(false);
+  };
+
+  const subscribeToOrders = () => {
+    const channel = supabase
+      .channel('account-orders')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ai_account_purchases'
+        },
+        () => {
+          fetchOrders();
+          toast.info('New order received!');
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const handleDeliver = async (orderId: string) => {
+    const creds = credentials[orderId];
+    if (!creds?.trim()) {
+      toast.error('Please enter account credentials');
+      return;
+    }
+
+    setDelivering(orderId);
+
+    const { error } = await supabase
+      .from('ai_account_purchases')
+      .update({
+        account_credentials: creds,
+        delivery_status: 'delivered',
+        delivered_at: new Date().toISOString()
+      })
+      .eq('id', orderId);
+
+    setDelivering(null);
+
+    if (error) {
+      toast.error('Failed to deliver credentials');
+    } else {
+      toast.success('Credentials delivered successfully');
+      setCredentials(prev => ({ ...prev, [orderId]: '' }));
+      fetchOrders();
+    }
+  };
+
+  const getCategoryIcon = (category: string | null) => {
+    switch (category) {
+      case 'chatgpt': return '🤖';
+      case 'claude': return '🧠';
+      case 'midjourney': return '🎨';
+      case 'gemini': return '✨';
+      default: return '🔮';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-white mb-6">Account Orders</h2>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-gray-800 rounded-xl p-4">
+          <div className="text-gray-400 text-sm">Total Orders</div>
+          <div className="text-2xl font-bold text-white">{stats.total}</div>
+        </div>
+        <div className="bg-gray-800 rounded-xl p-4">
+          <div className="text-gray-400 text-sm">Pending</div>
+          <div className="text-2xl font-bold text-yellow-400">{stats.pending}</div>
+        </div>
+        <div className="bg-gray-800 rounded-xl p-4">
+          <div className="text-gray-400 text-sm">Delivered</div>
+          <div className="text-2xl font-bold text-green-400">{stats.delivered}</div>
+        </div>
+        <div className="bg-gray-800 rounded-xl p-4">
+          <div className="text-gray-400 text-sm">Revenue</div>
+          <div className="text-2xl font-bold text-purple-400">${stats.revenue.toFixed(2)}</div>
+        </div>
+      </div>
+
+      {/* Orders List */}
+      {orders.length === 0 ? (
+        <div className="bg-gray-800 rounded-xl p-12 text-center">
+          <Package className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">No Orders Yet</h3>
+          <p className="text-gray-400">AI account orders will appear here</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {orders.map((order) => (
+            <div
+              key={order.id}
+              className={`bg-gray-800 rounded-xl p-5 border ${
+                order.delivery_status === 'pending' ? 'border-yellow-500/30' : 'border-gray-700'
+              }`}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gray-700 flex items-center justify-center text-2xl">
+                    {getCategoryIcon(order.ai_accounts?.category)}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">
+                      {order.ai_accounts?.name || 'AI Account'}
+                    </h3>
+                    <p className="text-gray-400 text-sm">{order.user_email}</p>
+                    <p className="text-gray-500 text-xs">
+                      {new Date(order.purchased_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-bold text-white">${order.amount}</span>
+                  {order.delivery_status === 'pending' ? (
+                    <span className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm">
+                      <Clock className="w-4 h-4" />
+                      Pending
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm">
+                      <CheckCircle className="w-4 h-4" />
+                      Delivered
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {order.delivery_status === 'pending' && (
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={credentials[order.id] || ''}
+                    onChange={(e) => setCredentials(prev => ({ ...prev, [order.id]: e.target.value }))}
+                    placeholder="Enter account credentials (email:password or link)"
+                    className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500"
+                  />
+                  <button
+                    onClick={() => handleDeliver(order.id)}
+                    disabled={delivering === order.id}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {delivering === order.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    Deliver
+                  </button>
+                </div>
+              )}
+
+              {order.delivery_status === 'delivered' && order.account_credentials && (
+                <div className="flex items-center gap-2 p-3 bg-gray-900 rounded-lg">
+                  <Eye className="w-4 h-4 text-gray-400" />
+                  <code className="text-sm text-gray-400">{order.account_credentials}</code>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AccountOrdersManagement;
