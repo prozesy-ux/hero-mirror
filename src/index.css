@@ -193,6 +193,38 @@
     );
   }
 
+  /* Premium Typography */
+  .font-display {
+    font-family: "DM Sans", system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .font-heading {
+    font-family: "DM Sans", system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .font-body {
+    font-family: "DM Sans", system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  .font-label {
+    font-family: "DM Sans", system-ui, sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  .text-uppercase-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
   /* Premium Glass Card */
   .glass-card {
     @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl;
