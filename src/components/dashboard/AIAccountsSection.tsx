@@ -749,13 +749,13 @@ const AIAccountsSection = () => {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
-                        <img 
-                          src={getProductImage(purchase.ai_accounts?.category)}
-                          alt={purchase.ai_accounts?.name || 'AI Account'}
-                          className="w-10 h-10 object-contain"
-                        />
-                      </div>
+                              <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
+                                <img 
+                                  src={purchase.ai_accounts?.icon_url || getProductImage(purchase.ai_accounts?.category)}
+                                  alt={purchase.ai_accounts?.name || 'AI Account'}
+                                  className="w-10 h-10 object-contain"
+                                />
+                              </div>
                       <div>
                         <h3 className="text-lg font-bold text-gray-900 tracking-tight">
                           {purchase.ai_accounts?.name || 'AI Account'}
