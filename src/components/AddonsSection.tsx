@@ -16,8 +16,6 @@ const products = [
       "Video Tutorials for Every Workflow",
       "Operations, Marketing, Sales Automated"
     ],
-    originalPrice: 700,
-    price: 150,
     rating: 5.0,
     reviews: 127,
     isNew: true,
@@ -31,8 +29,6 @@ const products = [
       "How-to Guides & Tips",
       "Automate your Marketing & Business"
     ],
-    originalPrice: 120,
-    price: 67,
     rating: 4.7,
     reviews: 100,
     isNew: true,
@@ -46,8 +42,6 @@ const products = [
       "Extend Your ChatGPT's Functionality",
       "Create Quizzes, Save Prompts & More!"
     ],
-    originalPrice: 70,
-    price: 27,
     rating: 4.7,
     reviews: 48,
     isNew: false,
@@ -61,8 +55,6 @@ const products = [
       "50 Categories",
       "Boost Income, Automate Writing & More!"
     ],
-    originalPrice: 40,
-    price: 17,
     rating: 4.8,
     reviews: 103,
     isNew: false,
@@ -136,10 +128,11 @@ const AddonsSection = () => {
                 ))}
               </ul>
 
-              {/* Price */}
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-gray-400 line-through text-base">${product.originalPrice}.00</span>
-                <span className="text-xl font-bold text-amber-500">${product.price}.00</span>
+              {/* Lifetime Access Badge */}
+              <div className="mb-4">
+                <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  Lifetime Access
+                </span>
               </div>
 
               {/* CTA Button */}

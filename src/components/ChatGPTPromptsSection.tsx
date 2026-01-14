@@ -23,8 +23,6 @@ const products = [
       "All Premium Prompts In One",
       "Biggest Collection of AI Prompts for ChatGPT, Claude, Grok, & Gemini AI"
     ],
-    originalPrice: 150,
-    price: 97,
     rating: 4.8,
     reviews: 257,
     isNew: false,
@@ -38,8 +36,6 @@ const products = [
       "How-to guides & tips",
       "Streamline your business tasks"
     ],
-    originalPrice: 67,
-    price: 37,
     rating: 4.8,
     reviews: 230,
     isNew: false,
@@ -53,8 +49,6 @@ const products = [
       "How-to guides & tips",
       "Cut costs by 40%"
     ],
-    originalPrice: 67,
-    price: 37,
     rating: 4.9,
     reviews: 115,
     isNew: true,
@@ -68,8 +62,6 @@ const products = [
       "How-to guides & tips",
       "Automate all your academic tasks"
     ],
-    originalPrice: 67,
-    price: 37,
     rating: 4.8,
     reviews: 217,
     isNew: true,
@@ -83,8 +75,6 @@ const products = [
       "How-to guides & tips",
       "Reduce financial stress"
     ],
-    originalPrice: 67,
-    price: 37,
     rating: 4.9,
     reviews: 159,
     isNew: true,
@@ -98,8 +88,6 @@ const products = [
       "How-to guides & tips",
       "Supercharge your marketing"
     ],
-    originalPrice: 67,
-    price: 37,
     rating: 4.9,
     reviews: 459,
     isNew: true,
@@ -113,8 +101,6 @@ const products = [
       "How-to guides & tips",
       "10X your productivity"
     ],
-    originalPrice: 67,
-    price: 37,
     rating: 4.8,
     reviews: 175,
     isNew: true,
@@ -128,8 +114,6 @@ const products = [
       "How-to guides & tips",
       "Boost & automate your SEO"
     ],
-    originalPrice: 67,
-    price: 37,
     rating: 4.9,
     reviews: 105,
     isNew: true,
@@ -143,8 +127,6 @@ const products = [
       "How-to guides & tips",
       "Streamline your sales funnel"
     ],
-    originalPrice: 67,
-    price: 37,
     rating: 4.9,
     reviews: 157,
     isNew: true,
@@ -158,8 +140,6 @@ const products = [
       "How-to guides & tips",
       "Unlock your one-person business"
     ],
-    originalPrice: 67,
-    price: 37,
     rating: 5.0,
     reviews: 177,
     isNew: true,
@@ -233,10 +213,11 @@ const ChatGPTPromptsSection = () => {
                 ))}
               </ul>
 
-              {/* Price */}
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-gray-400 line-through text-base">${product.originalPrice}.00</span>
-                <span className="text-xl font-bold text-amber-500">${product.price}.00</span>
+              {/* Lifetime Access Badge */}
+              <div className="mb-4">
+                <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  Lifetime Access
+                </span>
               </div>
 
               {/* CTA Button */}

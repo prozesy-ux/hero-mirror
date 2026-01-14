@@ -15,8 +15,6 @@ const products = [
       "How-to Guides, Tips & Tricks",
       "Create Custom Logos, Banners & More!"
     ],
-    originalPrice: 120,
-    price: 67,
     rating: 4.8,
     reviews: 89,
     isNew: false,
@@ -30,8 +28,6 @@ const products = [
       "Prompt Templates, Tips & Tricks",
       "Innovate in Architecture!"
     ],
-    originalPrice: 67,
-    price: 27,
     rating: 4.7,
     reviews: 110,
     isNew: false,
@@ -45,8 +41,6 @@ const products = [
       "Prompt Templates, Tips & Tricks",
       "Inspire Your Creativity!"
     ],
-    originalPrice: 67,
-    price: 27,
     rating: 4.8,
     reviews: 137,
     isNew: true,
@@ -60,8 +54,6 @@ const products = [
       "Prompt Templates, Tips & Tricks",
       "Automate Visual Content Creation!"
     ],
-    originalPrice: 67,
-    price: 27,
     rating: 4.9,
     reviews: 49,
     isNew: true,
@@ -75,8 +67,6 @@ const products = [
       "Prompt Templates, Tips & Tricks",
       "Create Stunning Photographs!"
     ],
-    originalPrice: 67,
-    price: 27,
     rating: 4.5,
     reviews: 67,
     isNew: true,
@@ -90,8 +80,6 @@ const products = [
       "Prompt Templates, Tips & Tricks",
       "Automate Web Design Mock-Ups!"
     ],
-    originalPrice: 67,
-    price: 27,
     rating: 4.7,
     reviews: 70,
     isNew: true,
@@ -165,10 +153,11 @@ const MidjourneyPromptsSection = () => {
                 ))}
               </ul>
 
-              {/* Price */}
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-gray-400 line-through text-base">${product.originalPrice}.00</span>
-                <span className="text-xl font-bold text-amber-500">${product.price}.00</span>
+              {/* Lifetime Access Badge */}
+              <div className="mb-4">
+                <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  Lifetime Access
+                </span>
               </div>
 
               {/* CTA Button */}
