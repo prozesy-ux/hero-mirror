@@ -4,6 +4,7 @@ import AsSeenIn from "@/components/AsSeenIn";
 import StatsSection from "@/components/StatsSection";
 import PromptsSection from "@/components/PromptsSection";
 import BundleSection from "@/components/BundleSection";
+import TestimonialsSection from "@/components/TestimonialsSection";
 import PricingSection from "@/components/PricingSection";
 
 const Index = () => {
@@ -16,6 +17,7 @@ const Index = () => {
         <StatsSection />
         <PromptsSection />
         <BundleSection />
+        <TestimonialsSection />
         <PricingSection />
       </main>
     </div>
