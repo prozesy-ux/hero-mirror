@@ -6,6 +6,7 @@ import AIToolsGrid from "@/components/AIToolsGrid";
 import SocialMediaSection from "@/components/SocialMediaSection";
 import AudienceNiches from "@/components/AudienceNiches";
 import AIVideoSection from "@/components/AIVideoSection";
+import PromptsSection from "@/components/PromptsSection";
 import PricingSection from "@/components/PricingSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import FinalCTA from "@/components/FinalCTA";
@@ -22,6 +23,7 @@ const Index = () => {
         <SocialMediaSection />
         <AudienceNiches />
         <AIVideoSection />
+        <PromptsSection />
         <PricingSection />
         <TestimonialsSection />
         <FinalCTA />
