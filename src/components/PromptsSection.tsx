@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, Unlock, Lock, Check, SlidersHorizontal, X, Eye } from 'lucide-react';
+import { Heart, Unlock, Lock, Check, SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 
 const categories = [
   'Artworks',
@@ -161,6 +161,8 @@ const PromptsSection = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('trending');
   const [showFilters, setShowFilters] = useState(false);
+  const [showToolDropdown, setShowToolDropdown] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [favorites, setFavorites] = useState<number[]>([]);
 
   const toggleTool = (tool: string) => {
@@ -187,6 +189,8 @@ const PromptsSection = () => {
     return true;
   });
 
+  const activeFiltersCount = selectedTools.length + (selectedCategory ? 1 : 0);
+
   return (
     <section className="py-16 px-4 bg-gradient-to-b from-gray-900 to-black min-h-screen">
       <div className="max-w-7xl mx-auto">
@@ -210,169 +214,209 @@ const PromptsSection = () => {
               </button>
             ))}
           </div>
-        </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filter Sidebar */}
-          <div className={`lg:w-72 flex-shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10 sticky top-4">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <SlidersHorizontal className="w-5 h-5" />
-                  Filter Prompts
-                </h3>
-                <button
-                  onClick={clearFilters}
-                  className="text-sm text-purple-400 hover:text-purple-300"
-                >
-                  Clear Filter
-                </button>
-              </div>
+          {/* Top Filter Bar */}
+          <div className="flex flex-wrap items-center gap-3 p-4 bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-white/10">
+            {/* Filter Icon & Title */}
+            <div className="flex items-center gap-2 text-white font-medium">
+              <SlidersHorizontal className="w-5 h-5 text-purple-400" />
+              <span>Filter Prompts</span>
+            </div>
 
-              {/* Sort By */}
-              <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-300 mb-3">Sort by</h4>
-                <div className="space-y-2">
+            <div className="w-px h-6 bg-white/20 hidden sm:block" />
+
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowSortDropdown(!showSortDropdown);
+                  setShowToolDropdown(false);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-gray-300 text-sm transition-colors"
+              >
+                <span>Sort: {sortOptions.find(o => o.id === sortBy)?.label}</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showSortDropdown && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-gray-800 border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
                   {sortOptions.map((option) => (
-                    <label
+                    <button
                       key={option.id}
-                      className="flex items-center gap-3 cursor-pointer group"
-                      onClick={() => setSortBy(option.id)}
+                      onClick={() => {
+                        setSortBy(option.id);
+                        setShowSortDropdown(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${
+                        sortBy === option.id
+                          ? 'bg-purple-500/20 text-purple-400'
+                          : 'text-gray-300 hover:bg-white/10'
+                      }`}
                     >
                       <div
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                          sortBy === option.id
-                            ? 'bg-purple-500 border-purple-500'
-                            : 'border-gray-500 group-hover:border-gray-400'
+                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          sortBy === option.id ? 'border-purple-500 bg-purple-500' : 'border-gray-500'
                         }`}
                       >
-                        {sortBy === option.id && <Check className="w-3 h-3 text-white" />}
+                        {sortBy === option.id && <Check className="w-2.5 h-2.5 text-white" />}
                       </div>
-                      <span className="text-gray-300 group-hover:text-white text-sm">
-                        {option.label}
-                      </span>
-                    </label>
+                      {option.label}
+                    </button>
                   ))}
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* AI Tool */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-300 mb-3">AI Tool</h4>
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
+            {/* AI Tool Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowToolDropdown(!showToolDropdown);
+                  setShowSortDropdown(false);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-gray-300 text-sm transition-colors"
+              >
+                <span>AI Tool {selectedTools.length > 0 && `(${selectedTools.length})`}</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showToolDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showToolDropdown && (
+                <div className="absolute top-full left-0 mt-2 w-56 bg-gray-800 border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
                   {aiTools.map((tool) => (
-                    <label
+                    <button
                       key={tool.name}
-                      className="flex items-center justify-between cursor-pointer group"
                       onClick={() => toggleTool(tool.name)}
+                      className={`w-full flex items-center justify-between px-4 py-3 text-left text-sm transition-colors ${
+                        selectedTools.includes(tool.name)
+                          ? 'bg-purple-500/20 text-purple-400'
+                          : 'text-gray-300 hover:bg-white/10'
+                      }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                            selectedTools.includes(tool.name)
-                              ? 'bg-purple-500 border-purple-500'
-                              : 'border-gray-500 group-hover:border-gray-400'
+                          className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                            selectedTools.includes(tool.name) ? 'border-purple-500 bg-purple-500' : 'border-gray-500'
                           }`}
                         >
-                          {selectedTools.includes(tool.name) && (
-                            <Check className="w-3 h-3 text-white" />
-                          )}
+                          {selectedTools.includes(tool.name) && <Check className="w-2.5 h-2.5 text-white" />}
                         </div>
-                        <span className="text-gray-300 group-hover:text-white text-sm">
-                          {tool.name}
-                        </span>
+                        {tool.name}
                       </div>
                       <span className="text-xs text-gray-500">{tool.count}</span>
-                    </label>
+                    </button>
                   ))}
                 </div>
-              </div>
+              )}
             </div>
-          </div>
 
-          {/* Mobile Filter Button */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="lg:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-purple-500 rounded-full flex items-center justify-center shadow-lg"
-          >
-            {showFilters ? <X className="w-6 h-6 text-white" /> : <SlidersHorizontal className="w-6 h-6 text-white" />}
-          </button>
-
-          {/* Prompts Grid */}
-          <div className="flex-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPrompts.map((prompt) => (
-                <div
-                  key={prompt.id}
-                  className="group bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10 hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10"
-                >
-                  {/* Image */}
-                  <div className="relative aspect-[4/3] overflow-hidden">
-                    <img
-                      src={prompt.image}
-                      alt={prompt.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    
-                    {/* Tool Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1 bg-black/60 backdrop-blur-sm rounded-full">
-                      <span className="w-2 h-2 bg-purple-400 rounded-full" />
-                      <span className="text-white text-xs font-medium">{prompt.tool}</span>
-                    </div>
-
-                    {/* Favorite Button */}
+            {/* Selected Tools Pills */}
+            {selectedTools.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedTools.map((tool) => (
+                  <span
+                    key={tool}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 text-purple-400 text-xs font-medium rounded-full"
+                  >
+                    {tool}
                     <button
-                      onClick={() => toggleFavorite(prompt.id)}
-                      className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
-                        favorites.includes(prompt.id)
-                          ? 'bg-red-500 text-white'
-                          : 'bg-black/60 backdrop-blur-sm text-gray-300 hover:text-white'
-                      }`}
+                      onClick={() => toggleTool(tool)}
+                      className="hover:text-white transition-colors"
                     >
-                      <Heart className={`w-4 h-4 ${favorites.includes(prompt.id) ? 'fill-current' : ''}`} />
+                      <X className="w-3 h-3" />
                     </button>
+                  </span>
+                ))}
+              </div>
+            )}
 
-                    {/* Lock/Unlock Indicator */}
-                    {prompt.unlocked && (
-                      <div className="absolute bottom-3 right-3 px-2 py-1 bg-green-500/80 backdrop-blur-sm rounded-full flex items-center gap-1">
-                        <Unlock className="w-3 h-3 text-white" />
-                        <span className="text-white text-xs font-medium">Unlocked</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 group-hover:text-purple-300 transition-colors mb-4">
-                      {prompt.title}
-                    </h3>
-
-                    {/* Action Button */}
-                    {prompt.unlocked ? (
-                      <button className="w-full py-2.5 bg-green-500/20 hover:bg-green-500 text-green-400 hover:text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-green-500/30 hover:border-green-500">
-                        <Eye className="w-4 h-4" />
-                        View Prompt
-                      </button>
-                    ) : (
-                      <button className="w-full py-2.5 bg-purple-500/20 hover:bg-purple-500 text-purple-400 hover:text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-purple-500/30 hover:border-purple-500">
-                        <Lock className="w-4 h-4" />
-                        Unlock Prompt
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Load More */}
-            <div className="text-center mt-10">
-              <button className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-full transition-colors">
-                Load More Prompts
+            {/* Clear Filters */}
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="ml-auto text-sm text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Clear All ({activeFiltersCount})
               </button>
-            </div>
+            )}
           </div>
         </div>
+
+        {/* Prompts Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredPrompts.map((prompt) => (
+            <div
+              key={prompt.id}
+              className="group bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10 hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10"
+            >
+              {/* Image */}
+              <div className="relative aspect-[4/3] overflow-hidden">
+                <img
+                  src={prompt.image}
+                  alt={prompt.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+                
+                {/* Tool Badge */}
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1 bg-black/60 backdrop-blur-sm rounded-full">
+                  <span className="w-2 h-2 bg-purple-400 rounded-full" />
+                  <span className="text-white text-xs font-medium">{prompt.tool}</span>
+                </div>
+
+                {/* Favorite Button */}
+                <button
+                  onClick={() => toggleFavorite(prompt.id)}
+                  className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                    favorites.includes(prompt.id)
+                      ? 'bg-red-500 text-white'
+                      : 'bg-black/60 backdrop-blur-sm text-gray-300 hover:text-white'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${favorites.includes(prompt.id) ? 'fill-current' : ''}`} />
+                </button>
+
+                {/* Lock/Unlock Indicator */}
+                {prompt.unlocked && (
+                  <div className="absolute bottom-3 right-3 px-2 py-1 bg-green-500/80 backdrop-blur-sm rounded-full flex items-center gap-1">
+                    <Unlock className="w-3 h-3 text-white" />
+                    <span className="text-white text-xs font-medium">Unlocked</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="p-4">
+                <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 group-hover:text-purple-300 transition-colors mb-4">
+                  {prompt.title}
+                </h3>
+
+                {/* Action Button - Always shows Unlock */}
+                <button className="w-full py-2.5 bg-purple-500/20 hover:bg-purple-500 text-purple-400 hover:text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-purple-500/30 hover:border-purple-500">
+                  <Lock className="w-4 h-4" />
+                  Unlock Prompt
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Load More */}
+        <div className="text-center mt-10">
+          <button className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-full transition-colors">
+            Load More Prompts
+          </button>
+        </div>
       </div>
+
+      {/* Click outside to close dropdowns */}
+      {(showSortDropdown || showToolDropdown) && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => {
+            setShowSortDropdown(false);
+            setShowToolDropdown(false);
+          }}
+        />
+      )}
     </section>
   );
 };
