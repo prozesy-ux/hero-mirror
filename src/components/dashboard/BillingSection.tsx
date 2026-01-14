@@ -263,7 +263,7 @@ const BillingSection = () => {
                   <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400 group-hover:scale-110 transition-transform">
                     <Check size={16} />
                   </div>
-                  <span className="text-gray-200">{feature.text}</span>
+                  <span className="text-gray-200">{feature}</span>
                 </div>
               ))}
             </div>
