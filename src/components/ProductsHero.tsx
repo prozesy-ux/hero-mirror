@@ -1,19 +1,18 @@
-import { Zap } from 'lucide-react';
+import godMascot from '@/assets/god-mascot.avif';
+import flashIcon from '@/assets/flash-icon.avif';
 
 const ProductsHero = () => {
   return (
-    <section className="py-20 px-4 bg-white relative overflow-hidden">
+    <section className="py-16 md:py-20 px-4 bg-white relative overflow-hidden">
       <div className="max-w-6xl mx-auto text-center relative">
         {/* Decorative God Character - Left */}
         <div className="absolute left-0 top-1/2 -translate-y-1/2 hidden lg:block">
-          <div className="w-32 h-32 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-6xl">
-            🧔
-          </div>
+          <img src={godMascot} alt="Mascot" className="w-28 h-28 object-contain" />
         </div>
 
         {/* Decorative Lightning - Right */}
         <div className="absolute right-0 top-1/2 -translate-y-1/2 hidden lg:block">
-          <Zap className="w-24 h-24 text-black fill-black" />
+          <img src={flashIcon} alt="Flash" className="w-20 h-20 object-contain" />
         </div>
 
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-black mb-4 leading-tight">
