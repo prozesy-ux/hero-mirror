@@ -11,7 +11,7 @@ const DashboardHome = () => (
   <div>
     <h1 className="text-3xl font-bold text-white mb-6">Welcome to Your Dashboard</h1>
     <p className="text-gray-400 mb-8">Access all your prompts, AI tools, and account settings.</p>
-    <PromptsGrid showFeatured />
+    <PromptsGrid />
   </div>
 );
 
@@ -24,7 +24,7 @@ const Dashboard = () => {
           <Routes>
             <Route index element={<DashboardHome />} />
             <Route path="prompts" element={<PromptsGrid />} />
-            <Route path="favorites" element={<PromptsGrid showFavorites />} />
+            <Route path="favorites" element={<PromptsGrid showFavoritesOnly />} />
             <Route path="tools" element={<AIToolsSection />} />
             <Route path="ai-accounts" element={<AIAccountsSection />} />
             <Route path="my-accounts" element={<MyPurchasedAccounts />} />

@@ -35,9 +35,9 @@ const AdminDashboard = () => (
 );
 
 const Admin = () => {
-  const { isAuthenticated } = useAdmin();
+  const { isAdminAuthenticated } = useAdmin();
 
-  if (!isAuthenticated) {
+  if (!isAdminAuthenticated) {
     return <Navigate to="/admin/login" replace />;
   }
 
