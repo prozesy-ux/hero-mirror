@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, Lock, Unlock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, Filter, Eye, ChevronDown, FolderOpen, Sparkles, Star, BarChart3, Bookmark } from 'lucide-react';
+import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, Filter, ChevronDown, FolderOpen, Star, Bookmark, Check, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -234,8 +234,7 @@ const PromptsGrid = () => {
           )}
 
           {/* Tool Badge */}
-          <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${getToolBadgeClass(prompt.tool)}`}>
-            <span className={`w-2 h-2 rounded-full ${getToolDotColor(prompt.tool)}`} />
+          <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold uppercase shadow-lg">
             {prompt.tool}
           </div>
 
@@ -250,56 +249,76 @@ const PromptsGrid = () => {
             />
           </button>
 
-          {/* Unlocked Badge */}
-          {!isLocked && (
-            <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-emerald-500 rounded-full flex items-center gap-1 shadow-sm">
-              <Unlock size={12} className="text-white" />
-              <span className="text-white text-xs font-semibold">Unlocked</span>
-            </div>
-          )}
-
           {/* Lock Overlay */}
           {isLocked && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-2">
-                  <Lock size={20} className="text-white" />
-                </div>
-                <span className="text-white text-sm font-medium">Pro Only</span>
-              </div>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
+              <Lock size={28} className="text-white mb-2" />
+              <span className="text-white text-sm font-semibold">Pro Only</span>
             </div>
           )}
         </div>
 
         {/* Content */}
         <div className="p-5">
-          <h3 className="font-bold text-gray-900 text-sm leading-tight line-clamp-2 group-hover:text-gray-700 transition-colors mb-4">
+          <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">
             {prompt.title}
           </h3>
+          
+          {/* Description */}
+          {prompt.description && (
+            <p className="text-sm text-gray-600 mb-3 line-clamp-3">
+              {prompt.description}
+            </p>
+          )}
 
-          {/* Button */}
+          {/* Access Badge */}
+          <div className="mb-3">
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+              prompt.is_free 
+                ? 'bg-emerald-100 text-emerald-700' 
+                : isPro
+                  ? 'bg-violet-100 text-violet-700'
+                  : 'bg-gray-100 text-gray-600'
+            }`}>
+              {prompt.is_free ? (
+                <>
+                  <Check size={12} />
+                  Free Access
+                </>
+              ) : isPro ? (
+                <>
+                  <Star size={12} className="fill-violet-500" />
+                  Pro Version
+                </>
+              ) : (
+                <>
+                  <Lock size={12} />
+                  Pro Access
+                </>
+              )}
+            </span>
+          </div>
+
+          {/* Review Section */}
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />
+              ))}
+            </div>
+            <span className="text-sm text-gray-600 font-medium">4.9 (120+ reviews)</span>
+          </div>
+
+          {/* Yellow CTA Button */}
           <button
-            className={`w-full py-3 font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
-              isLocked
-                ? 'bg-gray-100 hover:bg-gray-200 text-gray-600 border border-gray-200'
-                : 'bg-black hover:bg-gray-800 text-white'
-            }`}
+            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               handlePromptClick(prompt);
             }}
           >
-            {isLocked ? (
-              <>
-                <Lock size={16} />
-                Unlock Prompt
-              </>
-            ) : (
-              <>
-                <Eye size={16} />
-                View Prompt
-              </>
-            )}
+            {isLocked ? 'Unlock Prompt' : 'View Prompt'}
+            <ChevronRight size={16} />
           </button>
         </div>
       </div>
