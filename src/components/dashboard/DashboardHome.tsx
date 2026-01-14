@@ -12,7 +12,6 @@ import geminiLogo from '@/assets/gemini-logo.avif';
 import checkIcon from '@/assets/check-icon.svg';
 import starsIcon from '@/assets/stars.svg';
 import btnArrow from '@/assets/btn-arrow.svg';
-import madeForNotion from '@/assets/made-for-notion.avif';
 
 interface Prompt {
   id: string;
@@ -110,14 +109,6 @@ const DashboardHome = () => {
 
   const canAccessPrompt = (prompt: Prompt) => prompt.is_free || isPro;
 
-  const getToolLogo = (tool: string) => {
-    const toolLower = tool.toLowerCase();
-    if (toolLower.includes('chatgpt')) return chatgptLogo;
-    if (toolLower.includes('midjourney')) return midjourneyLogo;
-    if (toolLower.includes('gemini')) return geminiLogo;
-    return chatgptLogo;
-  };
-
   const getProductImage = (category: string | null) => {
     switch (category) {
       case 'chatgpt': return chatgptLogo;
@@ -125,21 +116,6 @@ const DashboardHome = () => {
       case 'gemini': return geminiLogo;
       default: return chatgptLogo;
     }
-  };
-
-  // Prompt features for cards
-  const getPromptFeatures = (tool: string) => {
-    const toolLower = tool.toLowerCase();
-    if (toolLower.includes('chatgpt')) {
-      return ['Ready-to-use prompts', 'Boost productivity', 'Expert crafted'];
-    }
-    if (toolLower.includes('midjourney')) {
-      return ['Stunning visuals', 'Art generation', 'Creative styles'];
-    }
-    if (toolLower.includes('gemini')) {
-      return ['AI assistance', 'Smart responses', 'Multi-modal'];
-    }
-    return ['Premium content', 'Instant access', 'Regular updates'];
   };
 
   // Account features
@@ -216,24 +192,26 @@ const DashboardHome = () => {
             {trendingPrompts.map((prompt) => {
               const isLocked = !canAccessPrompt(prompt);
               const isFavorite = favorites.includes(prompt.id);
-              const features = getPromptFeatures(prompt.tool);
 
               return (
                 <div
                   key={prompt.id}
                   className="flex-shrink-0 w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
-                  {/* Header with logos */}
+                  {/* Header with image */}
                   <div className="p-4 border-b border-gray-100">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <img src={getToolLogo(prompt.tool)} alt={prompt.tool} className="w-8 h-8 object-contain" />
-                        <img src={madeForNotion} alt="Notion" className="h-5 object-contain" />
+                        <img 
+                          src={prompt.image_url || '/placeholder.svg'} 
+                          alt={prompt.title}
+                          className="w-10 h-10 rounded-lg object-cover"
+                        />
                       </div>
                       <div className="flex items-center gap-2">
-                        {prompt.is_featured && (
-                          <span className="px-2 py-0.5 bg-yellow-400 text-black text-xs font-bold rounded">NEW!</span>
-                        )}
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded uppercase">
+                          {prompt.tool}
+                        </span>
                         <button
                           onClick={(e) => toggleFavorite(prompt.id, e)}
                           className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
@@ -247,15 +225,17 @@ const DashboardHome = () => {
                     </div>
 
                     {/* Title */}
-                    <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-1">
+                    <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-1 mb-1">
                       {prompt.title}
                     </h3>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">DELIVERED VIA NOTION</p>
+                    {prompt.description && (
+                      <p className="text-xs text-gray-500 line-clamp-2">{prompt.description}</p>
+                    )}
                   </div>
 
                   {/* Features */}
                   <div className="p-4 space-y-2">
-                    {features.map((feature, idx) => (
+                    {['Premium Content', 'Instant Access', 'Regular Updates'].map((feature, idx) => (
                       <div key={idx} className="flex items-center gap-2">
                         <img src={checkIcon} alt="check" className="w-4 h-4" />
                         <span className="text-sm text-gray-700">{feature}</span>
