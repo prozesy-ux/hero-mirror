@@ -139,13 +139,13 @@ const getCategoryIcon = (category: string) => {
 
 const getCategoryColor = (category: string) => {
   switch (category) {
-    case 'Chat': return 'bg-blue-100 text-blue-700 border-blue-200';
-    case 'Image': return 'bg-purple-100 text-purple-700 border-purple-200';
-    case 'Research': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    case 'Video': return 'bg-pink-100 text-pink-700 border-pink-200';
-    case 'Audio': return 'bg-orange-100 text-orange-700 border-orange-200';
-    case 'Design': return 'bg-cyan-100 text-cyan-700 border-cyan-200';
-    default: return 'bg-gray-100 text-gray-700 border-gray-200';
+    case 'Chat': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+    case 'Image': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+    case 'Research': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+    case 'Video': return 'bg-pink-500/20 text-pink-400 border-pink-500/30';
+    case 'Audio': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+    case 'Design': return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30';
+    default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
   }
 };
 
@@ -157,15 +157,18 @@ const AIToolsSection = () => {
   const tools = activeTab === 'free' ? freeTools : premiumTools;
 
   return (
-    <div className="section-tools animate-fade-up">
+    <div className="animate-fade-up">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <div className="p-4 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl shadow-lg shadow-cyan-500/30">
-          <Rocket size={28} className="text-white" />
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl blur-lg opacity-50" />
+          <div className="relative p-4 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl shadow-lg">
+            <Rocket size={28} className="text-white" />
+          </div>
         </div>
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">AI Tools</h2>
-          <p className="text-gray-500">Discover and access popular AI tools</p>
+          <h2 className="text-3xl font-bold text-white">AI Tools</h2>
+          <p className="text-gray-400">Discover and access popular AI tools</p>
         </div>
       </div>
 
@@ -173,10 +176,10 @@ const AIToolsSection = () => {
       <div className="flex gap-3 mb-8">
         <button
           onClick={() => setActiveTab('free')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
             activeTab === 'free'
               ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30'
-              : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+              : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10'
           }`}
         >
           <Zap className="w-5 h-5" />
@@ -184,10 +187,10 @@ const AIToolsSection = () => {
         </button>
         <button
           onClick={() => setActiveTab('premium')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
             activeTab === 'premium'
               ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
-              : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+              : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10'
           }`}
         >
           <Crown className="w-5 h-5" />
@@ -200,40 +203,43 @@ const AIToolsSection = () => {
         {tools.map((tool) => (
           <div
             key={tool.id}
-            className={`group bg-white rounded-3xl p-6 border border-black/5 hover:shadow-xl hover:shadow-cyan-500/10 hover:-translate-y-1 transition-all duration-300 ${
-              tool.isPremium && !isPro ? 'opacity-80' : ''
+            className={`group relative bg-gradient-to-br from-[#1a1a2e]/80 to-[#12121f]/80 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-cyan-500/30 shadow-xl shadow-black/30 hover:shadow-cyan-500/10 hover:-translate-y-1 transition-all duration-300 ${
+              tool.isPremium && !isPro ? 'opacity-70' : ''
             }`}
           >
+            {/* Hover glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl" />
+
             {tool.isPremium && !isPro && (
-              <div className="absolute top-4 right-4">
-                <Lock className="w-5 h-5 text-gray-400" />
+              <div className="absolute top-4 right-4 z-10">
+                <Lock className="w-5 h-5 text-gray-500" />
               </div>
             )}
 
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-50 to-blue-50 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-300 shadow-inner border border-cyan-100">
+            <div className="relative flex items-start gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0f0f18] to-[#1a1a2e] border border-white/10 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-300 shadow-inner">
                 {tool.icon}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold text-gray-900">{tool.name}</h3>
+                  <h3 className="font-bold text-white group-hover:text-cyan-300 transition-colors">{tool.name}</h3>
                   {tool.isPremium && (
                     <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2.5 py-1 rounded-full font-semibold">
                       PRO
                     </span>
                   )}
                 </div>
-                <p className="text-gray-500 text-sm mb-2">{tool.description}</p>
-                <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium border ${getCategoryColor(tool.category)}`}>
+                <p className="text-gray-400 text-sm mb-2">{tool.description}</p>
+                <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-medium border ${getCategoryColor(tool.category)}`}>
                   {getCategoryIcon(tool.category)}
                   {tool.category}
                 </span>
               </div>
             </div>
 
-            <div className="mt-5">
+            <div className="relative mt-5">
               {tool.isPremium && !isPro ? (
-                <button className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-400 py-3 rounded-xl cursor-not-allowed font-medium">
+                <button className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-gray-500 py-3 rounded-xl cursor-not-allowed font-medium">
                   <Lock className="w-4 h-4" />
                   Upgrade to Access
                 </button>
@@ -242,10 +248,14 @@ const AIToolsSection = () => {
                   href={tool.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white py-3 rounded-xl transition-all font-semibold shadow-lg shadow-cyan-500/25"
+                  className="w-full flex items-center justify-center gap-2 relative overflow-hidden group/btn"
                 >
-                  <ExternalLink className="w-4 h-4" />
-                  Open Tool
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-500 opacity-80 group-hover/btn:opacity-100 transition-opacity rounded-xl" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-400 blur-xl opacity-0 group-hover/btn:opacity-40 transition-opacity" />
+                  <span className="relative flex items-center justify-center gap-2 py-3 text-white font-semibold w-full">
+                    <ExternalLink className="w-4 h-4" />
+                    Open Tool
+                  </span>
                 </a>
               )}
             </div>
@@ -255,18 +265,26 @@ const AIToolsSection = () => {
 
       {/* Upgrade CTA */}
       {activeTab === 'premium' && !isPro && (
-        <div className="mt-10 p-8 bg-gradient-to-r from-purple-50 to-pink-50 rounded-3xl border border-purple-200/50">
-          <div className="flex items-center gap-6">
-            <div className="p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-lg shadow-purple-500/30">
-              <Sparkles className="w-8 h-8 text-white" />
+        <div className="mt-10 relative">
+          <div className="absolute -inset-1 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-purple-600/20 rounded-3xl blur-xl opacity-50" />
+          <div className="relative p-8 bg-gradient-to-br from-[#1a1a2e]/90 to-[#12121f]/90 backdrop-blur-xl rounded-2xl border border-white/10">
+            <div className="flex items-center gap-6 flex-wrap">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl blur-lg opacity-50" />
+                <div className="relative p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-lg">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-white mb-1">Upgrade to Pro</h3>
+                <p className="text-gray-400">Get access to all premium AI tools and exclusive features</p>
+              </div>
+              <button className="relative overflow-hidden group/btn px-6 py-3 rounded-xl">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-90 group-hover/btn:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 blur-xl opacity-0 group-hover/btn:opacity-50 transition-opacity" />
+                <span className="relative text-white font-semibold">Upgrade Now</span>
+              </button>
             </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Upgrade to Pro</h3>
-              <p className="text-gray-600">Get access to all premium AI tools and exclusive features</p>
-            </div>
-            <button className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-purple-500/25">
-              Upgrade Now
-            </button>
           </div>
         </div>
       )}
