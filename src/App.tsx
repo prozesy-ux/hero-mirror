@@ -8,7 +8,6 @@ import { AdminProvider } from "@/contexts/AdminContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import AdminLogin from "./pages/AdminLogin";
 import Admin from "./pages/Admin";
@@ -27,7 +26,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/signin" element={<SignIn />} />
-              <Route path="/signup" element={<SignUp />} />
+              <Route path="/signup" element={<SignIn />} />
               <Route path="/dashboard/*" element={
                 <ProtectedRoute>
                   <Dashboard />
