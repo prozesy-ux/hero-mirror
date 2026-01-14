@@ -3,7 +3,6 @@ import { User, Mail, Save, Camera, Lock, Eye, EyeOff, Loader2, AlertTriangle, Ch
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { GlassCard } from '@/components/ui/glass-card';
 
 const ProfileSection = () => {
   const { profile, user } = useAuthContext();
@@ -157,21 +156,14 @@ const ProfileSection = () => {
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-up">
-      <div className="flex items-center gap-4 mb-8">
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl blur-lg opacity-50" />
-          <div className="relative p-4 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl shadow-lg">
-            <User size={28} className="text-white" />
-          </div>
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold text-white">Profile Settings</h2>
-          <p className="text-gray-400">Manage your account settings and preferences</p>
-        </div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Profile Settings</h1>
+        <p className="text-gray-400 font-medium">Manage your account settings and preferences</p>
       </div>
 
       {/* Avatar Section */}
-      <GlassCard variant="glow" className="mb-6">
+      <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5 mb-6">
         <div className="flex items-center gap-6">
           <div className="relative group">
             <div className="relative">
@@ -179,10 +171,10 @@ const ProfileSection = () => {
                 <img 
                   src={profile.avatar_url} 
                   alt="Avatar" 
-                  className="w-28 h-28 rounded-full object-cover ring-4 ring-purple-500/30 transition-all duration-300 group-hover:ring-purple-500/50"
+                  className="w-24 h-24 rounded-full object-cover ring-4 ring-white/10 transition-all duration-300 group-hover:ring-white/20"
                 />
               ) : (
-                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-purple-500/30">
+                <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center text-white text-3xl font-bold ring-4 ring-white/10">
                   {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
                 </div>
               )}
@@ -205,7 +197,7 @@ const ProfileSection = () => {
             <button 
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarLoading}
-              className="absolute -bottom-1 -right-1 p-2.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white hover:from-purple-500 hover:to-pink-500 transition-all shadow-lg glow-purple"
+              className="absolute -bottom-1 -right-1 p-2 bg-black rounded-full text-white hover:bg-gray-800 transition-all shadow-lg border border-white/10"
             >
               <Upload size={14} />
             </button>
@@ -220,40 +212,40 @@ const ProfileSection = () => {
           </div>
           
           <div className="flex-1">
-            <h3 className="text-2xl font-bold text-white mb-1">
+            <h3 className="text-xl font-bold text-white tracking-tight mb-1">
               {profile?.full_name || 'User'}
             </h3>
-            <p className="text-gray-400 mb-2">{profile?.email}</p>
+            <p className="text-gray-400 mb-1">{profile?.email}</p>
             <p className="text-sm text-gray-500">
               Member since {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
             </p>
           </div>
         </div>
-      </GlassCard>
+      </div>
 
       {/* Profile Form */}
-      <GlassCard className="mb-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <User size={20} className="text-purple-400" />
+      <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5 mb-6">
+        <h3 className="text-lg font-bold text-white tracking-tight mb-4 flex items-center gap-2">
+          <User size={20} className="text-gray-400" />
           Personal Information
         </h3>
         
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-400 mb-2">
               Full Name
             </label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+              className="w-full bg-[#0f0f12] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 transition-all"
               placeholder="Your full name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-400 mb-2">
               Email Address
             </label>
             <div className="flex gap-2">
@@ -261,7 +253,7 @@ const ProfileSection = () => {
                 type="email"
                 value={profile?.email || ''}
                 disabled
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-400 cursor-not-allowed"
+                className="flex-1 bg-[#0f0f12] border border-white/10 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed"
               />
               <button
                 onClick={() => setShowEmailChange(!showEmailChange)}
@@ -273,8 +265,8 @@ const ProfileSection = () => {
           </div>
 
           {showEmailChange && (
-            <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-3 animate-scale-in">
-              <div className="flex items-center gap-2 text-yellow-400 text-sm">
+            <div className="p-4 bg-[#0f0f12] rounded-xl border border-white/10 space-y-3 animate-scale-in">
+              <div className="flex items-center gap-2 text-amber-500 text-sm">
                 <AlertTriangle size={16} />
                 A verification email will be sent to your new address
               </div>
@@ -283,19 +275,19 @@ const ProfileSection = () => {
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="Enter new email address"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                className="w-full bg-[#1a1a1f] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
               />
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowEmailChange(false)}
-                  className="flex-1 bg-white/5 hover:bg-white/10 text-white py-2.5 rounded-xl transition-all"
+                  className="flex-1 bg-white/5 hover:bg-white/10 text-white py-2.5 rounded-xl transition-all border border-white/10"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleEmailChange}
                   disabled={emailLoading}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white py-2.5 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 bg-white hover:bg-gray-100 text-black py-2.5 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
                 >
                   {emailLoading ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
                   Send Verification
@@ -307,19 +299,19 @@ const ProfileSection = () => {
           <button
             onClick={handleSave}
             disabled={loading}
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-medium py-3 px-6 rounded-xl transition-all disabled:opacity-50 glow-purple-hover"
+            className="flex items-center gap-2 bg-white hover:bg-gray-100 text-black font-semibold py-3 px-6 rounded-xl transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
             {loading ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
-      </GlassCard>
+      </div>
 
       {/* Password Change */}
-      <GlassCard>
+      <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Lock size={20} className="text-purple-400" />
+          <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+            <Lock size={20} className="text-gray-400" />
             Password & Security
           </h3>
           <button
@@ -331,19 +323,19 @@ const ProfileSection = () => {
         </div>
 
         {!showPasswordChange ? (
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-500 text-sm">
             Keep your account secure with a strong password. We recommend using a unique password that you don't use elsewhere.
           </p>
         ) : (
           <div className="space-y-4 animate-scale-in">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
+              <label className="block text-sm font-medium text-gray-400 mb-2">New Password</label>
               <div className="relative">
                 <input
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white pr-12 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                  className="w-full bg-[#0f0f12] border border-white/10 rounded-xl px-4 py-3 text-white pr-12 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
                   placeholder="Enter new password"
                 />
                 <button
@@ -376,12 +368,12 @@ const ProfileSection = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
+              <label className="block text-sm font-medium text-gray-400 mb-2">Confirm New Password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                className="w-full bg-[#0f0f12] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
                 placeholder="Confirm new password"
               />
               {confirmPassword && newPassword && (
@@ -404,14 +396,14 @@ const ProfileSection = () => {
             <button
               onClick={handlePasswordChange}
               disabled={passwordLoading || newPassword.length < 6 || newPassword !== confirmPassword}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-medium py-3 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed glow-purple-hover"
+              className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-black font-semibold py-3 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {passwordLoading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
               {passwordLoading ? 'Updating...' : 'Update Password'}
             </button>
           </div>
         )}
-      </GlassCard>
+      </div>
     </div>
   );
 };

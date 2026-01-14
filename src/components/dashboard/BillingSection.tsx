@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, Check, Sparkles, Crown, Zap, XCircle, RefreshCcw, Loader2, AlertTriangle, Shield, Wallet, Plus, ArrowUpRight, History, DollarSign, IndianRupee, Smartphone } from 'lucide-react';
+import { CreditCard, Check, XCircle, RefreshCcw, Loader2, AlertTriangle, Shield, Wallet, Plus, ArrowUpRight, History, DollarSign, IndianRupee, Smartphone, Award, BadgeCheck, ArrowDownRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { GlassCard } from '@/components/ui/glass-card';
 import { useSearchParams } from 'react-router-dom';
 
 interface Purchase {
@@ -224,7 +223,7 @@ const BillingSection = () => {
     if (profileError) {
       toast.error('Failed to activate Pro status');
     } else {
-      toast.success('🎉 Welcome to Pro! All prompts are now unlocked!');
+      toast.success('Welcome to Pro! All prompts are now unlocked!');
       fetchData();
       window.location.reload();
     }
@@ -285,9 +284,9 @@ const BillingSection = () => {
   const quickAmounts = [5, 10, 25, 50, 100];
 
   const gatewayInfo = {
-    stripe: { name: 'Stripe', icon: CreditCard, color: 'from-purple-500 to-indigo-500', desc: 'Credit/Debit Card' },
-    bkash: { name: 'bKash', icon: Smartphone, color: 'from-pink-500 to-rose-500', desc: 'Mobile Banking (BD)' },
-    upi: { name: 'UPI', icon: IndianRupee, color: 'from-green-500 to-emerald-500', desc: 'India Payments' },
+    stripe: { name: 'Stripe', icon: CreditCard, desc: 'Credit/Debit Card' },
+    bkash: { name: 'bKash', icon: Smartphone, desc: 'Mobile Banking (BD)' },
+    upi: { name: 'UPI', icon: IndianRupee, desc: 'India Payments' },
   };
 
   const proFeatures = [
@@ -303,48 +302,41 @@ const BillingSection = () => {
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">
-      <div className="flex items-center gap-4 mb-8">
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl blur-lg opacity-50" />
-          <div className="relative p-4 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl shadow-lg">
-            <Wallet size={28} className="text-white" />
-          </div>
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold text-white">Billing & Wallet</h2>
-          <p className="text-gray-400">Manage your wallet, subscription and payments</p>
-        </div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Billing & Wallet</h1>
+        <p className="text-gray-400 font-medium">Manage your wallet, subscription and payments</p>
       </div>
 
       {/* Wallet Card */}
-      <GlassCard variant="glow" className="mb-6">
+      <div className="bg-white rounded-2xl p-6 mb-6 shadow-lg border border-gray-100">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 animate-glow-pulse">
+            <div className="p-4 rounded-2xl bg-gray-900">
               <Wallet size={28} className="text-white" />
             </div>
             <div>
-              <p className="text-gray-400 text-sm">Wallet Balance</p>
-              <h3 className="text-4xl font-bold text-white">
+              <p className="text-gray-500 text-sm font-medium">Wallet Balance</p>
+              <h3 className="text-4xl font-bold text-gray-900 tracking-tight">
                 ${(wallet?.balance || 0).toFixed(2)}
               </h3>
             </div>
           </div>
           <button
             onClick={() => setShowTopupModal(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-semibold rounded-xl transition-all"
+            className="flex items-center gap-2 px-6 py-3 bg-black hover:bg-gray-900 text-white font-semibold rounded-xl transition-all"
           >
             <Plus size={20} />
             Add Funds
           </button>
         </div>
-      </GlassCard>
+      </div>
 
       {/* Transaction History */}
       {transactions.length > 0 && (
-        <GlassCard className="mb-6">
-          <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-            <History className="text-purple-400" size={20} />
+        <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5 mb-6">
+          <h3 className="text-lg font-bold text-white tracking-tight mb-4 flex items-center gap-2">
+            <History className="text-gray-400" size={20} />
             Recent Transactions
           </h3>
           <div className="space-y-3">
@@ -360,7 +352,7 @@ const BillingSection = () => {
                     'bg-blue-500/20 text-blue-400'
                   }`}>
                     {tx.type === 'topup' ? <ArrowUpRight size={16} /> :
-                     tx.type === 'purchase' ? <DollarSign size={16} /> :
+                     tx.type === 'purchase' ? <ArrowDownRight size={16} /> :
                      <RefreshCcw size={16} />}
                   </div>
                   <div>
@@ -390,21 +382,21 @@ const BillingSection = () => {
               </div>
             ))}
           </div>
-        </GlassCard>
+        </div>
       )}
 
       {/* Current Plan */}
-      <GlassCard variant={isPro ? "glow" : "default"} className="mb-6">
+      <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5 mb-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <div className={`p-4 rounded-2xl ${isPro ? 'bg-gradient-to-br from-purple-500 to-pink-500 animate-glow-pulse' : 'bg-white/10'}`}>
-              {isPro ? <Crown size={28} className="text-white" /> : <CreditCard size={28} className="text-gray-400" />}
+            <div className={`p-4 rounded-2xl ${isPro ? 'bg-white' : 'bg-white/10'}`}>
+              {isPro ? <Award size={28} className="text-gray-900" /> : <CreditCard size={28} className="text-gray-400" />}
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-white">
+              <h3 className="text-xl font-bold text-white tracking-tight">
                 {isPro ? 'Pro Plan' : 'Free Plan'}
               </h3>
-              <p className="text-gray-400">
+              <p className="text-gray-500">
                 {isPro ? 'Lifetime access to all prompts' : 'Limited access to free prompts only'}
               </p>
             </div>
@@ -412,13 +404,13 @@ const BillingSection = () => {
           <div className="flex items-center gap-3">
             {isPro && (
               <>
-                <span className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-lg">
+                <span className="px-4 py-2 bg-white text-gray-900 font-semibold rounded-xl">
                   Active
                 </span>
                 {!hasPendingCancellation && (
                   <button
                     onClick={() => setShowCancelModal(true)}
-                    className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl transition-all text-sm border border-white/10"
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl transition-all text-sm border border-white/10"
                   >
                     Cancel Plan
                   </button>
@@ -429,83 +421,77 @@ const BillingSection = () => {
         </div>
 
         {hasPendingCancellation && (
-          <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center gap-3">
-            <AlertTriangle className="text-yellow-400 shrink-0" size={20} />
+          <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center gap-3">
+            <AlertTriangle className="text-amber-400 shrink-0" size={20} />
             <div>
-              <p className="text-yellow-400 font-medium">Cancellation Pending</p>
-              <p className="text-gray-400 text-sm">Your cancellation request is being processed.</p>
+              <p className="text-amber-400 font-medium">Cancellation Pending</p>
+              <p className="text-gray-500 text-sm">Your cancellation request is being processed.</p>
             </div>
           </div>
         )}
-      </GlassCard>
+      </div>
 
       {/* Upgrade Card (if not Pro) */}
       {!isPro && (
-        <GlassCard variant="gradient" className="mb-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl" />
-          
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="text-yellow-400 animate-pulse" size={28} />
-              <h3 className="text-3xl font-bold text-white">Upgrade to Pro</h3>
-            </div>
-
-            <div className="flex items-baseline gap-3 mb-8">
-              <span className="text-gray-500 line-through text-2xl">$499</span>
-              <span className="text-6xl font-bold gradient-text">$19</span>
-              <span className="text-gray-400 text-lg">one-time payment</span>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4 mb-8">
-              {proFeatures.map((feature, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 group hover:bg-white/10 transition-all"
-                >
-                  <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400 group-hover:scale-110 transition-transform">
-                    <Check size={16} />
-                  </div>
-                  <span className="text-gray-200">{feature}</span>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={handleUpgrade}
-              disabled={processingPayment}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-50 glow-purple text-lg"
-            >
-              {processingPayment ? (
-                <>
-                  <Loader2 className="animate-spin" size={24} />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Zap size={24} />
-                  Upgrade Now for $19
-                </>
-              )}
-            </button>
-
-            <p className="text-center text-gray-500 text-sm mt-4 flex items-center justify-center gap-2">
-              <Shield size={14} />
-              Secure payment • 30-day money-back guarantee
-            </p>
+        <div className="bg-white rounded-2xl p-6 mb-6 shadow-lg border border-gray-100">
+          <div className="flex items-center gap-2 mb-4">
+            <BadgeCheck className="text-gray-900" size={28} />
+            <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Upgrade to Pro</h3>
           </div>
-        </GlassCard>
+
+          <div className="flex items-baseline gap-3 mb-6">
+            <span className="text-gray-400 line-through text-xl">$499</span>
+            <span className="text-5xl font-bold text-gray-900 tracking-tight">$19</span>
+            <span className="text-gray-500">one-time payment</span>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-3 mb-6">
+            {proFeatures.map((feature, index) => (
+              <div 
+                key={index} 
+                className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
+              >
+                <div className="p-1.5 bg-gray-900 rounded-lg">
+                  <Check size={14} className="text-white" />
+                </div>
+                <span className="text-gray-700 font-medium">{feature}</span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={handleUpgrade}
+            disabled={processingPayment}
+            className="w-full bg-black hover:bg-gray-900 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all disabled:opacity-50"
+          >
+            {processingPayment ? (
+              <>
+                <Loader2 className="animate-spin" size={24} />
+                Processing...
+              </>
+            ) : (
+              <>
+                Upgrade Now for $19
+              </>
+            )}
+          </button>
+
+          <p className="text-center text-gray-500 text-sm mt-4 flex items-center justify-center gap-2">
+            <Shield size={14} />
+            Secure payment • 30-day money-back guarantee
+          </p>
+        </div>
       )}
 
       {/* Purchase History */}
-      <GlassCard>
-        <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-          <CreditCard className="text-purple-400" size={20} />
+      <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5">
+        <h3 className="text-lg font-bold text-white tracking-tight mb-4 flex items-center gap-2">
+          <CreditCard className="text-gray-400" size={20} />
           Purchase History
         </h3>
         
         {purchases.length === 0 ? (
-          <p className="text-gray-400 text-center py-8">No purchases yet</p>
+          <p className="text-gray-500 text-center py-8">No purchases yet</p>
         ) : (
           <div className="space-y-3">
             {purchases.map((purchase) => {
@@ -551,7 +537,7 @@ const BillingSection = () => {
                     ) : canRequestRefund && (
                       <button
                         onClick={() => setShowRefundModal(purchase.id)}
-                        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 bg-white/5 rounded-lg"
+                        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 bg-white/5 rounded-lg border border-white/10"
                       >
                         <RefreshCcw size={14} />
                         Request Refund
@@ -563,22 +549,22 @@ const BillingSection = () => {
             })}
           </div>
         )}
-      </GlassCard>
+      </div>
 
       {/* Topup Modal */}
       {showTopupModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#111] rounded-2xl p-6 w-full max-w-lg border border-white/10 animate-scale-in max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg border border-gray-200 animate-scale-in max-h-[90vh] overflow-y-auto">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-green-500/20 rounded-xl">
-                <Wallet className="text-green-400" size={24} />
+              <div className="p-3 bg-gray-900 rounded-xl">
+                <Wallet className="text-white" size={24} />
               </div>
-              <h3 className="text-xl font-bold text-white">Add Funds to Wallet</h3>
+              <h3 className="text-xl font-bold text-gray-900 tracking-tight">Add Funds to Wallet</h3>
             </div>
 
             {/* Quick Amount Buttons */}
             <div className="mb-6">
-              <p className="text-gray-400 text-sm mb-3">Select amount</p>
+              <p className="text-gray-500 text-sm mb-3 font-medium">Select amount</p>
               <div className="grid grid-cols-5 gap-2">
                 {quickAmounts.map((amount) => (
                   <button
@@ -586,8 +572,8 @@ const BillingSection = () => {
                     onClick={() => setTopupAmount(amount)}
                     className={`py-3 rounded-xl font-semibold transition-all ${
                       topupAmount === amount
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                        : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
                     ${amount}
@@ -599,7 +585,7 @@ const BillingSection = () => {
                   type="number"
                   value={topupAmount}
                   onChange={(e) => setTopupAmount(Math.max(1, parseInt(e.target.value) || 0))}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                   min="1"
                 />
               </div>
@@ -607,7 +593,7 @@ const BillingSection = () => {
 
             {/* Payment Gateway Selection */}
             <div className="mb-6">
-              <p className="text-gray-400 text-sm mb-3">Select payment method</p>
+              <p className="text-gray-500 text-sm mb-3 font-medium">Select payment method</p>
               <div className="grid grid-cols-3 gap-3">
                 {(Object.keys(gatewayInfo) as PaymentGateway[]).map((gateway) => {
                   const info = gatewayInfo[gateway];
@@ -618,13 +604,13 @@ const BillingSection = () => {
                       onClick={() => setSelectedGateway(gateway)}
                       className={`p-4 rounded-xl border transition-all text-center ${
                         selectedGateway === gateway
-                          ? `bg-gradient-to-br ${info.color} border-transparent`
-                          : 'bg-white/5 border-white/10 hover:bg-white/10'
+                          ? 'bg-gray-900 border-gray-900 text-white'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700'
                       }`}
                     >
                       <Icon size={24} className="mx-auto mb-2" />
-                      <p className="text-white font-medium text-sm">{info.name}</p>
-                      <p className="text-gray-400 text-xs">{info.desc}</p>
+                      <p className="font-medium text-sm">{info.name}</p>
+                      <p className={`text-xs ${selectedGateway === gateway ? 'text-gray-300' : 'text-gray-500'}`}>{info.desc}</p>
                     </button>
                   );
                 })}
@@ -634,26 +620,26 @@ const BillingSection = () => {
             {/* Gateway Specific Fields */}
             {selectedGateway === 'bkash' && (
               <div className="mb-6">
-                <label className="text-gray-400 text-sm mb-2 block">bKash Number</label>
+                <label className="text-gray-500 text-sm mb-2 block font-medium">bKash Number</label>
                 <input
                   type="tel"
                   value={bkashNumber}
                   onChange={(e) => setBkashNumber(e.target.value)}
                   placeholder="01XXXXXXXXX"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                 />
               </div>
             )}
 
             {selectedGateway === 'upi' && (
               <div className="mb-6">
-                <label className="text-gray-400 text-sm mb-2 block">UPI ID</label>
+                <label className="text-gray-500 text-sm mb-2 block font-medium">UPI ID</label>
                 <input
                   type="text"
                   value={upiId}
                   onChange={(e) => setUpiId(e.target.value)}
                   placeholder="yourname@upi"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                 />
               </div>
             )}
@@ -662,14 +648,14 @@ const BillingSection = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowTopupModal(false)}
-                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl transition-all font-medium"
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl transition-all font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={handleTopup}
                 disabled={processingTopup || (selectedGateway === 'bkash' && !bkashNumber) || (selectedGateway === 'upi' && !upiId)}
-                className={`flex-1 bg-gradient-to-r ${gatewayInfo[selectedGateway].color} text-white py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium`}
+                className="flex-1 bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
               >
                 {processingTopup ? <Loader2 className="animate-spin" size={18} /> : null}
                 Add ${topupAmount}
@@ -687,7 +673,7 @@ const BillingSection = () => {
               <div className="p-3 bg-red-500/20 rounded-xl">
                 <XCircle className="text-red-400" size={24} />
               </div>
-              <h3 className="text-xl font-bold text-white">Cancel Pro Plan</h3>
+              <h3 className="text-xl font-bold text-white tracking-tight">Cancel Pro Plan</h3>
             </div>
             <p className="text-gray-400 mb-4">
               Are you sure you want to cancel your Pro plan? You'll lose access to all premium prompts.
@@ -696,13 +682,13 @@ const BillingSection = () => {
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="Reason for cancellation (optional)"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 mb-4 focus:outline-none focus:ring-2 focus:ring-white/20"
               rows={3}
             />
             <div className="flex gap-3">
               <button
                 onClick={() => setShowCancelModal(false)}
-                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl transition-all font-medium"
+                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl transition-all font-medium border border-white/10"
               >
                 Keep Plan
               </button>
@@ -724,10 +710,10 @@ const BillingSection = () => {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-[#111] rounded-2xl p-6 w-full max-w-md border border-white/10 animate-scale-in">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-purple-500/20 rounded-xl">
-                <RefreshCcw className="text-purple-400" size={24} />
+              <div className="p-3 bg-white/10 rounded-xl">
+                <RefreshCcw className="text-white" size={24} />
               </div>
-              <h3 className="text-xl font-bold text-white">Request Refund</h3>
+              <h3 className="text-xl font-bold text-white tracking-tight">Request Refund</h3>
             </div>
             <p className="text-gray-400 mb-4">
               Please tell us why you'd like a refund. We'll review your request within 24-48 hours.
@@ -736,13 +722,13 @@ const BillingSection = () => {
               value={refundReason}
               onChange={(e) => setRefundReason(e.target.value)}
               placeholder="Reason for refund request"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 mb-4 focus:outline-none focus:ring-2 focus:ring-white/20"
               rows={3}
             />
             <div className="flex gap-3">
               <button
                 onClick={() => setShowRefundModal(null)}
-                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl transition-all font-medium"
+                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl transition-all font-medium border border-white/10"
               >
                 Cancel
               </button>
@@ -752,7 +738,7 @@ const BillingSection = () => {
                   if (purchase) handleRefundRequest(purchase.id, purchase.amount);
                 }}
                 disabled={submitting}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
+                className="flex-1 bg-white hover:bg-gray-100 text-black py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
               >
                 {submitting ? <Loader2 className="animate-spin" size={18} /> : null}
                 Submit Request
