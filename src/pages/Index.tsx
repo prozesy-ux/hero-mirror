@@ -1,7 +1,6 @@
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import AsSeenIn from "@/components/AsSeenIn";
-import StatsSection from "@/components/StatsSection";
 import CompleteBundleCard from "@/components/CompleteBundleCard";
 import ChatGPTPromptsSection from "@/components/ChatGPTPromptsSection";
 import MidjourneyPromptsSection from "@/components/MidjourneyPromptsSection";
@@ -19,7 +18,6 @@ const Index = () => {
       <main>
         <HeroSection />
         <AsSeenIn />
-        <StatsSection />
         <CompleteBundleCard />
         <ChatGPTPromptsSection />
         <MidjourneyPromptsSection />
