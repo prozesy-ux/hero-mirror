@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Bot, ArrowRight, Heart, Lock, Eye, Star, Check } from 'lucide-react';
+import { TrendingUp, Bot, ArrowRight, Heart, Lock, Eye, Star, Check, ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -196,89 +196,67 @@ const DashboardHome = () => {
               return (
                 <div
                   key={prompt.id}
-                  className="flex-shrink-0 w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  className="group flex-shrink-0 w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
-                  {/* Header with image */}
-                  <div className="p-4 border-b border-gray-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <img 
-                          src={prompt.image_url || '/placeholder.svg'} 
-                          alt={prompt.title}
-                          className="w-10 h-10 rounded-lg object-cover"
-                        />
+                  {/* Large Image Section */}
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    {prompt.image_url ? (
+                      <img
+                        src={prompt.image_url}
+                        alt={prompt.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        <ImageIcon size={40} className="text-gray-300" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded uppercase">
-                          {prompt.tool}
-                        </span>
-                        <button
-                          onClick={(e) => toggleFavorite(prompt.id, e)}
-                          className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
-                        >
-                          <Heart
-                            size={14}
-                            className={isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-500'}
-                          />
-                        </button>
-                      </div>
+                    )}
+
+                    {/* Tool Badge - overlaid on image */}
+                    <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold uppercase shadow-lg">
+                      {prompt.tool}
                     </div>
 
-                    {/* Title */}
-                    <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-1 mb-1">
-                      {prompt.title}
-                    </h3>
-                    {prompt.description && (
-                      <p className="text-xs text-gray-500 line-clamp-2">{prompt.description}</p>
+                    {/* Favorite Button - overlaid on image */}
+                    <button
+                      onClick={(e) => toggleFavorite(prompt.id, e)}
+                      className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-lg"
+                    >
+                      <Heart
+                        size={16}
+                        className={isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-600'}
+                      />
+                    </button>
+
+                    {/* Lock Overlay for locked prompts */}
+                    {isLocked && (
+                      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
+                        <Lock size={28} className="text-white mb-2" />
+                        <span className="text-white text-sm font-semibold">Pro Only</span>
+                      </div>
                     )}
                   </div>
 
-                  {/* Features */}
-                  <div className="p-4 space-y-2">
-                    {['Premium Content', 'Instant Access', 'Regular Updates'].map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <img src={checkIcon} alt="check" className="w-4 h-4" />
-                        <span className="text-sm text-gray-700">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {/* Content Section */}
+                  <div className="p-5">
+                    {/* Title */}
+                    <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">
+                      {prompt.title}
+                    </h3>
+                    
+                    {/* Description - more visible */}
+                    {prompt.description && (
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-3">{prompt.description}</p>
+                    )}
 
-                  {/* Access Badge */}
-                  <div className="px-4 pb-3">
-                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
-                      isLocked 
-                        ? 'bg-gray-100 text-gray-600' 
-                        : 'bg-emerald-100 text-emerald-700'
-                    }`}>
-                      {isLocked ? (
-                        <>
-                          <Lock size={12} />
-                          Pro Access Required
-                        </>
-                      ) : (
-                        <>
-                          <Check size={12} />
-                          {prompt.is_free ? 'Free Access' : 'Pro Access'}
-                        </>
-                      )}
-                    </span>
-                  </div>
-
-                  {/* CTA Button */}
-                  <div className="px-4 pb-4">
+                    {/* CTA Button */}
                     <Link
-                      to={`/dashboard/prompts`}
+                      to="/dashboard/prompts"
                       className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
                     >
-                      Unlock Prompt
+                      {isLocked ? 'Unlock Prompt' : 'View Prompt'}
                       <img src={btnArrow} alt="arrow" className="w-4 h-4" />
                     </Link>
-                  </div>
-
-                  {/* Rating */}
-                  <div className="px-4 pb-4 flex items-center gap-2">
-                    <img src={starsIcon} alt="rating" className="h-4" />
-                    <span className="text-sm text-gray-600 font-medium">4.9 (500+ reviews)</span>
                   </div>
                 </div>
               );
