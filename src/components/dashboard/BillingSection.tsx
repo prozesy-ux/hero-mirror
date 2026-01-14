@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, Check, XCircle, RefreshCcw, Loader2, AlertTriangle, Shield, Wallet, Plus, ArrowUpRight, History, DollarSign, IndianRupee, Smartphone, Award, BadgeCheck, ArrowDownRight } from 'lucide-react';
+import { 
+  CreditCard, Check, XCircle, Loader2, AlertTriangle, Shield, Wallet, Plus, History, 
+  IndianRupee, Smartphone, Crown, Zap, Sparkles, Infinity, MessageSquareText, Image, 
+  Brain, CalendarCheck, Headphones, FileCheck, CircleDollarSign, Receipt, RotateCcw, 
+  ClipboardList, ShoppingBag, Banknote, User
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -286,18 +291,18 @@ const BillingSection = () => {
   const gatewayInfo = {
     stripe: { name: 'Stripe', icon: CreditCard, desc: 'Credit/Debit Card' },
     bkash: { name: 'bKash', icon: Smartphone, desc: 'Mobile Banking (BD)' },
-    upi: { name: 'UPI', icon: IndianRupee, desc: 'India Payments' },
+    upi: { name: 'UPI', icon: Banknote, desc: 'India Payments' },
   };
 
   const proFeatures = [
-    '10,000+ Premium AI Prompts',
-    'Unlimited Access Forever',
-    'All ChatGPT Mega-Prompts',
-    'All Midjourney Prompts',
-    'All Claude Prompts',
-    'New Prompts Added Monthly',
-    'Priority Support',
-    'Commercial License',
+    { text: '10,000+ Premium AI Prompts', icon: Sparkles },
+    { text: 'Unlimited Access Forever', icon: Infinity },
+    { text: 'All ChatGPT Mega-Prompts', icon: MessageSquareText },
+    { text: 'All Midjourney Prompts', icon: Image },
+    { text: 'All Claude Prompts', icon: Brain },
+    { text: 'New Prompts Added Monthly', icon: CalendarCheck },
+    { text: 'Priority Support', icon: Headphones },
+    { text: 'Commercial License', icon: FileCheck },
   ];
 
   return (
@@ -340,14 +345,14 @@ const BillingSection = () => {
                 className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${
-                    tx.type === 'topup' ? 'bg-green-500/20 text-green-400' :
-                    tx.type === 'purchase' ? 'bg-red-500/20 text-red-400' :
-                    'bg-blue-500/20 text-blue-400'
+                  <div className={`p-2.5 rounded-xl ${
+                    tx.type === 'topup' ? 'bg-emerald-500/15' :
+                    tx.type === 'purchase' ? 'bg-gray-500/15' :
+                    'bg-blue-500/15'
                   }`}>
-                    {tx.type === 'topup' ? <ArrowUpRight size={16} /> :
-                     tx.type === 'purchase' ? <ArrowDownRight size={16} /> :
-                     <RefreshCcw size={16} />}
+                    {tx.type === 'topup' && <CircleDollarSign size={18} className="text-emerald-400" />}
+                    {tx.type === 'purchase' && <Receipt size={18} className="text-gray-400" />}
+                    {tx.type === 'refund' && <RotateCcw size={18} className="text-blue-400" />}
                   </div>
                   <div>
                     <p className="text-white font-medium capitalize">{tx.description || tx.type}</p>
@@ -362,12 +367,12 @@ const BillingSection = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`font-semibold ${tx.type === 'topup' ? 'text-green-400' : 'text-red-400'}`}>
-                    {tx.type === 'topup' ? '+' : '-'}${tx.amount.toFixed(2)}
+                  <p className={`font-semibold ${tx.type === 'topup' ? 'text-emerald-400' : tx.type === 'refund' ? 'text-blue-400' : 'text-gray-300'}`}>
+                    {tx.type === 'topup' ? '+' : tx.type === 'refund' ? '+' : '-'}${tx.amount.toFixed(2)}
                   </p>
-                  <span className={`text-xs px-2 py-0.5 rounded ${
-                    tx.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                    tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                  <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+                    tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' :
+                    tx.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
                     'bg-red-500/20 text-red-400'
                   }`}>
                     {tx.status}
@@ -383,11 +388,11 @@ const BillingSection = () => {
       <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5 mb-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <div className={`p-4 rounded-2xl ${isPro ? 'bg-white' : 'bg-white/10'}`}>
-              {isPro ? <Award size={28} className="text-gray-900" /> : <CreditCard size={28} className="text-gray-400" />}
+            <div className={`p-4 rounded-2xl ${isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-white/10'}`}>
+              {isPro ? <Crown size={28} className="text-white" /> : <User size={28} className="text-gray-400" />}
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white tracking-tight">
+              <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                 {isPro ? 'Pro Plan' : 'Free Plan'}
               </h3>
               <p className="text-gray-500">
@@ -398,7 +403,8 @@ const BillingSection = () => {
           <div className="flex items-center gap-3">
             {isPro && (
               <>
-                <span className="px-4 py-2 bg-white text-gray-900 font-semibold rounded-xl">
+                <span className="px-4 py-2 bg-emerald-500/20 text-emerald-400 font-semibold rounded-xl flex items-center gap-2">
+                  <Check size={16} />
                   Active
                 </span>
                 {!hasPendingCancellation && (
@@ -428,8 +434,10 @@ const BillingSection = () => {
       {/* Upgrade Card (if not Pro) */}
       {!isPro && (
         <div className="bg-white rounded-2xl p-6 mb-6 shadow-lg border border-gray-100">
-          <div className="flex items-center gap-2 mb-4">
-            <BadgeCheck className="text-gray-900" size={28} />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl">
+              <Crown className="text-white" size={24} />
+            </div>
             <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Upgrade to Pro</h3>
           </div>
 
@@ -440,17 +448,20 @@ const BillingSection = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-3 mb-6">
-            {proFeatures.map((feature, index) => (
-              <div 
-                key={index} 
-                className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
-              >
-                <div className="p-1.5 bg-gray-900 rounded-lg">
-                  <Check size={14} className="text-white" />
+            {proFeatures.map((feature, index) => {
+              const FeatureIcon = feature.icon;
+              return (
+                <div 
+                  key={index} 
+                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
+                >
+                  <div className="p-2 bg-gray-900 rounded-lg">
+                    <FeatureIcon size={16} className="text-white" />
+                  </div>
+                  <span className="text-gray-700 font-medium">{feature.text}</span>
                 </div>
-                <span className="text-gray-700 font-medium">{feature}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <button
@@ -465,6 +476,7 @@ const BillingSection = () => {
               </>
             ) : (
               <>
+                <Zap size={20} />
                 Upgrade Now for $19
               </>
             )}
@@ -480,7 +492,7 @@ const BillingSection = () => {
       {/* Purchase History */}
       <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5">
         <h3 className="text-lg font-bold text-white tracking-tight mb-4 flex items-center gap-2">
-          <CreditCard className="text-gray-400" size={20} />
+          <ClipboardList className="text-gray-400" size={20} />
           Purchase History
         </h3>
         
@@ -497,23 +509,28 @@ const BillingSection = () => {
                   key={purchase.id}
                   className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 flex-wrap gap-3 hover:bg-white/10 transition-all"
                 >
-                  <div>
-                    <p className="text-white font-medium">Pro Plan - Lifetime Access</p>
-                    <p className="text-gray-500 text-sm">
-                      {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
-                        month: 'long', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })}
-                    </p>
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-white/10 rounded-xl">
+                      <ShoppingBag size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold">Pro Plan - Lifetime Access</p>
+                      <p className="text-gray-500 text-sm">
+                        {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
+                      </p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <p className="text-white font-semibold text-lg">${purchase.amount.toFixed(2)}</p>
-                      <span className={`text-xs px-2 py-1 rounded-lg ${
+                      <span className={`text-xs px-2.5 py-1 rounded-md font-medium ${
                         purchase.payment_status === 'completed'
-                          ? 'bg-green-500/20 text-green-400'
-                          : 'bg-yellow-500/20 text-yellow-400'
+                          ? 'bg-emerald-500/20 text-emerald-400'
+                          : 'bg-amber-500/20 text-amber-400'
                       }`}>
                         {purchase.payment_status}
                       </span>
@@ -521,9 +538,9 @@ const BillingSection = () => {
                     {refundStatus ? (
                       <span className={`text-xs px-3 py-1.5 rounded-lg font-medium ${
                         refundStatus.status === 'pending'
-                          ? 'bg-yellow-500/20 text-yellow-400'
+                          ? 'bg-amber-500/20 text-amber-400'
                           : refundStatus.status === 'approved'
-                          ? 'bg-green-500/20 text-green-400'
+                          ? 'bg-emerald-500/20 text-emerald-400'
                           : 'bg-red-500/20 text-red-400'
                       }`}>
                         Refund {refundStatus.status}
@@ -533,7 +550,7 @@ const BillingSection = () => {
                         onClick={() => setShowRefundModal(purchase.id)}
                         className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 bg-white/5 rounded-lg border border-white/10"
                       >
-                        <RefreshCcw size={14} />
+                        <RotateCcw size={14} />
                         Request Refund
                       </button>
                     )}
@@ -705,7 +722,7 @@ const BillingSection = () => {
           <div className="bg-[#111] rounded-2xl p-6 w-full max-w-md border border-white/10 animate-scale-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-white/10 rounded-xl">
-                <RefreshCcw className="text-white" size={24} />
+                <RotateCcw className="text-white" size={24} />
               </div>
               <h3 className="text-xl font-bold text-white tracking-tight">Request Refund</h3>
             </div>
