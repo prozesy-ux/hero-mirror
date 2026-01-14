@@ -254,21 +254,25 @@ const BundleSection = () => {
               🚀 Do You Want Everything? Get it all with The Everything Bundle.
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Database className="w-5 h-5 text-primary" />
-                <span>10,000+ Prompts</span>
+              <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors">
+                <Database className="w-8 h-8 text-primary" />
+                <span className="text-2xl font-bold text-foreground">10,000+</span>
+                <span className="text-sm text-muted-foreground">Prompts</span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <span>Constant Updates</span>
+              <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors">
+                <Sparkles className="w-8 h-8 text-primary" />
+                <span className="text-2xl font-bold text-foreground">Constant</span>
+                <span className="text-sm text-muted-foreground">Updates</span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Gift className="w-5 h-5 text-primary" />
-                <span>Lifetime Access</span>
+              <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors">
+                <Gift className="w-8 h-8 text-primary" />
+                <span className="text-2xl font-bold text-foreground">Lifetime</span>
+                <span className="text-sm text-muted-foreground">Access</span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Zap className="w-5 h-5 text-primary" />
-                <span>Instant Delivery</span>
+              <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors">
+                <Zap className="w-8 h-8 text-primary" />
+                <span className="text-2xl font-bold text-foreground">Instant</span>
+                <span className="text-sm text-muted-foreground">Delivery</span>
               </div>
             </div>
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-6 text-xl">
