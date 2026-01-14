@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Loader2, Bot, Save, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Bot, Save, X, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ImageUploader from './ImageUploader';
 
 interface AIAccount {
   id: string;
@@ -28,7 +29,8 @@ const AIAccountsManagement = () => {
     price: 5,
     category: 'chatgpt',
     stock: '',
-    is_available: true
+    is_available: true,
+    icon_url: null as string | null
   });
 
   useEffect(() => {
@@ -57,7 +59,8 @@ const AIAccountsManagement = () => {
       price: formData.price,
       category: formData.category,
       stock: formData.stock ? parseInt(formData.stock) : null,
-      is_available: formData.is_available
+      is_available: formData.is_available,
+      icon_url: formData.icon_url
     };
 
     if (editingAccount) {
@@ -98,7 +101,8 @@ const AIAccountsManagement = () => {
       price: account.price,
       category: account.category || 'chatgpt',
       stock: account.stock?.toString() || '',
-      is_available: account.is_available
+      is_available: account.is_available,
+      icon_url: account.icon_url
     });
     setShowForm(true);
   };
@@ -126,7 +130,8 @@ const AIAccountsManagement = () => {
       price: 5,
       category: 'chatgpt',
       stock: '',
-      is_available: true
+      is_available: true,
+      icon_url: null
     });
     setEditingAccount(null);
     setShowForm(false);
@@ -166,7 +171,7 @@ const AIAccountsManagement = () => {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md">
+          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">
                 {editingAccount ? 'Edit Account' : 'Add New Account'}
@@ -177,6 +182,39 @@ const AIAccountsManagement = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Image Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <ImageIcon className="w-4 h-4 inline mr-1" />
+                  Product Image
+                </label>
+                {formData.icon_url ? (
+                  <div className="relative group">
+                    <img
+                      src={formData.icon_url}
+                      alt="Product preview"
+                      className="w-full h-40 object-cover rounded-lg border border-gray-700"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, icon_url: null })}
+                        className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <ImageUploader
+                    value={formData.icon_url}
+                    onChange={(url) => setFormData({ ...formData, icon_url: url })}
+                    bucket="ai-account-images"
+                    folder="products"
+                  />
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
                 <input
@@ -287,43 +325,55 @@ const AIAccountsManagement = () => {
           {accounts.map((account) => (
             <div
               key={account.id}
-              className={`bg-gray-800 rounded-xl p-5 border ${account.is_available ? 'border-gray-700' : 'border-red-500/30'}`}
+              className={`bg-gray-800 rounded-xl overflow-hidden border ${account.is_available ? 'border-gray-700' : 'border-red-500/30'}`}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{getCategoryIcon(account.category)}</span>
+              {/* Product Image */}
+              {account.icon_url ? (
+                <img
+                  src={account.icon_url}
+                  alt={account.name}
+                  className="w-full h-32 object-cover"
+                />
+              ) : (
+                <div className="w-full h-32 bg-gradient-to-br from-purple-600/20 to-pink-600/20 flex items-center justify-center">
+                  <span className="text-5xl">{getCategoryIcon(account.category)}</span>
+                </div>
+              )}
+              
+              <div className="p-5">
+                <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-semibold text-white">{account.name}</h3>
                     <span className="text-sm text-gray-400 capitalize">{account.category}</span>
                   </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleEdit(account)}
+                      className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <Edit className="w-4 h-4 text-gray-400" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(account.id)}
+                      className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-400" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => handleEdit(account)}
-                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <Edit className="w-4 h-4 text-gray-400" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(account.id)}
-                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-400" />
-                  </button>
-                </div>
-              </div>
 
-              <p className="text-gray-400 text-sm mb-3 line-clamp-2">{account.description}</p>
+                <p className="text-gray-400 text-sm mb-3 line-clamp-2">{account.description}</p>
 
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-2xl font-bold text-white">${account.price}</span>
-                <div className="flex items-center gap-2">
-                  {account.stock !== null && (
-                    <span className="text-gray-400">Stock: {account.stock}</span>
-                  )}
-                  <span className={`px-2 py-1 rounded-full text-xs ${account.is_available ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {account.is_available ? 'Available' : 'Unavailable'}
-                  </span>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-2xl font-bold text-white">${account.price}</span>
+                  <div className="flex items-center gap-2">
+                    {account.stock !== null && (
+                      <span className="text-gray-400">Stock: {account.stock}</span>
+                    )}
+                    <span className={`px-2 py-1 rounded-full text-xs ${account.is_available ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      {account.is_available ? 'Available' : 'Unavailable'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
