@@ -20,7 +20,7 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
       ref={ref}
       to={to}
       onClick={onClick}
-      className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+      className={`group flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-300 ${
         isActive 
           ? 'nav-item-active' 
           : 'text-gray-400 hover:bg-white/5 hover:text-white'
@@ -29,7 +29,7 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
       <span className={`transition-transform duration-300 ${isActive ? '' : 'group-hover:scale-110'}`}>
         {icon}
       </span>
-      <span className="font-medium">{label}</span>
+      <span className="font-medium text-sm">{label}</span>
       {isActive && (
         <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
       )}
@@ -62,46 +62,46 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     return (
       <div ref={ref} className="flex flex-col h-full premium-scrollbar overflow-y-auto">
         {/* Logo Section */}
-        <div className="p-6 border-b border-white/5">
+        <div className="p-4 border-b border-white/5">
           <Link to="/" className="flex items-center gap-2 group">
             <div className="relative">
-              <Sparkles size={24} className="text-purple-400 animate-pulse-glow" />
+              <Sparkles size={20} className="text-purple-400 animate-pulse-glow" />
               <div className="absolute inset-0 blur-lg bg-purple-500/30" />
             </div>
-            <span className="text-2xl font-bold gradient-text">PromptHero</span>
+            <span className="text-xl font-bold gradient-text">PromptHero</span>
           </Link>
         </div>
 
         {/* User Card */}
-        <div className="p-4 mx-4 my-4 glass-card rounded-xl">
-          <div className="flex items-center gap-3">
-            <div className="relative">
+        <div className="p-3 mx-3 my-3 glass-card rounded-xl">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-shrink-0">
               {profile?.avatar_url ? (
                 <img 
                   src={profile.avatar_url} 
                   alt="Avatar" 
-                  className="w-12 h-12 rounded-full object-cover ring-2 ring-purple-500/50"
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-purple-500/50"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-lg font-bold ring-2 ring-purple-500/50">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold ring-2 ring-purple-500/50">
                   {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
                 </div>
               )}
               {profile?.is_pro && (
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
-                  <Crown size={10} className="text-white" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
+                  <Crown size={8} className="text-white" />
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold truncate">{profile?.full_name || 'User'}</p>
-              <p className="text-gray-400 text-sm truncate">{profile?.email}</p>
+              <p className="text-white font-semibold text-sm truncate">{profile?.full_name || 'User'}</p>
+              <p className="text-gray-400 text-xs truncate">{profile?.email}</p>
             </div>
           </div>
           {profile?.is_pro && (
-            <div className="mt-3 px-3 py-1.5 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-lg border border-purple-500/20">
-              <span className="text-xs font-medium text-purple-300 flex items-center gap-1.5">
-                <Crown size={12} />
+            <div className="mt-2 px-2 py-1 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-lg border border-purple-500/20">
+              <span className="text-xs font-medium text-purple-300 flex items-center gap-1">
+                <Crown size={10} />
                 PRO Member
               </span>
             </div>
@@ -207,15 +207,15 @@ const DashboardSidebar = () => {
         />
       )}
 
-      {/* Mobile Sidebar */}
+        {/* Mobile Sidebar */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-[#0a0a0a] border-r border-white/5 pt-16 animate-slide-in-left">
+        <div className="lg:hidden fixed inset-y-0 left-0 z-50 w-60 bg-[#0a0a0a] border-r border-white/5 pt-16 animate-slide-in-left">
           <SidebarContent onNavClick={() => setMobileMenuOpen(false)} />
         </div>
       )}
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block fixed left-0 top-0 h-screen w-72 bg-[#0a0a0a] border-r border-white/5">
+      <div className="hidden lg:block fixed left-0 top-0 h-screen w-60 bg-[#0a0a0a] border-r border-white/5">
         <SidebarContent />
       </div>
     </>
