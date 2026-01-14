@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { X, Image as ImageIcon, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -18,9 +18,37 @@ const ImageUploader = ({
 }: ImageUploaderProps) => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const checkAuth = async (): Promise<boolean> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setError('You must be logged in with an admin account to upload images');
+      toast.error('Please sign in with your admin account first');
+      return false;
+    }
+
+    // Check admin role
+    const { data: roleData, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleError || !roleData) {
+      setError('Your account does not have admin permissions');
+      toast.error('Admin permissions required for uploads');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleUpload = async (file: File) => {
+    setError(null);
+
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');
       return;
@@ -30,6 +58,10 @@ const ImageUploader = ({
       toast.error('Image must be less than 5MB');
       return;
     }
+
+    // Check authentication before upload
+    const isAuthed = await checkAuth();
+    if (!isAuthed) return;
 
     setUploading(true);
 
@@ -41,7 +73,13 @@ const ImageUploader = ({
         .from(bucket)
         .upload(fileName, file, { upsert: true });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error details:', uploadError);
+        if (uploadError.message.includes('row-level security') || uploadError.message.includes('policy')) {
+          throw new Error('Permission denied. Please ensure you are signed in with admin credentials.');
+        }
+        throw uploadError;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from(bucket)
@@ -49,9 +87,11 @@ const ImageUploader = ({
 
       onChange(publicUrl);
       toast.success('Image uploaded successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload image');
+      const errorMessage = error?.message || 'Failed to upload image';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -69,6 +109,7 @@ const ImageUploader = ({
         await supabase.storage.from(bucket).remove([filePath]);
       }
       onChange(null);
+      setError(null);
       toast.success('Image removed');
     } catch (error) {
       console.error('Remove error:', error);
@@ -106,6 +147,13 @@ const ImageUploader = ({
       <label className="block text-sm font-medium text-gray-300">
         Prompt Image
       </label>
+      
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
       
       {value ? (
         <div className="relative group">
@@ -146,7 +194,10 @@ const ImageUploader = ({
           `}
         >
           {uploading ? (
-            <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+            <div className="flex flex-col items-center">
+              <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+              <p className="text-gray-400 text-sm mt-2">Uploading...</p>
+            </div>
           ) : (
             <>
               <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-3">

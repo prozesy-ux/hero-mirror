@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, Eye, Image, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Eye, Image, ChevronDown, ChevronUp, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import RichTextEditor from './RichTextEditor';
 import ImageUploader from './ImageUploader';
+import { useAdmin } from '@/contexts/AdminContext';
 
 interface Prompt {
   id: string;
@@ -24,13 +25,17 @@ interface Category {
 }
 
 const PromptsManagement = () => {
+  const { hasAdminRole, adminUser } = useAdmin();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewPrompt, setPreviewPrompt] = useState<Prompt | null>(null);
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -46,17 +51,60 @@ const PromptsManagement = () => {
 
   useEffect(() => {
     fetchData();
+
+    // Subscribe to realtime updates for prompts
+    const channel = supabase
+      .channel('admin-prompts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'prompts'
+        },
+        () => {
+          // Refetch data when prompts change
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  const fetchData = async () => {
-    const [{ data: promptsData }, { data: categoriesData }] = await Promise.all([
-      supabase.from('prompts').select('*, categories(name)').order('created_at', { ascending: false }),
-      supabase.from('categories').select('id, name').order('name')
-    ]);
+  useEffect(() => {
+    // Check auth status
+    if (!adminUser) {
+      setAuthError('Please sign in with your admin account (mdmerajul614@gmail.com) to manage prompts');
+    } else if (!hasAdminRole) {
+      setAuthError('Your account does not have admin permissions');
+    } else {
+      setAuthError(null);
+    }
+  }, [adminUser, hasAdminRole]);
 
-    setPrompts(promptsData || []);
-    setCategories(categoriesData || []);
-    setLoading(false);
+  const fetchData = async () => {
+    try {
+      const [{ data: promptsData, error: promptsError }, { data: categoriesData }] = await Promise.all([
+        supabase.from('prompts').select('*, categories(name)').order('created_at', { ascending: false }),
+        supabase.from('categories').select('id, name').order('name')
+      ]);
+
+      if (promptsError) {
+        console.error('Error fetching prompts:', promptsError);
+        toast.error('Failed to load prompts');
+      }
+
+      setPrompts(promptsData || []);
+      setCategories(categoriesData || []);
+    } catch (error) {
+      console.error('Fetch error:', error);
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -64,6 +112,13 @@ const PromptsManagement = () => {
       toast.error('Title is required');
       return;
     }
+
+    if (!hasAdminRole) {
+      toast.error('Admin permissions required. Please sign in with your admin account.');
+      return;
+    }
+
+    setSaving(true);
 
     const promptData = {
       title: formData.title,
@@ -76,22 +131,40 @@ const PromptsManagement = () => {
       category_id: formData.category_id || null
     };
 
-    if (editingId) {
-      const { error } = await supabase.from('prompts').update(promptData).eq('id', editingId);
-      if (error) toast.error('Failed to update prompt');
-      else {
-        toast.success('Prompt updated');
-        fetchData();
+    try {
+      if (editingId) {
+        const { error } = await supabase.from('prompts').update(promptData).eq('id', editingId);
+        if (error) {
+          console.error('Update error:', error);
+          if (error.message.includes('row-level security')) {
+            toast.error('Permission denied. Please sign in with admin account.');
+          } else {
+            toast.error(`Failed to update: ${error.message}`);
+          }
+        } else {
+          toast.success('Prompt updated successfully!');
+          resetForm();
+        }
+      } else {
+        const { error } = await supabase.from('prompts').insert(promptData);
+        if (error) {
+          console.error('Insert error:', error);
+          if (error.message.includes('row-level security')) {
+            toast.error('Permission denied. Please sign in with admin account.');
+          } else {
+            toast.error(`Failed to create: ${error.message}`);
+          }
+        } else {
+          toast.success('Prompt created successfully!');
+          resetForm();
+        }
       }
-    } else {
-      const { error } = await supabase.from('prompts').insert(promptData);
-      if (error) toast.error('Failed to create prompt');
-      else {
-        toast.success('Prompt created');
-        fetchData();
-      }
+    } catch (error: any) {
+      console.error('Save error:', error);
+      toast.error(error?.message || 'An error occurred');
+    } finally {
+      setSaving(false);
     }
-    resetForm();
   };
 
   const handleEdit = (prompt: Prompt) => {
@@ -111,11 +184,31 @@ const PromptsManagement = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this prompt?')) return;
-    const { error } = await supabase.from('prompts').delete().eq('id', id);
-    if (error) toast.error('Failed to delete');
-    else {
-      toast.success('Prompt deleted');
-      fetchData();
+    
+    if (!hasAdminRole) {
+      toast.error('Admin permissions required. Please sign in with your admin account.');
+      return;
+    }
+
+    setDeleting(id);
+
+    try {
+      const { error } = await supabase.from('prompts').delete().eq('id', id);
+      if (error) {
+        console.error('Delete error:', error);
+        if (error.message.includes('row-level security')) {
+          toast.error('Permission denied. Please sign in with admin account.');
+        } else {
+          toast.error(`Failed to delete: ${error.message}`);
+        }
+      } else {
+        toast.success('Prompt deleted successfully!');
+      }
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error(error?.message || 'Failed to delete prompt');
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -161,6 +254,24 @@ const PromptsManagement = () => {
         </button>
       </div>
 
+      {/* Auth Warning */}
+      {authError && (
+        <div className="mb-6 flex items-center gap-3 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400">
+          <AlertCircle size={20} />
+          <div>
+            <p className="font-medium">Authentication Required</p>
+            <p className="text-sm">{authError}</p>
+            <a 
+              href="/signin" 
+              target="_blank"
+              className="text-yellow-300 underline text-sm mt-1 inline-block"
+            >
+              Sign in with admin account →
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 overflow-y-auto">
@@ -178,6 +289,17 @@ const PromptsManagement = () => {
             </div>
             
             <div className="p-6 space-y-6">
+              {/* Auth Warning in Modal */}
+              {authError && (
+                <div className="flex items-center gap-3 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400">
+                  <AlertCircle size={20} />
+                  <div>
+                    <p className="font-medium">Sign in required to save changes</p>
+                    <p className="text-sm">{authError}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Basic Info */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -276,10 +398,20 @@ const PromptsManagement = () => {
               <div className="flex gap-3 pt-4 border-t border-gray-700">
                 <button 
                   onClick={handleSave} 
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  disabled={saving || !!authError}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 >
-                  <Save size={18} />
-                  {editingId ? 'Update Prompt' : 'Create Prompt'}
+                  {saving ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      {editingId ? 'Update Prompt' : 'Create Prompt'}
+                    </>
+                  )}
                 </button>
                 <button 
                   onClick={() => setPreviewPrompt({ 
@@ -432,10 +564,15 @@ const PromptsManagement = () => {
                       </button>
                       <button 
                         onClick={() => handleDelete(prompt.id)} 
-                        className="p-2 text-red-400 hover:bg-gray-700 rounded transition-colors"
+                        disabled={deleting === prompt.id}
+                        className="p-2 text-red-400 hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
                         title="Delete"
                       >
-                        <Trash2 size={18} />
+                        {deleting === prompt.id ? (
+                          <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={18} />
+                        )}
                       </button>
                     </div>
                   </td>
