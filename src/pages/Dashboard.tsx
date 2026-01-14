@@ -114,7 +114,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <DashboardSidebar />
-      <main className="lg:ml-72 pt-16 lg:pt-0 min-h-screen">
+      <main className="lg:ml-60 pt-16 lg:pt-0 min-h-screen">
         <div className="p-6 lg:p-8">
           <Routes>
             <Route index element={<DashboardHome />} />
