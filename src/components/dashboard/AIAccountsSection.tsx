@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff } from 'lucide-react';
+import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, Plus, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -35,6 +36,14 @@ interface PurchasedAccount {
   } | null;
 }
 
+interface InsufficientFundsModal {
+  show: boolean;
+  required: number;
+  current: number;
+  shortfall: number;
+  accountName?: string;
+}
+
 // Generate stable random purchase count per account
 const getPurchaseCount = (accountId: string) => {
   const hash = accountId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -46,9 +55,11 @@ type CategoryFilter = 'all' | 'chatgpt' | 'midjourney' | 'claude' | 'gemini';
 
 const AIAccountsSection = () => {
   const { user } = useAuthContext();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('browse');
   const [accounts, setAccounts] = useState<AIAccount[]>([]);
   const [purchases, setPurchases] = useState<PurchasedAccount[]>([]);
+  const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasesLoading, setPurchasesLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
@@ -56,6 +67,12 @@ const AIAccountsSection = () => {
   const [hoveredAccount, setHoveredAccount] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [showCredentials, setShowCredentials] = useState<Record<string, boolean>>({});
+  const [insufficientFundsModal, setInsufficientFundsModal] = useState<InsufficientFundsModal>({
+    show: false,
+    required: 0,
+    current: 0,
+    shortfall: 0
+  });
 
   useEffect(() => {
     fetchAccounts();
@@ -64,10 +81,60 @@ const AIAccountsSection = () => {
   useEffect(() => {
     if (user) {
       fetchPurchases();
+      fetchWallet();
       const unsubscribe = subscribeToUpdates();
-      return unsubscribe;
+      const unsubscribeWallet = subscribeToWallet();
+      return () => {
+        unsubscribe();
+        unsubscribeWallet();
+      };
     }
   }, [user]);
+
+  const fetchWallet = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('user_wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code === 'PGRST116') {
+      // No wallet exists, create one
+      const { data: newWallet } = await supabase
+        .from('user_wallets')
+        .insert({ user_id: user.id, balance: 0 })
+        .select('balance')
+        .single();
+      
+      setWallet(newWallet);
+    } else if (data) {
+      setWallet(data);
+    }
+  };
+
+  const subscribeToWallet = () => {
+    if (!user) return () => {};
+
+    const channel = supabase
+      .channel('my-wallet-ai-accounts')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_wallets',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => fetchWallet()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
 
   const fetchAccounts = async () => {
     const { data, error } = await supabase
@@ -99,6 +166,8 @@ const AIAccountsSection = () => {
   };
 
   const subscribeToUpdates = () => {
+    if (!user) return () => {};
+
     const channel = supabase
       .channel('my-account-purchases')
       .on(
@@ -126,27 +195,103 @@ const AIAccountsSection = () => {
       return;
     }
 
+    // Check wallet balance first
+    const { data: walletData, error: walletError } = await supabase
+      .from('user_wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .single();
+
+    if (walletError && walletError.code === 'PGRST116') {
+      // No wallet exists
+      setInsufficientFundsModal({
+        show: true,
+        required: account.price,
+        current: 0,
+        shortfall: account.price,
+        accountName: account.name
+      });
+      return;
+    }
+
+    const currentBalance = Number(walletData?.balance) || 0;
+
+    if (currentBalance < account.price) {
+      // Show insufficient balance modal
+      setInsufficientFundsModal({
+        show: true,
+        required: account.price,
+        current: currentBalance,
+        shortfall: account.price - currentBalance,
+        accountName: account.name
+      });
+      return;
+    }
+
+    // Proceed with purchase
     setPurchasing(account.id);
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // 1. Deduct from wallet
+      const newBalance = currentBalance - account.price;
+      const { error: updateError } = await supabase
+        .from('user_wallets')
+        .update({ balance: newBalance })
+        .eq('user_id', user.id);
 
-    const { error } = await supabase
-      .from('ai_account_purchases')
-      .insert({
-        user_id: user.id,
-        ai_account_id: account.id,
-        amount: account.price,
-        payment_status: 'completed',
-        delivery_status: 'pending'
-      });
+      if (updateError) {
+        throw new Error('Failed to update wallet balance');
+      }
 
-    setPurchasing(null);
+      // 2. Create wallet transaction record
+      const { error: transactionError } = await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user.id,
+          type: 'purchase',
+          amount: account.price,
+          status: 'completed',
+          description: `AI Account: ${account.name}`
+        });
 
-    if (error) {
-      toast.error('Failed to complete purchase');
-    } else {
+      if (transactionError) {
+        // Rollback wallet balance
+        await supabase
+          .from('user_wallets')
+          .update({ balance: currentBalance })
+          .eq('user_id', user.id);
+        throw new Error('Failed to create transaction record');
+      }
+
+      // 3. Create AI account purchase record
+      const { error: purchaseError } = await supabase
+        .from('ai_account_purchases')
+        .insert({
+          user_id: user.id,
+          ai_account_id: account.id,
+          amount: account.price,
+          payment_status: 'completed',
+          delivery_status: 'pending'
+        });
+
+      if (purchaseError) {
+        // Rollback wallet
+        await supabase
+          .from('user_wallets')
+          .update({ balance: currentBalance })
+          .eq('user_id', user.id);
+        throw new Error('Failed to create purchase record');
+      }
+
       toast.success('Purchase successful! Account credentials will be delivered soon.');
+      fetchWallet();
       fetchPurchases();
+      setActiveTab('purchases');
+    } catch (error: any) {
+      console.error('Purchase error:', error);
+      toast.error(error.message || 'Failed to complete purchase');
+    } finally {
+      setPurchasing(null);
     }
   };
 
@@ -203,6 +348,31 @@ const AIAccountsSection = () => {
 
   return (
     <div className="animate-fade-up">
+      {/* Header with Wallet Balance */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-white tracking-tight">AI Accounts</h2>
+          <p className="text-gray-400 text-sm">Browse and purchase premium AI accounts</p>
+        </div>
+        
+        {/* Wallet Balance Display */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-violet-500/20 border border-violet-500/30 px-4 py-2.5 rounded-xl">
+            <Wallet size={18} className="text-violet-400" />
+            <span className="text-violet-400 font-bold text-lg">
+              ${wallet?.balance?.toFixed(2) || '0.00'}
+            </span>
+          </div>
+          <button
+            onClick={() => navigate('/dashboard/billing')}
+            className="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white px-4 py-2.5 rounded-xl font-medium transition-colors"
+          >
+            <Plus size={18} />
+            Add Funds
+          </button>
+        </div>
+      </div>
+
       {/* Tab Navigation */}
       <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 flex gap-2">
         <button
@@ -292,108 +462,131 @@ const AIAccountsSection = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAccounts.map((account) => (
-                <div
-                  key={account.id}
-                  className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                >
-                  {/* Product Image Header */}
-                  <div className="h-32 bg-gray-50 p-6 flex items-center justify-center relative">
-                    <img 
-                      src={getProductImage(account.category)} 
-                      alt={account.name}
-                      className="h-16 w-16 object-contain"
-                    />
-                    {/* Purchase Count Badge */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg shadow-sm border border-gray-100">
-                      <Users size={12} className="text-gray-600" />
-                      <span className="text-xs font-semibold text-gray-700">{getPurchaseCount(account.id)} sold</span>
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-5">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-bold text-gray-900 tracking-tight">
-                        {account.name}
-                      </h3>
-                      <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-lg">
-                        <BadgeCheck size={14} className="text-gray-600" />
-                        <span className="text-xs font-semibold text-gray-600">Verified</span>
+              {filteredAccounts.map((account) => {
+                const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
+                
+                return (
+                  <div
+                    key={account.id}
+                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  >
+                    {/* Product Image Header */}
+                    <div className="h-32 bg-gray-50 p-6 flex items-center justify-center relative">
+                      <img 
+                        src={getProductImage(account.category)} 
+                        alt={account.name}
+                        className="h-16 w-16 object-contain"
+                      />
+                      {/* Purchase Count Badge */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg shadow-sm border border-gray-100">
+                        <Users size={12} className="text-gray-600" />
+                        <span className="text-xs font-semibold text-gray-700">{getPurchaseCount(account.id)} sold</span>
                       </div>
+                      
+                      {/* Low Balance Warning Badge */}
+                      {!hasEnoughBalance && (
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded-lg border border-amber-200">
+                          <AlertTriangle size={12} className="text-amber-600" />
+                          <span className="text-xs font-semibold text-amber-700">Low Balance</span>
+                        </div>
+                      )}
                     </div>
 
-                    <p className="text-gray-500 text-sm mb-4 line-clamp-2">
-                      {account.description || 'Premium AI account with full access'}
-                    </p>
-
-                    {/* Features */}
-                    <div className="flex items-center gap-3 mb-5 text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <ShieldCheck size={12} className="text-gray-600" />
-                        Secure
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Check size={12} className="text-gray-600" />
-                        Instant
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-2xl font-bold text-gray-900 tracking-tight">${account.price}</span>
-                        <span className="text-gray-400 text-sm ml-1">one-time</span>
+                    {/* Content */}
+                    <div className="p-5">
+                      <div className="flex items-start justify-between mb-3">
+                        <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+                          {account.name}
+                        </h3>
+                        <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-lg">
+                          <BadgeCheck size={14} className="text-gray-600" />
+                          <span className="text-xs font-semibold text-gray-600">Verified</span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        {/* View Button */}
-                        <div 
-                          className="relative"
-                          onMouseEnter={() => setHoveredAccount(account.id)}
-                          onMouseLeave={() => setHoveredAccount(null)}
-                        >
-                          <button className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all">
-                            <Eye size={18} className="text-gray-700" />
-                          </button>
-                          
-                          {/* Hover Tooltip */}
-                          {hoveredAccount === account.id && (
-                            <div className="absolute bottom-full right-0 mb-2 w-64 p-4 bg-white rounded-xl shadow-xl border border-gray-100 z-20 animate-fade-up">
-                              <h4 className="font-bold text-gray-900 mb-1">{account.name}</h4>
-                              <p className="text-gray-600 text-sm mb-3">
-                                {account.description || 'Premium AI account with full access to all features and capabilities.'}
-                              </p>
-                              <div className="flex items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-3">
-                                <ShieldCheck size={12} className="text-green-600" />
-                                <span>Instant delivery • Secure payment • 24/7 support</span>
-                              </div>
-                            </div>
-                          )}
+                      <p className="text-gray-500 text-sm mb-4 line-clamp-2">
+                        {account.description || 'Premium AI account with full access'}
+                      </p>
+
+                      {/* Features */}
+                      <div className="flex items-center gap-3 mb-5 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <ShieldCheck size={12} className="text-gray-600" />
+                          Secure
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Check size={12} className="text-gray-600" />
+                          Instant
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-2xl font-bold text-gray-900 tracking-tight">${account.price}</span>
+                          <span className="text-gray-400 text-sm ml-1">one-time</span>
                         </div>
 
-                        {/* Buy Now Button */}
-                        <button
-                          onClick={() => handlePurchase(account)}
-                          disabled={purchasing === account.id}
-                          className="bg-black hover:bg-gray-900 text-white font-semibold px-5 py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                        >
-                          {purchasing === account.id ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              Processing
-                            </>
-                          ) : (
-                            <>
-                              <ShoppingCart className="w-4 h-4" />
-                              Buy Now
-                            </>
-                          )}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {/* View Button */}
+                          <div 
+                            className="relative"
+                            onMouseEnter={() => setHoveredAccount(account.id)}
+                            onMouseLeave={() => setHoveredAccount(null)}
+                          >
+                            <button className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all">
+                              <Eye size={18} className="text-gray-700" />
+                            </button>
+                            
+                            {/* Hover Tooltip */}
+                            {hoveredAccount === account.id && (
+                              <div className="absolute bottom-full right-0 mb-2 w-64 p-4 bg-white rounded-xl shadow-xl border border-gray-100 z-20 animate-fade-up">
+                                <h4 className="font-bold text-gray-900 mb-1">{account.name}</h4>
+                                <p className="text-gray-600 text-sm mb-3">
+                                  {account.description || 'Premium AI account with full access to all features and capabilities.'}
+                                </p>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-3">
+                                  <ShieldCheck size={12} className="text-green-600" />
+                                  <span>Instant delivery • Secure payment • 24/7 support</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Buy Now Button */}
+                          <button
+                            onClick={() => handlePurchase(account)}
+                            disabled={purchasing === account.id}
+                            className={`font-semibold px-5 py-2.5 rounded-xl transition-all disabled:cursor-not-allowed flex items-center gap-2 ${
+                              purchasing === account.id
+                                ? 'bg-gray-200 text-gray-500'
+                                : hasEnoughBalance
+                                ? 'bg-black hover:bg-gray-900 text-white'
+                                : 'bg-amber-500/20 text-amber-700 hover:bg-amber-500/30 border border-amber-300'
+                            }`}
+                          >
+                            {purchasing === account.id ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Processing
+                              </>
+                            ) : !hasEnoughBalance ? (
+                              <>
+                                <AlertTriangle className="w-4 h-4" />
+                                Top Up
+                              </>
+                            ) : (
+                              <>
+                                <ShoppingCart className="w-4 h-4" />
+                                Buy Now
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
@@ -451,6 +644,11 @@ const AIAccountsSection = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
+                      {/* Paid from Wallet Badge */}
+                      <span className="flex items-center gap-1.5 bg-violet-50 text-violet-600 px-3 py-1.5 rounded-full text-sm font-medium">
+                        <Wallet className="w-4 h-4" />
+                        Wallet
+                      </span>
                       {purchase.delivery_status === 'pending' ? (
                         <span className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full text-sm font-medium">
                           <Clock className="w-4 h-4" />
@@ -510,6 +708,26 @@ const AIAccountsSection = () => {
       {/* Stats Tab */}
       {activeTab === 'stats' && (
         <>
+          {/* Wallet Balance Card */}
+          <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl p-6 mb-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-violet-200 text-sm font-medium mb-1">Wallet Balance</p>
+                <p className="text-4xl font-bold tracking-tight">${wallet?.balance?.toFixed(2) || '0.00'}</p>
+              </div>
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                <Wallet className="w-8 h-8" />
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/dashboard/billing')}
+              className="mt-4 w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus size={18} />
+              Add Funds to Wallet
+            </button>
+          </div>
+
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg">
@@ -524,8 +742,8 @@ const AIAccountsSection = () => {
 
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg">
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2.5 bg-green-50 rounded-xl">
-                  <BarChart3 size={20} className="text-green-600" />
+                <div className="p-2.5 bg-violet-50 rounded-xl">
+                  <BarChart3 size={20} className="text-violet-600" />
                 </div>
                 <span className="text-gray-500 text-sm font-medium">Total Spent</span>
               </div>
@@ -534,8 +752,8 @@ const AIAccountsSection = () => {
 
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg">
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2.5 bg-emerald-50 rounded-xl">
-                  <CheckCircle size={20} className="text-emerald-600" />
+                <div className="p-2.5 bg-green-50 rounded-xl">
+                  <CheckCircle size={20} className="text-green-600" />
                 </div>
                 <span className="text-gray-500 text-sm font-medium">Delivered</span>
               </div>
@@ -594,6 +812,66 @@ const AIAccountsSection = () => {
             )}
           </div>
         </>
+      )}
+
+      {/* Insufficient Funds Modal */}
+      {insufficientFundsModal.show && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+            <button
+              onClick={() => setInsufficientFundsModal({ show: false, required: 0, current: 0, shortfall: 0 })}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-amber-600" />
+              </div>
+              
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Insufficient Balance</h3>
+              
+              <p className="text-gray-600 mb-4">
+                To purchase <span className="font-semibold text-gray-900">{insufficientFundsModal.accountName}</span>
+              </p>
+              
+              <div className="bg-gray-50 rounded-xl p-4 mb-6 space-y-3 text-left">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Required Amount:</span>
+                  <span className="text-gray-900 font-bold">${insufficientFundsModal.required.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Your Balance:</span>
+                  <span className="text-amber-600 font-bold">${insufficientFundsModal.current.toFixed(2)}</span>
+                </div>
+                <div className="border-t border-gray-200 pt-3 flex justify-between text-sm">
+                  <span className="text-gray-500">Amount Needed:</span>
+                  <span className="text-violet-600 font-bold">${insufficientFundsModal.shortfall.toFixed(2)}</span>
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setInsufficientFundsModal({ show: false, required: 0, current: 0, shortfall: 0 })}
+                  className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setInsufficientFundsModal({ show: false, required: 0, current: 0, shortfall: 0 });
+                    navigate('/dashboard/billing');
+                  }}
+                  className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                >
+                  <Wallet size={18} />
+                  Top Up Wallet
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
