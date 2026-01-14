@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Heart, Lock, Unlock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, Filter, Eye, ChevronDown, FolderOpen, Sparkles, Star, BarChart3, Bookmark } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Heart, Lock, Unlock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, Filter, Eye, ChevronDown, FolderOpen, Sparkles, Bookmark, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import madeForNotion from '@/assets/made-for-notion.avif';
+import chatgptLogo from '@/assets/chatgpt-logo.avif';
+import checkIcon from '@/assets/check-icon.svg';
+import btnArrow from '@/assets/btn-arrow.svg';
+import starsIcon from '@/assets/stars.svg';
+import midjourneyLogo from '@/assets/midjourney-logo.avif';
+import geminiLogo from '@/assets/gemini-logo.avif';
 
 interface Prompt {
   id: string;
@@ -39,6 +46,7 @@ const PromptsGrid = () => {
   const [showLocked, setShowLocked] = useState<string>('all');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
+  const scrollRef = useRef<HTMLDivElement>(null);
   
   const { user, isPro } = useAuthContext();
 
@@ -157,6 +165,14 @@ const PromptsGrid = () => {
     toast.success('Prompt copied to clipboard!');
   };
 
+  const getToolLogo = (tool: string) => {
+    const toolLower = tool.toLowerCase();
+    if (toolLower.includes('chatgpt') || toolLower.includes('gpt')) return chatgptLogo;
+    if (toolLower.includes('midjourney')) return midjourneyLogo;
+    if (toolLower.includes('gemini')) return geminiLogo;
+    return chatgptLogo;
+  };
+
   const getToolBadgeClass = (tool: string) => {
     const toolLower = tool.toLowerCase();
     if (toolLower.includes('chatgpt')) return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
@@ -194,13 +210,6 @@ const PromptsGrid = () => {
   const favoritePrompts = prompts.filter(p => favorites.includes(p.id));
   const tools = [...new Set(prompts.map(p => p.tool))];
 
-  // Stats
-  const totalPrompts = prompts.length;
-  const unlockedPrompts = prompts.filter(p => canAccessPrompt(p)).length;
-  const totalFavorites = favorites.length;
-  const totalCategories = categories.length;
-
-  // Get prompts count per category
   const getCategoryPromptCount = (categoryId: string) => {
     return prompts.filter(p => p.category_id === categoryId).length;
   };
@@ -210,97 +219,192 @@ const PromptsGrid = () => {
     setActiveTab('all');
   };
 
-  const PromptCard = ({ prompt }: { prompt: Prompt }) => {
+  // Homepage style card component
+  const HomepageStyleCard = ({ prompt }: { prompt: Prompt }) => {
     const isLocked = !canAccessPrompt(prompt);
     const isFavorite = favorites.includes(prompt.id);
+    const toolLogo = getToolLogo(prompt.tool);
+
+    // Parse title to get main title and bold part (category)
+    const titleParts = prompt.title.split(' ');
+    const lastWord = titleParts.pop() || '';
+    const mainTitle = titleParts.join(' ');
 
     return (
       <div
-        className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+        className="bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative flex flex-col flex-shrink-0 cursor-pointer"
+        style={{ width: 'calc((100% - 60px) / 3.5)', minWidth: '280px' }}
         onClick={() => handlePromptClick(prompt)}
       >
-        {/* Image */}
-        <div className="relative aspect-[4/3] overflow-hidden">
-          {prompt.image_url ? (
-            <img
-              src={prompt.image_url}
-              alt={prompt.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-              <ImageIcon size={40} className="text-gray-300" />
-            </div>
-          )}
-
-          {/* Tool Badge */}
-          <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${getToolBadgeClass(prompt.tool)}`}>
-            <span className={`w-2 h-2 rounded-full ${getToolDotColor(prompt.tool)}`} />
-            {prompt.tool}
+        {/* Top Row: Logos + NEW badge + Made for Notion */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <img src={toolLogo} alt="Logo" className="w-8 h-8 rounded-lg" />
+            {prompt.image_url && (
+              <img src={prompt.image_url} alt="Product" className="w-8 h-8 rounded-lg object-cover" />
+            )}
+            {prompt.is_featured && (
+              <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded">
+                HOT!
+              </span>
+            )}
           </div>
-
-          {/* Favorite Button */}
-          <button
-            onClick={(e) => toggleFavorite(prompt.id, e)}
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-sm"
-          >
-            <Heart
-              size={16}
-              className={isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-600'}
-            />
-          </button>
-
-          {/* Unlocked Badge */}
-          {!isLocked && (
-            <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-emerald-500 rounded-full flex items-center gap-1 shadow-sm">
-              <Unlock size={12} className="text-white" />
-              <span className="text-white text-xs font-semibold">Unlocked</span>
-            </div>
-          )}
-
-          {/* Lock Overlay */}
-          {isLocked && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-2">
-                  <Lock size={20} className="text-white" />
-                </div>
-                <span className="text-white text-sm font-medium">Pro Only</span>
-              </div>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <img src={madeForNotion} alt="Made for Notion" className="h-6 w-auto" />
+            <button
+              onClick={(e) => toggleFavorite(prompt.id, e)}
+              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+            >
+              <Heart
+                size={14}
+                className={isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-400'}
+              />
+            </button>
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="p-5">
-          <h3 className="font-bold text-gray-900 text-sm leading-tight line-clamp-2 group-hover:text-gray-700 transition-colors mb-4">
-            {prompt.title}
-          </h3>
+        {/* Title with black box on last word */}
+        <h3 className="text-lg text-black mb-1 leading-tight">
+          {mainTitle}{' '}
+          <span className="bg-black text-white px-2 py-0.5 font-bold inline-block">
+            {lastWord}
+          </span>
+        </h3>
 
-          {/* Button */}
-          <button
-            className={`w-full py-3 font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
-              isLocked
-                ? 'bg-gray-100 hover:bg-gray-200 text-gray-600 border border-gray-200'
-                : 'bg-black hover:bg-gray-800 text-white'
-            }`}
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePromptClick(prompt);
-            }}
-          >
-            {isLocked ? (
-              <>
-                <Lock size={16} />
-                Unlock Prompt
-              </>
-            ) : (
-              <>
-                <Eye size={16} />
-                View Prompt
-              </>
-            )}
-          </button>
+        {/* Tool Name */}
+        <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-4">
+          {prompt.tool}
+        </p>
+
+        {/* Description / Features */}
+        <ul className="space-y-2 mb-4 flex-grow">
+          {prompt.description ? (
+            <li className="flex items-start gap-2 text-sm text-gray-600">
+              <img src={checkIcon} alt="Check" className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <span className="leading-tight line-clamp-2">{prompt.description}</span>
+            </li>
+          ) : (
+            <>
+              <li className="flex items-start gap-2 text-sm text-gray-600">
+                <img src={checkIcon} alt="Check" className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <span className="leading-tight">Premium AI Prompt</span>
+              </li>
+              <li className="flex items-start gap-2 text-sm text-gray-600">
+                <img src={checkIcon} alt="Check" className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <span className="leading-tight">Ready to use template</span>
+              </li>
+            </>
+          )}
+          {prompt.categories && (
+            <li className="flex items-start gap-2 text-sm text-gray-600">
+              <img src={checkIcon} alt="Check" className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <span className="leading-tight">{prompt.categories.icon} {prompt.categories.name}</span>
+            </li>
+          )}
+        </ul>
+
+        {/* Access Badge */}
+        <div className="mb-4">
+          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+            isLocked 
+              ? 'bg-amber-500 text-white' 
+              : 'bg-green-600 text-white'
+          }`}>
+            {isLocked ? 'Pro Access' : 'Lifetime Access'}
+          </span>
+        </div>
+
+        {/* CTA Button */}
+        <button 
+          className={`w-full font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm ${
+            isLocked 
+              ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+              : 'bg-yellow-400 hover:bg-yellow-500 text-black'
+          }`}
+          onClick={(e) => {
+            e.stopPropagation();
+            handlePromptClick(prompt);
+          }}
+        >
+          {isLocked ? (
+            <>
+              <Lock size={14} />
+              Unlock Prompt
+            </>
+          ) : (
+            <>
+              View Prompt
+              <img src={btnArrow} alt="Arrow" className="w-4 h-4" />
+            </>
+          )}
+        </button>
+
+        {/* Rating */}
+        <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
+          <span className="text-sm font-medium text-gray-600">(4.9)</span>
+          <img src={starsIcon} alt="Stars" className="h-4" />
+          <span className="text-sm text-gray-400">(127)</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Horizontal scroll section component
+  const HorizontalPromptSection = ({ 
+    title, 
+    icon, 
+    prompts: sectionPrompts,
+    emptyMessage 
+  }: { 
+    title: string; 
+    icon: React.ReactNode; 
+    prompts: Prompt[];
+    emptyMessage?: string;
+  }) => {
+    const sectionScrollRef = useRef<HTMLDivElement>(null);
+
+    if (sectionPrompts.length === 0 && emptyMessage) {
+      return (
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-2">
+            {icon}
+            <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+              {title} <span className="font-normal text-gray-500">&gt;</span>
+            </h2>
+          </div>
+          <div className="w-full h-px bg-white/10 mb-6" />
+          <div className="text-center py-12 bg-[#141418] rounded-2xl border border-white/10">
+            <p className="text-gray-500">{emptyMessage}</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mb-10">
+        {/* Section Header - Homepage Style */}
+        <div className="flex items-center gap-3 mb-2">
+          {icon}
+          <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+            {title} <span className="font-normal text-gray-500">&gt;</span>
+          </h2>
+        </div>
+
+        {/* Divider */}
+        <div className="w-full h-px bg-white/10 mb-6" />
+
+        {/* Cards Container with horizontal scroll */}
+        <div 
+          ref={sectionScrollRef}
+          className="flex gap-5 overflow-x-auto pb-4 scroll-smooth"
+          style={{ 
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#4b5563 #1f2937'
+          }}
+        >
+          {sectionPrompts.map((prompt) => (
+            <HomepageStyleCard key={prompt.id} prompt={prompt} />
+          ))}
         </div>
       </div>
     );
@@ -317,10 +421,10 @@ const PromptsGrid = () => {
   return (
     <div className="space-y-8 section-prompts animate-fade-up">
       {/* Tab Navigation */}
-      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 flex gap-2">
+      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 flex gap-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('all')}
-          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'all'
               ? 'bg-white text-black shadow-lg'
               : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
@@ -331,7 +435,7 @@ const PromptsGrid = () => {
         </button>
         <button
           onClick={() => setActiveTab('trending')}
-          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'trending'
               ? 'bg-white text-black shadow-lg'
               : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
@@ -349,7 +453,7 @@ const PromptsGrid = () => {
         </button>
         <button
           onClick={() => setActiveTab('saved')}
-          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'saved'
               ? 'bg-white text-black shadow-lg'
               : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
@@ -367,7 +471,7 @@ const PromptsGrid = () => {
         </button>
         <button
           onClick={() => setActiveTab('categories')}
-          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'categories'
               ? 'bg-white text-black shadow-lg'
               : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
@@ -382,7 +486,7 @@ const PromptsGrid = () => {
       {activeTab === 'all' && (
         <>
           {/* Filter Bar */}
-          <div className="bg-[#141418] rounded-2xl p-6 border border-white/10">
+          <div className="bg-[#141418] rounded-2xl p-6 border border-white/10 mb-8">
             {/* Search */}
             <div className="relative mb-5">
               <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -461,55 +565,35 @@ const PromptsGrid = () => {
             </div>
           </div>
 
-          {/* Prompts Grid */}
-          {filteredPrompts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {filteredPrompts.map((prompt) => (
-                <PromptCard key={prompt.id} prompt={prompt} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-[#141418] rounded-2xl border border-white/10">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Search size={24} className="text-gray-500" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">No prompts found</h3>
-              <p className="text-gray-500">Try adjusting your search or filters</p>
-            </div>
-          )}
+          {/* Prompts Horizontal Scroll */}
+          <HorizontalPromptSection
+            title="AI Prompts"
+            icon={<Sparkles className="w-8 h-8 text-violet-500" />}
+            prompts={filteredPrompts}
+            emptyMessage="No prompts found. Try adjusting your filters."
+          />
         </>
       )}
 
       {/* Trending Tab */}
       {activeTab === 'trending' && (
-        <>
-          {trendingPrompts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {trendingPrompts.map((prompt) => (
-                <PromptCard key={prompt.id} prompt={prompt} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-[#141418] rounded-2xl border border-white/10">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <TrendingUp size={24} className="text-gray-500" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">No trending prompts yet</h3>
-              <p className="text-gray-500">Trending prompts will appear here</p>
-            </div>
-          )}
-        </>
+        <HorizontalPromptSection
+          title="Trending Prompts"
+          icon={<TrendingUp className="w-8 h-8 text-orange-500" />}
+          prompts={trendingPrompts}
+          emptyMessage="No trending prompts yet. Check back later!"
+        />
       )}
 
       {/* Saved Prompts Tab */}
       {activeTab === 'saved' && (
         <>
           {favoritePrompts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {favoritePrompts.map((prompt) => (
-                <PromptCard key={prompt.id} prompt={prompt} />
-              ))}
-            </div>
+            <HorizontalPromptSection
+              title="Saved Prompts"
+              icon={<Bookmark className="w-8 h-8 text-pink-500" />}
+              prompts={favoritePrompts}
+            />
           ) : (
             <div className="text-center py-16 bg-[#141418] rounded-2xl border border-white/10">
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
@@ -658,6 +742,24 @@ const PromptsGrid = () => {
           </div>
         </div>
       )}
+
+      {/* Custom scrollbar styles for dark theme */}
+      <style>{`
+        .section-prompts div::-webkit-scrollbar {
+          height: 8px;
+        }
+        .section-prompts div::-webkit-scrollbar-track {
+          background: #1f2937;
+          border-radius: 4px;
+        }
+        .section-prompts div::-webkit-scrollbar-thumb {
+          background: #4b5563;
+          border-radius: 4px;
+        }
+        .section-prompts div::-webkit-scrollbar-thumb:hover {
+          background: #6b7280;
+        }
+      `}</style>
     </div>
   );
 };
