@@ -1,0 +1,221 @@
+import { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string | null;
+  description: string | null;
+  created_at: string;
+}
+
+const CategoriesManagement = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ name: '', icon: '', description: '' });
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name');
+    
+    if (error) {
+      toast.error('Failed to load categories');
+    } else {
+      setCategories(data || []);
+    }
+    setLoading(false);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name) {
+      toast.error('Category name is required');
+      return;
+    }
+
+    if (editingId) {
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: formData.name,
+          icon: formData.icon || null,
+          description: formData.description || null
+        })
+        .eq('id', editingId);
+
+      if (error) {
+        toast.error('Failed to update category');
+      } else {
+        toast.success('Category updated');
+        fetchCategories();
+      }
+    } else {
+      const { error } = await supabase
+        .from('categories')
+        .insert({
+          name: formData.name,
+          icon: formData.icon || null,
+          description: formData.description || null
+        });
+
+      if (error) {
+        toast.error('Failed to create category');
+      } else {
+        toast.success('Category created');
+        fetchCategories();
+      }
+    }
+
+    resetForm();
+  };
+
+  const handleEdit = (category: Category) => {
+    setFormData({
+      name: category.name,
+      icon: category.icon || '',
+      description: category.description || ''
+    });
+    setEditingId(category.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this category?')) return;
+
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+
+    if (error) {
+      toast.error('Failed to delete category');
+    } else {
+      toast.success('Category deleted');
+      fetchCategories();
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({ name: '', icon: '', description: '' });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-white">Categories Management</h2>
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          <Plus size={18} />
+          Add Category
+        </button>
+      </div>
+
+      {/* Form */}
+      {showForm && (
+        <div className="bg-gray-800 rounded-xl p-6 mb-6">
+          <h3 className="text-lg font-semibold text-white mb-4">
+            {editingId ? 'Edit Category' : 'New Category'}
+          </h3>
+          <div className="grid md:grid-cols-3 gap-4 mb-4">
+            <input
+              type="text"
+              placeholder="Category name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white"
+            />
+            <input
+              type="text"
+              placeholder="Icon (emoji)"
+              value={formData.icon}
+              onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+              className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white"
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+            >
+              <Save size={18} />
+              Save
+            </button>
+            <button
+              onClick={resetForm}
+              className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
+            >
+              <X size={18} />
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Categories Table */}
+      <div className="bg-gray-800 rounded-xl overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-900">
+            <tr>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium">Icon</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium">Name</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium">Description</th>
+              <th className="text-right px-6 py-4 text-gray-400 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {categories.map((category) => (
+              <tr key={category.id} className="border-t border-gray-700">
+                <td className="px-6 py-4 text-2xl">{category.icon || '📁'}</td>
+                <td className="px-6 py-4 text-white font-medium">{category.name}</td>
+                <td className="px-6 py-4 text-gray-400">{category.description || '-'}</td>
+                <td className="px-6 py-4">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => handleEdit(category)}
+                      className="p-2 text-blue-400 hover:bg-gray-700 rounded"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(category.id)}
+                      className="p-2 text-red-400 hover:bg-gray-700 rounded"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default CategoriesManagement;
