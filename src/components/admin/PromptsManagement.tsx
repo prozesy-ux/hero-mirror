@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, Eye, Image, ChevronDown, ChevronUp, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Eye, Image, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import RichTextEditor from './RichTextEditor';
 import ImageUploader from './ImageUploader';
-import { useAdmin } from '@/contexts/AdminContext';
 
 interface Prompt {
   id: string;
@@ -25,7 +24,6 @@ interface Category {
 }
 
 const PromptsManagement = () => {
-  const { hasAdminRole, adminUser } = useAdmin();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +33,6 @@ const PromptsManagement = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewPrompt, setPreviewPrompt] = useState<Prompt | null>(null);
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
-  const [authError, setAuthError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -74,17 +71,6 @@ const PromptsManagement = () => {
     };
   }, []);
 
-  useEffect(() => {
-    // Check auth status
-    if (!adminUser) {
-      setAuthError('Please sign in with your admin account (mdmerajul614@gmail.com) to manage prompts');
-    } else if (!hasAdminRole) {
-      setAuthError('Your account does not have admin permissions');
-    } else {
-      setAuthError(null);
-    }
-  }, [adminUser, hasAdminRole]);
-
   const fetchData = async () => {
     try {
       const [{ data: promptsData, error: promptsError }, { data: categoriesData }] = await Promise.all([
@@ -113,11 +99,6 @@ const PromptsManagement = () => {
       return;
     }
 
-    if (!hasAdminRole) {
-      toast.error('Admin permissions required. Please sign in with your admin account.');
-      return;
-    }
-
     setSaving(true);
 
     const promptData = {
@@ -136,11 +117,7 @@ const PromptsManagement = () => {
         const { error } = await supabase.from('prompts').update(promptData).eq('id', editingId);
         if (error) {
           console.error('Update error:', error);
-          if (error.message.includes('row-level security')) {
-            toast.error('Permission denied. Please sign in with admin account.');
-          } else {
-            toast.error(`Failed to update: ${error.message}`);
-          }
+          toast.error(`Failed to update: ${error.message}`);
         } else {
           toast.success('Prompt updated successfully!');
           resetForm();
@@ -149,11 +126,7 @@ const PromptsManagement = () => {
         const { error } = await supabase.from('prompts').insert(promptData);
         if (error) {
           console.error('Insert error:', error);
-          if (error.message.includes('row-level security')) {
-            toast.error('Permission denied. Please sign in with admin account.');
-          } else {
-            toast.error(`Failed to create: ${error.message}`);
-          }
+          toast.error(`Failed to create: ${error.message}`);
         } else {
           toast.success('Prompt created successfully!');
           resetForm();
@@ -184,11 +157,6 @@ const PromptsManagement = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this prompt?')) return;
-    
-    if (!hasAdminRole) {
-      toast.error('Admin permissions required. Please sign in with your admin account.');
-      return;
-    }
 
     setDeleting(id);
 
@@ -196,11 +164,7 @@ const PromptsManagement = () => {
       const { error } = await supabase.from('prompts').delete().eq('id', id);
       if (error) {
         console.error('Delete error:', error);
-        if (error.message.includes('row-level security')) {
-          toast.error('Permission denied. Please sign in with admin account.');
-        } else {
-          toast.error(`Failed to delete: ${error.message}`);
-        }
+        toast.error(`Failed to delete: ${error.message}`);
       } else {
         toast.success('Prompt deleted successfully!');
       }
@@ -254,24 +218,6 @@ const PromptsManagement = () => {
         </button>
       </div>
 
-      {/* Auth Warning */}
-      {authError && (
-        <div className="mb-6 flex items-center gap-3 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400">
-          <AlertCircle size={20} />
-          <div>
-            <p className="font-medium">Authentication Required</p>
-            <p className="text-sm">{authError}</p>
-            <a 
-              href="/signin" 
-              target="_blank"
-              className="text-yellow-300 underline text-sm mt-1 inline-block"
-            >
-              Sign in with admin account →
-            </a>
-          </div>
-        </div>
-      )}
-
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 overflow-y-auto">
@@ -289,17 +235,6 @@ const PromptsManagement = () => {
             </div>
             
             <div className="p-6 space-y-6">
-              {/* Auth Warning in Modal */}
-              {authError && (
-                <div className="flex items-center gap-3 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400">
-                  <AlertCircle size={20} />
-                  <div>
-                    <p className="font-medium">Sign in required to save changes</p>
-                    <p className="text-sm">{authError}</p>
-                  </div>
-                </div>
-              )}
-
               {/* Basic Info */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -398,7 +333,7 @@ const PromptsManagement = () => {
               <div className="flex gap-3 pt-4 border-t border-gray-700">
                 <button 
                   onClick={handleSave} 
-                  disabled={saving || !!authError}
+                  disabled={saving}
                   className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 >
                   {saving ? (
@@ -479,17 +414,16 @@ const PromptsManagement = () => {
                   </span>
                 )}
               </div>
-              
-              <h2 className="text-2xl font-bold text-white mb-3">{previewPrompt.title}</h2>
-              <p className="text-gray-400 mb-6">{previewPrompt.description}</p>
-              
-              <div className="bg-gray-900 rounded-lg p-4">
-                <h3 className="text-white font-medium mb-3">Prompt Content</h3>
+              <h3 className="text-xl font-bold text-white mb-2">{previewPrompt.title}</h3>
+              {previewPrompt.description && (
+                <p className="text-gray-400 mb-4">{previewPrompt.description}</p>
+              )}
+              {previewPrompt.content && (
                 <div 
-                  className="text-gray-300 prose prose-invert prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: previewPrompt.content || 'No content available' }}
+                  className="prose prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: previewPrompt.content }}
                 />
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -497,115 +431,128 @@ const PromptsManagement = () => {
 
       {/* Prompts Table */}
       <div className="bg-gray-800 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-900">
-            <tr>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium w-8"></th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Image</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Title</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Tool</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Category</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Status</th>
-              <th className="text-right px-6 py-4 text-gray-400 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {prompts.map((prompt) => (
-              <>
-                <tr key={prompt.id} className="border-t border-gray-700 hover:bg-gray-700/50">
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => toggleRowExpand(prompt.id)}
-                      className="p-1 text-gray-400 hover:text-white transition-colors"
-                    >
-                      {expandedRows.includes(prompt.id) ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4">
-                    {prompt.image_url ? (
-                      <img 
-                        src={prompt.image_url} 
-                        alt={prompt.title}
-                        className="w-16 h-12 object-cover rounded-lg"
-                      />
-                    ) : (
-                      <div className="w-16 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                        <Image size={16} className="text-gray-500" />
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-white font-medium max-w-xs truncate">{prompt.title}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded">{prompt.tool}</span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-400">{prompt.categories?.name || '-'}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      {prompt.is_free && <span className="px-2 py-1 bg-green-900/50 text-green-400 text-xs rounded">Free</span>}
-                      {prompt.is_featured && <span className="px-2 py-1 bg-purple-900/50 text-purple-400 text-xs rounded">Featured</span>}
-                      {!prompt.is_free && <span className="px-2 py-1 bg-yellow-900/50 text-yellow-400 text-xs rounded">Premium</span>}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex justify-end gap-2">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-900">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Image</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Title</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Tool</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Category</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Status</th>
+                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-300">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-700">
+              {prompts.map((prompt) => (
+                <>
+                  <tr key={prompt.id} className="hover:bg-gray-700/50 transition-colors">
+                    <td className="px-6 py-4">
+                      {prompt.image_url ? (
+                        <img 
+                          src={prompt.image_url} 
+                          alt={prompt.title}
+                          className="w-12 h-12 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
+                          <Image size={20} className="text-gray-500" />
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
                       <button 
-                        onClick={() => setPreviewPrompt(prompt)} 
-                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-                        title="Preview"
+                        onClick={() => toggleRowExpand(prompt.id)}
+                        className="flex items-center gap-2 text-white hover:text-purple-400 transition-colors"
                       >
-                        <Eye size={18} />
+                        {expandedRows.includes(prompt.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <span className="font-medium">{prompt.title}</span>
                       </button>
-                      <button 
-                        onClick={() => handleEdit(prompt)} 
-                        className="p-2 text-blue-400 hover:bg-gray-700 rounded transition-colors"
-                        title="Edit"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(prompt.id)} 
-                        disabled={deleting === prompt.id}
-                        className="p-2 text-red-400 hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
-                        title="Delete"
-                      >
-                        {deleting === prompt.id ? (
-                          <Loader2 size={18} className="animate-spin" />
-                        ) : (
-                          <Trash2 size={18} />
+                    </td>
+                    <td className="px-6 py-4 text-gray-300">{prompt.tool}</td>
+                    <td className="px-6 py-4 text-gray-300">{prompt.categories?.name || '-'}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {prompt.is_free && (
+                          <span className="px-2 py-1 bg-green-600/20 text-green-400 text-xs rounded-full">
+                            Free
+                          </span>
                         )}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                {expandedRows.includes(prompt.id) && (
-                  <tr key={`${prompt.id}-expanded`} className="bg-gray-900/50">
-                    <td colSpan={7} className="px-6 py-4">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-400 mb-2">Description</h4>
-                          <p className="text-gray-300 text-sm">{prompt.description || 'No description'}</p>
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-400 mb-2">Content Preview</h4>
-                          <div 
-                            className="text-gray-300 text-sm line-clamp-3 prose prose-invert prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: prompt.content || 'No content' }}
-                          />
-                        </div>
+                        {prompt.is_featured && (
+                          <span className="px-2 py-1 bg-yellow-600/20 text-yellow-400 text-xs rounded-full">
+                            Featured
+                          </span>
+                        )}
+                        {!prompt.is_free && !prompt.is_featured && (
+                          <span className="text-gray-500 text-sm">Premium</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => setPreviewPrompt(prompt)}
+                          className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 rounded-lg transition-colors"
+                          title="Preview"
+                        >
+                          <Eye size={18} />
+                        </button>
+                        <button 
+                          onClick={() => handleEdit(prompt)}
+                          className="p-2 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(prompt.id)}
+                          disabled={deleting === prompt.id}
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                          title="Delete"
+                        >
+                          {deleting === prompt.id ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={18} />
+                          )}
+                        </button>
                       </div>
                     </td>
                   </tr>
-                )}
-              </>
-            ))}
-          </tbody>
-        </table>
-        
-        {prompts.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-400">No prompts yet. Create your first prompt!</p>
-          </div>
-        )}
+                  {expandedRows.includes(prompt.id) && (
+                    <tr key={`${prompt.id}-expanded`} className="bg-gray-900/50">
+                      <td colSpan={6} className="px-6 py-4">
+                        <div className="space-y-3">
+                          {prompt.description && (
+                            <div>
+                              <span className="text-sm font-medium text-gray-400">Description:</span>
+                              <p className="text-gray-300 mt-1">{prompt.description}</p>
+                            </div>
+                          )}
+                          {prompt.content && (
+                            <div>
+                              <span className="text-sm font-medium text-gray-400">Content Preview:</span>
+                              <div 
+                                className="text-gray-300 mt-1 prose prose-sm prose-invert max-w-none line-clamp-3"
+                                dangerouslySetInnerHTML={{ __html: prompt.content }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table>
+          
+          {prompts.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-400">No prompts found. Create your first prompt!</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
