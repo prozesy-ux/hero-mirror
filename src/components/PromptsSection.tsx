@@ -138,7 +138,7 @@ const PromptsSection = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-2">Premium AI Prompts</h2>
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-2">Premium AI Prompts <span className="text-purple-400">Samples</span></h2>
           <p className="text-xl text-purple-400 font-medium">🔥 These are trending prompts</p>
         </div>
 
