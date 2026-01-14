@@ -281,18 +281,6 @@ const AIAccountsSection = () => {
             ))}
           </div>
 
-          {/* Top Selling Section */}
-          <div className="bg-[#1a1a1f] rounded-2xl p-6 mb-8 border border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-white rounded-xl">
-                <TrendingUp size={20} className="text-gray-900" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">Top Selling</h2>
-                <p className="text-gray-500 text-sm">Most popular AI accounts this month</p>
-              </div>
-            </div>
-          </div>
 
           {filteredAccounts.length === 0 ? (
             <div className="bg-[#1a1a1f] rounded-2xl p-16 text-center border border-white/5">

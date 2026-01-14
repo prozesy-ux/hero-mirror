@@ -302,12 +302,6 @@ const BillingSection = () => {
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Billing & Wallet</h1>
-        <p className="text-gray-400 font-medium">Manage your wallet, subscription and payments</p>
-      </div>
-
       {/* Wallet Card */}
       <div className="bg-white rounded-2xl p-6 mb-6 shadow-lg border border-gray-100">
         <div className="flex items-center justify-between flex-wrap gap-4">

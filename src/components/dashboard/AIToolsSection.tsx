@@ -158,20 +158,6 @@ const AIToolsSection = () => {
 
   return (
     <div className="animate-fade-up">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl blur-lg opacity-50" />
-          <div className="relative p-4 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl shadow-lg">
-            <Rocket size={28} className="text-white" />
-          </div>
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold text-white">AI Tools</h2>
-          <p className="text-gray-400">Discover and access popular AI tools</p>
-        </div>
-      </div>
-
       {/* Tabs */}
       <div className="flex gap-3 mb-8">
         <button
