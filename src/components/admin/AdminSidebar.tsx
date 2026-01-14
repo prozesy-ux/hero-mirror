@@ -16,7 +16,6 @@ import {
   XCircle
 } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
-import theLogo from '@/assets/the-logo.png';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -60,11 +59,10 @@ const AdminSidebar = () => {
 
   const SidebarContent = () => (
     <>
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-6 border-b border-gray-800">
-        <img src={theLogo} alt="THE" className="h-8" />
-        <span className="text-xs text-red-400 flex items-center gap-1">
-          <Shield size={12} /> Admin Panel
+      {/* Admin Panel Header */}
+      <div className="flex items-center gap-2 px-4 py-6 border-b border-gray-800">
+        <span className="text-sm text-red-400 flex items-center gap-1.5 font-semibold">
+          <Shield size={14} /> Admin Panel
         </span>
       </div>
 
@@ -99,9 +97,9 @@ const AdminSidebar = () => {
     <>
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-800 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src={theLogo} alt="THE" className="h-6" />
-          <span className="text-lg font-bold text-white">Admin</span>
+        <div className="flex items-center gap-2">
+          <Shield size={16} className="text-red-400" />
+          <span className="text-sm font-semibold text-red-400">Admin Panel</span>
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
