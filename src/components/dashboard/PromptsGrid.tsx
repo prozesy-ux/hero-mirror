@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, Lock, Unlock, Search, Copy, X, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { Heart, Lock, Unlock, Search, Copy, X, Image as ImageIcon, Sparkles, Flame } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -108,7 +108,8 @@ const PromptsGrid = ({ showFavoritesOnly = false }: PromptsGridProps) => {
     setLoading(false);
   };
 
-  const toggleFavorite = async (promptId: string) => {
+  const toggleFavorite = async (promptId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!user) {
       toast.error('Please sign in to add favorites');
       return;
@@ -177,7 +178,106 @@ const PromptsGrid = ({ showFavoritesOnly = false }: PromptsGridProps) => {
     filteredPrompts = filteredPrompts.filter(prompt => favorites.includes(prompt.id));
   }
 
+  // Separate trending (featured) and regular prompts
+  const trendingPrompts = filteredPrompts.filter(p => p.is_featured);
+  const regularPrompts = filteredPrompts.filter(p => !p.is_featured);
+
   const tools = [...new Set(prompts.map(p => p.tool))];
+
+  // Prompt Card Component matching home page design
+  const PromptCard = ({ prompt }: { prompt: Prompt }) => {
+    const isLocked = !canAccessPrompt(prompt);
+    const isFavorite = favorites.includes(prompt.id);
+
+    return (
+      <div
+        className="group bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10 hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer"
+        onClick={() => handlePromptClick(prompt)}
+      >
+        {/* Image with 4:3 aspect ratio */}
+        <div className="relative aspect-[4/3] overflow-hidden">
+          {prompt.image_url ? (
+            <img
+              src={prompt.image_url}
+              alt={prompt.title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-purple-900/50 to-pink-900/50 flex items-center justify-center">
+              <ImageIcon size={40} className="text-gray-600" />
+            </div>
+          )}
+
+          {/* Tool Badge - top left with purple dot */}
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1 bg-black/60 backdrop-blur-sm rounded-full">
+            <span className="w-2 h-2 bg-purple-400 rounded-full" />
+            <span className="text-white text-xs font-medium">{prompt.tool}</span>
+          </div>
+
+          {/* Favorite Button - top right */}
+          <button
+            onClick={(e) => toggleFavorite(prompt.id, e)}
+            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+          >
+            <Heart
+              size={16}
+              className={isFavorite ? 'text-red-500 fill-red-500' : 'text-white'}
+            />
+          </button>
+
+          {/* Unlocked Badge - bottom right (if accessible) */}
+          {!isLocked && (
+            <div className="absolute bottom-3 right-3 px-2 py-1 bg-green-500/80 backdrop-blur-sm rounded-full flex items-center gap-1">
+              <Unlock size={12} className="text-white" />
+              <span className="text-white text-xs font-medium">Unlocked</span>
+            </div>
+          )}
+
+          {/* Lock Overlay for premium */}
+          {isLocked && (
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
+              <div className="text-center">
+                <Lock size={24} className="text-gray-300 mx-auto mb-1" />
+                <span className="text-gray-300 text-xs">Pro Only</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Compact Content */}
+        <div className="p-4">
+          <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2 group-hover:text-purple-300 transition-colors mb-4">
+            {prompt.title}
+          </h3>
+
+          {/* Unlock Button */}
+          <button
+            className={`w-full py-2.5 font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border ${
+              isLocked
+                ? 'bg-gray-700/50 hover:bg-gray-700 text-gray-400 hover:text-white border-gray-600/30 hover:border-gray-600'
+                : 'bg-purple-500/20 hover:bg-purple-500 text-purple-400 hover:text-white border-purple-500/30 hover:border-purple-500'
+            }`}
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePromptClick(prompt);
+            }}
+          >
+            {isLocked ? (
+              <>
+                <Lock size={16} />
+                Unlock Prompt
+              </>
+            ) : (
+              <>
+                <Unlock size={16} />
+                View Prompt
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -237,142 +337,59 @@ const PromptsGrid = ({ showFavoritesOnly = false }: PromptsGridProps) => {
         </div>
       </div>
 
-      {/* Results Count */}
-      <div className="flex items-center justify-between">
-        <p className="text-gray-400">
-          {filteredPrompts.length} prompt{filteredPrompts.length !== 1 ? 's' : ''} found
-        </p>
-        {!isPro && (
-          <p className="text-purple-400 text-sm">
-            <Lock size={14} className="inline mr-1" />
-            Upgrade to Pro to unlock all prompts
-          </p>
-        )}
-      </div>
+      {/* Trending Prompts Section */}
+      {trendingPrompts.length > 0 && (
+        <div className="mb-2">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="p-2 bg-orange-500/20 rounded-lg">
+              <Flame size={20} className="text-orange-500" />
+            </div>
+            <h2 className="text-xl font-bold text-white">Trending Prompts</h2>
+            <span className="px-3 py-1 bg-orange-500/20 text-orange-400 text-xs font-medium rounded-full">
+              🔥 Most Popular
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {trendingPrompts.map((prompt) => (
+              <PromptCard key={prompt.id} prompt={prompt} />
+            ))}
+          </div>
+        </div>
+      )}
 
-      {/* Prompts Grid */}
-      {filteredPrompts.length === 0 ? (
+      {/* All Prompts Section */}
+      {regularPrompts.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-bold text-white">
+                {trendingPrompts.length > 0 ? 'All Prompts' : 'Prompts'}
+              </h2>
+              <span className="text-sm text-gray-400">
+                {regularPrompts.length} found
+              </span>
+            </div>
+            {!isPro && (
+              <p className="text-purple-400 text-sm">
+                <Lock size={14} className="inline mr-1" />
+                Upgrade to Pro to unlock all prompts
+              </p>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {regularPrompts.map((prompt) => (
+              <PromptCard key={prompt.id} prompt={prompt} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {filteredPrompts.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-400 text-lg">
             {showFavoritesOnly ? 'No favorite prompts yet' : 'No prompts found'}
           </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPrompts.map((prompt) => {
-            const isLocked = !canAccessPrompt(prompt);
-            const isFavorite = favorites.includes(prompt.id);
-
-            return (
-              <div
-                key={prompt.id}
-                className={`group bg-gray-800 rounded-xl overflow-hidden border transition-all duration-300 ${
-                  isLocked 
-                    ? 'border-gray-700 opacity-80' 
-                    : 'border-gray-700 hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/10'
-                }`}
-              >
-                {/* Image */}
-                <div className="relative h-44 overflow-hidden">
-                  {prompt.image_url ? (
-                    <img
-                      src={prompt.image_url}
-                      alt={prompt.title}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-purple-900/50 to-pink-900/50 flex items-center justify-center">
-                      <ImageIcon size={40} className="text-gray-600" />
-                    </div>
-                  )}
-                  
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
-                  
-                  {/* Badges */}
-                  <div className="absolute top-3 left-3 flex gap-2">
-                    <span className="px-2.5 py-1 bg-gray-900/90 backdrop-blur-sm text-xs font-medium text-white rounded-full">
-                      {prompt.tool}
-                    </span>
-                    {prompt.is_featured && (
-                      <span className="px-2.5 py-1 bg-purple-600/90 backdrop-blur-sm text-xs font-medium text-white rounded-full flex items-center gap-1">
-                        <Sparkles size={12} />
-                        Featured
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Favorite Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(prompt.id);
-                    }}
-                    className="absolute top-3 right-3 p-2 bg-gray-900/80 backdrop-blur-sm rounded-full hover:bg-gray-900 transition-colors"
-                  >
-                    <Heart
-                      size={18}
-                      className={isFavorite ? 'text-red-500 fill-red-500' : 'text-white'}
-                    />
-                  </button>
-
-                  {/* Lock Overlay */}
-                  {isLocked && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-[2px]">
-                      <div className="text-center">
-                        <Lock size={32} className="text-gray-400 mx-auto mb-2" />
-                        <span className="text-gray-400 text-sm">Pro Only</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Free Badge */}
-                  {prompt.is_free && (
-                    <span className="absolute bottom-3 left-3 px-2.5 py-1 bg-green-600/90 backdrop-blur-sm text-xs font-medium text-white rounded-full">
-                      Free
-                    </span>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="p-4">
-                  {prompt.categories && (
-                    <span className="text-purple-400 text-xs font-medium mb-1.5 block">
-                      {prompt.categories.icon} {prompt.categories.name}
-                    </span>
-                  )}
-                  <h3 className="text-white font-semibold text-lg mb-2 line-clamp-1 group-hover:text-purple-300 transition-colors">
-                    {prompt.title}
-                  </h3>
-                  <p className="text-gray-400 text-sm mb-4 line-clamp-2">
-                    {prompt.description}
-                  </p>
-
-                  <button
-                    onClick={() => handlePromptClick(prompt)}
-                    className={`w-full py-2.5 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all duration-200 ${
-                      isLocked
-                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                        : 'bg-purple-600 hover:bg-purple-500 text-white hover:shadow-md hover:shadow-purple-500/25'
-                    }`}
-                    disabled={isLocked}
-                  >
-                    {isLocked ? (
-                      <>
-                        <Lock size={16} />
-                        Upgrade to Unlock
-                      </>
-                    ) : (
-                      <>
-                        <Unlock size={16} />
-                        View Prompt
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
         </div>
       )}
 
