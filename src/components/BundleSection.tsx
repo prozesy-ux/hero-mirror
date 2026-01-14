@@ -203,8 +203,8 @@ const BundleSection = () => {
             THE EVERYTHING BUNDLE
           </h2>
           <div className="flex items-center justify-center gap-4 mb-6">
-            <span className="text-2xl text-muted-foreground line-through">$329</span>
-            <span className="text-5xl font-bold text-primary">$89</span>
+            <span className="text-2xl text-muted-foreground line-through">$499</span>
+            <span className="text-5xl font-bold text-primary">$19</span>
           </div>
           <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-6 text-xl">
             <Zap className="w-6 h-6 mr-2" />
@@ -272,7 +272,7 @@ const BundleSection = () => {
               </div>
             </div>
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-6 text-xl">
-              Get The Everything Bundle - $89
+              Get The Everything Bundle - $19
             </Button>
           </div>
         </div>
