@@ -316,46 +316,6 @@ const PromptsGrid = () => {
 
   return (
     <div className="space-y-8 section-prompts animate-fade-up">
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-[#141418] rounded-2xl p-5 border border-white/10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-white/5 rounded-lg">
-              <Layers size={16} className="text-white" />
-            </div>
-            <span className="text-gray-400 text-sm">Total Prompts</span>
-          </div>
-          <p className="text-2xl font-bold text-white">{totalPrompts}</p>
-        </div>
-        <div className="bg-[#141418] rounded-2xl p-5 border border-white/10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-emerald-500/10 rounded-lg">
-              <Unlock size={16} className="text-emerald-400" />
-            </div>
-            <span className="text-gray-400 text-sm">Unlocked</span>
-          </div>
-          <p className="text-2xl font-bold text-white">{unlockedPrompts}</p>
-        </div>
-        <div className="bg-[#141418] rounded-2xl p-5 border border-white/10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <Bookmark size={16} className="text-blue-400" />
-            </div>
-            <span className="text-gray-400 text-sm">Saved Prompts</span>
-          </div>
-          <p className="text-2xl font-bold text-white">{totalFavorites}</p>
-        </div>
-        <div className="bg-[#141418] rounded-2xl p-5 border border-white/10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-violet-500/10 rounded-lg">
-              <FolderOpen size={16} className="text-violet-400" />
-            </div>
-            <span className="text-gray-400 text-sm">Categories</span>
-          </div>
-          <p className="text-2xl font-bold text-white">{totalCategories}</p>
-        </div>
-      </div>
-
       {/* Tab Navigation */}
       <div className="bg-[#1a1a1f] rounded-2xl p-2 border border-white/5 inline-flex gap-1 flex-wrap">
         <button
@@ -421,23 +381,6 @@ const PromptsGrid = () => {
       {/* All Prompts Tab */}
       {activeTab === 'all' && (
         <>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gradient-to-r from-gray-700 to-gray-800 rounded-xl">
-                <Layers size={20} className="text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">All Prompts</h2>
-                <p className="text-gray-500 text-sm">Browse and discover prompts</p>
-              </div>
-            </div>
-            <div className="px-4 py-2 bg-white/5 rounded-full border border-white/10">
-              <span className="text-white font-semibold">{filteredPrompts.length}</span>
-              <span className="text-gray-400 ml-1">results</span>
-            </div>
-          </div>
-
           {/* Filter Bar */}
           <div className="bg-[#141418] rounded-2xl p-6 border border-white/10">
             {/* Search */}
@@ -541,22 +484,11 @@ const PromptsGrid = () => {
       {activeTab === 'trending' && (
         <>
           {trendingPrompts.length > 0 ? (
-            <>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2.5 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl">
-                  <TrendingUp size={20} className="text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Trending Prompts</h2>
-                  <p className="text-gray-500 text-sm">Most popular this week</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {trendingPrompts.map((prompt) => (
-                  <PromptCard key={prompt.id} prompt={prompt} />
-                ))}
-              </div>
-            </>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {trendingPrompts.map((prompt) => (
+                <PromptCard key={prompt.id} prompt={prompt} />
+              ))}
+            </div>
           ) : (
             <div className="text-center py-16 bg-[#141418] rounded-2xl border border-white/10">
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
@@ -573,22 +505,11 @@ const PromptsGrid = () => {
       {activeTab === 'saved' && (
         <>
           {favoritePrompts.length > 0 ? (
-            <>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl">
-                  <Bookmark size={20} className="text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Your Saved Prompts</h2>
-                  <p className="text-gray-500 text-sm">{favoritePrompts.length} prompts saved</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {favoritePrompts.map((prompt) => (
-                  <PromptCard key={prompt.id} prompt={prompt} />
-                ))}
-              </div>
-            </>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {favoritePrompts.map((prompt) => (
+                <PromptCard key={prompt.id} prompt={prompt} />
+              ))}
+            </div>
           ) : (
             <div className="text-center py-16 bg-[#141418] rounded-2xl border border-white/10">
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
@@ -610,16 +531,6 @@ const PromptsGrid = () => {
       {/* Categories Tab */}
       {activeTab === 'categories' && (
         <>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl">
-              <FolderOpen size={20} className="text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Browse by Category</h2>
-              <p className="text-gray-500 text-sm">{categories.length} categories available</p>
-            </div>
-          </div>
-          
           {categories.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {categories.map((category) => (
