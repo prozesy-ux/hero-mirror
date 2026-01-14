@@ -246,8 +246,35 @@ const DashboardHome = () => {
                     
                     {/* Description - more visible */}
                     {prompt.description && (
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-3">{prompt.description}</p>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-3">{prompt.description}</p>
                     )}
+
+                    {/* Pro Access Badge */}
+                    <div className="mb-3">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                        prompt.is_free 
+                          ? 'bg-emerald-100 text-emerald-700' 
+                          : 'bg-violet-100 text-violet-700'
+                      }`}>
+                        {prompt.is_free ? (
+                          <>
+                            <Check size={12} />
+                            Free Access
+                          </>
+                        ) : (
+                          <>
+                            <Star size={12} className="fill-violet-500" />
+                            Pro Access
+                          </>
+                        )}
+                      </span>
+                    </div>
+
+                    {/* Review Section */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <img src={starsIcon} alt="rating" className="h-4" />
+                      <span className="text-sm text-gray-600 font-medium">4.9 (120+ reviews)</span>
+                    </div>
 
                     {/* CTA Button */}
                     <Link
