@@ -1,7 +1,7 @@
 import { useState, forwardRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, FileText, Heart, CreditCard, User, LogOut, Menu, X, 
+  LayoutDashboard, FileText, CreditCard, User, LogOut, Menu, X, 
   Crown, Wrench, Bot, ShoppingBag, ArrowRight, Zap
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -83,7 +83,6 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     const navItems = [
       { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
       { to: '/dashboard/prompts', icon: <FileText size={20} />, label: 'All Prompts' },
-      { to: '/dashboard/favorites', icon: <Heart size={20} />, label: 'Favorites' },
       { to: '/dashboard/tools', icon: <Wrench size={20} />, label: 'AI Tools' },
       { to: '/dashboard/ai-accounts', icon: <Bot size={20} />, label: 'AI Accounts' },
       { to: '/dashboard/billing', icon: <CreditCard size={20} />, label: 'Billing' },
