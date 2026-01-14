@@ -5,7 +5,6 @@ import {
   Crown, Wrench, Bot, ShoppingBag, ArrowRight, Zap
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
-import theLogo from '@/assets/the-logo.png';
 // Meta Logo SVG Component (Official Infinity Logo)
 const MetaLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg viewBox="0 0 36 36" fill="none" className={className}>
@@ -91,12 +90,6 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
 
     return (
       <div ref={ref} className="flex flex-col h-full overflow-y-auto premium-scrollbar">
-        {/* Logo Section */}
-        <div className="p-5 border-b border-white/5">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <img src={theLogo} alt="THE" className="h-7" />
-          </Link>
-        </div>
 
         {/* User Card */}
         <div className="p-3.5 mx-3 my-4 bg-white/5 rounded-xl border border-white/10">
@@ -223,10 +216,7 @@ const DashboardSidebar = () => {
     <>
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a] border-b border-white/5 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5">
-            <img src={theLogo} alt="THE" className="h-6" />
-          </Link>
+        <div className="flex items-center justify-end">
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
             className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
