@@ -334,32 +334,32 @@ const PromptsGrid = () => {
   }
 
   return (
-    <div className="space-y-8 section-prompts animate-fade-up">
-      {/* Tab Navigation */}
-      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 flex gap-2">
+    <div className="space-y-6 lg:space-y-8 section-prompts animate-fade-up">
+      {/* Tab Navigation - Scrollable on mobile */}
+      <div className="bg-[#1a1a1f] rounded-2xl p-1.5 lg:p-2 mb-6 lg:mb-8 border border-white/5 flex gap-1.5 lg:gap-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('all')}
-          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+          className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
             activeTab === 'all'
               ? 'bg-white text-black shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 active:scale-95'
           }`}
         >
-          <Layers size={16} />
-          All Prompts
+          <Layers size={14} className="lg:w-4 lg:h-4" />
+          All
         </button>
         <button
           onClick={() => setActiveTab('trending')}
-          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+          className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
             activeTab === 'trending'
               ? 'bg-white text-black shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 active:scale-95'
           }`}
         >
-          <TrendingUp size={16} />
+          <TrendingUp size={14} className="lg:w-4 lg:h-4" />
           Trending
           {trendingPrompts.length > 0 && (
-            <span className={`px-2 py-0.5 text-xs rounded-full ${
+            <span className={`px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs rounded-full ${
               activeTab === 'trending' ? 'bg-black text-white' : 'bg-white/10 text-white'
             }`}>
               {trendingPrompts.length}
@@ -368,16 +368,16 @@ const PromptsGrid = () => {
         </button>
         <button
           onClick={() => setActiveTab('saved')}
-          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+          className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
             activeTab === 'saved'
               ? 'bg-white text-black shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 active:scale-95'
           }`}
         >
-          <Bookmark size={16} />
-          Saved Prompts
+          <Bookmark size={14} className="lg:w-4 lg:h-4" />
+          Saved
           {favoritePrompts.length > 0 && (
-            <span className={`px-2 py-0.5 text-xs rounded-full ${
+            <span className={`px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs rounded-full ${
               activeTab === 'saved' ? 'bg-black text-white' : 'bg-white/10 text-white'
             }`}>
               {favoritePrompts.length}
@@ -386,13 +386,13 @@ const PromptsGrid = () => {
         </button>
         <button
           onClick={() => setActiveTab('categories')}
-          className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+          className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
             activeTab === 'categories'
               ? 'bg-white text-black shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+              : 'text-gray-400 hover:text-white hover:bg-white/10 active:scale-95'
           }`}
         >
-          <FolderOpen size={16} />
+          <FolderOpen size={14} className="lg:w-4 lg:h-4" />
           Categories
         </button>
       </div>
@@ -401,21 +401,21 @@ const PromptsGrid = () => {
       {activeTab === 'all' && (
         <>
           {/* Filter Bar */}
-          <div className="bg-[#141418] rounded-2xl p-6 border border-white/10">
+          <div className="bg-[#141418] rounded-2xl p-4 lg:p-6 border border-white/10">
             {/* Search */}
-            <div className="relative mb-5">
-              <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+            <div className="relative mb-4 lg:mb-5">
+              <Search size={18} className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
                 type="text"
                 placeholder="Search prompts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#0a0a0c] border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-gray-500 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-all"
+                className="w-full bg-[#0a0a0c] border border-white/10 rounded-xl pl-10 lg:pl-12 pr-4 py-3 text-sm lg:text-base text-white placeholder-gray-500 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-all"
               />
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex flex-wrap gap-3">
+            {/* Filter Pills - Scrollable on mobile */}
+            <div className="flex gap-2 lg:gap-3 overflow-x-auto pb-1">
               <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
                 <Filter size={14} className="text-gray-400" />
                 <span className="text-sm font-medium text-gray-400">Filters:</span>
@@ -482,7 +482,7 @@ const PromptsGrid = () => {
 
           {/* Prompts Grid */}
           {filteredPrompts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
               {filteredPrompts.map((prompt) => (
                 <PromptCard key={prompt.id} prompt={prompt} />
               ))}
@@ -503,7 +503,7 @@ const PromptsGrid = () => {
       {activeTab === 'trending' && (
         <>
           {trendingPrompts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
               {trendingPrompts.map((prompt) => (
                 <PromptCard key={prompt.id} prompt={prompt} />
               ))}
@@ -524,21 +524,21 @@ const PromptsGrid = () => {
       {activeTab === 'saved' && (
         <>
           {favoritePrompts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
               {favoritePrompts.map((prompt) => (
                 <PromptCard key={prompt.id} prompt={prompt} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 bg-[#141418] rounded-2xl border border-white/10">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Bookmark size={24} className="text-gray-500" />
+            <div className="text-center py-12 lg:py-16 bg-[#141418] rounded-2xl border border-white/10">
+              <div className="w-14 lg:w-16 h-14 lg:h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+                <Bookmark size={20} className="text-gray-500 lg:w-6 lg:h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">No saved prompts yet</h3>
-              <p className="text-gray-500 mb-6">Start saving prompts for quick access</p>
+              <h3 className="text-base lg:text-lg font-bold text-white mb-2">No saved prompts yet</h3>
+              <p className="text-gray-500 mb-6 text-sm lg:text-base">Start saving prompts for quick access</p>
               <button
                 onClick={() => setActiveTab('all')}
-                className="bg-white text-black font-semibold px-6 py-3 rounded-xl hover:bg-gray-100 transition-all"
+                className="bg-white text-black font-semibold px-5 lg:px-6 py-2.5 lg:py-3 rounded-xl hover:bg-gray-100 transition-all text-sm lg:text-base"
               >
                 Browse Prompts
               </button>
@@ -551,7 +551,7 @@ const PromptsGrid = () => {
       {activeTab === 'categories' && (
         <>
           {categories.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4">
               {categories.map((category) => (
                 <button
                   key={category.id}
