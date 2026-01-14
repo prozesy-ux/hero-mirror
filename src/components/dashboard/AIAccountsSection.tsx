@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users } from 'lucide-react';
+import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -20,23 +20,54 @@ interface AIAccount {
   stock: number | null;
 }
 
+interface PurchasedAccount {
+  id: string;
+  amount: number;
+  payment_status: string;
+  delivery_status: string;
+  account_credentials: string | null;
+  purchased_at: string;
+  delivered_at: string | null;
+  ai_accounts: {
+    name: string;
+    category: string | null;
+    icon_url: string | null;
+  } | null;
+}
+
 // Generate stable random purchase count per account
 const getPurchaseCount = (accountId: string) => {
   const hash = accountId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return 150 + (hash % 350);
 };
 
+type TabType = 'browse' | 'purchases' | 'stats';
+type CategoryFilter = 'all' | 'chatgpt' | 'midjourney' | 'claude' | 'gemini';
+
 const AIAccountsSection = () => {
   const { user } = useAuthContext();
+  const [activeTab, setActiveTab] = useState<TabType>('browse');
   const [accounts, setAccounts] = useState<AIAccount[]>([]);
+  const [purchases, setPurchases] = useState<PurchasedAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [purchasesLoading, setPurchasesLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredAccount, setHoveredAccount] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
+  const [showCredentials, setShowCredentials] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchAccounts();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchPurchases();
+      const unsubscribe = subscribeToUpdates();
+      return unsubscribe;
+    }
+  }, [user]);
 
   const fetchAccounts = async () => {
     const { data, error } = await supabase
@@ -49,6 +80,44 @@ const AIAccountsSection = () => {
       setAccounts(data);
     }
     setLoading(false);
+  };
+
+  const fetchPurchases = async () => {
+    const { data, error } = await supabase
+      .from('ai_account_purchases')
+      .select(`
+        *,
+        ai_accounts (name, category, icon_url)
+      `)
+      .eq('user_id', user?.id)
+      .order('purchased_at', { ascending: false });
+
+    if (!error && data) {
+      setPurchases(data as PurchasedAccount[]);
+    }
+    setPurchasesLoading(false);
+  };
+
+  const subscribeToUpdates = () => {
+    const channel = supabase
+      .channel('my-account-purchases')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ai_account_purchases',
+          filter: `user_id=eq.${user?.id}`
+        },
+        () => {
+          fetchPurchases();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   };
 
   const handlePurchase = async (account: AIAccount) => {
@@ -77,6 +146,7 @@ const AIAccountsSection = () => {
       toast.error('Failed to complete purchase');
     } else {
       toast.success('Purchase successful! Account credentials will be delivered soon.');
+      fetchPurchases();
     }
   };
 
@@ -90,10 +160,38 @@ const AIAccountsSection = () => {
     }
   };
 
-  const filteredAccounts = accounts.filter(account =>
-    account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    account.category?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const toggleCredentials = (id: string) => {
+    setShowCredentials(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const copyCredentials = (credentials: string) => {
+    navigator.clipboard.writeText(credentials);
+    toast.success('Credentials copied to clipboard');
+  };
+
+  const filteredAccounts = accounts.filter(account => {
+    const matchesSearch = account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      account.category?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = categoryFilter === 'all' || account.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Stats calculations
+  const totalPurchases = purchases.length;
+  const totalSpent = purchases.reduce((sum, p) => sum + Number(p.amount), 0);
+  const deliveredCount = purchases.filter(p => p.delivery_status === 'delivered').length;
+  const pendingCount = purchases.filter(p => p.delivery_status === 'pending').length;
+
+  const categories: { value: CategoryFilter; label: string }[] = [
+    { value: 'all', label: 'All' },
+    { value: 'chatgpt', label: 'ChatGPT' },
+    { value: 'midjourney', label: 'Midjourney' },
+    { value: 'claude', label: 'Claude' },
+    { value: 'gemini', label: 'Gemini' },
+  ];
 
   if (loading) {
     return (
@@ -105,146 +203,409 @@ const AIAccountsSection = () => {
 
   return (
     <div className="animate-fade-up">
-      {/* Premium Search Bar */}
-      <div className="relative mb-8">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/10 rounded-lg">
-          <Search size={18} className="text-gray-400" />
-        </div>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search AI accounts..."
-          className="w-full bg-[#0f0f12] border border-white/10 rounded-2xl pl-14 pr-4 py-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 transition-all font-medium text-lg"
-        />
+      {/* Tab Navigation */}
+      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 inline-flex gap-1">
+        <button
+          onClick={() => setActiveTab('browse')}
+          className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
+            activeTab === 'browse'
+              ? 'bg-white text-black'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <ShoppingCart size={16} />
+          Browse Accounts
+        </button>
+        <button
+          onClick={() => setActiveTab('purchases')}
+          className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
+            activeTab === 'purchases'
+              ? 'bg-white text-black'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Package size={16} />
+          My Purchases
+          {purchases.length > 0 && (
+            <span className={`px-2 py-0.5 text-xs rounded-full ${
+              activeTab === 'purchases' ? 'bg-black text-white' : 'bg-white/10 text-white'
+            }`}>
+              {purchases.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('stats')}
+          className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${
+            activeTab === 'stats'
+              ? 'bg-white text-black'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <BarChart3 size={16} />
+          Stats
+        </button>
       </div>
 
-      {/* Top Selling Section */}
-      <div className="bg-[#1a1a1f] rounded-2xl p-6 mb-8 border border-white/5">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-white rounded-xl">
-            <TrendingUp size={20} className="text-gray-900" />
+      {/* Browse Accounts Tab */}
+      {activeTab === 'browse' && (
+        <>
+          {/* Premium Search Bar */}
+          <div className="relative mb-6">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/10 rounded-lg">
+              <Search size={18} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search AI accounts..."
+              className="w-full bg-[#0f0f12] border border-white/10 rounded-2xl pl-14 pr-4 py-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 transition-all font-medium text-lg"
+            />
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-white tracking-tight">Top Selling</h2>
-            <p className="text-gray-500 text-sm">Most popular AI accounts this month</p>
-          </div>
-        </div>
-      </div>
 
-      {accounts.length === 0 ? (
-        <div className="bg-[#1a1a1f] rounded-2xl p-16 text-center border border-white/5">
-          <div className="w-20 h-20 rounded-full bg-[#0f0f12] flex items-center justify-center mx-auto mb-6">
-            <ShoppingCart className="w-10 h-10 text-gray-600" />
+          {/* Category Filters */}
+          <div className="flex gap-2 mb-8 flex-wrap">
+            {categories.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => setCategoryFilter(cat.value)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  categoryFilter === cat.value
+                    ? 'bg-white text-black'
+                    : 'bg-[#1a1a1f] text-gray-400 hover:text-white border border-white/5 hover:bg-white/5'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
           </div>
-          <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No Accounts Available</h3>
-          <p className="text-gray-500">Check back later for premium AI accounts</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAccounts.map((account) => (
-            <div
-              key={account.id}
-              className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-            >
-              {/* Product Image Header */}
-              <div className="h-32 bg-gray-50 p-6 flex items-center justify-center relative">
-                <img 
-                  src={getProductImage(account.category)} 
-                  alt={account.name}
-                  className="h-16 w-16 object-contain"
-                />
-                {/* Purchase Count Badge */}
-                <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg shadow-sm border border-gray-100">
-                  <Users size={12} className="text-gray-600" />
-                  <span className="text-xs font-semibold text-gray-700">{getPurchaseCount(account.id)} sold</span>
-                </div>
+
+          {/* Top Selling Section */}
+          <div className="bg-[#1a1a1f] rounded-2xl p-6 mb-8 border border-white/5">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-white rounded-xl">
+                <TrendingUp size={20} className="text-gray-900" />
               </div>
-
-              {/* Content */}
-              <div className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-bold text-gray-900 tracking-tight">
-                    {account.name}
-                  </h3>
-                  <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-lg">
-                    <BadgeCheck size={14} className="text-gray-600" />
-                    <span className="text-xs font-semibold text-gray-600">Verified</span>
-                  </div>
-                </div>
-
-                <p className="text-gray-500 text-sm mb-4 line-clamp-2">
-                  {account.description || 'Premium AI account with full access'}
-                </p>
-
-                {/* Features */}
-                <div className="flex items-center gap-3 mb-5 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <ShieldCheck size={12} className="text-gray-600" />
-                    Secure
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Check size={12} className="text-gray-600" />
-                    Instant
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-2xl font-bold text-gray-900 tracking-tight">${account.price}</span>
-                    <span className="text-gray-400 text-sm ml-1">one-time</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {/* View Button */}
-                    <div 
-                      className="relative"
-                      onMouseEnter={() => setHoveredAccount(account.id)}
-                      onMouseLeave={() => setHoveredAccount(null)}
-                    >
-                      <button className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all">
-                        <Eye size={18} className="text-gray-700" />
-                      </button>
-                      
-                      {/* Hover Tooltip */}
-                      {hoveredAccount === account.id && (
-                        <div className="absolute bottom-full right-0 mb-2 w-64 p-4 bg-white rounded-xl shadow-xl border border-gray-100 z-20 animate-fade-up">
-                          <h4 className="font-bold text-gray-900 mb-1">{account.name}</h4>
-                          <p className="text-gray-600 text-sm mb-3">
-                            {account.description || 'Premium AI account with full access to all features and capabilities.'}
-                          </p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-3">
-                            <ShieldCheck size={12} className="text-green-600" />
-                            <span>Instant delivery • Secure payment • 24/7 support</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Buy Now Button */}
-                    <button
-                      onClick={() => handlePurchase(account)}
-                      disabled={purchasing === account.id}
-                      className="bg-black hover:bg-gray-900 text-white font-semibold px-5 py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {purchasing === account.id ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Processing
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart className="w-4 h-4" />
-                          Buy Now
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
+              <div>
+                <h2 className="text-lg font-bold text-white tracking-tight">Top Selling</h2>
+                <p className="text-gray-500 text-sm">Most popular AI accounts this month</p>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+
+          {filteredAccounts.length === 0 ? (
+            <div className="bg-[#1a1a1f] rounded-2xl p-16 text-center border border-white/5">
+              <div className="w-20 h-20 rounded-full bg-[#0f0f12] flex items-center justify-center mx-auto mb-6">
+                <ShoppingCart className="w-10 h-10 text-gray-600" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No Accounts Found</h3>
+              <p className="text-gray-500">Try adjusting your search or filters</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredAccounts.map((account) => (
+                <div
+                  key={account.id}
+                  className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                >
+                  {/* Product Image Header */}
+                  <div className="h-32 bg-gray-50 p-6 flex items-center justify-center relative">
+                    <img 
+                      src={getProductImage(account.category)} 
+                      alt={account.name}
+                      className="h-16 w-16 object-contain"
+                    />
+                    {/* Purchase Count Badge */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg shadow-sm border border-gray-100">
+                      <Users size={12} className="text-gray-600" />
+                      <span className="text-xs font-semibold text-gray-700">{getPurchaseCount(account.id)} sold</span>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+                        {account.name}
+                      </h3>
+                      <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-lg">
+                        <BadgeCheck size={14} className="text-gray-600" />
+                        <span className="text-xs font-semibold text-gray-600">Verified</span>
+                      </div>
+                    </div>
+
+                    <p className="text-gray-500 text-sm mb-4 line-clamp-2">
+                      {account.description || 'Premium AI account with full access'}
+                    </p>
+
+                    {/* Features */}
+                    <div className="flex items-center gap-3 mb-5 text-xs text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <ShieldCheck size={12} className="text-gray-600" />
+                        Secure
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Check size={12} className="text-gray-600" />
+                        Instant
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-2xl font-bold text-gray-900 tracking-tight">${account.price}</span>
+                        <span className="text-gray-400 text-sm ml-1">one-time</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {/* View Button */}
+                        <div 
+                          className="relative"
+                          onMouseEnter={() => setHoveredAccount(account.id)}
+                          onMouseLeave={() => setHoveredAccount(null)}
+                        >
+                          <button className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all">
+                            <Eye size={18} className="text-gray-700" />
+                          </button>
+                          
+                          {/* Hover Tooltip */}
+                          {hoveredAccount === account.id && (
+                            <div className="absolute bottom-full right-0 mb-2 w-64 p-4 bg-white rounded-xl shadow-xl border border-gray-100 z-20 animate-fade-up">
+                              <h4 className="font-bold text-gray-900 mb-1">{account.name}</h4>
+                              <p className="text-gray-600 text-sm mb-3">
+                                {account.description || 'Premium AI account with full access to all features and capabilities.'}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-3">
+                                <ShieldCheck size={12} className="text-green-600" />
+                                <span>Instant delivery • Secure payment • 24/7 support</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Buy Now Button */}
+                        <button
+                          onClick={() => handlePurchase(account)}
+                          disabled={purchasing === account.id}
+                          className="bg-black hover:bg-gray-900 text-white font-semibold px-5 py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          {purchasing === account.id ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Processing
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingCart className="w-4 h-4" />
+                              Buy Now
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* My Purchases Tab */}
+      {activeTab === 'purchases' && (
+        <>
+          {purchasesLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-gray-900 animate-spin" />
+            </div>
+          ) : purchases.length === 0 ? (
+            <div className="bg-[#1a1a1f] rounded-2xl p-16 text-center border border-white/5">
+              <div className="w-20 h-20 rounded-full bg-[#0f0f12] flex items-center justify-center mx-auto mb-6">
+                <Package className="w-10 h-10 text-gray-600" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No Purchases Yet</h3>
+              <p className="text-gray-500 mb-6">Your purchased AI accounts will appear here</p>
+              <button
+                onClick={() => setActiveTab('browse')}
+                className="bg-white text-black font-semibold px-6 py-3 rounded-xl hover:bg-gray-100 transition-all"
+              >
+                Browse Accounts
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {purchases.map((purchase) => (
+                <div
+                  key={purchase.id}
+                  className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
+                        <img 
+                          src={getProductImage(purchase.ai_accounts?.category)}
+                          alt={purchase.ai_accounts?.name || 'AI Account'}
+                          className="w-10 h-10 object-contain"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+                          {purchase.ai_accounts?.name || 'AI Account'}
+                        </h3>
+                        <p className="text-gray-500 text-sm">
+                          Purchased on {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            year: 'numeric' 
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {purchase.delivery_status === 'pending' ? (
+                        <span className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full text-sm font-medium">
+                          <Clock className="w-4 h-4" />
+                          Pending
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-sm font-medium">
+                          <CheckCircle className="w-4 h-4" />
+                          Delivered
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {purchase.delivery_status === 'delivered' && purchase.account_credentials && (
+                    <div className="mt-5 p-4 bg-[#0f0f12] rounded-xl border border-white/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-300">Account Credentials</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleCredentials(purchase.id)}
+                            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                          >
+                            {showCredentials[purchase.id] ? (
+                              <EyeOff className="w-4 h-4 text-gray-400" />
+                            ) : (
+                              <Eye className="w-4 h-4 text-gray-400" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => copyCredentials(purchase.account_credentials!)}
+                            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                          >
+                            <Copy className="w-4 h-4 text-gray-400" />
+                          </button>
+                        </div>
+                      </div>
+                      <code className="text-sm text-white font-mono">
+                        {showCredentials[purchase.id]
+                          ? purchase.account_credentials
+                          : '••••••••••••••••••••'}
+                      </code>
+                    </div>
+                  )}
+
+                  <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-sm">
+                    <span className="text-gray-500">Amount Paid</span>
+                    <span className="text-gray-900 font-bold text-lg">${purchase.amount}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Stats Tab */}
+      {activeTab === 'stats' && (
+        <>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2.5 bg-blue-50 rounded-xl">
+                  <Package size={20} className="text-blue-600" />
+                </div>
+                <span className="text-gray-500 text-sm font-medium">Total Purchases</span>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">{totalPurchases}</p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2.5 bg-green-50 rounded-xl">
+                  <BarChart3 size={20} className="text-green-600" />
+                </div>
+                <span className="text-gray-500 text-sm font-medium">Total Spent</span>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">${totalSpent.toFixed(2)}</p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2.5 bg-emerald-50 rounded-xl">
+                  <CheckCircle size={20} className="text-emerald-600" />
+                </div>
+                <span className="text-gray-500 text-sm font-medium">Delivered</span>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">{deliveredCount}</p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2.5 bg-amber-50 rounded-xl">
+                  <Clock size={20} className="text-amber-600" />
+                </div>
+                <span className="text-gray-500 text-sm font-medium">Pending</span>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">{pendingCount}</p>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5">
+            <h3 className="text-lg font-bold text-white mb-4 tracking-tight">Recent Activity</h3>
+            {purchases.length === 0 ? (
+              <p className="text-gray-500">No recent activity</p>
+            ) : (
+              <div className="space-y-3">
+                {purchases.slice(0, 5).map((purchase) => (
+                  <div key={purchase.id} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
+                        <img 
+                          src={getProductImage(purchase.ai_accounts?.category)}
+                          alt=""
+                          className="w-6 h-6 object-contain"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium text-sm">{purchase.ai_accounts?.name}</p>
+                        <p className="text-gray-500 text-xs">
+                          {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-white font-semibold">${purchase.amount}</span>
+                      {purchase.delivery_status === 'delivered' ? (
+                        <CheckCircle size={16} className="text-green-500" />
+                      ) : (
+                        <Clock size={16} className="text-amber-500" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

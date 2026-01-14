@@ -86,7 +86,6 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       { to: '/dashboard/favorites', icon: <Heart size={20} />, label: 'Favorites' },
       { to: '/dashboard/tools', icon: <Wrench size={20} />, label: 'AI Tools' },
       { to: '/dashboard/ai-accounts', icon: <Bot size={20} />, label: 'AI Accounts' },
-      { to: '/dashboard/my-accounts', icon: <ShoppingBag size={20} />, label: 'My Purchases' },
       { to: '/dashboard/billing', icon: <CreditCard size={20} />, label: 'Billing' },
       { to: '/dashboard/profile', icon: <User size={20} />, label: 'Profile' },
     ];
