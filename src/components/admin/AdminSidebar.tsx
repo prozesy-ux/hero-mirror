@@ -17,7 +17,8 @@ import {
   MessageCircle,
   ChevronLeft,
   ChevronRight,
-  Wallet
+  Wallet,
+  Trash2
 } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -118,6 +119,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       { icon: <Package size={22} />, label: 'Account Orders', to: '/admin/account-orders' },
       { icon: <RefreshCcw size={22} />, label: 'Refund Requests', to: '/admin/refunds' },
       { icon: <XCircle size={22} />, label: 'Cancellations', to: '/admin/cancellations' },
+      { icon: <Trash2 size={22} />, label: 'Deletions', to: '/admin/deletions' },
       { icon: <MessageCircle size={22} />, label: 'Support Chats', to: '/admin/chats' },
     ];
 

@@ -9,6 +9,7 @@ import AIAccountsManagement from '@/components/admin/AIAccountsManagement';
 import AccountOrdersManagement from '@/components/admin/AccountOrdersManagement';
 import RefundRequestsManagement from '@/components/admin/RefundRequestsManagement';
 import CancellationRequestsManagement from '@/components/admin/CancellationRequestsManagement';
+import DeletionRequestsManagement from '@/components/admin/DeletionRequestsManagement';
 import ChatManagement from '@/components/admin/ChatManagement';
 import WalletManagement from '@/components/admin/WalletManagement';
 import { useState, useEffect } from 'react';
@@ -107,6 +108,7 @@ const AdminContent = () => {
           <Route path="account-orders" element={<AccountOrdersManagement />} />
           <Route path="refunds" element={<RefundRequestsManagement />} />
           <Route path="cancellations" element={<CancellationRequestsManagement />} />
+          <Route path="deletions" element={<DeletionRequestsManagement />} />
           <Route path="chats" element={<ChatManagement />} />
         </Routes>
       </div>
