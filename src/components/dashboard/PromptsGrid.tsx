@@ -216,7 +216,7 @@ const PromptsGrid = () => {
 
     return (
       <div
-        className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+        className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
         onClick={() => handlePromptClick(prompt)}
       >
         {/* Image */}
@@ -336,7 +336,7 @@ const PromptsGrid = () => {
   return (
     <div className="space-y-6 lg:space-y-8 section-prompts animate-fade-up">
       {/* Tab Navigation - Scrollable on mobile */}
-      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-6 lg:mb-8 border border-gray-200 shadow-sm flex gap-1.5 lg:gap-2 overflow-x-auto">
+      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-6 lg:mb-8 border border-gray-200 shadow-md flex gap-1.5 lg:gap-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('all')}
           className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
@@ -401,7 +401,7 @@ const PromptsGrid = () => {
       {activeTab === 'all' && (
         <>
           {/* Filter Bar */}
-          <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
             {/* Search */}
             <div className="relative mb-4 lg:mb-5">
               <Search size={18} className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 text-gray-400" />

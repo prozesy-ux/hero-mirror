@@ -455,7 +455,7 @@ const AIAccountsSection = () => {
   return (
     <div className="animate-fade-up">
       {/* Tab Navigation with Wallet Balance */}
-      <div className="bg-white rounded-2xl p-2 mb-8 border border-gray-200 shadow-sm">
+      <div className="bg-white rounded-2xl p-2 mb-8 border border-gray-200 shadow-md">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           {/* Tab buttons */}
           <div className="flex gap-2 flex-wrap">
@@ -549,7 +549,7 @@ const AIAccountsSection = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search AI accounts..."
-              className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium text-lg shadow-sm"
+              className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium text-lg shadow-md"
             />
           </div>
 
@@ -561,8 +561,8 @@ const AIAccountsSection = () => {
                 onClick={() => setCategoryFilter(cat.value)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   categoryFilter === cat.value
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm'
+                    ? 'bg-gray-900 text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-md hover:shadow-lg'
                 }`}
               >
                 {cat.label}
@@ -572,7 +572,7 @@ const AIAccountsSection = () => {
 
 
           {filteredAccounts.length === 0 ? (
-            <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-sm">
+            <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
               <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
                 <ShoppingCart className="w-10 h-10 text-gray-400" />
               </div>
@@ -587,7 +587,7 @@ const AIAccountsSection = () => {
                 return (
                   <div
                     key={account.id}
-                    className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                    className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                   >
                     {/* Image */}
                     <div className="relative aspect-[4/3] overflow-hidden">
@@ -701,7 +701,7 @@ const AIAccountsSection = () => {
               <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-gray-900 animate-spin" />
             </div>
           ) : purchases.length === 0 ? (
-            <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-sm">
+            <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
               <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
                 <Package className="w-10 h-10 text-gray-400" />
               </div>
@@ -719,7 +719,7 @@ const AIAccountsSection = () => {
               {purchases.map((purchase) => (
                 <div
                   key={purchase.id}
-                  className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg"
+                  className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md hover:shadow-lg transition-all"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
@@ -831,7 +831,7 @@ const AIAccountsSection = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2.5 bg-blue-50 rounded-xl">
                   <Package size={20} className="text-blue-600" />
@@ -841,7 +841,7 @@ const AIAccountsSection = () => {
               <p className="text-3xl font-bold text-gray-900 tracking-tight">{totalPurchases}</p>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2.5 bg-violet-50 rounded-xl">
                   <BarChart3 size={20} className="text-violet-600" />
@@ -851,7 +851,7 @@ const AIAccountsSection = () => {
               <p className="text-3xl font-bold text-gray-900 tracking-tight">${totalSpent.toFixed(2)}</p>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2.5 bg-green-50 rounded-xl">
                   <CheckCircle size={20} className="text-green-600" />
@@ -861,7 +861,7 @@ const AIAccountsSection = () => {
               <p className="text-3xl font-bold text-gray-900 tracking-tight">{deliveredCount}</p>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2.5 bg-amber-50 rounded-xl">
                   <Clock size={20} className="text-amber-600" />
@@ -873,7 +873,7 @@ const AIAccountsSection = () => {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
             <h3 className="text-lg font-bold text-gray-900 mb-4 tracking-tight">Recent Activity</h3>
             {purchases.length === 0 ? (
               <p className="text-gray-500">No recent activity</p>
@@ -917,7 +917,7 @@ const AIAccountsSection = () => {
 
       {/* Chat Tab */}
       {activeTab === 'chat' && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden">
           {/* Chat Header */}
           <div className="p-4 border-b border-gray-200 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
