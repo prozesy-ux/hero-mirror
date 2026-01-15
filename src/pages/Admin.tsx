@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAdmin } from '@/contexts/AdminContext';
+import { useAuthContext } from '@/contexts/AuthContext';
 import AdminSidebar, { useAdminSidebarContext } from '@/components/admin/AdminSidebar';
 import PromptsManagement from '@/components/admin/PromptsManagement';
 import CategoriesManagement from '@/components/admin/CategoriesManagement';
@@ -14,6 +14,7 @@ import ChatManagement from '@/components/admin/ChatManagement';
 import WalletManagement from '@/components/admin/WalletManagement';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -116,10 +117,25 @@ const AdminContent = () => {
 };
 
 const Admin = () => {
-  const { isAdminAuthenticated } = useAdmin();
+  const { isAuthenticated, isAdmin, loading } = useAuthContext();
 
-  if (!isAdminAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      </div>
+    );
+  }
+
+  // Redirect to sign in if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  // Redirect to dashboard if not admin
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (

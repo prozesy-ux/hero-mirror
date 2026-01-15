@@ -1,5 +1,5 @@
 import { useState, forwardRef, createContext, useContext } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -20,7 +20,7 @@ import {
   Wallet,
   Trash2
 } from 'lucide-react';
-import { useAdmin } from '@/contexts/AdminContext';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Context for sidebar collapse state
@@ -106,7 +106,13 @@ interface SidebarContentProps {
 const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
   ({ onNavClick, isCollapsed = false, onToggleCollapse }, ref) => {
     const location = useLocation();
-    const { adminLogout } = useAdmin();
+    const navigate = useNavigate();
+    const { signOut } = useAuthContext();
+
+    const handleLogout = async () => {
+      await signOut();
+      navigate('/signin');
+    };
 
     const navItems = [
       { icon: <LayoutDashboard size={22} />, label: 'Dashboard', to: '/admin' },
@@ -149,7 +155,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                 <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={adminLogout}
+                      onClick={handleLogout}
                       className="flex items-center justify-center p-3 w-full text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-300"
                     >
                       <LogOut size={22} />
@@ -161,7 +167,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                 </Tooltip>
               ) : (
                 <button
-                  onClick={adminLogout}
+                  onClick={handleLogout}
                   className="flex items-center gap-3.5 px-4 py-3 flex-1 text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-300"
                 >
                   <LogOut size={22} />
