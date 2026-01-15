@@ -2,44 +2,38 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { toast } from 'sonner';
-import { Shield, Lock, Mail } from 'lucide-react';
+import { Shield, Lock, User } from 'lucide-react';
 import promptheroIcon from '@/assets/prompthero-icon.png';
 
 const AdminLogin = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { adminLogin, isAdminAuthenticated, isLoading } = useAdmin();
+  const { adminLogin, isAdminAuthenticated } = useAdmin();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && isAdminAuthenticated) {
+    if (isAdminAuthenticated) {
       navigate('/admin');
     }
-  }, [isAdminAuthenticated, isLoading, navigate]);
+  }, [isAdminAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const result = await adminLogin(email, password);
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const success = adminLogin(username, password);
     setLoading(false);
 
-    if (result.success) {
+    if (success) {
       toast.success('Welcome to Admin Panel!');
       navigate('/admin');
     } else {
-      toast.error(result.error || 'Invalid admin credentials');
+      toast.error('Invalid admin credentials');
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-4 border-gray-700 border-t-purple-500 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
@@ -52,20 +46,20 @@ const AdminLogin = () => {
               <Shield className="w-8 h-8 text-purple-500" />
             </div>
             <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
-            <p className="text-gray-400 mt-2">Sign in with admin credentials</p>
+            <p className="text-gray-400 mt-2">Enter admin credentials to continue</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                <Mail size={16} className="inline mr-2" />
-                Email
+                <User size={16} className="inline mr-2" />
+                Username
               </label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter admin email"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter admin username"
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 required
               />

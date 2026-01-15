@@ -561,15 +561,6 @@ export type Database = {
         Returns: boolean
       }
       is_pro_user: { Args: { _user_id: string }; Returns: boolean }
-      purchase_ai_account: {
-        Args: {
-          p_account_id: string
-          p_account_name: string
-          p_amount: number
-          p_user_id: string
-        }
-        Returns: Json
-      }
     }
     Enums: {
       app_role: "admin" | "user"
