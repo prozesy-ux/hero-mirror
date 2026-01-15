@@ -1,8 +1,8 @@
 import { useState, forwardRef, createContext, useContext, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileText, CreditCard, User, LogOut, Menu, X, 
-  Crown, Bot, ArrowRight, ChevronLeft, ChevronRight, MessageCircle
+  Crown, Bot, ArrowRight, ChevronLeft, ChevronRight, MessageCircle, Sparkles
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -127,6 +127,7 @@ interface SidebarContentProps {
 const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
   ({ onNavClick, isCollapsed = false, onToggleCollapse }, ref) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const { profile, signOut, user } = useAuthContext();
     const [unreadCount, setUnreadCount] = useState(0);
 
@@ -181,44 +182,70 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     return (
       <TooltipProvider>
         <div ref={ref} className="flex flex-col h-full overflow-y-auto premium-scrollbar">
-          {/* User Card */}
-          <div className={`mx-3 mb-4 mt-4 bg-white/5 rounded-xl border border-white/10 ${isCollapsed ? 'p-2' : 'p-4'}`}>
-            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3.5'}`}>
-              <div className="relative flex-shrink-0">
-                {profile?.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt="Avatar" 
-                    className={`rounded-full object-cover ring-2 ring-white/20 ${isCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`}
-                  />
-                ) : (
-                  <div className={`rounded-full bg-white flex items-center justify-center text-black font-bold ring-2 ring-white/20 ${isCollapsed ? 'w-10 h-10 text-sm' : 'w-12 h-12 text-base'}`}>
-                    {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
+          {/* User Card - Premium Design */}
+          <div className={`mx-3 mb-4 mt-4 bg-gradient-to-br from-white/10 to-white/5 rounded-2xl border border-white/10 overflow-hidden ${isCollapsed ? '' : ''}`}>
+            {/* Profile Header with gradient background */}
+            <div className={`bg-gradient-to-r from-violet-500/10 to-purple-500/10 ${isCollapsed ? 'p-3' : 'p-4'}`}>
+              <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'}`}>
+                {/* Avatar with gradient ring */}
+                <div className="relative flex-shrink-0">
+                  <div className={`rounded-full bg-gradient-to-br from-violet-500 to-purple-600 p-0.5 ${isCollapsed ? 'w-11 h-11' : 'w-14 h-14'}`}>
+                    {profile?.avatar_url ? (
+                      <img 
+                        src={profile.avatar_url} 
+                        alt="Avatar" 
+                        className="w-full h-full rounded-full object-cover bg-[#0a0a0a]"
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-[#0a0a0a] flex items-center justify-center text-white font-bold text-lg">
+                        {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
+                      </div>
+                    )}
                   </div>
-                )}
-                {profile?.is_pro && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center">
-                    <Crown size={10} className="text-black" />
+                  {/* Crown badge on avatar */}
+                  {profile?.is_pro && (
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-2 ring-[#0a0a0a] shadow-lg">
+                      <Crown size={12} className="text-black" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* User Info */}
+                {!isCollapsed && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-bold text-lg tracking-tight truncate uppercase">
+                      {profile?.full_name || 'User'}
+                    </p>
+                    <p className="text-gray-400 text-sm truncate">
+                      {profile?.email}
+                    </p>
                   </div>
                 )}
               </div>
-              {!isCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-bold text-lg tracking-tight truncate">
-                    {profile?.full_name || 'User'}
-                  </p>
-                  <p className="text-gray-500 text-sm tracking-normal truncate">
-                    {profile?.email}
-                  </p>
-                </div>
-              )}
             </div>
-            {profile?.is_pro && !isCollapsed && (
-              <div className="mt-3 px-3 py-2 bg-amber-400/10 rounded-lg border border-amber-400/20">
-                <span className="text-xs font-semibold text-amber-400 flex items-center gap-2 uppercase tracking-wide">
-                  <Crown size={12} />
-                  PRO Member
-                </span>
+            
+            {/* PRO Badge - Premium style */}
+            {!isCollapsed && (
+              <div className="px-4 pb-4 pt-3">
+                {profile?.is_pro ? (
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 rounded-xl border border-amber-400/30">
+                    <Crown size={14} className="text-amber-400" />
+                    <span className="text-amber-400 font-semibold text-sm">PRO Member</span>
+                    <span className="ml-auto flex items-center gap-1 text-amber-300 text-xs">
+                      <Sparkles size={10} />
+                      Active
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => navigate('/dashboard/billing')}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 rounded-xl text-black font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <Crown size={14} />
+                    Upgrade to Pro
+                    <ArrowRight size={14} className="ml-auto" />
+                  </button>
+                )}
               </div>
             )}
           </div>
