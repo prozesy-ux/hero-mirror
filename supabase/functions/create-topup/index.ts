@@ -56,7 +56,7 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/dashboard/billing?topup=success&amount=${amount}`,
+      success_url: `${req.headers.get("origin")}/dashboard/billing?topup=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/dashboard/billing?topup=cancelled`,
       metadata: {
         user_id: user.id,
