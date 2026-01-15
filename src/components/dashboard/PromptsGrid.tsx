@@ -336,7 +336,7 @@ const PromptsGrid = () => {
   return (
     <div className="space-y-6 lg:space-y-8 section-prompts animate-fade-up">
       {/* Tab Navigation - Scrollable on mobile */}
-      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-6 lg:mb-8 border border-gray-200 shadow-md flex gap-1.5 lg:gap-2 overflow-x-auto">
+      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-6 lg:mb-8 border border-gray-200 shadow-md flex gap-1.5 lg:gap-2 overflow-x-auto items-center">
         <button
           onClick={() => setActiveTab('all')}
           className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
@@ -395,6 +395,14 @@ const PromptsGrid = () => {
           <FolderOpen size={14} className="lg:w-4 lg:h-4" />
           Categories
         </button>
+
+        {/* PRO Version Badge for non-Pro users */}
+        {!isPro && (
+          <div className="ml-auto flex items-center gap-2 px-3 lg:px-4 py-2 lg:py-2.5 bg-gradient-to-r from-amber-100 to-orange-100 border border-amber-200 rounded-xl whitespace-nowrap">
+            <Lock size={14} className="text-amber-600" />
+            <span className="text-amber-700 font-semibold text-xs lg:text-sm">PRO Version Required</span>
+          </div>
+        )}
       </div>
 
       {/* All Prompts Tab */}
@@ -402,15 +410,17 @@ const PromptsGrid = () => {
         <>
           {/* Filter Bar */}
           <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
-            {/* Search */}
+            {/* Search - Premium Design */}
             <div className="relative mb-4 lg:mb-5">
-              <Search size={18} className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
+                <Search size={18} className="text-gray-500" />
+              </div>
               <input
                 type="text"
                 placeholder="Search prompts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 lg:pl-12 pr-4 py-3 text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all"
+                className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium text-lg shadow-sm"
               />
             </div>
 

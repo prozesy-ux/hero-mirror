@@ -1,11 +1,12 @@
-import { useState, forwardRef, createContext, useContext } from 'react';
+import { useState, forwardRef, createContext, useContext, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, FileText, CreditCard, User, LogOut, Menu, X, 
-  Crown, Bot, ArrowRight, ChevronLeft, ChevronRight
+  Crown, Bot, ArrowRight, ChevronLeft, ChevronRight, MessageCircle
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { supabase } from '@/integrations/supabase/client';
 
 // Context for sidebar collapse state
 interface SidebarContextType {
@@ -53,10 +54,11 @@ interface NavItemProps {
   isActive: boolean;
   isCollapsed?: boolean;
   onClick?: () => void;
+  badge?: number;
 }
 
 const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
-  ({ to, icon, label, isActive, isCollapsed, onClick }, ref) => {
+  ({ to, icon, label, isActive, isCollapsed, onClick, badge }, ref) => {
     const linkContent = (
       <Link
         ref={ref}
@@ -68,8 +70,13 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
             : 'text-gray-400 hover:bg-white/5 hover:text-white'
         } ${isCollapsed ? 'justify-center' : ''}`}
       >
-        <span className={`transition-transform duration-300 flex-shrink-0 ${isActive ? '' : 'group-hover:scale-110'}`}>
+        <span className={`transition-transform duration-300 flex-shrink-0 relative ${isActive ? '' : 'group-hover:scale-110'}`}>
           {icon}
+          {badge && isCollapsed && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              {badge > 9 ? '9+' : badge}
+            </span>
+          )}
         </span>
         {!isCollapsed && (
           <>
@@ -80,9 +87,13 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
             }`}>
               {label}
             </span>
-            {isActive && (
+            {badge ? (
+              <span className="ml-auto px-2 py-0.5 text-xs rounded-full bg-red-500 text-white font-bold">
+                {badge > 99 ? '99+' : badge}
+              </span>
+            ) : isActive ? (
               <span className="ml-auto w-2 h-2 rounded-full bg-black" />
-            )}
+            ) : null}
           </>
         )}
       </Link>
@@ -116,7 +127,47 @@ interface SidebarContentProps {
 const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
   ({ onNavClick, isCollapsed = false, onToggleCollapse }, ref) => {
     const location = useLocation();
-    const { profile, signOut } = useAuthContext();
+    const { profile, signOut, user } = useAuthContext();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // Fetch unread message count
+    useEffect(() => {
+      if (!user) return;
+
+      const fetchUnreadCount = async () => {
+        const { count } = await supabase
+          .from('support_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('sender_type', 'admin')
+          .eq('is_read', false);
+        
+        setUnreadCount(count || 0);
+      };
+
+      fetchUnreadCount();
+
+      // Subscribe to new messages
+      const channel = supabase
+        .channel('sidebar-unread')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'support_messages',
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            fetchUnreadCount();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }, [user]);
 
     const navItems = [
       { to: '/dashboard', icon: <LayoutDashboard size={22} />, label: 'Dashboard' },
@@ -124,6 +175,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       { to: '/dashboard/ai-accounts', icon: <Bot size={22} />, label: 'AI Accounts' },
       { to: '/dashboard/billing', icon: <CreditCard size={22} />, label: 'Billing' },
       { to: '/dashboard/profile', icon: <User size={22} />, label: 'Profile' },
+      { to: '/dashboard/chat', icon: <MessageCircle size={22} />, label: 'Chat', badge: unreadCount > 0 ? unreadCount : undefined },
     ];
 
     return (
@@ -182,6 +234,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                 isActive={location.pathname === item.to || (item.to === '/dashboard' && location.pathname === '/dashboard/')}
                 isCollapsed={isCollapsed}
                 onClick={onNavClick}
+                badge={item.badge}
               />
             ))}
           </nav>
@@ -313,7 +366,7 @@ const DashboardSidebar = () => {
             { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Home' },
             { to: '/dashboard/prompts', icon: <FileText size={20} />, label: 'Prompts' },
             { to: '/dashboard/ai-accounts', icon: <Bot size={20} />, label: 'Accounts' },
-            { to: '/dashboard/billing', icon: <CreditCard size={20} />, label: 'Billing' },
+            { to: '/dashboard/chat', icon: <MessageCircle size={20} />, label: 'Chat' },
             { to: '/dashboard/profile', icon: <User size={20} />, label: 'Profile' },
           ].map((item) => {
             const isActive = location.pathname === item.to || (item.to === '/dashboard' && location.pathname === '/dashboard/');
