@@ -402,9 +402,9 @@ const BillingSection = () => {
 
       {/* Transactions Tab */}
       {activeTab === 'transactions' && (
-        <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5">
-          <h3 className="text-lg font-bold text-white tracking-tight mb-4 flex items-center gap-2">
-            <History className="text-gray-400" size={20} />
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
+            <History className="text-gray-500" size={20} />
             Transaction History
           </h3>
           
@@ -415,20 +415,20 @@ const BillingSection = () => {
               {transactions.map((tx) => (
                 <div
                   key={tx.id}
-                  className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all"
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`p-2.5 rounded-xl ${
-                      tx.type === 'topup' ? 'bg-violet-500/15' :
-                      tx.type === 'purchase' ? 'bg-gray-500/15' :
-                      'bg-blue-500/15'
+                      tx.type === 'topup' ? 'bg-violet-100' :
+                      tx.type === 'purchase' ? 'bg-gray-100' :
+                      'bg-blue-100'
                     }`}>
-                      {tx.type === 'topup' && <CircleDollarSign size={18} className="text-violet-400" />}
-                      {tx.type === 'purchase' && <Receipt size={18} className="text-gray-400" />}
-                      {tx.type === 'refund' && <RotateCcw size={18} className="text-blue-400" />}
+                      {tx.type === 'topup' && <CircleDollarSign size={18} className="text-violet-600" />}
+                      {tx.type === 'purchase' && <Receipt size={18} className="text-gray-600" />}
+                      {tx.type === 'refund' && <RotateCcw size={18} className="text-blue-600" />}
                     </div>
                     <div>
-                      <p className="text-white font-medium capitalize">{tx.description || tx.type}</p>
+                      <p className="text-gray-900 font-medium capitalize">{tx.description || tx.type}</p>
                       <p className="text-gray-500 text-sm">
                         {new Date(tx.created_at).toLocaleDateString('en-US', {
                           month: 'short',
@@ -440,13 +440,13 @@ const BillingSection = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`font-semibold ${tx.type === 'topup' ? 'text-violet-400' : tx.type === 'refund' ? 'text-blue-400' : 'text-gray-300'}`}>
+                    <p className={`font-semibold ${tx.type === 'topup' ? 'text-violet-600' : tx.type === 'refund' ? 'text-blue-600' : 'text-gray-700'}`}>
                       {tx.type === 'topup' ? '+' : tx.type === 'refund' ? '+' : '-'}${tx.amount.toFixed(2)}
                     </p>
                     <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
-                      tx.status === 'completed' ? 'bg-violet-500/20 text-violet-400' :
-                      tx.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
-                      'bg-red-500/20 text-red-400'
+                      tx.status === 'completed' ? 'bg-violet-100 text-violet-700' :
+                      tx.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
                     }`}>
                       {tx.status}
                     </span>
@@ -576,9 +576,9 @@ const BillingSection = () => {
 
       {/* Purchases Tab */}
       {activeTab === 'purchases' && (
-        <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5">
-          <h3 className="text-lg font-bold text-white tracking-tight mb-4 flex items-center gap-2">
-            <ClipboardList className="text-gray-400" size={20} />
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
+            <ClipboardList className="text-gray-500" size={20} />
             Purchase History
           </h3>
           
@@ -593,14 +593,14 @@ const BillingSection = () => {
                 return (
                   <div
                     key={purchase.id}
-                    className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 flex-wrap gap-3 hover:bg-white/10 transition-all"
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 flex-wrap gap-3 hover:bg-gray-100 transition-all"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-white/10 rounded-xl">
-                        <ShoppingBag size={18} className="text-white" />
+                      <div className="p-3 bg-gray-100 rounded-xl">
+                        <ShoppingBag size={18} className="text-gray-600" />
                       </div>
                       <div>
-                        <p className="text-white font-semibold">Pro Plan - Lifetime Access</p>
+                        <p className="text-gray-900 font-semibold">Pro Plan - Lifetime Access</p>
                         <p className="text-gray-500 text-sm">
                           {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
                             month: 'short', 
@@ -612,11 +612,11 @@ const BillingSection = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <p className="text-white font-semibold text-lg">${purchase.amount.toFixed(2)}</p>
+                        <p className="text-gray-900 font-semibold text-lg">${purchase.amount.toFixed(2)}</p>
                         <span className={`text-xs px-2.5 py-1 rounded-md font-medium ${
                           purchase.payment_status === 'completed'
-                            ? 'bg-violet-500/20 text-violet-400'
-                            : 'bg-amber-500/20 text-amber-400'
+                            ? 'bg-violet-100 text-violet-700'
+                            : 'bg-amber-100 text-amber-700'
                         }`}>
                           {purchase.payment_status}
                         </span>
@@ -624,17 +624,17 @@ const BillingSection = () => {
                       {refundStatus ? (
                         <span className={`text-xs px-3 py-1.5 rounded-lg font-medium ${
                           refundStatus.status === 'pending'
-                            ? 'bg-amber-500/20 text-amber-400'
+                            ? 'bg-amber-100 text-amber-700'
                             : refundStatus.status === 'approved'
-                            ? 'bg-violet-500/20 text-violet-400'
-                            : 'bg-red-500/20 text-red-400'
+                            ? 'bg-violet-100 text-violet-700'
+                            : 'bg-red-100 text-red-700'
                         }`}>
                           Refund {refundStatus.status}
                         </span>
                       ) : canRequestRefund && (
                         <button
                           onClick={() => setShowRefundModal(purchase.id)}
-                          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 bg-white/5 rounded-lg border border-white/10"
+                          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors px-3 py-1.5 bg-gray-100 rounded-lg border border-gray-200 hover:bg-gray-200"
                         >
                           <RotateCcw size={14} />
                           Request Refund
