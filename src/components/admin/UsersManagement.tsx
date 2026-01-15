@@ -96,10 +96,6 @@ const UsersManagement = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Users Management</h2>
-      </div>
-
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">

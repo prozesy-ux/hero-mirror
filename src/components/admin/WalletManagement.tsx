@@ -132,16 +132,6 @@ const WalletManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Wallet className="text-green-400" />
-            Wallet Management
-          </h2>
-          <p className="text-gray-400 mt-1">Manage user wallets and transactions</p>
-        </div>
-      </div>
-
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">

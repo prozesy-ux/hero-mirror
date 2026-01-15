@@ -125,22 +125,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
 
     return (
       <TooltipProvider>
-        <div ref={ref} className="flex flex-col h-full overflow-y-auto premium-scrollbar">
-          {/* Admin Panel Header */}
-          <div className={`mx-3 mb-4 mt-4 bg-red-500/10 rounded-xl border border-red-500/20 ${isCollapsed ? 'p-2' : 'p-4'}`}>
-            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-              <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                <Shield size={20} className="text-red-400" />
-              </div>
-              {!isCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-bold text-lg tracking-tight">Admin</p>
-                  <p className="text-red-400 text-sm">Control Panel</p>
-                </div>
-              )}
-            </div>
-          </div>
-
+        <div ref={ref} className="flex flex-col h-full overflow-y-auto premium-scrollbar pt-4">
           {/* Navigation */}
           <nav className={`flex-1 space-y-1.5 ${isCollapsed ? 'px-2' : 'px-4'}`}>
             {navItems.map((item) => (

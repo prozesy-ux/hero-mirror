@@ -116,15 +116,14 @@ const CancellationRequestsManagement = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Cancellation Requests</h2>
-        {pendingCount > 0 && (
+      {pendingCount > 0 && (
+        <div className="flex items-center justify-end mb-6">
           <span className="flex items-center gap-2 bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full">
             <AlertTriangle className="w-4 h-4" />
             {pendingCount} Pending
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {requests.length === 0 ? (
         <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
