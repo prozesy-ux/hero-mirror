@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, Filter, ChevronDown, FolderOpen, Star, Bookmark, Check, ChevronRight, Crown, Wallet } from 'lucide-react';
+import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, FolderOpen, Star, Bookmark, Check, ChevronRight, Crown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -37,8 +37,6 @@ const PromptsGrid = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedTool, setSelectedTool] = useState<string>('all');
-  const [showLocked, setShowLocked] = useState<string>('all');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
   
@@ -179,17 +177,12 @@ const PromptsGrid = () => {
     return 'bg-gray-500';
   };
 
-  // Filter logic for All Prompts tab
+  // Filter logic for All Prompts tab - Search and category filter
   let filteredPrompts = prompts.filter(prompt => {
     const matchesSearch = prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           prompt.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || prompt.category_id === selectedCategory;
-    const matchesTool = selectedTool === 'all' || prompt.tool === selectedTool;
-    const matchesLocked = showLocked === 'all' || 
-                          (showLocked === 'free' && prompt.is_free) ||
-                          (showLocked === 'premium' && !prompt.is_free);
-    
-    return matchesSearch && matchesCategory && matchesTool && matchesLocked;
+    return matchesSearch && matchesCategory;
   });
 
   const trendingPrompts = prompts.filter(p => p.is_featured);
@@ -424,123 +417,18 @@ const PromptsGrid = () => {
       {/* All Prompts Tab */}
       {activeTab === 'all' && (
         <>
-          {/* Filter Bar */}
-          <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
-            {/* Search - Premium Design */}
-            <div className="relative mb-4 lg:mb-5">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
-                <Search size={18} className="text-gray-500" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search prompts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium text-lg shadow-sm"
-              />
+          {/* Clean Search Bar - Matching AI Accounts Style */}
+          <div className="relative mb-6 lg:mb-8">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
+              <Search size={18} className="text-gray-500" />
             </div>
-
-            {/* Tool Filter Pills - Button Style like AI Accounts */}
-            <div className="flex gap-2 lg:gap-3 overflow-x-auto pb-1 flex-wrap">
-              <button
-                onClick={() => setSelectedTool('all')}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
-                  selectedTool === 'all'
-                    ? 'bg-gray-900 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
-                }`}
-              >
-                All Tools
-              </button>
-              {tools.map(tool => (
-                <button
-                  key={tool}
-                  onClick={() => setSelectedTool(tool)}
-                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
-                    selectedTool === tool
-                      ? 'bg-gray-900 text-white shadow-md'
-                      : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
-                  }`}
-                >
-                  {tool}
-                </button>
-              ))}
-            </div>
-
-            {/* Category & Access Filter Row */}
-            <div className="flex gap-2 lg:gap-3 mt-3 overflow-x-auto pb-1 flex-wrap items-center">
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl border border-gray-200">
-                <Filter size={14} className="text-gray-500" />
-                <span className="text-sm font-medium text-gray-600">Filter by:</span>
-              </div>
-
-              {/* Category Pills */}
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
-                  selectedCategory === 'all'
-                    ? 'bg-violet-600 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
-                }`}
-              >
-                All Categories
-              </button>
-              {categories.slice(0, 5).map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                    selectedCategory === cat.id
-                      ? 'bg-violet-600 text-white shadow-md'
-                      : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
-                  }`}
-                >
-                  {cat.icon && <span>{cat.icon}</span>}
-                  {cat.name}
-                </button>
-              ))}
-
-              {/* Access Filter Pills */}
-              <div className="h-6 w-px bg-gray-200 mx-1 hidden lg:block" />
-              
-              <button
-                onClick={() => setShowLocked('free')}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
-                  showLocked === 'free'
-                    ? 'bg-emerald-600 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
-                }`}
-              >
-                Free Only
-              </button>
-              <button
-                onClick={() => setShowLocked('premium')}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                  showLocked === 'premium'
-                    ? 'bg-amber-500 text-black shadow-md'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
-                }`}
-              >
-                <Crown size={12} />
-                Pro Only
-              </button>
-
-              {/* Clear Filters Button */}
-              {(searchQuery || selectedCategory !== 'all' || selectedTool !== 'all' || showLocked !== 'all') && (
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedCategory('all');
-                    setSelectedTool('all');
-                    setShowLocked('all');
-                  }}
-                  className="px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl text-red-600 text-sm font-medium transition-all flex items-center gap-2"
-                >
-                  <X size={14} />
-                  Clear
-                </button>
-              )}
-            </div>
+            <input
+              type="text"
+              placeholder="Search prompts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium text-lg shadow-md"
+            />
           </div>
 
           {/* Prompts Grid */}
@@ -551,12 +439,12 @@ const PromptsGrid = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 bg-[#141418] rounded-2xl border border-white/10">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Search size={24} className="text-gray-500" />
+            <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-md">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <Search size={24} className="text-gray-400" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">No prompts found</h3>
-              <p className="text-gray-500">Try adjusting your search or filters</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">No prompts found</h3>
+              <p className="text-gray-500">Try adjusting your search</p>
             </div>
           )}
         </>
