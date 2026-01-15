@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, FolderOpen, Star, Bookmark, Check, ChevronRight, Crown } from 'lucide-react';
+import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, FolderOpen, Star, Bookmark, Check, ChevronRight, Crown, Wallet, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -39,8 +39,32 @@ const PromptsGrid = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   
   const { user, isPro } = useAuthContext();
+
+  const fetchWallet = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('user_wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code === 'PGRST116') {
+      // No wallet exists, create one
+      const { data: newWallet } = await supabase
+        .from('user_wallets')
+        .insert({ user_id: user.id, balance: 0 })
+        .select('balance')
+        .single();
+      
+      setWallet(newWallet);
+    } else if (data) {
+      setWallet(data);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -63,6 +87,31 @@ const PromptsGrid = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchWallet();
+      
+      // Subscribe to wallet updates
+      const walletChannel = supabase
+        .channel('prompts-wallet-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_wallets',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => fetchWallet()
+        )
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(walletChannel);
+      };
+    }
   }, [user]);
 
   const fetchData = async () => {
@@ -395,22 +444,40 @@ const PromptsGrid = () => {
             </button>
           </div>
 
-          {/* Unlock Pro Section - Like AI Accounts wallet style */}
-          {!isPro && (
-            <div className="flex items-center gap-2 ml-auto">
-              <div className="flex items-center gap-2 bg-amber-100 border border-amber-200 px-3 py-2 rounded-xl">
-                <Lock size={14} className="text-amber-600" />
-                <span className="text-amber-700 font-bold text-xs lg:text-sm whitespace-nowrap">Free Plan</span>
-              </div>
-              <button
-                onClick={() => navigate('/dashboard/billing')}
-                className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black px-4 py-2 rounded-xl font-semibold text-xs lg:text-sm transition-all hover:scale-105 active:scale-95 shadow-lg whitespace-nowrap"
-              >
-                <Crown size={14} />
-                Unlock Pro
-              </button>
+          {/* Wallet Balance & Add Funds + Unlock Pro */}
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Wallet Balance - Always visible */}
+            <div className="flex items-center gap-2 bg-violet-100 border border-violet-200 px-3 py-2 rounded-xl">
+              <Wallet size={14} className="text-violet-600 lg:w-4 lg:h-4" />
+              <span className="text-violet-700 font-bold text-xs lg:text-sm">
+                ${wallet?.balance?.toFixed(2) || '0.00'}
+              </span>
             </div>
-          )}
+            <button
+              onClick={() => navigate('/dashboard/billing')}
+              className="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white px-3 lg:px-4 py-2 rounded-xl font-medium text-xs lg:text-sm transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+            >
+              <Plus size={14} className="lg:w-4 lg:h-4" />
+              Add Funds
+            </button>
+
+            {/* Unlock Pro Section - Only for non-Pro users */}
+            {!isPro && (
+              <>
+                <div className="flex items-center gap-2 bg-amber-100 border border-amber-200 px-3 py-2 rounded-xl">
+                  <Lock size={14} className="text-amber-600" />
+                  <span className="text-amber-700 font-bold text-xs lg:text-sm whitespace-nowrap">Free Plan</span>
+                </div>
+                <button
+                  onClick={() => navigate('/dashboard/billing')}
+                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black px-3 lg:px-4 py-2 rounded-xl font-semibold text-xs lg:text-sm transition-all hover:scale-105 active:scale-95 shadow-lg whitespace-nowrap"
+                >
+                  <Crown size={14} />
+                  Unlock Pro
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
