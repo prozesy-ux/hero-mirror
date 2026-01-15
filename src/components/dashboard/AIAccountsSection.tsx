@@ -701,15 +701,15 @@ const AIAccountsSection = () => {
               <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-gray-900 animate-spin" />
             </div>
           ) : purchases.length === 0 ? (
-            <div className="bg-[#1a1a1f] rounded-2xl p-16 text-center border border-white/5">
-              <div className="w-20 h-20 rounded-full bg-[#0f0f12] flex items-center justify-center mx-auto mb-6">
-                <Package className="w-10 h-10 text-gray-600" />
+            <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-sm">
+              <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+                <Package className="w-10 h-10 text-gray-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No Purchases Yet</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Purchases Yet</h3>
               <p className="text-gray-500 mb-6">Your purchased AI accounts will appear here</p>
               <button
                 onClick={() => setActiveTab('browse')}
-                className="bg-white text-black font-semibold px-6 py-3 rounded-xl hover:bg-gray-100 transition-all"
+                className="bg-gray-900 text-white font-semibold px-6 py-3 rounded-xl hover:bg-gray-800 transition-all"
               >
                 Browse Accounts
               </button>
@@ -765,29 +765,29 @@ const AIAccountsSection = () => {
                   </div>
 
                   {purchase.delivery_status === 'delivered' && purchase.account_credentials && (
-                    <div className="mt-5 p-4 bg-[#0f0f12] rounded-xl border border-white/10">
+                    <div className="mt-5 p-4 bg-gray-100 rounded-xl border border-gray-200">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-300">Account Credentials</span>
+                        <span className="text-sm font-medium text-gray-600">Account Credentials</span>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => toggleCredentials(purchase.id)}
-                            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                           >
                             {showCredentials[purchase.id] ? (
-                              <EyeOff className="w-4 h-4 text-gray-400" />
+                              <EyeOff className="w-4 h-4 text-gray-500" />
                             ) : (
-                              <Eye className="w-4 h-4 text-gray-400" />
+                              <Eye className="w-4 h-4 text-gray-500" />
                             )}
                           </button>
                           <button
                             onClick={() => copyCredentials(purchase.account_credentials!)}
-                            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                           >
-                            <Copy className="w-4 h-4 text-gray-400" />
+                            <Copy className="w-4 h-4 text-gray-500" />
                           </button>
                         </div>
                       </div>
-                      <code className="text-sm text-white font-mono">
+                      <code className="text-sm text-gray-900 font-mono">
                         {showCredentials[purchase.id]
                           ? purchase.account_credentials
                           : '••••••••••••••••••••'}
@@ -873,16 +873,16 @@ const AIAccountsSection = () => {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5">
-            <h3 className="text-lg font-bold text-white mb-4 tracking-tight">Recent Activity</h3>
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 tracking-tight">Recent Activity</h3>
             {purchases.length === 0 ? (
               <p className="text-gray-500">No recent activity</p>
             ) : (
               <div className="space-y-3">
                 {purchases.slice(0, 5).map((purchase) => (
-                  <div key={purchase.id} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+                  <div key={purchase.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
                         <img 
                           src={getProductImage(purchase.ai_accounts?.category)}
                           alt=""
@@ -890,7 +890,7 @@ const AIAccountsSection = () => {
                         />
                       </div>
                       <div>
-                        <p className="text-white font-medium text-sm">{purchase.ai_accounts?.name}</p>
+                        <p className="text-gray-900 font-medium text-sm">{purchase.ai_accounts?.name}</p>
                         <p className="text-gray-500 text-xs">
                           {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
                             month: 'short', 
@@ -900,7 +900,7 @@ const AIAccountsSection = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-white font-semibold">${purchase.amount}</span>
+                      <span className="text-gray-900 font-semibold">${purchase.amount}</span>
                       {purchase.delivery_status === 'delivered' ? (
                         <CheckCircle size={16} className="text-green-500" />
                       ) : (
@@ -917,25 +917,25 @@ const AIAccountsSection = () => {
 
       {/* Chat Tab */}
       {activeTab === 'chat' && (
-        <div className="bg-[#1a1a1f] rounded-2xl border border-white/5 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           {/* Chat Header */}
-          <div className="p-4 border-b border-white/10 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
-              <MessageCircle className="text-violet-400" size={20} />
+          <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
+              <MessageCircle className="text-violet-600" size={20} />
             </div>
             <div>
-              <h3 className="text-white font-semibold">Support Chat</h3>
-              <p className="text-gray-400 text-sm">We typically reply within a few hours</p>
+              <h3 className="text-gray-900 font-semibold">Support Chat</h3>
+              <p className="text-gray-500 text-sm">We typically reply within a few hours</p>
             </div>
           </div>
           
           {/* Messages Area */}
-          <div className="h-96 overflow-y-auto p-4 space-y-4">
+          <div className="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center">
-                  <MessageCircle className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-400">No messages yet</p>
+                  <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600">No messages yet</p>
                   <p className="text-gray-500 text-sm">Send us a message and we'll get back to you</p>
                 </div>
               </div>
@@ -949,11 +949,11 @@ const AIAccountsSection = () => {
                     className={`max-w-[70%] rounded-2xl px-4 py-3 ${
                       msg.sender_type === 'user'
                         ? 'bg-violet-500 text-white'
-                        : 'bg-gray-800 text-white'
+                        : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{msg.message}</p>
-                    <span className="text-xs opacity-60 mt-1 block">
+                    <span className={`text-xs mt-1 block ${msg.sender_type === 'user' ? 'opacity-60' : 'text-gray-400'}`}>
                       {format(new Date(msg.created_at), 'h:mm a')}
                     </span>
                   </div>
@@ -964,14 +964,14 @@ const AIAccountsSection = () => {
           </div>
           
           {/* Input Area */}
-          <div className="p-4 border-t border-white/10">
+          <div className="p-4 border-t border-gray-200 bg-white">
             <div className="flex gap-3">
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1 bg-gray-800 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-300"
                 onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendChatMessage()}
               />
               <button
