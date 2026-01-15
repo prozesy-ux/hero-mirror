@@ -2,7 +2,7 @@ import { useState, forwardRef, createContext, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, FileText, CreditCard, User, LogOut, Menu, X, 
-  Crown, Wrench, Bot, ArrowRight, ChevronLeft, ChevronRight
+  Crown, Bot, ArrowRight, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -121,7 +121,6 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     const navItems = [
       { to: '/dashboard', icon: <LayoutDashboard size={22} />, label: 'Dashboard' },
       { to: '/dashboard/prompts', icon: <FileText size={22} />, label: 'All Prompts' },
-      { to: '/dashboard/tools', icon: <Wrench size={22} />, label: 'AI Tools' },
       { to: '/dashboard/ai-accounts', icon: <Bot size={22} />, label: 'AI Accounts' },
       { to: '/dashboard/billing', icon: <CreditCard size={22} />, label: 'Billing' },
       { to: '/dashboard/profile', icon: <User size={22} />, label: 'Profile' },
