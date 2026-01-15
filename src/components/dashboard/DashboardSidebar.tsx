@@ -1,4 +1,4 @@
-import { useState, forwardRef, createContext, useContext, useEffect } from 'react';
+import { useState, forwardRef, createContext, useContext, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileText, CreditCard, User, LogOut, Menu, X, 
@@ -7,6 +7,7 @@ import {
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
+import { playSound } from '@/lib/sounds';
 
 // Context for sidebar collapse state
 interface SidebarContextType {
@@ -72,11 +73,11 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
       >
         <span className={`transition-transform duration-300 flex-shrink-0 relative ${isActive ? '' : 'group-hover:scale-110'}`}>
           {icon}
-          {badge && isCollapsed && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-              {badge > 9 ? '9+' : badge}
-            </span>
-          )}
+            {badge && isCollapsed && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                {badge > 9 ? '9+' : badge}
+              </span>
+            )}
         </span>
         {!isCollapsed && (
           <>
@@ -88,7 +89,7 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
               {label}
             </span>
             {badge ? (
-              <span className="ml-auto px-2 py-0.5 text-xs rounded-full bg-red-500 text-white font-bold">
+              <span className="ml-auto px-2 py-0.5 text-xs rounded-full bg-red-500 text-white font-bold animate-pulse">
                 {badge > 99 ? '99+' : badge}
               </span>
             ) : isActive ? (
@@ -130,6 +131,15 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     const navigate = useNavigate();
     const { profile, signOut, user } = useAuthContext();
     const [unreadCount, setUnreadCount] = useState(0);
+    const prevUnreadCountRef = useRef<number>(0);
+
+    // Play sound when unread count increases
+    useEffect(() => {
+      if (unreadCount > prevUnreadCountRef.current && prevUnreadCountRef.current >= 0) {
+        playSound('messageReceived');
+      }
+      prevUnreadCountRef.current = unreadCount;
+    }, [unreadCount]);
 
     // Fetch unread message count
     useEffect(() => {

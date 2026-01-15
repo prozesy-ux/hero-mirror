@@ -3,6 +3,7 @@ import { MessageCircle, Send, Users, Search, Check, CheckCheck, Trash2, AlertTri
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { playSound } from '@/lib/sounds';
 
 interface ChatUser {
   user_id: string;
@@ -164,6 +165,10 @@ const ChatManagement = () => {
           table: 'support_messages'
         },
         (payload) => {
+          // Play sound when new user message arrives
+          if (payload.new && (payload.new as Message).sender_type === 'user') {
+            playSound('messageReceived');
+          }
           fetchChatUsers();
           if (selectedUser && payload.new && (payload.new as Message).user_id === selectedUser.user_id) {
             fetchMessages(selectedUser.user_id);
@@ -194,6 +199,8 @@ const ChatManagement = () => {
       toast.error('Failed to send message');
       console.error('Error sending message:', error);
     } else {
+      // Play sound when message sent successfully
+      playSound('messageSent');
       setNewMessage('');
       fetchMessages(selectedUser.user_id);
       toast.success('Message sent!');
