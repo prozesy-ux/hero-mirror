@@ -8,10 +8,12 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
-// Import payment logo
+// Import payment logos
 import stripeLogo from '@/assets/stripe-logo.svg';
+import bkashLogo from '@/assets/bkash-logo.png';
+import upiLogo from '@/assets/upi-logo.png';
 
 interface Purchase {
   id: string;
@@ -48,10 +50,12 @@ interface WalletTransaction {
 }
 
 type BillingTab = 'wallet' | 'transactions' | 'plan' | 'purchases';
+type PaymentGateway = 'stripe' | 'bkash' | 'upi';
 
 const BillingSection = () => {
   const { user, isPro } = useAuthContext();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
   const [cancellationRequest, setCancellationRequest] = useState<CancellationRequest | null>(null);
@@ -71,22 +75,52 @@ const BillingSection = () => {
   const [showTopupModal, setShowTopupModal] = useState(false);
   const [topupAmount, setTopupAmount] = useState<number>(10);
   const [processingTopup, setProcessingTopup] = useState(false);
+  
+  // Payment gateway states
+  const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>('stripe');
+  const [bkashNumber, setBkashNumber] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchData();
       subscribeToUpdates();
       
-      // Check for topup success - show success message (webhook will have already processed the payment)
+      // Check for Stripe topup success and verify payment
       const topupStatus = searchParams.get('topup');
-      const amount = searchParams.get('amount');
-      if (topupStatus === 'success' && amount) {
-        toast.success(`Payment of $${amount} received! Your wallet will be updated shortly.`);
-        // Refetch data to get updated balance
-        setTimeout(() => fetchData(), 2000);
+      const sessionId = searchParams.get('session_id');
+      
+      if (topupStatus === 'success' && sessionId) {
+        verifyAndCreditWallet(sessionId);
       }
     }
   }, [user, searchParams]);
+
+  const verifyAndCreditWallet = async (sessionId: string) => {
+    setVerifyingPayment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-topup', {
+        body: { session_id: sessionId }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success(`$${data.amount} added to your wallet!`);
+        fetchData();
+      }
+      
+      // Clear URL params
+      navigate('/dashboard/billing', { replace: true });
+    } catch (error: any) {
+      console.error('Payment verification error:', error);
+      toast.error('Failed to verify payment. Contact support if funds are missing.');
+      navigate('/dashboard/billing', { replace: true });
+    } finally {
+      setVerifyingPayment(false);
+    }
+  };
 
   const fetchData = async () => {
     const { data: purchasesData } = await supabase
@@ -152,14 +186,45 @@ const BillingSection = () => {
     setProcessingTopup(true);
 
     try {
-      // Only Stripe payments are supported - they go through secure checkout
-      const { data, error } = await supabase.functions.invoke('create-topup', {
-        body: { amount: topupAmount }
-      });
-      
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
+      if (selectedGateway === 'stripe') {
+        // Stripe checkout flow
+        const { data, error } = await supabase.functions.invoke('create-topup', {
+          body: { amount: topupAmount }
+        });
+        
+        if (error) throw error;
+        if (data?.url) {
+          window.open(data.url, '_blank');
+        }
+      } else {
+        // Manual payment flow (bKash/UPI)
+        const transactionId = selectedGateway === 'bkash' ? bkashNumber : upiId;
+        
+        if (!transactionId.trim()) {
+          toast.error(`Please enter your ${selectedGateway === 'bkash' ? 'bKash number' : 'UPI transaction ID'}`);
+          setProcessingTopup(false);
+          return;
+        }
+
+        // Create pending transaction for admin approval
+        const { error } = await supabase
+          .from('wallet_transactions')
+          .insert({
+            user_id: user.id,
+            type: 'topup',
+            amount: topupAmount,
+            payment_gateway: selectedGateway,
+            transaction_id: transactionId,
+            status: 'pending',
+            description: `Top-up via ${selectedGateway.toUpperCase()} - awaiting approval`
+          });
+
+        if (error) throw error;
+        
+        toast.success('Payment submitted! Awaiting admin approval.');
+        setBkashNumber('');
+        setUpiId('');
+        fetchData();
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to process payment');
@@ -277,6 +342,25 @@ const BillingSection = () => {
     { id: 'purchases' as BillingTab, label: 'Purchases', icon: ShoppingBag },
   ];
 
+  const paymentMethods = [
+    { id: 'stripe' as PaymentGateway, name: 'Stripe', logo: stripeLogo, description: 'Credit/Debit Card' },
+    { id: 'bkash' as PaymentGateway, name: 'bKash', logo: bkashLogo, description: 'Mobile Banking' },
+    { id: 'upi' as PaymentGateway, name: 'UPI', logo: upiLogo, description: 'UPI Payment' },
+  ];
+
+  // Show loading overlay when verifying payment
+  if (verifyingPayment) {
+    return (
+      <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="animate-spin mx-auto mb-4 text-violet-600" size={48} />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Verifying Payment...</h3>
+          <p className="text-gray-500">Please wait while we confirm your payment.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">
       {/* Tab Navigation */}
@@ -331,16 +415,23 @@ const BillingSection = () => {
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
             <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
               <CreditCard className="text-gray-500" size={20} />
-              Payment Method
+              Available Payment Methods
             </h3>
-            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all max-w-xs">
-              <img 
-                src={stripeLogo} 
-                alt="Stripe" 
-                className="h-8 w-auto mx-auto mb-2 object-contain"
-              />
-              <p className="text-gray-900 font-medium text-sm">Stripe</p>
-              <p className="text-gray-500 text-xs">Credit/Debit Card</p>
+            <div className="grid grid-cols-3 gap-4">
+              {paymentMethods.map((method) => (
+                <div 
+                  key={method.id}
+                  className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
+                >
+                  <img 
+                    src={method.logo} 
+                    alt={method.name} 
+                    className="h-8 w-auto mx-auto mb-2 object-contain"
+                  />
+                  <p className="text-gray-900 font-medium text-sm">{method.name}</p>
+                  <p className="text-gray-500 text-xs">{method.description}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -382,6 +473,11 @@ const BillingSection = () => {
                           hour: '2-digit',
                           minute: '2-digit'
                         })}
+                        {tx.payment_gateway && (
+                          <span className="ml-2 text-xs uppercase text-gray-400">
+                            via {tx.payment_gateway}
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -635,25 +731,94 @@ const BillingSection = () => {
               </div>
             </div>
 
-            {/* Payment via Stripe */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <div className="flex items-center gap-3">
-                <img 
-                  src={stripeLogo} 
-                  alt="Stripe" 
-                  className="h-8 w-auto object-contain"
-                />
-                <div>
-                  <p className="font-medium text-gray-900">Secure Payment via Stripe</p>
-                  <p className="text-xs text-gray-500">Credit/Debit Card accepted</p>
-                </div>
+            {/* Payment Method Selection */}
+            <div className="mb-6">
+              <p className="text-gray-500 text-sm mb-3 font-medium">Select payment method</p>
+              <div className="grid grid-cols-3 gap-3">
+                {paymentMethods.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => setSelectedGateway(method.id)}
+                    className={`p-4 rounded-xl border-2 transition-all ${
+                      selectedGateway === method.id
+                        ? 'border-violet-500 bg-violet-50'
+                        : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                    }`}
+                  >
+                    <img 
+                      src={method.logo} 
+                      alt={method.name} 
+                      className="h-8 w-auto mx-auto mb-2 object-contain"
+                    />
+                    <p className="text-gray-900 font-medium text-sm text-center">{method.name}</p>
+                  </button>
+                ))}
               </div>
             </div>
+
+            {/* Gateway-specific inputs */}
+            {selectedGateway === 'bkash' && (
+              <div className="mb-6 p-4 bg-pink-50 rounded-xl border border-pink-200">
+                <div className="mb-3">
+                  <p className="text-pink-800 font-semibold mb-1">bKash Payment Instructions</p>
+                  <p className="text-pink-600 text-sm">
+                    1. Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold">01XXXXXXXXX</span> (Personal)
+                  </p>
+                  <p className="text-pink-600 text-sm">2. Enter your bKash number below</p>
+                </div>
+                <input
+                  type="text"
+                  value={bkashNumber}
+                  onChange={(e) => setBkashNumber(e.target.value)}
+                  placeholder="Enter your bKash number"
+                  className="w-full bg-white border border-pink-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-500/30"
+                />
+              </div>
+            )}
+
+            {selectedGateway === 'upi' && (
+              <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <div className="mb-3">
+                  <p className="text-blue-800 font-semibold mb-1">UPI Payment Instructions</p>
+                  <p className="text-blue-600 text-sm">
+                    1. Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold">yourname@upi</span>
+                  </p>
+                  <p className="text-blue-600 text-sm">2. Enter your UPI transaction ID below</p>
+                </div>
+                <input
+                  type="text"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
+                  placeholder="Enter UPI transaction ID"
+                  className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                />
+              </div>
+            )}
+
+            {selectedGateway === 'stripe' && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={stripeLogo} 
+                    alt="Stripe" 
+                    className="h-8 w-auto object-contain"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-900">Secure Payment via Stripe</p>
+                    <p className="text-xs text-gray-500">Credit/Debit Card accepted • Instant</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3">
               <button
-                onClick={() => setShowTopupModal(false)}
+                onClick={() => {
+                  setShowTopupModal(false);
+                  setBkashNumber('');
+                  setUpiId('');
+                }}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl transition-all font-medium"
               >
                 Cancel
@@ -664,7 +829,7 @@ const BillingSection = () => {
                 className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
               >
                 {processingTopup ? <Loader2 className="animate-spin" size={18} /> : null}
-                Add ${topupAmount}
+                {selectedGateway === 'stripe' ? `Pay $${topupAmount}` : `Submit $${topupAmount} Request`}
               </button>
             </div>
           </div>

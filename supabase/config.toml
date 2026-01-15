@@ -1,1 +1,7 @@
 project_id = "bzooojifrzwdyvbuyoel"
+
+[functions.verify-topup]
+verify_jwt = false
+
+[functions.create-topup]
+verify_jwt = false

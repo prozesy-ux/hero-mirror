@@ -104,6 +104,14 @@ const WalletManagement = () => {
   };
 
   const updateTransactionStatus = async (id: string, status: string) => {
+    // Find the transaction
+    const tx = transactions.find(t => t.id === id);
+    if (!tx) {
+      toast.error('Transaction not found');
+      return;
+    }
+
+    // Update transaction status
     const { error } = await supabase
       .from('wallet_transactions')
       .update({ status })
@@ -111,10 +119,42 @@ const WalletManagement = () => {
 
     if (error) {
       toast.error('Failed to update transaction');
+      return;
+    }
+
+    // If approving a topup, credit the user's wallet
+    if (status === 'completed' && tx.type === 'topup') {
+      // Get current wallet balance
+      const { data: wallet } = await supabase
+        .from('user_wallets')
+        .select('balance')
+        .eq('user_id', tx.user_id)
+        .single();
+
+      const currentBalance = wallet?.balance || 0;
+      const newBalance = currentBalance + tx.amount;
+
+      // Upsert wallet with new balance
+      const { error: walletError } = await supabase
+        .from('user_wallets')
+        .upsert({
+          user_id: tx.user_id,
+          balance: newBalance,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+
+      if (walletError) {
+        toast.error('Transaction approved but failed to credit wallet');
+        fetchData();
+        return;
+      }
+
+      toast.success(`Transaction approved! $${tx.amount} credited to wallet.`);
     } else {
       toast.success(`Transaction marked as ${status}`);
-      fetchData();
     }
+    
+    fetchData();
   };
 
   const filteredWallets = wallets.filter(w =>
