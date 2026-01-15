@@ -338,6 +338,33 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          created_at: string | null
+          endpoint: string
+          id: string
+          identifier: string
+          request_count: number | null
+          window_start: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          identifier: string
+          request_count?: number | null
+          window_start?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          identifier?: string
+          request_count?: number | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       refund_requests: {
         Row: {
           admin_notes: string | null
@@ -374,6 +401,51 @@ export type Database = {
           reason?: string | null
           status?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      security_logs: {
+        Row: {
+          attempt_count: number | null
+          block_reason: string | null
+          blocked_until: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          ip_address: string
+          is_blocked: boolean | null
+          metadata: Json | null
+          updated_at: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attempt_count?: number | null
+          block_reason?: string | null
+          blocked_until?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          ip_address: string
+          is_blocked?: boolean | null
+          metadata?: Json | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attempt_count?: number | null
+          block_reason?: string | null
+          blocked_until?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string
+          is_blocked?: boolean | null
+          metadata?: Json | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -553,6 +625,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clean_old_rate_limits: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

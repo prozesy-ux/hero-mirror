@@ -7,9 +7,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limit check helper
+async function checkRateLimit(identifier: string, endpoint: string): Promise<{ allowed: boolean; remaining?: number }> {
+  try {
+    const response = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/rate-limit-check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier, endpoint }),
+    });
+    return await response.json();
+  } catch {
+    // Fail open if rate limit check fails
+    return { allowed: true };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Extract client IP for rate limiting
+  const clientIP = 
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+
+  // Check rate limit
+  const rateCheck = await checkRateLimit(clientIP, "create-topup");
+  if (!rateCheck.allowed) {
+    return new Response(
+      JSON.stringify({ error: "Too many requests. Please try again later." }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 429 }
+    );
   }
 
   const supabaseClient = createClient(
