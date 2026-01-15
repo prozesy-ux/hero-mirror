@@ -97,28 +97,43 @@ const BillingSection = () => {
     }
   }, [user, searchParams]);
 
-  const verifyAndCreditWallet = async (sessionId: string) => {
-    setVerifyingPayment(true);
+  const verifyAndCreditWallet = async (sessionId: string, retryCount = 0) => {
+    // Don't block the entire page - just show a toast
+    if (retryCount === 0) {
+      setVerifyingPayment(true);
+      toast.info('Verifying your payment...');
+      // Add delay on first attempt - Stripe might not be ready immediately
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+    
     try {
       const { data, error } = await supabase.functions.invoke('verify-topup', {
         body: { session_id: sessionId }
       });
       
-      if (error) throw error;
+      if (error) {
+        // If payment not completed yet, retry up to 3 times
+        if (error.message?.includes('not completed') && retryCount < 3) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          return verifyAndCreditWallet(sessionId, retryCount + 1);
+        }
+        throw error;
+      }
       
       if (data?.success) {
         toast.success(`$${data.amount} added to your wallet!`);
         fetchData();
+      } else if (data?.message?.includes('already processed')) {
+        toast.info('Payment was already processed.');
+        fetchData();
       }
-      
-      // Clear URL params
-      navigate('/dashboard/billing', { replace: true });
     } catch (error: any) {
       console.error('Payment verification error:', error);
-      toast.error('Failed to verify payment. Contact support if funds are missing.');
-      navigate('/dashboard/billing', { replace: true });
+      toast.error('Payment verification failed. Contact support if funds are missing.');
     } finally {
       setVerifyingPayment(false);
+      // Clear URL params
+      navigate('/dashboard/billing', { replace: true });
     }
   };
 
@@ -348,18 +363,7 @@ const BillingSection = () => {
     { id: 'upi' as PaymentGateway, name: 'UPI', logo: upiLogo, description: 'UPI Payment' },
   ];
 
-  // Show loading overlay when verifying payment
-  if (verifyingPayment) {
-    return (
-      <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="animate-spin mx-auto mb-4 text-violet-600" size={48} />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Verifying Payment...</h3>
-          <p className="text-gray-500">Please wait while we confirm your payment.</p>
-        </div>
-      </div>
-    );
-  }
+  // Removed blocking loading overlay - now using toast notifications instead
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">

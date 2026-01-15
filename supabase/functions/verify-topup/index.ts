@@ -33,11 +33,18 @@ serve(async (req) => {
     });
 
     // Retrieve the checkout session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(session_id);
+    let session;
+    try {
+      session = await stripe.checkout.sessions.retrieve(session_id);
+    } catch (stripeError) {
+      console.error("Stripe session retrieval error:", stripeError);
+      throw new Error("Could not find payment session");
+    }
     
-    // Verify payment was successful
+    // Verify payment was successful - allow "paid" or handle unpaid gracefully
     if (session.payment_status !== 'paid') {
-      throw new Error("Payment not completed");
+      console.log(`Session ${session_id} status: ${session.payment_status}`);
+      throw new Error("Payment not completed yet");
     }
 
     // Verify this session belongs to this user
