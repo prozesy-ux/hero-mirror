@@ -10,10 +10,8 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 
-// Import real payment logos
+// Import payment logo
 import stripeLogo from '@/assets/stripe-logo.svg';
-import bkashLogo from '@/assets/bkash-logo.png';
-import upiLogo from '@/assets/upi-logo.png';
 
 interface Purchase {
   id: string;
@@ -49,7 +47,6 @@ interface WalletTransaction {
   created_at: string;
 }
 
-type PaymentGateway = 'stripe' | 'bkash' | 'upi';
 type BillingTab = 'wallet' | 'transactions' | 'plan' | 'purchases';
 
 const BillingSection = () => {
@@ -73,21 +70,20 @@ const BillingSection = () => {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [showTopupModal, setShowTopupModal] = useState(false);
   const [topupAmount, setTopupAmount] = useState<number>(10);
-  const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>('stripe');
   const [processingTopup, setProcessingTopup] = useState(false);
-  const [bkashNumber, setBkashNumber] = useState('');
-  const [upiId, setUpiId] = useState('');
 
   useEffect(() => {
     if (user) {
       fetchData();
       subscribeToUpdates();
       
-      // Check for topup success
+      // Check for topup success - show success message (webhook will have already processed the payment)
       const topupStatus = searchParams.get('topup');
       const amount = searchParams.get('amount');
       if (topupStatus === 'success' && amount) {
-        handleStripeTopupSuccess(parseFloat(amount));
+        toast.success(`Payment of $${amount} received! Your wallet will be updated shortly.`);
+        // Refetch data to get updated balance
+        setTimeout(() => fetchData(), 2000);
       }
     }
   }, [user, searchParams]);
@@ -151,59 +147,25 @@ const BillingSection = () => {
     return () => supabase.removeChannel(channel);
   };
 
-  const handleStripeTopupSuccess = async (amount: number) => {
-    try {
-      const { error } = await supabase.functions.invoke('process-topup', {
-        body: { amount, gateway: 'stripe', transactionId: `stripe_${Date.now()}` }
-      });
-      
-      if (error) throw error;
-      toast.success(`Successfully added $${amount} to your wallet!`);
-      fetchData();
-    } catch (error: any) {
-      console.error('Error processing topup:', error);
-    }
-  };
-
   const handleTopup = async () => {
     if (!user) return;
     setProcessingTopup(true);
 
     try {
-      if (selectedGateway === 'stripe') {
-        const { data, error } = await supabase.functions.invoke('create-topup', {
-          body: { amount: topupAmount }
-        });
-        
-        if (error) throw error;
-        if (data?.url) {
-          window.open(data.url, '_blank');
-        }
-      } else {
-        // For bKash and UPI, simulate payment process
-        const transactionId = selectedGateway === 'bkash' 
-          ? `bkash_${bkashNumber}_${Date.now()}`
-          : `upi_${upiId}_${Date.now()}`;
-        
-        const { error } = await supabase.functions.invoke('process-topup', {
-          body: { 
-            amount: topupAmount, 
-            gateway: selectedGateway, 
-            transactionId 
-          }
-        });
-        
-        if (error) throw error;
-        toast.success(`Successfully added $${topupAmount} to your wallet via ${selectedGateway.toUpperCase()}!`);
-        fetchData();
+      // Only Stripe payments are supported - they go through secure checkout
+      const { data, error } = await supabase.functions.invoke('create-topup', {
+        body: { amount: topupAmount }
+      });
+      
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to process payment');
     } finally {
       setProcessingTopup(false);
       setShowTopupModal(false);
-      setBkashNumber('');
-      setUpiId('');
     }
   };
 
@@ -297,12 +259,6 @@ const BillingSection = () => {
   const hasPendingCancellation = cancellationRequest?.status === 'pending';
   const quickAmounts = [5, 10, 25, 50, 100];
 
-  const gatewayInfo = {
-    stripe: { name: 'Stripe', logo: stripeLogo, desc: 'Credit/Debit Card' },
-    bkash: { name: 'bKash', logo: bkashLogo, desc: 'Mobile Banking (BD)' },
-    upi: { name: 'UPI', logo: upiLogo, desc: 'India Payments' },
-  };
-
   const proFeatures = [
     { text: '10,000+ Premium AI Prompts', icon: Sparkles },
     { text: 'Unlimited Access Forever', icon: Infinity },
@@ -375,26 +331,16 @@ const BillingSection = () => {
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
             <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
               <CreditCard className="text-gray-500" size={20} />
-              Payment Methods
+              Payment Method
             </h3>
-            <div className="grid grid-cols-3 gap-4">
-              {(Object.keys(gatewayInfo) as PaymentGateway[]).map((gateway) => {
-                const info = gatewayInfo[gateway];
-                return (
-                  <div
-                    key={gateway}
-                    className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
-                  >
-                    <img 
-                      src={info.logo} 
-                      alt={info.name} 
-                      className="h-8 w-auto mx-auto mb-2 object-contain"
-                    />
-                    <p className="text-gray-900 font-medium text-sm">{info.name}</p>
-                    <p className="text-gray-500 text-xs">{info.desc}</p>
-                  </div>
-                );
-              })}
+            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all max-w-xs">
+              <img 
+                src={stripeLogo} 
+                alt="Stripe" 
+                className="h-8 w-auto mx-auto mb-2 object-contain"
+              />
+              <p className="text-gray-900 font-medium text-sm">Stripe</p>
+              <p className="text-gray-500 text-xs">Credit/Debit Card</p>
             </div>
           </div>
         </div>
@@ -689,61 +635,20 @@ const BillingSection = () => {
               </div>
             </div>
 
-            {/* Payment Gateway Selection with Real Logos */}
-            <div className="mb-6">
-              <p className="text-gray-500 text-sm mb-3 font-medium">Select payment method</p>
-              <div className="grid grid-cols-3 gap-3">
-                {(Object.keys(gatewayInfo) as PaymentGateway[]).map((gateway) => {
-                  const info = gatewayInfo[gateway];
-                  return (
-                    <button
-                      key={gateway}
-                      onClick={() => setSelectedGateway(gateway)}
-                      className={`p-4 rounded-xl border transition-all text-center ${
-                        selectedGateway === gateway
-                          ? 'bg-violet-50 border-violet-300 ring-2 ring-violet-500/20'
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      <img 
-                        src={info.logo} 
-                        alt={info.name} 
-                        className="h-8 w-auto mx-auto mb-2 object-contain"
-                      />
-                      <p className="font-medium text-sm text-gray-900">{info.name}</p>
-                      <p className="text-xs text-gray-500">{info.desc}</p>
-                    </button>
-                  );
-                })}
+            {/* Payment via Stripe */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <div className="flex items-center gap-3">
+                <img 
+                  src={stripeLogo} 
+                  alt="Stripe" 
+                  className="h-8 w-auto object-contain"
+                />
+                <div>
+                  <p className="font-medium text-gray-900">Secure Payment via Stripe</p>
+                  <p className="text-xs text-gray-500">Credit/Debit Card accepted</p>
+                </div>
               </div>
             </div>
-
-            {/* Gateway Specific Fields */}
-            {selectedGateway === 'bkash' && (
-              <div className="mb-6">
-                <label className="text-gray-500 text-sm mb-2 block font-medium">bKash Number</label>
-                <input
-                  type="tel"
-                  value={bkashNumber}
-                  onChange={(e) => setBkashNumber(e.target.value)}
-                  placeholder="01XXXXXXXXX"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-                />
-              </div>
-            )}
-
-            {selectedGateway === 'upi' && (
-              <div className="mb-6">
-                <label className="text-gray-500 text-sm mb-2 block font-medium">UPI ID</label>
-                <input
-                  type="text"
-                  value={upiId}
-                  onChange={(e) => setUpiId(e.target.value)}
-                  placeholder="yourname@upi"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-                />
-              </div>
-            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3">
@@ -755,7 +660,7 @@ const BillingSection = () => {
               </button>
               <button
                 onClick={handleTopup}
-                disabled={processingTopup || (selectedGateway === 'bkash' && !bkashNumber) || (selectedGateway === 'upi' && !upiId)}
+                disabled={processingTopup}
                 className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
               >
                 {processingTopup ? <Loader2 className="animate-spin" size={18} /> : null}

@@ -18,6 +18,23 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const checkAdminRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .rpc('has_role', { _user_id: userId, _role: 'admin' });
+      
+      if (error) {
+        console.error('Error checking admin role:', error);
+        return false;
+      }
+      return data === true;
+    } catch (err) {
+      console.error('Error in checkAdminRole:', err);
+      return false;
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -27,6 +44,10 @@ export const useAuth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          // Check admin role
+          const adminStatus = await checkAdminRole(session.user.id);
+          setIsAdmin(adminStatus);
+          
           // Fetch profile using setTimeout to avoid race condition
           setTimeout(async () => {
             const { data: profileData } = await supabase
@@ -39,6 +60,7 @@ export const useAuth = () => {
           }, 0);
         } else {
           setProfile(null);
+          setIsAdmin(false);
         }
         
         setLoading(false);
@@ -46,11 +68,15 @@ export const useAuth = () => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        // Check admin role
+        const adminStatus = await checkAdminRole(session.user.id);
+        setIsAdmin(adminStatus);
+        
         supabase
           .from('profiles')
           .select('*')
@@ -115,6 +141,7 @@ export const useAuth = () => {
     signOut,
     signInWithGoogle,
     isAuthenticated: !!session,
-    isPro: profile?.is_pro ?? false
+    isPro: profile?.is_pro ?? false,
+    isAdmin
   };
 };

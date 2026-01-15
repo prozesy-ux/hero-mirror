@@ -24,6 +24,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<any>;
   isAuthenticated: boolean;
   isPro: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
