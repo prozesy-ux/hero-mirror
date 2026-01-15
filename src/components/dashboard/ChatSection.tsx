@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { playSound } from '@/lib/sounds';
 
 interface SupportMessage {
   id: string;
@@ -42,10 +43,12 @@ const ChatSection = () => {
             table: 'support_messages',
             filter: `user_id=eq.${user.id}`,
           },
-          (payload) => {
+        (payload) => {
             const newMsg = payload.new as SupportMessage;
             setMessages((prev) => [...prev, newMsg]);
             if (newMsg.sender_type === 'admin') {
+              // Play notification sound when admin replies
+              playSound('messageReceived');
               markMessagesAsRead();
             }
           }
@@ -105,6 +108,8 @@ const ChatSection = () => {
       });
 
       if (error) throw error;
+      // Play sound when message sent successfully
+      playSound('messageSent');
       setNewMessage('');
       toast.success('Message sent!');
     } catch (error) {

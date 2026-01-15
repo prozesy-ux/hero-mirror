@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   CreditCard, Check, XCircle, Loader2, AlertTriangle, Shield, Wallet, Plus, History, 
   Crown, Zap, Sparkles, Infinity, CalendarPlus, Headphones, FileCheck, CircleDollarSign, Receipt, RotateCcw, 
@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { playSound } from '@/lib/sounds';
 
 // Import payment logos
 import stripeLogo from '@/assets/stripe-logo.svg';
@@ -190,17 +191,40 @@ const BillingSection = () => {
     setTransactions(txData || []);
   };
 
+  // Track previous wallet balance for sound notification
+  const prevWalletBalanceRef = useRef<number | null>(null);
+
   const subscribeToUpdates = () => {
     const channel = supabase
       .channel('billing-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'refund_requests', filter: `user_id=eq.${user?.id}` }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cancellation_requests', filter: `user_id=eq.${user?.id}` }, fetchData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets', filter: `user_id=eq.${user?.id}` }, fetchData)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_wallets', filter: `user_id=eq.${user?.id}` }, (payload) => {
+        const newBalance = (payload.new as { balance: number })?.balance || 0;
+        const oldBalance = prevWalletBalanceRef.current;
+        
+        // Play sound and show toast when wallet is credited
+        if (oldBalance !== null && newBalance > oldBalance) {
+          playSound('walletCredited');
+          toast.success(`$${(newBalance - oldBalance).toFixed(2)} added to your wallet!`);
+        }
+        
+        prevWalletBalanceRef.current = newBalance;
+        fetchData();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_wallets', filter: `user_id=eq.${user?.id}` }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_transactions', filter: `user_id=eq.${user?.id}` }, fetchData)
       .subscribe();
 
     return () => supabase.removeChannel(channel);
   };
+
+  // Initialize wallet balance ref when wallet data is fetched
+  useEffect(() => {
+    if (wallet?.balance !== undefined && prevWalletBalanceRef.current === null) {
+      prevWalletBalanceRef.current = wallet.balance;
+    }
+  }, [wallet?.balance]);
 
   const handleTopup = async () => {
     if (!user) return;
