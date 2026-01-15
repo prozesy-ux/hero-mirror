@@ -328,7 +328,7 @@ const PromptsGrid = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
       </div>
     );
   }
@@ -336,13 +336,13 @@ const PromptsGrid = () => {
   return (
     <div className="space-y-6 lg:space-y-8 section-prompts animate-fade-up">
       {/* Tab Navigation - Scrollable on mobile */}
-      <div className="bg-[#1a1a1f] rounded-2xl p-1.5 lg:p-2 mb-6 lg:mb-8 border border-white/5 flex gap-1.5 lg:gap-2 overflow-x-auto">
+      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-6 lg:mb-8 border border-gray-200 shadow-sm flex gap-1.5 lg:gap-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('all')}
           className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
             activeTab === 'all'
-              ? 'bg-white text-black shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/10 active:scale-95'
+              ? 'bg-gray-900 text-white shadow-lg'
+              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
           }`}
         >
           <Layers size={14} className="lg:w-4 lg:h-4" />
@@ -352,15 +352,15 @@ const PromptsGrid = () => {
           onClick={() => setActiveTab('trending')}
           className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
             activeTab === 'trending'
-              ? 'bg-white text-black shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/10 active:scale-95'
+              ? 'bg-gray-900 text-white shadow-lg'
+              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
           }`}
         >
           <TrendingUp size={14} className="lg:w-4 lg:h-4" />
           Trending
           {trendingPrompts.length > 0 && (
             <span className={`px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs rounded-full ${
-              activeTab === 'trending' ? 'bg-black text-white' : 'bg-white/10 text-white'
+              activeTab === 'trending' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
             }`}>
               {trendingPrompts.length}
             </span>
@@ -370,15 +370,15 @@ const PromptsGrid = () => {
           onClick={() => setActiveTab('saved')}
           className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
             activeTab === 'saved'
-              ? 'bg-white text-black shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/10 active:scale-95'
+              ? 'bg-gray-900 text-white shadow-lg'
+              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
           }`}
         >
           <Bookmark size={14} className="lg:w-4 lg:h-4" />
           Saved
           {favoritePrompts.length > 0 && (
             <span className={`px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs rounded-full ${
-              activeTab === 'saved' ? 'bg-black text-white' : 'bg-white/10 text-white'
+              activeTab === 'saved' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
             }`}>
               {favoritePrompts.length}
             </span>
@@ -388,8 +388,8 @@ const PromptsGrid = () => {
           onClick={() => setActiveTab('categories')}
           className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
             activeTab === 'categories'
-              ? 'bg-white text-black shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/10 active:scale-95'
+              ? 'bg-gray-900 text-white shadow-lg'
+              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
           }`}
         >
           <FolderOpen size={14} className="lg:w-4 lg:h-4" />
@@ -401,59 +401,59 @@ const PromptsGrid = () => {
       {activeTab === 'all' && (
         <>
           {/* Filter Bar */}
-          <div className="bg-[#141418] rounded-2xl p-4 lg:p-6 border border-white/10">
+          <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-sm">
             {/* Search */}
             <div className="relative mb-4 lg:mb-5">
-              <Search size={18} className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+              <Search size={18} className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search prompts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#0a0a0c] border border-white/10 rounded-xl pl-10 lg:pl-12 pr-4 py-3 text-sm lg:text-base text-white placeholder-gray-500 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-all"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 lg:pl-12 pr-4 py-3 text-sm lg:text-base text-gray-900 placeholder-gray-400 focus:border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all"
               />
             </div>
 
             {/* Filter Pills - Scrollable on mobile */}
             <div className="flex gap-2 lg:gap-3 overflow-x-auto pb-1">
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
-                <Filter size={14} className="text-gray-400" />
-                <span className="text-sm font-medium text-gray-400">Filters:</span>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full border border-gray-200">
+                <Filter size={14} className="text-gray-500" />
+                <span className="text-sm font-medium text-gray-600">Filters:</span>
               </div>
 
               <div className="relative">
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="appearance-none px-4 py-2 pr-8 bg-[#0a0a0c] border border-white/10 rounded-full text-white text-sm font-medium focus:outline-none focus:border-white/20 transition-all cursor-pointer"
+                  className="appearance-none px-4 py-2 pr-8 bg-gray-50 border border-gray-200 rounded-full text-gray-700 text-sm font-medium focus:outline-none focus:border-gray-300 transition-all cursor-pointer"
                 >
                   <option value="all">All Categories</option>
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
                   ))}
                 </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
 
               <div className="relative">
                 <select
                   value={selectedTool}
                   onChange={(e) => setSelectedTool(e.target.value)}
-                  className="appearance-none px-4 py-2 pr-8 bg-[#0a0a0c] border border-white/10 rounded-full text-white text-sm font-medium focus:outline-none focus:border-white/20 transition-all cursor-pointer"
+                  className="appearance-none px-4 py-2 pr-8 bg-gray-50 border border-gray-200 rounded-full text-gray-700 text-sm font-medium focus:outline-none focus:border-gray-300 transition-all cursor-pointer"
                 >
                   <option value="all">All Tools</option>
                   {tools.map(tool => (
                     <option key={tool} value={tool}>{tool}</option>
                   ))}
                 </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
 
               <div className="relative">
                 <select
                   value={showLocked}
                   onChange={(e) => setShowLocked(e.target.value)}
-                  className="appearance-none px-4 py-2 pr-8 bg-[#0a0a0c] border border-white/10 rounded-full text-white text-sm font-medium focus:outline-none focus:border-white/20 transition-all cursor-pointer"
+                  className="appearance-none px-4 py-2 pr-8 bg-gray-50 border border-gray-200 rounded-full text-gray-700 text-sm font-medium focus:outline-none focus:border-gray-300 transition-all cursor-pointer"
                 >
                   <option value="all">All Access</option>
                   <option value="free">Free Only</option>

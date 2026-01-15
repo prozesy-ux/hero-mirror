@@ -455,7 +455,7 @@ const AIAccountsSection = () => {
   return (
     <div className="animate-fade-up">
       {/* Tab Navigation with Wallet Balance */}
-      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5">
+      <div className="bg-white rounded-2xl p-2 mb-8 border border-gray-200 shadow-sm">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           {/* Tab buttons */}
           <div className="flex gap-2 flex-wrap">
@@ -463,8 +463,8 @@ const AIAccountsSection = () => {
               onClick={() => setActiveTab('browse')}
               className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
                 activeTab === 'browse'
-                  ? 'bg-white text-black shadow-lg'
-                  : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+                  ? 'bg-gray-900 text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 hover:scale-105 active:scale-95'
               }`}
             >
               <ShoppingCart size={16} />
@@ -474,15 +474,15 @@ const AIAccountsSection = () => {
               onClick={() => setActiveTab('purchases')}
               className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
                 activeTab === 'purchases'
-                  ? 'bg-white text-black shadow-lg'
-                  : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+                  ? 'bg-gray-900 text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 hover:scale-105 active:scale-95'
               }`}
             >
               <Package size={16} />
               My Purchases
               {purchases.length > 0 && (
                 <span className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === 'purchases' ? 'bg-black text-white' : 'bg-white/10 text-white'
+                  activeTab === 'purchases' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
                 }`}>
                   {purchases.length}
                 </span>
@@ -492,8 +492,8 @@ const AIAccountsSection = () => {
               onClick={() => setActiveTab('stats')}
               className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
                 activeTab === 'stats'
-                  ? 'bg-white text-black shadow-lg'
-                  : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+                  ? 'bg-gray-900 text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 hover:scale-105 active:scale-95'
               }`}
             >
               <BarChart3 size={16} />
@@ -503,8 +503,8 @@ const AIAccountsSection = () => {
               onClick={() => setActiveTab('chat')}
               className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
                 activeTab === 'chat'
-                  ? 'bg-white text-black shadow-lg'
-                  : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+                  ? 'bg-gray-900 text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 hover:scale-105 active:scale-95'
               }`}
             >
               <MessageCircle size={16} />
@@ -519,9 +519,9 @@ const AIAccountsSection = () => {
           
           {/* Wallet Balance & Add Funds */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-violet-500/20 border border-violet-500/30 px-3 py-2 rounded-xl">
-              <Wallet size={16} className="text-violet-400" />
-              <span className="text-violet-400 font-bold">
+            <div className="flex items-center gap-2 bg-violet-100 border border-violet-200 px-3 py-2 rounded-xl">
+              <Wallet size={16} className="text-violet-600" />
+              <span className="text-violet-700 font-bold">
                 ${wallet?.balance?.toFixed(2) || '0.00'}
               </span>
             </div>
@@ -541,15 +541,15 @@ const AIAccountsSection = () => {
         <>
           {/* Premium Search Bar */}
           <div className="relative mb-6">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/10 rounded-lg">
-              <Search size={18} className="text-gray-400" />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
+              <Search size={18} className="text-gray-500" />
             </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search AI accounts..."
-              className="w-full bg-[#0f0f12] border border-white/10 rounded-2xl pl-14 pr-4 py-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 transition-all font-medium text-lg"
+              className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium text-lg shadow-sm"
             />
           </div>
 
@@ -561,8 +561,8 @@ const AIAccountsSection = () => {
                 onClick={() => setCategoryFilter(cat.value)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   categoryFilter === cat.value
-                    ? 'bg-white text-black'
-                    : 'bg-[#1a1a1f] text-gray-400 hover:text-white border border-white/5 hover:bg-white/5'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm'
                 }`}
               >
                 {cat.label}
@@ -572,11 +572,11 @@ const AIAccountsSection = () => {
 
 
           {filteredAccounts.length === 0 ? (
-            <div className="bg-[#1a1a1f] rounded-2xl p-16 text-center border border-white/5">
-              <div className="w-20 h-20 rounded-full bg-[#0f0f12] flex items-center justify-center mx-auto mb-6">
-                <ShoppingCart className="w-10 h-10 text-gray-600" />
+            <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-sm">
+              <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+                <ShoppingCart className="w-10 h-10 text-gray-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No Accounts Found</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Accounts Found</h3>
               <p className="text-gray-500">Try adjusting your search or filters</p>
             </div>
           ) : (
