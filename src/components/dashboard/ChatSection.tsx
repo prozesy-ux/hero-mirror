@@ -135,7 +135,6 @@ const ChatSection = () => {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">Support Chat</h1>
-        <p className="text-gray-500 mt-1">Get help from our support team</p>
       </div>
 
       {/* Chat Container */}
