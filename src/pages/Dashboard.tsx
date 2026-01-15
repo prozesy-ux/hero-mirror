@@ -28,13 +28,10 @@ const DashboardContent = () => {
 
   return (
     <main 
-      className={`pb-20 lg:pb-0 min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#0f0f18] to-[#12121f] transition-all duration-300 ease-in-out ${
+      className={`pb-20 lg:pb-0 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white transition-all duration-300 ease-in-out ${
         isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-72'
       }`}
     >
-      {/* Subtle grid pattern overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(139, 92, 246, 0.5) 1px, transparent 0)', backgroundSize: '32px 32px' }} />
       <div className="relative p-4 lg:p-8">
         <Routes>
           <Route index element={<DashboardHome />} />
@@ -52,7 +49,7 @@ const DashboardContent = () => {
 
 const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen bg-gray-50">
       <DashboardSidebar />
       <DashboardContent />
     </div>

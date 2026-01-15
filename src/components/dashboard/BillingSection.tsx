@@ -324,7 +324,7 @@ const BillingSection = () => {
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">
       {/* Tab Navigation */}
-      <div className="bg-[#1a1a1f] rounded-2xl p-2 mb-8 border border-white/5 flex gap-2">
+      <div className="bg-white rounded-2xl p-2 mb-8 border border-gray-200 shadow-sm flex gap-2">
         {tabs.map((tab) => {
           const TabIcon = tab.icon;
           return (
@@ -333,8 +333,8 @@ const BillingSection = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
                 activeTab === tab.id
-                  ? 'bg-white text-black shadow-lg'
-                  : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 active:scale-95'
+                  ? 'bg-gray-900 text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 hover:scale-105 active:scale-95'
               }`}
             >
               <TabIcon size={16} />
@@ -372,9 +372,9 @@ const BillingSection = () => {
           </div>
 
           {/* Payment Methods */}
-          <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5">
-            <h3 className="text-lg font-bold text-white tracking-tight mb-4 flex items-center gap-2">
-              <CreditCard className="text-gray-400" size={20} />
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
+              <CreditCard className="text-gray-500" size={20} />
               Payment Methods
             </h3>
             <div className="grid grid-cols-3 gap-4">
@@ -383,14 +383,14 @@ const BillingSection = () => {
                 return (
                   <div
                     key={gateway}
-                    className="p-4 rounded-xl bg-white/5 border border-white/10 text-center hover:bg-white/10 transition-all"
+                    className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
                   >
                     <img 
                       src={info.logo} 
                       alt={info.name} 
                       className="h-8 w-auto mx-auto mb-2 object-contain"
                     />
-                    <p className="text-white font-medium text-sm">{info.name}</p>
+                    <p className="text-gray-900 font-medium text-sm">{info.name}</p>
                     <p className="text-gray-500 text-xs">{info.desc}</p>
                   </div>
                 );
@@ -462,14 +462,14 @@ const BillingSection = () => {
       {activeTab === 'plan' && (
         <div className="space-y-6">
           {/* Current Plan */}
-          <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5">
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
-                <div className={`p-4 rounded-2xl ${isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-white/10'}`}>
-                  {isPro ? <Crown size={28} className="text-white" /> : <User size={28} className="text-gray-400" />}
+                <div className={`p-4 rounded-2xl ${isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gray-100'}`}>
+                  {isPro ? <Crown size={28} className="text-white" /> : <User size={28} className="text-gray-500" />}
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                  <h3 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
                     {isPro ? 'Pro Plan' : 'Free Plan'}
                   </h3>
                   <p className="text-gray-500">
@@ -480,14 +480,14 @@ const BillingSection = () => {
               <div className="flex items-center gap-3">
                 {isPro && (
                   <>
-                    <span className="px-4 py-2 bg-violet-500/20 text-violet-400 font-semibold rounded-xl flex items-center gap-2">
+                    <span className="px-4 py-2 bg-violet-100 text-violet-700 font-semibold rounded-xl flex items-center gap-2">
                       <Check size={16} />
                       Active
                     </span>
                     {!hasPendingCancellation && (
                       <button
                         onClick={() => setShowCancelModal(true)}
-                        className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl transition-all text-sm border border-white/10"
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl transition-all text-sm border border-gray-200"
                       >
                         Cancel Plan
                       </button>
@@ -498,11 +498,11 @@ const BillingSection = () => {
             </div>
 
             {hasPendingCancellation && (
-              <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center gap-3">
-                <AlertTriangle className="text-amber-400 shrink-0" size={20} />
+              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+                <AlertTriangle className="text-amber-600 shrink-0" size={20} />
                 <div>
-                  <p className="text-amber-400 font-medium">Cancellation Pending</p>
-                  <p className="text-gray-500 text-sm">Your cancellation request is being processed.</p>
+                  <p className="text-amber-700 font-medium">Cancellation Pending</p>
+                  <p className="text-amber-600/70 text-sm">Your cancellation request is being processed.</p>
                 </div>
               </div>
             )}

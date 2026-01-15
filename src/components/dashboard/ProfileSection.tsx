@@ -243,28 +243,28 @@ const ProfileSection = () => {
         {/* Right Column - Settings */}
         <div className="lg:col-span-2 space-y-6">
           {/* Personal Information */}
-          <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5">
-            <h3 className="text-lg font-bold text-white tracking-tight mb-5 flex items-center gap-2">
-              <User size={20} className="text-gray-400" />
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-5 flex items-center gap-2">
+              <User size={20} className="text-gray-500" />
               Personal Information
             </h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-600 mb-2">
                   Full Name
                 </label>
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-[#0f0f12] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 transition-all"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all"
                   placeholder="Your full name"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-600 mb-2">
                   Email Address
                 </label>
                 <div className="flex gap-2">
@@ -272,11 +272,11 @@ const ProfileSection = () => {
                     type="email"
                     value={profile?.email || ''}
                     disabled
-                    className="flex-1 bg-[#0f0f12] border border-white/10 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed"
+                    className="flex-1 bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed"
                   />
                   <button
                     onClick={() => setShowEmailChange(!showEmailChange)}
-                    className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all text-sm font-medium border border-white/10"
+                    className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all text-sm font-medium border border-gray-200"
                   >
                     Change
                   </button>
@@ -284,8 +284,8 @@ const ProfileSection = () => {
               </div>
 
               {showEmailChange && (
-                <div className="p-4 bg-[#0f0f12] rounded-xl border border-white/10 space-y-3 animate-scale-in">
-                  <div className="flex items-center gap-2 text-amber-500 text-sm">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3 animate-scale-in">
+                  <div className="flex items-center gap-2 text-amber-600 text-sm">
                     <AlertTriangle size={16} />
                     A verification email will be sent to your new address
                   </div>
@@ -294,19 +294,19 @@ const ProfileSection = () => {
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     placeholder="Enter new email address"
-                    className="w-full bg-[#1a1a1f] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={() => setShowEmailChange(false)}
-                      className="flex-1 bg-white/5 hover:bg-white/10 text-white py-2.5 rounded-xl transition-all border border-white/10"
+                      className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl transition-all border border-gray-200"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleEmailChange}
                       disabled={emailLoading}
-                      className="flex-1 bg-white hover:bg-gray-100 text-black py-2.5 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
+                      className="flex-1 bg-gray-900 hover:bg-gray-800 text-white py-2.5 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
                     >
                       {emailLoading ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
                       Send Verification
@@ -318,7 +318,7 @@ const ProfileSection = () => {
               <button
                 onClick={handleSave}
                 disabled={loading}
-                className="flex items-center gap-2 bg-white hover:bg-gray-100 text-black font-semibold py-3 px-6 rounded-xl transition-all disabled:opacity-50"
+                className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-xl transition-all disabled:opacity-50"
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                 {loading ? 'Saving...' : 'Save Changes'}
@@ -327,15 +327,15 @@ const ProfileSection = () => {
           </div>
 
           {/* Password & Security */}
-          <div className="bg-[#1a1a1f] rounded-2xl p-6 border border-white/5">
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                <Lock size={20} className="text-gray-400" />
+              <h3 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                <Lock size={20} className="text-gray-500" />
                 Password & Security
               </h3>
               <button
                 onClick={() => setShowPasswordChange(!showPasswordChange)}
-                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all text-sm font-medium border border-white/10"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all text-sm font-medium border border-gray-200"
               >
                 {showPasswordChange ? 'Cancel' : 'Change Password'}
               </button>
@@ -348,19 +348,19 @@ const ProfileSection = () => {
             ) : (
               <div className="space-y-4 animate-scale-in">
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">New Password</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">New Password</label>
                   <div className="relative">
                     <input
                       type={showNewPassword ? 'text' : 'password'}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full bg-[#0f0f12] border border-white/10 rounded-xl px-4 py-3 text-white pr-12 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 pr-12 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all"
                       placeholder="Enter new password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -374,12 +374,12 @@ const ProfileSection = () => {
                           <div
                             key={i}
                             className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                              i < passwordStrength ? strengthColors[passwordStrength - 1] : 'bg-white/10'
+                              i < passwordStrength ? strengthColors[passwordStrength - 1] : 'bg-gray-200'
                             }`}
                           />
                         ))}
                       </div>
-                      <span className={`text-xs font-medium ${passwordStrength >= 4 ? 'text-green-400' : passwordStrength >= 3 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      <span className={`text-xs font-medium ${passwordStrength >= 4 ? 'text-green-600' : passwordStrength >= 3 ? 'text-yellow-600' : 'text-red-600'}`}>
                         {strengthLabels[passwordStrength - 1] || 'Too Short'}
                       </span>
                     </div>
@@ -387,25 +387,25 @@ const ProfileSection = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Confirm New Password</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">Confirm New Password</label>
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-[#0f0f12] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all"
                     placeholder="Confirm new password"
                   />
                   {confirmPassword && newPassword && (
                     <div className="flex items-center gap-1.5 mt-2">
                       {confirmPassword === newPassword ? (
                         <>
-                          <CheckCircle size={14} className="text-green-400" />
-                          <span className="text-xs text-green-400 font-medium">Passwords match</span>
+                          <CheckCircle size={14} className="text-green-600" />
+                          <span className="text-xs text-green-600 font-medium">Passwords match</span>
                         </>
                       ) : (
                         <>
-                          <AlertTriangle size={14} className="text-red-400" />
-                          <span className="text-xs text-red-400 font-medium">Passwords do not match</span>
+                          <AlertTriangle size={14} className="text-red-600" />
+                          <span className="text-xs text-red-600 font-medium">Passwords do not match</span>
                         </>
                       )}
                     </div>
@@ -415,7 +415,7 @@ const ProfileSection = () => {
                 <button
                   onClick={handlePasswordChange}
                   disabled={passwordLoading || newPassword.length < 6 || newPassword !== confirmPassword}
-                  className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-black font-semibold py-3 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {passwordLoading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
                   {passwordLoading ? 'Updating...' : 'Update Password'}

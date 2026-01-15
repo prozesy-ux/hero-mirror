@@ -174,7 +174,7 @@ const DashboardHome = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
       </div>
     );
   }
@@ -185,15 +185,15 @@ const DashboardHome = () => {
       <div>
         <div className="flex items-center justify-between mb-4 lg:mb-6">
           <div className="flex items-center gap-2 lg:gap-3 flex-wrap">
-            <div className="p-2 lg:p-2.5 bg-black border border-white/10 rounded-xl">
+            <div className="p-2 lg:p-2.5 bg-gray-900 rounded-xl">
               <TrendingUp size={18} className="text-white lg:w-5 lg:h-5" />
             </div>
-            <h2 className="text-lg lg:text-xl font-bold text-white">Trending Prompts</h2>
+            <h2 className="text-lg lg:text-xl font-bold text-gray-900">Trending Prompts</h2>
             <span className="px-2 lg:px-3 py-1 bg-emerald-500 text-white rounded-full text-[10px] lg:text-xs font-bold">Popular</span>
           </div>
           <Link 
             to="/dashboard/prompts" 
-            className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm font-medium text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
           >
             View All
             <ArrowRight size={14} className="lg:w-4 lg:h-4" />
@@ -311,8 +311,8 @@ const DashboardHome = () => {
             })}
           </div>
         ) : (
-          <div className="bg-[#141418] rounded-2xl p-12 text-center border border-white/10">
-            <TrendingUp size={40} className="text-gray-600 mx-auto mb-4" />
+          <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 shadow-sm">
+            <TrendingUp size={40} className="text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">No trending prompts available</p>
           </div>
         )}
@@ -322,15 +322,15 @@ const DashboardHome = () => {
       <div>
         <div className="flex items-center justify-between mb-4 lg:mb-6">
           <div className="flex items-center gap-2 lg:gap-3 flex-wrap">
-            <div className="p-2 lg:p-2.5 bg-black border border-white/10 rounded-xl">
+            <div className="p-2 lg:p-2.5 bg-gray-900 rounded-xl">
               <Bot size={18} className="text-white lg:w-5 lg:h-5" />
             </div>
-            <h2 className="text-lg lg:text-xl font-bold text-white">Popular AI Accounts</h2>
+            <h2 className="text-lg lg:text-xl font-bold text-gray-900">Popular AI Accounts</h2>
             <span className="px-2 lg:px-3 py-1 bg-yellow-500 text-black rounded-full text-[10px] lg:text-xs font-bold">Cheap</span>
           </div>
           <Link 
             to="/dashboard/ai-accounts" 
-            className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm font-medium text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
           >
             View All
             <ArrowRight size={14} className="lg:w-4 lg:h-4" />
@@ -427,8 +427,8 @@ const DashboardHome = () => {
             })}
           </div>
         ) : (
-          <div className="bg-[#141418] rounded-2xl p-12 text-center border border-white/10">
-            <Bot size={40} className="text-gray-600 mx-auto mb-4" />
+          <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 shadow-sm">
+            <Bot size={40} className="text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">No AI accounts available</p>
           </div>
         )}
