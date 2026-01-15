@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, Filter, ChevronDown, FolderOpen, Star, Bookmark, Check, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, Filter, ChevronDown, FolderOpen, Star, Bookmark, Check, ChevronRight, Crown, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -29,6 +30,7 @@ interface Category {
 type TabType = 'all' | 'trending' | 'saved' | 'categories';
 
 const PromptsGrid = () => {
+  const navigate = useNavigate();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -335,74 +337,88 @@ const PromptsGrid = () => {
 
   return (
     <div className="space-y-6 lg:space-y-8 section-prompts animate-fade-up">
-      {/* Tab Navigation - Scrollable on mobile */}
-      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-6 lg:mb-8 border border-gray-200 shadow-md flex gap-1.5 lg:gap-2 overflow-x-auto items-center">
-        <button
-          onClick={() => setActiveTab('all')}
-          className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
-            activeTab === 'all'
-              ? 'bg-gray-900 text-white shadow-lg'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
-          }`}
-        >
-          <Layers size={14} className="lg:w-4 lg:h-4" />
-          All
-        </button>
-        <button
-          onClick={() => setActiveTab('trending')}
-          className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
-            activeTab === 'trending'
-              ? 'bg-gray-900 text-white shadow-lg'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
-          }`}
-        >
-          <TrendingUp size={14} className="lg:w-4 lg:h-4" />
-          Trending
-          {trendingPrompts.length > 0 && (
-            <span className={`px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs rounded-full ${
-              activeTab === 'trending' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
-            }`}>
-              {trendingPrompts.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('saved')}
-          className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
-            activeTab === 'saved'
-              ? 'bg-gray-900 text-white shadow-lg'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
-          }`}
-        >
-          <Bookmark size={14} className="lg:w-4 lg:h-4" />
-          Saved
-          {favoritePrompts.length > 0 && (
-            <span className={`px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs rounded-full ${
-              activeTab === 'saved' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
-            }`}>
-              {favoritePrompts.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('categories')}
-          className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
-            activeTab === 'categories'
-              ? 'bg-gray-900 text-white shadow-lg'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
-          }`}
-        >
-          <FolderOpen size={14} className="lg:w-4 lg:h-4" />
-          Categories
-        </button>
-
-        {/* PRO Version Badge for non-Pro users */}
-        {!isPro && (
-          <div className="ml-auto flex items-center gap-2 px-3 lg:px-4 py-2 lg:py-2.5 bg-gradient-to-r from-amber-100 to-orange-100 border border-amber-200 rounded-xl whitespace-nowrap">
-            <Lock size={14} className="text-amber-600" />
-            <span className="text-amber-700 font-semibold text-xs lg:text-sm">PRO Version Required</span>
+      {/* Tab Navigation - Premium Design with Unlock Pro */}
+      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-6 lg:mb-8 border border-gray-200 shadow-md">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          {/* Tab buttons */}
+          <div className="flex gap-1.5 lg:gap-2 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
+                activeTab === 'all'
+                  ? 'bg-gray-900 text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+              }`}
+            >
+              <Layers size={14} className="lg:w-4 lg:h-4" />
+              All
+            </button>
+            <button
+              onClick={() => setActiveTab('trending')}
+              className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
+                activeTab === 'trending'
+                  ? 'bg-gray-900 text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+              }`}
+            >
+              <TrendingUp size={14} className="lg:w-4 lg:h-4" />
+              Trending
+              {trendingPrompts.length > 0 && (
+                <span className={`px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs rounded-full ${
+                  activeTab === 'trending' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
+                }`}>
+                  {trendingPrompts.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('saved')}
+              className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
+                activeTab === 'saved'
+                  ? 'bg-gray-900 text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+              }`}
+            >
+              <Bookmark size={14} className="lg:w-4 lg:h-4" />
+              Saved
+              {favoritePrompts.length > 0 && (
+                <span className={`px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs rounded-full ${
+                  activeTab === 'saved' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
+                }`}>
+                  {favoritePrompts.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('categories')}
+              className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
+                activeTab === 'categories'
+                  ? 'bg-gray-900 text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+              }`}
+            >
+              <FolderOpen size={14} className="lg:w-4 lg:h-4" />
+              Categories
+            </button>
           </div>
-        )}
+
+          {/* Unlock Pro Section - Like AI Accounts wallet style */}
+          {!isPro && (
+            <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-2 bg-amber-100 border border-amber-200 px-3 py-2 rounded-xl">
+                <Lock size={14} className="text-amber-600" />
+                <span className="text-amber-700 font-bold text-xs lg:text-sm whitespace-nowrap">Free Plan</span>
+              </div>
+              <button
+                onClick={() => navigate('/dashboard/billing')}
+                className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black px-4 py-2 rounded-xl font-semibold text-xs lg:text-sm transition-all hover:scale-105 active:scale-95 shadow-lg whitespace-nowrap"
+              >
+                <Crown size={14} />
+                Unlock Pro
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* All Prompts Tab */}
@@ -424,53 +440,90 @@ const PromptsGrid = () => {
               />
             </div>
 
-            {/* Filter Pills - Scrollable on mobile */}
-            <div className="flex gap-2 lg:gap-3 overflow-x-auto pb-1">
-              <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full border border-gray-200">
+            {/* Tool Filter Pills - Button Style like AI Accounts */}
+            <div className="flex gap-2 lg:gap-3 overflow-x-auto pb-1 flex-wrap">
+              <button
+                onClick={() => setSelectedTool('all')}
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                  selectedTool === 'all'
+                    ? 'bg-gray-900 text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
+                }`}
+              >
+                All Tools
+              </button>
+              {tools.map(tool => (
+                <button
+                  key={tool}
+                  onClick={() => setSelectedTool(tool)}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                    selectedTool === tool
+                      ? 'bg-gray-900 text-white shadow-md'
+                      : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
+                  }`}
+                >
+                  {tool}
+                </button>
+              ))}
+            </div>
+
+            {/* Category & Access Filter Row */}
+            <div className="flex gap-2 lg:gap-3 mt-3 overflow-x-auto pb-1 flex-wrap items-center">
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl border border-gray-200">
                 <Filter size={14} className="text-gray-500" />
-                <span className="text-sm font-medium text-gray-600">Filters:</span>
+                <span className="text-sm font-medium text-gray-600">Filter by:</span>
               </div>
 
-              <div className="relative">
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="appearance-none px-4 py-2 pr-8 bg-gray-50 border border-gray-200 rounded-full text-gray-700 text-sm font-medium focus:outline-none focus:border-gray-300 transition-all cursor-pointer"
+              {/* Category Pills */}
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                  selectedCategory === 'all'
+                    ? 'bg-violet-600 text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
+                }`}
+              >
+                All Categories
+              </button>
+              {categories.slice(0, 5).map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                    selectedCategory === cat.id
+                      ? 'bg-violet-600 text-white shadow-md'
+                      : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
+                  }`}
                 >
-                  <option value="all">All Categories</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
+                  {cat.icon && <span>{cat.icon}</span>}
+                  {cat.name}
+                </button>
+              ))}
 
-              <div className="relative">
-                <select
-                  value={selectedTool}
-                  onChange={(e) => setSelectedTool(e.target.value)}
-                  className="appearance-none px-4 py-2 pr-8 bg-gray-50 border border-gray-200 rounded-full text-gray-700 text-sm font-medium focus:outline-none focus:border-gray-300 transition-all cursor-pointer"
-                >
-                  <option value="all">All Tools</option>
-                  {tools.map(tool => (
-                    <option key={tool} value={tool}>{tool}</option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
-
-              <div className="relative">
-                <select
-                  value={showLocked}
-                  onChange={(e) => setShowLocked(e.target.value)}
-                  className="appearance-none px-4 py-2 pr-8 bg-gray-50 border border-gray-200 rounded-full text-gray-700 text-sm font-medium focus:outline-none focus:border-gray-300 transition-all cursor-pointer"
-                >
-                  <option value="all">All Access</option>
-                  <option value="free">Free Only</option>
-                  <option value="premium">Premium Only</option>
-                </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-              </div>
+              {/* Access Filter Pills */}
+              <div className="h-6 w-px bg-gray-200 mx-1 hidden lg:block" />
+              
+              <button
+                onClick={() => setShowLocked('free')}
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                  showLocked === 'free'
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
+                }`}
+              >
+                Free Only
+              </button>
+              <button
+                onClick={() => setShowLocked('premium')}
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                  showLocked === 'premium'
+                    ? 'bg-amber-500 text-black shadow-md'
+                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
+                }`}
+              >
+                <Crown size={12} />
+                Pro Only
+              </button>
 
               {/* Clear Filters Button */}
               {(searchQuery || selectedCategory !== 'all' || selectedTool !== 'all' || showLocked !== 'all') && (
@@ -481,10 +534,10 @@ const PromptsGrid = () => {
                     setSelectedTool('all');
                     setShowLocked('all');
                   }}
-                  className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-full text-red-400 text-sm font-medium transition-all flex items-center gap-2"
+                  className="px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl text-red-600 text-sm font-medium transition-all flex items-center gap-2"
                 >
                   <X size={14} />
-                  Clear Filters
+                  Clear
                 </button>
               )}
             </div>
