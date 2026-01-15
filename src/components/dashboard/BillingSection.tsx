@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
   CreditCard, Check, XCircle, Loader2, AlertTriangle, Shield, Wallet, Plus, History, 
-  Crown, Zap, Sparkles, Infinity, MessageSquareText, Image, 
-  Brain, CalendarCheck, Headphones, FileCheck, CircleDollarSign, Receipt, RotateCcw, 
-  ClipboardList, ShoppingBag, User
+  Crown, Zap, Sparkles, Infinity, CalendarPlus, Headphones, FileCheck, CircleDollarSign, Receipt, RotateCcw, 
+  ClipboardList, ShoppingBag, User, ArrowRight
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -14,6 +13,11 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import stripeLogo from '@/assets/stripe-logo.svg';
 import bkashLogo from '@/assets/bkash-logo.png';
 import upiLogo from '@/assets/upi-logo.png';
+
+// Import AI product logos
+import chatgptLogo from '@/assets/chatgpt-logo.avif';
+import midjourneyLogo from '@/assets/midjourney-logo.avif';
+import geminiLogo from '@/assets/gemini-logo.avif';
 
 interface Purchase {
   id: string;
@@ -389,12 +393,12 @@ const BillingSection = () => {
   const quickAmounts = [5, 10, 25, 50, 100];
 
   const proFeatures = [
-    { text: '10,000+ Premium AI Prompts', icon: Sparkles },
+    { text: '10,000+ Premium AI Prompts', icon: Sparkles, highlight: true },
+    { text: 'All ChatGPT Mega-Prompts', logo: chatgptLogo, logoAlt: 'ChatGPT' },
+    { text: 'All Midjourney Prompts', logo: midjourneyLogo, logoAlt: 'Midjourney' },
+    { text: 'All Gemini Prompts', logo: geminiLogo, logoAlt: 'Gemini' },
     { text: 'Unlimited Access Forever', icon: Infinity },
-    { text: 'All ChatGPT Mega-Prompts', icon: MessageSquareText },
-    { text: 'All Midjourney Prompts', icon: Image },
-    { text: 'All Claude Prompts', icon: Brain },
-    { text: 'New Prompts Added Monthly', icon: CalendarCheck },
+    { text: 'New Prompts Added Monthly', icon: CalendarPlus },
     { text: 'Priority Support', icon: Headphones },
     { text: 'Commercial License', icon: FileCheck },
   ];
@@ -655,64 +659,87 @@ const BillingSection = () => {
 
           {/* Upgrade Card (if not Pro) */}
           {!isPro && (
-            <div className="bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100">
-              {/* Gradient Hero Header */}
-              <div className="h-32 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 p-6 flex items-center gap-4">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
-                  <Crown className="text-white" size={32} />
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+              {/* Clean header with PRO badge */}
+              <div className="px-8 pt-8 pb-6 border-b border-gray-100">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-sm font-semibold mb-4 border border-amber-100">
+                  <Crown size={14} />
+                  PRO
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-white tracking-tight">Upgrade to Pro</h3>
-                  <p className="text-white/80">Unlock everything, forever</p>
-                </div>
+                <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
+                  Upgrade to Pro
+                </h3>
+                <p className="text-gray-500 mt-1">
+                  Unlock 10,000+ premium AI prompts, forever.
+                </p>
               </div>
 
-              <div className="p-6">
-                <div className="flex items-baseline gap-3 mb-6">
-                  <span className="text-gray-400 line-through text-xl">$499</span>
-                  <span className="text-5xl font-bold text-gray-900 tracking-tight">$19</span>
-                  <span className="text-gray-500">one-time payment</span>
+              {/* Two-column layout */}
+              <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+                {/* Pricing Column */}
+                <div className="p-8">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-gray-400 line-through text-lg font-medium">$499</span>
+                    <span className="text-4xl font-bold text-gray-900 tracking-tight">$19</span>
+                  </div>
+                  <p className="text-gray-500 text-sm mb-6">one-time payment</p>
+                  
+                  <button
+                    onClick={handleUpgrade}
+                    disabled={processingPayment}
+                    className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-3.5 px-6 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 group"
+                  >
+                    {processingPayment ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        Upgrade Now
+                        <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                      </>
+                    )}
+                  </button>
+                  
+                  <div className="flex items-center gap-2 mt-4 text-sm text-gray-500">
+                    <Shield size={14} className="text-gray-400" />
+                    <span>30-day money-back guarantee</span>
+                  </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-3 mb-6">
-                  {proFeatures.map((feature, index) => {
-                    const FeatureIcon = feature.icon;
-                    return (
-                      <div 
-                        key={index} 
-                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
-                      >
-                        <div className="p-2 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg">
-                          <FeatureIcon size={16} className="text-white" />
-                        </div>
-                        <span className="text-gray-700 font-medium">{feature.text}</span>
+                {/* Features Column */}
+                <div className="p-8">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                    What's included
+                  </p>
+                  <div className="space-y-3">
+                    {proFeatures.map((feature, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        {'logo' in feature && feature.logo ? (
+                          <img 
+                            src={feature.logo} 
+                            alt={feature.logoAlt} 
+                            className="w-6 h-6 rounded-md object-cover"
+                          />
+                        ) : (
+                          <div className={`w-6 h-6 rounded-md flex items-center justify-center ${
+                            feature.highlight ? 'bg-amber-100' : 'bg-gray-100'
+                          }`}>
+                            {feature.icon && <feature.icon size={14} className={
+                              feature.highlight ? 'text-amber-600' : 'text-gray-600'
+                            } />}
+                          </div>
+                        )}
+                        <span className={`text-[15px] ${
+                          feature.highlight ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'
+                        }`}>
+                          {feature.text}
+                        </span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-
-                <button
-                  onClick={handleUpgrade}
-                  disabled={processingPayment}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all disabled:opacity-50 shadow-lg shadow-orange-500/25"
-                >
-                  {processingPayment ? (
-                    <>
-                      <Loader2 className="animate-spin" size={24} />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap size={20} />
-                      Upgrade Now for $19
-                    </>
-                  )}
-                </button>
-
-                <p className="text-center text-gray-500 text-sm mt-4 flex items-center justify-center gap-2">
-                  <Shield size={14} />
-                  Secure payment • 30-day money-back guarantee
-                </p>
               </div>
             </div>
           )}
