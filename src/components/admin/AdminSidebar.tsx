@@ -127,6 +127,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       { icon: <XCircle size={22} />, label: 'Cancellations', to: '/admin/cancellations' },
       { icon: <Trash2 size={22} />, label: 'Deletions', to: '/admin/deletions' },
       { icon: <MessageCircle size={22} />, label: 'Support Chats', to: '/admin/chats' },
+      { icon: <Shield size={22} />, label: 'Security Logs', to: '/admin/security' },
     ];
 
     return (
