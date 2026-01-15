@@ -5,6 +5,7 @@ import PromptsGrid from '@/components/dashboard/PromptsGrid';
 import ProfileSection from '@/components/dashboard/ProfileSection';
 import BillingSection from '@/components/dashboard/BillingSection';
 import AIAccountsSection from '@/components/dashboard/AIAccountsSection';
+import ChatSection from '@/components/dashboard/ChatSection';
 import { useState, useEffect } from 'react';
 
 const DashboardContent = () => {
@@ -41,6 +42,7 @@ const DashboardContent = () => {
           <Route path="ai-accounts" element={<AIAccountsSection />} />
           <Route path="billing" element={<BillingSection />} />
           <Route path="profile" element={<ProfileSection />} />
+          <Route path="chat" element={<ChatSection />} />
         </Routes>
       </div>
     </main>
