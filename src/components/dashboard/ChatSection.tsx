@@ -221,16 +221,6 @@ const ChatSection = () => {
           </div>
         </div>
       </div>
-
-      {/* Help Tips */}
-      <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
-        <h4 className="font-semibold text-amber-800 mb-2">💡 Quick Tips</h4>
-        <ul className="text-sm text-amber-700 space-y-1">
-          <li>• Include details about your issue for faster resolution</li>
-          <li>• Check our FAQ for common questions</li>
-          <li>• Response time: Usually within 24 hours</li>
-        </ul>
-      </div>
     </div>
   );
 };
