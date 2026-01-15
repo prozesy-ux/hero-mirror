@@ -22,6 +22,13 @@ export const useAuth = () => {
 
   const checkAdminRole = async (userId: string) => {
     try {
+      // Check cache first to avoid repeated RPC calls
+      const cacheKey = `admin_${userId}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached !== null) {
+        return cached === 'true';
+      }
+      
       const { data, error } = await supabase
         .rpc('has_role', { _user_id: userId, _role: 'admin' });
       
@@ -29,6 +36,9 @@ export const useAuth = () => {
         console.error('Error checking admin role:', error);
         return false;
       }
+      
+      // Cache the result for this session
+      sessionStorage.setItem(cacheKey, String(data === true));
       return data === true;
     } catch (err) {
       console.error('Error in checkAdminRole:', err);
