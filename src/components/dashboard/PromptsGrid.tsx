@@ -392,8 +392,8 @@ const PromptsGrid = () => {
                   : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-              <Layers size={14} className="lg:w-4 lg:h-4" />
-              All
+                <Layers size={14} className="lg:w-4 lg:h-4" />
+                Browse Prompts
             </button>
             <button
               onClick={() => setActiveTab('trending')}
