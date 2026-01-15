@@ -217,7 +217,7 @@ const DashboardHome = () => {
               return (
                 <div
                   key={prompt.id}
-                  className="group flex-shrink-0 w-[240px] lg:w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  className="group flex-shrink-0 w-[240px] lg:w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300"
                 >
                   {/* Large Image Section */}
                   <div className="relative aspect-[4/3] overflow-hidden">
@@ -311,7 +311,7 @@ const DashboardHome = () => {
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 shadow-md">
             <TrendingUp size={40} className="text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">No trending prompts available</p>
           </div>
@@ -353,7 +353,7 @@ const DashboardHome = () => {
               return (
                 <div
                   key={account.id}
-                  className="group flex-shrink-0 w-[240px] lg:w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  className="group flex-shrink-0 w-[240px] lg:w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300"
                 >
                   {/* Large Image Section */}
                   <div className="relative aspect-[4/3] overflow-hidden">

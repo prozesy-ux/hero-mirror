@@ -324,7 +324,7 @@ const BillingSection = () => {
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">
       {/* Tab Navigation */}
-      <div className="bg-white rounded-2xl p-2 mb-8 border border-gray-200 shadow-sm flex gap-2">
+      <div className="bg-white rounded-2xl p-2 mb-8 border border-gray-200 shadow-md flex gap-2">
         {tabs.map((tab) => {
           const TabIcon = tab.icon;
           return (
@@ -372,7 +372,7 @@ const BillingSection = () => {
           </div>
 
           {/* Payment Methods */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
             <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
               <CreditCard className="text-gray-500" size={20} />
               Payment Methods
@@ -402,7 +402,7 @@ const BillingSection = () => {
 
       {/* Transactions Tab */}
       {activeTab === 'transactions' && (
-        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
           <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
             <History className="text-gray-500" size={20} />
             Transaction History
@@ -462,7 +462,7 @@ const BillingSection = () => {
       {activeTab === 'plan' && (
         <div className="space-y-6">
           {/* Current Plan */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <div className={`p-4 rounded-2xl ${isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gray-100'}`}>

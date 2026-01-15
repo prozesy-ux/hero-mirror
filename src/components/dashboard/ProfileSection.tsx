@@ -243,7 +243,7 @@ const ProfileSection = () => {
         {/* Right Column - Settings */}
         <div className="lg:col-span-2 space-y-6">
           {/* Personal Information */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
             <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-5 flex items-center gap-2">
               <User size={20} className="text-gray-500" />
               Personal Information
@@ -327,7 +327,7 @@ const ProfileSection = () => {
           </div>
 
           {/* Password & Security */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
                 <Lock size={20} className="text-gray-500" />
