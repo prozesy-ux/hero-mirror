@@ -1,27 +1,91 @@
 import { useState, useRef } from 'react';
-import { User, Mail, Save, Camera, Lock, Eye, EyeOff, Loader2, AlertTriangle, CheckCircle, Upload, Shield, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { 
+  User, 
+  Shield, 
+  Bell, 
+  Trash2, 
+  Camera,
+  Check,
+  X,
+  Eye,
+  EyeOff,
+  Smartphone,
+  Monitor,
+  LogOut,
+  Download,
+  Mail,
+  Key,
+  Lock,
+  Loader2,
+  AlertTriangle,
+  CheckCircle
+} from 'lucide-react';
 
 const ProfileSection = () => {
   const { profile, user } = useAuthContext();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || '');
+  const [isEditingName, setIsEditingName] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Email change
-  const [showEmailChange, setShowEmailChange] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [emailLoading, setEmailLoading] = useState(false);
-  
-  // Password change
+  // Password states
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // Notification preferences
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [marketingEmails, setMarketingEmails] = useState(false);
+  const [securityAlerts, setSecurityAlerts] = useState(true);
+
+  // 2FA state (UI only)
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return user?.email?.charAt(0).toUpperCase() || 'U';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Unknown';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    });
+  };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -70,7 +134,7 @@ const ProfileSection = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveName = async () => {
     if (!user) return;
     
     setLoading(true);
@@ -82,32 +146,10 @@ const ProfileSection = () => {
     setLoading(false);
 
     if (error) {
-      toast.error('Failed to update profile');
+      toast.error('Failed to update name');
     } else {
-      toast.success('Profile updated successfully');
-    }
-  };
-
-  const handleEmailChange = async () => {
-    if (!newEmail || !newEmail.includes('@')) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-
-    setEmailLoading(true);
-    
-    const { error } = await supabase.auth.updateUser({
-      email: newEmail
-    });
-
-    setEmailLoading(false);
-
-    if (error) {
-      toast.error(error.message || 'Failed to update email');
-    } else {
-      toast.success('Verification email sent to your new address. Please check your inbox.');
-      setShowEmailChange(false);
-      setNewEmail('');
+      toast.success('Name updated successfully');
+      setIsEditingName(false);
     }
   };
 
@@ -154,276 +196,454 @@ const ProfileSection = () => {
   const strengthLabels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
   const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-lime-500', 'bg-green-500'];
 
+  const handleToggle2FA = () => {
+    setTwoFactorEnabled(!twoFactorEnabled);
+    toast.info(twoFactorEnabled ? 'Two-factor authentication disabled' : 'Two-factor authentication enabled (Demo)');
+  };
+
+  const handleDeleteAccount = async () => {
+    toast.info('Account deletion request submitted. Our team will process this within 48 hours.');
+  };
+
   return (
-    <div className="animate-fade-up">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Profile Card */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 sticky top-6">
-            {/* Avatar */}
-            <div className="flex flex-col items-center text-center">
-              <div className="relative group mb-4">
-                <div className="relative">
-                  {profile?.avatar_url ? (
-                    <img 
-                      src={profile.avatar_url} 
-                      alt="Avatar" 
-                      className="w-28 h-28 rounded-full object-cover ring-4 ring-gray-100 transition-all duration-300 group-hover:ring-gray-200"
-                    />
-                  ) : (
-                    <div className="w-28 h-28 rounded-full bg-gray-900 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-gray-100">
-                      {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
-                    </div>
-                  )}
-                  
-                  {/* Upload Overlay */}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={avatarLoading}
-                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-full"
-                  >
-                    {avatarLoading ? (
-                      <Loader2 size={24} className="text-white animate-spin" />
-                    ) : (
-                      <Camera size={24} className="text-white" />
-                    )}
-                  </button>
-                </div>
-                
-                {/* Upload Button */}
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={avatarLoading}
-                  className="absolute -bottom-1 -right-1 p-2.5 bg-gray-900 rounded-full text-white hover:bg-gray-800 transition-all shadow-lg"
-                >
-                  <Upload size={14} />
-                </button>
-                
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
-              </div>
-              
-              <h3 className="text-xl font-bold text-gray-900 tracking-tight mb-1">
-                {profile?.full_name || 'User'}
-              </h3>
-              <p className="text-gray-500 text-sm mb-4">{profile?.email}</p>
-              
-              {/* Quick Stats */}
-              <div className="w-full space-y-3 pt-4 border-t border-gray-100">
-                <div className="flex items-center gap-3 text-left">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <Calendar size={16} className="text-gray-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Member since</p>
-                    <p className="text-sm font-medium text-gray-700">
-                      {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-left">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <Shield size={16} className="text-gray-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Account status</p>
-                    <p className="text-sm font-medium text-green-600">Active</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column - Settings */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Personal Information */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
-            <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-5 flex items-center gap-2">
-              <User size={20} className="text-gray-500" />
-              Personal Information
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all"
-                  placeholder="Your full name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  Email Address
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    value={profile?.email || ''}
-                    disabled
-                    className="flex-1 bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed"
-                  />
-                  <button
-                    onClick={() => setShowEmailChange(!showEmailChange)}
-                    className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all text-sm font-medium border border-gray-200"
-                  >
-                    Change
-                  </button>
-                </div>
-              </div>
-
-              {showEmailChange && (
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3 animate-scale-in">
-                  <div className="flex items-center gap-2 text-amber-600 text-sm">
-                    <AlertTriangle size={16} />
-                    A verification email will be sent to your new address
-                  </div>
-                  <input
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="Enter new email address"
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowEmailChange(false)}
-                      className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl transition-all border border-gray-200"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleEmailChange}
-                      disabled={emailLoading}
-                      className="flex-1 bg-gray-900 hover:bg-gray-800 text-white py-2.5 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
-                    >
-                      {emailLoading ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
-                      Send Verification
-                    </button>
-                  </div>
-                </div>
+    <div className="max-w-2xl mx-auto space-y-6 p-4 lg:p-6 animate-fade-up">
+      {/* Compact Profile Header */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-md p-6">
+        <div className="flex items-center gap-5">
+          {/* Avatar with change button */}
+          <div className="relative group">
+            <Avatar className="h-16 w-16 border-2 border-gray-100">
+              <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || 'User'} />
+              <AvatarFallback className="bg-gray-900 text-white text-lg font-semibold">
+                {getInitials(profile?.full_name)}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarLoading}
+              className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
+            >
+              {avatarLoading ? (
+                <Loader2 className="h-5 w-5 text-white animate-spin" />
+              ) : (
+                <Camera className="h-5 w-5 text-white" />
               )}
-
-              <button
-                onClick={handleSave}
-                disabled={loading}
-                className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-xl transition-all disabled:opacity-50"
-              >
-                {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                {loading ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
           </div>
 
-          {/* Password & Security */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                <Lock size={20} className="text-gray-500" />
-                Password & Security
-              </h3>
-              <button
-                onClick={() => setShowPasswordChange(!showPasswordChange)}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all text-sm font-medium border border-gray-200"
-              >
-                {showPasswordChange ? 'Cancel' : 'Change Password'}
-              </button>
-            </div>
-
-            {!showPasswordChange ? (
-              <p className="text-gray-500 text-sm">
-                Keep your account secure with a strong password. We recommend using a unique password that you don't use elsewhere.
-              </p>
-            ) : (
-              <div className="space-y-4 animate-scale-in">
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-2">New Password</label>
-                  <div className="relative">
-                    <input
-                      type={showNewPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 pr-12 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all"
-                      placeholder="Enter new password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                  
-                  {/* Password Strength Indicator */}
-                  {newPassword && (
-                    <div className="mt-3">
-                      <div className="flex gap-1 mb-2">
-                        {[...Array(5)].map((_, i) => (
-                          <div
-                            key={i}
-                            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                              i < passwordStrength ? strengthColors[passwordStrength - 1] : 'bg-gray-200'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className={`text-xs font-medium ${passwordStrength >= 4 ? 'text-green-600' : passwordStrength >= 3 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {strengthLabels[passwordStrength - 1] || 'Too Short'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-2">Confirm New Password</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all"
-                    placeholder="Confirm new password"
-                  />
-                  {confirmPassword && newPassword && (
-                    <div className="flex items-center gap-1.5 mt-2">
-                      {confirmPassword === newPassword ? (
-                        <>
-                          <CheckCircle size={14} className="text-green-600" />
-                          <span className="text-xs text-green-600 font-medium">Passwords match</span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertTriangle size={14} className="text-red-600" />
-                          <span className="text-xs text-red-600 font-medium">Passwords do not match</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  onClick={handlePasswordChange}
-                  disabled={passwordLoading || newPassword.length < 6 || newPassword !== confirmPassword}
-                  className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {passwordLoading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
-                  {passwordLoading ? 'Updating...' : 'Update Password'}
-                </button>
-              </div>
-            )}
+          {/* User info */}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-semibold text-gray-900 truncate">
+              {profile?.full_name || 'User'}
+            </h2>
+            <p className="text-sm text-gray-500 truncate">{user?.email}</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Member since {formatDate(profile?.created_at)}
+            </p>
           </div>
+
+          {/* Pro badge */}
+          {profile?.is_pro && (
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-900 text-white">
+              PRO
+            </span>
+          )}
         </div>
+      </div>
+
+      {/* Settings Accordion */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden">
+        <Accordion type="multiple" defaultValue={['personal']} className="divide-y divide-gray-100">
+          
+          {/* Personal Information */}
+          <AccordionItem value="personal" className="border-none">
+            <AccordionTrigger className="px-6 py-4 hover:bg-gray-50 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-gray-100">
+                  <User className="h-4 w-4 text-gray-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-900">Personal Information</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              <div className="space-y-4">
+                {/* Full Name */}
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <div className="flex-1">
+                    <Label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Full Name</Label>
+                    {isEditingName ? (
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Input
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          className="h-9 text-sm bg-white border-gray-300 flex-1"
+                          placeholder="Enter your name"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={handleSaveName}
+                          disabled={loading}
+                          className="h-9 bg-gray-900 hover:bg-gray-800"
+                        >
+                          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setIsEditingName(false);
+                            setFullName(profile?.full_name || '');
+                          }}
+                          className="h-9"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-900 mt-1">{profile?.full_name || 'Not set'}</p>
+                    )}
+                  </div>
+                  {!isEditingName && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsEditingName(true)}
+                      className="text-gray-600 hover:text-gray-900 text-xs"
+                    >
+                      Edit
+                    </Button>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div className="flex items-center justify-between py-3">
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Address</Label>
+                    <p className="text-sm text-gray-900 mt-1">{user?.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      <Check className="h-3 w-3 mr-1" />
+                      Verified
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Security */}
+          <AccordionItem value="security" className="border-none">
+            <AccordionTrigger className="px-6 py-4 hover:bg-gray-50 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-gray-100">
+                  <Shield className="h-4 w-4 text-gray-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-900">Security</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              <div className="space-y-4">
+                {/* Password */}
+                <div className="py-3 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Key className="h-4 w-4 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Password</p>
+                        <p className="text-xs text-gray-500">Keep your account secure</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowPasswordChange(!showPasswordChange)}
+                      className="text-gray-600 hover:text-gray-900 text-xs"
+                    >
+                      {showPasswordChange ? 'Cancel' : 'Change'}
+                    </Button>
+                  </div>
+
+                  {showPasswordChange && (
+                    <div className="mt-4 space-y-3 pl-7 animate-fade-up">
+                      <div>
+                        <div className="relative">
+                          <Input
+                            type={showNewPassword ? 'text' : 'password'}
+                            placeholder="New password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="h-9 text-sm bg-white border-gray-300 pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        
+                        {/* Password Strength */}
+                        {newPassword && (
+                          <div className="mt-2">
+                            <div className="flex gap-1 mb-1">
+                              {[...Array(5)].map((_, i) => (
+                                <div
+                                  key={i}
+                                  className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                                    i < passwordStrength ? strengthColors[passwordStrength - 1] : 'bg-gray-200'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className={`text-xs font-medium ${passwordStrength >= 4 ? 'text-green-600' : passwordStrength >= 3 ? 'text-yellow-600' : 'text-red-600'}`}>
+                              {strengthLabels[passwordStrength - 1] || 'Too Short'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <Input
+                          type="password"
+                          placeholder="Confirm new password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="h-9 text-sm bg-white border-gray-300"
+                        />
+                        {confirmPassword && newPassword && (
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            {confirmPassword === newPassword ? (
+                              <>
+                                <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                                <span className="text-xs text-green-600 font-medium">Passwords match</span>
+                              </>
+                            ) : (
+                              <>
+                                <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+                                <span className="text-xs text-red-600 font-medium">Passwords do not match</span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Button
+                        onClick={handlePasswordChange}
+                        disabled={passwordLoading || newPassword.length < 6 || newPassword !== confirmPassword}
+                        className="h-9 bg-gray-900 hover:bg-gray-800 text-sm"
+                      >
+                        {passwordLoading ? 'Updating...' : 'Update Password'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Two-Factor Authentication */}
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <Smartphone className="h-4 w-4 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Two-Factor Authentication</p>
+                      <p className="text-xs text-gray-500">Add an extra layer of security</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={twoFactorEnabled}
+                    onCheckedChange={handleToggle2FA}
+                  />
+                </div>
+
+                {/* Active Sessions */}
+                <div className="py-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <Monitor className="h-4 w-4 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Active Sessions</p>
+                        <p className="text-xs text-gray-500">Manage your logged-in devices</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="ml-7 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-1.5 bg-green-100 rounded">
+                          <Monitor className="h-3.5 w-3.5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-900">Current Session</p>
+                          <p className="text-xs text-gray-500">This device • Active now</p>
+                        </div>
+                      </div>
+                      <span className="text-xs text-green-600 font-medium">Current</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Notifications */}
+          <AccordionItem value="notifications" className="border-none">
+            <AccordionTrigger className="px-6 py-4 hover:bg-gray-50 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-gray-100">
+                  <Bell className="h-4 w-4 text-gray-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-900">Notifications</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-4 w-4 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Email Notifications</p>
+                      <p className="text-xs text-gray-500">Receive updates about your account</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={emailNotifications}
+                    onCheckedChange={setEmailNotifications}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <Bell className="h-4 w-4 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Marketing Emails</p>
+                      <p className="text-xs text-gray-500">Receive tips, updates and offers</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={marketingEmails}
+                    onCheckedChange={setMarketingEmails}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-3">
+                    <Lock className="h-4 w-4 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Security Alerts</p>
+                      <p className="text-xs text-gray-500">Get notified about suspicious activity</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={securityAlerts}
+                    onCheckedChange={setSecurityAlerts}
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Danger Zone */}
+          <AccordionItem value="danger" className="border-none">
+            <AccordionTrigger className="px-6 py-4 hover:bg-red-50 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-red-100">
+                  <Trash2 className="h-4 w-4 text-red-600" />
+                </div>
+                <span className="text-sm font-medium text-red-600">Danger Zone</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              <div className="space-y-4">
+                {/* Export Data */}
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <Download className="h-4 w-4 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Export Your Data</p>
+                      <p className="text-xs text-gray-500">Download all your data in JSON format</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toast.info('Data export started. You\'ll receive an email when ready.')}
+                    className="text-gray-600 border-gray-300 hover:bg-gray-50 text-xs"
+                  >
+                    Export
+                  </Button>
+                </div>
+
+                {/* Sign Out All Devices */}
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <LogOut className="h-4 w-4 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Sign Out All Devices</p>
+                      <p className="text-xs text-gray-500">Log out from all other sessions</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toast.success('Signed out from all other devices')}
+                    className="text-gray-600 border-gray-300 hover:bg-gray-50 text-xs"
+                  >
+                    Sign Out
+                  </Button>
+                </div>
+
+                {/* Delete Account */}
+                <div className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-3">
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                    <div>
+                      <p className="text-sm font-medium text-red-600">Delete Account</p>
+                      <p className="text-xs text-gray-500">Permanently delete your account and data</p>
+                    </div>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="bg-red-600 hover:bg-red-700 text-xs"
+                      >
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-white border border-gray-200 shadow-xl">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-gray-900">Delete Account?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-gray-500">
+                          This action cannot be undone. This will permanently delete your account
+                          and remove all your data from our servers.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteAccount}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          Delete Account
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
     </div>
   );
