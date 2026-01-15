@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, Plus, X, MessageCircle, Send } from 'lucide-react';
+import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, Plus, X, MessageCircle, Send, Star, ChevronRight, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -580,136 +580,110 @@ const AIAccountsSection = () => {
               <p className="text-gray-500">Try adjusting your search or filters</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
               {filteredAccounts.map((account) => {
                 const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
                 
                 return (
                   <div
                     key={account.id}
-                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                    className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                   >
-                    {/* Product Image Header */}
-                    <div className="h-32 bg-gray-50 flex items-center justify-center relative overflow-hidden">
+                    {/* Image */}
+                    <div className="relative aspect-[4/3] overflow-hidden">
                       {account.icon_url ? (
                         <img 
                           src={account.icon_url} 
                           alt={account.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
-                        <img 
-                          src={getProductImage(account.category)} 
-                          alt={account.name}
-                          className="h-16 w-16 object-contain"
-                        />
+                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                          <img 
+                            src={getProductImage(account.category)} 
+                            alt={account.name}
+                            className="h-20 w-20 object-contain"
+                          />
+                        </div>
                       )}
-                      {/* Purchase Count Badge */}
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg shadow-sm border border-gray-100">
-                        <Users size={12} className="text-gray-600" />
-                        <span className="text-xs font-semibold text-gray-700">{getPurchaseCount(account.id)} sold</span>
+
+                      {/* Category Badge */}
+                      <div className="absolute top-3 left-3 px-3 py-1.5 bg-violet-500 text-white rounded-full text-xs font-bold uppercase shadow-lg">
+                        {account.category || 'AI'}
                       </div>
-                      
-                      {/* Low Balance Warning Badge */}
+
+                      {/* Purchase Count Badge */}
+                      <div className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                        <Users size={16} className="text-gray-600" />
+                      </div>
+
+                      {/* Low Balance Overlay */}
                       {!hasEnoughBalance && (
-                        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded-lg border border-amber-200">
-                          <AlertTriangle size={12} className="text-amber-600" />
-                          <span className="text-xs font-semibold text-amber-700">Low Balance</span>
+                        <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
+                          <Wallet size={28} className="text-white mb-2" />
+                          <span className="text-white text-sm font-semibold">Low Balance</span>
                         </div>
                       )}
                     </div>
 
                     {/* Content */}
                     <div className="p-5">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-lg font-bold text-gray-900 tracking-tight">
-                          {account.name}
-                        </h3>
-                        <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-lg">
-                          <BadgeCheck size={14} className="text-gray-600" />
-                          <span className="text-xs font-semibold text-gray-600">Verified</span>
-                        </div>
-                      </div>
-
-                      <p className="text-gray-500 text-sm mb-4 line-clamp-2">
+                      <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">
+                        {account.name}
+                      </h3>
+                      
+                      {/* Description */}
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                         {account.description || 'Premium AI account with full access'}
                       </p>
 
-                      {/* Features */}
-                      <div className="flex items-center gap-3 mb-5 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <ShieldCheck size={12} className="text-gray-600" />
-                          Secure
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Check size={12} className="text-gray-600" />
-                          Instant
+                      {/* Price Badge */}
+                      <div className="mb-3">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                          <Check size={12} />
+                          ${account.price} one-time
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-2xl font-bold text-gray-900 tracking-tight">${account.price}</span>
-                          <span className="text-gray-400 text-sm ml-1">one-time</span>
+                      {/* Review Section */}
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="flex gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />
+                          ))}
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          {/* View Button */}
-                          <div 
-                            className="relative"
-                            onMouseEnter={() => setHoveredAccount(account.id)}
-                            onMouseLeave={() => setHoveredAccount(null)}
-                          >
-                            <button className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all">
-                              <Eye size={18} className="text-gray-700" />
-                            </button>
-                            
-                            {/* Hover Tooltip */}
-                            {hoveredAccount === account.id && (
-                              <div className="absolute bottom-full right-0 mb-2 w-64 p-4 bg-white rounded-xl shadow-xl border border-gray-100 z-20 animate-fade-up">
-                                <h4 className="font-bold text-gray-900 mb-1">{account.name}</h4>
-                                <p className="text-gray-600 text-sm mb-3">
-                                  {account.description || 'Premium AI account with full access to all features and capabilities.'}
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-3">
-                                  <ShieldCheck size={12} className="text-green-600" />
-                                  <span>Instant delivery • Secure payment • 24/7 support</span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Buy Now Button */}
-                          <button
-                            onClick={() => handlePurchase(account)}
-                            disabled={purchasing === account.id}
-                            className={`font-semibold px-5 py-2.5 rounded-xl transition-all disabled:cursor-not-allowed flex items-center gap-2 ${
-                              purchasing === account.id
-                                ? 'bg-gray-200 text-gray-500'
-                                : hasEnoughBalance
-                                ? 'bg-black hover:bg-gray-900 text-white'
-                                : 'bg-amber-500/20 text-amber-700 hover:bg-amber-500/30 border border-amber-300'
-                            }`}
-                          >
-                            {purchasing === account.id ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Processing
-                              </>
-                            ) : !hasEnoughBalance ? (
-                              <>
-                                <AlertTriangle className="w-4 h-4" />
-                                Top Up
-                              </>
-                            ) : (
-                              <>
-                                <ShoppingCart className="w-4 h-4" />
-                                Buy Now
-                              </>
-                            )}
-                          </button>
-                        </div>
+                        <span className="text-sm text-gray-600 font-medium">{getPurchaseCount(account.id)}+ sold</span>
                       </div>
+
+                      {/* Yellow CTA Button */}
+                      <button
+                        onClick={() => handlePurchase(account)}
+                        disabled={purchasing === account.id}
+                        className={`w-full font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                          purchasing === account.id
+                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                            : hasEnoughBalance
+                            ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
+                            : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
+                        }`}
+                      >
+                        {purchasing === account.id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : !hasEnoughBalance ? (
+                          <>
+                            <Wallet className="w-4 h-4" />
+                            Top Up & Buy
+                          </>
+                        ) : (
+                          <>
+                            Buy Now
+                            <ChevronRight size={16} />
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 );
