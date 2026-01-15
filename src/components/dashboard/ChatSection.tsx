@@ -132,10 +132,6 @@ const ChatSection = () => {
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">Support Chat</h1>
-      </div>
 
       {/* Chat Container */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
