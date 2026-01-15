@@ -273,11 +273,7 @@ const ChatManagement = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Support Chats</h1>
-          <p className="text-gray-400 mt-1">Manage customer support conversations</p>
-        </div>
+      <div className="flex items-center justify-end mb-6">
         {totalUnread > 0 && (
           <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/30 px-4 py-2 rounded-xl">
             <MessageCircle className="text-red-400" size={18} />

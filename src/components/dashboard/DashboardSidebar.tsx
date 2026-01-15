@@ -171,7 +171,6 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     }, [user]);
 
     const navItems = [
-      { to: '/dashboard', icon: <LayoutDashboard size={22} />, label: 'Dashboard' },
       { to: '/dashboard/prompts', icon: <FileText size={22} />, label: 'All Prompts' },
       { to: '/dashboard/ai-accounts', icon: <Bot size={22} />, label: 'AI Accounts' },
       { to: '/dashboard/billing', icon: <CreditCard size={22} />, label: 'Billing' },
@@ -390,13 +389,13 @@ const DashboardSidebar = () => {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a] border-t border-white/10 px-2 py-2 safe-area-bottom">
         <div className="flex items-center justify-around">
           {[
-            { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Home' },
             { to: '/dashboard/prompts', icon: <FileText size={20} />, label: 'Prompts' },
             { to: '/dashboard/ai-accounts', icon: <Bot size={20} />, label: 'Accounts' },
+            { to: '/dashboard/billing', icon: <CreditCard size={20} />, label: 'Billing' },
             { to: '/dashboard/chat', icon: <MessageCircle size={20} />, label: 'Chat' },
             { to: '/dashboard/profile', icon: <User size={20} />, label: 'Profile' },
           ].map((item) => {
-            const isActive = location.pathname === item.to || (item.to === '/dashboard' && location.pathname === '/dashboard/');
+            const isActive = location.pathname === item.to;
             return (
               <Link
                 key={item.to}

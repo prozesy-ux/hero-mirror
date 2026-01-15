@@ -57,10 +57,6 @@ const PurchasesManagement = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Purchase History</h2>
-      </div>
-
       {/* Stats */}
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white/5 border border-white/10 rounded-xl p-6">

@@ -139,8 +139,6 @@ const RefundRequestsManagement = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-white mb-6">Refund Requests</h2>
-
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">

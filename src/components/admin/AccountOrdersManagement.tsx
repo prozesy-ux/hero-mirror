@@ -109,6 +109,14 @@ const AccountOrdersManagement = () => {
   };
 
   const handleDeliver = async (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    
+    // Check if payment is completed
+    if (order?.payment_status !== 'completed') {
+      toast.error('Cannot deliver - payment not completed');
+      return;
+    }
+    
     const creds = credentials[orderId];
     if (!creds?.trim()) {
       toast.error('Please enter account credentials');
@@ -214,8 +222,6 @@ const AccountOrdersManagement = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-white mb-6">Account Orders</h2>
-
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">

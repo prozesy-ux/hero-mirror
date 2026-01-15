@@ -212,20 +212,14 @@ const DeletionRequestsManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Account Deletion Requests</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Review and process user account deletion requests
-          </p>
-        </div>
-        {pendingCount > 0 && (
+      {pendingCount > 0 && (
+        <div className="flex items-center justify-end">
           <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-sm px-3 py-1">
             <AlertTriangle className="w-4 h-4 mr-2" />
             {pendingCount} pending request{pendingCount !== 1 ? 's' : ''}
           </Badge>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Search and Refresh */}
       <div className="flex items-center gap-4">

@@ -35,10 +35,10 @@ const DashboardContent = () => {
     >
       <div className="relative p-4 lg:p-8">
         <Routes>
-          <Route index element={<DashboardHome />} />
+          <Route index element={<Navigate to="/dashboard/prompts" replace />} />
           <Route path="prompts" element={<PromptsGrid />} />
           <Route path="favorites" element={<Navigate to="/dashboard/prompts" replace />} />
-          <Route path="tools" element={<Navigate to="/dashboard" replace />} />
+          <Route path="tools" element={<Navigate to="/dashboard/prompts" replace />} />
           <Route path="ai-accounts" element={<AIAccountsSection />} />
           <Route path="billing" element={<BillingSection />} />
           <Route path="profile" element={<ProfileSection />} />

@@ -207,8 +207,7 @@ const PromptsManagement = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Prompts Management</h2>
+      <div className="flex items-center justify-end mb-6">
         <button 
           onClick={() => setShowForm(true)} 
           className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
