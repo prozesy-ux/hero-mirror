@@ -47,6 +47,7 @@ interface WalletTransaction {
   status: string;
   description: string;
   created_at: string;
+  transaction_id?: string;
 }
 
 type BillingTab = 'wallet' | 'transactions' | 'plan' | 'purchases';
@@ -78,8 +79,9 @@ const BillingSection = () => {
   
   // Payment gateway states
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>('stripe');
-  const [bkashNumber, setBkashNumber] = useState('');
-  const [upiId, setUpiId] = useState('');
+  const [transactionIdInput, setTransactionIdInput] = useState('');
+  const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
+  const [editTransactionIdValue, setEditTransactionIdValue] = useState('');
   const [verifyingPayment, setVerifyingPayment] = useState(false);
 
   useEffect(() => {
@@ -213,10 +215,21 @@ const BillingSection = () => {
         }
       } else {
         // Manual payment flow (bKash/UPI)
-        const transactionId = selectedGateway === 'bkash' ? bkashNumber : upiId;
-        
-        if (!transactionId.trim()) {
-          toast.error(`Please enter your ${selectedGateway === 'bkash' ? 'bKash number' : 'UPI transaction ID'}`);
+        if (!transactionIdInput.trim()) {
+          toast.error('Please enter your transaction ID');
+          setProcessingTopup(false);
+          return;
+        }
+
+        // Check for duplicate transaction ID
+        const { data: existingTx } = await supabase
+          .from('wallet_transactions')
+          .select('id')
+          .eq('transaction_id', transactionIdInput.trim())
+          .single();
+
+        if (existingTx) {
+          toast.error('This transaction ID has already been used. Please check your transaction ID.');
           setProcessingTopup(false);
           return;
         }
@@ -229,7 +242,7 @@ const BillingSection = () => {
             type: 'topup',
             amount: topupAmount,
             payment_gateway: selectedGateway,
-            transaction_id: transactionId,
+            transaction_id: transactionIdInput.trim(),
             status: 'pending',
             description: `Top-up via ${selectedGateway.toUpperCase()} - awaiting approval`
           });
@@ -237,8 +250,7 @@ const BillingSection = () => {
         if (error) throw error;
         
         toast.success('Payment submitted! Awaiting admin approval.');
-        setBkashNumber('');
-        setUpiId('');
+        setTransactionIdInput('');
         fetchData();
       }
     } catch (error: any) {
@@ -247,6 +259,43 @@ const BillingSection = () => {
       setProcessingTopup(false);
       setShowTopupModal(false);
     }
+  };
+
+  const handleUpdateTransactionId = async (txId: string) => {
+    if (!editTransactionIdValue.trim()) {
+      toast.error('Please enter a transaction ID');
+      return;
+    }
+
+    // Check for duplicate
+    const { data: existingTx } = await supabase
+      .from('wallet_transactions')
+      .select('id')
+      .eq('transaction_id', editTransactionIdValue.trim())
+      .neq('id', txId)
+      .single();
+
+    if (existingTx) {
+      toast.error('This transaction ID has already been used');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('wallet_transactions')
+      .update({ transaction_id: editTransactionIdValue.trim() })
+      .eq('id', txId)
+      .eq('user_id', user?.id)
+      .eq('status', 'pending');
+
+    if (error) {
+      toast.error('Failed to update transaction ID');
+      return;
+    }
+
+    toast.success('Transaction ID updated!');
+    setEditingTransactionId(null);
+    setEditTransactionIdValue('');
+    fetchData();
   };
 
   const handleUpgrade = async () => {
@@ -456,47 +505,97 @@ const BillingSection = () => {
               {transactions.map((tx) => (
                 <div
                   key={tx.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
+                  className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl ${
-                      tx.type === 'topup' ? 'bg-violet-100' :
-                      tx.type === 'purchase' ? 'bg-gray-100' :
-                      'bg-blue-100'
-                    }`}>
-                      {tx.type === 'topup' && <CircleDollarSign size={18} className="text-violet-600" />}
-                      {tx.type === 'purchase' && <Receipt size={18} className="text-gray-600" />}
-                      {tx.type === 'refund' && <RotateCcw size={18} className="text-blue-600" />}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2.5 rounded-xl ${
+                        tx.type === 'topup' ? 'bg-violet-100' :
+                        tx.type === 'purchase' ? 'bg-gray-100' :
+                        'bg-blue-100'
+                      }`}>
+                        {tx.type === 'topup' && <CircleDollarSign size={18} className="text-violet-600" />}
+                        {tx.type === 'purchase' && <Receipt size={18} className="text-gray-600" />}
+                        {tx.type === 'refund' && <RotateCcw size={18} className="text-blue-600" />}
+                      </div>
+                      <div>
+                        <p className="text-gray-900 font-medium capitalize">{tx.description || tx.type}</p>
+                        <p className="text-gray-500 text-sm">
+                          {new Date(tx.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                          {tx.payment_gateway && (
+                            <span className="ml-2 text-xs uppercase text-gray-400">
+                              via {tx.payment_gateway}
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-gray-900 font-medium capitalize">{tx.description || tx.type}</p>
-                      <p className="text-gray-500 text-sm">
-                        {new Date(tx.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                        {tx.payment_gateway && (
-                          <span className="ml-2 text-xs uppercase text-gray-400">
-                            via {tx.payment_gateway}
-                          </span>
-                        )}
+                    <div className="text-right">
+                      <p className={`font-semibold ${tx.type === 'topup' ? 'text-violet-600' : tx.type === 'refund' ? 'text-blue-600' : 'text-gray-700'}`}>
+                        {tx.type === 'topup' ? '+' : tx.type === 'refund' ? '+' : '-'}${tx.amount.toFixed(2)}
                       </p>
+                      <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+                        tx.status === 'completed' ? 'bg-violet-100 text-violet-700' :
+                        tx.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {tx.status}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-semibold ${tx.type === 'topup' ? 'text-violet-600' : tx.type === 'refund' ? 'text-blue-600' : 'text-gray-700'}`}>
-                      {tx.type === 'topup' ? '+' : tx.type === 'refund' ? '+' : '-'}${tx.amount.toFixed(2)}
-                    </p>
-                    <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
-                      tx.status === 'completed' ? 'bg-violet-100 text-violet-700' :
-                      tx.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                      {tx.status}
-                    </span>
-                  </div>
+                  
+                  {/* Transaction ID section for manual payments */}
+                  {tx.payment_gateway && tx.payment_gateway !== 'stripe' && tx.status === 'pending' && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      {editingTransactionId === tx.id ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editTransactionIdValue}
+                            onChange={(e) => setEditTransactionIdValue(e.target.value)}
+                            placeholder="Enter correct transaction ID"
+                            className="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+                          />
+                          <button
+                            onClick={() => handleUpdateTransactionId(tx.id)}
+                            className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingTransactionId(null);
+                              setEditTransactionIdValue('');
+                            }}
+                            className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Transaction ID:</span>{' '}
+                            <span className="font-mono">{tx.transaction_id || 'Not provided'}</span>
+                          </p>
+                          <button
+                            onClick={() => {
+                              setEditingTransactionId(tx.id);
+                              setEditTransactionIdValue(tx.transaction_id || '');
+                            }}
+                            className="text-xs text-violet-600 hover:text-violet-700 font-medium"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -766,15 +865,15 @@ const BillingSection = () => {
                 <div className="mb-3">
                   <p className="text-pink-800 font-semibold mb-1">bKash Payment Instructions</p>
                   <p className="text-pink-600 text-sm">
-                    1. Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold">01XXXXXXXXX</span> (Personal)
+                    1. Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold select-all">01844291940</span> (Personal)
                   </p>
-                  <p className="text-pink-600 text-sm">2. Enter your bKash number below</p>
+                  <p className="text-pink-600 text-sm">2. Enter your bKash Transaction ID below</p>
                 </div>
                 <input
                   type="text"
-                  value={bkashNumber}
-                  onChange={(e) => setBkashNumber(e.target.value)}
-                  placeholder="Enter your bKash number"
+                  value={transactionIdInput}
+                  onChange={(e) => setTransactionIdInput(e.target.value)}
+                  placeholder="Enter bKash Transaction ID (e.g., TRX123456789)"
                   className="w-full bg-white border border-pink-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-500/30"
                 />
               </div>
@@ -785,15 +884,15 @@ const BillingSection = () => {
                 <div className="mb-3">
                   <p className="text-blue-800 font-semibold mb-1">UPI Payment Instructions</p>
                   <p className="text-blue-600 text-sm">
-                    1. Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold">yourname@upi</span>
+                    1. Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold select-all">paytmqr6z0g0n@ptys</span>
                   </p>
-                  <p className="text-blue-600 text-sm">2. Enter your UPI transaction ID below</p>
+                  <p className="text-blue-600 text-sm">2. Enter your UPI Transaction ID below</p>
                 </div>
                 <input
                   type="text"
-                  value={upiId}
-                  onChange={(e) => setUpiId(e.target.value)}
-                  placeholder="Enter UPI transaction ID"
+                  value={transactionIdInput}
+                  onChange={(e) => setTransactionIdInput(e.target.value)}
+                  placeholder="Enter UPI Transaction ID (e.g., 123456789012)"
                   className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 />
               </div>
@@ -820,8 +919,7 @@ const BillingSection = () => {
               <button
                 onClick={() => {
                   setShowTopupModal(false);
-                  setBkashNumber('');
-                  setUpiId('');
+                  setTransactionIdInput('');
                 }}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl transition-all font-medium"
               >

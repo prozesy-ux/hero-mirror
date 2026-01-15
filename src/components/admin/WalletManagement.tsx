@@ -31,6 +31,7 @@ interface Transaction {
   description: string;
   created_at: string;
   user_email?: string;
+  transaction_id?: string;
 }
 
 const WalletManagement = () => {
@@ -38,7 +39,7 @@ const WalletManagement = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'wallets' | 'transactions'>('wallets');
+  const [activeTab, setActiveTab] = useState<'wallets' | 'transactions' | 'pending'>('wallets');
 
   useEffect(() => {
     fetchData();
@@ -163,17 +164,26 @@ const WalletManagement = () => {
 
   const filteredTransactions = transactions.filter(t =>
     t.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.payment_gateway?.toLowerCase().includes(searchTerm.toLowerCase())
+    t.payment_gateway?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.transaction_id?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const pendingTransactions = transactions.filter(t => t.status === 'pending');
+  const filteredPendingTransactions = pendingTransactions.filter(t =>
+    t.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.payment_gateway?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.transaction_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalBalance = wallets.reduce((sum, w) => sum + parseFloat(String(w.balance)), 0);
   const totalTopups = transactions.filter(t => t.type === 'topup' && t.status === 'completed')
     .reduce((sum, t) => sum + parseFloat(String(t.amount)), 0);
+  const pendingAmount = pendingTransactions.reduce((sum, t) => sum + parseFloat(String(t.amount)), 0);
 
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-green-500/20 rounded-lg">
@@ -193,6 +203,17 @@ const WalletManagement = () => {
             <div>
               <p className="text-gray-400 text-sm">Total Top-ups</p>
               <p className="text-2xl font-bold text-white">${totalTopups.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-yellow-500/20 rounded-lg">
+              <RefreshCcw className="text-yellow-400" size={20} />
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Pending Payments</p>
+              <p className="text-2xl font-bold text-white">{pendingTransactions.length} (${pendingAmount.toFixed(2)})</p>
             </div>
           </div>
         </div>
@@ -225,7 +246,20 @@ const WalletManagement = () => {
             activeTab === 'transactions' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
           }`}
         >
-          Transactions
+          All Transactions
+        </button>
+        <button
+          onClick={() => setActiveTab('pending')}
+          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+            activeTab === 'pending' ? 'bg-yellow-600 text-white' : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Pending Payments
+          {pendingTransactions.length > 0 && (
+            <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">
+              {pendingTransactions.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -296,6 +330,7 @@ const WalletManagement = () => {
                 <TableHead className="text-gray-400">Type</TableHead>
                 <TableHead className="text-gray-400">Amount</TableHead>
                 <TableHead className="text-gray-400">Gateway</TableHead>
+                <TableHead className="text-gray-400">Transaction ID</TableHead>
                 <TableHead className="text-gray-400">Status</TableHead>
                 <TableHead className="text-gray-400">Date</TableHead>
                 <TableHead className="text-gray-400">Actions</TableHead>
@@ -304,13 +339,13 @@ const WalletManagement = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-400 py-8">
+                  <TableCell colSpan={8} className="text-center text-gray-400 py-8">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : filteredTransactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-400 py-8">
+                  <TableCell colSpan={8} className="text-center text-gray-400 py-8">
                     No transactions found
                   </TableCell>
                 </TableRow>
@@ -330,7 +365,8 @@ const WalletManagement = () => {
                     <TableCell className={tx.type === 'topup' ? 'text-green-400' : 'text-red-400'}>
                       {tx.type === 'topup' ? '+' : '-'}${parseFloat(String(tx.amount)).toFixed(2)}
                     </TableCell>
-                    <TableCell className="text-gray-400 uppercase">{tx.payment_gateway}</TableCell>
+                    <TableCell className="text-gray-400 uppercase">{tx.payment_gateway || '-'}</TableCell>
+                    <TableCell className="text-gray-300 font-mono text-xs">{tx.transaction_id || '-'}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-xs ${
                         tx.status === 'completed' ? 'bg-green-500/20 text-green-400' :
@@ -360,6 +396,69 @@ const WalletManagement = () => {
                           </button>
                         </div>
                       )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Pending Payments Table */}
+      {activeTab === 'pending' && (
+        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-white/10">
+                <TableHead className="text-gray-400">User</TableHead>
+                <TableHead className="text-gray-400">Amount</TableHead>
+                <TableHead className="text-gray-400">Gateway</TableHead>
+                <TableHead className="text-gray-400">Transaction ID</TableHead>
+                <TableHead className="text-gray-400">Date</TableHead>
+                <TableHead className="text-gray-400">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-gray-400 py-8">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filteredPendingTransactions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-gray-400 py-8">
+                    No pending payments
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredPendingTransactions.map((tx) => (
+                  <TableRow key={tx.id} className="border-white/10">
+                    <TableCell className="text-white">{tx.user_email}</TableCell>
+                    <TableCell className="text-green-400 font-semibold">
+                      +${parseFloat(String(tx.amount)).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-gray-400 uppercase">{tx.payment_gateway}</TableCell>
+                    <TableCell className="text-yellow-400 font-mono text-sm">{tx.transaction_id || 'Not provided'}</TableCell>
+                    <TableCell className="text-gray-400">
+                      {new Date(tx.created_at).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => updateTransactionStatus(tx.id, 'completed')}
+                          className="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm transition-all"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => updateTransactionStatus(tx.id, 'failed')}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm transition-all"
+                        >
+                          Reject
+                        </button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
