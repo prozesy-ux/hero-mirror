@@ -301,7 +301,7 @@ const AIAccountsSection = () => {
       return;
     }
 
-    // Check wallet balance first
+    // Check wallet balance first for UI feedback
     const { data: walletData, error: walletError } = await supabase
       .from('user_wallets')
       .select('balance')
@@ -334,59 +334,36 @@ const AIAccountsSection = () => {
       return;
     }
 
-    // Proceed with purchase
+    // Proceed with atomic purchase using database function
     setPurchasing(account.id);
 
     try {
-      // 1. Deduct from wallet
-      const newBalance = currentBalance - account.price;
-      const { error: updateError } = await supabase
-        .from('user_wallets')
-        .update({ balance: newBalance })
-        .eq('user_id', user.id);
+      // Use atomic database function to prevent race conditions
+      const { data, error } = await supabase.rpc('purchase_ai_account', {
+        p_user_id: user.id,
+        p_account_id: account.id,
+        p_amount: account.price,
+        p_account_name: account.name
+      });
 
-      if (updateError) {
-        throw new Error('Failed to update wallet balance');
+      if (error) {
+        throw new Error(error.message);
       }
 
-      // 2. Create wallet transaction record
-      const { error: transactionError } = await supabase
-        .from('wallet_transactions')
-        .insert({
-          user_id: user.id,
-          type: 'purchase',
-          amount: account.price,
-          status: 'completed',
-          description: `AI Account: ${account.name}`
-        });
+      const result = data as { success: boolean; error?: string; purchase_id?: string; new_balance?: number };
 
-      if (transactionError) {
-        // Rollback wallet balance
-        await supabase
-          .from('user_wallets')
-          .update({ balance: currentBalance })
-          .eq('user_id', user.id);
-        throw new Error('Failed to create transaction record');
-      }
-
-      // 3. Create AI account purchase record
-      const { error: purchaseError } = await supabase
-        .from('ai_account_purchases')
-        .insert({
-          user_id: user.id,
-          ai_account_id: account.id,
-          amount: account.price,
-          payment_status: 'completed',
-          delivery_status: 'pending'
-        });
-
-      if (purchaseError) {
-        // Rollback wallet
-        await supabase
-          .from('user_wallets')
-          .update({ balance: currentBalance })
-          .eq('user_id', user.id);
-        throw new Error('Failed to create purchase record');
+      if (!result.success) {
+        if (result.error === 'Insufficient funds') {
+          setInsufficientFundsModal({
+            show: true,
+            required: account.price,
+            current: currentBalance,
+            shortfall: account.price - currentBalance,
+            accountName: account.name
+          });
+          return;
+        }
+        throw new Error(result.error || 'Purchase failed');
       }
 
       toast.success('Purchase successful! Account credentials will be delivered soon.');
