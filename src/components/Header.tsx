@@ -8,7 +8,7 @@ const Header = () => {
         <div className="flex items-center gap-6">
           {/* Logo */}
           <a href="/" className="text-lg font-bold tracking-tight text-foreground">
-            PromptHero
+            Uptoza
           </a>
 
           {/* Main Nav */}
