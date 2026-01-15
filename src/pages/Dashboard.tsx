@@ -4,7 +4,6 @@ import DashboardHome from '@/components/dashboard/DashboardHome';
 import PromptsGrid from '@/components/dashboard/PromptsGrid';
 import ProfileSection from '@/components/dashboard/ProfileSection';
 import BillingSection from '@/components/dashboard/BillingSection';
-import AIToolsSection from '@/components/dashboard/AIToolsSection';
 import AIAccountsSection from '@/components/dashboard/AIAccountsSection';
 import { useState, useEffect } from 'react';
 
@@ -41,7 +40,7 @@ const DashboardContent = () => {
           <Route index element={<DashboardHome />} />
           <Route path="prompts" element={<PromptsGrid />} />
           <Route path="favorites" element={<Navigate to="/dashboard/prompts" replace />} />
-          <Route path="tools" element={<AIToolsSection />} />
+          <Route path="tools" element={<Navigate to="/dashboard" replace />} />
           <Route path="ai-accounts" element={<AIAccountsSection />} />
           <Route path="billing" element={<BillingSection />} />
           <Route path="profile" element={<ProfileSection />} />
