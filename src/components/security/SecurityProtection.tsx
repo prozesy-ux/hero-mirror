@@ -1,4 +1,6 @@
-import { useEffect, ReactNode, useCallback } from 'react';
+import { useEffect, ReactNode, useCallback, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { ShieldAlert } from 'lucide-react';
 
 interface SecurityProtectionProps {
   children: ReactNode;
@@ -7,6 +9,13 @@ interface SecurityProtectionProps {
 const HONEYPOT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/security-honeypot`;
 
 const SecurityProtection = ({ children }: SecurityProtectionProps) => {
+  const location = useLocation();
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockedUntil, setBlockedUntil] = useState<string | null>(null);
+  
+  // Check if user is on dashboard routes (where we allow more interactions)
+  const isDashboardRoute = location.pathname.startsWith('/dashboard');
+
   // Report suspicious activity to backend honeypot
   const reportToHoneypot = useCallback(async (eventType: string, metadata: Record<string, unknown> = {}) => {
     try {
@@ -17,6 +26,10 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
 
       // Only report to backend after 2 local attempts (reduce noise)
       if (currentAttempts < 2) return;
+
+      // Prevent repeated reporting for same event type in session
+      const reportedKey = `security_reported_${eventType}`;
+      if (sessionStorage.getItem(reportedKey) === 'true') return;
 
       const response = await fetch(HONEYPOT_URL, {
         method: 'POST',
@@ -36,14 +49,14 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
       });
 
       const data = await response.json();
+      
+      // Mark as reported to prevent spam
+      sessionStorage.setItem(reportedKey, 'true');
 
-      // If blocked, show warning and optionally redirect
+      // If blocked, show warning and update state
       if (data.blocked) {
-        console.clear();
-        console.log('%c🚫 ACCESS RESTRICTED', 'color: red; font-size: 30px; font-weight: bold;');
-        console.log('%cYour activity has been logged and access is temporarily restricted.', 'font-size: 16px;');
-        
-        // Store blocked status
+        setIsBlocked(true);
+        setBlockedUntil(data.blocked_until || null);
         sessionStorage.setItem('security_blocked', 'true');
         sessionStorage.setItem('security_blocked_until', data.blocked_until || '');
       }
@@ -54,6 +67,13 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
 
   // Check if user is blocked on mount
   const checkBlockStatus = useCallback(async () => {
+    // Check local storage first
+    if (sessionStorage.getItem('security_blocked') === 'true') {
+      setIsBlocked(true);
+      setBlockedUntil(sessionStorage.getItem('security_blocked_until'));
+      return;
+    }
+    
     try {
       const response = await fetch(HONEYPOT_URL, {
         method: 'POST',
@@ -64,9 +84,9 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
       const data = await response.json();
       
       if (data.blocked) {
+        setIsBlocked(true);
+        setBlockedUntil(data.blocked_until || null);
         sessionStorage.setItem('security_blocked', 'true');
-        console.clear();
-        console.log('%c🚫 ACCESS RESTRICTED', 'color: red; font-size: 30px; font-weight: bold;');
       }
     } catch {
       // Fail silently
@@ -107,8 +127,8 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
         return false;
       }
 
-      // Block Ctrl+U (View Source)
-      if (e.ctrlKey && e.key === 'u') {
+      // Block Ctrl+U (View Source) - but not on dashboard
+      if (e.ctrlKey && e.key === 'u' && !isDashboardRoute) {
         e.preventDefault();
         reportToHoneypot('repeated_inspection', { method: 'Ctrl+U' });
         return false;
@@ -141,16 +161,17 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
         return false;
       }
 
-      // Block Cmd+Option+U (Mac View Source)
-      if (e.metaKey && e.altKey && e.key === 'u') {
+      // Block Cmd+Option+U (Mac View Source) - but not on dashboard
+      if (e.metaKey && e.altKey && e.key === 'u' && !isDashboardRoute) {
         e.preventDefault();
         reportToHoneypot('repeated_inspection', { method: 'Cmd+Option+U' });
         return false;
       }
     };
 
-    // === RIGHT-CLICK BLOCKING ===
+    // === RIGHT-CLICK BLOCKING (only on non-dashboard routes) ===
     const handleContextMenu = (e: MouseEvent) => {
+      if (isDashboardRoute) return; // Allow right-click on dashboard
       e.preventDefault();
       reportToHoneypot('repeated_inspection', { method: 'right_click' });
       return false;
@@ -159,7 +180,6 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
     // === DEVTOOLS DETECTION (debounced) ===
     let devToolsOpen = false;
     const threshold = 160;
-    let devToolsReported = false;
     let resizeTimeout: ReturnType<typeof setTimeout>;
 
     const detectDevTools = () => {
@@ -169,9 +189,10 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
       if (widthThreshold || heightThreshold) {
         if (!devToolsOpen) {
           devToolsOpen = true;
-          // Report only once per session for resize-based detection
-          if (!devToolsReported) {
-            devToolsReported = true;
+          // Only report once per session for resize-based detection
+          const resizeReportedKey = 'security_reported_devtools_resize';
+          if (sessionStorage.getItem(resizeReportedKey) !== 'true') {
+            sessionStorage.setItem(resizeReportedKey, 'true');
             reportToHoneypot('devtools_detected', { method: 'resize_detection' });
           }
         }
@@ -188,19 +209,22 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
 
     // === CONSOLE CLEARING (every 60 seconds to reduce overhead) ===
     const clearConsoleInterval = setInterval(() => {
-      if (import.meta.env.PROD) {
+      if (import.meta.env.PROD && !isDashboardRoute) {
         console.clear();
       }
     }, 60000);
 
     // === DRAG PREVENTION ===
     const handleDragStart = (e: DragEvent) => {
+      if (isDashboardRoute) return; // Allow drag on dashboard
       e.preventDefault();
       return false;
     };
 
-    // === COPY PREVENTION ===
+    // === COPY PREVENTION (only on non-dashboard routes) ===
     const handleCopy = (e: ClipboardEvent) => {
+      if (isDashboardRoute) return; // Allow copy on dashboard (users need to copy prompts)
+      
       // Allow copying in input/textarea elements
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
@@ -210,8 +234,10 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
       return false;
     };
 
-    // === SELECT PREVENTION ===
+    // === SELECT PREVENTION (only on non-dashboard routes) ===
     const handleSelectStart = (e: Event) => {
+      if (isDashboardRoute) return; // Allow selection on dashboard
+      
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
         return true;
@@ -242,7 +268,39 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
       clearInterval(clearConsoleInterval);
       clearTimeout(resizeTimeout);
     };
-  }, [reportToHoneypot, checkBlockStatus]);
+  }, [reportToHoneypot, checkBlockStatus, isDashboardRoute]);
+
+  // Show blocked UI if user is blocked
+  if (isBlocked) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
+          <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
+            <ShieldAlert size={40} className="text-red-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Access Restricted</h1>
+          <p className="text-gray-600 mb-6">
+            Your access has been temporarily restricted due to suspicious activity. 
+            {blockedUntil && (
+              <span className="block mt-2 text-sm text-gray-500">
+                Try again after: {new Date(blockedUntil).toLocaleString()}
+              </span>
+            )}
+          </p>
+          <button
+            onClick={() => {
+              sessionStorage.removeItem('security_blocked');
+              sessionStorage.removeItem('security_blocked_until');
+              window.location.reload();
+            }}
+            className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 };

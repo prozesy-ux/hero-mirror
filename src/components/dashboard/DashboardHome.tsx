@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Bot, ArrowRight, Heart, Lock, Star, Check, ImageIcon } from 'lucide-react';
+import { TrendingUp, Bot, ArrowRight, Heart, Lock, Star, Check, ImageIcon, RefreshCw, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ interface Prompt {
   tool: string;
   is_free: boolean;
   is_featured: boolean;
+  is_trending?: boolean;
   description: string | null;
 }
 
@@ -37,16 +38,24 @@ const DashboardHome = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [accountFavorites, setAccountFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isPromptsPaused, setIsPromptsPaused] = useState(false);
   const [isAccountsPaused, setIsAccountsPaused] = useState(false);
   
   const promptsScrollRef = useRef<HTMLDivElement>(null);
   const accountsScrollRef = useRef<HTMLDivElement>(null);
+  const fetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const { user, isPro, profile } = useAuthContext();
 
   useEffect(() => {
     fetchData();
+    
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
   }, [user]);
 
   // Auto-slide for Trending Prompts
@@ -90,37 +99,74 @@ const DashboardHome = () => {
   }, [isAccountsPaused, aiAccounts]);
 
   const fetchData = async () => {
-    setLoading(true);
-    
-    // Fetch trending prompts (prioritize is_trending, then is_featured)
-    const { data: promptsData } = await supabase
-      .from('prompts')
-      .select('id, title, image_url, tool, is_free, is_featured, description')
-      .or('is_trending.eq.true,is_featured.eq.true')
-      .limit(8);
-    
-    setTrendingPrompts(promptsData || []);
-
-    // Fetch AI accounts (limit to 8 for scrollable)
-    const { data: accountsData } = await supabase
-      .from('ai_accounts')
-      .select('id, name, description, price, icon_url, category')
-      .eq('is_available', true)
-      .limit(8);
-    
-    setAiAccounts(accountsData || []);
-
-    // Fetch user favorites
-    if (user) {
-      const { data: favoritesData } = await supabase
-        .from('favorites')
-        .select('prompt_id')
-        .eq('user_id', user.id);
-      
-      setFavorites(favoritesData?.map(f => f.prompt_id) || []);
+    // Clear any previous timeout
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
     }
+    
+    setLoading(true);
+    setLoadError(null);
+    
+    // Set a timeout to prevent infinite loading (15 seconds)
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      fetchTimeoutRef.current = setTimeout(() => {
+        reject(new Error('Request timeout - please check your connection'));
+      }, 15000);
+    });
+    
+    try {
+      const fetchPromise = async () => {
+        // Fetch trending prompts (prioritize is_trending, then is_featured)
+        const { data: promptsData, error: promptsError } = await supabase
+          .from('prompts')
+          .select('id, title, image_url, tool, is_free, is_featured, is_trending, description')
+          .or('is_trending.eq.true,is_featured.eq.true')
+          .order('is_trending', { ascending: false })
+          .order('is_featured', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(8);
+        
+        if (promptsError) {
+          throw promptsError;
+        }
+        setTrendingPrompts(promptsData || []);
 
-    setLoading(false);
+        // Fetch AI accounts (limit to 8 for scrollable)
+        const { data: accountsData, error: accountsError } = await supabase
+          .from('ai_accounts')
+          .select('id, name, description, price, icon_url, category')
+          .eq('is_available', true)
+          .limit(8);
+        
+        if (accountsError) {
+          console.error('Error fetching AI accounts:', accountsError);
+        }
+        setAiAccounts(accountsData || []);
+
+        // Fetch user favorites
+        if (user) {
+          const { data: favoritesData } = await supabase
+            .from('favorites')
+            .select('prompt_id')
+            .eq('user_id', user.id);
+          
+          setFavorites(favoritesData?.map(f => f.prompt_id) || []);
+        }
+      };
+      
+      await Promise.race([fetchPromise(), timeoutPromise]);
+      
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard';
+      setLoadError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+      setLoading(false);
+    }
   };
 
   const toggleFavorite = async (promptId: string, e: React.MouseEvent) => {
@@ -175,6 +221,25 @@ const DashboardHome = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-10 h-10 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 bg-white rounded-2xl border border-gray-200 shadow-md p-8">
+        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+          <AlertCircle size={32} className="text-red-500" />
+        </div>
+        <h3 className="text-lg font-bold text-gray-900 mb-2">Failed to load dashboard</h3>
+        <p className="text-gray-500 text-center mb-6 max-w-md">{loadError}</p>
+        <button
+          onClick={() => fetchData()}
+          className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+        >
+          <RefreshCw size={18} />
+          Retry
+        </button>
       </div>
     );
   }
