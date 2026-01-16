@@ -103,7 +103,7 @@ const RichTextEditor = ({ value, onChange, placeholder = 'Write your content...'
   );
 
   return (
-    <div className="border border-[#1a1a1a] rounded-lg overflow-hidden bg-[#030303]">
+    <div className="border border-[#111] rounded-sm overflow-hidden bg-black">
       {/* Toolbar */}
       <div className="bg-[#0d0d0f] border-b border-[#1a1a1a] p-2 flex flex-wrap items-center gap-1">
         {/* Undo/Redo */}
@@ -235,7 +235,7 @@ const RichTextEditor = ({ value, onChange, placeholder = 'Write your content...'
       />
 
       {/* Character count */}
-      <div className="bg-[#0d0d0f] border-t border-[#1a1a1a] px-4 py-2 text-xs text-zinc-500">
+      <div className="bg-[#050505] border-t border-[#111] px-4 py-2 text-xs text-zinc-500">
         {value.replace(/<[^>]*>/g, '').length} characters
       </div>
     </div>

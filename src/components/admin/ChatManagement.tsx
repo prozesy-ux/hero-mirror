@@ -286,11 +286,11 @@ const ChatManagement = () => {
         )}
       </div>
 
-      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-2xl overflow-hidden flex" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="bg-black border border-[#111] rounded-none overflow-hidden flex" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Users List */}
-        <div className="w-80 border-r border-[#1a1a1a] flex flex-col">
+        <div className="w-80 border-r border-[#111] flex flex-col">
           {/* Search */}
-          <div className="p-4 border-b border-[#1a1a1a]">
+          <div className="p-4 border-b border-[#111]">
             <div className="relative">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
               <input
@@ -298,7 +298,7 @@ const ChatManagement = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search users..."
-                className="w-full bg-[#050506] border border-[#1a1a1a] rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-[#252528]"
+                className="w-full bg-black border border-[#111] rounded-sm pl-10 pr-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-[#1a1a1a]"
               />
             </div>
           </div>
@@ -355,10 +355,10 @@ const ChatManagement = () => {
           {selectedUser ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-[#1a1a1a] bg-[#0d0d0f]">
+              <div className="p-4 border-b border-[#111] bg-[#050505]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center">
                       <span className="text-white font-bold">
                         {(selectedUser.full_name || selectedUser.email)[0].toUpperCase()}
                       </span>
@@ -461,7 +461,7 @@ const ChatManagement = () => {
               </div>
 
               {/* Input */}
-              <div className="p-4 border-t border-[#1a1a1a]">
+              <div className="p-4 border-t border-[#111]">
                 <div className="flex gap-3">
                   <input
                     type="text"
@@ -469,7 +469,7 @@ const ChatManagement = () => {
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                     placeholder="Type a message..."
-                    className="flex-1 bg-[#050506] border border-[#1a1a1a] rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#252528]"
+                    className="flex-1 bg-black border border-[#111] rounded-sm px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#1a1a1a]"
                   />
                   <button
                     onClick={sendMessage}

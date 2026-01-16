@@ -141,10 +141,10 @@ const ImageUploader = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={`
-            border-2 border-dashed rounded-lg h-48 flex flex-col items-center justify-center cursor-pointer transition-colors
+            border-2 border-dashed rounded-sm h-48 flex flex-col items-center justify-center cursor-pointer transition-colors
             ${dragOver 
-              ? 'border-white/50 bg-white/5' 
-              : 'border-[#1a1a1a] hover:border-[#252528] bg-[#030303]'
+              ? 'border-white/30 bg-white/5' 
+              : 'border-[#111] hover:border-[#1a1a1a] bg-black'
             }
           `}
         >

@@ -231,15 +231,15 @@ const PromptsManagement = () => {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 overflow-y-auto">
-          <div className="bg-[#09090b] border border-[#1a1a1a] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
-            <div className="sticky top-0 bg-[#09090b] border-b border-[#1a1a1a] px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 overflow-y-auto">
+          <div className="bg-black border border-[#111] rounded-sm max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
+            <div className="sticky top-0 bg-black border-b border-[#111] px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-white">
                 {editingId ? 'Edit Prompt' : 'Create New Prompt'}
               </h3>
               <button 
                 onClick={resetForm} 
-                className="p-2 text-zinc-400 hover:text-white hover:bg-[#0f0f11] rounded-lg transition-colors"
+                className="p-2 text-zinc-400 hover:text-white hover:bg-[#0a0a0a] rounded-sm transition-colors"
               >
                 <X size={20} />
               </button>
@@ -256,7 +256,7 @@ const PromptsManagement = () => {
                       placeholder="Enter prompt title" 
                       value={formData.title} 
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })} 
-                      className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all" 
+                      className="w-full bg-black border border-[#111] rounded-sm px-4 py-3 text-white placeholder-zinc-600 focus:ring-1 focus:ring-white/10 focus:border-transparent transition-all"
                     />
                   </div>
 
@@ -450,11 +450,11 @@ const PromptsManagement = () => {
       )}
 
       {/* Prompts Table */}
-      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl overflow-hidden">
+      <div className="bg-black border border-[#111] rounded-none overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-[#0d0d0f]">
+              <tr className="bg-[#050505]">
                 <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-400">Image</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-400">Title</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-400">Tool</th>
