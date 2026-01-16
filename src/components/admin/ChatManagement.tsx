@@ -165,7 +165,6 @@ const ChatManagement = () => {
           table: 'support_messages'
         },
         (payload) => {
-          // Play sound when new user message arrives
           if (payload.new && (payload.new as Message).sender_type === 'user') {
             playSound('messageReceived');
           }
@@ -199,7 +198,6 @@ const ChatManagement = () => {
       toast.error('Failed to send message');
       console.error('Error sending message:', error);
     } else {
-      // Play sound when message sent successfully
       playSound('messageSent');
       setNewMessage('');
       fetchMessages(selectedUser.user_id);
@@ -208,7 +206,6 @@ const ChatManagement = () => {
     setSending(false);
   };
 
-  // Check if message can be deleted (older than 1 day)
   const canDeleteMessage = (createdAt: string): boolean => {
     const messageDate = new Date(createdAt);
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -282,26 +279,26 @@ const ChatManagement = () => {
     <div>
       <div className="flex items-center justify-end mb-6">
         {totalUnread > 0 && (
-          <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/30 px-4 py-2 rounded-xl">
+          <div className="flex items-center gap-2 bg-red-500/10 px-4 py-2 rounded-xl">
             <MessageCircle className="text-red-400" size={18} />
             <span className="text-red-400 font-semibold">{totalUnread} unread</span>
           </div>
         )}
       </div>
 
-      <div className="bg-[#111113] border border-[#27272a] rounded-2xl overflow-hidden flex" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-2xl overflow-hidden flex" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Users List */}
-        <div className="w-80 border-r border-[#27272a] flex flex-col">
+        <div className="w-80 border-r border-[#1a1a1a] flex flex-col">
           {/* Search */}
-          <div className="p-4 border-b border-[#27272a]">
+          <div className="p-4 border-b border-[#1a1a1a]">
             <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search users..."
-                className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
+                className="w-full bg-[#050506] border border-[#1a1a1a] rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-[#252528]"
               />
             </div>
           </div>
@@ -314,18 +311,18 @@ const ChatManagement = () => {
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="p-6 text-center">
-                <Users className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-500">No conversations yet</p>
+                <Users className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
+                <p className="text-zinc-600">No conversations yet</p>
               </div>
             ) : (
               filteredUsers.map((user) => (
                   <button
                     key={user.user_id}
                     onClick={() => setSelectedUser(user)}
-                    className={`w-full p-4 text-left transition-all border-b border-[#27272a] ${
+                    className={`w-full p-4 text-left transition-all border-b border-[#1a1a1a] ${
                       selectedUser?.user_id === user.user_id
                         ? 'bg-white text-black'
-                        : 'hover:bg-[#1a1a1e]'
+                        : 'hover:bg-[#0f0f11]'
                     }`}
                   >
                   <div className="flex items-start justify-between">
@@ -340,10 +337,10 @@ const ChatManagement = () => {
                           </span>
                         )}
                       </div>
-                      <p className={`text-sm truncate ${selectedUser?.user_id === user.user_id ? 'text-black/60' : 'text-gray-500'}`}>{user.email}</p>
-                      <p className={`text-sm truncate mt-1 ${selectedUser?.user_id === user.user_id ? 'text-black/70' : 'text-gray-400'}`}>{user.last_message}</p>
+                      <p className={`text-sm truncate ${selectedUser?.user_id === user.user_id ? 'text-black/60' : 'text-zinc-600'}`}>{user.email}</p>
+                      <p className={`text-sm truncate mt-1 ${selectedUser?.user_id === user.user_id ? 'text-black/70' : 'text-zinc-500'}`}>{user.last_message}</p>
                     </div>
-                    <span className={`text-xs whitespace-nowrap ml-2 ${selectedUser?.user_id === user.user_id ? 'text-black/50' : 'text-gray-600'}`}>
+                    <span className={`text-xs whitespace-nowrap ml-2 ${selectedUser?.user_id === user.user_id ? 'text-black/50' : 'text-zinc-600'}`}>
                       {format(new Date(user.last_message_at), 'MMM d')}
                     </span>
                   </div>
@@ -358,10 +355,10 @@ const ChatManagement = () => {
           {selectedUser ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-[#27272a] bg-[#18181b]">
+              <div className="p-4 border-b border-[#1a1a1a] bg-[#0d0d0f]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#27272a] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center">
                       <span className="text-white font-bold">
                         {(selectedUser.full_name || selectedUser.email)[0].toUpperCase()}
                       </span>
@@ -370,15 +367,14 @@ const ChatManagement = () => {
                       <h3 className="font-semibold text-white">
                         {selectedUser.full_name || selectedUser.email.split('@')[0]}
                       </h3>
-                      <p className="text-gray-500 text-sm">{selectedUser.email}</p>
+                      <p className="text-zinc-600 text-sm">{selectedUser.email}</p>
                     </div>
                   </div>
                   
-                  {/* Delete All Chat Button */}
                   <button
                     onClick={handleDeleteAllChat}
                     disabled={deletingAllChat}
-                    className="flex items-center gap-2 px-3 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors text-sm"
+                    className="flex items-center gap-2 px-3 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-all text-sm"
                   >
                     {deletingAllChat ? (
                       <Loader2 size={16} className="animate-spin" />
@@ -401,7 +397,6 @@ const ChatManagement = () => {
                       className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'} group`}
                     >
                       <div className="flex items-end gap-2">
-                        {/* Delete button for user messages */}
                         {msg.sender_type === 'user' && isDeletable && (
                           <button
                             onClick={() => handleDeleteMessage(msg.id, msg.created_at)}
@@ -421,7 +416,7 @@ const ChatManagement = () => {
                           className={`max-w-[70%] rounded-2xl px-4 py-3 ${
                             msg.sender_type === 'admin'
                               ? 'bg-white text-black'
-                              : 'bg-white/10 text-white'
+                              : 'bg-white/5 text-white'
                           }`}
                         >
                           <p className="whitespace-pre-wrap">{msg.message}</p>
@@ -444,7 +439,6 @@ const ChatManagement = () => {
                           </div>
                         </div>
                         
-                        {/* Delete button for admin messages */}
                         {msg.sender_type === 'admin' && isDeletable && (
                           <button
                             onClick={() => handleDeleteMessage(msg.id, msg.created_at)}
@@ -467,23 +461,26 @@ const ChatManagement = () => {
               </div>
 
               {/* Input */}
-              <div className="p-4 border-t border-[#27272a]">
+              <div className="p-4 border-t border-[#1a1a1a]">
                 <div className="flex gap-3">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your reply..."
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
-                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                    placeholder="Type a message..."
+                    className="flex-1 bg-[#050506] border border-[#1a1a1a] rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#252528]"
                   />
                   <button
                     onClick={sendMessage}
-                    disabled={!newMessage.trim() || sending}
-                    className="bg-white text-black px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                    disabled={sending || !newMessage.trim()}
+                    className="flex items-center justify-center w-12 h-12 bg-white text-black rounded-xl hover:bg-white/90 transition-all disabled:opacity-50"
                   >
-                    <Send size={18} />
-                    Send
+                    {sending ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : (
+                      <Send size={20} />
+                    )}
                   </button>
                 </div>
               </div>
@@ -491,9 +488,9 @@ const ChatManagement = () => {
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <MessageCircle className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-400 mb-2">Select a conversation</h3>
-                <p className="text-gray-600">Choose a user from the list to view their messages</p>
+                <MessageCircle className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">Select a conversation</h3>
+                <p className="text-zinc-600">Choose a user from the list to view messages</p>
               </div>
             </div>
           )}
