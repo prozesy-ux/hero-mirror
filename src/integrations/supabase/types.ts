@@ -41,6 +41,30 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_credentials: {
+        Row: {
+          created_at: string | null
+          id: string
+          password_hash: string
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          password_hash: string
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          password_hash?: string
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
       admin_sessions: {
         Row: {
           created_at: string | null
@@ -733,6 +757,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      verify_admin_password: {
+        Args: { p_password: string; p_username: string }
+        Returns: boolean
       }
     }
     Enums: {
