@@ -90,9 +90,11 @@ const BillingSection = () => {
   const [verifyingPayment, setVerifyingPayment] = useState(false);
 
   useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    
     if (user) {
       fetchData();
-      subscribeToUpdates();
+      unsubscribe = subscribeToUpdates();
       
       // Check for Stripe topup success and verify payment
       const topupStatus = searchParams.get('topup');
@@ -102,6 +104,10 @@ const BillingSection = () => {
         verifyAndCreditWallet(sessionId);
       }
     }
+    
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [user, searchParams]);
 
   const verifyAndCreditWallet = async (sessionId: string, retryCount = 0) => {
