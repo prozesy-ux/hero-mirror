@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminData } from '@/hooks/useAdminData';
 import { toast } from 'sonner';
 
 interface Category {
@@ -12,6 +13,7 @@ interface Category {
 }
 
 const CategoriesManagement = () => {
+  const { fetchData } = useAdminData();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -23,10 +25,9 @@ const CategoriesManagement = () => {
   }, []);
 
   const fetchCategories = async () => {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name');
+    const { data, error } = await fetchData<Category>('categories', {
+      order: { column: 'name', ascending: true }
+    });
     
     if (error) {
       toast.error('Failed to load categories');

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminData } from '@/hooks/useAdminData';
 import { toast } from 'sonner';
 import { Wallet, Search, DollarSign, ArrowUpRight, RefreshCcw, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -34,7 +35,13 @@ interface Transaction {
   transaction_id?: string;
 }
 
+interface Profile {
+  user_id: string;
+  email: string;
+}
+
 const WalletManagement = () => {
+  const { fetchData } = useAdminData();
   const [wallets, setWallets] = useState<WalletWithUser[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,51 +49,38 @@ const WalletManagement = () => {
   const [activeTab, setActiveTab] = useState<'wallets' | 'transactions' | 'pending'>('wallets');
 
   useEffect(() => {
-    fetchData();
+    fetchAllData();
     subscribeToUpdates();
   }, []);
 
-  const fetchData = async () => {
+  const fetchAllData = async () => {
     setLoading(true);
     
-    // Fetch wallets with user profiles
-    const { data: walletsData } = await supabase
-      .from('user_wallets')
-      .select('*')
-      .order('updated_at', { ascending: false });
+    const [walletsRes, transactionsRes, profilesRes] = await Promise.all([
+      fetchData<WalletWithUser>('user_wallets', {
+        order: { column: 'updated_at', ascending: false }
+      }),
+      fetchData<Transaction>('wallet_transactions', {
+        order: { column: 'created_at', ascending: false },
+        limit: 100
+      }),
+      fetchData<Profile>('profiles')
+    ]);
 
-    // Fetch user emails for wallets
-    if (walletsData) {
-      const userIds = walletsData.map(w => w.user_id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, email')
-        .in('user_id', userIds);
+    const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p.email]));
 
-      const walletsWithEmail = walletsData.map(wallet => ({
+    if (walletsRes.data) {
+      const walletsWithEmail = walletsRes.data.map(wallet => ({
         ...wallet,
-        user_email: profiles?.find(p => p.user_id === wallet.user_id)?.email || 'Unknown'
+        user_email: profileMap.get(wallet.user_id) || 'Unknown'
       }));
       setWallets(walletsWithEmail);
     }
 
-    // Fetch transactions
-    const { data: txData } = await supabase
-      .from('wallet_transactions')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100);
-
-    if (txData) {
-      const userIds = [...new Set(txData.map(t => t.user_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, email')
-        .in('user_id', userIds);
-
-      const txWithEmail = txData.map(tx => ({
+    if (transactionsRes.data) {
+      const txWithEmail = transactionsRes.data.map(tx => ({
         ...tx,
-        user_email: profiles?.find(p => p.user_id === tx.user_id)?.email || 'Unknown'
+        user_email: profileMap.get(tx.user_id) || 'Unknown'
       }));
       setTransactions(txWithEmail);
     }
@@ -97,22 +91,20 @@ const WalletManagement = () => {
   const subscribeToUpdates = () => {
     const channel = supabase
       .channel('admin-wallet-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets' }, fetchData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_transactions' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_transactions' }, fetchAllData)
       .subscribe();
 
     return () => supabase.removeChannel(channel);
   };
 
   const updateTransactionStatus = async (id: string, status: string) => {
-    // Find the transaction
     const tx = transactions.find(t => t.id === id);
     if (!tx) {
       toast.error('Transaction not found');
       return;
     }
 
-    // Update transaction status
     const { error } = await supabase
       .from('wallet_transactions')
       .update({ status })
@@ -123,19 +115,16 @@ const WalletManagement = () => {
       return;
     }
 
-    // If approving a topup, credit the user's wallet
     if (status === 'completed' && tx.type === 'topup') {
-      // Get current wallet balance
       const { data: wallet } = await supabase
         .from('user_wallets')
         .select('balance')
         .eq('user_id', tx.user_id)
-        .single();
+        .maybeSingle();
 
       const currentBalance = wallet?.balance || 0;
       const newBalance = currentBalance + tx.amount;
 
-      // Upsert wallet with new balance
       const { error: walletError } = await supabase
         .from('user_wallets')
         .upsert({
@@ -146,7 +135,7 @@ const WalletManagement = () => {
 
       if (walletError) {
         toast.error('Transaction approved but failed to credit wallet');
-        fetchData();
+        fetchAllData();
         return;
       }
 
@@ -155,7 +144,7 @@ const WalletManagement = () => {
       toast.success(`Transaction marked as ${status}`);
     }
     
-    fetchData();
+    fetchAllData();
   };
 
   const filteredWallets = wallets.filter(w =>
@@ -448,13 +437,13 @@ const WalletManagement = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => updateTransactionStatus(tx.id, 'completed')}
-                          className="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm transition-all"
+                          className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
                         >
                           Approve
                         </button>
                         <button
                           onClick={() => updateTransactionStatus(tx.id, 'failed')}
-                          className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm transition-all"
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
                         >
                           Reject
                         </button>

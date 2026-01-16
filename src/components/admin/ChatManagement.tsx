@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Send, Users, Search, Check, CheckCheck, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminData } from '@/hooks/useAdminData';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { playSound } from '@/lib/sounds';
@@ -23,7 +24,23 @@ interface Message {
   created_at: string;
 }
 
+interface Profile {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+}
+
+interface SupportMessage {
+  id: string;
+  user_id: string;
+  message: string;
+  sender_type: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 const ChatManagement = () => {
+  const { fetchData } = useAdminData();
   const [users, setUsers] = useState<ChatUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<ChatUser | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -59,13 +76,15 @@ const ChatManagement = () => {
   const fetchChatUsers = async () => {
     setLoading(true);
     
-    const { data: messagesData, error } = await supabase
-      .from('support_messages')
-      .select('user_id, message, sender_type, is_read, created_at')
-      .order('created_at', { ascending: false });
+    const [messagesRes, profilesRes] = await Promise.all([
+      fetchData<SupportMessage>('support_messages', {
+        order: { column: 'created_at', ascending: false }
+      }),
+      fetchData<Profile>('profiles')
+    ]);
 
-    if (error) {
-      console.error('Error fetching chat users:', error);
+    if (messagesRes.error) {
+      console.error('Error fetching chat users:', messagesRes.error);
       setLoading(false);
       return;
     }
@@ -77,7 +96,7 @@ const ChatManagement = () => {
       last_message_at: string 
     }>();
 
-    messagesData?.forEach((msg) => {
+    (messagesRes.data || []).forEach((msg) => {
       if (!userMap.has(msg.user_id)) {
         userMap.set(msg.user_id, {
           user_id: msg.user_id,
@@ -100,13 +119,10 @@ const ChatManagement = () => {
       return;
     }
 
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('user_id, email, full_name')
-      .in('user_id', userIds);
+    const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
 
     const chatUsers: ChatUser[] = userIds.map((userId) => {
-      const profile = profiles?.find((p) => p.user_id === userId);
+      const profile = profileMap.get(userId);
       const userData = userMap.get(userId)!;
       return {
         user_id: userId,
@@ -130,11 +146,10 @@ const ChatManagement = () => {
   };
 
   const fetchMessages = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('support_messages')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
+    const { data, error } = await fetchData<Message>('support_messages', {
+      filters: [{ column: 'user_id', value: userId }],
+      order: { column: 'created_at', ascending: true }
+    });
 
     if (!error && data) {
       setMessages(data as Message[]);
@@ -165,7 +180,6 @@ const ChatManagement = () => {
           table: 'support_messages'
         },
         (payload) => {
-          // Play sound when new user message arrives
           if (payload.new && (payload.new as Message).sender_type === 'user') {
             playSound('messageReceived');
           }
@@ -199,7 +213,6 @@ const ChatManagement = () => {
       toast.error('Failed to send message');
       console.error('Error sending message:', error);
     } else {
-      // Play sound when message sent successfully
       playSound('messageSent');
       setNewMessage('');
       fetchMessages(selectedUser.user_id);
@@ -208,7 +221,6 @@ const ChatManagement = () => {
     setSending(false);
   };
 
-  // Check if message can be deleted (older than 1 day)
   const canDeleteMessage = (createdAt: string): boolean => {
     const messageDate = new Date(createdAt);
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -292,7 +304,6 @@ const ChatManagement = () => {
       <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Users List */}
         <div className="w-80 border-r border-white/10 flex flex-col">
-          {/* Search */}
           <div className="p-4 border-b border-white/10">
             <div className="relative">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -306,7 +317,6 @@ const ChatManagement = () => {
             </div>
           </div>
 
-          {/* Users */}
           <div className="flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center h-32">
@@ -357,7 +367,6 @@ const ChatManagement = () => {
         <div className="flex-1 flex flex-col">
           {selectedUser ? (
             <>
-              {/* Chat Header */}
               <div className="p-4 border-b border-white/10 bg-white/[0.02]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -374,7 +383,6 @@ const ChatManagement = () => {
                     </div>
                   </div>
                   
-                  {/* Delete All Chat Button */}
                   <button
                     onClick={handleDeleteAllChat}
                     disabled={deletingAllChat}
@@ -390,7 +398,6 @@ const ChatManagement = () => {
                 </div>
               </div>
 
-              {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg) => {
                   const isDeletable = canDeleteMessage(msg.created_at);
@@ -401,7 +408,6 @@ const ChatManagement = () => {
                       className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'} group`}
                     >
                       <div className="flex items-end gap-2">
-                        {/* Delete button for user messages */}
                         {msg.sender_type === 'user' && isDeletable && (
                           <button
                             onClick={() => handleDeleteMessage(msg.id, msg.created_at)}
@@ -444,7 +450,6 @@ const ChatManagement = () => {
                           </div>
                         </div>
                         
-                        {/* Delete button for admin messages */}
                         {msg.sender_type === 'admin' && isDeletable && (
                           <button
                             onClick={() => handleDeleteMessage(msg.id, msg.created_at)}
@@ -466,24 +471,26 @@ const ChatManagement = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input */}
               <div className="p-4 border-t border-white/10">
                 <div className="flex gap-3">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your reply..."
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                    placeholder="Type a message..."
                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
-                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                   />
                   <button
                     onClick={sendMessage}
-                    disabled={!newMessage.trim() || sending}
-                    className="bg-white text-black px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                    disabled={sending || !newMessage.trim()}
+                    className="bg-white text-black px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 flex items-center gap-2"
                   >
-                    <Send size={18} />
-                    Send
+                    {sending ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Send size={18} />
+                    )}
                   </button>
                 </div>
               </div>
@@ -491,9 +498,9 @@ const ChatManagement = () => {
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <MessageCircle className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-400 mb-2">Select a conversation</h3>
-                <p className="text-gray-600">Choose a user from the list to view their messages</p>
+                <MessageCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">Select a conversation</h3>
+                <p className="text-gray-500">Choose a user to start chatting</p>
               </div>
             </div>
           )}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Loader2, Bot, Save, X, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminData } from '@/hooks/useAdminData';
 import { toast } from 'sonner';
 import ImageUploader from './ImageUploader';
 
@@ -17,6 +18,7 @@ interface AIAccount {
 }
 
 const AIAccountsManagement = () => {
+  const { fetchData } = useAdminData();
   const [accounts, setAccounts] = useState<AIAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -38,10 +40,9 @@ const AIAccountsManagement = () => {
   }, []);
 
   const fetchAccounts = async () => {
-    const { data, error } = await supabase
-      .from('ai_accounts')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data, error } = await fetchData<AIAccount>('ai_accounts', {
+      order: { column: 'created_at', ascending: false }
+    });
 
     if (!error && data) {
       setAccounts(data);

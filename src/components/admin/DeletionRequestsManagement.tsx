@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminData } from '@/hooks/useAdminData';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,7 +57,14 @@ interface DeletionRequest {
   user_name?: string;
 }
 
+interface Profile {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+}
+
 const DeletionRequestsManagement = () => {
+  const { fetchData } = useAdminData();
   const [requests, setRequests] = useState<DeletionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,29 +82,22 @@ const DeletionRequestsManagement = () => {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const { data: requestsData, error } = await supabase
-        .from('account_deletion_requests')
-        .select('*')
-        .order('requested_at', { ascending: false });
+      const [requestsRes, profilesRes] = await Promise.all([
+        fetchData<DeletionRequest>('account_deletion_requests', {
+          order: { column: 'requested_at', ascending: false }
+        }),
+        fetchData<Profile>('profiles')
+      ]);
 
-      if (error) throw error;
+      if (requestsRes.error) throw new Error(requestsRes.error);
 
-      // Fetch user details for each request
-      const requestsWithUsers = await Promise.all(
-        (requestsData || []).map(async (request) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('email, full_name')
-            .eq('user_id', request.user_id)
-            .maybeSingle();
+      const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
 
-          return {
-            ...request,
-            user_email: profile?.email || 'Unknown',
-            user_name: profile?.full_name || 'Unknown User'
-          };
-        })
-      );
+      const requestsWithUsers = (requestsRes.data || []).map(request => ({
+        ...request,
+        user_email: profileMap.get(request.user_id)?.email || 'Unknown',
+        user_name: profileMap.get(request.user_id)?.full_name || 'Unknown User'
+      }));
 
       setRequests(requestsWithUsers);
     } catch (error) {
@@ -112,7 +113,6 @@ const DeletionRequestsManagement = () => {
 
     setProcessing(true);
     try {
-      // Update request status
       const { error: updateError } = await supabase
         .from('account_deletion_requests')
         .update({

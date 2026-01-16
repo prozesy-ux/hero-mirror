@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.admin-validate-session]
 verify_jwt = false
+
+[functions.admin-fetch-data]
+verify_jwt = false
