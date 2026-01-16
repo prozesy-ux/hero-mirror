@@ -221,9 +221,17 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
       <div className="bg-white/5 border border-white/10 rounded-xl p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl font-bold">
-              {profile.full_name?.charAt(0) || profile.email?.charAt(0) || 'U'}
-            </div>
+            {profile.avatar_url ? (
+              <img 
+                src={profile.avatar_url} 
+                alt={profile.full_name || 'User'} 
+                className="w-16 h-16 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl font-bold">
+                {profile.full_name?.charAt(0) || profile.email?.charAt(0) || 'U'}
+              </div>
+            )}
             <div>
               <h2 className="text-xl font-bold text-white">{profile.full_name || 'No name'}</h2>
               <div className="flex items-center gap-2 text-gray-400 text-sm">
