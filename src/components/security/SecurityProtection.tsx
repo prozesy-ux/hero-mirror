@@ -13,8 +13,10 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockedUntil, setBlockedUntil] = useState<string | null>(null);
   
-  // Check if user is on dashboard routes (where we allow more interactions)
+  // Check if user is on dashboard or admin routes (where we allow more interactions)
   const isDashboardRoute = location.pathname.startsWith('/dashboard');
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isProtectedArea = isDashboardRoute || isAdminRoute;
 
   // Report suspicious activity to backend honeypot
   const reportToHoneypot = useCallback(async (eventType: string, metadata: Record<string, unknown> = {}) => {
@@ -94,8 +96,14 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
   }, []);
 
   useEffect(() => {
-    // Check block status on mount
-    checkBlockStatus();
+    // Skip blocking security checks for admin/dashboard routes
+    if (isProtectedArea) {
+      // Don't run any security checks on protected areas
+      return;
+    }
+
+    // Check block status on mount (only for public routes)
+    checkBlockStatus().catch(() => {});
 
     // === KEYBOARD SHORTCUT BLOCKING ===
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -268,7 +276,7 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
       clearInterval(clearConsoleInterval);
       clearTimeout(resizeTimeout);
     };
-  }, [reportToHoneypot, checkBlockStatus, isDashboardRoute]);
+  }, [reportToHoneypot, checkBlockStatus, isDashboardRoute, isAdminRoute, isProtectedArea]);
 
   // Show blocked UI if user is blocked
   if (isBlocked) {
