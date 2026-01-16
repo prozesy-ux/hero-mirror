@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Loader2, GripVertical, Save, X, Search, ChevronDown, icons } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, GripVertical, Save, X, Search, ChevronDown, icons, ImageIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 // Popular icons for quick selection
@@ -11,6 +11,7 @@ const POPULAR_ICONS = [
   'Camera', 'Video', 'Music', 'FileText', 'Code', 'Palette', 'Mic',
   'Globe', 'Star', 'Heart', 'Rocket', 'Lightbulb', 'Target', 'Layers'
 ];
+
 interface AITool {
   id: string;
   name: string;
@@ -19,6 +20,7 @@ interface AITool {
   description: string | null;
   is_active: boolean;
   display_order: number;
+  image_url: string | null;
   created_at: string;
 }
 
@@ -34,6 +36,7 @@ const AIToolsTab = () => {
     icon: '',
     color: '',
     description: '',
+    image_url: '',
     is_active: true,
     display_order: 0
   });
@@ -86,6 +89,7 @@ const AIToolsTab = () => {
           icon: formData.icon || null,
           color: formData.color || null,
           description: formData.description || null,
+          image_url: formData.image_url || null,
           is_active: formData.is_active,
           display_order: formData.display_order
         })
@@ -107,6 +111,7 @@ const AIToolsTab = () => {
           icon: formData.icon || null,
           color: formData.color || null,
           description: formData.description || null,
+          image_url: formData.image_url || null,
           is_active: formData.is_active,
           display_order: tools.length + 1
         });
@@ -129,6 +134,7 @@ const AIToolsTab = () => {
       icon: tool.icon || '',
       color: tool.color || '',
       description: tool.description || '',
+      image_url: tool.image_url || '',
       is_active: tool.is_active,
       display_order: tool.display_order
     });
@@ -158,6 +164,7 @@ const AIToolsTab = () => {
       icon: '',
       color: '',
       description: '',
+      image_url: '',
       is_active: true,
       display_order: 0
     });
@@ -172,10 +179,34 @@ const AIToolsTab = () => {
     setShowIconPicker(false);
     setIconSearch('');
   };
+
   const renderIcon = (iconName: string | null, className: string = "w-5 h-5") => {
     if (!iconName) return null;
     const IconComponent = icons[iconName as keyof typeof icons] as LucideIcon | undefined;
     return IconComponent ? <IconComponent className={className} /> : <span>{iconName}</span>;
+  };
+
+  const renderToolIcon = (tool: AITool) => {
+    // If image_url exists, show the image
+    if (tool.image_url) {
+      return (
+        <img 
+          src={tool.image_url} 
+          alt={tool.name} 
+          className="w-10 h-10 rounded-lg object-contain bg-white/10 p-1"
+          onError={(e) => {
+            // Fallback to icon if image fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    }
+    // Otherwise show the gradient with icon
+    return (
+      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tool.color || 'from-gray-500 to-gray-600'} flex items-center justify-center text-white shadow-lg border border-white/10`}>
+        {renderIcon(tool.icon)}
+      </div>
+    );
   };
 
   if (loading) {
@@ -216,7 +247,7 @@ const AIToolsTab = () => {
                 />
               </div>
               <div className="space-y-2 relative">
-                <label className="block text-sm font-medium text-gray-300">Icon</label>
+                <label className="block text-sm font-medium text-gray-300">Icon (fallback)</label>
                 <div className="relative">
                   <button
                     type="button"
@@ -282,6 +313,20 @@ const AIToolsTab = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  <ImageIcon className="w-4 h-4 inline mr-1" />
+                  Logo Image URL (optional)
+                </label>
+                <input
+                  type="url"
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  placeholder="https://example.com/logo.png"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500">If provided, this image will be used instead of the icon</p>
+              </div>
+              <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-300">Gradient Color Classes</label>
                 <input
                   type="text"
@@ -291,8 +336,21 @@ const AIToolsTab = () => {
                   className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
-              <div className="space-y-2 flex items-end gap-4">
-                <div className="flex items-center gap-3 bg-gray-900 px-4 py-2 rounded-lg border border-gray-700">
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of the AI tool"
+                  rows={2}
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                />
+              </div>
+              <div className="space-y-2 flex flex-col justify-end">
+                <div className="flex items-center gap-3 bg-gray-900 px-4 py-3 rounded-lg border border-gray-700">
                   <Switch
                     id="is_active"
                     checked={formData.is_active}
@@ -301,17 +359,6 @@ const AIToolsTab = () => {
                   <label htmlFor="is_active" className="text-sm text-gray-300">Active</label>
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Description</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief description of the AI tool"
-                rows={2}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-              />
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -339,7 +386,7 @@ const AIToolsTab = () => {
           <thead className="bg-gray-900">
             <tr>
               <th className="text-left px-4 py-4 text-gray-400 font-medium w-12">#</th>
-              <th className="text-left px-4 py-4 text-gray-400 font-medium w-16">Icon</th>
+              <th className="text-left px-4 py-4 text-gray-400 font-medium w-16">Logo</th>
               <th className="text-left px-4 py-4 text-gray-400 font-medium">Name</th>
               <th className="text-left px-4 py-4 text-gray-400 font-medium">Color</th>
               <th className="text-left px-4 py-4 text-gray-400 font-medium">Description</th>
@@ -355,9 +402,7 @@ const AIToolsTab = () => {
                   {index + 1}
                 </td>
                 <td className="px-4 py-4">
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tool.color || 'from-gray-500 to-gray-600'} flex items-center justify-center text-white shadow-lg border border-white/10`}>
-                    {renderIcon(tool.icon)}
-                  </div>
+                  {renderToolIcon(tool)}
                 </td>
                 <td className="px-4 py-4 font-medium text-white">{tool.name}</td>
                 <td className="px-4 py-4">
