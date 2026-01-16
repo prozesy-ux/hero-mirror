@@ -8,8 +8,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import Dashboard from "./pages/Dashboard";
-import AdminLogin from "./pages/AdminLogin";
-import Admin from "./pages/Admin";
+import AdminPro from "./pages/AdminPro";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,8 +29,7 @@ const App = () => (
                 <Dashboard />
               </ProtectedRoute>
             } />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin/*" element={<Admin />} />
+            <Route path="/adminpro/*" element={<AdminPro />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
