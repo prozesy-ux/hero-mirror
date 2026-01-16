@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Crown, User as UserIcon, Trash2, Search, Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Crown, User as UserIcon, Trash2, Search, Loader2, ToggleLeft, ToggleRight, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import UserDetailView from './UserDetailView';
 
 interface UserProfile {
   id: string;
@@ -18,6 +19,7 @@ const UsersManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -86,11 +88,36 @@ const UsersManagement = () => {
   const proCount = users.filter(u => u.is_pro).length;
   const freeCount = users.filter(u => !u.is_pro).length;
 
+  const handleUserClick = (user: UserProfile) => {
+    setSelectedUser(user);
+  };
+
+  const handleBackToList = () => {
+    setSelectedUser(null);
+  };
+
+  const handleUserDeleted = () => {
+    setSelectedUser(null);
+    fetchUsers();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
+    );
+  }
+
+  // Show user detail view if a user is selected
+  if (selectedUser) {
+    return (
+      <UserDetailView
+        userId={selectedUser.id}
+        userIdAuth={selectedUser.user_id}
+        onBack={handleBackToList}
+        onUserDeleted={handleUserDeleted}
+      />
     );
   }
 
@@ -137,7 +164,11 @@ const UsersManagement = () => {
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
-              <tr key={user.id} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors">
+              <tr 
+                key={user.id} 
+                className="border-t border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                onClick={() => handleUserClick(user)}
+              >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
@@ -164,7 +195,14 @@ const UsersManagement = () => {
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-2">
                     <button
-                      onClick={() => handleTogglePro(user.id, user.is_pro)}
+                      onClick={(e) => { e.stopPropagation(); handleUserClick(user); }}
+                      className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+                      title="View Details"
+                    >
+                      <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleTogglePro(user.id, user.is_pro); }}
                       disabled={togglingId === user.id}
                       className={`p-2 rounded-lg transition-all ${
                         user.is_pro 
@@ -182,7 +220,7 @@ const UsersManagement = () => {
                       )}
                     </button>
                     <button
-                      onClick={() => handleDeleteUser(user.id, user.user_id)}
+                      onClick={(e) => { e.stopPropagation(); handleDeleteUser(user.id, user.user_id); }}
                       disabled={deletingId === user.id}
                       className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
                       title="Delete User"
