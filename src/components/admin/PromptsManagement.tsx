@@ -14,6 +14,7 @@ interface Prompt {
   tool: string;
   is_free: boolean;
   is_featured: boolean;
+  is_trending?: boolean;
   category_id: string | null;
   categories?: { name: string } | null;
 }
@@ -41,6 +42,7 @@ const PromptsManagement = () => {
     tool: 'ChatGPT',
     is_free: false,
     is_featured: false,
+    is_trending: false,
     category_id: ''
   });
 
@@ -74,7 +76,7 @@ const PromptsManagement = () => {
   const fetchData = async () => {
     try {
       const [{ data: promptsData, error: promptsError }, { data: categoriesData }] = await Promise.all([
-        supabase.from('prompts').select('*, categories(name)').order('created_at', { ascending: false }),
+        supabase.from('prompts').select('id, title, description, content, image_url, tool, is_free, is_featured, category_id, categories(name)').order('created_at', { ascending: false }),
         supabase.from('categories').select('id, name').order('name')
       ]);
 
@@ -109,6 +111,7 @@ const PromptsManagement = () => {
       tool: formData.tool,
       is_free: formData.is_free,
       is_featured: formData.is_featured,
+      is_trending: formData.is_trending,
       category_id: formData.category_id || null
     };
 
@@ -149,6 +152,7 @@ const PromptsManagement = () => {
       tool: prompt.tool,
       is_free: prompt.is_free,
       is_featured: prompt.is_featured,
+      is_trending: prompt.is_trending || false,
       category_id: prompt.category_id || ''
     });
     setEditingId(prompt.id);
@@ -184,7 +188,8 @@ const PromptsManagement = () => {
       image_url: null,
       tool: 'ChatGPT', 
       is_free: false, 
-      is_featured: false, 
+      is_featured: false,
+      is_trending: false, 
       category_id: '' 
     });
     setEditingId(null);
@@ -286,7 +291,7 @@ const PromptsManagement = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6 pt-2">
+                  <div className="flex items-center gap-6 pt-2 flex-wrap">
                     <label className="flex items-center gap-2 text-white cursor-pointer">
                       <input 
                         type="checkbox" 
@@ -304,6 +309,15 @@ const PromptsManagement = () => {
                         className="w-5 h-5 rounded bg-gray-900 border-gray-700 text-purple-500 focus:ring-purple-500" 
                       />
                       <span>Featured</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-white cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={formData.is_trending} 
+                        onChange={(e) => setFormData({ ...formData, is_trending: e.target.checked })} 
+                        className="w-5 h-5 rounded bg-gray-900 border-gray-700 text-orange-500 focus:ring-orange-500" 
+                      />
+                      <span>Trending</span>
                     </label>
                   </div>
                 </div>
@@ -471,7 +485,7 @@ const PromptsManagement = () => {
                     <td className="px-6 py-4 text-gray-300">{prompt.tool}</td>
                     <td className="px-6 py-4 text-gray-300">{prompt.categories?.name || '-'}</td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {prompt.is_free && (
                           <span className="px-2 py-1 bg-green-600/20 text-green-400 text-xs rounded-full">
                             Free
@@ -482,7 +496,12 @@ const PromptsManagement = () => {
                             Featured
                           </span>
                         )}
-                        {!prompt.is_free && !prompt.is_featured && (
+                        {prompt.is_trending && (
+                          <span className="px-2 py-1 bg-orange-600/20 text-orange-400 text-xs rounded-full">
+                            Trending
+                          </span>
+                        )}
+                        {!prompt.is_free && !prompt.is_featured && !prompt.is_trending && (
                           <span className="text-gray-500 text-sm">Premium</span>
                         )}
                       </div>

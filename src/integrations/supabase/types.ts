@@ -241,6 +241,7 @@ export type Database = {
           is_automatic: boolean | null
           is_enabled: boolean | null
           name: string
+          qr_image_url: string | null
           updated_at: string | null
         }
         Insert: {
@@ -255,6 +256,7 @@ export type Database = {
           is_automatic?: boolean | null
           is_enabled?: boolean | null
           name: string
+          qr_image_url?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -269,6 +271,7 @@ export type Database = {
           is_automatic?: boolean | null
           is_enabled?: boolean | null
           name?: string
+          qr_image_url?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -316,6 +319,7 @@ export type Database = {
           image_url: string | null
           is_featured: boolean | null
           is_free: boolean | null
+          is_trending: boolean | null
           title: string
           tool: string
           updated_at: string | null
@@ -329,6 +333,7 @@ export type Database = {
           image_url?: string | null
           is_featured?: boolean | null
           is_free?: boolean | null
+          is_trending?: boolean | null
           title: string
           tool?: string
           updated_at?: string | null
@@ -342,6 +347,7 @@ export type Database = {
           image_url?: string | null
           is_featured?: boolean | null
           is_free?: boolean | null
+          is_trending?: boolean | null
           title?: string
           tool?: string
           updated_at?: string | null
