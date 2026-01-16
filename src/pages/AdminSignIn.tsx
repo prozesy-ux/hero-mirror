@@ -2,14 +2,14 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import signinBackground from "@/assets/signin-background.webp";
 import promptheroIcon from "@/assets/prompthero-icon.png";
 
 const adminSignInSchema = z.object({
-  email: z.string().trim().email("Invalid email address").max(255),
+  username: z.string().trim().min(1, "Username is required").max(100),
   password: z.string().min(6, "Password must be at least 6 characters").max(128),
 });
 
@@ -19,7 +19,7 @@ const AdminSignIn = () => {
   const navigate = useNavigate();
   const { signIn } = useAuthContext();
 
-  const [form, setForm] = useState<AdminSignInForm>({ email: "", password: "" });
+  const [form, setForm] = useState<AdminSignInForm>({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -35,11 +35,18 @@ const AdminSignIn = () => {
     }
 
     setSubmitting(true);
-    const { data: authData, error } = await signIn(parsed.data.email, parsed.data.password);
+    
+    // Convert username to email format for Supabase auth
+    // If username doesn't contain @, append a domain
+    const loginEmail = parsed.data.username.includes('@') 
+      ? parsed.data.username 
+      : `${parsed.data.username}@admin.local`;
+    
+    const { data: authData, error } = await signIn(loginEmail, parsed.data.password);
 
     if (error) {
       setSubmitting(false);
-      toast.error(error.message);
+      toast.error("Invalid username or password");
       return;
     }
 
@@ -121,17 +128,17 @@ const AdminSignIn = () => {
           <div className="w-full rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-medium text-white">Email Address</label>
+                <label className="mb-2 block text-sm font-medium text-white">Username</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                   <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
-                    placeholder="admin@company.com"
+                    type="text"
+                    value={form.username}
+                    onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))}
+                    placeholder="admin"
                     className="w-full rounded-lg border border-gray-700 bg-black/50 py-3 pl-10 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
                     required
-                    autoComplete="email"
+                    autoComplete="username"
                   />
                 </div>
               </div>
