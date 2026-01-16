@@ -149,11 +149,11 @@ const SecurityLogsManagement = () => {
           Security Logs
         </h2>
         <div className="flex gap-2">
-          <Button onClick={handleClearOldLogs} variant="outline" size="sm" className="border-[#1a1a1a] bg-[#0d0d0f] hover:bg-[#111114]">
+          <Button onClick={handleClearOldLogs} variant="outline" size="sm" className="border-[#151516] bg-[#0d0d0f] rounded-sm hover:bg-[#0e0e10]">
             <Trash2 className="h-4 w-4 mr-2" />
             Clear Old Logs
           </Button>
-          <Button onClick={fetchLogs} variant="outline" size="sm" className="border-[#1a1a1a] bg-[#0d0d0f] hover:bg-[#111114]">
+          <Button onClick={fetchLogs} variant="outline" size="sm" className="border-[#151516] bg-[#0d0d0f] rounded-sm hover:bg-[#0e0e10]">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
@@ -162,27 +162,27 @@ const SecurityLogsManagement = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-6 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-[#0a0a0b] border border-[#151516] rounded-none p-6 hover:bg-[#0e0e10] transition-all">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-500/5 rounded-lg">
+            <div className="p-2 bg-blue-500/5 rounded-sm">
               <Shield className="h-4 w-4 text-blue-400" />
             </div>
             <span className="text-sm font-medium text-zinc-500">Total Events</span>
           </div>
           <div className="text-2xl font-bold text-white">{logs.length}</div>
         </div>
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-6 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-[#0a0a0b] border border-[#151516] rounded-none p-6 hover:bg-[#0e0e10] transition-all">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-red-500/5 rounded-lg">
+            <div className="p-2 bg-red-500/5 rounded-sm">
               <AlertTriangle className="h-4 w-4 text-red-400" />
             </div>
             <span className="text-sm font-medium text-zinc-500">Blocked IPs</span>
           </div>
           <div className="text-2xl font-bold text-red-400">{blockedCount}</div>
         </div>
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-6 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-[#0a0a0b] border border-[#151516] rounded-none p-6 hover:bg-[#0e0e10] transition-all">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-orange-500/5 rounded-lg">
+            <div className="p-2 bg-orange-500/5 rounded-sm">
               <Shield className="h-4 w-4 text-orange-400" />
             </div>
             <span className="text-sm font-medium text-zinc-500">DevTools Detections</span>
@@ -199,11 +199,11 @@ const SecurityLogsManagement = () => {
             placeholder="Search by IP, event type, or user agent..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-[#050506] border-[#1a1a1a] text-white placeholder-zinc-600 focus:border-[#252528]"
+            className="pl-10 bg-[#030304] border-[#151516] rounded-sm text-white placeholder-zinc-600 focus:border-[#252528]"
           />
         </div>
         <Select value={eventFilter} onValueChange={setEventFilter}>
-          <SelectTrigger className="w-[180px] bg-[#050506] border-[#1a1a1a]">
+          <SelectTrigger className="w-[180px] bg-[#030304] border-[#151516] rounded-sm">
             <SelectValue placeholder="Event Type" />
           </SelectTrigger>
           <SelectContent>
@@ -214,7 +214,7 @@ const SecurityLogsManagement = () => {
           </SelectContent>
         </Select>
         <Select value={blockedFilter} onValueChange={setBlockedFilter}>
-          <SelectTrigger className="w-[150px] bg-[#050506] border-[#1a1a1a]">
+          <SelectTrigger className="w-[150px] bg-[#030304] border-[#151516] rounded-sm">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -226,10 +226,10 @@ const SecurityLogsManagement = () => {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl overflow-hidden">
+      <div className="bg-[#0a0a0b] border border-[#151516] rounded-none overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[#0d0d0f] border-b border-[#1a1a1a] hover:bg-[#0d0d0f]">
+            <TableRow className="bg-[#080809] border-b border-[#151516] hover:bg-[#080809]">
               <TableHead className="text-zinc-500">IP Address</TableHead>
               <TableHead className="text-zinc-500">Event Type</TableHead>
               <TableHead className="text-zinc-500">Attempts</TableHead>
@@ -254,7 +254,7 @@ const SecurityLogsManagement = () => {
                 </TableRow>
               ) : (
                 filteredLogs.map((log) => (
-                  <TableRow key={log.id} className="border-t border-[#1a1a1a] hover:bg-[#0f0f11] transition-all">
+                  <TableRow key={log.id} className="border-t border-[#151516] hover:bg-[#0c0c0d] transition-all">
                     <TableCell className="font-mono text-sm">{log.ip_address}</TableCell>
                     <TableCell>
                       <Badge className={getEventBadgeColor(log.event_type)}>
@@ -284,7 +284,7 @@ const SecurityLogsManagement = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => handleUnblock(log.id)}
-                            className="border-[#1a1a1a] hover:bg-[#111114]"
+                            className="border-[#151516] rounded-sm hover:bg-[#0e0e10]"
                           >
                             <ShieldOff className="h-4 w-4" />
                           </Button>

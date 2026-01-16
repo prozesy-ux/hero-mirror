@@ -223,7 +223,7 @@ const PaymentSettingsManagement = () => {
       <div className="flex items-center justify-end mb-6">
         <button
           onClick={openAddModal}
-          className="flex items-center gap-2 px-4 py-2 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-white text-black font-semibold rounded-sm hover:bg-white/90 transition-colors"
         >
           <Plus size={18} />
           Add Method
@@ -235,14 +235,14 @@ const PaymentSettingsManagement = () => {
         {paymentMethods.map((method, index) => (
           <div 
             key={method.id}
-            className={`bg-[#09090b] border border-[#1a1a1a] rounded-xl p-4 transition-all hover:bg-[#0f0f11] ${
+            className={`bg-[#0a0a0b] border border-[#151516] rounded-none p-4 transition-all hover:bg-[#0e0e10] ${
               !method.is_enabled ? 'opacity-60' : ''
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 {/* Logo */}
-                <div className="w-14 h-14 rounded-xl bg-[#0d0d0f] border border-[#1a1a1a] flex items-center justify-center overflow-hidden">
+                <div className="w-14 h-14 rounded-sm bg-[#0d0d0f] border border-[#151516] flex items-center justify-center overflow-hidden">
                   {method.icon_url ? (
                     <img 
                       src={method.icon_url} 
@@ -259,11 +259,11 @@ const PaymentSettingsManagement = () => {
                   <div className="flex items-center gap-2">
                     <h3 className="text-white font-semibold">{method.name}</h3>
                     {method.is_automatic ? (
-                      <span className="flex items-center gap-1 px-2 py-0.5 bg-white/5 text-white text-xs rounded-full">
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-white/5 text-white text-xs rounded-sm">
                         <Zap size={10} /> Automatic
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-400 text-xs rounded-full">
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-400 text-xs rounded-sm">
                         <Clock size={10} /> Manual
                       </span>
                     )}
@@ -285,14 +285,14 @@ const PaymentSettingsManagement = () => {
                   <button
                     onClick={() => handleMoveOrder(method, 'up')}
                     disabled={index === 0}
-                    className="p-1 rounded bg-[#0d0d0f] border border-[#1a1a1a] text-zinc-400 hover:bg-[#0f0f11] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="p-1 rounded-sm bg-[#0d0d0f] border border-[#151516] text-zinc-400 hover:bg-[#0e0e10] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     <ArrowUp size={14} />
                   </button>
                   <button
                     onClick={() => handleMoveOrder(method, 'down')}
                     disabled={index === paymentMethods.length - 1}
-                    className="p-1 rounded bg-[#0d0d0f] border border-[#1a1a1a] text-zinc-400 hover:bg-[#0f0f11] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="p-1 rounded-sm bg-[#0d0d0f] border border-[#151516] text-zinc-400 hover:bg-[#0e0e10] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     <ArrowDown size={14} />
                   </button>
@@ -321,7 +321,7 @@ const PaymentSettingsManagement = () => {
                 {/* Edit */}
                 <button
                   onClick={() => openEditModal(method)}
-                  className="p-2 rounded-lg bg-[#0d0d0f] border border-[#1a1a1a] text-zinc-400 hover:bg-[#0f0f11] hover:text-white transition-all"
+                  className="p-2 rounded-sm bg-[#0d0d0f] border border-[#151516] text-zinc-400 hover:bg-[#0e0e10] hover:text-white transition-all"
                   title="Edit"
                 >
                   <Edit2 size={18} />
@@ -331,7 +331,7 @@ const PaymentSettingsManagement = () => {
                 <button
                   onClick={() => handleDelete(method)}
                   disabled={saving === method.id}
-                  className="p-2 rounded-lg bg-[#0d0d0f] border border-[#1a1a1a] text-zinc-400 hover:bg-red-500/10 hover:text-red-400 transition-all"
+                  className="p-2 rounded-sm bg-[#0d0d0f] border border-[#151516] text-zinc-400 hover:bg-red-500/10 hover:text-red-400 transition-all"
                   title="Delete"
                 >
                   {saving === method.id ? (
@@ -346,7 +346,7 @@ const PaymentSettingsManagement = () => {
         ))}
         
         {paymentMethods.length === 0 && (
-          <div className="text-center py-12 text-zinc-500 bg-[#09090b] rounded-xl border border-[#1a1a1a]">
+          <div className="text-center py-12 text-zinc-500 bg-[#0a0a0b] rounded-none border border-[#151516]">
             No payment methods configured. Add one to get started.
           </div>
         )}
