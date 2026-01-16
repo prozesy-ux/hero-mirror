@@ -115,13 +115,13 @@ const ImageUploader = ({
           <img
             src={value}
             alt="Prompt preview"
-            className="w-full h-48 object-cover rounded-lg border border-[#27272a]"
+            className="w-full h-48 object-cover rounded-lg border border-[#1a1a1a]"
           />
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-3">
             <button
               type="button"
               onClick={handleClick}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="px-4 py-2 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-colors"
             >
               Replace
             </button>
@@ -143,19 +143,19 @@ const ImageUploader = ({
           className={`
             border-2 border-dashed rounded-lg h-48 flex flex-col items-center justify-center cursor-pointer transition-colors
             ${dragOver 
-              ? 'border-purple-500 bg-purple-500/10' 
-              : 'border-[#27272a] hover:border-[#3f3f46] bg-[#0c0c0e]'
+              ? 'border-white/50 bg-white/5' 
+              : 'border-[#1a1a1a] hover:border-[#252528] bg-[#030303]'
             }
           `}
         >
           {uploading ? (
             <div className="flex flex-col items-center">
-              <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+              <Loader2 className="w-8 h-8 text-white animate-spin" />
               <p className="text-zinc-400 text-sm mt-2">Uploading...</p>
             </div>
           ) : (
             <>
-              <div className="w-12 h-12 rounded-full bg-[#18181b] flex items-center justify-center mb-3">
+              <div className="w-12 h-12 rounded-full bg-[#0d0d0f] flex items-center justify-center mb-3">
                 <ImageIcon className="w-6 h-6 text-zinc-400" />
               </div>
               <p className="text-zinc-400 text-sm mb-1">Drag & drop an image here</p>
