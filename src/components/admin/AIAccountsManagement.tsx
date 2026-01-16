@@ -169,13 +169,13 @@ const AIAccountsManagement = () => {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">
                 {editingAccount ? 'Edit Account' : 'Add New Account'}
               </h3>
-              <button onClick={resetForm} className="text-gray-400 hover:text-white">
+              <button onClick={resetForm} className="text-zinc-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -183,7 +183,7 @@ const AIAccountsManagement = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Image Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
                   <ImageIcon className="w-4 h-4 inline mr-1" />
                   Product Image
                 </label>
@@ -192,7 +192,7 @@ const AIAccountsManagement = () => {
                     <img
                       src={formData.icon_url}
                       alt="Product preview"
-                      className="w-full h-40 object-cover rounded-lg border border-gray-700"
+                      className="w-full h-40 object-cover rounded-lg border border-[#27272a]"
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                       <button
@@ -215,23 +215,23 @@ const AIAccountsManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
+                <label className="block text-sm font-medium text-zinc-300 mb-1">Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                   placeholder="ChatGPT Premium"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                <label className="block text-sm font-medium text-zinc-300 mb-1">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                   rows={3}
                   placeholder="Premium AI account with full access"
                 />
@@ -239,7 +239,7 @@ const AIAccountsManagement = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Price ($)</label>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1">Price ($)</label>
                   <input
                     type="number"
                     value={formData.price}
@@ -247,29 +247,29 @@ const AIAccountsManagement = () => {
                     required
                     min="0"
                     step="0.01"
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                    className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Stock (optional)</label>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1">Stock (optional)</label>
                   <input
                     type="number"
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                     min="0"
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                    className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                     placeholder="Unlimited"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>
+                <label className="block text-sm font-medium text-zinc-300 mb-1">Category</label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                 >
                   <option value="chatgpt">ChatGPT</option>
                   <option value="claude">Claude</option>
@@ -285,16 +285,16 @@ const AIAccountsManagement = () => {
                   id="is_available"
                   checked={formData.is_available}
                   onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-purple-600"
+                  className="w-4 h-4 rounded border-[#27272a] bg-[#0c0c0e] text-purple-600"
                 />
-                <label htmlFor="is_available" className="text-sm text-gray-300">Available for purchase</label>
+                <label htmlFor="is_available" className="text-sm text-zinc-300">Available for purchase</label>
               </div>
 
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-[#18181b] border border-[#27272a] hover:bg-[#1f1f23] text-white py-2 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -314,17 +314,17 @@ const AIAccountsManagement = () => {
 
       {/* Accounts Grid */}
       {accounts.length === 0 ? (
-        <div className="bg-gray-800 rounded-xl p-12 text-center">
-          <Bot className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-12 text-center">
+          <Bot className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No AI Accounts</h3>
-          <p className="text-gray-400">Add your first AI account for sale</p>
+          <p className="text-zinc-400">Add your first AI account for sale</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {accounts.map((account) => (
             <div
               key={account.id}
-              className={`bg-gray-800 rounded-xl overflow-hidden border ${account.is_available ? 'border-gray-700' : 'border-red-500/30'}`}
+              className={`bg-[#111113] rounded-xl overflow-hidden border ${account.is_available ? 'border-[#27272a]' : 'border-red-500/30'} hover:border-[#3f3f46] transition-colors`}
             >
               {/* Product Image */}
               {account.icon_url ? (
@@ -343,31 +343,31 @@ const AIAccountsManagement = () => {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-semibold text-white">{account.name}</h3>
-                    <span className="text-sm text-gray-400 capitalize">{account.category}</span>
+                    <span className="text-sm text-zinc-400 capitalize">{account.category}</span>
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleEdit(account)}
-                      className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                      className="p-2 hover:bg-[#1a1a1e] rounded-lg transition-colors"
                     >
-                      <Edit className="w-4 h-4 text-gray-400" />
+                      <Edit className="w-4 h-4 text-zinc-400" />
                     </button>
                     <button
                       onClick={() => handleDelete(account.id)}
-                      className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                      className="p-2 hover:bg-[#1a1a1e] rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
                   </div>
                 </div>
 
-                <p className="text-gray-400 text-sm mb-3 line-clamp-2">{account.description}</p>
+                <p className="text-zinc-400 text-sm mb-3 line-clamp-2">{account.description}</p>
 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-2xl font-bold text-white">${account.price}</span>
                   <div className="flex items-center gap-2">
                     {account.stock !== null && (
-                      <span className="text-gray-400">Stock: {account.stock}</span>
+                      <span className="text-zinc-400">Stock: {account.stock}</span>
                     )}
                     <span className={`px-2 py-1 rounded-full text-xs ${account.is_available ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                       {account.is_available ? 'Available' : 'Unavailable'}
