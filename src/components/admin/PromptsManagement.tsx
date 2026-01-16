@@ -24,9 +24,16 @@ interface Category {
   name: string;
 }
 
+interface AITool {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
 const PromptsManagement = () => {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [aiTools, setAITools] = useState<AITool[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -45,8 +52,6 @@ const PromptsManagement = () => {
     is_trending: false,
     category_id: ''
   });
-
-  const tools = ['ChatGPT', 'Midjourney', 'Claude', 'DALL-E', 'Gemini', 'Stable Diffusion', 'Leonardo AI', 'Copilot'];
 
   useEffect(() => {
     fetchData();
@@ -75,9 +80,10 @@ const PromptsManagement = () => {
 
   const fetchData = async () => {
     try {
-      const [{ data: promptsData, error: promptsError }, { data: categoriesData }] = await Promise.all([
+      const [{ data: promptsData, error: promptsError }, { data: categoriesData }, { data: toolsData }] = await Promise.all([
         supabase.from('prompts').select('id, title, description, content, image_url, tool, is_free, is_featured, category_id, categories(name)').order('created_at', { ascending: false }),
-        supabase.from('categories').select('id, name').order('name')
+        supabase.from('categories').select('id, name').order('name'),
+        supabase.from('ai_tools').select('id, name, is_active').eq('is_active', true).order('display_order')
       ]);
 
       if (promptsError) {
@@ -87,6 +93,7 @@ const PromptsManagement = () => {
 
       setPrompts(promptsData || []);
       setCategories(categoriesData || []);
+      setAITools(toolsData || []);
     } catch (error) {
       console.error('Fetch error:', error);
       toast.error('Failed to load data');
@@ -271,8 +278,8 @@ const PromptsManagement = () => {
                         onChange={(e) => setFormData({ ...formData, tool: e.target.value })} 
                         className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
-                        {tools.map(tool => (
-                          <option key={tool} value={tool}>{tool}</option>
+                        {aiTools.map(tool => (
+                          <option key={tool.id} value={tool.name}>{tool.name}</option>
                         ))}
                       </select>
                     </div>
