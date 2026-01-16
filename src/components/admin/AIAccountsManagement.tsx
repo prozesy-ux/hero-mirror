@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2, Loader2, Bot, Save, X, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { toast } from 'sonner';
 import ImageUploader from './ImageUploader';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface AIAccount {
   id: string;
@@ -18,9 +19,7 @@ interface AIAccount {
 }
 
 const AIAccountsManagement = () => {
-  const { fetchData } = useAdminData();
-  const [accounts, setAccounts] = useState<AIAccount[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { aiAccounts, isLoading, refreshTable } = useAdminDataContext();
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<AIAccount | null>(null);
   const [saving, setSaving] = useState(false);
@@ -35,20 +34,7 @@ const AIAccountsManagement = () => {
     icon_url: null as string | null
   });
 
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
-
-  const fetchAccounts = async () => {
-    const { data, error } = await fetchData<AIAccount>('ai_accounts', {
-      order: { column: 'created_at', ascending: false }
-    });
-
-    if (!error && data) {
-      setAccounts(data);
-    }
-    setLoading(false);
-  };
+  const accounts = aiAccounts as AIAccount[];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +60,7 @@ const AIAccountsManagement = () => {
         toast.error('Failed to update account');
       } else {
         toast.success('Account updated successfully');
-        fetchAccounts();
+        refreshTable('ai_accounts');
         resetForm();
       }
     } else {
@@ -86,7 +72,7 @@ const AIAccountsManagement = () => {
         toast.error('Failed to create account');
       } else {
         toast.success('Account created successfully');
-        fetchAccounts();
+        refreshTable('ai_accounts');
         resetForm();
       }
     }
@@ -120,7 +106,7 @@ const AIAccountsManagement = () => {
       toast.error('Failed to delete account');
     } else {
       toast.success('Account deleted');
-      fetchAccounts();
+      refreshTable('ai_accounts');
     }
   };
 
@@ -147,14 +133,6 @@ const AIAccountsManagement = () => {
       default: return '🔮';
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -314,7 +292,20 @@ const AIAccountsManagement = () => {
       )}
 
       {/* Accounts Grid */}
-      {accounts.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-gray-800 rounded-xl overflow-hidden border border-gray-700">
+              <Skeleton className="w-full h-32 bg-white/10" />
+              <div className="p-5 space-y-3">
+                <Skeleton className="h-5 w-3/4 bg-white/10" />
+                <Skeleton className="h-4 w-1/2 bg-white/10" />
+                <Skeleton className="h-8 w-20 bg-white/10" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : accounts.length === 0 ? (
         <div className="bg-gray-800 rounded-xl p-12 text-center">
           <Bot className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No AI Accounts</h3>

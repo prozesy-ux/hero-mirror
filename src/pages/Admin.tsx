@@ -12,55 +12,26 @@ import DeletionRequestsManagement from '@/components/admin/DeletionRequestsManag
 import ChatManagement from '@/components/admin/ChatManagement';
 import WalletManagement from '@/components/admin/WalletManagement';
 import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
+import { AdminDataProvider, useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useState, useEffect } from 'react';
-import { useAdminData } from '@/hooks/useAdminData';
 import { Loader2, Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import promptheroIcon from '@/assets/prompthero-icon.png';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ADMIN_SESSION_KEY = 'admin_session_token';
 
 const AdminDashboard = () => {
-  const { fetchData } = useAdminData();
-  const [stats, setStats] = useState({
-    totalPrompts: 0,
-    totalUsers: 0,
-    proUsers: 0,
-    revenue: 0
-  });
-  const [loading, setLoading] = useState(true);
+  const { profiles, purchases, prompts, isLoading } = useAdminDataContext();
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      const [promptsRes, profilesRes, purchasesRes] = await Promise.all([
-        fetchData('prompts'),
-        fetchData('profiles'),
-        fetchData('purchases')
-      ]);
-
-      const profiles = profilesRes.data || [];
-      const purchases = purchasesRes.data || [];
-
-      const totalUsers = profiles.length;
-      const proUsers = profiles.filter((p: any) => p.is_pro).length;
-      const revenue = purchases
-        .filter((p: any) => p.payment_status === 'completed')
-        .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
-
-      setStats({
-        totalPrompts: promptsRes.data?.length || 0,
-        totalUsers,
-        proUsers,
-        revenue
-      });
-      setLoading(false);
-    };
-
-    fetchStats();
-  }, []);
+  const totalUsers = profiles.length;
+  const proUsers = profiles.filter((p: any) => p.is_pro).length;
+  const revenue = purchases
+    .filter((p: any) => p.payment_status === 'completed')
+    .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
   return (
     <div>
@@ -68,25 +39,25 @@ const AdminDashboard = () => {
         <div className="bg-white/5 border border-white/10 rounded-xl p-6">
           <div className="text-gray-400 text-sm">Total Prompts</div>
           <div className="text-3xl font-bold text-white mt-1">
-            {loading ? '...' : stats.totalPrompts}
+            {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : prompts.length}
           </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-6">
           <div className="text-gray-400 text-sm">Total Users</div>
           <div className="text-3xl font-bold text-white mt-1">
-            {loading ? '...' : stats.totalUsers}
+            {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : totalUsers}
           </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-6">
           <div className="text-gray-400 text-sm">Pro Users</div>
           <div className="text-3xl font-bold text-amber-400 mt-1">
-            {loading ? '...' : stats.proUsers}
+            {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : proUsers}
           </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-6">
           <div className="text-gray-400 text-sm">Revenue</div>
           <div className="text-3xl font-bold text-green-400 mt-1">
-            ${loading ? '...' : stats.revenue.toFixed(2)}
+            {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : `$${revenue.toFixed(2)}`}
           </div>
         </div>
       </div>
@@ -257,6 +228,22 @@ const AdminLoginForm = ({ onLogin }: { onLogin: () => void }) => {
   );
 };
 
+const AdminPanelContent = ({ onLogout }: { onLogout: () => void }) => {
+  const { refreshAll } = useAdminDataContext();
+
+  useEffect(() => {
+    // Pre-fetch all admin data on mount
+    refreshAll();
+  }, [refreshAll]);
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a]">
+      <AdminSidebar onLogout={onLogout} />
+      <AdminContent />
+    </div>
+  );
+};
+
 const Admin = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -322,10 +309,9 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <AdminSidebar onLogout={handleLogout} />
-      <AdminContent />
-    </div>
+    <AdminDataProvider>
+      <AdminPanelContent onLogout={handleLogout} />
+    </AdminDataProvider>
   );
 };
 

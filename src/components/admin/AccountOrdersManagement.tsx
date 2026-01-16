@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Loader2, Package, CheckCircle, Clock, Send, Eye, Edit, Trash2, X, Save, Search, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface AccountOrder {
   id: string;
@@ -22,20 +23,11 @@ interface AccountOrder {
   user_avatar?: string | null;
 }
 
-interface Profile {
-  user_id: string;
-  email: string;
-  full_name: string | null;
-  avatar_url: string | null;
-}
-
 type StatusFilter = 'all' | 'pending' | 'delivered' | 'failed';
 type PaymentFilter = 'all' | 'completed' | 'pending';
 
 const AccountOrdersManagement = () => {
-  const { fetchData } = useAdminData();
-  const [orders, setOrders] = useState<AccountOrder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { accountOrders, profiles, isLoading, refreshTable } = useAdminDataContext();
   const [delivering, setDelivering] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<Record<string, string>>({});
   const [editingOrder, setEditingOrder] = useState<AccountOrder | null>(null);
@@ -52,80 +44,40 @@ const AccountOrdersManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all');
-  
-  const [stats, setStats] = useState({
-    total: 0,
-    pending: 0,
-    delivered: 0,
-    revenue: 0
-  });
+
+  const enrichedOrders = useMemo(() => {
+    const profileMap = new Map(profiles.map((p: any) => [p.user_id, p]));
+    return accountOrders.map((order: any) => ({
+      ...order,
+      user_email: profileMap.get(order.user_id)?.email || 'Unknown',
+      user_name: profileMap.get(order.user_id)?.full_name || 'Unknown',
+      user_avatar: profileMap.get(order.user_id)?.avatar_url || null
+    })) as AccountOrder[];
+  }, [accountOrders, profiles]);
+
+  const stats = useMemo(() => {
+    const pending = enrichedOrders.filter(o => o.delivery_status === 'pending').length;
+    const delivered = enrichedOrders.filter(o => o.delivery_status === 'delivered').length;
+    const revenue = enrichedOrders
+      .filter(o => o.payment_status === 'completed')
+      .reduce((sum, o) => sum + o.amount, 0);
+    return { total: enrichedOrders.length, pending, delivered, revenue };
+  }, [enrichedOrders]);
 
   useEffect(() => {
-    fetchOrders();
-    subscribeToOrders();
-  }, []);
-
-  const fetchOrders = async () => {
-    const [ordersRes, profilesRes] = await Promise.all([
-      fetchData<AccountOrder>('ai_account_purchases', {
-        select: '*, ai_accounts(name, category)',
-        order: { column: 'purchased_at', ascending: false }
-      }),
-      fetchData<Profile>('profiles')
-    ]);
-
-    if (!ordersRes.error && ordersRes.data) {
-      const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
-
-      const enrichedOrders = ordersRes.data.map(order => ({
-        ...order,
-        user_email: profileMap.get(order.user_id)?.email || 'Unknown',
-        user_name: profileMap.get(order.user_id)?.full_name || 'Unknown',
-        user_avatar: profileMap.get(order.user_id)?.avatar_url || null
-      }));
-
-      setOrders(enrichedOrders as AccountOrder[]);
-
-      const pending = enrichedOrders.filter(o => o.delivery_status === 'pending').length;
-      const delivered = enrichedOrders.filter(o => o.delivery_status === 'delivered').length;
-      const revenue = enrichedOrders
-        .filter(o => o.payment_status === 'completed')
-        .reduce((sum, o) => sum + o.amount, 0);
-
-      setStats({
-        total: enrichedOrders.length,
-        pending,
-        delivered,
-        revenue
-      });
-    }
-    setLoading(false);
-  };
-
-  const subscribeToOrders = () => {
     const channel = supabase
       .channel('account-orders')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'ai_account_purchases'
-        },
-        () => {
-          fetchOrders();
-          toast.info('Order updated!');
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ai_account_purchases' }, () => {
+        refreshTable('ai_account_purchases');
+        toast.info('Order updated!');
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
+    return () => { supabase.removeChannel(channel); };
+  }, [refreshTable]);
 
   const handleDeliver = async (orderId: string) => {
-    const order = orders.find(o => o.id === orderId);
+    const order = enrichedOrders.find(o => o.id === orderId);
     
     if (order?.payment_status !== 'completed') {
       toast.error('Cannot deliver - payment not completed');
@@ -156,7 +108,7 @@ const AccountOrdersManagement = () => {
     } else {
       toast.success('Credentials delivered successfully');
       setCredentials(prev => ({ ...prev, [orderId]: '' }));
-      fetchOrders();
+      refreshTable('ai_account_purchases');
     }
   };
 
@@ -193,7 +145,7 @@ const AccountOrdersManagement = () => {
     } else {
       toast.success('Order updated successfully');
       setEditingOrder(null);
-      fetchOrders();
+      refreshTable('ai_account_purchases');
     }
   };
 
@@ -213,7 +165,7 @@ const AccountOrdersManagement = () => {
       toast.error('Failed to delete order');
     } else {
       toast.success('Order deleted successfully');
-      fetchOrders();
+      refreshTable('ai_account_purchases');
     }
   };
 
@@ -227,8 +179,7 @@ const AccountOrdersManagement = () => {
     }
   };
 
-  // Filter orders
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = enrichedOrders.filter(order => {
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = !searchQuery || 
       order.user_email?.toLowerCase().includes(searchLower) ||
@@ -242,33 +193,33 @@ const AccountOrdersManagement = () => {
     return matchesSearch && matchesStatus && matchesPayment;
   });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div>
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Total Orders</div>
-          <div className="text-2xl font-bold text-white">{stats.total}</div>
+          <div className="text-2xl font-bold text-white">
+            {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : stats.total}
+          </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Pending</div>
-          <div className="text-2xl font-bold text-yellow-400">{stats.pending}</div>
+          <div className="text-2xl font-bold text-yellow-400">
+            {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : stats.pending}
+          </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Delivered</div>
-          <div className="text-2xl font-bold text-green-400">{stats.delivered}</div>
+          <div className="text-2xl font-bold text-green-400">
+            {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : stats.delivered}
+          </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Revenue</div>
-          <div className="text-2xl font-bold text-purple-400">${stats.revenue.toFixed(2)}</div>
+          <div className="text-2xl font-bold text-purple-400">
+            {isLoading ? <Skeleton className="h-8 w-20 bg-white/10" /> : `$${stats.revenue.toFixed(2)}`}
+          </div>
         </div>
       </div>
 
@@ -312,7 +263,7 @@ const AccountOrdersManagement = () => {
 
         {(searchQuery || statusFilter !== 'all' || paymentFilter !== 'all') && (
           <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
-            <span className="text-gray-400 text-sm">Showing {filteredOrders.length} of {orders.length} orders</span>
+            <span className="text-gray-400 text-sm">Showing {filteredOrders.length} of {enrichedOrders.length} orders</span>
             <button
               onClick={() => {
                 setSearchQuery('');
@@ -410,14 +361,32 @@ const AccountOrdersManagement = () => {
       )}
 
       {/* Orders List */}
-      {filteredOrders.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-12 h-12 rounded-full bg-white/10" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-32 bg-white/10" />
+                    <Skeleton className="h-4 w-48 bg-white/10" />
+                    <Skeleton className="h-4 w-24 bg-white/10" />
+                  </div>
+                </div>
+                <Skeleton className="h-8 w-20 bg-white/10" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredOrders.length === 0 ? (
         <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
           <Package className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">
-            {orders.length === 0 ? 'No Orders Yet' : 'No Matching Orders'}
+            {enrichedOrders.length === 0 ? 'No Orders Yet' : 'No Matching Orders'}
           </h3>
           <p className="text-gray-400">
-            {orders.length === 0 ? 'AI account orders will appear here' : 'Try adjusting your search or filters'}
+            {enrichedOrders.length === 0 ? 'AI account orders will appear here' : 'Try adjusting your search or filters'}
           </p>
         </div>
       ) : (
@@ -461,80 +430,77 @@ const AccountOrdersManagement = () => {
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <p className="text-xl font-bold text-white">${order.amount}</p>
-                    <div className="flex gap-1 mt-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    <div className="flex gap-1.5 mt-1">
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
                         order.payment_status === 'completed' 
                           ? 'bg-green-500/20 text-green-400' 
                           : 'bg-yellow-500/20 text-yellow-400'
                       }`}>
                         {order.payment_status}
                       </span>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        order.delivery_status === 'delivered' 
+                          ? 'bg-blue-500/20 text-blue-400' 
+                          : 'bg-orange-500/20 text-orange-400'
+                      }`}>
+                        {order.delivery_status}
+                      </span>
                     </div>
                   </div>
                   
-                  <div className="flex flex-col items-center gap-1">
-                    {order.delivery_status === 'delivered' ? (
-                      <CheckCircle className="w-6 h-6 text-green-400" />
-                    ) : (
-                      <Clock className="w-6 h-6 text-yellow-400" />
-                    )}
-                    <span className="text-xs text-gray-500 capitalize">{order.delivery_status}</span>
-                  </div>
-
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleEdit(order)}
-                      className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
-                      title="Edit"
+                      className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                      title="Edit order"
                     >
-                      <Edit size={16} />
+                      <Edit size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(order.id)}
                       disabled={deletingId === order.id}
-                      className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
-                      title="Delete"
+                      className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      title="Delete order"
                     >
-                      {deletingId === order.id ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={16} />
-                      )}
+                      {deletingId === order.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Deliver Section */}
               {order.delivery_status === 'pending' && order.payment_status === 'completed' && (
-                <div className="flex gap-3 pt-4 border-t border-white/10">
+                <div className="flex gap-3 mt-4 pt-4 border-t border-white/10">
                   <input
                     type="text"
                     value={credentials[order.id] || ''}
                     onChange={(e) => setCredentials(prev => ({ ...prev, [order.id]: e.target.value }))}
-                    placeholder="Enter account credentials (email:password)"
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                    placeholder="Enter account credentials (email:password or invite link)"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                   />
                   <button
                     onClick={() => handleDeliver(order.id)}
                     disabled={delivering === order.id}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
                   >
-                    {delivering === order.id ? (
-                      <Loader2 size={18} className="animate-spin" />
-                    ) : (
-                      <Send size={18} />
-                    )}
+                    {delivering === order.id ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                     Deliver
                   </button>
                 </div>
               )}
 
-              {/* Show credentials if delivered */}
               {order.delivery_status === 'delivered' && order.account_credentials && (
-                <div className="pt-4 border-t border-white/10">
-                  <p className="text-gray-500 text-sm">Delivered credentials:</p>
-                  <p className="text-green-400 font-mono text-sm mt-1">{order.account_credentials}</p>
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle size={16} className="text-green-400" />
+                    <span className="text-green-400 text-sm font-medium">Delivered</span>
+                    <span className="text-gray-500 text-xs">
+                      {order.delivered_at && new Date(order.delivered_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="mt-2 p-3 bg-white/5 rounded-lg">
+                    <p className="text-gray-400 text-xs mb-1">Credentials:</p>
+                    <p className="text-white font-mono text-sm">{order.account_credentials}</p>
+                  </div>
                 </div>
               )}
             </div>

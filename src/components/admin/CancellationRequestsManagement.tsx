@@ -1,87 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Loader2, XCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { toast } from 'sonner';
-
-interface CancellationRequest {
-  id: string;
-  user_id: string;
-  reason: string | null;
-  status: string;
-  admin_notes: string | null;
-  created_at: string;
-  processed_at: string | null;
-  user_email?: string;
-  user_name?: string;
-}
-
-interface Profile {
-  user_id: string;
-  email: string;
-  full_name: string | null;
-}
+import { Skeleton } from '@/components/ui/skeleton';
 
 const CancellationRequestsManagement = () => {
-  const { fetchData } = useAdminData();
-  const [requests, setRequests] = useState<CancellationRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { cancellationRequests, profiles, isLoading, refreshTable } = useAdminDataContext();
   const [processing, setProcessing] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetchRequests();
-    subscribeToRequests();
-  }, []);
-
-  const fetchRequests = async () => {
-    const [requestsRes, profilesRes] = await Promise.all([
-      fetchData<CancellationRequest>('cancellation_requests', {
-        order: { column: 'created_at', ascending: false }
-      }),
-      fetchData<Profile>('profiles')
-    ]);
-
-    if (!requestsRes.error && requestsRes.data) {
-      const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
-
-      const enrichedRequests = requestsRes.data.map(req => ({
-        ...req,
-        user_email: profileMap.get(req.user_id)?.email || 'Unknown',
-        user_name: profileMap.get(req.user_id)?.full_name || 'Unknown'
-      }));
-
-      setRequests(enrichedRequests as CancellationRequest[]);
-    }
-    setLoading(false);
-  };
-
-  const subscribeToRequests = () => {
     const channel = supabase
       .channel('cancellation-requests')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'cancellation_requests'
-        },
-        () => {
-          fetchRequests();
-          toast.info('New cancellation request!');
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cancellation_requests' }, () => {
+        refreshTable('cancellation_requests');
+        toast.info('New cancellation request!');
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
+    return () => { supabase.removeChannel(channel); };
+  }, [refreshTable]);
+
+  const enrichedRequests = useMemo(() => {
+    const profileMap = new Map(profiles.map((p: any) => [p.user_id, p]));
+    return cancellationRequests.map((req: any) => ({
+      ...req,
+      user_email: profileMap.get(req.user_id)?.email || 'Unknown',
+      user_name: profileMap.get(req.user_id)?.full_name || 'Unknown'
+    }));
+  }, [cancellationRequests, profiles]);
+
+  const pendingCount = enrichedRequests.filter((r: any) => r.status === 'pending').length;
 
   const handleProcess = async (requestId: string, action: 'approved' | 'rejected') => {
     setProcessing(requestId);
 
-    const request = requests.find(r => r.id === requestId);
+    const request = enrichedRequests.find((r: any) => r.id === requestId);
     if (!request) return;
 
     const { error } = await supabase
@@ -104,21 +59,11 @@ const CancellationRequestsManagement = () => {
       }
 
       toast.success(`Cancellation ${action} successfully`);
-      fetchRequests();
+      refreshTable('cancellation_requests');
     }
 
     setProcessing(null);
   };
-
-  const pendingCount = requests.filter(r => r.status === 'pending').length;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -131,7 +76,22 @@ const CancellationRequestsManagement = () => {
         </div>
       )}
 
-      {requests.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-5">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-40 bg-white/10" />
+                  <Skeleton className="h-4 w-32 bg-white/10" />
+                  <Skeleton className="h-3 w-24 bg-white/10" />
+                </div>
+                <Skeleton className="h-8 w-20 bg-white/10" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : enrichedRequests.length === 0 ? (
         <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
           <XCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No Cancellation Requests</h3>
@@ -139,7 +99,7 @@ const CancellationRequestsManagement = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {requests.map((request) => (
+          {enrichedRequests.map((request: any) => (
             <div
               key={request.id}
               className={`bg-white/5 border rounded-xl p-5 ${

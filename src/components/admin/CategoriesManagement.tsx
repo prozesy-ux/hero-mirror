@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Category {
   id: string;
@@ -13,29 +14,10 @@ interface Category {
 }
 
 const CategoriesManagement = () => {
-  const { fetchData } = useAdminData();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { categories, isLoading, refreshTable } = useAdminDataContext();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', icon: '', description: '' });
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    const { data, error } = await fetchData<Category>('categories', {
-      order: { column: 'name', ascending: true }
-    });
-    
-    if (error) {
-      toast.error('Failed to load categories');
-    } else {
-      setCategories(data || []);
-    }
-    setLoading(false);
-  };
 
   const handleSave = async () => {
     if (!formData.name) {
@@ -57,7 +39,7 @@ const CategoriesManagement = () => {
         toast.error('Failed to update category');
       } else {
         toast.success('Category updated');
-        fetchCategories();
+        refreshTable('categories');
       }
     } else {
       const { error } = await supabase
@@ -72,7 +54,7 @@ const CategoriesManagement = () => {
         toast.error('Failed to create category');
       } else {
         toast.success('Category created');
-        fetchCategories();
+        refreshTable('categories');
       }
     }
 
@@ -98,7 +80,7 @@ const CategoriesManagement = () => {
       toast.error('Failed to delete category');
     } else {
       toast.success('Category deleted');
-      fetchCategories();
+      refreshTable('categories');
     }
   };
 
@@ -108,13 +90,7 @@ const CategoriesManagement = () => {
     setShowForm(false);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
-  }
+  const categoryList = categories as Category[];
 
   return (
     <div>
@@ -188,29 +164,40 @@ const CategoriesManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {categories.map((category) => (
-              <tr key={category.id} className="border-t border-gray-700">
-                <td className="px-6 py-4 text-2xl">{category.icon || '📁'}</td>
-                <td className="px-6 py-4 text-white font-medium">{category.name}</td>
-                <td className="px-6 py-4 text-gray-400">{category.description || '-'}</td>
-                <td className="px-6 py-4">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => handleEdit(category)}
-                      className="p-2 text-blue-400 hover:bg-gray-700 rounded"
-                    >
-                      <Edit size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(category.id)}
-                      className="p-2 text-red-400 hover:bg-gray-700 rounded"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <tr key={i} className="border-t border-gray-700">
+                  <td className="px-6 py-4"><Skeleton className="h-8 w-8 bg-white/10" /></td>
+                  <td className="px-6 py-4"><Skeleton className="h-4 w-32 bg-white/10" /></td>
+                  <td className="px-6 py-4"><Skeleton className="h-4 w-48 bg-white/10" /></td>
+                  <td className="px-6 py-4"><Skeleton className="h-8 w-20 ml-auto bg-white/10" /></td>
+                </tr>
+              ))
+            ) : (
+              categoryList.map((category) => (
+                <tr key={category.id} className="border-t border-gray-700">
+                  <td className="px-6 py-4 text-2xl">{category.icon || '📁'}</td>
+                  <td className="px-6 py-4 text-white font-medium">{category.name}</td>
+                  <td className="px-6 py-4 text-gray-400">{category.description || '-'}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => handleEdit(category)}
+                        className="p-2 text-blue-400 hover:bg-gray-700 rounded"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(category.id)}
+                        className="p-2 text-red-400 hover:bg-gray-700 rounded"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
