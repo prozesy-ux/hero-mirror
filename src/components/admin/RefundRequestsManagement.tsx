@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, RefreshCcw, CheckCircle, XCircle, Clock, DollarSign } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAdminApi } from '@/hooks/useAdminApi';
 
 interface RefundRequest {
   id: string;
@@ -18,6 +18,12 @@ interface RefundRequest {
   user_name?: string;
 }
 
+interface Profile {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+}
+
 const RefundRequestsManagement = () => {
   const [requests, setRequests] = useState<RefundRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,71 +36,50 @@ const RefundRequestsManagement = () => {
     rejected: 0,
     totalRefunded: 0
   });
+  const { fetchData, updateData } = useAdminApi();
 
   useEffect(() => {
     fetchRequests();
-    subscribeToRequests();
   }, []);
 
   const fetchRequests = async () => {
-    const { data: requestsData, error } = await supabase
-      .from('refund_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const [requestsResult, profilesResult] = await Promise.all([
+      fetchData<RefundRequest>('refund_requests', {
+        select: '*',
+        order: { column: 'created_at', ascending: false }
+      }),
+      fetchData<Profile>('profiles', { select: 'user_id, email, full_name' })
+    ]);
 
-    if (!error && requestsData) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, email, full_name');
+    const requestsData = requestsResult.data || [];
+    const profiles = profilesResult.data || [];
 
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+    const profileMap = new Map(profiles.map(p => [p.user_id, p]));
 
-      const enrichedRequests = requestsData.map(req => ({
-        ...req,
-        user_email: profileMap.get(req.user_id)?.email || 'Unknown',
-        user_name: profileMap.get(req.user_id)?.full_name || 'Unknown'
-      }));
+    const enrichedRequests = requestsData.map(req => ({
+      ...req,
+      user_email: profileMap.get(req.user_id)?.email || 'Unknown',
+      user_name: profileMap.get(req.user_id)?.full_name || 'Unknown'
+    }));
 
-      setRequests(enrichedRequests as RefundRequest[]);
+    setRequests(enrichedRequests);
 
-      const pending = enrichedRequests.filter(r => r.status === 'pending').length;
-      const approved = enrichedRequests.filter(r => r.status === 'approved').length;
-      const rejected = enrichedRequests.filter(r => r.status === 'rejected').length;
-      const totalRefunded = enrichedRequests
-        .filter(r => r.status === 'approved')
-        .reduce((sum, r) => sum + r.amount, 0);
+    const pending = enrichedRequests.filter(r => r.status === 'pending').length;
+    const approved = enrichedRequests.filter(r => r.status === 'approved').length;
+    const rejected = enrichedRequests.filter(r => r.status === 'rejected').length;
+    const totalRefunded = enrichedRequests
+      .filter(r => r.status === 'approved')
+      .reduce((sum, r) => sum + r.amount, 0);
 
-      setStats({
-        total: enrichedRequests.length,
-        pending,
-        approved,
-        rejected,
-        totalRefunded
-      });
-    }
+    setStats({
+      total: enrichedRequests.length,
+      pending,
+      approved,
+      rejected,
+      totalRefunded
+    });
+
     setLoading(false);
-  };
-
-  const subscribeToRequests = () => {
-    const channel = supabase
-      .channel('refund-requests')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'refund_requests'
-        },
-        () => {
-          fetchRequests();
-          toast.info('New refund request!');
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   };
 
   const handleProcess = async (requestId: string, action: 'approved' | 'rejected') => {
@@ -103,23 +88,17 @@ const RefundRequestsManagement = () => {
     const request = requests.find(r => r.id === requestId);
     if (!request) return;
 
-    const { error } = await supabase
-      .from('refund_requests')
-      .update({
-        status: action,
-        admin_notes: adminNotes[requestId] || null,
-        processed_at: new Date().toISOString()
-      })
-      .eq('id', requestId);
+    const { error } = await updateData('refund_requests', requestId, {
+      status: action,
+      admin_notes: adminNotes[requestId] || null,
+      processed_at: new Date().toISOString()
+    });
 
     if (error) {
       toast.error(`Failed to ${action} refund`);
     } else {
       if (action === 'approved' && request.purchase_type === 'pro_plan') {
-        await supabase
-          .from('profiles')
-          .update({ is_pro: false })
-          .eq('user_id', request.user_id);
+        await updateData('profiles', null, { is_pro: false }, { eq: { user_id: request.user_id } });
       }
 
       toast.success(`Refund ${action} successfully`);
