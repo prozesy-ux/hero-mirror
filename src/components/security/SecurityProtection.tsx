@@ -156,10 +156,11 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
       return false;
     };
 
-    // === DEVTOOLS DETECTION ===
+    // === DEVTOOLS DETECTION (debounced) ===
     let devToolsOpen = false;
     const threshold = 160;
     let devToolsReported = false;
+    let resizeTimeout: ReturnType<typeof setTimeout>;
 
     const detectDevTools = () => {
       const widthThreshold = window.outerWidth - window.innerWidth > threshold;
@@ -173,25 +174,24 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
             devToolsReported = true;
             reportToHoneypot('devtools_detected', { method: 'resize_detection' });
           }
-          // Clear console when DevTools detected
-          console.clear();
-          console.log('%c⚠️ Security Notice', 'color: red; font-size: 24px; font-weight: bold;');
-          console.log('%cThis browser feature is intended for developers.', 'font-size: 14px;');
-          console.log('%cUnauthorized access attempts are logged and may result in access restriction.', 'font-size: 12px; color: orange;');
         }
       } else {
         devToolsOpen = false;
       }
     };
 
-    // === CONSOLE CLEARING (every 30 seconds to reduce overhead) ===
+    // Debounced resize handler to prevent performance issues
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(detectDevTools, 500);
+    };
+
+    // === CONSOLE CLEARING (every 60 seconds to reduce overhead) ===
     const clearConsoleInterval = setInterval(() => {
       if (import.meta.env.PROD) {
         console.clear();
       }
-    }, 30000);
-
-    // Debugger trap removed - was causing UI freezes
+    }, 60000);
 
     // === DRAG PREVENTION ===
     const handleDragStart = (e: DragEvent) => {
@@ -226,9 +226,9 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
     document.addEventListener('dragstart', handleDragStart);
     document.addEventListener('copy', handleCopy);
     document.addEventListener('selectstart', handleSelectStart);
-    window.addEventListener('resize', detectDevTools);
+    window.addEventListener('resize', handleResize);
 
-    // Initial DevTools check
+    // Initial DevTools check (once, not on resize)
     detectDevTools();
 
     // Cleanup
@@ -238,8 +238,9 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
       document.removeEventListener('dragstart', handleDragStart);
       document.removeEventListener('copy', handleCopy);
       document.removeEventListener('selectstart', handleSelectStart);
-      window.removeEventListener('resize', detectDevTools);
+      window.removeEventListener('resize', handleResize);
       clearInterval(clearConsoleInterval);
+      clearTimeout(resizeTimeout);
     };
   }, [reportToHoneypot, checkBlockStatus]);
 

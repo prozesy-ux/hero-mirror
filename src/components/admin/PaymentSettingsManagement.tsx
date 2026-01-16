@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   CreditCard, Plus, Trash2, Loader2, ToggleLeft, ToggleRight, 
-  Edit2, Save, X, Upload, ArrowUp, ArrowDown, Zap, Clock
+  Edit2, Save, X, ArrowUp, ArrowDown, Zap, Clock
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import ImageUploader from './ImageUploader';
 
 interface PaymentMethod {
   id: string;
@@ -24,6 +23,7 @@ interface PaymentMethod {
   is_enabled: boolean;
   is_automatic: boolean;
   display_order: number;
+  qr_image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,7 +42,8 @@ const PaymentSettingsManagement = () => {
     account_name: '',
     instructions: '',
     is_enabled: true,
-    is_automatic: false
+    is_automatic: false,
+    qr_image_url: ''
   });
 
   useEffect(() => {
@@ -126,7 +127,8 @@ const PaymentSettingsManagement = () => {
       account_name: '',
       instructions: '',
       is_enabled: true,
-      is_automatic: false
+      is_automatic: false,
+      qr_image_url: ''
     });
   };
 
@@ -140,7 +142,8 @@ const PaymentSettingsManagement = () => {
       account_name: method.account_name || '',
       instructions: method.instructions || '',
       is_enabled: method.is_enabled,
-      is_automatic: method.is_automatic
+      is_automatic: method.is_automatic,
+      qr_image_url: method.qr_image_url || ''
     });
   };
 
@@ -166,7 +169,8 @@ const PaymentSettingsManagement = () => {
       account_name: formData.account_name || null,
       instructions: formData.instructions || null,
       is_enabled: formData.is_enabled,
-      is_automatic: formData.is_automatic
+      is_automatic: formData.is_automatic,
+      qr_image_url: formData.qr_image_url || null
     };
     
     if (editingMethod) {
@@ -215,12 +219,8 @@ const PaymentSettingsManagement = () => {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Payment Settings</h1>
-          <p className="text-gray-400 text-sm mt-1">Manage payment methods shown to users</p>
-        </div>
+      {/* Header - Add Method Button Only */}
+      <div className="flex items-center justify-end mb-6">
         <button
           onClick={openAddModal}
           className="flex items-center gap-2 px-4 py-2 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition-colors"
@@ -228,26 +228,6 @@ const PaymentSettingsManagement = () => {
           <Plus size={18} />
           Add Method
         </button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="text-gray-400 text-sm">Total Methods</div>
-          <div className="text-2xl font-bold text-white">{paymentMethods.length}</div>
-        </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="text-gray-400 text-sm">Enabled</div>
-          <div className="text-2xl font-bold text-green-400">
-            {paymentMethods.filter(m => m.is_enabled).length}
-          </div>
-        </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="text-gray-400 text-sm">Automatic</div>
-          <div className="text-2xl font-bold text-purple-400">
-            {paymentMethods.filter(m => m.is_automatic).length}
-          </div>
-        </div>
       </div>
 
       {/* Payment Methods List */}
@@ -435,7 +415,7 @@ const PaymentSettingsManagement = () => {
                 <Input
                   value={formData.account_name}
                   onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
-                  placeholder="e.g., John Doe"
+                  placeholder="Account holder name"
                   className="bg-white/5 border-white/10 text-white mt-1"
                 />
               </div>
@@ -450,6 +430,41 @@ const PaymentSettingsManagement = () => {
                 className="bg-white/5 border-white/10 text-white mt-1 min-h-[80px]"
               />
             </div>
+            
+            {/* QR Code Upload - Only for Manual Payments */}
+            {!formData.is_automatic && (
+              <div>
+                <Label className="text-gray-400 mb-2 block">QR Code Image (Optional)</Label>
+                <div className="flex items-start gap-4">
+                  {formData.qr_image_url ? (
+                    <div className="relative">
+                      <img 
+                        src={formData.qr_image_url} 
+                        alt="QR Code" 
+                        className="w-32 h-32 object-contain border border-white/10 rounded-lg bg-white p-2"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, qr_image_url: '' })}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex-1">
+                      <Input
+                        value={formData.qr_image_url}
+                        onChange={(e) => setFormData({ ...formData, qr_image_url: e.target.value })}
+                        placeholder="https://example.com/qr-code.png"
+                        className="bg-white/5 border-white/10 text-white"
+                      />
+                      <p className="text-gray-500 text-xs mt-1">Paste QR code image URL for manual payments</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             
             <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
               <div>

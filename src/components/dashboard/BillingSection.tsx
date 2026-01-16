@@ -69,6 +69,7 @@ interface PaymentMethodDB {
   is_enabled: boolean;
   is_automatic: boolean;
   display_order: number;
+  qr_image_url: string | null;
 }
 
 const BillingSection = () => {
@@ -960,6 +961,17 @@ const BillingSection = () => {
             {/* Dynamic Gateway-specific inputs */}
             {selectedPaymentMethod && !selectedPaymentMethod.is_automatic && (
               <div className="mb-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                {/* QR Code Display */}
+                {selectedPaymentMethod.qr_image_url && (
+                  <div className="flex justify-center mb-4">
+                    <img 
+                      src={selectedPaymentMethod.qr_image_url} 
+                      alt={`${selectedPaymentMethod.name} QR Code`}
+                      className="w-48 h-48 object-contain border-2 border-amber-200 rounded-xl bg-white p-2"
+                    />
+                  </div>
+                )}
+                
                 <div className="mb-3">
                   <p className="text-amber-800 font-semibold mb-1">{selectedPaymentMethod.name} Payment Instructions</p>
                   {selectedPaymentMethod.account_number && (

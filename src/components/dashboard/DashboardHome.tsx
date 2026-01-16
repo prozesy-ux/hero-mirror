@@ -92,11 +92,11 @@ const DashboardHome = () => {
   const fetchData = async () => {
     setLoading(true);
     
-    // Fetch trending/featured prompts (limit to 8 for scrollable)
+    // Fetch trending prompts (prioritize is_trending, then is_featured)
     const { data: promptsData } = await supabase
       .from('prompts')
       .select('id, title, image_url, tool, is_free, is_featured, description')
-      .eq('is_featured', true)
+      .or('is_trending.eq.true,is_featured.eq.true')
       .limit(8);
     
     setTrendingPrompts(promptsData || []);
@@ -371,7 +371,7 @@ const DashboardHome = () => {
 
                     {/* Category Badge - overlaid on image */}
                     <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold uppercase shadow-lg">
-                      {account.category || 'Premium'}
+                      {account.category || 'AI Tool'}
                     </div>
 
                     {/* Favorite Button - overlaid on image */}
