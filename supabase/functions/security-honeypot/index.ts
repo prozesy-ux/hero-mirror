@@ -7,8 +7,10 @@ const corsHeaders = {
 };
 
 // Rate limits configuration
+// NOTE: devtools_detected is noisy and can trigger false positives in normal usage.
+// We log it for audit, but we do NOT block access based on it.
 const BLOCK_THRESHOLDS = {
-  devtools_detected: { maxAttempts: 5, blockDurationHours: 24 },
+  devtools_detected: { maxAttempts: 999999, blockDurationHours: 0 },
   repeated_inspection: { maxAttempts: 3, blockDurationHours: 48 },
   rate_limit_exceeded: { maxAttempts: 10, blockDurationHours: 1 },
 };
@@ -36,16 +38,17 @@ serve(async (req) => {
     const body = await req.json();
     const { event_type, metadata = {}, check_only = false } = body;
 
-    // Check if IP is currently blocked
+    // Check if IP is currently blocked (ignore devtools_detected blocks - too noisy)
     const { data: existingBlock } = await supabaseClient
       .from("security_logs")
       .select("*")
       .eq("ip_address", clientIP)
       .eq("is_blocked", true)
+      .neq("event_type", "devtools_detected")
       .gt("blocked_until", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (existingBlock) {
       const blockedUntil = new Date(existingBlock.blocked_until);
