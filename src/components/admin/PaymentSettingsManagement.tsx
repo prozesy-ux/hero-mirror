@@ -235,14 +235,14 @@ const PaymentSettingsManagement = () => {
         {paymentMethods.map((method, index) => (
           <div 
             key={method.id}
-            className={`bg-white/5 border border-white/10 rounded-xl p-4 transition-all ${
+            className={`bg-[#111113] border border-[#27272a] rounded-xl p-4 transition-all hover:border-[#3f3f46] ${
               !method.is_enabled ? 'opacity-60' : ''
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 {/* Logo */}
-                <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden">
+                <div className="w-14 h-14 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center overflow-hidden">
                   {method.icon_url ? (
                     <img 
                       src={method.icon_url} 
@@ -346,7 +346,7 @@ const PaymentSettingsManagement = () => {
         ))}
         
         {paymentMethods.length === 0 && (
-          <div className="text-center py-12 text-gray-400 bg-white/5 rounded-xl border border-white/10">
+          <div className="text-center py-12 text-zinc-400 bg-[#111113] rounded-xl border border-[#27272a]">
             No payment methods configured. Add one to get started.
           </div>
         )}
