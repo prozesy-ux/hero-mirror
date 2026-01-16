@@ -379,7 +379,7 @@ const PromptsGrid = () => {
 
   return (
     <div className="space-y-6 lg:space-y-8 section-prompts animate-fade-up">
-      {/* Tab Navigation - Premium Icon-Only Mobile Design */}
+      {/* Tab Navigation - Mobile Optimized Premium Design */}
       <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
         {/* Mobile: Wallet on top, tabs below */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
@@ -413,33 +413,31 @@ const PromptsGrid = () => {
             )}
           </div>
 
-          {/* Tab buttons - Icon-only on mobile, with text on desktop */}
-          <div className="flex gap-1 lg:gap-2 justify-around sm:justify-start lg:order-1">
+          {/* Tab buttons - Horizontal scroll on mobile */}
+          <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar lg:order-1">
             <button
               onClick={() => setActiveTab('all')}
-              className={`relative p-3 sm:px-4 lg:px-6 sm:py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 lg:gap-2 ${
+              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'all'
                   ? 'bg-gray-900 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-              <Layers size={18} className="sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Prompts</span>
-              {activeTab === 'all' && <div className="sm:hidden absolute -bottom-0.5 w-1 h-1 bg-white rounded-full" />}
+              <Layers size={14} />
+              <span className="hidden sm:inline">Browse</span> Prompts
             </button>
             <button
               onClick={() => setActiveTab('trending')}
-              className={`relative p-3 sm:px-4 lg:px-6 sm:py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 lg:gap-2 ${
+              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'trending'
                   ? 'bg-gray-900 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-              <TrendingUp size={18} className="sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Trending</span>
-              {activeTab === 'trending' && <div className="sm:hidden absolute -bottom-0.5 w-1 h-1 bg-white rounded-full" />}
+              <TrendingUp size={14} />
+              Trending
               {trendingPrompts.length > 0 && (
-                <span className={`hidden sm:inline px-1.5 py-0.5 text-[10px] rounded-full ${
+                <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
                   activeTab === 'trending' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
                 }`}>
                   {trendingPrompts.length}
@@ -448,17 +446,16 @@ const PromptsGrid = () => {
             </button>
             <button
               onClick={() => setActiveTab('saved')}
-              className={`relative p-3 sm:px-4 lg:px-6 sm:py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 lg:gap-2 ${
+              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'saved'
                   ? 'bg-gray-900 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-              <Bookmark size={18} className="sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Saved</span>
-              {activeTab === 'saved' && <div className="sm:hidden absolute -bottom-0.5 w-1 h-1 bg-white rounded-full" />}
+              <Bookmark size={14} />
+              Saved
               {favoritePrompts.length > 0 && (
-                <span className={`hidden sm:inline px-1.5 py-0.5 text-[10px] rounded-full ${
+                <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
                   activeTab === 'saved' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
                 }`}>
                   {favoritePrompts.length}
@@ -467,15 +464,14 @@ const PromptsGrid = () => {
             </button>
             <button
               onClick={() => setActiveTab('categories')}
-              className={`relative p-3 sm:px-4 lg:px-6 sm:py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 lg:gap-2 ${
+              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'categories'
                   ? 'bg-gray-900 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-              <FolderOpen size={18} className="sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Categories</span>
-              {activeTab === 'categories' && <div className="sm:hidden absolute -bottom-0.5 w-1 h-1 bg-white rounded-full" />}
+              <FolderOpen size={14} />
+              Categories
             </button>
           </div>
         </div>

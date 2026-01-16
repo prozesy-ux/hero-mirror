@@ -384,7 +384,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
 
 SidebarContent.displayName = 'SidebarContent';
 
-// Mobile Bottom Navigation Component - Premium Icon-Only Floating Design
+// Mobile Bottom Navigation Component - Premium Redesign
 const MobileBottomNav = () => {
   const location = useLocation();
   const { user } = useAuthContext();
@@ -420,50 +420,43 @@ const MobileBottomNav = () => {
   }, [user]);
 
   const navItems = [
-    { to: '/dashboard/prompts', icon: FileText },
-    { to: '/dashboard/ai-accounts', icon: Bot },
-    { to: '/dashboard/billing', icon: CreditCard },
-    { to: '/dashboard/profile', icon: User },
-    { to: '/dashboard/chat', icon: MessageCircle, badge: unreadCount },
+    { to: '/dashboard/prompts', icon: FileText, label: 'Prompts' },
+    { to: '/dashboard/ai-accounts', icon: Bot, label: 'Accounts' },
+    { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
+    { to: '/dashboard/profile', icon: User, label: 'Profile' },
+    { to: '/dashboard/chat', icon: MessageCircle, label: 'Chat', badge: unreadCount },
   ];
 
   return (
-    <nav className="lg:hidden fixed bottom-4 left-4 right-4 z-50">
-      <div className="bg-white rounded-2xl shadow-[0_4px_30px_rgba(0,0,0,0.12)] border border-gray-100">
-        <div className="flex items-center justify-around py-3 px-2">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.to;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`relative flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-200 ${
-                  isActive 
-                    ? 'scale-110' 
-                    : 'active:scale-95'
-                }`}
-              >
-                <Icon 
-                  size={24} 
-                  className={`transition-colors duration-200 ${
-                    isActive ? 'text-gray-900' : 'text-gray-400'
-                  }`} 
-                />
-                {/* Active dot indicator */}
-                {isActive && (
-                  <div className="absolute -bottom-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full" />
-                )}
-                {/* Badge for unread */}
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50 safe-area-bottom">
+      <div className="flex items-center justify-around px-2 py-2.5">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.to;
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`
+                relative flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all duration-200
+                ${isActive 
+                  ? 'text-violet-600 bg-violet-100 scale-105 shadow-sm' 
+                  : 'text-gray-400 hover:text-gray-600 active:scale-95'
+                }
+              `}
+            >
+              <div className="relative">
+                <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                 {item.badge && item.badge > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-violet-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
                     {item.badge > 9 ? '9+' : item.badge}
                   </span>
                 )}
-              </Link>
-            );
-          })}
-        </div>
+              </div>
+              <span className={`text-xs font-medium ${isActive ? 'font-semibold' : ''}`}>{item.label}</span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

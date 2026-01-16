@@ -474,25 +474,23 @@ const BillingSection = () => {
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">
-      {/* Tab Navigation - Premium Icon-Only Mobile Design */}
+      {/* Tab Navigation - Mobile Optimized */}
       <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
-        <div className="flex gap-1 lg:gap-2 justify-around sm:justify-start">
+        <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => {
             const TabIcon = tab.icon;
-            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative p-3 sm:px-4 lg:px-6 sm:py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 lg:gap-2 ${
-                  isActive
+                className={`px-3 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
+                  activeTab === tab.id
                     ? 'bg-gray-900 text-white shadow-lg'
-                    : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
                 }`}
               >
-                <TabIcon size={18} className="sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
-                {isActive && <div className="sm:hidden absolute -bottom-0.5 w-1 h-1 bg-white rounded-full" />}
+                <TabIcon size={14} className="lg:w-4 lg:h-4" />
+                {tab.label}
               </button>
             );
           })}
