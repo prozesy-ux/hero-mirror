@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { signIn } = useAuthContext();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,27 @@ const AdminLogin = () => {
     setError(null);
 
     try {
-      const { error: signInError } = await signIn(email, password);
+      let loginEmail = identifier;
+      
+      // Check if input is username (no @) or email
+      if (!identifier.includes('@')) {
+        // Look up email by username
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', identifier)
+          .single();
+        
+        if (profileError || !profileData) {
+          setError('Username not found');
+          setLoading(false);
+          return;
+        }
+        
+        loginEmail = profileData.email;
+      }
+
+      const { error: signInError } = await signIn(loginEmail, password);
       
       if (signInError) {
         setError(signInError.message || 'Invalid credentials');
@@ -85,13 +105,13 @@ const AdminLogin = () => {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-zinc-300">Email</Label>
+              <Label htmlFor="identifier" className="text-zinc-300">Username or Email</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
+                id="identifier"
+                type="text"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="ProZesy or admin@example.com"
                 required
                 className="bg-[#0c0c0e] border-[#27272a] text-white placeholder:text-zinc-500 focus:border-purple-500/50"
               />
