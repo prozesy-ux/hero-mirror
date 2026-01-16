@@ -13,7 +13,7 @@ import ChatManagement from '@/components/admin/ChatManagement';
 import WalletManagement from '@/components/admin/WalletManagement';
 import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useAdminData } from '@/hooks/useAdminData';
 import { Loader2, Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import promptheroIcon from '@/assets/prompthero-icon.png';
 const ADMIN_SESSION_KEY = 'admin_session_token';
 
 const AdminDashboard = () => {
+  const { fetchData } = useAdminData();
   const [stats, setStats] = useState({
     totalPrompts: 0,
     totalUsers: 0,
@@ -34,24 +35,23 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [
-        { count: promptsCount },
-        { data: profiles },
-        { data: purchases }
-      ] = await Promise.all([
-        supabase.from('prompts').select('*', { count: 'exact', head: true }),
-        supabase.from('profiles').select('is_pro'),
-        supabase.from('purchases').select('amount, payment_status')
+      const [promptsRes, profilesRes, purchasesRes] = await Promise.all([
+        fetchData('prompts'),
+        fetchData('profiles'),
+        fetchData('purchases')
       ]);
 
-      const totalUsers = profiles?.length || 0;
-      const proUsers = profiles?.filter(p => p.is_pro).length || 0;
+      const profiles = profilesRes.data || [];
+      const purchases = purchasesRes.data || [];
+
+      const totalUsers = profiles.length;
+      const proUsers = profiles.filter((p: any) => p.is_pro).length;
       const revenue = purchases
-        ?.filter(p => p.payment_status === 'completed')
-        .reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+        .filter((p: any) => p.payment_status === 'completed')
+        .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
       setStats({
-        totalPrompts: promptsCount || 0,
+        totalPrompts: promptsRes.data?.length || 0,
         totalUsers,
         proUsers,
         revenue

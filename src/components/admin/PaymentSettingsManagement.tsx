@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminData } from '@/hooks/useAdminData';
 import { 
   CreditCard, Plus, Edit, Trash2, Save, X, Loader2, 
-  Check, GripVertical, ToggleLeft, ToggleRight, Upload, QrCode
+  Check, ToggleLeft, ToggleRight, Upload, QrCode
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ImageUploader from './ImageUploader';
@@ -23,6 +24,7 @@ interface PaymentMethod {
 }
 
 const PaymentSettingsManagement = () => {
+  const { fetchData } = useAdminData();
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -48,10 +50,9 @@ const PaymentSettingsManagement = () => {
   }, []);
 
   const fetchMethods = async () => {
-    const { data, error } = await supabase
-      .from('payment_methods')
-      .select('*')
-      .order('display_order', { ascending: true });
+    const { data, error } = await fetchData<PaymentMethod>('payment_methods', {
+      order: { column: 'display_order', ascending: true }
+    });
     
     if (!error) {
       setMethods(data || []);
@@ -453,18 +454,14 @@ const PaymentSettingsManagement = () => {
                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                   />
                   {formData.icon_url && (
-                    <img 
-                      src={formData.icon_url} 
-                      alt="Preview" 
-                      className="w-12 h-12 rounded-lg object-contain bg-white/10"
-                    />
+                    <img src={formData.icon_url} alt="Preview" className="w-12 h-12 rounded-lg object-contain bg-white/10" />
                   )}
                 </div>
               </div>
 
-              {/* QR Code URL */}
+              {/* QR Image URL */}
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-400 mb-2">QR Code URL</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">QR Code Image URL</label>
                 <div className="flex gap-3">
                   <input
                     type="text"
@@ -474,22 +471,18 @@ const PaymentSettingsManagement = () => {
                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                   />
                   {formData.qr_image_url && (
-                    <img 
-                      src={formData.qr_image_url} 
-                      alt="QR Preview" 
-                      className="w-12 h-12 rounded-lg object-contain bg-white/10"
-                    />
+                    <img src={formData.qr_image_url} alt="QR Preview" className="w-12 h-12 rounded-lg object-contain bg-white/10" />
                   )}
                 </div>
               </div>
 
               {/* Instructions */}
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-400 mb-2">Payment Instructions</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Instructions</label>
                 <textarea
                   value={formData.instructions}
                   onChange={(e) => setFormData(prev => ({ ...prev, instructions: e.target.value }))}
-                  placeholder="Instructions for manual payment..."
+                  placeholder="Payment instructions for users..."
                   rows={3}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 resize-none"
                 />
@@ -497,14 +490,14 @@ const PaymentSettingsManagement = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 pt-6 border-t border-white/10 mt-6">
+            <div className="flex gap-3 mt-6 pt-4 border-t border-white/10">
               <button
                 onClick={handleSave}
                 disabled={saving}
                 className="flex-1 flex items-center justify-center gap-2 bg-white text-black font-semibold py-3 rounded-xl hover:bg-gray-100 transition-colors disabled:opacity-50"
               >
                 {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                {editingMethod ? 'Update' : 'Add'} Payment Method
+                {editingMethod ? 'Update' : 'Create'}
               </button>
               <button
                 onClick={() => setShowModal(false)}

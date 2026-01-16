@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useAdminData } from '@/hooks/useAdminData';
 import { DollarSign, TrendingUp } from 'lucide-react';
 
 interface Purchase {
@@ -12,7 +12,14 @@ interface Purchase {
   user_name?: string;
 }
 
+interface Profile {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+}
+
 const PurchasesManagement = () => {
+  const { fetchData } = useAdminData();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -22,16 +29,14 @@ const PurchasesManagement = () => {
   }, []);
 
   const fetchPurchases = async () => {
-    const { data: purchasesData } = await supabase
-      .from('purchases')
-      .select('*')
-      .order('purchased_at', { ascending: false });
+    const [purchasesRes, profilesRes] = await Promise.all([
+      fetchData<Purchase>('purchases', { order: { column: 'purchased_at', ascending: false } }),
+      fetchData<Profile>('profiles')
+    ]);
 
-    const { data: profilesData } = await supabase.from('profiles').select('user_id, email, full_name');
+    const profilesMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
     
-    const profilesMap = new Map((profilesData || []).map(p => [p.user_id, p]));
-    
-    const enrichedPurchases = (purchasesData || []).map(p => ({
+    const enrichedPurchases = (purchasesRes.data || []).map(p => ({
       ...p,
       user_email: profilesMap.get(p.user_id)?.email || 'Unknown',
       user_name: profilesMap.get(p.user_id)?.full_name || null

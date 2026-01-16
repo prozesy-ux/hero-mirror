@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, RefreshCcw, CheckCircle, XCircle, Clock, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminData } from '@/hooks/useAdminData';
 import { toast } from 'sonner';
 
 interface RefundRequest {
@@ -18,7 +19,14 @@ interface RefundRequest {
   user_name?: string;
 }
 
+interface Profile {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+}
+
 const RefundRequestsManagement = () => {
+  const { fetchData } = useAdminData();
   const [requests, setRequests] = useState<RefundRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
@@ -37,19 +45,17 @@ const RefundRequestsManagement = () => {
   }, []);
 
   const fetchRequests = async () => {
-    const { data: requestsData, error } = await supabase
-      .from('refund_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const [requestsRes, profilesRes] = await Promise.all([
+      fetchData<RefundRequest>('refund_requests', {
+        order: { column: 'created_at', ascending: false }
+      }),
+      fetchData<Profile>('profiles')
+    ]);
 
-    if (!error && requestsData) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, email, full_name');
+    if (!requestsRes.error && requestsRes.data) {
+      const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
 
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-
-      const enrichedRequests = requestsData.map(req => ({
+      const enrichedRequests = requestsRes.data.map(req => ({
         ...req,
         user_email: profileMap.get(req.user_id)?.email || 'Unknown',
         user_name: profileMap.get(req.user_id)?.full_name || 'Unknown'
