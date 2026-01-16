@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -150,11 +149,11 @@ const SecurityLogsManagement = () => {
           Security Logs
         </h2>
         <div className="flex gap-2">
-          <Button onClick={handleClearOldLogs} variant="outline" size="sm">
+          <Button onClick={handleClearOldLogs} variant="outline" size="sm" className="border-[#1a1a1a] bg-[#0d0d0f] hover:bg-[#111114]">
             <Trash2 className="h-4 w-4 mr-2" />
             Clear Old Logs
           </Button>
-          <Button onClick={fetchLogs} variant="outline" size="sm">
+          <Button onClick={fetchLogs} variant="outline" size="sm" className="border-[#1a1a1a] bg-[#0d0d0f] hover:bg-[#111114]">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
@@ -163,30 +162,30 @@ const SecurityLogsManagement = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
+        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-6 hover:bg-[#0f0f11] transition-all">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <div className="p-2 bg-blue-500/5 rounded-lg">
               <Shield className="h-4 w-4 text-blue-400" />
             </div>
-            <span className="text-sm font-medium text-zinc-400">Total Events</span>
+            <span className="text-sm font-medium text-zinc-500">Total Events</span>
           </div>
           <div className="text-2xl font-bold text-white">{logs.length}</div>
         </div>
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
+        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-6 hover:bg-[#0f0f11] transition-all">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-red-500/10 rounded-lg border border-red-500/20">
+            <div className="p-2 bg-red-500/5 rounded-lg">
               <AlertTriangle className="h-4 w-4 text-red-400" />
             </div>
-            <span className="text-sm font-medium text-zinc-400">Blocked IPs</span>
+            <span className="text-sm font-medium text-zinc-500">Blocked IPs</span>
           </div>
           <div className="text-2xl font-bold text-red-400">{blockedCount}</div>
         </div>
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
+        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-6 hover:bg-[#0f0f11] transition-all">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
+            <div className="p-2 bg-orange-500/5 rounded-lg">
               <Shield className="h-4 w-4 text-orange-400" />
             </div>
-            <span className="text-sm font-medium text-zinc-400">DevTools Detections</span>
+            <span className="text-sm font-medium text-zinc-500">DevTools Detections</span>
           </div>
           <div className="text-2xl font-bold text-orange-400">{devtoolsCount}</div>
         </div>
@@ -195,16 +194,16 @@ const SecurityLogsManagement = () => {
       {/* Filters */}
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-600" />
           <Input
             placeholder="Search by IP, event type, or user agent..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-[#0c0c0e] border-[#27272a] text-white placeholder-zinc-500 focus:border-[#3f3f46]"
+            className="pl-10 bg-[#050506] border-[#1a1a1a] text-white placeholder-zinc-600 focus:border-[#252528]"
           />
         </div>
         <Select value={eventFilter} onValueChange={setEventFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] bg-[#050506] border-[#1a1a1a]">
             <SelectValue placeholder="Event Type" />
           </SelectTrigger>
           <SelectContent>
@@ -215,7 +214,7 @@ const SecurityLogsManagement = () => {
           </SelectContent>
         </Select>
         <Select value={blockedFilter} onValueChange={setBlockedFilter}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-[150px] bg-[#050506] border-[#1a1a1a]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -227,17 +226,17 @@ const SecurityLogsManagement = () => {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
+      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[#18181b] border-b border-[#27272a] hover:bg-[#18181b]">
-              <TableHead className="text-zinc-400">IP Address</TableHead>
-              <TableHead className="text-zinc-400">Event Type</TableHead>
-              <TableHead className="text-zinc-400">Attempts</TableHead>
-              <TableHead className="text-zinc-400">Status</TableHead>
-              <TableHead className="text-zinc-400">Blocked Until</TableHead>
-              <TableHead className="text-zinc-400">Time</TableHead>
-              <TableHead className="text-zinc-400">Actions</TableHead>
+            <TableRow className="bg-[#0d0d0f] border-b border-[#1a1a1a] hover:bg-[#0d0d0f]">
+              <TableHead className="text-zinc-500">IP Address</TableHead>
+              <TableHead className="text-zinc-500">Event Type</TableHead>
+              <TableHead className="text-zinc-500">Attempts</TableHead>
+              <TableHead className="text-zinc-500">Status</TableHead>
+              <TableHead className="text-zinc-500">Blocked Until</TableHead>
+              <TableHead className="text-zinc-500">Time</TableHead>
+              <TableHead className="text-zinc-500">Actions</TableHead>
             </TableRow>
           </TableHeader>
             <TableBody>
@@ -249,13 +248,13 @@ const SecurityLogsManagement = () => {
                 </TableRow>
               ) : filteredLogs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-zinc-600">
                     No security logs found
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredLogs.map((log) => (
-                  <TableRow key={log.id} className="border-t border-[#27272a] hover:bg-[#1a1a1e] transition-colors">
+                  <TableRow key={log.id} className="border-t border-[#1a1a1a] hover:bg-[#0f0f11] transition-all">
                     <TableCell className="font-mono text-sm">{log.ip_address}</TableCell>
                     <TableCell>
                       <Badge className={getEventBadgeColor(log.event_type)}>
@@ -275,7 +274,7 @@ const SecurityLogsManagement = () => {
                         ? format(new Date(log.blocked_until), "MMM d, HH:mm")
                         : "-"}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-sm text-zinc-500">
                       {format(new Date(log.created_at), "MMM d, HH:mm")}
                     </TableCell>
                     <TableCell>
@@ -285,6 +284,7 @@ const SecurityLogsManagement = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => handleUnblock(log.id)}
+                            className="border-[#1a1a1a] hover:bg-[#111114]"
                           >
                             <ShieldOff className="h-4 w-4" />
                           </Button>
@@ -293,8 +293,9 @@ const SecurityLogsManagement = () => {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleDelete(log.id)}
+                          className="hover:bg-red-500/10 hover:text-red-400"
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>

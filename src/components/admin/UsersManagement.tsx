@@ -42,10 +42,7 @@ const UsersManagement = () => {
     setDeletingId(userId);
     
     try {
-      // Delete from user_roles first
       await supabase.from('user_roles').delete().eq('user_id', userIdAuth);
-      
-      // Delete from profiles
       const { error } = await supabase.from('profiles').delete().eq('id', userId);
       
       if (error) {
@@ -105,12 +102,11 @@ const UsersManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-[#27272a] border-t-white animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
     );
   }
 
-  // Show user detail view if a user is selected
   if (selectedUser) {
     return (
       <UserDetailView
@@ -126,48 +122,48 @@ const UsersManagement = () => {
     <div>
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
-          <div className="text-zinc-400 text-sm font-medium">Total Users</div>
+        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-4 hover:bg-[#0f0f11] transition-all">
+          <div className="text-zinc-500 text-sm font-medium">Total Users</div>
           <div className="text-2xl font-bold text-white">{users.length}</div>
         </div>
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
-          <div className="text-zinc-400 text-sm font-medium">Pro Users</div>
+        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-4 hover:bg-[#0f0f11] transition-all">
+          <div className="text-zinc-500 text-sm font-medium">Pro Users</div>
           <div className="text-2xl font-bold text-amber-400">{proCount}</div>
         </div>
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
-          <div className="text-zinc-400 text-sm font-medium">Free Users</div>
-          <div className="text-2xl font-bold text-zinc-400">{freeCount}</div>
+        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-4 hover:bg-[#0f0f11] transition-all">
+          <div className="text-zinc-500 text-sm font-medium">Free Users</div>
+          <div className="text-2xl font-bold text-zinc-500">{freeCount}</div>
         </div>
       </div>
 
       {/* Search */}
       <div className="relative mb-6">
-        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by name or email..."
-          className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl pl-12 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
+          className="w-full bg-[#050506] border border-[#1a1a1a] rounded-xl pl-12 pr-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#252528]"
         />
       </div>
 
-      <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
+      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl overflow-hidden">
         <table className="w-full">
-          <thead className="bg-[#18181b]">
+          <thead className="bg-[#0d0d0f]">
             <tr>
-              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">User</th>
-              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">Email</th>
-              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">Plan</th>
-              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">Joined</th>
-              <th className="text-right px-6 py-4 text-zinc-400 font-medium text-sm">Actions</th>
+              <th className="text-left px-6 py-4 text-zinc-500 font-medium text-sm">User</th>
+              <th className="text-left px-6 py-4 text-zinc-500 font-medium text-sm">Email</th>
+              <th className="text-left px-6 py-4 text-zinc-500 font-medium text-sm">Plan</th>
+              <th className="text-left px-6 py-4 text-zinc-500 font-medium text-sm">Joined</th>
+              <th className="text-right px-6 py-4 text-zinc-500 font-medium text-sm">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
               <tr 
                 key={user.id} 
-                className="border-t border-[#27272a] hover:bg-[#1a1a1e] transition-colors cursor-pointer"
+                className="border-t border-[#1a1a1a] hover:bg-[#0f0f11] transition-all cursor-pointer"
                 onClick={() => handleUserClick(user)}
               >
                 <td className="px-6 py-4">
@@ -186,26 +182,26 @@ const UsersManagement = () => {
                     <span className="text-white font-medium">{user.full_name || 'No name'}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-gray-400">{user.email}</td>
+                <td className="px-6 py-4 text-zinc-500">{user.email}</td>
                 <td className="px-6 py-4">
                   {user.is_pro ? (
-                    <span className="flex items-center gap-1 px-3 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full w-fit">
+                    <span className="flex items-center gap-1 px-3 py-1 bg-amber-500/10 text-amber-400 text-xs rounded-full w-fit">
                       <Crown size={12} /> Pro
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 px-3 py-1 bg-zinc-800 text-gray-300 text-xs rounded-full w-fit">
+                    <span className="flex items-center gap-1 px-3 py-1 bg-zinc-900 text-zinc-400 text-xs rounded-full w-fit">
                       <UserIcon size={12} /> Free
                     </span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-gray-400">
+                <td className="px-6 py-4 text-zinc-500">
                   {new Date(user.created_at).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleUserClick(user); }}
-                      className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23] hover:text-white transition-all"
+                      className="p-2 rounded-lg bg-[#0d0d0f] border border-[#1a1a1a] text-zinc-500 hover:bg-[#111114] hover:text-white transition-all"
                       title="View Details"
                     >
                       <Eye size={18} />
@@ -215,8 +211,8 @@ const UsersManagement = () => {
                       disabled={togglingId === user.id}
                       className={`p-2 rounded-lg transition-all ${
                         user.is_pro 
-                          ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' 
-                          : 'bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23] hover:text-white'
+                          ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' 
+                          : 'bg-[#0d0d0f] border border-[#1a1a1a] text-zinc-500 hover:bg-[#111114] hover:text-white'
                       }`}
                       title={user.is_pro ? 'Downgrade to Free' : 'Upgrade to Pro'}
                     >
@@ -231,7 +227,7 @@ const UsersManagement = () => {
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDeleteUser(user.id, user.user_id); }}
                       disabled={deletingId === user.id}
-                      className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
+                      className="p-2 rounded-lg bg-[#0d0d0f] border border-[#1a1a1a] text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition-all"
                       title="Delete User"
                     >
                       {deletingId === user.id ? (
@@ -248,7 +244,7 @@ const UsersManagement = () => {
         </table>
 
         {filteredUsers.length === 0 && (
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-12 text-zinc-500">
             {searchQuery ? 'No users found matching your search' : 'No users found'}
           </div>
         )}
