@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Package, CheckCircle, Clock, Send, Eye, Edit, Trash2, X, Save } from 'lucide-react';
+import { Loader2, Package, CheckCircle, Clock, Send, Eye, Edit, Trash2, X, Save, Search, Filter, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -18,7 +18,11 @@ interface AccountOrder {
   } | null;
   user_email?: string;
   user_name?: string;
+  user_avatar?: string | null;
 }
+
+type StatusFilter = 'all' | 'pending' | 'delivered' | 'failed';
+type PaymentFilter = 'all' | 'completed' | 'pending';
 
 const AccountOrdersManagement = () => {
   const [orders, setOrders] = useState<AccountOrder[]>([]);
@@ -34,6 +38,12 @@ const AccountOrdersManagement = () => {
   });
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // Search and filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all');
+  
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -58,14 +68,15 @@ const AccountOrdersManagement = () => {
     if (!error && ordersData) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, email, full_name');
+        .select('user_id, email, full_name, avatar_url');
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
       const enrichedOrders = ordersData.map(order => ({
         ...order,
         user_email: profileMap.get(order.user_id)?.email || 'Unknown',
-        user_name: profileMap.get(order.user_id)?.full_name || 'Unknown'
+        user_name: profileMap.get(order.user_id)?.full_name || 'Unknown',
+        user_avatar: profileMap.get(order.user_id)?.avatar_url || null
       }));
 
       setOrders(enrichedOrders as AccountOrder[]);
@@ -111,7 +122,6 @@ const AccountOrdersManagement = () => {
   const handleDeliver = async (orderId: string) => {
     const order = orders.find(o => o.id === orderId);
     
-    // Check if payment is completed
     if (order?.payment_status !== 'completed') {
       toast.error('Cannot deliver - payment not completed');
       return;
@@ -212,6 +222,25 @@ const AccountOrdersManagement = () => {
     }
   };
 
+  // Filter orders
+  const filteredOrders = orders.filter(order => {
+    // Search filter
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = !searchQuery || 
+      order.user_email?.toLowerCase().includes(searchLower) ||
+      order.user_name?.toLowerCase().includes(searchLower) ||
+      order.ai_accounts?.name?.toLowerCase().includes(searchLower) ||
+      order.id.toLowerCase().includes(searchLower);
+
+    // Status filter
+    const matchesStatus = statusFilter === 'all' || order.delivery_status === statusFilter;
+
+    // Payment filter
+    const matchesPayment = paymentFilter === 'all' || order.payment_status === paymentFilter;
+
+    return matchesSearch && matchesStatus && matchesPayment;
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -240,6 +269,65 @@ const AccountOrdersManagement = () => {
           <div className="text-gray-400 text-sm">Revenue</div>
           <div className="text-2xl font-bold text-purple-400">${stats.revenue.toFixed(2)}</div>
         </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Search Bar */}
+          <div className="relative flex-1">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by user, email, account name, or order ID..."
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="text-gray-400" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending Delivery</option>
+              <option value="delivered">Delivered</option>
+            </select>
+          </div>
+
+          {/* Payment Filter */}
+          <select
+            value={paymentFilter}
+            onChange={(e) => setPaymentFilter(e.target.value as PaymentFilter)}
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+          >
+            <option value="all">All Payments</option>
+            <option value="completed">Paid</option>
+            <option value="pending">Payment Pending</option>
+          </select>
+        </div>
+
+        {/* Active filters indicator */}
+        {(searchQuery || statusFilter !== 'all' || paymentFilter !== 'all') && (
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
+            <span className="text-gray-400 text-sm">Showing {filteredOrders.length} of {orders.length} orders</span>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('all');
+                setPaymentFilter('all');
+              }}
+              className="text-purple-400 text-sm hover:text-purple-300"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Edit Modal */}
@@ -325,15 +413,19 @@ const AccountOrdersManagement = () => {
       )}
 
       {/* Orders List */}
-      {orders.length === 0 ? (
+      {filteredOrders.length === 0 ? (
         <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
           <Package className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">No Orders Yet</h3>
-          <p className="text-gray-400">AI account orders will appear here</p>
+          <h3 className="text-xl font-semibold text-white mb-2">
+            {orders.length === 0 ? 'No Orders Yet' : 'No Matching Orders'}
+          </h3>
+          <p className="text-gray-400">
+            {orders.length === 0 ? 'AI account orders will appear here' : 'Try adjusting your search or filters'}
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <div
               key={order.id}
               className={`bg-white/5 border rounded-xl p-5 ${
@@ -342,22 +434,48 @@ const AccountOrdersManagement = () => {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-2xl">
-                    {getCategoryIcon(order.ai_accounts?.category)}
-                  </div>
+                  {/* User Avatar */}
+                  {order.user_avatar ? (
+                    <img 
+                      src={order.user_avatar} 
+                      alt={order.user_name} 
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
+                      {order.user_name?.charAt(0) || order.user_email?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                  
                   <div>
-                    <h3 className="font-semibold text-white">
-                      {order.ai_accounts?.name || 'AI Account'}
+                    {/* User Name - Prominent */}
+                    <h3 className="font-bold text-white text-lg">
+                      {order.user_name || 'Unknown User'}
                     </h3>
                     <p className="text-gray-400 text-sm">{order.user_email}</p>
-                    <p className="text-gray-500 text-xs">
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-2xl">{getCategoryIcon(order.ai_accounts?.category)}</span>
+                      <span className="text-gray-300 font-medium">{order.ai_accounts?.name || 'AI Account'}</span>
+                    </div>
+                    <p className="text-gray-500 text-xs mt-1">
                       {new Date(order.purchased_at).toLocaleString()}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-lg font-bold text-white">${order.amount}</span>
+                  <span className="text-xl font-bold text-white">${order.amount}</span>
+                  
+                  {/* Payment Status Badge */}
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    order.payment_status === 'completed' 
+                      ? 'bg-green-500/20 text-green-400' 
+                      : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {order.payment_status === 'completed' ? 'Paid' : 'Unpaid'}
+                  </span>
+                  
+                  {/* Delivery Status Badge */}
                   {order.delivery_status === 'pending' ? (
                     <span className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm">
                       <Clock className="w-4 h-4" />
@@ -404,8 +522,9 @@ const AccountOrdersManagement = () => {
                   />
                   <button
                     onClick={() => handleDeliver(order.id)}
-                    disabled={delivering === order.id}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+                    disabled={delivering === order.id || order.payment_status !== 'completed'}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={order.payment_status !== 'completed' ? 'Payment must be completed first' : 'Deliver credentials'}
                   >
                     {delivering === order.id ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

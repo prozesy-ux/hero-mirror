@@ -145,6 +145,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_tools: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       cancellation_requests: {
         Row: {
           admin_notes: string | null
@@ -228,6 +264,54 @@ export type Database = {
           },
         ]
       }
+      payment_methods: {
+        Row: {
+          account_name: string | null
+          account_number: string | null
+          code: string
+          created_at: string | null
+          display_order: number | null
+          icon_url: string | null
+          id: string
+          instructions: string | null
+          is_automatic: boolean | null
+          is_enabled: boolean | null
+          name: string
+          qr_image_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_name?: string | null
+          account_number?: string | null
+          code: string
+          created_at?: string | null
+          display_order?: number | null
+          icon_url?: string | null
+          id?: string
+          instructions?: string | null
+          is_automatic?: boolean | null
+          is_enabled?: boolean | null
+          name: string
+          qr_image_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_name?: string | null
+          account_number?: string | null
+          code?: string
+          created_at?: string | null
+          display_order?: number | null
+          icon_url?: string | null
+          id?: string
+          instructions?: string | null
+          is_automatic?: boolean | null
+          is_enabled?: boolean | null
+          name?: string
+          qr_image_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -238,6 +322,7 @@ export type Database = {
           is_pro: boolean | null
           updated_at: string | null
           user_id: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -248,6 +333,7 @@ export type Database = {
           is_pro?: boolean | null
           updated_at?: string | null
           user_id: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -258,6 +344,7 @@ export type Database = {
           is_pro?: boolean | null
           updated_at?: string | null
           user_id?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -271,6 +358,7 @@ export type Database = {
           image_url: string | null
           is_featured: boolean | null
           is_free: boolean | null
+          is_trending: boolean | null
           title: string
           tool: string
           updated_at: string | null
@@ -284,6 +372,7 @@ export type Database = {
           image_url?: string | null
           is_featured?: boolean | null
           is_free?: boolean | null
+          is_trending?: boolean | null
           title: string
           tool?: string
           updated_at?: string | null
@@ -297,6 +386,7 @@ export type Database = {
           image_url?: string | null
           is_featured?: boolean | null
           is_free?: boolean | null
+          is_trending?: boolean | null
           title?: string
           tool?: string
           updated_at?: string | null
@@ -338,6 +428,33 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          created_at: string | null
+          endpoint: string
+          id: string
+          identifier: string
+          request_count: number | null
+          window_start: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          identifier: string
+          request_count?: number | null
+          window_start?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          identifier?: string
+          request_count?: number | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       refund_requests: {
         Row: {
           admin_notes: string | null
@@ -374,6 +491,51 @@ export type Database = {
           reason?: string | null
           status?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      security_logs: {
+        Row: {
+          attempt_count: number | null
+          block_reason: string | null
+          blocked_until: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          ip_address: string
+          is_blocked: boolean | null
+          metadata: Json | null
+          updated_at: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attempt_count?: number | null
+          block_reason?: string | null
+          blocked_until?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          ip_address: string
+          is_blocked?: boolean | null
+          metadata?: Json | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attempt_count?: number | null
+          block_reason?: string | null
+          blocked_until?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string
+          is_blocked?: boolean | null
+          metadata?: Json | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -553,6 +715,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clean_old_rate_limits: { Args: never; Returns: undefined }
+      cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
