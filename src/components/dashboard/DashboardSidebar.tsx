@@ -2,7 +2,7 @@ import { useState, forwardRef, createContext, useContext, useEffect, useRef } fr
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileText, CreditCard, User, LogOut, Menu, X, 
-  Crown, Bot, ArrowRight, ChevronLeft, ChevronRight, MessageCircle, Sparkles
+  Crown, Bot, ArrowRight, ChevronLeft, ChevronRight, MessageCircle, Sparkles, ExternalLink
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -67,14 +67,14 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
         onClick={onClick}
         className={`group flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-300 ${
           isActive 
-            ? 'bg-white text-black' 
-            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' 
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
         } ${isCollapsed ? 'justify-center' : ''}`}
       >
         <span className={`transition-transform duration-300 flex-shrink-0 relative ${isActive ? '' : 'group-hover:scale-110'}`}>
           {icon}
             {badge && isCollapsed && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
                 {badge > 9 ? '9+' : badge}
               </span>
             )}
@@ -89,11 +89,11 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
               {label}
             </span>
             {badge ? (
-              <span className="ml-auto px-2 py-0.5 text-xs rounded-full bg-red-500 text-white font-bold animate-pulse">
+              <span className={`ml-auto px-2 py-0.5 text-xs rounded-full font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-violet-100 text-violet-600'}`}>
                 {badge > 99 ? '99+' : badge}
               </span>
             ) : isActive ? (
-              <span className="ml-auto w-2 h-2 rounded-full bg-black" />
+              <span className="ml-auto w-2 h-2 rounded-full bg-white" />
             ) : null}
           </>
         )}
@@ -106,7 +106,7 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
           <TooltipTrigger asChild>
             {linkContent}
           </TooltipTrigger>
-          <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
+          <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800">
             {label}
           </TooltipContent>
         </Tooltip>
@@ -190,11 +190,11 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
 
     return (
       <TooltipProvider>
-        <div ref={ref} className="flex flex-col h-full overflow-y-auto premium-scrollbar">
+        <div ref={ref} className="flex flex-col h-full overflow-y-auto bg-white">
           {/* User Card - Premium Design */}
-          <div className={`mx-3 mb-4 mt-4 bg-gradient-to-br from-white/10 to-white/5 rounded-2xl border border-white/10 overflow-hidden ${isCollapsed ? '' : ''}`}>
+          <div className={`mx-3 mb-4 mt-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 overflow-hidden ${isCollapsed ? '' : ''}`}>
             {/* Profile Header with gradient background */}
-            <div className={`bg-gradient-to-r from-violet-500/10 to-purple-500/10 ${isCollapsed ? 'p-3' : 'p-4'}`}>
+            <div className={`bg-gradient-to-r from-violet-50 to-purple-50 ${isCollapsed ? 'p-3' : 'p-4'}`}>
               <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'}`}>
                 {/* Avatar with gradient ring */}
                 <div className="relative flex-shrink-0">
@@ -203,17 +203,17 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                       <img 
                         src={profile.avatar_url} 
                         alt="Avatar" 
-                        className="w-full h-full rounded-full object-cover bg-[#0a0a0a]"
+                        className="w-full h-full rounded-full object-cover bg-white"
                       />
                     ) : (
-                      <div className="w-full h-full rounded-full bg-[#0a0a0a] flex items-center justify-center text-white font-bold text-lg">
+                      <div className="w-full h-full rounded-full bg-violet-500 flex items-center justify-center text-white font-bold text-lg">
                         {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
                       </div>
                     )}
                   </div>
                   {/* Crown badge on avatar */}
                   {profile?.is_pro && (
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-2 ring-[#0a0a0a] shadow-lg">
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-2 ring-white shadow-lg">
                       <Crown size={12} className="text-black" />
                     </div>
                   )}
@@ -222,10 +222,10 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                 {/* User Info */}
                 {!isCollapsed && (
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-bold text-lg tracking-tight truncate uppercase">
+                    <p className="text-gray-900 font-bold text-lg tracking-tight truncate uppercase">
                       {profile?.full_name || 'User'}
                     </p>
-                    <p className="text-gray-400 text-sm truncate">
+                    <p className="text-gray-500 text-sm truncate">
                       {profile?.email}
                     </p>
                   </div>
@@ -237,10 +237,10 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
             {!isCollapsed && (
               <div className="px-4 pb-4 pt-3">
                 {profile?.is_pro ? (
-                  <div className="flex items-center gap-2 px-3 py-2.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 rounded-xl border border-amber-400/30">
-                    <Crown size={14} className="text-amber-400" />
-                    <span className="text-amber-400 font-semibold text-sm">PRO Member</span>
-                    <span className="ml-auto flex items-center gap-1 text-amber-300 text-xs">
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200">
+                    <Crown size={14} className="text-amber-500" />
+                    <span className="text-amber-600 font-semibold text-sm">PRO Member</span>
+                    <span className="ml-auto flex items-center gap-1 text-amber-500 text-xs">
                       <Sparkles size={10} />
                       Active
                     </span>
@@ -248,7 +248,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                 ) : (
                   <button
                     onClick={() => navigate('/dashboard/billing')}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 rounded-xl text-black font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full flex items-center gap-2 px-3 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 rounded-xl text-black font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-amber-500/25"
                   >
                     <Crown size={14} />
                     Upgrade to Pro
@@ -278,12 +278,12 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
           {/* Ads Agency Section - Hidden when collapsed */}
           {!isCollapsed && (
             <div className="mx-4 mb-4">
-              <div className="p-4 rounded-xl border border-white/10 bg-white/[0.03]">
+              <div className="p-4 rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white">
                 {/* Header */}
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
                   Ads Agency
                 </p>
-                <h3 className="text-lg font-bold text-white tracking-tight mb-1">
+                <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-1">
                   Grow Your Business
                 </h3>
                 <p className="text-sm text-gray-500 leading-relaxed mb-4">
@@ -296,36 +296,42 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                     href="https://business.facebook.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center py-3 bg-transparent border border-white/10 rounded-xl hover:bg-[#0668E1]/10 hover:border-[#0668E1]/30 transition-all group"
+                    className="flex-1 flex items-center justify-center py-3 bg-white border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-all group shadow-sm"
                     title="Meta Ads"
                   >
-                    <MetaLogo className="w-6 h-6 text-white group-hover:text-[#0668E1] transition-colors" />
+                    <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center">
+                      <MetaLogo className="w-4 h-4" />
+                    </div>
                   </a>
                   <a
                     href="https://ads.google.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center py-3 bg-transparent border border-white/10 rounded-xl hover:bg-white/5 hover:border-white/20 transition-all group"
+                    className="flex-1 flex items-center justify-center py-3 bg-white border border-gray-200 rounded-xl hover:bg-amber-50 hover:border-amber-200 transition-all group shadow-sm"
                     title="Google Ads"
                   >
-                    <GoogleAdsLogo className="w-6 h-6" />
+                    <div className="w-6 h-6 bg-amber-400 rounded flex items-center justify-center">
+                      <GoogleAdsLogo className="w-4 h-4" />
+                    </div>
                   </a>
                 </div>
                 
                 {/* CTA Button */}
                 <a
-                  href="mailto:contact@agency.com"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-white hover:bg-gray-100 text-black text-sm font-semibold rounded-xl transition-all tracking-normal"
+                  href="https://wa.me/+8801722684872"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-violet-500 hover:bg-violet-600 text-white text-sm font-semibold rounded-xl transition-all tracking-normal shadow-lg shadow-violet-500/25"
                 >
-                  Contact Agency
-                  <ArrowRight size={16} />
+                  <ExternalLink size={14} />
+                  Contact Us
                 </a>
               </div>
             </div>
           )}
 
           {/* Sign Out + Collapse Toggle */}
-          <div className={`p-4 border-t border-white/5 ${isCollapsed ? 'px-2' : ''}`}>
+          <div className={`p-4 border-t border-gray-200 ${isCollapsed ? 'px-2' : ''}`}>
             <div className={`flex items-center ${isCollapsed ? 'flex-col gap-2' : 'gap-2'}`}>
               {/* Sign Out Button */}
               {isCollapsed ? (
@@ -333,19 +339,19 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                   <TooltipTrigger asChild>
                     <button
                       onClick={signOut}
-                      className="flex items-center justify-center p-3 w-full text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-300"
+                      className="flex items-center justify-center p-3 w-full text-gray-500 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all duration-300"
                     >
                       <LogOut size={22} />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
+                  <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800">
                     Sign Out
                   </TooltipContent>
                 </Tooltip>
               ) : (
                 <button
                   onClick={signOut}
-                  className="flex items-center gap-3.5 px-4 py-3 flex-1 text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-300"
+                  className="flex items-center gap-3.5 px-4 py-3 flex-1 text-gray-500 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all duration-300"
                 >
                   <LogOut size={22} />
                   <span className="font-medium text-base">Sign Out</span>
@@ -358,12 +364,12 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                   <TooltipTrigger asChild>
                     <button
                       onClick={onToggleCollapse}
-                      className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all duration-300 flex-shrink-0"
+                      className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-all duration-300 flex-shrink-0"
                     >
                       {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
+                  <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800">
                     {isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                   </TooltipContent>
                 </Tooltip>
@@ -378,6 +384,46 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
 
 SidebarContent.displayName = 'SidebarContent';
 
+// Mobile Bottom Navigation Component
+const MobileBottomNav = () => {
+  const location = useLocation();
+  
+  const navItems = [
+    { to: '/dashboard/prompts', icon: FileText, label: 'Prompts' },
+    { to: '/dashboard/ai-accounts', icon: Bot, label: 'Accounts' },
+    { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
+    { to: '/dashboard/profile', icon: User, label: 'Profile' },
+    { to: '/dashboard/chat', icon: MessageCircle, label: 'Chat' },
+  ];
+
+  return (
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
+      <div className="flex items-center justify-around px-2 py-2">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.to;
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`
+                flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all
+                ${isActive 
+                  ? 'text-violet-600 bg-violet-50' 
+                  : 'text-gray-400 hover:text-gray-600'
+                }
+              `}
+            >
+              <Icon size={20} />
+              <span className="text-[10px] font-medium">{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+};
+
 const DashboardSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -385,53 +431,29 @@ const DashboardSidebar = () => {
     }
     return false;
   });
-  const location = useLocation();
 
-  const toggleCollapse = () => {
+  const handleToggleCollapse = () => {
     const newState = !isCollapsed;
     setIsCollapsed(newState);
     localStorage.setItem('sidebar-collapsed', String(newState));
   };
 
   return (
-    <SidebarContext.Provider value={{ isCollapsed, toggleCollapse }}>
-      {/* Mobile Header - Fixed Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a] border-t border-white/10 px-2 py-2 safe-area-bottom">
-        <div className="flex items-center justify-around">
-          {[
-            { to: '/dashboard/prompts', icon: <FileText size={20} />, label: 'Prompts' },
-            { to: '/dashboard/ai-accounts', icon: <Bot size={20} />, label: 'Accounts' },
-            { to: '/dashboard/billing', icon: <CreditCard size={20} />, label: 'Billing' },
-            { to: '/dashboard/chat', icon: <MessageCircle size={20} />, label: 'Chat' },
-            { to: '/dashboard/profile', icon: <User size={20} />, label: 'Profile' },
-          ].map((item) => {
-            const isActive = location.pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
-                  isActive 
-                    ? 'text-white bg-white/10' 
-                    : 'text-gray-500 hover:text-gray-300'
-                }`}
-              >
-                {item.icon}
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
+    <SidebarContext.Provider value={{ isCollapsed, toggleCollapse: handleToggleCollapse }}>
       {/* Desktop Sidebar */}
-      <div 
-        className={`hidden lg:block fixed left-0 top-0 h-screen bg-[#0a0a0a] border-r border-white/5 transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'w-[72px]' : 'w-72'
-        }`}
+      <aside 
+        className={`
+          hidden lg:flex fixed left-0 top-0 h-screen
+          bg-white border-r border-gray-200
+          transition-all duration-300 ease-in-out z-50
+          ${isCollapsed ? 'w-[72px]' : 'w-72'}
+        `}
       >
-        <SidebarContent isCollapsed={isCollapsed} onToggleCollapse={toggleCollapse} />
-      </div>
+        <SidebarContent isCollapsed={isCollapsed} onToggleCollapse={handleToggleCollapse} />
+      </aside>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
     </SidebarContext.Provider>
   );
 };
