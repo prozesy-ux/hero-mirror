@@ -11,6 +11,7 @@ interface AITool {
   description: string | null;
   is_active: boolean;
   display_order: number;
+  image_url: string | null;
   prompt_count?: number;
 }
 
@@ -86,6 +87,37 @@ const AIToolsGrid = () => {
     return <Sparkles className="w-6 h-6 text-white" />;
   };
 
+  const renderToolVisual = (tool: AITool) => {
+    // If image_url exists, show the real logo
+    if (tool.image_url) {
+      return (
+        <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 overflow-hidden">
+          <img 
+            src={tool.image_url} 
+            alt={tool.name} 
+            className="w-10 h-10 object-contain"
+            onError={(e) => {
+              // Hide broken image and show fallback
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                parent.classList.add('bg-gradient-to-br', tool.color || 'from-gray-500', 'to-gray-600');
+                parent.innerHTML = '';
+                // Re-render with icon fallback
+              }
+            }}
+          />
+        </div>
+      );
+    }
+    
+    // Otherwise show the gradient with icon
+    return (
+      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.color || 'from-gray-500 to-gray-600'} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+        {renderIcon(tool.icon)}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <section className="py-20 px-4 bg-white">
@@ -119,8 +151,8 @@ const AIToolsGrid = () => {
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${tool.color || 'from-gray-500 to-gray-600'} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
               
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.color || 'from-gray-500 to-gray-600'} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                {renderIcon(tool.icon)}
+              <div className="mb-4">
+                {renderToolVisual(tool)}
               </div>
               
               <h3 className="font-semibold text-black text-lg mb-1">{tool.name}</h3>

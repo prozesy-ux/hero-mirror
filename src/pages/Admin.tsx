@@ -143,7 +143,9 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-[#0a0a0a] overflow-hidden relative">
+      {/* Clean solid background - no patterns */}
+      <div className="fixed inset-0 bg-[#0a0a0a] -z-10" />
       <AdminSidebar />
       <AdminContent />
     </div>
