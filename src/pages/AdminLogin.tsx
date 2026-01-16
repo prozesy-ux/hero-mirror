@@ -21,37 +21,41 @@ const AdminLogin = () => {
     setError(null);
 
     try {
-      let loginEmail = identifier;
-      
-      // Check if input is username (no @) or email
+      // If a username is provided, we must resolve it server-side (RLS blocks anonymous profile reads).
       if (!identifier.includes('@')) {
-        // Look up email by username
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('username', identifier)
-          .single();
-        
-        if (profileError || !profileData) {
-          setError('Username not found');
+        const { data, error: fnError } = await supabase.functions.invoke('admin-login', {
+          body: { identifier, password },
+        });
+
+        if (fnError || !data?.access_token || !data?.refresh_token) {
+          setError((data as any)?.error || fnError?.message || 'Invalid credentials');
           setLoading(false);
           return;
         }
-        
-        loginEmail = profileData.email;
-      }
 
-      const { error: signInError } = await signIn(loginEmail, password);
-      
-      if (signInError) {
-        setError(signInError.message || 'Invalid credentials');
-        setLoading(false);
-        return;
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
+
+        if (setSessionError) {
+          setError(setSessionError.message || 'Authentication failed');
+          setLoading(false);
+          return;
+        }
+      } else {
+        const { error: signInError } = await signIn(identifier, password);
+
+        if (signInError) {
+          setError(signInError.message || 'Invalid credentials');
+          setLoading(false);
+          return;
+        }
       }
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         setError('Authentication failed');
         setLoading(false);
