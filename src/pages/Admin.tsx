@@ -167,14 +167,14 @@ const Admin = () => {
     );
   }
 
-  // If still loading after timeout, redirect to signin
+  // If still loading after timeout, send to admin login
   if (loading && loadingTimeout) {
-    return <Navigate to="/signin" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
-  // Redirect to sign in if not authenticated
+  // Redirect to admin login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/signin" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   // Redirect to dashboard if not admin
