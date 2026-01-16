@@ -1,14 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Loader2, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, GripVertical, Save, X } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
 interface AITool {
@@ -158,7 +152,7 @@ const AIToolsTab = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -166,144 +160,171 @@ const AIToolsTab = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={() => setShowForm(true)} className="gap-2">
+        <button 
+          onClick={() => setShowForm(true)} 
+          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+        >
           <Plus className="w-4 h-4" />
           Add AI Tool
-        </Button>
+        </button>
       </div>
 
       {showForm && (
-        <Card className="border-primary/20">
-          <CardContent className="pt-6 space-y-4">
+        <div className="bg-gray-800 rounded-xl p-6 mb-6 border border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4">
+            {editing ? 'Edit AI Tool' : 'Add New AI Tool'}
+          </h3>
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
+                <label className="block text-sm font-medium text-gray-300">Name *</label>
+                <input
+                  type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. ChatGPT"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="icon">Icon (Lucide icon name)</Label>
-                <Input
-                  id="icon"
+                <label className="block text-sm font-medium text-gray-300">Icon (Lucide icon name)</label>
+                <input
+                  type="text"
                   value={formData.icon}
                   onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
                   placeholder="e.g. MessageSquare, Image, Bot"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="color">Gradient Color Classes</Label>
-                <Input
-                  id="color"
+                <label className="block text-sm font-medium text-gray-300">Gradient Color Classes</label>
+                <input
+                  type="text"
                   value={formData.color}
                   onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                   placeholder="e.g. from-green-500 to-emerald-600"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
               <div className="space-y-2 flex items-end gap-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3 bg-gray-900 px-4 py-2 rounded-lg border border-gray-700">
                   <Switch
                     id="is_active"
                     checked={formData.is_active}
                     onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                   />
-                  <Label htmlFor="is_active">Active</Label>
+                  <label htmlFor="is_active" className="text-sm text-gray-300">Active</label>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
+              <label className="block text-sm font-medium text-gray-300">Description</label>
+              <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Brief description of the AI tool"
                 rows={2}
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
               />
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleSave}>
+              <button 
+                onClick={handleSave}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <Save className="w-4 h-4" />
                 {editing ? 'Update' : 'Create'} AI Tool
-              </Button>
-              <Button variant="outline" onClick={resetForm}>
+              </button>
+              <button 
+                onClick={resetForm}
+                className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
                 Cancel
-              </Button>
+              </button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-12">#</TableHead>
-            <TableHead className="w-16">Icon</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Color</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead className="w-20">Status</TableHead>
-            <TableHead className="w-24">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tools.map((tool, index) => (
-            <TableRow key={tool.id}>
-              <TableCell className="text-muted-foreground">
-                <GripVertical className="w-4 h-4 inline mr-1" />
-                {index + 1}
-              </TableCell>
-              <TableCell>
-                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tool.color || 'from-gray-500 to-gray-600'} flex items-center justify-center text-white`}>
-                  {renderIcon(tool.icon)}
-                </div>
-              </TableCell>
-              <TableCell className="font-medium">{tool.name}</TableCell>
-              <TableCell>
-                <code className="text-xs bg-muted px-2 py-1 rounded">
-                  {tool.color || 'none'}
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground text-sm">
-                {tool.description || '-'}
-              </TableCell>
-              <TableCell>
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  tool.is_active 
-                    ? 'bg-green-500/20 text-green-600' 
-                    : 'bg-red-500/20 text-red-600'
-                }`}>
-                  {tool.is_active ? 'Active' : 'Inactive'}
-                </span>
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(tool)}>
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(tool.id)}>
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-          {tools.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                No AI tools found. Add your first one!
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <div className="bg-gray-800 rounded-xl overflow-hidden border border-gray-700">
+        <table className="w-full">
+          <thead className="bg-gray-900">
+            <tr>
+              <th className="text-left px-4 py-4 text-gray-400 font-medium w-12">#</th>
+              <th className="text-left px-4 py-4 text-gray-400 font-medium w-16">Icon</th>
+              <th className="text-left px-4 py-4 text-gray-400 font-medium">Name</th>
+              <th className="text-left px-4 py-4 text-gray-400 font-medium">Color</th>
+              <th className="text-left px-4 py-4 text-gray-400 font-medium">Description</th>
+              <th className="text-left px-4 py-4 text-gray-400 font-medium w-20">Status</th>
+              <th className="text-left px-4 py-4 text-gray-400 font-medium w-24">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tools.map((tool, index) => (
+              <tr key={tool.id} className="border-t border-gray-700 hover:bg-gray-700/50 transition-colors">
+                <td className="px-4 py-4 text-gray-400">
+                  <GripVertical className="w-4 h-4 inline mr-1 cursor-grab" />
+                  {index + 1}
+                </td>
+                <td className="px-4 py-4">
+                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tool.color || 'from-gray-500 to-gray-600'} flex items-center justify-center text-white shadow-lg border border-white/10`}>
+                    {renderIcon(tool.icon)}
+                  </div>
+                </td>
+                <td className="px-4 py-4 font-medium text-white">{tool.name}</td>
+                <td className="px-4 py-4">
+                  <code className="text-xs bg-gray-900 text-gray-300 px-2 py-1 rounded border border-gray-700">
+                    {tool.color || 'none'}
+                  </code>
+                </td>
+                <td className="px-4 py-4 text-gray-400 text-sm max-w-xs truncate">
+                  {tool.description || '-'}
+                </td>
+                <td className="px-4 py-4">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    tool.is_active 
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  }`}>
+                    {tool.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
+                <td className="px-4 py-4">
+                  <div className="flex gap-1">
+                    <button 
+                      onClick={() => handleEdit(tool)}
+                      className="p-2 text-blue-400 hover:bg-gray-700 rounded-lg transition-colors"
+                      title="Edit"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(tool.id)}
+                      className="p-2 text-red-400 hover:bg-gray-700 rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {tools.length === 0 && (
+              <tr>
+                <td colSpan={7} className="text-center text-gray-400 py-8">
+                  No AI tools found. Add your first one!
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
