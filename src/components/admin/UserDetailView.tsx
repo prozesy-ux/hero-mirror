@@ -172,7 +172,7 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
       failed: 'bg-red-500/20 text-red-400',
       delivered: 'bg-green-500/20 text-green-400'
     };
-    return styles[status] || 'bg-white/10 text-gray-400';
+    return styles[status] || 'bg-zinc-800 text-zinc-400';
   };
 
   // Calculate stats
@@ -218,7 +218,7 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
       </div>
 
       {/* Profile Card */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             {profile.avatar_url ? (
@@ -251,7 +251,7 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
                 <Crown size={16} /> Pro User
               </span>
             ) : (
-              <span className="flex items-center gap-2 px-4 py-2 bg-white/10 text-gray-400 rounded-full">
+              <span className="flex items-center gap-2 px-4 py-2 bg-zinc-800 text-gray-400 rounded-full">
                 <UserIcon size={16} /> Free User
               </span>
             )}
@@ -261,7 +261,7 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
               className={`p-2 rounded-lg transition-all ${
                 profile.is_pro 
                   ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' 
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                  : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700 hover:text-white'
               }`}
               title={profile.is_pro ? 'Downgrade to Free' : 'Upgrade to Pro'}
             >
@@ -279,30 +279,38 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-            <Wallet size={14} />
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+          <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
+            <div className="p-1.5 bg-blue-500/10 rounded-lg">
+              <Wallet size={14} className="text-blue-400" />
+            </div>
             Balance
           </div>
           <div className="text-2xl font-bold text-white">৳{wallet?.balance?.toFixed(2) || '0.00'}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-            <ArrowUpRight size={14} className="text-green-400" />
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+          <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
+            <div className="p-1.5 bg-green-500/10 rounded-lg">
+              <ArrowUpRight size={14} className="text-green-400" />
+            </div>
             Total Topup
           </div>
           <div className="text-2xl font-bold text-green-400">৳{totalTopup.toFixed(2)}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-            <ShoppingBag size={14} />
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+          <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
+            <div className="p-1.5 bg-purple-500/10 rounded-lg">
+              <ShoppingBag size={14} className="text-purple-400" />
+            </div>
             Purchases
           </div>
           <div className="text-2xl font-bold text-white">{aiPurchases.length}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-            <Heart size={14} />
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+          <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
+            <div className="p-1.5 bg-pink-500/10 rounded-lg">
+              <Heart size={14} className="text-pink-400" />
+            </div>
             Favorites
           </div>
           <div className="text-2xl font-bold text-white">{favoritesCount}</div>
@@ -311,37 +319,37 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
 
       {/* Tabs */}
       <Tabs defaultValue="transactions" className="w-full">
-        <TabsList className="bg-white/5 border border-white/10 p-1 rounded-xl">
-          <TabsTrigger value="transactions" className="data-[state=active]:bg-white/10 rounded-lg">
+        <TabsList className="bg-[#18181b] border border-[#27272a] p-1 rounded-xl">
+          <TabsTrigger value="transactions" className="data-[state=active]:bg-[#27272a] rounded-lg">
             Transactions ({transactions.length})
           </TabsTrigger>
-          <TabsTrigger value="purchases" className="data-[state=active]:bg-white/10 rounded-lg">
+          <TabsTrigger value="purchases" className="data-[state=active]:bg-[#27272a] rounded-lg">
             AI Purchases ({aiPurchases.length})
           </TabsTrigger>
-          <TabsTrigger value="messages" className="data-[state=active]:bg-white/10 rounded-lg">
+          <TabsTrigger value="messages" className="data-[state=active]:bg-[#27272a] rounded-lg">
             Messages ({supportMessages.length})
           </TabsTrigger>
         </TabsList>
 
         {/* Transactions Tab */}
         <TabsContent value="transactions" className="mt-4">
-          <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+          <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
             {transactions.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">No transactions found</div>
+              <div className="text-center py-12 text-zinc-500">No transactions found</div>
             ) : (
               <table className="w-full">
-                <thead className="bg-white/5">
+                <thead className="bg-[#18181b]">
                   <tr>
-                    <th className="text-left px-6 py-3 text-gray-400 font-medium text-sm">Type</th>
-                    <th className="text-left px-6 py-3 text-gray-400 font-medium text-sm">Amount</th>
-                    <th className="text-left px-6 py-3 text-gray-400 font-medium text-sm">Gateway</th>
-                    <th className="text-left px-6 py-3 text-gray-400 font-medium text-sm">Status</th>
-                    <th className="text-left px-6 py-3 text-gray-400 font-medium text-sm">Date</th>
+                    <th className="text-left px-6 py-3 text-zinc-400 font-medium text-sm">Type</th>
+                    <th className="text-left px-6 py-3 text-zinc-400 font-medium text-sm">Amount</th>
+                    <th className="text-left px-6 py-3 text-zinc-400 font-medium text-sm">Gateway</th>
+                    <th className="text-left px-6 py-3 text-zinc-400 font-medium text-sm">Status</th>
+                    <th className="text-left px-6 py-3 text-zinc-400 font-medium text-sm">Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {transactions.map((tx) => (
-                    <tr key={tx.id} className="border-t border-white/5">
+                    <tr key={tx.id} className="border-t border-[#27272a] hover:bg-[#1a1a1e] transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           {tx.type === 'topup' ? (
@@ -355,14 +363,14 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
                       <td className={`px-6 py-4 font-medium ${tx.type === 'topup' ? 'text-green-400' : 'text-red-400'}`}>
                         {tx.type === 'topup' ? '+' : '-'}৳{Number(tx.amount).toFixed(2)}
                       </td>
-                      <td className="px-6 py-4 text-gray-400">{tx.payment_gateway || '-'}</td>
+                      <td className="px-6 py-4 text-zinc-400">{tx.payment_gateway || '-'}</td>
                       <td className="px-6 py-4">
                         <span className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs w-fit ${getStatusBadge(tx.status)}`}>
                           {getStatusIcon(tx.status)}
                           {tx.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-400 text-sm">
+                      <td className="px-6 py-4 text-zinc-400 text-sm">
                         {new Date(tx.created_at).toLocaleString()}
                       </td>
                     </tr>
@@ -375,30 +383,30 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
 
         {/* AI Purchases Tab */}
         <TabsContent value="purchases" className="mt-4">
-          <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+          <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
             {aiPurchases.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">No AI account purchases found</div>
+              <div className="text-center py-12 text-zinc-500">No AI account purchases found</div>
             ) : (
               <table className="w-full">
-                <thead className="bg-white/5">
+                <thead className="bg-[#18181b]">
                   <tr>
-                    <th className="text-left px-6 py-3 text-gray-400 font-medium text-sm">Account</th>
-                    <th className="text-left px-6 py-3 text-gray-400 font-medium text-sm">Amount</th>
-                    <th className="text-left px-6 py-3 text-gray-400 font-medium text-sm">Payment</th>
-                    <th className="text-left px-6 py-3 text-gray-400 font-medium text-sm">Delivery</th>
-                    <th className="text-left px-6 py-3 text-gray-400 font-medium text-sm">Date</th>
+                    <th className="text-left px-6 py-3 text-zinc-400 font-medium text-sm">Account</th>
+                    <th className="text-left px-6 py-3 text-zinc-400 font-medium text-sm">Amount</th>
+                    <th className="text-left px-6 py-3 text-zinc-400 font-medium text-sm">Payment</th>
+                    <th className="text-left px-6 py-3 text-zinc-400 font-medium text-sm">Delivery</th>
+                    <th className="text-left px-6 py-3 text-zinc-400 font-medium text-sm">Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {aiPurchases.map((purchase) => (
-                    <tr key={purchase.id} className="border-t border-white/5">
+                    <tr key={purchase.id} className="border-t border-[#27272a] hover:bg-[#1a1a1e] transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {purchase.ai_accounts?.icon_url ? (
                             <img src={purchase.ai_accounts.icon_url} alt="" className="w-8 h-8 rounded-lg" />
                           ) : (
-                            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                              <ShoppingBag size={16} className="text-gray-400" />
+                            <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                              <ShoppingBag size={16} className="text-zinc-400" />
                             </div>
                           )}
                           <span className="text-white">{purchase.ai_accounts?.name || 'Unknown'}</span>
@@ -417,7 +425,7 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
                           {purchase.delivery_status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-400 text-sm">
+                      <td className="px-6 py-4 text-zinc-400 text-sm">
                         {new Date(purchase.purchased_at).toLocaleString()}
                       </td>
                     </tr>
@@ -430,9 +438,9 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
 
         {/* Support Messages Tab */}
         <TabsContent value="messages" className="mt-4">
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4 max-h-96 overflow-y-auto">
+          <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 max-h-96 overflow-y-auto">
             {supportMessages.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">No support messages found</div>
+              <div className="text-center py-12 text-zinc-500">No support messages found</div>
             ) : (
               <div className="space-y-3">
                 {supportMessages.map((msg) => (
@@ -441,7 +449,7 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
                     className={`p-3 rounded-lg ${
                       msg.sender_type === 'admin' 
                         ? 'bg-purple-500/20 ml-8' 
-                        : 'bg-white/5 mr-8'
+                        : 'bg-[#18181b] mr-8'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
