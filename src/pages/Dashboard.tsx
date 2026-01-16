@@ -29,11 +29,11 @@ const DashboardContent = () => {
 
   return (
     <main 
-      className={`pb-20 lg:pb-0 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white transition-all duration-300 ease-in-out ${
+      className={`pb-24 lg:pb-0 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white transition-all duration-300 ease-in-out ${
         isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-72'
       }`}
     >
-      <div className="relative p-4 lg:p-8">
+      <div className="relative p-3 sm:p-4 lg:p-8">
         <Routes>
           <Route index element={<Navigate to="/dashboard/prompts" replace />} />
           <Route path="prompts" element={<PromptsGrid />} />

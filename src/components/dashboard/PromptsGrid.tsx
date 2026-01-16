@@ -260,11 +260,11 @@ const PromptsGrid = () => {
 
     return (
       <div
-        className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+        className="group bg-white rounded-xl sm:rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 lg:hover:-translate-y-1 transition-all duration-300 cursor-pointer"
         onClick={() => handlePromptClick(prompt)}
       >
-        {/* Image */}
-        <div className="relative aspect-[4/3] overflow-hidden">
+        {/* Image - Shorter on mobile */}
+        <div className="relative aspect-[16/10] sm:aspect-[4/3] overflow-hidden">
           {prompt.image_url ? (
             <img
               src={prompt.image_url}
@@ -273,51 +273,51 @@ const PromptsGrid = () => {
             />
           ) : (
             <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-              <ImageIcon size={40} className="text-gray-300" />
+              <ImageIcon size={32} className="text-gray-300 sm:w-10 sm:h-10" />
             </div>
           )}
 
-          {/* Tool Badge */}
-          <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold uppercase shadow-lg">
+          {/* Tool Badge - Smaller on mobile */}
+          <div className="absolute top-2 sm:top-3 left-2 sm:left-3 px-2 sm:px-3 py-1 sm:py-1.5 bg-emerald-500 text-white rounded-full text-[10px] sm:text-xs font-bold uppercase shadow-lg">
             {prompt.tool}
           </div>
 
           {/* Favorite Button */}
           <button
             onClick={(e) => toggleFavorite(prompt.id, e)}
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-sm"
+            className="absolute top-2 sm:top-3 right-2 sm:right-3 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors shadow-sm"
           >
             <Heart
-              size={16}
-              className={isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-600'}
+              size={14}
+              className={`sm:w-4 sm:h-4 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-600'}`}
             />
           </button>
 
           {/* Lock Overlay */}
           {isLocked && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
-              <Lock size={28} className="text-white mb-2" />
-              <span className="text-white text-sm font-semibold">Pro Only</span>
+              <Lock size={24} className="text-white mb-1 sm:mb-2 sm:w-7 sm:h-7" />
+              <span className="text-white text-xs sm:text-sm font-semibold">Pro Only</span>
             </div>
           )}
         </div>
 
-        {/* Content */}
-        <div className="p-5">
-          <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">
+        {/* Content - Compact on mobile */}
+        <div className="p-3 sm:p-5">
+          <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight line-clamp-2 mb-1.5 sm:mb-2">
             {prompt.title}
           </h3>
           
-          {/* Description */}
+          {/* Description - 2 lines on mobile, 3 on desktop */}
           {prompt.description && (
-            <p className="text-sm text-gray-600 mb-3 line-clamp-3">
+            <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2 sm:line-clamp-3">
               {prompt.description}
             </p>
           )}
 
           {/* Access Badge */}
-          <div className="mb-3">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+          <div className="mb-2 sm:mb-3">
+            <span className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold ${
               prompt.is_free 
                 ? 'bg-emerald-100 text-emerald-700' 
                 : isPro
@@ -326,25 +326,25 @@ const PromptsGrid = () => {
             }`}>
               {prompt.is_free ? (
                 <>
-                  <Check size={12} />
-                  Free Access
+                  <Check size={10} className="sm:w-3 sm:h-3" />
+                  Free
                 </>
               ) : isPro ? (
                 <>
-                  <Star size={12} className="fill-violet-500" />
-                  Pro Version
+                  <Star size={10} className="fill-violet-500 sm:w-3 sm:h-3" />
+                  Pro
                 </>
               ) : (
                 <>
-                  <Lock size={12} />
-                  Pro Access
+                  <Lock size={10} className="sm:w-3 sm:h-3" />
+                  Pro
                 </>
               )}
             </span>
           </div>
 
-          {/* Review Section */}
-          <div className="flex items-center gap-2 mb-4">
+          {/* Review Section - Hidden on mobile for space */}
+          <div className="hidden sm:flex items-center gap-2 mb-4">
             <div className="flex gap-0.5">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />
@@ -353,16 +353,16 @@ const PromptsGrid = () => {
             <span className="text-sm text-gray-600 font-medium">4.9 (120+ reviews)</span>
           </div>
 
-          {/* Yellow CTA Button */}
+          {/* Yellow CTA Button - Smaller on mobile */}
           <button
-            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
+            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg sm:rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 transition-colors text-xs sm:text-sm"
             onClick={(e) => {
               e.stopPropagation();
               handlePromptClick(prompt);
             }}
           >
-            {isLocked ? 'Unlock Prompt' : 'View Prompt'}
-            <ChevronRight size={16} />
+            {isLocked ? 'Unlock' : 'View'}
+            <ChevronRight size={14} className="sm:w-4 sm:h-4" />
           </button>
         </div>
       </div>
@@ -379,34 +379,65 @@ const PromptsGrid = () => {
 
   return (
     <div className="space-y-6 lg:space-y-8 section-prompts animate-fade-up">
-      {/* Tab Navigation - Premium Design with Unlock Pro */}
-      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-6 lg:mb-8 border border-gray-200 shadow-md">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          {/* Tab buttons */}
-          <div className="flex gap-1.5 lg:gap-2 overflow-x-auto">
+      {/* Tab Navigation - Mobile Optimized Premium Design */}
+      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
+        {/* Mobile: Wallet on top, tabs below */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
+          {/* Wallet & Actions - Mobile: Full width row on top */}
+          <div className="flex items-center gap-2 lg:order-2 lg:ml-auto overflow-x-auto hide-scrollbar pb-1 lg:pb-0">
+            {/* Wallet Balance */}
+            <div className="flex items-center gap-1.5 bg-violet-100 border border-violet-200 px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl flex-shrink-0">
+              <Wallet size={14} className="text-violet-600" />
+              <span className="text-violet-700 font-bold text-xs lg:text-sm">
+                ${wallet?.balance?.toFixed(2) || '0.00'}
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/dashboard/billing')}
+              className="flex items-center gap-1.5 bg-violet-500 hover:bg-violet-600 text-white px-2.5 py-1.5 lg:px-4 lg:py-2 rounded-xl font-medium text-xs lg:text-sm transition-all active:scale-95 whitespace-nowrap flex-shrink-0"
+            >
+              <Plus size={14} />
+              <span className="hidden sm:inline">Add Funds</span>
+              <span className="sm:hidden">Add</span>
+            </button>
+
+            {/* Unlock Pro - Hidden on small mobile, show on larger screens */}
+            {!isPro && (
+              <button
+                onClick={() => navigate('/dashboard/billing')}
+                className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black px-2.5 py-1.5 lg:px-4 lg:py-2 rounded-xl font-semibold text-xs lg:text-sm transition-all active:scale-95 shadow-lg whitespace-nowrap flex-shrink-0"
+              >
+                <Crown size={14} />
+                Unlock Pro
+              </button>
+            )}
+          </div>
+
+          {/* Tab buttons - Horizontal scroll on mobile */}
+          <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar lg:order-1">
             <button
               onClick={() => setActiveTab('all')}
-              className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
+              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'all'
                   ? 'bg-gray-900 text-white shadow-lg'
                   : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-                <Layers size={14} className="lg:w-4 lg:h-4" />
-                Browse Prompts
+              <Layers size={14} />
+              <span className="hidden sm:inline">Browse</span> Prompts
             </button>
             <button
               onClick={() => setActiveTab('trending')}
-              className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
+              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'trending'
                   ? 'bg-gray-900 text-white shadow-lg'
                   : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-              <TrendingUp size={14} className="lg:w-4 lg:h-4" />
+              <TrendingUp size={14} />
               Trending
               {trendingPrompts.length > 0 && (
-                <span className={`px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs rounded-full ${
+                <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
                   activeTab === 'trending' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
                 }`}>
                   {trendingPrompts.length}
@@ -415,16 +446,16 @@ const PromptsGrid = () => {
             </button>
             <button
               onClick={() => setActiveTab('saved')}
-              className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
+              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'saved'
                   ? 'bg-gray-900 text-white shadow-lg'
                   : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-              <Bookmark size={14} className="lg:w-4 lg:h-4" />
+              <Bookmark size={14} />
               Saved
               {favoritePrompts.length > 0 && (
-                <span className={`px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs rounded-full ${
+                <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
                   activeTab === 'saved' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
                 }`}>
                   {favoritePrompts.length}
@@ -433,50 +464,15 @@ const PromptsGrid = () => {
             </button>
             <button
               onClick={() => setActiveTab('categories')}
-              className={`px-4 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform flex items-center gap-1.5 lg:gap-2 whitespace-nowrap ${
+              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'categories'
                   ? 'bg-gray-900 text-white shadow-lg'
                   : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-              <FolderOpen size={14} className="lg:w-4 lg:h-4" />
+              <FolderOpen size={14} />
               Categories
             </button>
-          </div>
-
-          {/* Wallet Balance & Add Funds + Unlock Pro */}
-          <div className="flex items-center gap-2 ml-auto">
-            {/* Wallet Balance - Always visible */}
-            <div className="flex items-center gap-2 bg-violet-100 border border-violet-200 px-3 py-2 rounded-xl">
-              <Wallet size={14} className="text-violet-600 lg:w-4 lg:h-4" />
-              <span className="text-violet-700 font-bold text-xs lg:text-sm">
-                ${wallet?.balance?.toFixed(2) || '0.00'}
-              </span>
-            </div>
-            <button
-              onClick={() => navigate('/dashboard/billing')}
-              className="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white px-3 lg:px-4 py-2 rounded-xl font-medium text-xs lg:text-sm transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
-            >
-              <Plus size={14} className="lg:w-4 lg:h-4" />
-              Add Funds
-            </button>
-
-            {/* Unlock Pro Section - Only for non-Pro users */}
-            {!isPro && (
-              <>
-                <div className="flex items-center gap-2 bg-amber-100 border border-amber-200 px-3 py-2 rounded-xl">
-                  <Lock size={14} className="text-amber-600" />
-                  <span className="text-amber-700 font-bold text-xs lg:text-sm whitespace-nowrap">Free Plan</span>
-                </div>
-                <button
-                  onClick={() => navigate('/dashboard/billing')}
-                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black px-3 lg:px-4 py-2 rounded-xl font-semibold text-xs lg:text-sm transition-all hover:scale-105 active:scale-95 shadow-lg whitespace-nowrap"
-                >
-                  <Crown size={14} />
-                  Unlock Pro
-                </button>
-              </>
-            )}
           </div>
         </div>
       </div>
