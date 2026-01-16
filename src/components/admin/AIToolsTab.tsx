@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Loader2, GripVertical, Save, X } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, GripVertical, Save, X, Search, ChevronDown, icons } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
+// Popular icons for quick selection
+const POPULAR_ICONS = [
+  'MessageSquare', 'Image', 'Bot', 'Sparkles', 'Wand2', 'Brain', 'Zap',
+  'Camera', 'Video', 'Music', 'FileText', 'Code', 'Palette', 'Mic',
+  'Globe', 'Star', 'Heart', 'Rocket', 'Lightbulb', 'Target', 'Layers'
+];
 interface AITool {
   id: string;
   name: string;
@@ -21,6 +27,8 @@ const AIToolsTab = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<AITool | null>(null);
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [iconSearch, setIconSearch] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     icon: '',
@@ -29,6 +37,20 @@ const AIToolsTab = () => {
     is_active: true,
     display_order: 0
   });
+
+  // Get all available icon names from lucide-react
+  const allIconNames = useMemo(() => {
+    return Object.keys(icons).filter(
+      (name) => typeof icons[name as keyof typeof icons] === 'function'
+    );
+  }, []);
+
+  // Filter icons based on search
+  const filteredIcons = useMemo(() => {
+    if (!iconSearch) return POPULAR_ICONS;
+    const search = iconSearch.toLowerCase();
+    return allIconNames.filter((name) => name.toLowerCase().includes(search)).slice(0, 50);
+  }, [iconSearch, allIconNames]);
 
   useEffect(() => {
     fetchTools();
@@ -141,12 +163,19 @@ const AIToolsTab = () => {
     });
     setEditing(null);
     setShowForm(false);
+    setShowIconPicker(false);
+    setIconSearch('');
   };
 
-  const renderIcon = (iconName: string | null) => {
+  const selectIcon = (iconName: string) => {
+    setFormData({ ...formData, icon: iconName });
+    setShowIconPicker(false);
+    setIconSearch('');
+  };
+  const renderIcon = (iconName: string | null, className: string = "w-5 h-5") => {
     if (!iconName) return null;
-    const IconComponent = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[iconName];
-    return IconComponent ? <IconComponent className="w-5 h-5" /> : <span>{iconName}</span>;
+    const IconComponent = icons[iconName as keyof typeof icons] as LucideIcon | undefined;
+    return IconComponent ? <IconComponent className={className} /> : <span>{iconName}</span>;
   };
 
   if (loading) {
@@ -186,15 +215,68 @@ const AIToolsTab = () => {
                   className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-300">Icon (Lucide icon name)</label>
-                <input
-                  type="text"
-                  value={formData.icon}
-                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                  placeholder="e.g. MessageSquare, Image, Bot"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
+              <div className="space-y-2 relative">
+                <label className="block text-sm font-medium text-gray-300">Icon</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowIconPicker(!showIconPicker)}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-left text-white flex items-center justify-between hover:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <span className="flex items-center gap-2">
+                      {formData.icon ? (
+                        <>
+                          {renderIcon(formData.icon, "w-4 h-4")}
+                          <span>{formData.icon}</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-500">Select an icon...</span>
+                      )}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showIconPicker ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showIconPicker && (
+                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-h-72 overflow-hidden">
+                      <div className="p-2 border-b border-gray-700">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                          <input
+                            type="text"
+                            value={iconSearch}
+                            onChange={(e) => setIconSearch(e.target.value)}
+                            placeholder="Search icons..."
+                            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+                      <div className="p-2 overflow-y-auto max-h-52">
+                        {!iconSearch && (
+                          <p className="text-xs text-gray-500 mb-2 px-1">Popular icons</p>
+                        )}
+                        <div className="grid grid-cols-6 gap-1">
+                          {filteredIcons.map((iconName) => (
+                            <button
+                              key={iconName}
+                              type="button"
+                              onClick={() => selectIcon(iconName)}
+                              className={`p-2 rounded-lg hover:bg-gray-700 flex items-center justify-center transition-colors ${
+                                formData.icon === iconName ? 'bg-purple-600 hover:bg-purple-700' : ''
+                              }`}
+                              title={iconName}
+                            >
+                              {renderIcon(iconName, "w-5 h-5")}
+                            </button>
+                          ))}
+                        </div>
+                        {filteredIcons.length === 0 && (
+                          <p className="text-center text-gray-500 text-sm py-4">No icons found</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
