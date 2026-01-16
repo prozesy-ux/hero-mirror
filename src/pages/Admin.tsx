@@ -150,14 +150,26 @@ const AdminContent = () => {
 
 const Admin = () => {
   const { isAuthenticated, isAdmin, loading } = useAuthContext();
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  // Show loading while checking auth
-  if (loading) {
+  // Add timeout fallback - if loading takes too long, redirect
+  useEffect(() => {
+    const timer = setTimeout(() => setLoadingTimeout(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show loading while checking auth (with timeout fallback)
+  if (loading && !loadingTimeout) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
       </div>
     );
+  }
+
+  // If still loading after timeout, redirect to signin
+  if (loading && loadingTimeout) {
+    return <Navigate to="/signin" replace />;
   }
 
   // Redirect to sign in if not authenticated
