@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -12,9 +12,20 @@ const SignIn = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const { signIn, signUp, signInWithGoogle } = useAuthContext();
+  const [formLoading, setFormLoading] = useState(false);
+  const { signIn, signUp, signInWithGoogle, isAuthenticated, isAdmin, loading: authLoading } = useAuthContext();
   const navigate = useNavigate();
+
+  // Redirect after authentication based on role
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      if (isAdmin) {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
+    }
+  }, [isAuthenticated, isAdmin, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,25 +40,25 @@ const SignIn = () => {
       return;
     }
 
-    setLoading(true);
+    setFormLoading(true);
 
     if (isSignUp) {
       const { error } = await signUp(email, password, fullName);
-      setLoading(false);
+      setFormLoading(false);
       if (error) {
         toast.error(error.message);
       } else {
         toast.success("Account created successfully!");
-        navigate("/dashboard");
+        // Navigation handled by useEffect based on role
       }
     } else {
       const { error } = await signIn(email, password);
-      setLoading(false);
+      setFormLoading(false);
       if (error) {
         toast.error(error.message);
       } else {
         toast.success("Welcome back!");
-        navigate("/dashboard");
+        // Navigation handled by useEffect based on role
       }
     }
   };
@@ -228,10 +239,10 @@ const SignIn = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={formLoading}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? (
+                {formLoading ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                     {isSignUp ? "Creating account..." : "Signing in..."}
