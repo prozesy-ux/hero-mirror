@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import AdminSidebar, { useAdminSidebarContext } from '@/components/admin/AdminSidebar';
 import PromptsManagement from '@/components/admin/PromptsManagement';
 import CategoriesManagement from '@/components/admin/CategoriesManagement';
@@ -14,15 +14,16 @@ import WalletManagement from '@/components/admin/WalletManagement';
 import SecurityLogsManagement from '@/components/admin/SecurityLogsManagement';
 import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock, User, LogOut, AlertCircle } from 'lucide-react';
+import { createAdminSession, deleteAdminSession, useAdminApi } from '@/hooks/useAdminApi';
 
 const ADMIN_USERNAME = 'ProZesy';
 const ADMIN_PASSWORD = 'ProMeida@18177';
 const ADMIN_SESSION_KEY = 'adminpro_logged_in';
+const ADMIN_SESSION_TOKEN_KEY = 'adminpro_session_token';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -32,36 +33,47 @@ const AdminDashboard = () => {
     revenue: 0
   });
   const [loading, setLoading] = useState(true);
+  const { fetchData, countData } = useAdminApi();
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [
-        { count: promptsCount },
-        { data: profiles },
-        { data: purchases }
-      ] = await Promise.all([
-        supabase.from('prompts').select('*', { count: 'exact', head: true }),
-        supabase.from('profiles').select('is_pro'),
-        supabase.from('purchases').select('amount, payment_status')
-      ]);
+      try {
+        const [
+          promptsCount,
+          profilesResult,
+          purchasesResult
+        ] = await Promise.all([
+          countData('prompts'),
+          fetchData<{ is_pro: boolean }>('profiles', { select: 'is_pro' }),
+          fetchData<{ amount: number; payment_status: string }>('purchases', { 
+            select: 'amount, payment_status' 
+          })
+        ]);
 
-      const totalUsers = profiles?.length || 0;
-      const proUsers = profiles?.filter(p => p.is_pro).length || 0;
-      const revenue = purchases
-        ?.filter(p => p.payment_status === 'completed')
-        .reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+        const profiles = profilesResult.data || [];
+        const purchases = purchasesResult.data || [];
 
-      setStats({
-        totalPrompts: promptsCount || 0,
-        totalUsers,
-        proUsers,
-        revenue
-      });
-      setLoading(false);
+        const totalUsers = profiles.length;
+        const proUsers = profiles.filter(p => p.is_pro).length;
+        const revenue = purchases
+          .filter(p => p.payment_status === 'completed')
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+
+        setStats({
+          totalPrompts: promptsCount,
+          totalUsers,
+          proUsers,
+          revenue
+        });
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchStats();
-  }, []);
+  }, [fetchData, countData]);
 
   return (
     <div>
@@ -125,6 +137,26 @@ const AdminDashboard = () => {
 
 const AdminContent = ({ onLogout }: { onLogout: () => void }) => {
   const { isCollapsed } = useAdminSidebarContext();
+  const location = useLocation();
+
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/adminpro' || path === '/adminpro/') return 'Dashboard';
+    if (path.includes('/prompts')) return 'Prompts Management';
+    if (path.includes('/categories')) return 'Categories & Tools';
+    if (path.includes('/users')) return 'Users Management';
+    if (path.includes('/purchases')) return 'Purchases';
+    if (path.includes('/wallets')) return 'Wallet Management';
+    if (path.includes('/payments')) return 'Payment Settings';
+    if (path.includes('/ai-accounts')) return 'AI Accounts';
+    if (path.includes('/account-orders')) return 'Account Orders';
+    if (path.includes('/refunds')) return 'Refund Requests';
+    if (path.includes('/cancellations')) return 'Cancellation Requests';
+    if (path.includes('/deletions')) return 'Deletion Requests';
+    if (path.includes('/chats')) return 'Support Chats';
+    if (path.includes('/security')) return 'Security Logs';
+    return 'Admin Panel';
+  };
 
   return (
     <main 
@@ -133,7 +165,9 @@ const AdminContent = ({ onLogout }: { onLogout: () => void }) => {
       }`}
     >
       <div className="p-6 lg:p-8">
-        <div className="flex justify-end mb-4">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl lg:text-3xl font-bold text-white">{getPageTitle()}</h1>
           <Button
             variant="outline"
             size="sm"
@@ -144,6 +178,7 @@ const AdminContent = ({ onLogout }: { onLogout: () => void }) => {
             Logout
           </Button>
         </div>
+        
         <Routes>
           <Route index element={<AdminDashboard />} />
           <Route path="prompts" element={<PromptsManagement />} />
@@ -171,15 +206,26 @@ const AdminLoginForm = ({ onLogin }: { onLogin: () => void }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     // Simple credential check
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
-      onLogin();
+      // Generate a secure session token
+      const sessionToken = crypto.randomUUID();
+      
+      // Create session in database
+      const success = await createAdminSession(sessionToken);
+      
+      if (success) {
+        sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+        sessionStorage.setItem(ADMIN_SESSION_TOKEN_KEY, sessionToken);
+        onLogin();
+      } else {
+        setError('Failed to create session. Please try again.');
+      }
     } else {
       setError('Invalid username or password');
     }
@@ -267,8 +313,13 @@ const AdminPro = () => {
     setIsLoggedIn(true);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const token = sessionStorage.getItem(ADMIN_SESSION_TOKEN_KEY);
+    if (token) {
+      await deleteAdminSession(token);
+    }
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    sessionStorage.removeItem(ADMIN_SESSION_TOKEN_KEY);
     setIsLoggedIn(false);
   };
 

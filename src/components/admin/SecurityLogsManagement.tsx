@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Shield, ShieldOff, Search, RefreshCw, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useAdminApi } from "@/hooks/useAdminApi";
 
 interface SecurityLog {
   id: string;
@@ -30,30 +29,29 @@ const SecurityLogsManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [eventFilter, setEventFilter] = useState<string>("all");
   const [blockedFilter, setBlockedFilter] = useState<string>("all");
+  const { fetchData, updateData, deleteData } = useAdminApi();
 
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from("security_logs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
+      const options: any = {
+        select: '*',
+        order: { column: 'created_at', ascending: false },
+        limit: 100
+      };
 
       if (eventFilter !== "all") {
-        query = query.eq("event_type", eventFilter);
+        options.eq = { event_type: eventFilter };
       }
 
       if (blockedFilter === "blocked") {
-        query = query.eq("is_blocked", true);
+        options.eq = { ...options.eq, is_blocked: true };
       } else if (blockedFilter === "active") {
-        query = query.eq("is_blocked", false);
+        options.eq = { ...options.eq, is_blocked: false };
       }
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setLogs((data as SecurityLog[]) || []);
+      const { data } = await fetchData<SecurityLog>('security_logs', options);
+      setLogs(data || []);
     } catch (error) {
       console.error("Error fetching security logs:", error);
       toast.error("Failed to fetch security logs");
@@ -68,16 +66,13 @@ const SecurityLogsManagement = () => {
 
   const handleUnblock = async (logId: string) => {
     try {
-      const { error } = await supabase
-        .from("security_logs")
-        .update({ 
-          is_blocked: false, 
-          blocked_until: null,
-          block_reason: null 
-        })
-        .eq("id", logId);
+      const { error } = await updateData('security_logs', logId, { 
+        is_blocked: false, 
+        blocked_until: null,
+        block_reason: null 
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(error);
       toast.success("IP unblocked successfully");
       fetchLogs();
     } catch (error) {
@@ -88,12 +83,9 @@ const SecurityLogsManagement = () => {
 
   const handleDelete = async (logId: string) => {
     try {
-      const { error } = await supabase
-        .from("security_logs")
-        .delete()
-        .eq("id", logId);
+      const { error } = await deleteData('security_logs', logId);
 
-      if (error) throw error;
+      if (error) throw new Error(error);
       toast.success("Log deleted successfully");
       fetchLogs();
     } catch (error) {
@@ -105,13 +97,12 @@ const SecurityLogsManagement = () => {
   const handleClearOldLogs = async () => {
     try {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const { error } = await supabase
-        .from("security_logs")
-        .delete()
-        .lt("created_at", sevenDaysAgo)
-        .eq("is_blocked", false);
+      const { error } = await deleteData('security_logs', undefined, {
+        lt: { created_at: sevenDaysAgo },
+        eq: { is_blocked: false }
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(error);
       toast.success("Old logs cleared successfully");
       fetchLogs();
     } catch (error) {

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Crown, User as UserIcon, Trash2, Search, Loader2, ToggleLeft, ToggleRight, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import UserDetailView from './UserDetailView';
+import { useAdminApi } from '@/hooks/useAdminApi';
 
 interface UserProfile {
   id: string;
@@ -21,16 +21,17 @@ const UsersManagement = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const { fetchData, updateData, deleteData } = useAdminApi();
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const fetchUsers = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data } = await fetchData<UserProfile>('profiles', {
+      select: '*',
+      order: { column: 'created_at', ascending: false }
+    });
     
     setUsers(data || []);
     setLoading(false);
@@ -43,10 +44,10 @@ const UsersManagement = () => {
     
     try {
       // Delete from user_roles first
-      await supabase.from('user_roles').delete().eq('user_id', userIdAuth);
+      await deleteData('user_roles', undefined, { eq: { user_id: userIdAuth } });
       
       // Delete from profiles
-      const { error } = await supabase.from('profiles').delete().eq('id', userId);
+      const { error } = await deleteData('profiles', userId);
       
       if (error) {
         toast.error('Failed to delete user');
@@ -66,10 +67,7 @@ const UsersManagement = () => {
   const handleTogglePro = async (userId: string, currentStatus: boolean) => {
     setTogglingId(userId);
     
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_pro: !currentStatus })
-      .eq('id', userId);
+    const { error } = await updateData('profiles', userId, { is_pro: !currentStatus });
     
     if (error) {
       toast.error('Failed to update user status');
