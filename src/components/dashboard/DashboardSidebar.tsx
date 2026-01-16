@@ -182,7 +182,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
 
     const navItems = [
       { to: '/dashboard/prompts', icon: <FileText size={22} />, label: 'All Prompts' },
-      { to: '/dashboard/ai-accounts', icon: <Bot size={22} />, label: 'AI Accounts' },
+      { to: '/dashboard/ai-accounts', icon: <Bot size={22} />, label: 'Marketplace' },
       { to: '/dashboard/billing', icon: <CreditCard size={22} />, label: 'Billing' },
       { to: '/dashboard/profile', icon: <User size={22} />, label: 'Profile' },
       { to: '/dashboard/chat', icon: <MessageCircle size={22} />, label: 'Chat', badge: unreadCount > 0 ? unreadCount : undefined },
@@ -421,7 +421,7 @@ const MobileBottomNav = () => {
 
   const navItems = [
     { to: '/dashboard/prompts', icon: FileText, label: 'Prompts' },
-    { to: '/dashboard/ai-accounts', icon: Bot, label: 'Accounts' },
+    { to: '/dashboard/ai-accounts', icon: Bot, label: 'Marketplace' },
     { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
     { to: '/dashboard/profile', icon: User, label: 'Profile' },
     { to: '/dashboard/chat', icon: MessageCircle, label: 'Chat', badge: unreadCount },
