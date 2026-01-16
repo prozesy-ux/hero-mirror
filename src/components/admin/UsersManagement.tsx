@@ -9,6 +9,7 @@ interface UserProfile {
   user_id: string;
   email: string;
   full_name: string | null;
+  avatar_url: string | null;
   is_pro: boolean;
   created_at: string;
 }
@@ -171,9 +172,17 @@ const UsersManagement = () => {
               >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                      {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
-                    </div>
+                    {user.avatar_url ? (
+                      <img 
+                        src={user.avatar_url} 
+                        alt={user.full_name || 'User'} 
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                        {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                      </div>
+                    )}
                     <span className="text-white font-medium">{user.full_name || 'No name'}</span>
                   </div>
                 </td>
