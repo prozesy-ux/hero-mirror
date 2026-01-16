@@ -59,9 +59,9 @@ const PurchasesManagement = () => {
     <div>
       {/* Stats */}
       <div className="grid md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-6 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-[#0a0a0b] border border-[#151516] rounded-none p-6 hover:bg-[#0e0e10] transition-all">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-500/5 rounded-xl">
+            <div className="p-3 bg-green-500/5 rounded-sm">
               <DollarSign size={24} className="text-green-400" />
             </div>
             <div>
@@ -71,9 +71,9 @@ const PurchasesManagement = () => {
           </div>
         </div>
 
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-6 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-[#0a0a0b] border border-[#151516] rounded-none p-6 hover:bg-[#0e0e10] transition-all">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-purple-500/5 rounded-xl">
+            <div className="p-3 bg-purple-500/5 rounded-sm">
               <TrendingUp size={24} className="text-purple-400" />
             </div>
             <div>
@@ -85,9 +85,9 @@ const PurchasesManagement = () => {
       </div>
 
       {/* Purchases Table */}
-      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl overflow-hidden">
+      <div className="bg-[#0a0a0b] border border-[#151516] rounded-none overflow-hidden">
         <table className="w-full">
-          <thead className="bg-[#0d0d0f]">
+          <thead className="bg-[#080809]">
             <tr>
               <th className="text-left px-6 py-4 text-zinc-500 font-medium text-sm">User</th>
               <th className="text-left px-6 py-4 text-zinc-500 font-medium text-sm">Amount</th>
@@ -97,7 +97,7 @@ const PurchasesManagement = () => {
           </thead>
           <tbody>
             {purchases.map((purchase) => (
-              <tr key={purchase.id} className="border-t border-[#1a1a1a] hover:bg-[#0f0f11] transition-all">
+              <tr key={purchase.id} className="border-t border-[#151516] hover:bg-[#0c0c0d] transition-all">
                 <td className="px-6 py-4">
                   <div>
                     <p className="text-white font-medium">
@@ -110,7 +110,7 @@ const PurchasesManagement = () => {
                   ${Number(purchase.amount).toFixed(2)}
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`px-3 py-1 text-xs rounded-full ${
+                  <span className={`px-3 py-1 text-xs rounded-sm ${
                     purchase.payment_status === 'completed'
                       ? 'bg-green-500/10 text-green-400'
                       : 'bg-yellow-500/10 text-yellow-400'
