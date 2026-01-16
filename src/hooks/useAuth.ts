@@ -47,61 +47,89 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+    
+    // Safety timeout - ensure loading never gets stuck
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }, 5000);
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
         
+        // Set loading to false immediately - don't block on profile/admin checks
+        setLoading(false);
+        
         if (session?.user) {
-          // Check admin role
-          const adminStatus = await checkAdminRole(session.user.id);
-          setIsAdmin(adminStatus);
+          // Check admin role in background
+          checkAdminRole(session.user.id)
+            .then(adminStatus => {
+              if (isMounted) setIsAdmin(adminStatus);
+            })
+            .catch(() => {
+              if (isMounted) setIsAdmin(false);
+            });
           
-          // Fetch profile using setTimeout to avoid race condition
-          setTimeout(async () => {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .maybeSingle();
-            
-            setProfile(profileData);
-          }, 0);
+          // Fetch profile in background
+          supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle()
+            .then(({ data: profileData }) => {
+              if (isMounted) setProfile(profileData);
+            });
         } else {
           setProfile(null);
           setIsAdmin(false);
         }
-        
-        setLoading(false);
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!isMounted) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       
+      // Set loading to false immediately
+      setLoading(false);
+      
       if (session?.user) {
-        // Check admin role
-        const adminStatus = await checkAdminRole(session.user.id);
-        setIsAdmin(adminStatus);
+        // Check admin role in background
+        checkAdminRole(session.user.id)
+          .then(adminStatus => {
+            if (isMounted) setIsAdmin(adminStatus);
+          })
+          .catch(() => {
+            if (isMounted) setIsAdmin(false);
+          });
         
+        // Fetch profile in background  
         supabase
           .from('profiles')
           .select('*')
           .eq('user_id', session.user.id)
           .maybeSingle()
           .then(({ data }) => {
-            setProfile(data);
-            setLoading(false);
+            if (isMounted) setProfile(data);
           });
-      } else {
-        setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      clearTimeout(safetyTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
