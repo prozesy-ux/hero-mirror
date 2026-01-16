@@ -533,23 +533,6 @@ const AIAccountsSection = () => {
               )}
             </button>
           </div>
-          
-          {/* Wallet Balance & Add Funds */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-violet-100 border border-violet-200 px-3 py-2 rounded-xl">
-              <Wallet size={16} className="text-violet-600" />
-              <span className="text-violet-700 font-bold">
-                ${wallet?.balance?.toFixed(2) || '0.00'}
-              </span>
-            </div>
-            <button
-              onClick={() => navigate('/dashboard/billing')}
-              className="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white px-4 py-2 rounded-xl font-medium transition-all hover:scale-105 active:scale-95"
-            >
-              <Plus size={16} />
-              Add Funds
-            </button>
-          </div>
         </div>
       </div>
 
