@@ -67,24 +67,35 @@ export type Database = {
       }
       admin_sessions: {
         Row: {
+          admin_id: string | null
           created_at: string | null
           expires_at: string | null
           id: string
           session_token: string
         }
         Insert: {
+          admin_id?: string | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
           session_token: string
         }
         Update: {
+          admin_id?: string | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
           session_token?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "admin_sessions_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_credentials"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_account_purchases: {
         Row: {
