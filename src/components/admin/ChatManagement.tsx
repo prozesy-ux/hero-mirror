@@ -378,7 +378,7 @@ const ChatManagement = () => {
                   <button
                     onClick={handleDeleteAllChat}
                     disabled={deletingAllChat}
-                    className="flex items-center gap-2 px-3 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors text-sm"
+                    className="flex items-center gap-2 px-3 py-2 bg-[#2e1a1a] text-red-400 hover:bg-[#3d2222] rounded-lg transition-colors text-sm"
                   >
                     {deletingAllChat ? (
                       <Loader2 size={16} className="animate-spin" />

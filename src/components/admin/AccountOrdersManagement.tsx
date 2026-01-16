@@ -316,7 +316,7 @@ const AccountOrdersManagement = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-5 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
+            <div className="p-3 bg-[#1a1f2e] rounded-xl">
               <Package size={22} className="text-blue-400" />
             </div>
             <div>
@@ -328,7 +328,7 @@ const AccountOrdersManagement = () => {
 
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-5 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
+            <div className="p-3 bg-[#2e2a1a] rounded-xl">
               <Clock size={22} className="text-yellow-400" />
             </div>
             <div>
@@ -340,7 +340,7 @@ const AccountOrdersManagement = () => {
 
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-5 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+            <div className="p-3 bg-[#1a2e1f] rounded-xl">
               <CheckCircle size={22} className="text-green-400" />
             </div>
             <div>
@@ -352,7 +352,7 @@ const AccountOrdersManagement = () => {
 
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-5 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+            <div className="p-3 bg-[#1f1a2e] rounded-xl">
               <DollarSign size={22} className="text-purple-400" />
             </div>
             <div>
