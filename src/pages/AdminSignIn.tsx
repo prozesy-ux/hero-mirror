@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Lock, User, LogOut, AlertCircle } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import signinBackground from "@/assets/signin-background.webp";
@@ -17,13 +17,38 @@ type AdminSignInForm = z.infer<typeof adminSignInSchema>;
 
 const AdminSignIn = () => {
   const navigate = useNavigate();
-  const { signIn } = useAuthContext();
+  const [searchParams] = useSearchParams();
+  const { signIn, user, signOut } = useAuthContext();
 
   const [form, setForm] = useState<AdminSignInForm>({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [currentSessionEmail, setCurrentSessionEmail] = useState<string | null>(null);
 
   const title = useMemo(() => "Admin Sign In", []);
+  const redirectMessage = searchParams.get("message");
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setCurrentSessionEmail(data?.session?.user?.email || null);
+    };
+    checkSession();
+  }, [user]);
+
+  // Computed email preview for user clarity
+  const computedEmail = useMemo(() => {
+    const trimmed = form.username.trim().toLowerCase();
+    if (!trimmed) return null;
+    return trimmed.includes("@") ? trimmed : `${trimmed}@admin.local`;
+  }, [form.username]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setCurrentSessionEmail(null);
+    toast.success("Signed out successfully");
+  };
 
   // Helper: wait for session to be fully available after signIn
   const waitForSession = async (maxAttempts = 10, delayMs = 200): Promise<string | null> => {
@@ -149,22 +174,57 @@ const AdminSignIn = () => {
             </div>
           </div>
 
+          {/* Redirect message from Admin.tsx */}
+          {redirectMessage && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{redirectMessage}</span>
+            </div>
+          )}
+
+          {/* Current session indicator */}
+          {currentSessionEmail && (
+            <div className="mb-4 rounded-lg border border-gray-700 bg-gray-800/50 p-3">
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-gray-400">
+                  Currently signed in as:
+                  <span className="ml-1 font-medium text-white">{currentSessionEmail}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="flex items-center gap-1 rounded px-2 py-1 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                >
+                  <LogOut className="h-3 w-3" />
+                  Sign out
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="w-full rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-medium text-white">Username</label>
+                <label className="mb-2 block text-sm font-medium text-white">
+                  Admin Username or Email
+                </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                   <input
                     type="text"
                     value={form.username}
                     onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))}
-                    placeholder="admin"
+                    placeholder="admin or admin@admin.local"
                     className="w-full rounded-lg border border-gray-700 bg-black/50 py-3 pl-10 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
                     required
                     autoComplete="username"
                   />
                 </div>
+                {computedEmail && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Will sign in as: <span className="text-purple-400">{computedEmail}</span>
+                  </p>
+                )}
               </div>
 
               <div>
@@ -199,16 +259,16 @@ const AdminSignIn = () => {
                 {submitting ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Signing in...
+                    Verifying...
                   </>
                 ) : (
-                  <>Sign In</>
+                  <>Sign In as Admin</>
                 )}
               </button>
             </form>
 
             <p className="mt-4 text-center text-xs text-gray-500">
-              This page is for admins only. If you are a user, please use the normal sign in page.
+              This page is for admins only. Regular users should use the normal sign in page.
             </p>
           </div>
         </div>
