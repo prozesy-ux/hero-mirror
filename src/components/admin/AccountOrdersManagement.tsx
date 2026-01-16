@@ -224,20 +224,20 @@ const AccountOrdersManagement = () => {
     <div>
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="text-gray-400 text-sm">Total Orders</div>
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+          <div className="text-zinc-400 text-sm font-medium">Total Orders</div>
           <div className="text-2xl font-bold text-white">{stats.total}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="text-gray-400 text-sm">Pending</div>
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+          <div className="text-zinc-400 text-sm font-medium">Pending</div>
           <div className="text-2xl font-bold text-yellow-400">{stats.pending}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="text-gray-400 text-sm">Delivered</div>
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+          <div className="text-zinc-400 text-sm font-medium">Delivered</div>
           <div className="text-2xl font-bold text-green-400">{stats.delivered}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="text-gray-400 text-sm">Revenue</div>
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+          <div className="text-zinc-400 text-sm font-medium">Revenue</div>
           <div className="text-2xl font-bold text-purple-400">${stats.revenue.toFixed(2)}</div>
         </div>
       </div>
@@ -326,23 +326,23 @@ const AccountOrdersManagement = () => {
 
       {/* Orders List */}
       {orders.length === 0 ? (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
-          <Package className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-12 text-center">
+          <Package className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No Orders Yet</h3>
-          <p className="text-gray-400">AI account orders will appear here</p>
+          <p className="text-zinc-400">AI account orders will appear here</p>
         </div>
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
             <div
               key={order.id}
-              className={`bg-white/5 border rounded-xl p-5 ${
-                order.delivery_status === 'pending' ? 'border-yellow-500/30' : 'border-white/10'
+              className={`bg-[#111113] border rounded-xl p-5 ${
+                order.delivery_status === 'pending' ? 'border-yellow-500/30' : 'border-[#27272a]'
               }`}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-2xl">
+                  <div className="w-12 h-12 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center text-2xl">
                     {getCategoryIcon(order.ai_accounts?.category)}
                   </div>
                   <div>
@@ -400,7 +400,7 @@ const AccountOrdersManagement = () => {
                     value={credentials[order.id] || ''}
                     onChange={(e) => setCredentials(prev => ({ ...prev, [order.id]: e.target.value }))}
                     placeholder="Enter account credentials (email:password or link)"
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                    className="flex-1 bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
                   />
                   <button
                     onClick={() => handleDeliver(order.id)}
@@ -418,9 +418,9 @@ const AccountOrdersManagement = () => {
               )}
 
               {order.delivery_status === 'delivered' && order.account_credentials && (
-                <div className="flex items-center gap-2 p-3 bg-white/5 rounded-xl">
-                  <Eye className="w-4 h-4 text-gray-400" />
-                  <code className="text-sm text-gray-400">{order.account_credentials}</code>
+                <div className="flex items-center gap-2 p-3 bg-[#18181b] border border-[#27272a] rounded-xl">
+                  <Eye className="w-4 h-4 text-zinc-400" />
+                  <code className="text-sm text-zinc-400">{order.account_credentials}</code>
                 </div>
               )}
             </div>

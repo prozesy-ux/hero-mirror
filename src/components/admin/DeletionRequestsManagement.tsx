@@ -244,15 +244,15 @@ const DeletionRequestsManagement = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="border-white/10 hover:bg-transparent">
-              <TableHead className="text-gray-400">User</TableHead>
-              <TableHead className="text-gray-400">Reason</TableHead>
-              <TableHead className="text-gray-400">Status</TableHead>
-              <TableHead className="text-gray-400">Requested</TableHead>
-              <TableHead className="text-gray-400 text-right">Actions</TableHead>
+            <TableRow className="border-[#27272a] hover:bg-transparent bg-[#18181b]">
+              <TableHead className="text-zinc-400">User</TableHead>
+              <TableHead className="text-zinc-400">Reason</TableHead>
+              <TableHead className="text-zinc-400">Status</TableHead>
+              <TableHead className="text-zinc-400">Requested</TableHead>
+              <TableHead className="text-zinc-400 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -272,7 +272,7 @@ const DeletionRequestsManagement = () => {
               </TableRow>
             ) : (
               filteredRequests.map((request) => (
-                <TableRow key={request.id} className="border-white/10 hover:bg-white/5">
+                <TableRow key={request.id} className="border-[#27272a] hover:bg-[#1a1a1e]">
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">

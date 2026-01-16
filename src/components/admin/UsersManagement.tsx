@@ -126,48 +126,48 @@ const UsersManagement = () => {
     <div>
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="text-gray-400 text-sm">Total Users</div>
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+          <div className="text-zinc-400 text-sm font-medium">Total Users</div>
           <div className="text-2xl font-bold text-white">{users.length}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="text-gray-400 text-sm">Pro Users</div>
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+          <div className="text-zinc-400 text-sm font-medium">Pro Users</div>
           <div className="text-2xl font-bold text-amber-400">{proCount}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="text-gray-400 text-sm">Free Users</div>
-          <div className="text-2xl font-bold text-gray-400">{freeCount}</div>
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+          <div className="text-zinc-400 text-sm font-medium">Free Users</div>
+          <div className="text-2xl font-bold text-zinc-400">{freeCount}</div>
         </div>
       </div>
 
       {/* Search */}
       <div className="relative mb-6">
-        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by name or email..."
-          className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+          className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl pl-12 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
         />
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
         <table className="w-full">
-          <thead className="bg-white/5">
+          <thead className="bg-[#18181b]">
             <tr>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">User</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Email</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Plan</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Joined</th>
-              <th className="text-right px-6 py-4 text-gray-400 font-medium text-sm">Actions</th>
+              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">User</th>
+              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">Email</th>
+              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">Plan</th>
+              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">Joined</th>
+              <th className="text-right px-6 py-4 text-zinc-400 font-medium text-sm">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
               <tr 
                 key={user.id} 
-                className="border-t border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                className="border-t border-[#27272a] hover:bg-[#1a1a1e] transition-colors cursor-pointer"
                 onClick={() => handleUserClick(user)}
               >
                 <td className="px-6 py-4">

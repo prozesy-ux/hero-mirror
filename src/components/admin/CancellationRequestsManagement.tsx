@@ -126,18 +126,18 @@ const CancellationRequestsManagement = () => {
       )}
 
       {requests.length === 0 ? (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
-          <XCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-12 text-center">
+          <XCircle className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No Cancellation Requests</h3>
-          <p className="text-gray-400">Plan cancellation requests will appear here</p>
+          <p className="text-zinc-400">Plan cancellation requests will appear here</p>
         </div>
       ) : (
         <div className="space-y-4">
           {requests.map((request) => (
             <div
               key={request.id}
-              className={`bg-white/5 border rounded-xl p-5 ${
-                request.status === 'pending' ? 'border-yellow-500/30' : 'border-white/10'
+              className={`bg-[#111113] border rounded-xl p-5 ${
+                request.status === 'pending' ? 'border-yellow-500/30' : 'border-[#27272a]'
               }`}
             >
               <div className="flex items-start justify-between mb-4">
@@ -170,9 +170,9 @@ const CancellationRequestsManagement = () => {
               </div>
 
               {request.reason && (
-                <div className="p-3 bg-white/5 rounded-xl mb-4">
-                  <p className="text-sm text-gray-300">
-                    <span className="text-gray-500">Reason: </span>
+                <div className="p-3 bg-[#18181b] border border-[#27272a] rounded-xl mb-4">
+                  <p className="text-sm text-zinc-300">
+                    <span className="text-zinc-500">Reason: </span>
                     {request.reason}
                   </p>
                 </div>
@@ -185,7 +185,7 @@ const CancellationRequestsManagement = () => {
                     value={adminNotes[request.id] || ''}
                     onChange={(e) => setAdminNotes(prev => ({ ...prev, [request.id]: e.target.value }))}
                     placeholder="Admin notes (optional)"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                    className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
                   />
                   <div className="flex gap-3">
                     <button
@@ -217,9 +217,9 @@ const CancellationRequestsManagement = () => {
               )}
 
               {request.admin_notes && request.status !== 'pending' && (
-                <div className="p-3 bg-white/5 rounded-xl mt-3">
-                  <p className="text-sm text-gray-400">
-                    <span className="text-gray-500">Admin Notes: </span>
+                <div className="p-3 bg-[#18181b] border border-[#27272a] rounded-xl mt-3">
+                  <p className="text-sm text-zinc-400">
+                    <span className="text-zinc-500">Admin Notes: </span>
                     {request.admin_notes}
                   </p>
                 </div>

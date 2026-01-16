@@ -289,19 +289,19 @@ const ChatManagement = () => {
         )}
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="bg-[#111113] border border-[#27272a] rounded-2xl overflow-hidden flex" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Users List */}
-        <div className="w-80 border-r border-white/10 flex flex-col">
+        <div className="w-80 border-r border-[#27272a] flex flex-col">
           {/* Search */}
-          <div className="p-4 border-b border-white/10">
+          <div className="p-4 border-b border-[#27272a]">
             <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search users..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
               />
             </div>
           </div>
@@ -319,15 +319,15 @@ const ChatManagement = () => {
               </div>
             ) : (
               filteredUsers.map((user) => (
-                <button
-                  key={user.user_id}
-                  onClick={() => setSelectedUser(user)}
-                  className={`w-full p-4 text-left transition-all border-b border-white/5 ${
-                    selectedUser?.user_id === user.user_id
-                      ? 'bg-white text-black'
-                      : 'hover:bg-white/5'
-                  }`}
-                >
+                  <button
+                    key={user.user_id}
+                    onClick={() => setSelectedUser(user)}
+                    className={`w-full p-4 text-left transition-all border-b border-[#27272a] ${
+                      selectedUser?.user_id === user.user_id
+                        ? 'bg-white text-black'
+                        : 'hover:bg-[#1a1a1e]'
+                    }`}
+                  >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -358,10 +358,10 @@ const ChatManagement = () => {
           {selectedUser ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-white/10 bg-white/[0.02]">
+              <div className="p-4 border-b border-[#27272a] bg-[#18181b]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[#27272a] flex items-center justify-center">
                       <span className="text-white font-bold">
                         {(selectedUser.full_name || selectedUser.email)[0].toUpperCase()}
                       </span>
@@ -467,7 +467,7 @@ const ChatManagement = () => {
               </div>
 
               {/* Input */}
-              <div className="p-4 border-t border-white/10">
+              <div className="p-4 border-t border-[#27272a]">
                 <div className="flex gap-3">
                   <input
                     type="text"
