@@ -184,11 +184,7 @@ const PaymentSettingsManagement = () => {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-white">Payment Methods</h2>
-          <p className="text-gray-400 text-sm">Manage payment options shown to users</p>
-        </div>
+      <div className="flex items-center justify-end mb-6">
         <button
           onClick={handleAdd}
           className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition-colors"

@@ -10,10 +10,7 @@ import { toast } from 'sonner';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { playSound } from '@/lib/sounds';
 
-// Import payment logos
-import stripeLogo from '@/assets/stripe-logo.svg';
-import bkashLogo from '@/assets/bkash-logo.png';
-import upiLogo from '@/assets/upi-logo.png';
+// Import AI product logos
 
 // Import AI product logos
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -55,8 +52,21 @@ interface WalletTransaction {
   transaction_id?: string;
 }
 
+interface PaymentMethodDB {
+  id: string;
+  name: string;
+  code: string;
+  icon_url: string | null;
+  qr_image_url: string | null;
+  account_number: string | null;
+  account_name: string | null;
+  instructions: string | null;
+  is_automatic: boolean;
+  is_enabled: boolean;
+  display_order: number;
+}
+
 type BillingTab = 'wallet' | 'transactions' | 'plan' | 'purchases';
-type PaymentGateway = 'stripe' | 'bkash' | 'upi';
 
 const BillingSection = () => {
   const { user, isPro } = useAuthContext();
@@ -83,11 +93,18 @@ const BillingSection = () => {
   const [processingTopup, setProcessingTopup] = useState(false);
   
   // Payment gateway states
-  const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>('stripe');
+  const [selectedGateway, setSelectedGateway] = useState<string>('stripe');
   const [transactionIdInput, setTransactionIdInput] = useState('');
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
   const [editTransactionIdValue, setEditTransactionIdValue] = useState('');
   const [verifyingPayment, setVerifyingPayment] = useState(false);
+  
+  // Payment methods from database
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodDB[]>([]);
+
+  useEffect(() => {
+    fetchPaymentMethods();
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -103,6 +120,22 @@ const BillingSection = () => {
       }
     }
   }, [user, searchParams]);
+
+  const fetchPaymentMethods = async () => {
+    const { data } = await supabase
+      .from('payment_methods')
+      .select('*')
+      .eq('is_enabled', true)
+      .order('display_order', { ascending: true });
+    
+    if (data) {
+      setPaymentMethods(data);
+      // Set default selected gateway to first method
+      if (data.length > 0 && !selectedGateway) {
+        setSelectedGateway(data[0].code);
+      }
+    }
+  };
 
   const verifyAndCreditWallet = async (sessionId: string, retryCount = 0) => {
     // Don't block the entire page - just show a toast
@@ -415,6 +448,9 @@ const BillingSection = () => {
 
   const hasPendingCancellation = cancellationRequest?.status === 'pending';
   const quickAmounts = [5, 10, 25, 50, 100];
+  
+  // Get selected payment method details
+  const selectedMethod = paymentMethods.find(m => m.code === selectedGateway);
 
   const proFeatures = [
     { text: '10,000+ Premium AI Prompts', icon: Sparkles, highlight: true },
@@ -432,12 +468,6 @@ const BillingSection = () => {
     { id: 'transactions' as BillingTab, label: 'Transactions', icon: History },
     { id: 'plan' as BillingTab, label: 'Plan', icon: Crown },
     { id: 'purchases' as BillingTab, label: 'Purchases', icon: ShoppingBag },
-  ];
-
-  const paymentMethods = [
-    { id: 'stripe' as PaymentGateway, name: 'Stripe', logo: stripeLogo, description: 'Credit/Debit Card' },
-    { id: 'bkash' as PaymentGateway, name: 'bKash', logo: bkashLogo, description: 'Mobile Banking' },
-    { id: 'upi' as PaymentGateway, name: 'UPI', logo: upiLogo, description: 'UPI Payment' },
   ];
 
   // Removed blocking loading overlay - now using toast notifications instead
@@ -498,19 +528,25 @@ const BillingSection = () => {
               <CreditCard className="text-gray-500" size={20} />
               Available Payment Methods
             </h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {paymentMethods.map((method) => (
                 <div 
                   key={method.id}
                   className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
                 >
-                  <img 
-                    src={method.logo} 
-                    alt={method.name} 
-                    className="h-8 w-auto mx-auto mb-2 object-contain"
-                  />
+                  {method.icon_url ? (
+                    <img 
+                      src={method.icon_url} 
+                      alt={method.name} 
+                      className="h-8 w-auto mx-auto mb-2 object-contain"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 mx-auto mb-2 rounded-lg bg-gray-200 flex items-center justify-center">
+                      <CreditCard size={16} className="text-gray-500" />
+                    </div>
+                  )}
                   <p className="text-gray-900 font-medium text-sm">{method.name}</p>
-                  <p className="text-gray-500 text-xs">{method.description}</p>
+                  <p className="text-gray-500 text-xs">{method.is_automatic ? 'Automatic' : 'Manual'}</p>
                 </div>
               ))}
             </div>
@@ -888,22 +924,28 @@ const BillingSection = () => {
             {/* Payment Method Selection */}
             <div className="mb-6">
               <p className="text-gray-500 text-sm mb-3 font-medium">Select payment method</p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {paymentMethods.map((method) => (
                   <button
                     key={method.id}
-                    onClick={() => setSelectedGateway(method.id)}
+                    onClick={() => setSelectedGateway(method.code)}
                     className={`p-4 rounded-xl border-2 transition-all ${
-                      selectedGateway === method.id
+                      selectedGateway === method.code
                         ? 'border-violet-500 bg-violet-50'
                         : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                     }`}
                   >
-                    <img 
-                      src={method.logo} 
-                      alt={method.name} 
-                      className="h-8 w-auto mx-auto mb-2 object-contain"
-                    />
+                    {method.icon_url ? (
+                      <img 
+                        src={method.icon_url} 
+                        alt={method.name} 
+                        className="h-8 w-auto mx-auto mb-2 object-contain"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 mx-auto mb-2 rounded-lg bg-gray-200 flex items-center justify-center">
+                        <CreditCard size={16} className="text-gray-500" />
+                      </div>
+                    )}
                     <p className="text-gray-900 font-medium text-sm text-center">{method.name}</p>
                   </button>
                 ))}
@@ -911,55 +953,54 @@ const BillingSection = () => {
             </div>
 
             {/* Gateway-specific inputs */}
-            {selectedGateway === 'bkash' && (
-              <div className="mb-6 p-4 bg-pink-50 rounded-xl border border-pink-200">
+            {selectedMethod && !selectedMethod.is_automatic && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <div className="mb-3">
-                  <p className="text-pink-800 font-semibold mb-1">bKash Payment Instructions</p>
-                  <p className="text-pink-600 text-sm">
-                    1. Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold select-all">01844291940</span> (Personal)
-                  </p>
-                  <p className="text-pink-600 text-sm">2. Enter your bKash Transaction ID below</p>
+                  <p className="text-gray-800 font-semibold mb-1">{selectedMethod.name} Payment</p>
+                  {selectedMethod.account_number && (
+                    <p className="text-gray-600 text-sm">
+                      Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold select-all">{selectedMethod.account_number}</span>
+                      {selectedMethod.account_name && <span className="text-gray-500"> ({selectedMethod.account_name})</span>}
+                    </p>
+                  )}
+                  {selectedMethod.instructions && (
+                    <p className="text-gray-600 text-sm mt-1">{selectedMethod.instructions}</p>
+                  )}
+                  {selectedMethod.qr_image_url && (
+                    <div className="mt-3">
+                      <img 
+                        src={selectedMethod.qr_image_url} 
+                        alt={`${selectedMethod.name} QR`} 
+                        className="w-32 h-32 object-contain rounded-lg border border-gray-200"
+                      />
+                    </div>
+                  )}
                 </div>
                 <input
                   type="text"
                   value={transactionIdInput}
                   onChange={(e) => setTransactionIdInput(e.target.value)}
-                  placeholder="Enter bKash Transaction ID (e.g., TRX123456789)"
-                  className="w-full bg-white border border-pink-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-500/30"
+                  placeholder={`Enter ${selectedMethod.name} Transaction ID`}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
                 />
               </div>
             )}
 
-            {selectedGateway === 'upi' && (
-              <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                <div className="mb-3">
-                  <p className="text-blue-800 font-semibold mb-1">UPI Payment Instructions</p>
-                  <p className="text-blue-600 text-sm">
-                    1. Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold select-all">paytmqr6z0g0n@ptys</span>
-                  </p>
-                  <p className="text-blue-600 text-sm">2. Enter your UPI Transaction ID below</p>
-                </div>
-                <input
-                  type="text"
-                  value={transactionIdInput}
-                  onChange={(e) => setTransactionIdInput(e.target.value)}
-                  placeholder="Enter UPI Transaction ID (e.g., 123456789012)"
-                  className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-                />
-              </div>
-            )}
-
-            {selectedGateway === 'stripe' && (
+            {selectedMethod?.is_automatic && (
               <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <div className="flex items-center gap-3">
-                  <img 
-                    src={stripeLogo} 
-                    alt="Stripe" 
-                    className="h-8 w-auto object-contain"
-                  />
+                  {selectedMethod.icon_url ? (
+                    <img 
+                      src={selectedMethod.icon_url} 
+                      alt={selectedMethod.name} 
+                      className="h-8 w-auto object-contain"
+                    />
+                  ) : (
+                    <CreditCard size={24} className="text-gray-600" />
+                  )}
                   <div>
-                    <p className="font-medium text-gray-900">Secure Payment via Stripe</p>
-                    <p className="text-xs text-gray-500">Credit/Debit Card accepted • Instant</p>
+                    <p className="font-medium text-gray-900">Secure Payment via {selectedMethod.name}</p>
+                    <p className="text-xs text-gray-500">Instant processing</p>
                   </div>
                 </div>
               </div>
