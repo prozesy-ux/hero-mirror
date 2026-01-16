@@ -9,7 +9,7 @@ interface Prompt {
   id: string;
   title: string;
   description: string | null;
-  content?: string | null; // Optional - loaded on demand
+  content: string | null;
   image_url: string | null;
   tool: string;
   is_free: boolean;
@@ -39,11 +39,11 @@ const PromptsGrid = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
-  const [promptContentLoading, setPromptContentLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   
   const { user, isPro } = useAuthContext();
+  const fetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchWallet = async () => {
@@ -150,57 +150,71 @@ const PromptsGrid = () => {
   }, [user]);
 
   const fetchData = async () => {
+    // Clear any previous timeout
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
     setLoading(true);
     setLoadError(null);
     
+    // Set a timeout to prevent infinite loading (15 seconds)
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      fetchTimeoutRef.current = setTimeout(() => {
+        reject(new Error('Request timeout - please check your connection'));
+      }, 15000);
+    });
+    
     try {
-      // Lightweight query - exclude large 'content' field for list view
-      const { data: promptsData, error: promptsError } = await supabase
-        .from('prompts')
-        .select(`
-          id,
-          title,
-          description,
-          image_url,
-          tool,
-          is_free,
-          is_featured,
-          category_id,
-          created_at,
-          categories (
-            name,
-            icon
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(100); // Pagination limit for performance
+      const fetchPromise = async () => {
+        const { data: promptsData, error: promptsError } = await supabase
+          .from('prompts')
+          .select(`
+            *,
+            categories (
+              name,
+              icon
+            )
+          `)
+          .order('created_at', { ascending: false });
 
-      if (promptsError) throw promptsError;
-      setPrompts(promptsData || []);
-
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-      
-      if (!categoriesError) {
-        setCategories(categoriesData || []);
-      }
-
-      if (user) {
-        const { data: favoritesData } = await supabase
-          .from('favorites')
-          .select('prompt_id')
-          .eq('user_id', user.id);
+        if (promptsError) {
+          throw promptsError;
+        }
         
-        setFavorites(favoritesData?.map(f => f.prompt_id) || []);
-      }
+        setPrompts(promptsData || []);
+
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('categories')
+          .select('*')
+          .order('name');
+        
+        if (categoriesError) {
+          console.error('Error fetching categories:', categoriesError);
+        }
+        setCategories(categoriesData || []);
+
+        if (user) {
+          const { data: favoritesData } = await supabase
+            .from('favorites')
+            .select('prompt_id')
+            .eq('user_id', user.id);
+          
+          setFavorites(favoritesData?.map(f => f.prompt_id) || []);
+        }
+      };
+
+      await Promise.race([fetchPromise(), timeoutPromise]);
+      
     } catch (err) {
       console.error('Error fetching data:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to load prompts';
       setLoadError(errorMessage);
       toast.error(errorMessage);
     } finally {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
       setLoading(false);
     }
   };
@@ -241,39 +255,11 @@ const PromptsGrid = () => {
     return prompt.is_free || isPro;
   };
 
-  const handlePromptClick = async (prompt: Prompt) => {
-    if (!canAccessPrompt(prompt)) {
+  const handlePromptClick = (prompt: Prompt) => {
+    if (canAccessPrompt(prompt)) {
+      setSelectedPrompt(prompt);
+    } else {
       toast.error('Upgrade to Pro to unlock this prompt!');
-      return;
-    }
-    
-    // Open modal immediately with basic info
-    setSelectedPrompt(prompt);
-    
-    // Lazy-load content if not already present
-    if (!prompt.content) {
-      setPromptContentLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('prompts')
-          .select('content')
-          .eq('id', prompt.id)
-          .maybeSingle();
-        
-        if (!error && data) {
-          // Update the prompt with content
-          setSelectedPrompt(prev => prev ? { ...prev, content: data.content } : null);
-          // Also update in prompts array for cache
-          setPrompts(prevPrompts => 
-            prevPrompts.map(p => p.id === prompt.id ? { ...p, content: data.content } : p)
-          );
-        }
-      } catch (err) {
-        console.error('Error loading prompt content:', err);
-        toast.error('Failed to load prompt content');
-      } finally {
-        setPromptContentLoading(false);
-      }
     }
   };
 
@@ -742,10 +728,10 @@ const PromptsGrid = () => {
               )}
 
               {/* Prompt Content */}
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Prompt</span>
-                  {selectedPrompt.content && (
+              {selectedPrompt.content && (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Prompt</span>
                     <button
                       onClick={() => copyToClipboard(selectedPrompt.content || '')}
                       className="flex items-center gap-2 px-3 py-1.5 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors"
@@ -753,22 +739,13 @@ const PromptsGrid = () => {
                       <Copy size={14} />
                       Copy
                     </button>
-                  )}
-                </div>
-                {promptContentLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
-                    <span className="ml-3 text-gray-500">Loading prompt...</span>
                   </div>
-                ) : selectedPrompt.content ? (
                   <div 
                     className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: selectedPrompt.content }}
                   />
-                ) : (
-                  <p className="text-gray-400 italic">No content available</p>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Category */}
               {selectedPrompt.categories && (

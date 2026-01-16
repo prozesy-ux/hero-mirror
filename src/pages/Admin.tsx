@@ -14,7 +14,7 @@ import ChatManagement from '@/components/admin/ChatManagement';
 import WalletManagement from '@/components/admin/WalletManagement';
 import SecurityLogsManagement from '@/components/admin/SecurityLogsManagement';
 import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
@@ -149,47 +149,10 @@ const AdminContent = () => {
 };
 
 const Admin = () => {
-  const { isAuthenticated, loading, user } = useAuthContext();
-  const [adminCheckComplete, setAdminCheckComplete] = useState(false);
-  const [isAdminVerified, setIsAdminVerified] = useState(false);
+  const { isAuthenticated, isAdmin, loading } = useAuthContext();
 
-  // Check admin role with retries (handles transient session issues)
-  const checkAdminRole = useCallback(async (userId: string) => {
-    let delay = 200;
-    const maxAttempts = 5;
-    for (let i = 0; i < maxAttempts; i++) {
-      try {
-        const { data: isAdminRole, error } = await supabase
-          .rpc('has_role', { _user_id: userId, _role: 'admin' });
-
-        if (!error && isAdminRole) {
-          setIsAdminVerified(true);
-          setAdminCheckComplete(true);
-          return;
-        }
-        if (!error) {
-          // Not an error, just not an admin
-          break;
-        }
-      } catch {
-        // Transient error – continue retry
-      }
-      await new Promise((r) => setTimeout(r, delay));
-      delay = Math.min(delay * 2, 1500);
-    }
-    setAdminCheckComplete(true);
-  }, []);
-
-  useEffect(() => {
-    if (!loading && isAuthenticated && user?.id) {
-      checkAdminRole(user.id);
-    } else if (!loading && !isAuthenticated) {
-      setAdminCheckComplete(true);
-    }
-  }, [loading, isAuthenticated, user?.id, checkAdminRole]);
-
-  // Show loading state while checking authentication or admin status
-  if (loading || (isAuthenticated && !adminCheckComplete)) {
+  // Show loading while checking auth
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
@@ -197,14 +160,14 @@ const Admin = () => {
     );
   }
 
-  // Redirect to admin login if not authenticated
+  // Redirect to sign in if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/signin" replace />;
   }
 
-  // Redirect to admin login with message if not an admin (instead of dashboard)
-  if (!isAdminVerified) {
-    return <Navigate to="/admin/login?message=Admin+verification+failed.+Please+sign+in+with+an+admin+account." replace />;
+  // Redirect to dashboard if not admin
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (
