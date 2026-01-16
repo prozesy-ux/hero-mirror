@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useAdminData } from '@/hooks/useAdminData';
 import { 
   Crown, User as UserIcon, Trash2, Search, Loader2, ToggleLeft, ToggleRight,
@@ -7,6 +8,7 @@ import {
   DollarSign, ArrowUpRight, ArrowDownRight, Send
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface UserProfile {
   id: string;
@@ -59,9 +61,8 @@ interface SupportMessage {
 type DetailTab = 'profile' | 'wallet' | 'transactions' | 'purchases' | 'orders' | 'chat';
 
 const UsersManagement = () => {
-  const { fetchData, fetchMultiple } = useAdminData();
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { profiles, isLoading, refreshTable } = useAdminDataContext();
+  const { fetchData } = useAdminData();
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -85,25 +86,13 @@ const UsersManagement = () => {
   const [totalTopups, setTotalTopups] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    const { data } = await fetchData<UserProfile>('profiles', {
-      order: { column: 'created_at', ascending: false }
-    });
-    
-    setUsers(data || []);
-    setLoading(false);
-  };
+  const users = profiles as UserProfile[];
 
   const fetchUserDetails = async (user: UserProfile) => {
     setLoadingDetail(true);
     setSelectedUser(user);
     setDetailTab('profile');
 
-    // Fetch all user data in parallel using admin fetch
     const [walletRes, transactionsRes, purchasesRes, ordersRes, messagesRes] = await Promise.all([
       fetchData('user_wallets', { filters: [{ column: 'user_id', value: user.user_id }] }),
       fetchData('wallet_transactions', { 
@@ -133,7 +122,6 @@ const UsersManagement = () => {
     setUserOrders(ordersRes.data || []);
     setUserMessages(messagesRes.data || []);
 
-    // Calculate totals
     const topups = (transactionsRes.data || [])
       .filter((t: Transaction) => t.type === 'topup' && t.status === 'completed')
       .reduce((sum: number, t: Transaction) => sum + t.amount, 0);
@@ -160,7 +148,7 @@ const UsersManagement = () => {
       } else {
         toast.success('User deleted successfully');
         setSelectedUser(null);
-        fetchUsers();
+        refreshTable('profiles');
       }
     } catch (err) {
       toast.error('An error occurred');
@@ -181,7 +169,7 @@ const UsersManagement = () => {
       toast.error('Failed to update user status');
     } else {
       toast.success(`User ${!currentStatus ? 'upgraded to Pro' : 'downgraded to Free'}`);
-      fetchUsers();
+      refreshTable('profiles');
       if (selectedUser) {
         setSelectedUser({ ...selectedUser, is_pro: !currentStatus });
       }
@@ -195,7 +183,6 @@ const UsersManagement = () => {
     
     setSavingBalance(true);
 
-    // Check if wallet exists
     const { data: existingWallet } = await supabase
       .from('user_wallets')
       .select('id')
@@ -243,29 +230,27 @@ const UsersManagement = () => {
     { id: 'chat' as DetailTab, label: 'Chat', icon: MessageCircle },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div>
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Total Users</div>
-          <div className="text-2xl font-bold text-white">{users.length}</div>
+          <div className="text-2xl font-bold text-white">
+            {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : users.length}
+          </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Pro Users</div>
-          <div className="text-2xl font-bold text-amber-400">{proCount}</div>
+          <div className="text-2xl font-bold text-amber-400">
+            {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : proCount}
+          </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Free Users</div>
-          <div className="text-2xl font-bold text-gray-400">{freeCount}</div>
+          <div className="text-2xl font-bold text-gray-400">
+            {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : freeCount}
+          </div>
         </div>
       </div>
 
@@ -293,95 +278,115 @@ const UsersManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((user) => (
-              <tr 
-                key={user.id} 
-                className="border-t border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer"
-                onClick={() => fetchUserDetails(user)}
-              >
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    {user.avatar_url ? (
-                      <img 
-                        src={user.avatar_url} 
-                        alt={user.full_name || 'User'} 
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                        {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-t border-white/5">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-full bg-white/10" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-4 w-24 bg-white/10" />
+                        <Skeleton className="h-3 w-16 bg-white/10" />
                       </div>
-                    )}
-                    <div>
-                      <span className="text-white font-medium">{user.full_name || 'No name'}</span>
-                      {user.username && (
-                        <p className="text-gray-500 text-xs">@{user.username}</p>
-                      )}
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-gray-400">{user.email}</td>
-                <td className="px-6 py-4">
-                  {user.is_pro ? (
-                    <span className="flex items-center gap-1 px-3 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full w-fit">
-                      <Crown size={12} /> Pro
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 px-3 py-1 bg-white/10 text-gray-300 text-xs rounded-full w-fit">
-                      <UserIcon size={12} /> Free
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-gray-400">
-                  {new Date(user.created_at).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => fetchUserDetails(user)}
-                      className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
-                      title="View Details"
-                    >
-                      <Eye size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleTogglePro(user.id, user.is_pro)}
-                      disabled={togglingId === user.id}
-                      className={`p-2 rounded-lg transition-all ${
-                        user.is_pro 
-                          ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' 
-                          : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
-                      }`}
-                      title={user.is_pro ? 'Downgrade to Free' : 'Upgrade to Pro'}
-                    >
-                      {togglingId === user.id ? (
-                        <Loader2 size={18} className="animate-spin" />
-                      ) : user.is_pro ? (
-                        <ToggleRight size={18} />
+                  </td>
+                  <td className="px-6 py-4"><Skeleton className="h-4 w-40 bg-white/10" /></td>
+                  <td className="px-6 py-4"><Skeleton className="h-6 w-16 rounded-full bg-white/10" /></td>
+                  <td className="px-6 py-4"><Skeleton className="h-4 w-24 bg-white/10" /></td>
+                  <td className="px-6 py-4"><Skeleton className="h-8 w-24 ml-auto bg-white/10" /></td>
+                </tr>
+              ))
+            ) : (
+              filteredUsers.map((user) => (
+                <tr 
+                  key={user.id} 
+                  className="border-t border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                  onClick={() => fetchUserDetails(user)}
+                >
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      {user.avatar_url ? (
+                        <img 
+                          src={user.avatar_url} 
+                          alt={user.full_name || 'User'} 
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
                       ) : (
-                        <ToggleLeft size={18} />
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                          {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                        </div>
                       )}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteUser(user.id, user.user_id)}
-                      disabled={deletingId === user.id}
-                      className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
-                      title="Delete User"
-                    >
-                      {deletingId === user.id ? (
-                        <Loader2 size={18} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={18} />
-                      )}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      <div>
+                        <span className="text-white font-medium">{user.full_name || 'No name'}</span>
+                        {user.username && (
+                          <p className="text-gray-500 text-xs">@{user.username}</p>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-gray-400">{user.email}</td>
+                  <td className="px-6 py-4">
+                    {user.is_pro ? (
+                      <span className="flex items-center gap-1 px-3 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full w-fit">
+                        <Crown size={12} /> Pro
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 px-3 py-1 bg-white/10 text-gray-300 text-xs rounded-full w-fit">
+                        <UserIcon size={12} /> Free
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-gray-400">
+                    {new Date(user.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => fetchUserDetails(user)}
+                        className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+                        title="View Details"
+                      >
+                        <Eye size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleTogglePro(user.id, user.is_pro)}
+                        disabled={togglingId === user.id}
+                        className={`p-2 rounded-lg transition-all ${
+                          user.is_pro 
+                            ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' 
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                        }`}
+                        title={user.is_pro ? 'Downgrade to Free' : 'Upgrade to Pro'}
+                      >
+                        {togglingId === user.id ? (
+                          <Loader2 size={18} className="animate-spin" />
+                        ) : user.is_pro ? (
+                          <ToggleRight size={18} />
+                        ) : (
+                          <ToggleLeft size={18} />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user.id, user.user_id)}
+                        disabled={deletingId === user.id}
+                        className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
+                        title="Delete User"
+                      >
+                        {deletingId === user.id ? (
+                          <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={18} />
+                        )}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
 
-        {filteredUsers.length === 0 && (
+        {!isLoading && filteredUsers.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             {searchQuery ? 'No users found matching your search' : 'No users found'}
           </div>
@@ -456,10 +461,10 @@ const UsersManagement = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="p-6 max-h-[60vh] overflow-y-auto">
+            <div className="p-6">
               {loadingDetail ? (
-                <div className="flex items-center justify-center h-40">
-                  <Loader2 size={32} className="animate-spin text-white" />
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-white/50" />
                 </div>
               ) : (
                 <>
@@ -467,56 +472,56 @@ const UsersManagement = () => {
                   {detailTab === 'profile' && (
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white/5 p-4 rounded-xl">
-                          <p className="text-gray-500 text-sm">Full Name</p>
-                          <p className="text-white font-medium">{selectedUser.full_name || 'Not set'}</p>
+                        <div className="bg-white/5 rounded-xl p-4">
+                          <p className="text-gray-500 text-xs mb-1">Full Name</p>
+                          <p className="text-white">{selectedUser.full_name || '-'}</p>
                         </div>
-                        <div className="bg-white/5 p-4 rounded-xl">
-                          <p className="text-gray-500 text-sm">Username</p>
-                          <p className="text-white font-medium">@{selectedUser.username || 'Not set'}</p>
+                        <div className="bg-white/5 rounded-xl p-4">
+                          <p className="text-gray-500 text-xs mb-1">Username</p>
+                          <p className="text-white">{selectedUser.username || '-'}</p>
                         </div>
-                        <div className="bg-white/5 p-4 rounded-xl">
-                          <p className="text-gray-500 text-sm">Email</p>
-                          <p className="text-white font-medium">{selectedUser.email}</p>
+                        <div className="bg-white/5 rounded-xl p-4">
+                          <p className="text-gray-500 text-xs mb-1">Email</p>
+                          <p className="text-white">{selectedUser.email}</p>
                         </div>
-                        <div className="bg-white/5 p-4 rounded-xl">
-                          <p className="text-gray-500 text-sm">Plan</p>
-                          <p className={`font-medium ${selectedUser.is_pro ? 'text-amber-400' : 'text-gray-400'}`}>
-                            {selectedUser.is_pro ? '⭐ Pro' : 'Free'}
+                        <div className="bg-white/5 rounded-xl p-4">
+                          <p className="text-gray-500 text-xs mb-1">Plan</p>
+                          <p className={selectedUser.is_pro ? 'text-amber-400' : 'text-gray-400'}>
+                            {selectedUser.is_pro ? 'Pro' : 'Free'}
                           </p>
                         </div>
                       </div>
-                      <div className="flex gap-3 mt-6">
+
+                      <div className="flex gap-3">
                         <button
                           onClick={() => handleTogglePro(selectedUser.id, selectedUser.is_pro)}
                           disabled={togglingId === selectedUser.id}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                             selectedUser.is_pro
-                              ? 'bg-gray-700 text-white hover:bg-gray-600'
-                              : 'bg-amber-500 text-black hover:bg-amber-400'
+                              ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                              : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
                           }`}
                         >
                           {togglingId === selectedUser.id ? (
-                            <Loader2 size={18} className="animate-spin" />
+                            <Loader2 size={16} className="animate-spin" />
                           ) : selectedUser.is_pro ? (
-                            <>Downgrade to Free</>
+                            <ToggleLeft size={16} />
                           ) : (
-                            <>Upgrade to Pro</>
+                            <ToggleRight size={16} />
                           )}
+                          {selectedUser.is_pro ? 'Downgrade to Free' : 'Upgrade to Pro'}
                         </button>
                         <button
                           onClick={() => handleDeleteUser(selectedUser.id, selectedUser.user_id)}
                           disabled={deletingId === selectedUser.id}
-                          className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 rounded-xl font-medium hover:bg-red-500/30 transition-all"
+                          className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors"
                         >
                           {deletingId === selectedUser.id ? (
-                            <Loader2 size={18} className="animate-spin" />
+                            <Loader2 size={16} className="animate-spin" />
                           ) : (
-                            <>
-                              <Trash2 size={18} />
-                              Delete User
-                            </>
+                            <Trash2 size={16} />
                           )}
+                          Delete User
                         </button>
                       </div>
                     </div>
@@ -524,25 +529,30 @@ const UsersManagement = () => {
 
                   {/* Wallet Tab */}
                   {detailTab === 'wallet' && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-white/5 p-4 rounded-xl">
-                          <p className="text-gray-500 text-sm">Current Balance</p>
-                          <p className="text-2xl font-bold text-green-400">${userWallet?.balance?.toFixed(2) || '0.00'}</p>
+                        <div className="bg-white/5 rounded-xl p-4">
+                          <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                            <Wallet size={12} />
+                            Balance
+                          </div>
+                          <p className="text-2xl font-bold text-green-400">
+                            ${userWallet?.balance?.toFixed(2) || '0.00'}
+                          </p>
                         </div>
-                        <div className="bg-white/5 p-4 rounded-xl">
-                          <div className="flex items-center gap-2 text-gray-500 text-sm mb-1">
-                            <ArrowUpRight size={14} className="text-green-400" />
+                        <div className="bg-white/5 rounded-xl p-4">
+                          <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                            <ArrowUpRight size={12} />
                             Total Top-ups
                           </div>
-                          <p className="text-xl font-bold text-white">${totalTopups.toFixed(2)}</p>
+                          <p className="text-2xl font-bold text-purple-400">${totalTopups.toFixed(2)}</p>
                         </div>
-                        <div className="bg-white/5 p-4 rounded-xl">
-                          <div className="flex items-center gap-2 text-gray-500 text-sm mb-1">
-                            <ArrowDownRight size={14} className="text-red-400" />
+                        <div className="bg-white/5 rounded-xl p-4">
+                          <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                            <ArrowDownRight size={12} />
                             Total Spent
                           </div>
-                          <p className="text-xl font-bold text-white">${totalSpent.toFixed(2)}</p>
+                          <p className="text-2xl font-bold text-red-400">${totalSpent.toFixed(2)}</p>
                         </div>
                       </div>
                       <button
@@ -550,9 +560,9 @@ const UsersManagement = () => {
                           setNewBalance(userWallet?.balance || 0);
                           setShowBalanceModal(true);
                         }}
-                        className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-xl font-medium hover:bg-gray-100 transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg transition-colors"
                       >
-                        <Edit size={18} />
+                        <Edit size={16} />
                         Edit Balance
                       </button>
                     </div>
@@ -560,32 +570,38 @@ const UsersManagement = () => {
 
                   {/* Transactions Tab */}
                   {detailTab === 'transactions' && (
-                    <div className="space-y-3">
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
                       {userTransactions.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">No transactions found</p>
+                        <p className="text-gray-500 text-center py-8">No transactions</p>
                       ) : (
                         userTransactions.map((tx) => (
-                          <div key={tx.id} className="flex items-center justify-between bg-white/5 p-4 rounded-xl">
+                          <div key={tx.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
                             <div className="flex items-center gap-3">
                               <div className={`p-2 rounded-lg ${tx.type === 'topup' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
                                 {tx.type === 'topup' ? (
-                                  <ArrowUpRight className="text-green-400" size={18} />
+                                  <ArrowUpRight size={16} className="text-green-400" />
                                 ) : (
-                                  <ArrowDownRight className="text-red-400" size={18} />
+                                  <ArrowDownRight size={16} className="text-red-400" />
                                 )}
                               </div>
                               <div>
-                                <p className="text-white font-medium capitalize">{tx.type}</p>
-                                <p className="text-gray-500 text-sm">{tx.description || tx.payment_gateway || '-'}</p>
+                                <p className="text-white text-sm font-medium capitalize">{tx.type}</p>
+                                <p className="text-gray-500 text-xs">
+                                  {new Date(tx.created_at).toLocaleString()}
+                                </p>
                               </div>
                             </div>
                             <div className="text-right">
                               <p className={`font-bold ${tx.type === 'topup' ? 'text-green-400' : 'text-red-400'}`}>
                                 {tx.type === 'topup' ? '+' : '-'}${tx.amount.toFixed(2)}
                               </p>
-                              <p className="text-gray-500 text-xs">
-                                {new Date(tx.created_at).toLocaleDateString()}
-                              </p>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                tx.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                                tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-red-500/20 text-red-400'
+                              }`}>
+                                {tx.status}
+                              </span>
                             </div>
                           </div>
                         ))
@@ -595,31 +611,24 @@ const UsersManagement = () => {
 
                   {/* Purchases Tab */}
                   {detailTab === 'purchases' && (
-                    <div className="space-y-3">
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
                       {userPurchases.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">No purchases found</p>
+                        <p className="text-gray-500 text-center py-8">No purchases</p>
                       ) : (
-                        userPurchases.map((purchase) => (
-                          <div key={purchase.id} className="flex items-center justify-between bg-white/5 p-4 rounded-xl">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-lg bg-purple-500/20">
-                                <ShoppingBag className="text-purple-400" size={18} />
-                              </div>
-                              <div>
-                                <p className="text-white font-medium">Pro Plan Purchase</p>
-                                <p className="text-gray-500 text-xs">
-                                  {new Date(purchase.purchased_at).toLocaleDateString()}
-                                </p>
-                              </div>
+                        userPurchases.map((p) => (
+                          <div key={p.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                            <div>
+                              <p className="text-white text-sm font-medium">Pro Plan Purchase</p>
+                              <p className="text-gray-500 text-xs">
+                                {new Date(p.purchased_at).toLocaleString()}
+                              </p>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-white">${Number(purchase.amount).toFixed(2)}</p>
+                              <p className="font-bold text-white">${p.amount}</p>
                               <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                purchase.payment_status === 'completed' 
-                                  ? 'bg-green-500/20 text-green-400' 
-                                  : 'bg-yellow-500/20 text-yellow-400'
+                                p.payment_status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
                               }`}>
-                                {purchase.payment_status}
+                                {p.payment_status}
                               </span>
                             </div>
                           </div>
@@ -630,39 +639,30 @@ const UsersManagement = () => {
 
                   {/* AI Orders Tab */}
                   {detailTab === 'orders' && (
-                    <div className="space-y-3">
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
                       {userOrders.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">No AI account orders found</p>
+                        <p className="text-gray-500 text-center py-8">No AI account orders</p>
                       ) : (
-                        userOrders.map((order) => (
-                          <div key={order.id} className="flex items-center justify-between bg-white/5 p-4 rounded-xl">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-lg bg-blue-500/20">
-                                <Package className="text-blue-400" size={18} />
-                              </div>
-                              <div>
-                                <p className="text-white font-medium">{order.ai_accounts?.name || 'AI Account'}</p>
-                                <p className="text-gray-500 text-xs">
-                                  {new Date(order.purchased_at).toLocaleDateString()}
-                                </p>
-                              </div>
+                        userOrders.map((o) => (
+                          <div key={o.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                            <div>
+                              <p className="text-white text-sm font-medium">{o.ai_accounts?.name || 'AI Account'}</p>
+                              <p className="text-gray-500 text-xs">
+                                {new Date(o.purchased_at).toLocaleString()}
+                              </p>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-white">${Number(order.amount).toFixed(2)}</p>
+                              <p className="font-bold text-white">${o.amount}</p>
                               <div className="flex gap-1">
                                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  order.payment_status === 'completed' 
-                                    ? 'bg-green-500/20 text-green-400' 
-                                    : 'bg-yellow-500/20 text-yellow-400'
+                                  o.payment_status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
                                 }`}>
-                                  {order.payment_status}
+                                  {o.payment_status}
                                 </span>
                                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  order.delivery_status === 'delivered' 
-                                    ? 'bg-green-500/20 text-green-400' 
-                                    : 'bg-yellow-500/20 text-yellow-400'
+                                  o.delivery_status === 'delivered' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'
                                 }`}>
-                                  {order.delivery_status}
+                                  {o.delivery_status}
                                 </span>
                               </div>
                             </div>
@@ -674,28 +674,23 @@ const UsersManagement = () => {
 
                   {/* Chat Tab */}
                   {detailTab === 'chat' && (
-                    <div className="space-y-3">
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
                       {userMessages.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">No messages found</p>
+                        <p className="text-gray-500 text-center py-8">No messages</p>
                       ) : (
-                        userMessages.map((msg) => (
+                        userMessages.map((m) => (
                           <div 
-                            key={msg.id} 
-                            className={`p-4 rounded-xl ${
-                              msg.sender_type === 'admin' ? 'bg-white/10 ml-8' : 'bg-white/5 mr-8'
+                            key={m.id} 
+                            className={`p-3 rounded-xl max-w-[80%] ${
+                              m.sender_type === 'admin' 
+                                ? 'bg-purple-500/20 ml-auto' 
+                                : 'bg-white/5'
                             }`}
                           >
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`text-xs font-medium ${
-                                msg.sender_type === 'admin' ? 'text-purple-400' : 'text-gray-400'
-                              }`}>
-                                {msg.sender_type === 'admin' ? 'Admin' : 'User'}
-                              </span>
-                              <span className="text-gray-600 text-xs">
-                                {new Date(msg.created_at).toLocaleString()}
-                              </span>
-                            </div>
-                            <p className="text-white">{msg.message}</p>
+                            <p className="text-white text-sm">{m.message}</p>
+                            <p className="text-gray-500 text-xs mt-1">
+                              {m.sender_type === 'admin' ? 'Admin' : 'User'} • {new Date(m.created_at).toLocaleString()}
+                            </p>
                           </div>
                         ))
                       )}
@@ -708,37 +703,39 @@ const UsersManagement = () => {
         </div>
       )}
 
-      {/* Balance Edit Modal */}
+      {/* Edit Balance Modal */}
       {showBalanceModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80">
           <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl max-w-sm w-full p-6">
-            <h3 className="text-xl font-bold text-white mb-4">Edit Balance</h3>
-            <div className="mb-4">
-              <label className="block text-gray-400 text-sm mb-2">New Balance ($)</label>
-              <input
-                type="number"
-                value={newBalance}
-                onChange={(e) => setNewBalance(parseFloat(e.target.value) || 0)}
-                step="0.01"
-                min="0"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleUpdateBalance}
-                disabled={savingBalance}
-                className="flex-1 flex items-center justify-center gap-2 bg-white text-black font-semibold py-3 rounded-xl hover:bg-gray-100 transition-colors disabled:opacity-50"
-              >
-                {savingBalance ? <Loader2 size={18} className="animate-spin" /> : null}
-                Save
-              </button>
-              <button
-                onClick={() => setShowBalanceModal(false)}
-                className="px-6 py-3 bg-white/5 text-white rounded-xl hover:bg-white/10 transition-colors"
-              >
-                Cancel
-              </button>
+            <h3 className="text-lg font-bold text-white mb-4">Edit Wallet Balance</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-400">New Balance ($)</label>
+                <input
+                  type="number"
+                  value={newBalance}
+                  onChange={(e) => setNewBalance(parseFloat(e.target.value) || 0)}
+                  step="0.01"
+                  min="0"
+                  className="w-full mt-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleUpdateBalance}
+                  disabled={savingBalance}
+                  className="flex-1 flex items-center justify-center gap-2 bg-white text-black py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50"
+                >
+                  {savingBalance ? <Loader2 size={16} className="animate-spin" /> : <DollarSign size={16} />}
+                  Save
+                </button>
+                <button
+                  onClick={() => setShowBalanceModal(false)}
+                  className="px-6 py-3 bg-white/5 text-white rounded-xl hover:bg-white/10 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

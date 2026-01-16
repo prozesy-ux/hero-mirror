@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2, Save, X, Eye, Image, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { toast } from 'sonner';
 import RichTextEditor from './RichTextEditor';
 import ImageUploader from './ImageUploader';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Prompt {
   id: string;
@@ -25,10 +26,7 @@ interface Category {
 }
 
 const PromptsManagement = () => {
-  const { fetchData } = useAdminData();
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { prompts, categories, isLoading, refreshTable } = useAdminDataContext();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -48,57 +46,8 @@ const PromptsManagement = () => {
 
   const tools = ['ChatGPT', 'Midjourney', 'Claude', 'DALL-E', 'Gemini', 'Stable Diffusion', 'Leonardo AI', 'Copilot'];
 
-  useEffect(() => {
-    fetchDataFromAdmin();
-
-    // Subscribe to realtime updates for prompts
-    const channel = supabase
-      .channel('admin-prompts-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'prompts'
-        },
-        () => {
-          // Refetch data when prompts change
-          fetchDataFromAdmin();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchDataFromAdmin = async () => {
-    try {
-      const [promptsRes, categoriesRes] = await Promise.all([
-        fetchData<Prompt>('prompts', {
-          select: '*, categories(name)',
-          order: { column: 'created_at', ascending: false }
-        }),
-        fetchData<Category>('categories', {
-          order: { column: 'name', ascending: true }
-        })
-      ]);
-
-      if (promptsRes.error) {
-        console.error('Error fetching prompts:', promptsRes.error);
-        toast.error('Failed to load prompts');
-      }
-
-      setPrompts(promptsRes.data || []);
-      setCategories(categoriesRes.data || []);
-    } catch (error) {
-      console.error('Fetch error:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const promptList = prompts as Prompt[];
+  const categoryList = categories as Category[];
 
   const handleSave = async () => {
     if (!formData.title) {
@@ -123,24 +72,23 @@ const PromptsManagement = () => {
       if (editingId) {
         const { error } = await supabase.from('prompts').update(promptData).eq('id', editingId);
         if (error) {
-          console.error('Update error:', error);
           toast.error(`Failed to update: ${error.message}`);
         } else {
           toast.success('Prompt updated successfully!');
+          refreshTable('prompts');
           resetForm();
         }
       } else {
         const { error } = await supabase.from('prompts').insert(promptData);
         if (error) {
-          console.error('Insert error:', error);
           toast.error(`Failed to create: ${error.message}`);
         } else {
           toast.success('Prompt created successfully!');
+          refreshTable('prompts');
           resetForm();
         }
       }
     } catch (error: any) {
-      console.error('Save error:', error);
       toast.error(error?.message || 'An error occurred');
     } finally {
       setSaving(false);
@@ -170,13 +118,12 @@ const PromptsManagement = () => {
     try {
       const { error } = await supabase.from('prompts').delete().eq('id', id);
       if (error) {
-        console.error('Delete error:', error);
         toast.error(`Failed to delete: ${error.message}`);
       } else {
         toast.success('Prompt deleted successfully!');
+        refreshTable('prompts');
       }
     } catch (error: any) {
-      console.error('Delete error:', error);
       toast.error(error?.message || 'Failed to delete prompt');
     } finally {
       setDeleting(null);
@@ -203,14 +150,6 @@ const PromptsManagement = () => {
       prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
     );
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -286,7 +225,7 @@ const PromptsManagement = () => {
                         className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
                         <option value="">No Category</option>
-                        {categories.map(c => (
+                        {categoryList.map(c => (
                           <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                       </select>
@@ -358,8 +297,8 @@ const PromptsManagement = () => {
                   onClick={() => setPreviewPrompt({ 
                     ...formData, 
                     id: 'preview', 
-                    categories: categories.find(c => c.id === formData.category_id) 
-                      ? { name: categories.find(c => c.id === formData.category_id)!.name } 
+                    categories: categoryList.find(c => c.id === formData.category_id) 
+                      ? { name: categoryList.find(c => c.id === formData.category_id)!.name } 
                       : null 
                   } as Prompt)} 
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
@@ -450,123 +389,129 @@ const PromptsManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {prompts.map((prompt) => (
-                <>
-                  <tr key={prompt.id} className="hover:bg-gray-700/50 transition-colors">
-                    <td className="px-6 py-4">
-                      {prompt.image_url ? (
-                        <img 
-                          src={prompt.image_url} 
-                          alt={prompt.title}
-                          className="w-12 h-12 object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                          <Image size={20} className="text-gray-500" />
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => toggleRowExpand(prompt.id)}
-                        className="flex items-center gap-2 text-left group"
-                      >
-                        <span className="text-white font-medium group-hover:text-purple-400 transition-colors">
-                          {prompt.title}
-                        </span>
-                        {expandedRows.includes(prompt.id) ? (
-                          <ChevronUp size={16} className="text-gray-500" />
-                        ) : (
-                          <ChevronDown size={16} className="text-gray-500" />
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-purple-600/30 text-purple-300 text-xs font-medium rounded">
-                        {prompt.tool}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-400">
-                      {prompt.categories?.name || '-'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-1">
-                        {prompt.is_free && (
-                          <span className="px-2 py-0.5 bg-green-600/30 text-green-400 text-xs rounded">
-                            Free
-                          </span>
-                        )}
-                        {prompt.is_featured && (
-                          <span className="px-2 py-0.5 bg-amber-600/30 text-amber-400 text-xs rounded">
-                            Featured
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => setPreviewPrompt(prompt)}
-                          className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-                          title="Preview"
-                        >
-                          <Eye size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleEdit(prompt)}
-                          className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(prompt.id)}
-                          disabled={deleting === prompt.id}
-                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
-                          title="Delete"
-                        >
-                          {deleting === prompt.id ? (
-                            <Loader2 size={18} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={18} />
-                          )}
-                        </button>
-                      </div>
-                    </td>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="px-6 py-4"><Skeleton className="w-12 h-12 rounded-lg bg-white/10" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-40 bg-white/10" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-6 w-20 rounded-full bg-white/10" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-24 bg-white/10" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-6 w-16 rounded-full bg-white/10" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-8 w-24 ml-auto bg-white/10" /></td>
                   </tr>
-                  {expandedRows.includes(prompt.id) && (
-                    <tr key={`${prompt.id}-expanded`} className="bg-gray-900/50">
-                      <td colSpan={6} className="px-6 py-4">
-                        <div className="space-y-2">
-                          {prompt.description && (
-                            <p className="text-gray-400 text-sm">
-                              <span className="text-gray-500">Description:</span> {prompt.description}
-                            </p>
+                ))
+              ) : (
+                promptList.map((prompt) => (
+                  <>
+                    <tr key={prompt.id} className="hover:bg-gray-700/50 transition-colors">
+                      <td className="px-6 py-4">
+                        {prompt.image_url ? (
+                          <img 
+                            src={prompt.image_url} 
+                            alt={prompt.title}
+                            className="w-12 h-12 object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
+                            <Image size={20} className="text-gray-500" />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleRowExpand(prompt.id)}
+                            className="p-1 text-gray-400 hover:text-white"
+                          >
+                            {expandedRows.includes(prompt.id) ? (
+                              <ChevronUp size={16} />
+                            ) : (
+                              <ChevronDown size={16} />
+                            )}
+                          </button>
+                          <span className="text-white font-medium">{prompt.title}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 bg-purple-600/30 text-purple-300 text-xs font-medium rounded-full">
+                          {prompt.tool}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-400">
+                        {prompt.categories?.name || '-'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          {prompt.is_free && (
+                            <span className="px-2 py-1 bg-green-600/30 text-green-400 text-xs rounded-full">
+                              Free
+                            </span>
                           )}
-                          {prompt.content && (
-                            <div className="text-sm">
-                              <span className="text-gray-500">Content:</span>
-                              <div 
-                                className="mt-1 prose prose-sm prose-invert max-w-none"
-                                dangerouslySetInnerHTML={{ __html: prompt.content }}
-                              />
-                            </div>
+                          {prompt.is_featured && (
+                            <span className="px-2 py-1 bg-amber-500/30 text-amber-400 text-xs rounded-full">
+                              Featured
+                            </span>
                           )}
                         </div>
                       </td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => setPreviewPrompt(prompt)}
+                            className="p-2 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded-lg transition-colors"
+                            title="Preview"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(prompt)}
+                            className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(prompt.id)}
+                            disabled={deleting === prompt.id}
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                            title="Delete"
+                          >
+                            {deleting === prompt.id ? (
+                              <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={18} />
+                            )}
+                          </button>
+                        </div>
+                      </td>
                     </tr>
-                  )}
-                </>
-              ))}
+                    {expandedRows.includes(prompt.id) && (
+                      <tr key={`${prompt.id}-expanded`} className="bg-gray-900/50">
+                        <td colSpan={6} className="px-6 py-4">
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-400 mb-2">Description</h4>
+                              <p className="text-gray-300 text-sm">
+                                {prompt.description || 'No description'}
+                              </p>
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-400 mb-2">Content Preview</h4>
+                              <div 
+                                className="text-gray-300 text-sm line-clamp-3 prose prose-invert prose-sm max-w-none"
+                                dangerouslySetInnerHTML={{ __html: prompt.content || 'No content' }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-        
-        {prompts.length === 0 && (
-          <div className="text-center py-12 text-gray-400">
-            No prompts found. Create your first prompt!
-          </div>
-        )}
       </div>
     </div>
   );

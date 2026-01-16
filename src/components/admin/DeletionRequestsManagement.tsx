@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -57,16 +58,8 @@ interface DeletionRequest {
   user_name?: string;
 }
 
-interface Profile {
-  user_id: string;
-  email: string;
-  full_name: string | null;
-}
-
 const DeletionRequestsManagement = () => {
-  const { fetchData } = useAdminData();
-  const [requests, setRequests] = useState<DeletionRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { deletionRequests, profiles, isLoading, refreshTable } = useAdminDataContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<DeletionRequest | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -75,38 +68,14 @@ const DeletionRequestsManagement = () => {
   const [processing, setProcessing] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
-  const fetchRequests = async () => {
-    setLoading(true);
-    try {
-      const [requestsRes, profilesRes] = await Promise.all([
-        fetchData<DeletionRequest>('account_deletion_requests', {
-          order: { column: 'requested_at', ascending: false }
-        }),
-        fetchData<Profile>('profiles')
-      ]);
-
-      if (requestsRes.error) throw new Error(requestsRes.error);
-
-      const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
-
-      const requestsWithUsers = (requestsRes.data || []).map(request => ({
-        ...request,
-        user_email: profileMap.get(request.user_id)?.email || 'Unknown',
-        user_name: profileMap.get(request.user_id)?.full_name || 'Unknown User'
-      }));
-
-      setRequests(requestsWithUsers);
-    } catch (error) {
-      console.error('Error fetching deletion requests:', error);
-      toast.error('Failed to load deletion requests');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const enrichedRequests = useMemo(() => {
+    const profileMap = new Map(profiles.map((p: any) => [p.user_id, p]));
+    return deletionRequests.map((req: any) => ({
+      ...req,
+      user_email: profileMap.get(req.user_id)?.email || 'Unknown',
+      user_name: profileMap.get(req.user_id)?.full_name || 'Unknown User'
+    })) as DeletionRequest[];
+  }, [deletionRequests, profiles]);
 
   const handleApprove = async () => {
     if (!selectedRequest) return;
@@ -126,7 +95,7 @@ const DeletionRequestsManagement = () => {
       toast.success('Deletion request approved. Account will be deleted.');
       setShowApproveDialog(false);
       setSelectedRequest(null);
-      fetchRequests();
+      refreshTable('account_deletion_requests');
     } catch (error) {
       console.error('Error approving request:', error);
       toast.error('Failed to approve request');
@@ -154,7 +123,7 @@ const DeletionRequestsManagement = () => {
       setShowRejectDialog(false);
       setSelectedRequest(null);
       setAdminNotes('');
-      fetchRequests();
+      refreshTable('account_deletion_requests');
     } catch (error) {
       console.error('Error rejecting request:', error);
       toast.error('Failed to reject request');
@@ -201,13 +170,13 @@ const DeletionRequestsManagement = () => {
     });
   };
 
-  const filteredRequests = requests.filter(request =>
+  const filteredRequests = enrichedRequests.filter(request =>
     request.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     request.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     request.reason?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const pendingCount = requests.filter(r => r.status === 'pending').length;
+  const pendingCount = enrichedRequests.filter(r => r.status === 'pending').length;
 
   return (
     <div className="space-y-6">
@@ -234,11 +203,11 @@ const DeletionRequestsManagement = () => {
         </div>
         <Button
           variant="outline"
-          onClick={fetchRequests}
-          disabled={loading}
+          onClick={() => refreshTable('account_deletion_requests')}
+          disabled={isLoading}
           className="border-white/10 text-gray-300 hover:bg-white/5"
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
@@ -256,13 +225,24 @@ const DeletionRequestsManagement = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-gray-400 mx-auto" />
-                  <p className="text-gray-500 mt-2">Loading requests...</p>
-                </TableCell>
-              </TableRow>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i} className="border-white/10">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-8 h-8 rounded-full bg-white/10" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-4 w-24 bg-white/10" />
+                        <Skeleton className="h-3 w-32 bg-white/10" />
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell><Skeleton className="h-4 w-40 bg-white/10" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20 bg-white/10" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-28 bg-white/10" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-20 ml-auto bg-white/10" /></TableCell>
+                </TableRow>
+              ))
             ) : filteredRequests.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-12">

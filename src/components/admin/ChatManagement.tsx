@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { MessageCircle, Send, Users, Search, Check, CheckCheck, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useAdminData } from '@/hooks/useAdminData';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { playSound } from '@/lib/sounds';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ChatUser {
   user_id: string;
@@ -24,71 +26,19 @@ interface Message {
   created_at: string;
 }
 
-interface Profile {
-  user_id: string;
-  email: string;
-  full_name: string | null;
-}
-
-interface SupportMessage {
-  id: string;
-  user_id: string;
-  message: string;
-  sender_type: string;
-  is_read: boolean;
-  created_at: string;
-}
-
 const ChatManagement = () => {
+  const { supportMessages, profiles, isLoading, refreshTable } = useAdminDataContext();
   const { fetchData } = useAdminData();
-  const [users, setUsers] = useState<ChatUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<ChatUser | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [deletingAllChat, setDeletingAllChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchChatUsers();
-    const unsubscribe = subscribeToMessages();
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (selectedUser) {
-      fetchMessages(selectedUser.user_id);
-      markMessagesAsRead(selectedUser.user_id);
-    }
-  }, [selectedUser]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const fetchChatUsers = async () => {
-    setLoading(true);
-    
-    const [messagesRes, profilesRes] = await Promise.all([
-      fetchData<SupportMessage>('support_messages', {
-        order: { column: 'created_at', ascending: false }
-      }),
-      fetchData<Profile>('profiles')
-    ]);
-
-    if (messagesRes.error) {
-      console.error('Error fetching chat users:', messagesRes.error);
-      setLoading(false);
-      return;
-    }
-
+  const users = useMemo(() => {
     const userMap = new Map<string, { 
       user_id: string; 
       unread_count: number; 
@@ -96,7 +46,7 @@ const ChatManagement = () => {
       last_message_at: string 
     }>();
 
-    (messagesRes.data || []).forEach((msg) => {
+    supportMessages.forEach((msg: any) => {
       if (!userMap.has(msg.user_id)) {
         userMap.set(msg.user_id, {
           user_id: msg.user_id,
@@ -112,16 +62,9 @@ const ChatManagement = () => {
       }
     });
 
-    const userIds = Array.from(userMap.keys());
-    if (userIds.length === 0) {
-      setUsers([]);
-      setLoading(false);
-      return;
-    }
+    const profileMap = new Map(profiles.map((p: any) => [p.user_id, p]));
 
-    const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
-
-    const chatUsers: ChatUser[] = userIds.map((userId) => {
+    const chatUsers: ChatUser[] = Array.from(userMap.keys()).map((userId) => {
       const profile = profileMap.get(userId);
       const userData = userMap.get(userId)!;
       return {
@@ -141,19 +84,47 @@ const ChatManagement = () => {
       return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
     });
 
-    setUsers(chatUsers);
-    setLoading(false);
+    return chatUsers;
+  }, [supportMessages, profiles]);
+
+  useEffect(() => {
+    if (selectedUser) {
+      fetchMessages(selectedUser.user_id);
+      markMessagesAsRead(selectedUser.user_id);
+    }
+  }, [selectedUser]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-support-messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages' }, (payload) => {
+        if (payload.new && (payload.new as Message).sender_type === 'user') {
+          playSound('messageReceived');
+        }
+        refreshTable('support_messages');
+        if (selectedUser && payload.new && (payload.new as Message).user_id === selectedUser.user_id) {
+          fetchMessages(selectedUser.user_id);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedUser, refreshTable]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const fetchMessages = async (userId: string) => {
-    const { data, error } = await fetchData<Message>('support_messages', {
+    const { data } = await fetchData<Message>('support_messages', {
       filters: [{ column: 'user_id', value: userId }],
       order: { column: 'created_at', ascending: true }
     });
-
-    if (!error && data) {
-      setMessages(data as Message[]);
-    }
+    if (data) setMessages(data as Message[]);
   };
 
   const markMessagesAsRead = async (userId: string) => {
@@ -163,37 +134,6 @@ const ChatManagement = () => {
       .eq('user_id', userId)
       .eq('sender_type', 'user')
       .eq('is_read', false);
-
-    setUsers(prev => prev.map(u => 
-      u.user_id === userId ? { ...u, unread_count: 0 } : u
-    ));
-  };
-
-  const subscribeToMessages = () => {
-    const channel = supabase
-      .channel('admin-support-messages')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'support_messages'
-        },
-        (payload) => {
-          if (payload.new && (payload.new as Message).sender_type === 'user') {
-            playSound('messageReceived');
-          }
-          fetchChatUsers();
-          if (selectedUser && payload.new && (payload.new as Message).user_id === selectedUser.user_id) {
-            fetchMessages(selectedUser.user_id);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   };
 
   const sendMessage = async () => {
@@ -211,7 +151,6 @@ const ChatManagement = () => {
 
     if (error) {
       toast.error('Failed to send message');
-      console.error('Error sending message:', error);
     } else {
       playSound('messageSent');
       setNewMessage('');
@@ -232,7 +171,6 @@ const ChatManagement = () => {
       toast.error('Can only delete messages older than 1 day');
       return;
     }
-    
     if (!confirm('Delete this message?')) return;
     
     setDeletingMessageId(messageId);
@@ -246,23 +184,18 @@ const ChatManagement = () => {
     
     if (error) {
       toast.error('Failed to delete message');
-      console.error(error);
     } else {
       toast.success('Message deleted');
-      if (selectedUser) {
-        fetchMessages(selectedUser.user_id);
-      }
-      fetchChatUsers();
+      if (selectedUser) fetchMessages(selectedUser.user_id);
+      refreshTable('support_messages');
     }
   };
 
   const handleDeleteAllChat = async () => {
     if (!selectedUser) return;
-    
     if (!confirm('Delete entire chat history with this user? Only messages older than 1 day will be deleted.')) return;
     
     setDeletingAllChat(true);
-    
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     
     const { error } = await supabase
@@ -275,11 +208,10 @@ const ChatManagement = () => {
     
     if (error) {
       toast.error('Failed to delete chat');
-      console.error(error);
     } else {
       toast.success('Old messages deleted');
       fetchMessages(selectedUser.user_id);
-      fetchChatUsers();
+      refreshTable('support_messages');
     }
   };
 
@@ -318,9 +250,20 @@ const ChatManagement = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {loading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+            {isLoading ? (
+              <div className="space-y-2 p-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="p-4 border-b border-white/5">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-24 bg-white/10" />
+                        <Skeleton className="h-3 w-32 bg-white/10" />
+                        <Skeleton className="h-3 w-40 bg-white/10" />
+                      </div>
+                      <Skeleton className="h-3 w-12 bg-white/10" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="p-6 text-center">
@@ -413,7 +356,6 @@ const ChatManagement = () => {
                             onClick={() => handleDeleteMessage(msg.id, msg.created_at)}
                             disabled={deletingMessageId === msg.id}
                             className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
-                            title="Delete message (older than 1 day)"
                           >
                             {deletingMessageId === msg.id ? (
                               <Loader2 size={14} className="animate-spin" />
@@ -436,16 +378,10 @@ const ChatManagement = () => {
                               {format(new Date(msg.created_at), 'h:mm a')}
                             </span>
                             {isDeletable && (
-                              <span title="Can be deleted">
-                                <AlertTriangle size={10} className={msg.sender_type === 'admin' ? 'text-black/30' : 'text-white/30'} />
-                              </span>
+                              <AlertTriangle size={10} className={msg.sender_type === 'admin' ? 'text-black/30' : 'text-white/30'} />
                             )}
                             {msg.sender_type === 'admin' && (
-                              msg.is_read ? (
-                                <CheckCheck size={14} className="text-black/50" />
-                              ) : (
-                                <Check size={14} className="text-black/50" />
-                              )
+                              msg.is_read ? <CheckCheck size={14} className="text-black/50" /> : <Check size={14} className="text-black/50" />
                             )}
                           </div>
                         </div>
@@ -455,7 +391,6 @@ const ChatManagement = () => {
                             onClick={() => handleDeleteMessage(msg.id, msg.created_at)}
                             disabled={deletingMessageId === msg.id}
                             className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
-                            title="Delete message (older than 1 day)"
                           >
                             {deletingMessageId === msg.id ? (
                               <Loader2 size={14} className="animate-spin" />
@@ -484,13 +419,10 @@ const ChatManagement = () => {
                   <button
                     onClick={sendMessage}
                     disabled={sending || !newMessage.trim()}
-                    className="bg-white text-black px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    className="px-6 py-3 bg-white text-black rounded-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 flex items-center gap-2"
                   >
-                    {sending ? (
-                      <Loader2 size={18} className="animate-spin" />
-                    ) : (
-                      <Send size={18} />
-                    )}
+                    {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    Send
                   </button>
                 </div>
               </div>
@@ -499,8 +431,8 @@ const ChatManagement = () => {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <MessageCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">Select a conversation</h3>
-                <p className="text-gray-500">Choose a user to start chatting</p>
+                <h3 className="text-xl font-semibold text-white mb-2">Select a Conversation</h3>
+                <p className="text-gray-400">Choose a user from the list to start chatting</p>
               </div>
             </div>
           )}

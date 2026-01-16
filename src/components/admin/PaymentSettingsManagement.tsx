@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { 
   CreditCard, Plus, Edit, Trash2, Save, X, Loader2, 
-  Check, ToggleLeft, ToggleRight, Upload, QrCode
+  Check, QrCode
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ImageUploader from './ImageUploader';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PaymentMethod {
   id: string;
@@ -24,9 +25,7 @@ interface PaymentMethod {
 }
 
 const PaymentSettingsManagement = () => {
-  const { fetchData } = useAdminData();
-  const [methods, setMethods] = useState<PaymentMethod[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { paymentMethods, isLoading, refreshTable } = useAdminDataContext();
   const [showModal, setShowModal] = useState(false);
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
   const [saving, setSaving] = useState(false);
@@ -45,20 +44,7 @@ const PaymentSettingsManagement = () => {
     display_order: 0
   });
 
-  useEffect(() => {
-    fetchMethods();
-  }, []);
-
-  const fetchMethods = async () => {
-    const { data, error } = await fetchData<PaymentMethod>('payment_methods', {
-      order: { column: 'display_order', ascending: true }
-    });
-    
-    if (!error) {
-      setMethods(data || []);
-    }
-    setLoading(false);
-  };
+  const methods = paymentMethods as PaymentMethod[];
 
   const handleAdd = () => {
     setEditingMethod(null);
@@ -136,7 +122,7 @@ const PaymentSettingsManagement = () => {
     } else {
       toast.success(editingMethod ? 'Payment method updated' : 'Payment method added');
       setShowModal(false);
-      fetchMethods();
+      refreshTable('payment_methods');
     }
   };
 
@@ -156,7 +142,7 @@ const PaymentSettingsManagement = () => {
       toast.error('Failed to delete payment method');
     } else {
       toast.success('Payment method deleted');
-      fetchMethods();
+      refreshTable('payment_methods');
     }
   };
 
@@ -170,17 +156,9 @@ const PaymentSettingsManagement = () => {
       toast.error('Failed to update status');
     } else {
       toast.success(method.is_enabled ? 'Payment method disabled' : 'Payment method enabled');
-      fetchMethods();
+      refreshTable('payment_methods');
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -199,15 +177,21 @@ const PaymentSettingsManagement = () => {
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Total Methods</div>
-          <div className="text-2xl font-bold text-white">{methods.length}</div>
+          <div className="text-2xl font-bold text-white">
+            {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : methods.length}
+          </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Enabled</div>
-          <div className="text-2xl font-bold text-green-400">{methods.filter(m => m.is_enabled).length}</div>
+          <div className="text-2xl font-bold text-green-400">
+            {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : methods.filter(m => m.is_enabled).length}
+          </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Automatic</div>
-          <div className="text-2xl font-bold text-blue-400">{methods.filter(m => m.is_automatic).length}</div>
+          <div className="text-2xl font-bold text-blue-400">
+            {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : methods.filter(m => m.is_automatic).length}
+          </div>
         </div>
       </div>
 
@@ -224,110 +208,130 @@ const PaymentSettingsManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {methods.map((method) => (
-              <tr key={method.id} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    {method.icon_url ? (
-                      <img 
-                        src={method.icon_url} 
-                        alt={method.name} 
-                        className="w-10 h-10 rounded-lg object-contain bg-white/10 p-1"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
-                        <CreditCard size={20} className="text-gray-400" />
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <tr key={i} className="border-t border-white/5">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-lg bg-white/10" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-4 w-24 bg-white/10" />
+                        <Skeleton className="h-3 w-16 bg-white/10" />
                       </div>
-                    )}
-                    <div>
-                      <span className="text-white font-medium">{method.name}</span>
-                      <p className="text-gray-500 text-xs uppercase">{method.code}</p>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-gray-400 text-sm">
-                    {method.account_number ? (
-                      <>
-                        <p className="font-mono">{method.account_number}</p>
-                        {method.account_name && (
-                          <p className="text-gray-500 text-xs">{method.account_name}</p>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-gray-500">-</span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    method.is_automatic 
-                      ? 'bg-blue-500/20 text-blue-400' 
-                      : 'bg-amber-500/20 text-amber-400'
-                  }`}>
-                    {method.is_automatic ? 'Automatic' : 'Manual'}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => toggleEnabled(method)}
-                    className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                      method.is_enabled 
-                        ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
-                        : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
-                    }`}
-                  >
-                    {method.is_enabled ? (
-                      <>
-                        <Check size={12} />
-                        Enabled
-                      </>
-                    ) : (
-                      <>
-                        <X size={12} />
-                        Disabled
-                      </>
-                    )}
-                  </button>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-end gap-2">
-                    {method.qr_image_url && (
-                      <button
-                        onClick={() => window.open(method.qr_image_url!, '_blank')}
-                        className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
-                        title="View QR Code"
-                      >
-                        <QrCode size={18} />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleEdit(method)}
-                      className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
-                      title="Edit"
-                    >
-                      <Edit size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(method.id)}
-                      disabled={deletingId === method.id}
-                      className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
-                      title="Delete"
-                    >
-                      {deletingId === method.id ? (
-                        <Loader2 size={18} className="animate-spin" />
+                  </td>
+                  <td className="px-6 py-4"><Skeleton className="h-4 w-32 bg-white/10" /></td>
+                  <td className="px-6 py-4"><Skeleton className="h-6 w-20 rounded-full bg-white/10" /></td>
+                  <td className="px-6 py-4"><Skeleton className="h-6 w-20 rounded-full bg-white/10" /></td>
+                  <td className="px-6 py-4"><Skeleton className="h-8 w-24 ml-auto bg-white/10" /></td>
+                </tr>
+              ))
+            ) : (
+              methods.map((method) => (
+                <tr key={method.id} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      {method.icon_url ? (
+                        <img 
+                          src={method.icon_url} 
+                          alt={method.name} 
+                          className="w-10 h-10 rounded-lg object-contain bg-white/10 p-1"
+                        />
                       ) : (
-                        <Trash2 size={18} />
+                        <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+                          <CreditCard size={20} className="text-gray-400" />
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-white font-medium">{method.name}</span>
+                        <p className="text-gray-500 text-xs uppercase">{method.code}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-gray-400 text-sm">
+                      {method.account_number ? (
+                        <>
+                          <p className="font-mono">{method.account_number}</p>
+                          {method.account_name && (
+                            <p className="text-gray-500 text-xs">{method.account_name}</p>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      method.is_automatic 
+                        ? 'bg-blue-500/20 text-blue-400' 
+                        : 'bg-amber-500/20 text-amber-400'
+                    }`}>
+                      {method.is_automatic ? 'Automatic' : 'Manual'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => toggleEnabled(method)}
+                      className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        method.is_enabled 
+                          ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
+                          : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+                      }`}
+                    >
+                      {method.is_enabled ? (
+                        <>
+                          <Check size={12} />
+                          Enabled
+                        </>
+                      ) : (
+                        <>
+                          <X size={12} />
+                          Disabled
+                        </>
                       )}
                     </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-end gap-2">
+                      {method.qr_image_url && (
+                        <button
+                          onClick={() => window.open(method.qr_image_url!, '_blank')}
+                          className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+                          title="View QR Code"
+                        >
+                          <QrCode size={18} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleEdit(method)}
+                        className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+                        title="Edit"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(method.id)}
+                        disabled={deletingId === method.id}
+                        className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
+                        title="Delete"
+                      >
+                        {deletingId === method.id ? (
+                          <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={18} />
+                        )}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
 
-        {methods.length === 0 && (
+        {!isLoading && methods.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             No payment methods configured
           </div>
@@ -454,14 +458,14 @@ const PaymentSettingsManagement = () => {
                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                   />
                   {formData.icon_url && (
-                    <img src={formData.icon_url} alt="Preview" className="w-12 h-12 rounded-lg object-contain bg-white/10" />
+                    <img src={formData.icon_url} alt="Icon" className="w-12 h-12 rounded-lg object-contain bg-white/10" />
                   )}
                 </div>
               </div>
 
-              {/* QR Image URL */}
+              {/* QR Code URL */}
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-400 mb-2">QR Code Image URL</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">QR Code URL</label>
                 <div className="flex gap-3">
                   <input
                     type="text"
@@ -471,7 +475,7 @@ const PaymentSettingsManagement = () => {
                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                   />
                   {formData.qr_image_url && (
-                    <img src={formData.qr_image_url} alt="QR Preview" className="w-12 h-12 rounded-lg object-contain bg-white/10" />
+                    <img src={formData.qr_image_url} alt="QR" className="w-12 h-12 rounded-lg object-contain bg-white/10" />
                   )}
                 </div>
               </div>
@@ -490,14 +494,14 @@ const PaymentSettingsManagement = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 mt-6 pt-4 border-t border-white/10">
+            <div className="flex gap-3 mt-6 pt-6 border-t border-white/10">
               <button
                 onClick={handleSave}
                 disabled={saving}
                 className="flex-1 flex items-center justify-center gap-2 bg-white text-black font-semibold py-3 rounded-xl hover:bg-gray-100 transition-colors disabled:opacity-50"
               >
                 {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                {editingMethod ? 'Update' : 'Create'}
+                {editingMethod ? 'Update' : 'Add'} Payment Method
               </button>
               <button
                 onClick={() => setShowModal(false)}

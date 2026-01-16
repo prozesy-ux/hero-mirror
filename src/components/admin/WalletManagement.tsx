@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { toast } from 'sonner';
 import { Wallet, Search, DollarSign, ArrowUpRight, RefreshCcw, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -13,93 +14,39 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-interface WalletWithUser {
-  id: string;
-  user_id: string;
-  balance: number;
-  created_at: string;
-  updated_at: string;
-  user_email?: string;
-}
-
-interface Transaction {
-  id: string;
-  user_id: string;
-  type: string;
-  amount: number;
-  payment_gateway: string;
-  status: string;
-  description: string;
-  created_at: string;
-  user_email?: string;
-  transaction_id?: string;
-}
-
-interface Profile {
-  user_id: string;
-  email: string;
-}
-
 const WalletManagement = () => {
-  const { fetchData } = useAdminData();
-  const [wallets, setWallets] = useState<WalletWithUser[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { wallets, transactions, profiles, isLoading, refreshTable } = useAdminDataContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'wallets' | 'transactions' | 'pending'>('wallets');
 
   useEffect(() => {
-    fetchAllData();
-    subscribeToUpdates();
-  }, []);
-
-  const fetchAllData = async () => {
-    setLoading(true);
-    
-    const [walletsRes, transactionsRes, profilesRes] = await Promise.all([
-      fetchData<WalletWithUser>('user_wallets', {
-        order: { column: 'updated_at', ascending: false }
-      }),
-      fetchData<Transaction>('wallet_transactions', {
-        order: { column: 'created_at', ascending: false },
-        limit: 100
-      }),
-      fetchData<Profile>('profiles')
-    ]);
-
-    const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p.email]));
-
-    if (walletsRes.data) {
-      const walletsWithEmail = walletsRes.data.map(wallet => ({
-        ...wallet,
-        user_email: profileMap.get(wallet.user_id) || 'Unknown'
-      }));
-      setWallets(walletsWithEmail);
-    }
-
-    if (transactionsRes.data) {
-      const txWithEmail = transactionsRes.data.map(tx => ({
-        ...tx,
-        user_email: profileMap.get(tx.user_id) || 'Unknown'
-      }));
-      setTransactions(txWithEmail);
-    }
-
-    setLoading(false);
-  };
-
-  const subscribeToUpdates = () => {
     const channel = supabase
       .channel('admin-wallet-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets' }, fetchAllData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_transactions' }, fetchAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets' }, () => refreshTable('user_wallets'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_transactions' }, () => refreshTable('wallet_transactions'))
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
-  };
+    return () => { supabase.removeChannel(channel); };
+  }, [refreshTable]);
+
+  const enrichedData = useMemo(() => {
+    const profileMap = new Map(profiles.map((p: any) => [p.user_id, p.email]));
+    
+    const walletsWithEmail = wallets.map((wallet: any) => ({
+      ...wallet,
+      user_email: profileMap.get(wallet.user_id) || 'Unknown'
+    }));
+
+    const txWithEmail = transactions.map((tx: any) => ({
+      ...tx,
+      user_email: profileMap.get(tx.user_id) || 'Unknown'
+    }));
+
+    return { walletsWithEmail, txWithEmail };
+  }, [wallets, transactions, profiles]);
 
   const updateTransactionStatus = async (id: string, status: string) => {
-    const tx = transactions.find(t => t.id === id);
+    const tx = enrichedData.txWithEmail.find((t: any) => t.id === id);
     if (!tx) {
       toast.error('Transaction not found');
       return;
@@ -135,7 +82,7 @@ const WalletManagement = () => {
 
       if (walletError) {
         toast.error('Transaction approved but failed to credit wallet');
-        fetchAllData();
+        refreshTable('wallet_transactions');
         return;
       }
 
@@ -144,30 +91,31 @@ const WalletManagement = () => {
       toast.success(`Transaction marked as ${status}`);
     }
     
-    fetchAllData();
+    refreshTable('user_wallets');
+    refreshTable('wallet_transactions');
   };
 
-  const filteredWallets = wallets.filter(w =>
+  const filteredWallets = enrichedData.walletsWithEmail.filter((w: any) =>
     w.user_email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredTransactions = transactions.filter(t =>
+  const filteredTransactions = enrichedData.txWithEmail.filter((t: any) =>
     t.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.payment_gateway?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.transaction_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const pendingTransactions = transactions.filter(t => t.status === 'pending');
-  const filteredPendingTransactions = pendingTransactions.filter(t =>
+  const pendingTransactions = enrichedData.txWithEmail.filter((t: any) => t.status === 'pending');
+  const filteredPendingTransactions = pendingTransactions.filter((t: any) =>
     t.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.payment_gateway?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.transaction_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalBalance = wallets.reduce((sum, w) => sum + parseFloat(String(w.balance)), 0);
-  const totalTopups = transactions.filter(t => t.type === 'topup' && t.status === 'completed')
-    .reduce((sum, t) => sum + parseFloat(String(t.amount)), 0);
-  const pendingAmount = pendingTransactions.reduce((sum, t) => sum + parseFloat(String(t.amount)), 0);
+  const totalBalance = enrichedData.walletsWithEmail.reduce((sum: number, w: any) => sum + parseFloat(String(w.balance)), 0);
+  const totalTopups = enrichedData.txWithEmail.filter((t: any) => t.type === 'topup' && t.status === 'completed')
+    .reduce((sum: number, t: any) => sum + parseFloat(String(t.amount)), 0);
+  const pendingAmount = pendingTransactions.reduce((sum: number, t: any) => sum + parseFloat(String(t.amount)), 0);
 
   return (
     <div className="space-y-6">
@@ -180,7 +128,9 @@ const WalletManagement = () => {
             </div>
             <div>
               <p className="text-gray-400 text-sm">Total Balance</p>
-              <p className="text-2xl font-bold text-white">${totalBalance.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-white">
+                {isLoading ? <Skeleton className="h-8 w-20 bg-white/10" /> : `$${totalBalance.toFixed(2)}`}
+              </p>
             </div>
           </div>
         </div>
@@ -191,7 +141,9 @@ const WalletManagement = () => {
             </div>
             <div>
               <p className="text-gray-400 text-sm">Total Top-ups</p>
-              <p className="text-2xl font-bold text-white">${totalTopups.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-white">
+                {isLoading ? <Skeleton className="h-8 w-20 bg-white/10" /> : `$${totalTopups.toFixed(2)}`}
+              </p>
             </div>
           </div>
         </div>
@@ -202,7 +154,9 @@ const WalletManagement = () => {
             </div>
             <div>
               <p className="text-gray-400 text-sm">Pending Payments</p>
-              <p className="text-2xl font-bold text-white">{pendingTransactions.length} (${pendingAmount.toFixed(2)})</p>
+              <p className="text-2xl font-bold text-white">
+                {isLoading ? <Skeleton className="h-8 w-24 bg-white/10" /> : `${pendingTransactions.length} ($${pendingAmount.toFixed(2)})`}
+              </p>
             </div>
           </div>
         </div>
@@ -213,7 +167,9 @@ const WalletManagement = () => {
             </div>
             <div>
               <p className="text-gray-400 text-sm">Active Wallets</p>
-              <p className="text-2xl font-bold text-white">{wallets.length}</p>
+              <p className="text-2xl font-bold text-white">
+                {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : wallets.length}
+              </p>
             </div>
           </div>
         </div>
@@ -276,12 +232,15 @@ const WalletManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-gray-400 py-8">
-                    Loading...
-                  </TableCell>
-                </TableRow>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i} className="border-white/10">
+                    <TableCell><Skeleton className="h-4 w-40 bg-white/10" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20 bg-white/10" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24 bg-white/10" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24 bg-white/10" /></TableCell>
+                  </TableRow>
+                ))
               ) : filteredWallets.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-gray-400 py-8">
@@ -289,7 +248,7 @@ const WalletManagement = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredWallets.map((wallet) => (
+                filteredWallets.map((wallet: any) => (
                   <TableRow key={wallet.id} className="border-white/10">
                     <TableCell className="text-white">{wallet.user_email}</TableCell>
                     <TableCell className="text-green-400 font-semibold">
@@ -326,12 +285,14 @@ const WalletManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-gray-400 py-8">
-                    Loading...
-                  </TableCell>
-                </TableRow>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i} className="border-white/10">
+                    {Array.from({ length: 8 }).map((_, j) => (
+                      <TableCell key={j}><Skeleton className="h-4 w-16 bg-white/10" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
               ) : filteredTransactions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-gray-400 py-8">
@@ -339,7 +300,7 @@ const WalletManagement = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTransactions.map((tx) => (
+                filteredTransactions.map((tx: any) => (
                   <TableRow key={tx.id} className="border-white/10">
                     <TableCell className="text-white">{tx.user_email}</TableCell>
                     <TableCell>
@@ -409,12 +370,14 @@ const WalletManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-400 py-8">
-                    Loading...
-                  </TableCell>
-                </TableRow>
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <TableRow key={i} className="border-white/10">
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <TableCell key={j}><Skeleton className="h-4 w-16 bg-white/10" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
               ) : filteredPendingTransactions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-gray-400 py-8">
@@ -422,7 +385,7 @@ const WalletManagement = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPendingTransactions.map((tx) => (
+                filteredPendingTransactions.map((tx: any) => (
                   <TableRow key={tx.id} className="border-white/10">
                     <TableCell className="text-white">{tx.user_email}</TableCell>
                     <TableCell className="text-green-400 font-semibold">
