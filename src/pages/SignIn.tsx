@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -6,7 +6,7 @@ import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import signinBackground from "@/assets/signin-background.webp";
 import promptheroIcon from "@/assets/prompthero-icon.png";
 
-const SignIn = () => {
+const SignIn = forwardRef<HTMLDivElement>((_, ref) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,7 +60,7 @@ const SignIn = () => {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col lg:flex-row">
+    <div ref={ref} className="flex min-h-dvh flex-col lg:flex-row">
       {/* Left Side - Background Image */}
       <div className="relative hidden h-full min-h-dvh overflow-hidden lg:block lg:w-2/3">
         <img
@@ -253,6 +253,8 @@ const SignIn = () => {
       </div>
     </div>
   );
-};
+});
+
+SignIn.displayName = 'SignIn';
 
 export default SignIn;

@@ -184,19 +184,14 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
       }
     };
 
-    // === CONSOLE CLEARING ===
+    // === CONSOLE CLEARING (every 30 seconds to reduce overhead) ===
     const clearConsoleInterval = setInterval(() => {
       if (import.meta.env.PROD) {
         console.clear();
       }
-    }, 5000);
+    }, 30000);
 
-    // === DEBUGGER TRAP (Production only) ===
-    const debuggerInterval = setInterval(() => {
-      if (import.meta.env.PROD) {
-        (function() { debugger; })();
-      }
-    }, 1000);
+    // Debugger trap removed - was causing UI freezes
 
     // === DRAG PREVENTION ===
     const handleDragStart = (e: DragEvent) => {
@@ -245,7 +240,6 @@ const SecurityProtection = ({ children }: SecurityProtectionProps) => {
       document.removeEventListener('selectstart', handleSelectStart);
       window.removeEventListener('resize', detectDevTools);
       clearInterval(clearConsoleInterval);
-      clearInterval(debuggerInterval);
     };
   }, [reportToHoneypot, checkBlockStatus]);
 

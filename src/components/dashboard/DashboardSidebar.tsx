@@ -391,6 +391,8 @@ const DashboardSidebar = () => {
     const newState = !isCollapsed;
     setIsCollapsed(newState);
     localStorage.setItem('sidebar-collapsed', String(newState));
+    // Dispatch custom event for same-window updates
+    window.dispatchEvent(new CustomEvent('sidebar-collapse-change'));
   };
 
   return (
