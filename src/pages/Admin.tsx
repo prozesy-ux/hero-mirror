@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthContext } from '@/contexts/AuthContext';
 import AdminSidebar, { useAdminSidebarContext } from '@/components/admin/AdminSidebar';
 import PromptsManagement from '@/components/admin/PromptsManagement';
 import CategoriesManagement from '@/components/admin/CategoriesManagement';
@@ -11,10 +12,9 @@ import CancellationRequestsManagement from '@/components/admin/CancellationReque
 import DeletionRequestsManagement from '@/components/admin/DeletionRequestsManagement';
 import ChatManagement from '@/components/admin/ChatManagement';
 import WalletManagement from '@/components/admin/WalletManagement';
-import SecurityLogsManagement from '@/components/admin/SecurityLogsManagement';
-import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -58,56 +58,28 @@ const AdminDashboard = () => {
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
-              <span className="text-purple-400 text-xl">📝</span>
-            </div>
-            <div>
-              <div className="text-zinc-400 text-sm font-medium">Total Prompts</div>
-              <div className="text-2xl font-bold text-white mt-0.5">
-                {loading ? '...' : stats.totalPrompts}
-              </div>
-            </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="text-gray-400 text-sm">Total Prompts</div>
+          <div className="text-3xl font-bold text-white mt-1">
+            {loading ? '...' : stats.totalPrompts}
           </div>
         </div>
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
-              <span className="text-blue-400 text-xl">👥</span>
-            </div>
-            <div>
-              <div className="text-zinc-400 text-sm font-medium">Total Users</div>
-              <div className="text-2xl font-bold text-white mt-0.5">
-                {loading ? '...' : stats.totalUsers}
-              </div>
-            </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="text-gray-400 text-sm">Total Users</div>
+          <div className="text-3xl font-bold text-white mt-1">
+            {loading ? '...' : stats.totalUsers}
           </div>
         </div>
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
-              <span className="text-amber-400 text-xl">👑</span>
-            </div>
-            <div>
-              <div className="text-zinc-400 text-sm font-medium">Pro Users</div>
-              <div className="text-2xl font-bold text-amber-400 mt-0.5">
-                {loading ? '...' : stats.proUsers}
-              </div>
-            </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="text-gray-400 text-sm">Pro Users</div>
+          <div className="text-3xl font-bold text-amber-400 mt-1">
+            {loading ? '...' : stats.proUsers}
           </div>
         </div>
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20">
-              <span className="text-green-400 text-xl">💰</span>
-            </div>
-            <div>
-              <div className="text-zinc-400 text-sm font-medium">Revenue</div>
-              <div className="text-2xl font-bold text-green-400 mt-0.5">
-                ${loading ? '...' : stats.revenue.toFixed(2)}
-              </div>
-            </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="text-gray-400 text-sm">Revenue</div>
+          <div className="text-3xl font-bold text-green-400 mt-1">
+            ${loading ? '...' : stats.revenue.toFixed(2)}
           </div>
         </div>
       </div>
@@ -132,26 +104,42 @@ const AdminContent = () => {
           <Route path="users" element={<UsersManagement />} />
           <Route path="purchases" element={<PurchasesManagement />} />
           <Route path="wallets" element={<WalletManagement />} />
-          <Route path="payments" element={<PaymentSettingsManagement />} />
           <Route path="ai-accounts" element={<AIAccountsManagement />} />
           <Route path="account-orders" element={<AccountOrdersManagement />} />
           <Route path="refunds" element={<RefundRequestsManagement />} />
           <Route path="cancellations" element={<CancellationRequestsManagement />} />
           <Route path="deletions" element={<DeletionRequestsManagement />} />
           <Route path="chats" element={<ChatManagement />} />
-          <Route path="security" element={<SecurityLogsManagement />} />
         </Routes>
       </div>
     </main>
   );
 };
 
-// Admin panel - assumes user is already authenticated as admin via AdminProtectedRoute
 const Admin = () => {
+  const { isAuthenticated, isAdmin, loading } = useAuthContext();
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      </div>
+    );
+  }
+
+  // Redirect to sign in if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  // Redirect to dashboard if not admin
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] overflow-hidden relative">
-      {/* Clean solid background - no patterns */}
-      <div className="fixed inset-0 bg-[#0a0a0a] -z-10" />
+    <div className="min-h-screen bg-[#0a0a0a]">
       <AdminSidebar />
       <AdminContent />
     </div>

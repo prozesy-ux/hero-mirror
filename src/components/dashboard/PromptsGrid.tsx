@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, FolderOpen, Star, Bookmark, Check, ChevronRight, Crown, Wallet, Plus, RefreshCw, AlertCircle } from 'lucide-react';
+import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, FolderOpen, Star, Bookmark, Check, ChevronRight, Crown, Wallet, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -35,7 +35,6 @@ const PromptsGrid = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
@@ -43,86 +42,52 @@ const PromptsGrid = () => {
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   
   const { user, isPro } = useAuthContext();
-  const fetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchWallet = async () => {
     if (!user) return;
 
-    try {
-      const { data, error } = await supabase
-        .from('user_wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .maybeSingle();
+    const { data, error } = await supabase
+      .from('user_wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .single();
 
-      if (error && error.code === 'PGRST116') {
-        // No wallet exists, create one
-        const { data: newWallet } = await supabase
-          .from('user_wallets')
-          .insert({ user_id: user.id, balance: 0 })
-          .select('balance')
-          .single();
-        
-        setWallet(newWallet);
-      } else if (data) {
-        setWallet(data);
-      }
-    } catch (err) {
-      console.error('Error fetching wallet:', err);
+    if (error && error.code === 'PGRST116') {
+      // No wallet exists, create one
+      const { data: newWallet } = await supabase
+        .from('user_wallets')
+        .insert({ user_id: user.id, balance: 0 })
+        .select('balance')
+        .single();
+      
+      setWallet(newWallet);
+    } else if (data) {
+      setWallet(data);
     }
   };
-
-  // Debounced fetch for realtime updates
-  const debouncedFetch = useCallback(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-    debounceRef.current = setTimeout(() => {
-      fetchData();
-    }, 500);
-  }, []);
 
   useEffect(() => {
     fetchData();
 
-    // Subscribe only to specific events (not '*')
     const channel = supabase
       .channel('prompts-changes')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'prompts'
         },
-        debouncedFetch
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'prompts'
-        },
-        debouncedFetch
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'prompts'
-        },
-        debouncedFetch
+        () => {
+          fetchData();
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [user, debouncedFetch]);
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -134,7 +99,7 @@ const PromptsGrid = () => {
         .on(
           'postgres_changes',
           {
-            event: 'UPDATE',
+            event: '*',
             schema: 'public',
             table: 'user_wallets',
             filter: `user_id=eq.${user.id}`
@@ -150,73 +115,43 @@ const PromptsGrid = () => {
   }, [user]);
 
   const fetchData = async () => {
-    // Clear any previous timeout
-    if (fetchTimeoutRef.current) {
-      clearTimeout(fetchTimeoutRef.current);
-    }
-
     setLoading(true);
-    setLoadError(null);
     
-    // Set a timeout to prevent infinite loading (15 seconds)
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      fetchTimeoutRef.current = setTimeout(() => {
-        reject(new Error('Request timeout - please check your connection'));
-      }, 15000);
-    });
-    
-    try {
-      const fetchPromise = async () => {
-        const { data: promptsData, error: promptsError } = await supabase
-          .from('prompts')
-          .select(`
-            *,
-            categories (
-              name,
-              icon
-            )
-          `)
-          .order('created_at', { ascending: false });
+    const { data: promptsData, error: promptsError } = await supabase
+      .from('prompts')
+      .select(`
+        *,
+        categories (
+          name,
+          icon
+        )
+      `)
+      .order('created_at', { ascending: false });
 
-        if (promptsError) {
-          throw promptsError;
-        }
-        
-        setPrompts(promptsData || []);
-
-        const { data: categoriesData, error: categoriesError } = await supabase
-          .from('categories')
-          .select('*')
-          .order('name');
-        
-        if (categoriesError) {
-          console.error('Error fetching categories:', categoriesError);
-        }
-        setCategories(categoriesData || []);
-
-        if (user) {
-          const { data: favoritesData } = await supabase
-            .from('favorites')
-            .select('prompt_id')
-            .eq('user_id', user.id);
-          
-          setFavorites(favoritesData?.map(f => f.prompt_id) || []);
-        }
-      };
-
-      await Promise.race([fetchPromise(), timeoutPromise]);
-      
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load prompts';
-      setLoadError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
-      setLoading(false);
+    if (promptsError) {
+      console.error('Error fetching prompts:', promptsError);
+      toast.error('Failed to load prompts');
+    } else {
+      setPrompts(promptsData || []);
     }
+
+    const { data: categoriesData } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name');
+    
+    setCategories(categoriesData || []);
+
+    if (user) {
+      const { data: favoritesData } = await supabase
+        .from('favorites')
+        .select('prompt_id')
+        .eq('user_id', user.id);
+      
+      setFavorites(favoritesData?.map(f => f.prompt_id) || []);
+    }
+
+    setLoading(false);
   };
 
   const toggleFavorite = async (promptId: string, e: React.MouseEvent) => {
@@ -438,25 +373,6 @@ const PromptsGrid = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-10 h-10 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 bg-white rounded-2xl border border-gray-200 shadow-md p-8">
-        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
-          <AlertCircle size={32} className="text-red-500" />
-        </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-2">Failed to load prompts</h3>
-        <p className="text-gray-500 text-center mb-6 max-w-md">{loadError}</p>
-        <button
-          onClick={() => fetchData()}
-          className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
-        >
-          <RefreshCw size={18} />
-          Retry
-        </button>
       </div>
     );
   }

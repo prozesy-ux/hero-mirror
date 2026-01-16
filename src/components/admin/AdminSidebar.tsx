@@ -18,8 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Wallet,
-  Trash2,
-  Settings
+  Trash2
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -56,7 +55,7 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
         className={`group flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-300 ${
           active 
             ? 'bg-white text-black' 
-            : 'text-gray-400 hover:bg-[#1a1a1e] hover:text-white'
+            : 'text-gray-400 hover:bg-white/5 hover:text-white'
         } ${isCollapsed ? 'justify-center' : ''}`}
       >
         <span className={`transition-transform duration-300 flex-shrink-0 ${active ? '' : 'group-hover:scale-110'}`}>
@@ -85,7 +84,7 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
           <TooltipTrigger asChild>
             {linkContent}
           </TooltipTrigger>
-          <TooltipContent side="right" className="bg-[#1a1a24] text-white border-[#27272a]">
+          <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
             {label}
           </TooltipContent>
         </Tooltip>
@@ -118,18 +117,16 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     const navItems = [
       { icon: <LayoutDashboard size={22} />, label: 'Dashboard', to: '/admin' },
       { icon: <FileText size={22} />, label: 'Prompts', to: '/admin/prompts' },
-      { icon: <FolderOpen size={22} />, label: 'Categories & Tools', to: '/admin/categories' },
+      { icon: <FolderOpen size={22} />, label: 'Categories', to: '/admin/categories' },
       { icon: <Users size={22} />, label: 'Users', to: '/admin/users' },
       { icon: <CreditCard size={22} />, label: 'Purchases', to: '/admin/purchases' },
       { icon: <Wallet size={22} />, label: 'Wallets', to: '/admin/wallets' },
-      { icon: <Settings size={22} />, label: 'Payment Settings', to: '/admin/payments' },
       { icon: <Bot size={22} />, label: 'AI Accounts', to: '/admin/ai-accounts' },
       { icon: <Package size={22} />, label: 'Account Orders', to: '/admin/account-orders' },
       { icon: <RefreshCcw size={22} />, label: 'Refund Requests', to: '/admin/refunds' },
       { icon: <XCircle size={22} />, label: 'Cancellations', to: '/admin/cancellations' },
       { icon: <Trash2 size={22} />, label: 'Deletions', to: '/admin/deletions' },
       { icon: <MessageCircle size={22} />, label: 'Support Chats', to: '/admin/chats' },
-      { icon: <Shield size={22} />, label: 'Security Logs', to: '/admin/security' },
     ];
 
     return (
@@ -164,7 +161,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                       <LogOut size={22} />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-[#27272a]">
+                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
                     Sign Out
                   </TooltipContent>
                 </Tooltip>
@@ -184,12 +181,12 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                   <TooltipTrigger asChild>
                     <button
                       onClick={onToggleCollapse}
-                      className="p-3 rounded-xl bg-[#18181b] border border-[#27272a] hover:bg-[#1f1f23] text-gray-400 hover:text-white transition-all duration-300 flex-shrink-0"
+                      className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all duration-300 flex-shrink-0"
                     >
                       {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-[#27272a]">
+                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
                     {isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                   </TooltipContent>
                 </Tooltip>
@@ -230,7 +227,7 @@ const AdminSidebar = () => {
           </div>
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-            className="p-2 text-white hover:bg-[#1a1a1e] rounded-lg transition-colors"
+            className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -240,7 +237,7 @@ const AdminSidebar = () => {
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
-          className="lg:hidden fixed inset-0 z-40 bg-black/85"
+          className="lg:hidden fixed inset-0 z-40 bg-black/80 backdrop-blur-sm"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}

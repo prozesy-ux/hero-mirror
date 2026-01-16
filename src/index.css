@@ -370,42 +370,4 @@
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
-
-  /* ============= SECURITY PROTECTION STYLES ============= */
-  
-  /* Prevent text selection on protected elements */
-  .no-select {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-
-  /* Prevent image dragging */
-  img {
-    -webkit-user-drag: none;
-    user-drag: none;
-    -webkit-touch-callout: none;
-  }
-
-  /* Prevent all dragging */
-  .no-drag {
-    -webkit-user-drag: none;
-    user-drag: none;
-  }
-
-  /* Hide content when printing */
-  @media print {
-    body {
-      display: none !important;
-    }
-    html {
-      visibility: hidden !important;
-    }
-  }
-
-  /* Disable pointer events on overlay during protection */
-  .protection-overlay {
-    pointer-events: none;
-  }
 }

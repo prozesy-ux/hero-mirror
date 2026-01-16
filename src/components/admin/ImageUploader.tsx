@@ -106,7 +106,7 @@ const ImageUploader = ({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-zinc-300">
+      <label className="block text-sm font-medium text-gray-300">
         Prompt Image
       </label>
       
@@ -115,7 +115,7 @@ const ImageUploader = ({
           <img
             src={value}
             alt="Prompt preview"
-            className="w-full h-48 object-cover rounded-lg border border-[#27272a]"
+            className="w-full h-48 object-cover rounded-lg border border-gray-700"
           />
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-3">
             <button
@@ -144,23 +144,23 @@ const ImageUploader = ({
             border-2 border-dashed rounded-lg h-48 flex flex-col items-center justify-center cursor-pointer transition-colors
             ${dragOver 
               ? 'border-purple-500 bg-purple-500/10' 
-              : 'border-[#27272a] hover:border-[#3f3f46] bg-[#0c0c0e]'
+              : 'border-gray-700 hover:border-gray-600 bg-gray-900'
             }
           `}
         >
           {uploading ? (
             <div className="flex flex-col items-center">
               <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
-              <p className="text-zinc-400 text-sm mt-2">Uploading...</p>
+              <p className="text-gray-400 text-sm mt-2">Uploading...</p>
             </div>
           ) : (
             <>
-              <div className="w-12 h-12 rounded-full bg-[#18181b] flex items-center justify-center mb-3">
-                <ImageIcon className="w-6 h-6 text-zinc-400" />
+              <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-3">
+                <ImageIcon className="w-6 h-6 text-gray-400" />
               </div>
-              <p className="text-zinc-400 text-sm mb-1">Drag & drop an image here</p>
-              <p className="text-zinc-500 text-xs">or click to browse</p>
-              <p className="text-zinc-600 text-xs mt-2">Max 5MB • JPG, PNG, GIF, WebP</p>
+              <p className="text-gray-400 text-sm mb-1">Drag & drop an image here</p>
+              <p className="text-gray-500 text-xs">or click to browse</p>
+              <p className="text-gray-600 text-xs mt-2">Max 5MB • JPG, PNG, GIF, WebP</p>
             </>
           )}
         </div>

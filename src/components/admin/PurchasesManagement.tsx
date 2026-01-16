@@ -50,7 +50,7 @@ const PurchasesManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-[#27272a] border-t-white animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
     );
   }
@@ -59,25 +59,25 @@ const PurchasesManagement = () => {
     <div>
       {/* Stats */}
       <div className="grid md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+            <div className="p-3 bg-green-500/20 rounded-xl">
               <DollarSign size={24} className="text-green-400" />
             </div>
             <div>
-              <p className="text-zinc-400 text-sm font-medium">Total Revenue</p>
+              <p className="text-gray-400 text-sm">Total Revenue</p>
               <p className="text-3xl font-bold text-white">${totalRevenue.toFixed(2)}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+            <div className="p-3 bg-purple-500/20 rounded-xl">
               <TrendingUp size={24} className="text-purple-400" />
             </div>
             <div>
-              <p className="text-zinc-400 text-sm font-medium">Total Purchases</p>
+              <p className="text-gray-400 text-sm">Total Purchases</p>
               <p className="text-3xl font-bold text-white">{purchases.length}</p>
             </div>
           </div>
@@ -85,19 +85,19 @@ const PurchasesManagement = () => {
       </div>
 
       {/* Purchases Table */}
-      <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
+      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
         <table className="w-full">
-          <thead className="bg-[#18181b]">
+          <thead className="bg-white/5">
             <tr>
-              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">User</th>
-              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">Amount</th>
-              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">Status</th>
-              <th className="text-left px-6 py-4 text-zinc-400 font-medium text-sm">Date</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">User</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Amount</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Status</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Date</th>
             </tr>
           </thead>
           <tbody>
             {purchases.map((purchase) => (
-              <tr key={purchase.id} className="border-t border-[#27272a] hover:bg-[#1a1a1e] transition-colors">
+              <tr key={purchase.id} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors">
                 <td className="px-6 py-4">
                   <div>
                     <p className="text-white font-medium">

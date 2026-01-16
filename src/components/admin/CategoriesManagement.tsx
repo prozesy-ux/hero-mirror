@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import AIToolsTab from './AIToolsTab';
 
 interface Category {
   id: string;
@@ -119,126 +117,102 @@ const CategoriesManagement = () => {
 
   return (
     <div>
-      <Tabs defaultValue="categories" className="w-full">
-        <TabsList className="mb-6 bg-[#18181b] border border-[#27272a]">
-          <TabsTrigger value="categories" className="data-[state=active]:bg-purple-600">
-            Categories
-          </TabsTrigger>
-          <TabsTrigger value="ai-tools" className="data-[state=active]:bg-purple-600">
-            AI Tools
-          </TabsTrigger>
-        </TabsList>
+      <div className="flex items-center justify-end mb-6">
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          <Plus size={18} />
+          Add Category
+        </button>
+      </div>
 
-        <TabsContent value="categories">
-          <div className="flex items-center justify-end mb-6">
+      {/* Form */}
+      {showForm && (
+        <div className="bg-gray-800 rounded-xl p-6 mb-6">
+          <h3 className="text-lg font-semibold text-white mb-4">
+            {editingId ? 'Edit Category' : 'New Category'}
+          </h3>
+          <div className="grid md:grid-cols-3 gap-4 mb-4">
+            <input
+              type="text"
+              placeholder="Category name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white"
+            />
+            <input
+              type="text"
+              placeholder="Icon (emoji)"
+              value={formData.icon}
+              onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+              className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white"
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white"
+            />
+          </div>
+          <div className="flex gap-2">
             <button
-              onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+              onClick={handleSave}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
             >
-              <Plus size={18} />
-              Add Category
+              <Save size={18} />
+              Save
+            </button>
+            <button
+              onClick={resetForm}
+              className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
+            >
+              <X size={18} />
+              Cancel
             </button>
           </div>
+        </div>
+      )}
 
-          {/* Form */}
-          {showForm && (
-            <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 mb-6">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                {editingId ? 'Edit Category' : 'New Category'}
-              </h3>
-              <div className="grid md:grid-cols-3 gap-4 mb-4">
-                <input
-                  type="text"
-                  placeholder="Category name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
-                />
-                <input
-                  type="text"
-                  placeholder="Icon (emoji)"
-                  value={formData.icon}
-                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                  className="bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
-                />
-                <input
-                  type="text"
-                  placeholder="Description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSave}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                >
-                  <Save size={18} />
-                  Save
-                </button>
-                <button
-                  onClick={resetForm}
-                  className="flex items-center gap-2 bg-[#18181b] border border-[#27272a] hover:bg-[#1f1f23] text-white px-4 py-2 rounded-lg"
-                >
-                  <X size={18} />
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Categories Table */}
-          <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-[#18181b]">
-                <tr>
-                  <th className="text-left px-6 py-4 text-zinc-400 font-medium">Icon</th>
-                  <th className="text-left px-6 py-4 text-zinc-400 font-medium">Name</th>
-                  <th className="text-left px-6 py-4 text-zinc-400 font-medium">Description</th>
-                  <th className="text-right px-6 py-4 text-zinc-400 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((category) => (
-                  <tr key={category.id} className="border-t border-[#27272a] hover:bg-[#1a1a1e] transition-colors">
-                    <td className="px-6 py-4 text-2xl">{category.icon || '📁'}</td>
-                    <td className="px-6 py-4 text-white font-medium">{category.name}</td>
-                    <td className="px-6 py-4 text-zinc-400">{category.description || '-'}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(category)}
-                          className="p-2 text-blue-400 hover:bg-[#1a1a1e] rounded"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(category.id)}
-                          className="p-2 text-red-400 hover:bg-[#1a1a1e] rounded"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {categories.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="text-center text-zinc-500 py-8">
-                      No categories found. Add your first one!
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="ai-tools">
-          <AIToolsTab />
-        </TabsContent>
-      </Tabs>
+      {/* Categories Table */}
+      <div className="bg-gray-800 rounded-xl overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-900">
+            <tr>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium">Icon</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium">Name</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium">Description</th>
+              <th className="text-right px-6 py-4 text-gray-400 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {categories.map((category) => (
+              <tr key={category.id} className="border-t border-gray-700">
+                <td className="px-6 py-4 text-2xl">{category.icon || '📁'}</td>
+                <td className="px-6 py-4 text-white font-medium">{category.name}</td>
+                <td className="px-6 py-4 text-gray-400">{category.description || '-'}</td>
+                <td className="px-6 py-4">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => handleEdit(category)}
+                      className="p-2 text-blue-400 hover:bg-gray-700 rounded"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(category.id)}
+                      className="p-2 text-red-400 hover:bg-gray-700 rounded"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

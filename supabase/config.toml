@@ -5,9 +5,3 @@ verify_jwt = false
 
 [functions.create-topup]
 verify_jwt = false
-
-[functions.security-honeypot]
-verify_jwt = false
-
-[functions.rate-limit-check]
-verify_jwt = false

@@ -229,14 +229,14 @@ const DeletionRequestsManagement = () => {
             placeholder="Search by user email, name, or reason..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-[#0c0c0e] border-[#27272a] text-white placeholder:text-zinc-500"
+            className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
           />
         </div>
         <Button
           variant="outline"
           onClick={fetchRequests}
           disabled={loading}
-          className="border-[#27272a] text-gray-300 hover:bg-[#1a1a1e]"
+          className="border-white/10 text-gray-300 hover:bg-white/5"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -244,15 +244,15 @@ const DeletionRequestsManagement = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
+      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="border-[#27272a] hover:bg-transparent bg-[#18181b]">
-              <TableHead className="text-zinc-400">User</TableHead>
-              <TableHead className="text-zinc-400">Reason</TableHead>
-              <TableHead className="text-zinc-400">Status</TableHead>
-              <TableHead className="text-zinc-400">Requested</TableHead>
-              <TableHead className="text-zinc-400 text-right">Actions</TableHead>
+            <TableRow className="border-white/10 hover:bg-transparent">
+              <TableHead className="text-gray-400">User</TableHead>
+              <TableHead className="text-gray-400">Reason</TableHead>
+              <TableHead className="text-gray-400">Status</TableHead>
+              <TableHead className="text-gray-400">Requested</TableHead>
+              <TableHead className="text-gray-400 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -272,7 +272,7 @@ const DeletionRequestsManagement = () => {
               </TableRow>
             ) : (
               filteredRequests.map((request) => (
-                <TableRow key={request.id} className="border-[#27272a] hover:bg-[#1a1a1e]">
+                <TableRow key={request.id} className="border-white/10 hover:bg-white/5">
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
@@ -346,7 +346,7 @@ const DeletionRequestsManagement = () => {
 
       {/* Details Dialog */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="bg-[#111113] border-[#27272a] text-white max-w-md">
+        <DialogContent className="bg-[#1a1a1a] border-white/10 text-white max-w-md">
           <DialogHeader>
             <DialogTitle>Deletion Request Details</DialogTitle>
             <DialogDescription className="text-gray-400">
@@ -355,7 +355,7 @@ const DeletionRequestsManagement = () => {
           </DialogHeader>
           {selectedRequest && (
             <div className="space-y-4 py-4">
-              <div className="flex items-center gap-3 p-3 bg-[#18181b] border border-[#27272a] rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
                 <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
                   <User className="w-5 h-5 text-gray-400" />
                 </div>
@@ -376,7 +376,7 @@ const DeletionRequestsManagement = () => {
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Reason for Deletion
                 </label>
-                <p className="mt-1 text-gray-300 text-sm bg-[#18181b] border border-[#27272a] p-3 rounded-lg">
+                <p className="mt-1 text-gray-300 text-sm bg-white/5 p-3 rounded-lg">
                   {selectedRequest.reason || 'No reason provided'}
                 </p>
               </div>
@@ -407,7 +407,7 @@ const DeletionRequestsManagement = () => {
             <Button
               variant="outline"
               onClick={() => setShowDetailsDialog(false)}
-              className="border-[#27272a] text-gray-300"
+              className="border-white/10 text-gray-300"
             >
               Close
             </Button>
@@ -417,7 +417,7 @@ const DeletionRequestsManagement = () => {
 
       {/* Approve Dialog */}
       <AlertDialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
-        <AlertDialogContent className="bg-[#111113] border-[#27272a] text-white">
+        <AlertDialogContent className="bg-[#1a1a1a] border-white/10 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-green-400">
               Approve Deletion Request?
@@ -429,7 +429,7 @@ const DeletionRequestsManagement = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-[#27272a] text-gray-300 hover:bg-[#1a1a1e]">
+            <AlertDialogCancel className="border-white/10 text-gray-300 hover:bg-white/5">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -452,7 +452,7 @@ const DeletionRequestsManagement = () => {
 
       {/* Reject Dialog */}
       <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <AlertDialogContent className="bg-[#111113] border-[#27272a] text-white">
+        <AlertDialogContent className="bg-[#1a1a1a] border-white/10 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-400">
               Reject Deletion Request?
@@ -471,12 +471,12 @@ const DeletionRequestsManagement = () => {
               value={adminNotes}
               onChange={(e) => setAdminNotes(e.target.value)}
               placeholder="Add notes about why this request was rejected..."
-              className="mt-2 bg-[#0c0c0e] border-[#27272a] text-white placeholder:text-zinc-500"
+              className="mt-2 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
               rows={3}
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-[#27272a] text-gray-300 hover:bg-[#1a1a1e]">
+            <AlertDialogCancel className="border-white/10 text-gray-300 hover:bg-white/5">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction

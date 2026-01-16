@@ -14,7 +14,6 @@ interface Prompt {
   tool: string;
   is_free: boolean;
   is_featured: boolean;
-  is_trending?: boolean;
   category_id: string | null;
   categories?: { name: string } | null;
 }
@@ -24,16 +23,9 @@ interface Category {
   name: string;
 }
 
-interface AITool {
-  id: string;
-  name: string;
-  is_active: boolean;
-}
-
 const PromptsManagement = () => {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [aiTools, setAITools] = useState<AITool[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -49,9 +41,10 @@ const PromptsManagement = () => {
     tool: 'ChatGPT',
     is_free: false,
     is_featured: false,
-    is_trending: false,
     category_id: ''
   });
+
+  const tools = ['ChatGPT', 'Midjourney', 'Claude', 'DALL-E', 'Gemini', 'Stable Diffusion', 'Leonardo AI', 'Copilot'];
 
   useEffect(() => {
     fetchData();
@@ -80,10 +73,9 @@ const PromptsManagement = () => {
 
   const fetchData = async () => {
     try {
-      const [{ data: promptsData, error: promptsError }, { data: categoriesData }, { data: toolsData }] = await Promise.all([
-        supabase.from('prompts').select('id, title, description, content, image_url, tool, is_free, is_featured, category_id, categories(name)').order('created_at', { ascending: false }),
-        supabase.from('categories').select('id, name').order('name'),
-        supabase.from('ai_tools').select('id, name, is_active').eq('is_active', true).order('display_order')
+      const [{ data: promptsData, error: promptsError }, { data: categoriesData }] = await Promise.all([
+        supabase.from('prompts').select('*, categories(name)').order('created_at', { ascending: false }),
+        supabase.from('categories').select('id, name').order('name')
       ]);
 
       if (promptsError) {
@@ -93,7 +85,6 @@ const PromptsManagement = () => {
 
       setPrompts(promptsData || []);
       setCategories(categoriesData || []);
-      setAITools(toolsData || []);
     } catch (error) {
       console.error('Fetch error:', error);
       toast.error('Failed to load data');
@@ -118,7 +109,6 @@ const PromptsManagement = () => {
       tool: formData.tool,
       is_free: formData.is_free,
       is_featured: formData.is_featured,
-      is_trending: formData.is_trending,
       category_id: formData.category_id || null
     };
 
@@ -159,7 +149,6 @@ const PromptsManagement = () => {
       tool: prompt.tool,
       is_free: prompt.is_free,
       is_featured: prompt.is_featured,
-      is_trending: prompt.is_trending || false,
       category_id: prompt.category_id || ''
     });
     setEditingId(prompt.id);
@@ -195,8 +184,7 @@ const PromptsManagement = () => {
       image_url: null,
       tool: 'ChatGPT', 
       is_free: false, 
-      is_featured: false,
-      is_trending: false, 
+      is_featured: false, 
       category_id: '' 
     });
     setEditingId(null);
@@ -232,14 +220,14 @@ const PromptsManagement = () => {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 overflow-y-auto">
-          <div className="bg-[#111113] border border-[#27272a] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
-            <div className="sticky top-0 bg-[#111113] border-b border-[#27272a] px-6 py-4 flex items-center justify-between">
+          <div className="bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
+            <div className="sticky top-0 bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-white">
                 {editingId ? 'Edit Prompt' : 'Create New Prompt'}
               </h3>
               <button 
                 onClick={resetForm} 
-                className="p-2 text-zinc-400 hover:text-white hover:bg-[#1a1a1e] rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
               >
                 <X size={20} />
               </button>
@@ -250,45 +238,45 @@ const PromptsManagement = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-zinc-300 mb-2">Title *</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Title *</label>
                     <input 
                       type="text" 
                       placeholder="Enter prompt title" 
                       value={formData.title} 
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })} 
-                      className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent" 
+                      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-zinc-300 mb-2">Description</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
                     <textarea 
                       placeholder="Brief description of the prompt" 
                       value={formData.description} 
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
-                      className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-3 text-white placeholder-zinc-500 h-24 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent resize-none" 
+                      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white h-24 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none" 
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-zinc-300 mb-2">Tool</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Tool</label>
                       <select 
                         value={formData.tool} 
                         onChange={(e) => setFormData({ ...formData, tool: e.target.value })} 
-                        className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
+                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
-                        {aiTools.map(tool => (
-                          <option key={tool.id} value={tool.name}>{tool.name}</option>
+                        {tools.map(tool => (
+                          <option key={tool} value={tool}>{tool}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-zinc-300 mb-2">Category</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
                       <select 
                         value={formData.category_id} 
                         onChange={(e) => setFormData({ ...formData, category_id: e.target.value })} 
-                        className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
+                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
                         <option value="">No Category</option>
                         {categories.map(c => (
@@ -298,13 +286,13 @@ const PromptsManagement = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6 pt-2 flex-wrap">
+                  <div className="flex items-center gap-6 pt-2">
                     <label className="flex items-center gap-2 text-white cursor-pointer">
                       <input 
                         type="checkbox" 
                         checked={formData.is_free} 
                         onChange={(e) => setFormData({ ...formData, is_free: e.target.checked })} 
-                        className="w-5 h-5 rounded bg-[#0c0c0e] border-[#27272a] text-purple-500 focus:ring-purple-500" 
+                        className="w-5 h-5 rounded bg-gray-900 border-gray-700 text-purple-500 focus:ring-purple-500" 
                       />
                       <span>Free Prompt</span>
                     </label>
@@ -313,18 +301,9 @@ const PromptsManagement = () => {
                         type="checkbox" 
                         checked={formData.is_featured} 
                         onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })} 
-                        className="w-5 h-5 rounded bg-[#0c0c0e] border-[#27272a] text-purple-500 focus:ring-purple-500" 
+                        className="w-5 h-5 rounded bg-gray-900 border-gray-700 text-purple-500 focus:ring-purple-500" 
                       />
                       <span>Featured</span>
-                    </label>
-                    <label className="flex items-center gap-2 text-white cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={formData.is_trending} 
-                        onChange={(e) => setFormData({ ...formData, is_trending: e.target.checked })} 
-                        className="w-5 h-5 rounded bg-[#0c0c0e] border-[#27272a] text-orange-500 focus:ring-orange-500" 
-                      />
-                      <span>Trending</span>
                     </label>
                   </div>
                 </div>
@@ -339,7 +318,7 @@ const PromptsManagement = () => {
 
               {/* Rich Text Editor for Content */}
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Prompt Content
                 </label>
                 <RichTextEditor
@@ -350,7 +329,7 @@ const PromptsManagement = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t border-[#27272a]">
+              <div className="flex gap-3 pt-4 border-t border-gray-700">
                 <button 
                   onClick={handleSave} 
                   disabled={saving}
@@ -383,7 +362,7 @@ const PromptsManagement = () => {
                 </button>
                 <button 
                   onClick={resetForm} 
-                  className="flex items-center gap-2 bg-[#18181b] border border-[#27272a] hover:bg-[#1f1f23] text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 >
                   <X size={18} />
                   Cancel
@@ -397,7 +376,7 @@ const PromptsManagement = () => {
       {/* Preview Modal */}
       {previewPrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-          <div className="bg-[#111113] border border-[#27272a] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="relative">
               {previewPrompt.image_url ? (
                 <img 
@@ -407,7 +386,7 @@ const PromptsManagement = () => {
                 />
               ) : (
                 <div className="w-full h-48 bg-gradient-to-br from-purple-900/50 to-pink-900/50 flex items-center justify-center">
-                  <Image size={48} className="text-zinc-600" />
+                  <Image size={48} className="text-gray-600" />
                 </div>
               )}
               <button
@@ -424,7 +403,7 @@ const PromptsManagement = () => {
                   {previewPrompt.tool}
                 </span>
                 {previewPrompt.categories && (
-                  <span className="px-3 py-1 bg-[#27272a] text-xs font-medium text-zinc-300 rounded-full">
+                  <span className="px-3 py-1 bg-gray-700 text-xs font-medium text-gray-300 rounded-full">
                     {previewPrompt.categories.name}
                   </span>
                 )}
@@ -436,7 +415,7 @@ const PromptsManagement = () => {
               </div>
               <h3 className="text-xl font-bold text-white mb-2">{previewPrompt.title}</h3>
               {previewPrompt.description && (
-                <p className="text-zinc-400 mb-4">{previewPrompt.description}</p>
+                <p className="text-gray-400 mb-4">{previewPrompt.description}</p>
               )}
               {previewPrompt.content && (
                 <div 
@@ -450,23 +429,23 @@ const PromptsManagement = () => {
       )}
 
       {/* Prompts Table */}
-      <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
+      <div className="bg-gray-800 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-[#18181b]">
-                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-300">Image</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-300">Title</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-300">Tool</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-300">Category</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-300">Status</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-zinc-300">Actions</th>
+              <tr className="bg-gray-900">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Image</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Title</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Tool</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Category</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Status</th>
+                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-300">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#27272a]">
+            <tbody className="divide-y divide-gray-700">
               {prompts.map((prompt) => (
                 <>
-                  <tr key={prompt.id} className="hover:bg-[#1a1a1e] transition-colors">
+                  <tr key={prompt.id} className="hover:bg-gray-700/50 transition-colors">
                     <td className="px-6 py-4">
                       {prompt.image_url ? (
                         <img 
@@ -475,8 +454,8 @@ const PromptsManagement = () => {
                           className="w-12 h-12 object-cover rounded-lg"
                         />
                       ) : (
-                        <div className="w-12 h-12 bg-[#27272a] rounded-lg flex items-center justify-center">
-                          <Image size={20} className="text-zinc-500" />
+                        <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
+                          <Image size={20} className="text-gray-500" />
                         </div>
                       )}
                     </td>
@@ -489,10 +468,10 @@ const PromptsManagement = () => {
                         <span className="font-medium">{prompt.title}</span>
                       </button>
                     </td>
-                    <td className="px-6 py-4 text-zinc-300">{prompt.tool}</td>
-                    <td className="px-6 py-4 text-zinc-300">{prompt.categories?.name || '-'}</td>
+                    <td className="px-6 py-4 text-gray-300">{prompt.tool}</td>
+                    <td className="px-6 py-4 text-gray-300">{prompt.categories?.name || '-'}</td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
                         {prompt.is_free && (
                           <span className="px-2 py-1 bg-green-600/20 text-green-400 text-xs rounded-full">
                             Free
@@ -503,13 +482,8 @@ const PromptsManagement = () => {
                             Featured
                           </span>
                         )}
-                        {prompt.is_trending && (
-                          <span className="px-2 py-1 bg-orange-600/20 text-orange-400 text-xs rounded-full">
-                            Trending
-                          </span>
-                        )}
-                        {!prompt.is_free && !prompt.is_featured && !prompt.is_trending && (
-                          <span className="text-zinc-500 text-sm">Premium</span>
+                        {!prompt.is_free && !prompt.is_featured && (
+                          <span className="text-gray-500 text-sm">Premium</span>
                         )}
                       </div>
                     </td>
@@ -545,20 +519,20 @@ const PromptsManagement = () => {
                     </td>
                   </tr>
                   {expandedRows.includes(prompt.id) && (
-                    <tr key={`${prompt.id}-expanded`} className="bg-[#0c0c0e]">
+                    <tr key={`${prompt.id}-expanded`} className="bg-gray-900/50">
                       <td colSpan={6} className="px-6 py-4">
                         <div className="space-y-3">
                           {prompt.description && (
                             <div>
-                              <span className="text-sm font-medium text-zinc-400">Description:</span>
-                              <p className="text-zinc-300 mt-1">{prompt.description}</p>
+                              <span className="text-sm font-medium text-gray-400">Description:</span>
+                              <p className="text-gray-300 mt-1">{prompt.description}</p>
                             </div>
                           )}
                           {prompt.content && (
                             <div>
-                              <span className="text-sm font-medium text-zinc-400">Content Preview:</span>
+                              <span className="text-sm font-medium text-gray-400">Content Preview:</span>
                               <div 
-                                className="text-zinc-300 mt-1 prose prose-sm prose-invert max-w-none line-clamp-3"
+                                className="text-gray-300 mt-1 prose prose-sm prose-invert max-w-none line-clamp-3"
                                 dangerouslySetInnerHTML={{ __html: prompt.content }}
                               />
                             </div>
@@ -574,7 +548,7 @@ const PromptsManagement = () => {
           
           {prompts.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-zinc-400">No prompts found. Create your first prompt!</p>
+              <p className="text-gray-400">No prompts found. Create your first prompt!</p>
             </div>
           )}
         </div>

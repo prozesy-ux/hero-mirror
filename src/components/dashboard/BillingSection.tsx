@@ -56,21 +56,7 @@ interface WalletTransaction {
 }
 
 type BillingTab = 'wallet' | 'transactions' | 'plan' | 'purchases';
-type PaymentGateway = string;
-
-interface PaymentMethodDB {
-  id: string;
-  name: string;
-  code: string;
-  icon_url: string | null;
-  account_number: string | null;
-  account_name: string | null;
-  instructions: string | null;
-  is_enabled: boolean;
-  is_automatic: boolean;
-  display_order: number;
-  qr_image_url: string | null;
-}
+type PaymentGateway = 'stripe' | 'bkash' | 'upi';
 
 const BillingSection = () => {
   const { user, isPro } = useAuthContext();
@@ -102,17 +88,11 @@ const BillingSection = () => {
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
   const [editTransactionIdValue, setEditTransactionIdValue] = useState('');
   const [verifyingPayment, setVerifyingPayment] = useState(false);
-  
-  // Dynamic payment methods from database
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodDB[]>([]);
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    
     if (user) {
       fetchData();
-      fetchPaymentMethods();
-      unsubscribe = subscribeToUpdates();
+      subscribeToUpdates();
       
       // Check for Stripe topup success and verify payment
       const topupStatus = searchParams.get('topup');
@@ -122,26 +102,7 @@ const BillingSection = () => {
         verifyAndCreditWallet(sessionId);
       }
     }
-    
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
   }, [user, searchParams]);
-
-  const fetchPaymentMethods = async () => {
-    const { data } = await supabase
-      .from('payment_methods')
-      .select('*')
-      .eq('is_enabled', true)
-      .order('display_order');
-    
-    setPaymentMethods(data || []);
-    
-    // Set default gateway to first available method
-    if (data && data.length > 0) {
-      setSelectedGateway(data[0].code);
-    }
-  };
 
   const verifyAndCreditWallet = async (sessionId: string, retryCount = 0) => {
     // Don't block the entire page - just show a toast
@@ -473,8 +434,11 @@ const BillingSection = () => {
     { id: 'purchases' as BillingTab, label: 'Purchases', icon: ShoppingBag },
   ];
 
-  // Get selected payment method details
-  const selectedPaymentMethod = paymentMethods.find(m => m.code === selectedGateway);
+  const paymentMethods = [
+    { id: 'stripe' as PaymentGateway, name: 'Stripe', logo: stripeLogo, description: 'Credit/Debit Card' },
+    { id: 'bkash' as PaymentGateway, name: 'bKash', logo: bkashLogo, description: 'Mobile Banking' },
+    { id: 'upi' as PaymentGateway, name: 'UPI', logo: upiLogo, description: 'UPI Payment' },
+  ];
 
   // Removed blocking loading overlay - now using toast notifications instead
 
@@ -540,19 +504,13 @@ const BillingSection = () => {
                   key={method.id}
                   className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
                 >
-                  {method.icon_url ? (
-                    <img 
-                      src={method.icon_url} 
-                      alt={method.name} 
-                      className="h-8 w-auto mx-auto mb-2 object-contain"
-                    />
-                  ) : (
-                    <div className="h-8 w-8 mx-auto mb-2 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <CreditCard size={16} className="text-gray-500" />
-                    </div>
-                  )}
+                  <img 
+                    src={method.logo} 
+                    alt={method.name} 
+                    className="h-8 w-auto mx-auto mb-2 object-contain"
+                  />
                   <p className="text-gray-900 font-medium text-sm">{method.name}</p>
-                  <p className="text-gray-500 text-xs">{method.is_automatic ? 'Automatic' : 'Manual'}</p>
+                  <p className="text-gray-500 text-xs">{method.description}</p>
                 </div>
               ))}
             </div>
@@ -934,82 +892,74 @@ const BillingSection = () => {
                 {paymentMethods.map((method) => (
                   <button
                     key={method.id}
-                    onClick={() => setSelectedGateway(method.code)}
+                    onClick={() => setSelectedGateway(method.id)}
                     className={`p-4 rounded-xl border-2 transition-all ${
-                      selectedGateway === method.code
+                      selectedGateway === method.id
                         ? 'border-violet-500 bg-violet-50'
                         : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                     }`}
                   >
-                    {method.icon_url ? (
-                      <img 
-                        src={method.icon_url} 
-                        alt={method.name} 
-                        className="h-8 w-auto mx-auto mb-2 object-contain"
-                      />
-                    ) : (
-                      <div className="h-8 w-8 mx-auto mb-2 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <CreditCard size={16} className="text-gray-500" />
-                      </div>
-                    )}
+                    <img 
+                      src={method.logo} 
+                      alt={method.name} 
+                      className="h-8 w-auto mx-auto mb-2 object-contain"
+                    />
                     <p className="text-gray-900 font-medium text-sm text-center">{method.name}</p>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Dynamic Gateway-specific inputs */}
-            {selectedPaymentMethod && !selectedPaymentMethod.is_automatic && (
-              <div className="mb-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
-                {/* QR Code Display */}
-                {selectedPaymentMethod.qr_image_url && (
-                  <div className="flex justify-center mb-4">
-                    <img 
-                      src={selectedPaymentMethod.qr_image_url} 
-                      alt={`${selectedPaymentMethod.name} QR Code`}
-                      className="w-48 h-48 object-contain border-2 border-amber-200 rounded-xl bg-white p-2"
-                    />
-                  </div>
-                )}
-                
+            {/* Gateway-specific inputs */}
+            {selectedGateway === 'bkash' && (
+              <div className="mb-6 p-4 bg-pink-50 rounded-xl border border-pink-200">
                 <div className="mb-3">
-                  <p className="text-amber-800 font-semibold mb-1">{selectedPaymentMethod.name} Payment Instructions</p>
-                  {selectedPaymentMethod.account_number && (
-                    <p className="text-amber-600 text-sm">
-                      1. Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold select-all">{selectedPaymentMethod.account_number}</span>
-                      {selectedPaymentMethod.account_name && <span> ({selectedPaymentMethod.account_name})</span>}
-                    </p>
-                  )}
-                  {selectedPaymentMethod.instructions && (
-                    <p className="text-amber-600 text-sm mt-1">{selectedPaymentMethod.instructions}</p>
-                  )}
-                  <p className="text-amber-600 text-sm mt-1">Enter your Transaction ID below after payment</p>
+                  <p className="text-pink-800 font-semibold mb-1">bKash Payment Instructions</p>
+                  <p className="text-pink-600 text-sm">
+                    1. Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold select-all">01844291940</span> (Personal)
+                  </p>
+                  <p className="text-pink-600 text-sm">2. Enter your bKash Transaction ID below</p>
                 </div>
                 <input
                   type="text"
                   value={transactionIdInput}
                   onChange={(e) => setTransactionIdInput(e.target.value)}
-                  placeholder={`Enter ${selectedPaymentMethod.name} Transaction ID`}
-                  className="w-full bg-white border border-amber-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                  placeholder="Enter bKash Transaction ID (e.g., TRX123456789)"
+                  className="w-full bg-white border border-pink-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-500/30"
                 />
               </div>
             )}
 
-            {selectedPaymentMethod && selectedPaymentMethod.is_automatic && selectedPaymentMethod.code === 'stripe' && (
+            {selectedGateway === 'upi' && (
+              <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <div className="mb-3">
+                  <p className="text-blue-800 font-semibold mb-1">UPI Payment Instructions</p>
+                  <p className="text-blue-600 text-sm">
+                    1. Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold select-all">paytmqr6z0g0n@ptys</span>
+                  </p>
+                  <p className="text-blue-600 text-sm">2. Enter your UPI Transaction ID below</p>
+                </div>
+                <input
+                  type="text"
+                  value={transactionIdInput}
+                  onChange={(e) => setTransactionIdInput(e.target.value)}
+                  placeholder="Enter UPI Transaction ID (e.g., 123456789012)"
+                  className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                />
+              </div>
+            )}
+
+            {selectedGateway === 'stripe' && (
               <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <div className="flex items-center gap-3">
-                  {selectedPaymentMethod.icon_url ? (
-                    <img 
-                      src={selectedPaymentMethod.icon_url} 
-                      alt={selectedPaymentMethod.name} 
-                      className="h-8 w-auto object-contain"
-                    />
-                  ) : (
-                    <CreditCard size={32} className="text-gray-500" />
-                  )}
+                  <img 
+                    src={stripeLogo} 
+                    alt="Stripe" 
+                    className="h-8 w-auto object-contain"
+                  />
                   <div>
-                    <p className="font-medium text-gray-900">Secure Payment via {selectedPaymentMethod.name}</p>
-                    <p className="text-xs text-gray-500">{selectedPaymentMethod.instructions || 'Credit/Debit Card accepted • Instant'}</p>
+                    <p className="font-medium text-gray-900">Secure Payment via Stripe</p>
+                    <p className="text-xs text-gray-500">Credit/Debit Card accepted • Instant</p>
                   </div>
                 </div>
               </div>

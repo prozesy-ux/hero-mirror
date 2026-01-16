@@ -184,46 +184,46 @@ const WalletManagement = () => {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+            <div className="p-3 bg-green-500/20 rounded-lg">
               <DollarSign className="text-green-400" size={20} />
             </div>
             <div>
-              <p className="text-zinc-400 text-sm font-medium">Total Balance</p>
+              <p className="text-gray-400 text-sm">Total Balance</p>
               <p className="text-2xl font-bold text-white">${totalBalance.toFixed(2)}</p>
             </div>
           </div>
         </div>
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
+            <div className="p-3 bg-purple-500/20 rounded-lg">
               <ArrowUpRight className="text-purple-400" size={20} />
             </div>
             <div>
-              <p className="text-zinc-400 text-sm font-medium">Total Top-ups</p>
+              <p className="text-gray-400 text-sm">Total Top-ups</p>
               <p className="text-2xl font-bold text-white">${totalTopups.toFixed(2)}</p>
             </div>
           </div>
         </div>
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+            <div className="p-3 bg-yellow-500/20 rounded-lg">
               <RefreshCcw className="text-yellow-400" size={20} />
             </div>
             <div>
-              <p className="text-zinc-400 text-sm font-medium">Pending Payments</p>
+              <p className="text-gray-400 text-sm">Pending Payments</p>
               <p className="text-2xl font-bold text-white">{pendingTransactions.length} (${pendingAmount.toFixed(2)})</p>
             </div>
           </div>
         </div>
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <div className="p-3 bg-blue-500/20 rounded-lg">
               <User className="text-blue-400" size={20} />
             </div>
             <div>
-              <p className="text-zinc-400 text-sm font-medium">Active Wallets</p>
+              <p className="text-gray-400 text-sm">Active Wallets</p>
               <p className="text-2xl font-bold text-white">{wallets.length}</p>
             </div>
           </div>
@@ -231,7 +231,7 @@ const WalletManagement = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-[#27272a] pb-2">
+      <div className="flex gap-2 border-b border-white/10 pb-2">
         <button
           onClick={() => setActiveTab('wallets')}
           className={`px-4 py-2 rounded-lg transition-all ${
@@ -270,16 +270,16 @@ const WalletManagement = () => {
           placeholder="Search by email or gateway..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-[#0c0c0e] border-[#27272a] text-white"
+          className="pl-10 bg-white/5 border-white/10"
         />
       </div>
 
       {/* Wallets Table */}
       {activeTab === 'wallets' && (
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
+        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-[#27272a] bg-[#18181b]">
+              <TableRow className="border-white/10">
                 <TableHead className="text-gray-400">User</TableHead>
                 <TableHead className="text-gray-400">Balance</TableHead>
                 <TableHead className="text-gray-400">Created</TableHead>
@@ -301,7 +301,7 @@ const WalletManagement = () => {
                 </TableRow>
               ) : (
                 filteredWallets.map((wallet) => (
-                  <TableRow key={wallet.id} className="border-[#27272a]">
+                  <TableRow key={wallet.id} className="border-white/10">
                     <TableCell className="text-white">{wallet.user_email}</TableCell>
                     <TableCell className="text-green-400 font-semibold">
                       ${parseFloat(String(wallet.balance)).toFixed(2)}
@@ -322,10 +322,10 @@ const WalletManagement = () => {
 
       {/* Transactions Table */}
       {activeTab === 'transactions' && (
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
+        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-[#27272a] bg-[#18181b]">
+              <TableRow className="border-white/10">
                 <TableHead className="text-gray-400">User</TableHead>
                 <TableHead className="text-gray-400">Type</TableHead>
                 <TableHead className="text-gray-400">Amount</TableHead>
@@ -351,7 +351,7 @@ const WalletManagement = () => {
                 </TableRow>
               ) : (
                 filteredTransactions.map((tx) => (
-                  <TableRow key={tx.id} className="border-[#27272a]">
+                  <TableRow key={tx.id} className="border-white/10">
                     <TableCell className="text-white">{tx.user_email}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-xs ${
@@ -407,10 +407,10 @@ const WalletManagement = () => {
 
       {/* Pending Payments Table */}
       {activeTab === 'pending' && (
-        <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
+        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-[#27272a] bg-[#18181b]">
+              <TableRow className="border-white/10">
                 <TableHead className="text-gray-400">User</TableHead>
                 <TableHead className="text-gray-400">Amount</TableHead>
                 <TableHead className="text-gray-400">Gateway</TableHead>
@@ -434,7 +434,7 @@ const WalletManagement = () => {
                 </TableRow>
               ) : (
                 filteredPendingTransactions.map((tx) => (
-                  <TableRow key={tx.id} className="border-[#27272a]">
+                  <TableRow key={tx.id} className="border-white/10">
                     <TableCell className="text-white">{tx.user_email}</TableCell>
                     <TableCell className="text-green-400 font-semibold">
                       +${parseFloat(String(tx.amount)).toFixed(2)}

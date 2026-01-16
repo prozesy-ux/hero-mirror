@@ -18,30 +18,4 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  build: {
-    // Remove source maps in production (hides original code structure)
-    sourcemap: false,
-    // Use terser for advanced minification
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        // Remove console.log statements in production
-        drop_console: true,
-        // Remove debugger statements
-        drop_debugger: true,
-        // Remove unused code
-        dead_code: true,
-      },
-      mangle: {
-        // Mangle property names starting with underscore (private properties)
-        properties: {
-          regex: /^_/
-        }
-      },
-      format: {
-        // Remove all comments
-        comments: false
-      }
-    }
-  }
 }));

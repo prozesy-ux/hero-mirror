@@ -18,24 +18,13 @@ const DashboardContent = () => {
 
   // Listen for storage changes to sync collapse state
   useEffect(() => {
-    const handleStorageEvent = (e: StorageEvent) => {
-      if (e.key === 'sidebar-collapsed') {
-        setIsCollapsed(e.newValue === 'true');
-      }
-    };
-
-    // Custom event for same-window updates (storage event only fires across windows)
-    const handleCustomEvent = () => {
+    const handleStorageChange = () => {
       setIsCollapsed(localStorage.getItem('sidebar-collapsed') === 'true');
     };
 
-    window.addEventListener('storage', handleStorageEvent);
-    window.addEventListener('sidebar-collapse-change', handleCustomEvent);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageEvent);
-      window.removeEventListener('sidebar-collapse-change', handleCustomEvent);
-    };
+    // Check periodically for changes (since storage event doesn't fire in same window)
+    const interval = setInterval(handleStorageChange, 100);
+    return () => clearInterval(interval);
   }, []);
 
   return (
