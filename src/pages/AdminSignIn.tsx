@@ -50,8 +50,14 @@ const AdminSignIn = () => {
       return;
     }
 
-    // Check admin role BEFORE navigating
-    const userId = authData?.user?.id;
+    // Get the current session to ensure we have the user ID
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id || authData?.user?.id;
+    
+    console.log("Auth data:", authData);
+    console.log("Session data:", sessionData);
+    console.log("User ID:", userId);
+
     if (!userId) {
       setSubmitting(false);
       toast.error("Login failed - no user ID");
@@ -60,6 +66,8 @@ const AdminSignIn = () => {
 
     const { data: isAdminRole, error: roleError } = await supabase
       .rpc('has_role', { _user_id: userId, _role: 'admin' });
+
+    console.log("Admin role check:", { isAdminRole, roleError });
 
     setSubmitting(false);
 
