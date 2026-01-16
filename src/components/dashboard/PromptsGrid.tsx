@@ -9,7 +9,7 @@ interface Prompt {
   id: string;
   title: string;
   description: string | null;
-  content: string | null;
+  content?: string | null; // Optional - loaded on demand
   image_url: string | null;
   tool: string;
   is_free: boolean;
@@ -39,6 +39,7 @@ const PromptsGrid = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+  const [promptContentLoading, setPromptContentLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   
@@ -153,16 +154,26 @@ const PromptsGrid = () => {
     setLoadError(null);
     
     try {
+      // Lightweight query - exclude large 'content' field for list view
       const { data: promptsData, error: promptsError } = await supabase
         .from('prompts')
         .select(`
-          *,
+          id,
+          title,
+          description,
+          image_url,
+          tool,
+          is_free,
+          is_featured,
+          category_id,
+          created_at,
           categories (
             name,
             icon
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100); // Pagination limit for performance
 
       if (promptsError) throw promptsError;
       setPrompts(promptsData || []);
@@ -230,11 +241,39 @@ const PromptsGrid = () => {
     return prompt.is_free || isPro;
   };
 
-  const handlePromptClick = (prompt: Prompt) => {
-    if (canAccessPrompt(prompt)) {
-      setSelectedPrompt(prompt);
-    } else {
+  const handlePromptClick = async (prompt: Prompt) => {
+    if (!canAccessPrompt(prompt)) {
       toast.error('Upgrade to Pro to unlock this prompt!');
+      return;
+    }
+    
+    // Open modal immediately with basic info
+    setSelectedPrompt(prompt);
+    
+    // Lazy-load content if not already present
+    if (!prompt.content) {
+      setPromptContentLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('prompts')
+          .select('content')
+          .eq('id', prompt.id)
+          .maybeSingle();
+        
+        if (!error && data) {
+          // Update the prompt with content
+          setSelectedPrompt(prev => prev ? { ...prev, content: data.content } : null);
+          // Also update in prompts array for cache
+          setPrompts(prevPrompts => 
+            prevPrompts.map(p => p.id === prompt.id ? { ...p, content: data.content } : p)
+          );
+        }
+      } catch (err) {
+        console.error('Error loading prompt content:', err);
+        toast.error('Failed to load prompt content');
+      } finally {
+        setPromptContentLoading(false);
+      }
     }
   };
 
@@ -703,10 +742,10 @@ const PromptsGrid = () => {
               )}
 
               {/* Prompt Content */}
-              {selectedPrompt.content && (
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Prompt</span>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Prompt</span>
+                  {selectedPrompt.content && (
                     <button
                       onClick={() => copyToClipboard(selectedPrompt.content || '')}
                       className="flex items-center gap-2 px-3 py-1.5 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors"
@@ -714,13 +753,22 @@ const PromptsGrid = () => {
                       <Copy size={14} />
                       Copy
                     </button>
+                  )}
+                </div>
+                {promptContentLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
+                    <span className="ml-3 text-gray-500">Loading prompt...</span>
                   </div>
+                ) : selectedPrompt.content ? (
                   <div 
                     className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: selectedPrompt.content }}
                   />
-                </div>
-              )}
+                ) : (
+                  <p className="text-gray-400 italic">No content available</p>
+                )}
+              </div>
 
               {/* Category */}
               {selectedPrompt.categories && (
