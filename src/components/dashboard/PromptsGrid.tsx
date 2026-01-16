@@ -43,7 +43,6 @@ const PromptsGrid = () => {
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   
   const { user, isPro } = useAuthContext();
-  const fetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchWallet = async () => {
@@ -150,71 +149,47 @@ const PromptsGrid = () => {
   }, [user]);
 
   const fetchData = async () => {
-    // Clear any previous timeout
-    if (fetchTimeoutRef.current) {
-      clearTimeout(fetchTimeoutRef.current);
-    }
-
     setLoading(true);
     setLoadError(null);
     
-    // Set a timeout to prevent infinite loading (15 seconds)
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      fetchTimeoutRef.current = setTimeout(() => {
-        reject(new Error('Request timeout - please check your connection'));
-      }, 15000);
-    });
-    
     try {
-      const fetchPromise = async () => {
-        const { data: promptsData, error: promptsError } = await supabase
-          .from('prompts')
-          .select(`
-            *,
-            categories (
-              name,
-              icon
-            )
-          `)
-          .order('created_at', { ascending: false });
+      const { data: promptsData, error: promptsError } = await supabase
+        .from('prompts')
+        .select(`
+          *,
+          categories (
+            name,
+            icon
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-        if (promptsError) {
-          throw promptsError;
-        }
-        
-        setPrompts(promptsData || []);
+      if (promptsError) throw promptsError;
+      setPrompts(promptsData || []);
 
-        const { data: categoriesData, error: categoriesError } = await supabase
-          .from('categories')
-          .select('*')
-          .order('name');
-        
-        if (categoriesError) {
-          console.error('Error fetching categories:', categoriesError);
-        }
-        setCategories(categoriesData || []);
-
-        if (user) {
-          const { data: favoritesData } = await supabase
-            .from('favorites')
-            .select('prompt_id')
-            .eq('user_id', user.id);
-          
-          setFavorites(favoritesData?.map(f => f.prompt_id) || []);
-        }
-      };
-
-      await Promise.race([fetchPromise(), timeoutPromise]);
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
       
+      if (!categoriesError) {
+        setCategories(categoriesData || []);
+      }
+
+      if (user) {
+        const { data: favoritesData } = await supabase
+          .from('favorites')
+          .select('prompt_id')
+          .eq('user_id', user.id);
+        
+        setFavorites(favoritesData?.map(f => f.prompt_id) || []);
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to load prompts';
       setLoadError(errorMessage);
       toast.error(errorMessage);
     } finally {
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
       setLoading(false);
     }
   };
