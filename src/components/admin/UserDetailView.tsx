@@ -217,7 +217,7 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
       </div>
 
       {/* Profile Card */}
-      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-6 hover:bg-[#0f0f11] transition-all">
+      <div className="bg-black border border-[#111] rounded-none p-6 hover:bg-[#080808] transition-all">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             {profile.avatar_url ? (
@@ -278,36 +278,36 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-4 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-black border border-[#111] rounded-none p-4 hover:bg-[#080808] transition-all">
           <div className="flex items-center gap-2 text-zinc-500 text-sm mb-1">
-            <div className="p-1.5 bg-blue-500/5 rounded-lg">
+            <div className="p-1.5 bg-blue-500/5 rounded-sm">
               <Wallet size={14} className="text-blue-400" />
             </div>
             Balance
           </div>
           <div className="text-2xl font-bold text-white">৳{wallet?.balance?.toFixed(2) || '0.00'}</div>
         </div>
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-4 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-black border border-[#111] rounded-none p-4 hover:bg-[#080808] transition-all">
           <div className="flex items-center gap-2 text-zinc-500 text-sm mb-1">
-            <div className="p-1.5 bg-green-500/5 rounded-lg">
+            <div className="p-1.5 bg-green-500/5 rounded-sm">
               <ArrowUpRight size={14} className="text-green-400" />
             </div>
             Total Topup
           </div>
           <div className="text-2xl font-bold text-green-400">৳{totalTopup.toFixed(2)}</div>
         </div>
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-4 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-black border border-[#111] rounded-none p-4 hover:bg-[#080808] transition-all">
           <div className="flex items-center gap-2 text-zinc-500 text-sm mb-1">
-            <div className="p-1.5 bg-purple-500/5 rounded-lg">
+            <div className="p-1.5 bg-purple-500/5 rounded-sm">
               <ShoppingBag size={14} className="text-purple-400" />
             </div>
             Purchases
           </div>
           <div className="text-2xl font-bold text-white">{aiPurchases.length}</div>
         </div>
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-4 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-black border border-[#111] rounded-none p-4 hover:bg-[#080808] transition-all">
           <div className="flex items-center gap-2 text-zinc-500 text-sm mb-1">
-            <div className="p-1.5 bg-pink-500/5 rounded-lg">
+            <div className="p-1.5 bg-pink-500/5 rounded-sm">
               <Heart size={14} className="text-pink-400" />
             </div>
             Favorites

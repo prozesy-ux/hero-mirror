@@ -314,9 +314,9 @@ const AccountOrdersManagement = () => {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-5 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-black border border-[#111] rounded-none p-5 hover:bg-[#080808] transition-all">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-500/5 rounded-xl">
+            <div className="p-3 bg-blue-500/5 rounded-sm">
               <Package size={22} className="text-blue-400" />
             </div>
             <div>
@@ -326,9 +326,9 @@ const AccountOrdersManagement = () => {
           </div>
         </div>
 
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-5 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-black border border-[#111] rounded-none p-5 hover:bg-[#080808] transition-all">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-yellow-500/5 rounded-xl">
+            <div className="p-3 bg-yellow-500/5 rounded-sm">
               <Clock size={22} className="text-yellow-400" />
             </div>
             <div>
@@ -338,9 +338,9 @@ const AccountOrdersManagement = () => {
           </div>
         </div>
 
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-5 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-black border border-[#111] rounded-none p-5 hover:bg-[#080808] transition-all">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-green-500/5 rounded-xl">
+            <div className="p-3 bg-green-500/5 rounded-sm">
               <CheckCircle size={22} className="text-green-400" />
             </div>
             <div>
@@ -350,9 +350,9 @@ const AccountOrdersManagement = () => {
           </div>
         </div>
 
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-5 hover:bg-[#0f0f11] transition-all">
+        <div className="bg-black border border-[#111] rounded-none p-5 hover:bg-[#080808] transition-all">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-purple-500/5 rounded-xl">
+            <div className="p-3 bg-purple-500/5 rounded-sm">
               <DollarSign size={22} className="text-purple-400" />
             </div>
             <div>
@@ -364,7 +364,7 @@ const AccountOrdersManagement = () => {
       </div>
 
       {/* Search & Filters Bar */}
-      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-4">
+      <div className="bg-black border border-[#111] rounded-none p-4">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search Input */}
           <div className="flex-1 relative">
@@ -374,7 +374,7 @@ const AccountOrdersManagement = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by email, name, product, or order ID..."
-              className="w-full bg-[#050506] border border-[#1a1a1a] rounded-xl pl-11 pr-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#252528] transition-all"
+              className="w-full bg-black border border-[#111] rounded-sm pl-11 pr-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#1a1a1a] transition-all"
             />
           </div>
 
