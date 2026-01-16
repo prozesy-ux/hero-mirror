@@ -101,17 +101,22 @@ interface SidebarContentProps {
   onNavClick?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onLogout?: () => void;
 }
 
 const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
-  ({ onNavClick, isCollapsed = false, onToggleCollapse }, ref) => {
+  ({ onNavClick, isCollapsed = false, onToggleCollapse, onLogout }, ref) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { signOut } = useAuthContext();
 
     const handleLogout = async () => {
-      await signOut();
-      navigate('/signin');
+      if (onLogout) {
+        onLogout();
+      } else {
+        await signOut();
+        navigate('/signin');
+      }
     };
 
     const navItems = [
@@ -202,7 +207,11 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
 
 SidebarContent.displayName = 'SidebarContent';
 
-const AdminSidebar = () => {
+interface AdminSidebarProps {
+  onLogout?: () => void;
+}
+
+const AdminSidebar = ({ onLogout }: AdminSidebarProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -246,7 +255,7 @@ const AdminSidebar = () => {
       {/* Mobile Sidebar */}
       {mobileMenuOpen && (
         <div className="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-[#0a0a0a] border-r border-white/5 pt-16 animate-slide-in-left">
-          <SidebarContent onNavClick={() => setMobileMenuOpen(false)} />
+          <SidebarContent onNavClick={() => setMobileMenuOpen(false)} onLogout={onLogout} />
         </div>
       )}
 
@@ -256,7 +265,7 @@ const AdminSidebar = () => {
           isCollapsed ? 'w-[72px]' : 'w-72'
         }`}
       >
-        <SidebarContent isCollapsed={isCollapsed} onToggleCollapse={toggleCollapse} />
+        <SidebarContent isCollapsed={isCollapsed} onToggleCollapse={toggleCollapse} onLogout={onLogout} />
       </div>
     </AdminSidebarContext.Provider>
   );
