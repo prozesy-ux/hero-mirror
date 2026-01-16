@@ -25,6 +25,32 @@ const AdminSignIn = () => {
 
   const title = useMemo(() => "Admin Sign In", []);
 
+  // Helper: wait for session to be fully available after signIn
+  const waitForSession = async (maxAttempts = 10, delayMs = 200): Promise<string | null> => {
+    for (let i = 0; i < maxAttempts; i++) {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.user?.id && data?.session?.access_token) {
+        return data.session.user.id;
+      }
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+    return null;
+  };
+
+  // Helper: verify admin role with retries (exponential backoff)
+  const verifyAdminRole = async (userId: string, maxAttempts = 5): Promise<boolean> => {
+    let delay = 200;
+    for (let i = 0; i < maxAttempts; i++) {
+      const { data, error } = await supabase.rpc('has_role', { _user_id: userId, _role: 'admin' });
+      if (!error) {
+        return data === true;
+      }
+      await new Promise((r) => setTimeout(r, delay));
+      delay = Math.min(delay * 2, 1500);
+    }
+    return false;
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -35,14 +61,13 @@ const AdminSignIn = () => {
     }
 
     setSubmitting(true);
-    
-    // Convert username to email format for Supabase auth
-    // If username doesn't contain @, append a domain
-    const loginEmail = parsed.data.username.includes('@') 
-      ? parsed.data.username 
-      : `${parsed.data.username}@admin.local`;
-    
-    const { data: authData, error } = await signIn(loginEmail, parsed.data.password);
+
+    // Normalize username to lowercase and construct email
+    const loginEmail = parsed.data.username.includes('@')
+      ? parsed.data.username.trim().toLowerCase()
+      : `${parsed.data.username.trim().toLowerCase()}@admin.local`;
+
+    const { error } = await signIn(loginEmail, parsed.data.password);
 
     if (error) {
       setSubmitting(false);
@@ -50,34 +75,20 @@ const AdminSignIn = () => {
       return;
     }
 
-    // Ensure session is established before role check (helps in some browsers)
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData?.session?.user?.id || authData?.user?.id;
-
+    // Wait for session token to propagate across browsers
+    const userId = await waitForSession();
     if (!userId) {
       setSubmitting(false);
-      toast.error("Login failed - no user ID");
+      await supabase.auth.signOut();
+      toast.error("Session couldn't be established. Please try again.");
       return;
     }
 
-    // Verify admin role (retry once if the session hasn't propagated yet)
-    const runAdminCheck = async () =>
-      supabase.rpc('has_role', { _user_id: userId, _role: 'admin' });
-
-    let { data: isAdminRole, error: roleError } = await runAdminCheck();
-    if (roleError) {
-      await new Promise((r) => setTimeout(r, 250));
-      ({ data: isAdminRole, error: roleError } = await runAdminCheck());
-    }
-
+    // Verify admin role with retries
+    const isAdmin = await verifyAdminRole(userId);
     setSubmitting(false);
 
-    if (roleError) {
-      toast.error("Couldn't verify admin access. Please try again.");
-      return;
-    }
-
-    if (isAdminRole !== true) {
+    if (!isAdmin) {
       await supabase.auth.signOut();
       toast.error("Access denied. This login is for administrators only.");
       return;

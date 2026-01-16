@@ -153,20 +153,31 @@ const Admin = () => {
   const [adminCheckComplete, setAdminCheckComplete] = useState(false);
   const [isAdminVerified, setIsAdminVerified] = useState(false);
 
-  // Check admin role directly after auth loads
+  // Check admin role with retries (handles transient session issues)
   const checkAdminRole = useCallback(async (userId: string) => {
-    try {
-      const { data: isAdminRole, error } = await supabase
-        .rpc('has_role', { _user_id: userId, _role: 'admin' });
-      
-      if (!error && isAdminRole) {
-        setIsAdminVerified(true);
+    let delay = 200;
+    const maxAttempts = 5;
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        const { data: isAdminRole, error } = await supabase
+          .rpc('has_role', { _user_id: userId, _role: 'admin' });
+
+        if (!error && isAdminRole) {
+          setIsAdminVerified(true);
+          setAdminCheckComplete(true);
+          return;
+        }
+        if (!error) {
+          // Not an error, just not an admin
+          break;
+        }
+      } catch {
+        // Transient error – continue retry
       }
-    } catch (err) {
-      console.error('Error checking admin role:', err);
-    } finally {
-      setAdminCheckComplete(true);
+      await new Promise((r) => setTimeout(r, delay));
+      delay = Math.min(delay * 2, 1500);
     }
+    setAdminCheckComplete(true);
   }, []);
 
   useEffect(() => {
