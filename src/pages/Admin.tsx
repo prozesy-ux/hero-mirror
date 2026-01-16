@@ -1,5 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { Routes, Route } from 'react-router-dom';
 import AdminSidebar, { useAdminSidebarContext } from '@/components/admin/AdminSidebar';
 import PromptsManagement from '@/components/admin/PromptsManagement';
 import CategoriesManagement from '@/components/admin/CategoriesManagement';
@@ -16,7 +15,6 @@ import SecurityLogsManagement from '@/components/admin/SecurityLogsManagement';
 import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -148,28 +146,8 @@ const AdminContent = () => {
   );
 };
 
+// Admin panel - assumes user is already authenticated as admin via AdminProtectedRoute
 const Admin = () => {
-  const { isAuthenticated, isAdmin, loading } = useAuthContext();
-
-  // Show loading while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-      </div>
-    );
-  }
-
-  // Redirect to sign in if not authenticated
-  if (!isAuthenticated) {
-    return <Navigate to="/signin" replace />;
-  }
-
-  // Redirect to dashboard if not admin
-  if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] overflow-hidden relative">
       {/* Clean solid background - no patterns */}
