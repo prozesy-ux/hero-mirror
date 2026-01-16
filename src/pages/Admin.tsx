@@ -202,9 +202,9 @@ const Admin = () => {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Redirect to dashboard if not an admin
+  // Redirect to admin login with message if not an admin (instead of dashboard)
   if (!isAdminVerified) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/admin/login?message=Admin+verification+failed.+Please+sign+in+with+an+admin+account." replace />;
   }
 
   return (
