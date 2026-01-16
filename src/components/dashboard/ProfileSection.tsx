@@ -471,10 +471,10 @@ const ProfileSection = () => {
   const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 p-4 lg:p-6 animate-fade-up">
-      {/* Compact Profile Header */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <div className="flex items-center gap-5">
+    <div className="max-w-2xl mx-auto space-y-4 lg:space-y-6 animate-fade-up">
+      {/* Compact Profile Header - Stack on mobile */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-5">
           {/* Avatar with change button */}
           <div className="relative group">
             <Avatar className="h-16 w-16 border-2 border-gray-100">

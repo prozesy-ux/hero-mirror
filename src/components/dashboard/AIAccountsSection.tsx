@@ -454,34 +454,51 @@ const AIAccountsSection = () => {
 
   return (
     <div className="animate-fade-up">
-      {/* Tab Navigation with Wallet Balance */}
-      <div className="bg-white rounded-2xl p-2 mb-8 border border-gray-200 shadow-md">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          {/* Tab buttons */}
-          <div className="flex gap-2 flex-wrap">
+      {/* Tab Navigation with Wallet Balance - Mobile Optimized */}
+      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
+          {/* Wallet & Add Funds - Mobile: Top row */}
+          <div className="flex items-center gap-2 lg:order-2 lg:ml-auto">
+            <div className="flex items-center gap-1.5 bg-violet-100 border border-violet-200 px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl">
+              <Wallet size={14} className="text-violet-600" />
+              <span className="text-violet-700 font-bold text-xs lg:text-sm">
+                ${wallet?.balance?.toFixed(2) || '0.00'}
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/dashboard/billing')}
+              className="flex items-center gap-1.5 bg-violet-500 hover:bg-violet-600 text-white px-2.5 py-1.5 lg:px-4 lg:py-2 rounded-xl font-medium text-xs lg:text-sm transition-all active:scale-95 whitespace-nowrap"
+            >
+              <Plus size={14} />
+              Add Funds
+            </button>
+          </div>
+
+          {/* Tab buttons - Horizontal scroll on mobile */}
+          <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar lg:order-1">
             <button
               onClick={() => setActiveTab('browse')}
-              className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'browse'
                   ? 'bg-gray-900 text-white shadow-lg'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 hover:scale-105 active:scale-95'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-              <ShoppingCart size={16} />
-              Browse Accounts
+              <ShoppingCart size={14} />
+              Browse
             </button>
             <button
               onClick={() => setActiveTab('purchases')}
-              className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'purchases'
                   ? 'bg-gray-900 text-white shadow-lg'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 hover:scale-105 active:scale-95'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-              <Package size={16} />
-              My Purchases
+              <Package size={14} />
+              Purchases
               {purchases.length > 0 && (
-                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
                   activeTab === 'purchases' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
                 }`}>
                   {purchases.length}
@@ -490,13 +507,13 @@ const AIAccountsSection = () => {
             </button>
             <button
               onClick={() => setActiveTab('stats')}
-              className={`px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 transform flex items-center gap-2 ${
+              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'stats'
                   ? 'bg-gray-900 text-white shadow-lg'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 hover:scale-105 active:scale-95'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
               }`}
             >
-              <BarChart3 size={16} />
+              <BarChart3 size={14} />
               Stats
             </button>
             <button
