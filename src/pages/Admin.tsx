@@ -14,7 +14,7 @@ import ChatManagement from '@/components/admin/ChatManagement';
 import WalletManagement from '@/components/admin/WalletManagement';
 import SecurityLogsManagement from '@/components/admin/SecurityLogsManagement';
 import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
@@ -149,17 +149,36 @@ const AdminContent = () => {
 };
 
 const Admin = () => {
-  const { isAuthenticated, isAdmin, loading } = useAuthContext();
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const { isAuthenticated, loading, user } = useAuthContext();
+  const [adminCheckComplete, setAdminCheckComplete] = useState(false);
+  const [isAdminVerified, setIsAdminVerified] = useState(false);
 
-  // Add timeout fallback - if loading takes too long, redirect
-  useEffect(() => {
-    const timer = setTimeout(() => setLoadingTimeout(true), 3000);
-    return () => clearTimeout(timer);
+  // Check admin role directly after auth loads
+  const checkAdminRole = useCallback(async (userId: string) => {
+    try {
+      const { data: isAdminRole, error } = await supabase
+        .rpc('has_role', { _user_id: userId, _role: 'admin' });
+      
+      if (!error && isAdminRole) {
+        setIsAdminVerified(true);
+      }
+    } catch (err) {
+      console.error('Error checking admin role:', err);
+    } finally {
+      setAdminCheckComplete(true);
+    }
   }, []);
 
-  // Show loading while checking auth (with timeout fallback)
-  if (loading && !loadingTimeout) {
+  useEffect(() => {
+    if (!loading && isAuthenticated && user?.id) {
+      checkAdminRole(user.id);
+    } else if (!loading && !isAuthenticated) {
+      setAdminCheckComplete(true);
+    }
+  }, [loading, isAuthenticated, user?.id, checkAdminRole]);
+
+  // Show loading state while checking authentication or admin status
+  if (loading || (isAuthenticated && !adminCheckComplete)) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
@@ -167,18 +186,13 @@ const Admin = () => {
     );
   }
 
-  // If still loading after timeout, send to admin login
-  if (loading && loadingTimeout) {
-    return <Navigate to="/admin/login" replace />;
-  }
-
   // Redirect to admin login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Redirect to dashboard if not admin
-  if (!isAdmin) {
+  // Redirect to dashboard if not an admin
+  if (!isAdminVerified) {
     return <Navigate to="/dashboard" replace />;
   }
 

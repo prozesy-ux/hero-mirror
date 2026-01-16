@@ -4,6 +4,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import signinBackground from "@/assets/signin-background.webp";
 import promptheroIcon from "@/assets/prompthero-icon.png";
 
@@ -34,15 +35,35 @@ const AdminSignIn = () => {
     }
 
     setSubmitting(true);
-    const { error } = await signIn(parsed.data.email, parsed.data.password);
-    setSubmitting(false);
+    const { data: authData, error } = await signIn(parsed.data.email, parsed.data.password);
 
     if (error) {
+      setSubmitting(false);
       toast.error(error.message);
       return;
     }
 
-    toast.success("Signed in. Checking admin access...");
+    // Check admin role BEFORE navigating
+    const userId = authData?.user?.id;
+    if (!userId) {
+      setSubmitting(false);
+      toast.error("Login failed - no user ID");
+      return;
+    }
+
+    const { data: isAdminRole, error: roleError } = await supabase
+      .rpc('has_role', { _user_id: userId, _role: 'admin' });
+
+    setSubmitting(false);
+
+    if (roleError || !isAdminRole) {
+      // Sign out since they're not an admin
+      await supabase.auth.signOut();
+      toast.error("Access denied. This login is for administrators only.");
+      return;
+    }
+
+    toast.success("Admin access verified!");
     navigate("/admin", { replace: true });
   };
 
