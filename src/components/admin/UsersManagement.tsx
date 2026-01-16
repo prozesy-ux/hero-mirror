@@ -105,7 +105,7 @@ const UsersManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-[#27272a] border-t-white animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
     );
   }
@@ -193,7 +193,7 @@ const UsersManagement = () => {
                       <Crown size={12} /> Pro
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 px-3 py-1 bg-zinc-800 text-gray-300 text-xs rounded-full w-fit">
+                    <span className="flex items-center gap-1 px-3 py-1 bg-white/10 text-gray-300 text-xs rounded-full w-fit">
                       <UserIcon size={12} /> Free
                     </span>
                   )}
@@ -205,7 +205,7 @@ const UsersManagement = () => {
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleUserClick(user); }}
-                      className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23] hover:text-white transition-all"
+                      className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
                       title="View Details"
                     >
                       <Eye size={18} />
@@ -216,7 +216,7 @@ const UsersManagement = () => {
                       className={`p-2 rounded-lg transition-all ${
                         user.is_pro 
                           ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' 
-                          : 'bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23] hover:text-white'
+                          : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
                       }`}
                       title={user.is_pro ? 'Downgrade to Free' : 'Upgrade to Pro'}
                     >
@@ -231,7 +231,7 @@ const UsersManagement = () => {
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDeleteUser(user.id, user.user_id); }}
                       disabled={deletingId === user.id}
-                      className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
+                      className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
                       title="Delete User"
                     >
                       {deletingId === user.id ? (

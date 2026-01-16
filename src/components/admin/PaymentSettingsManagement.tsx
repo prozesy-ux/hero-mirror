@@ -212,7 +212,7 @@ const PaymentSettingsManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-[#27272a] border-t-white animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
     );
   }
@@ -285,14 +285,14 @@ const PaymentSettingsManagement = () => {
                   <button
                     onClick={() => handleMoveOrder(method, 'up')}
                     disabled={index === 0}
-                    className="p-1 rounded bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="p-1 rounded bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     <ArrowUp size={14} />
                   </button>
                   <button
                     onClick={() => handleMoveOrder(method, 'down')}
                     disabled={index === paymentMethods.length - 1}
-                    className="p-1 rounded bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="p-1 rounded bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     <ArrowDown size={14} />
                   </button>
@@ -305,7 +305,7 @@ const PaymentSettingsManagement = () => {
                   className={`p-2 rounded-lg transition-all ${
                     method.is_enabled 
                       ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
-                      : 'bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23]'
+                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
                   }`}
                   title={method.is_enabled ? 'Disable' : 'Enable'}
                 >
@@ -321,7 +321,7 @@ const PaymentSettingsManagement = () => {
                 {/* Edit */}
                 <button
                   onClick={() => openEditModal(method)}
-                  className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23] hover:text-white transition-all"
+                  className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
                   title="Edit"
                 >
                   <Edit2 size={18} />
@@ -331,7 +331,7 @@ const PaymentSettingsManagement = () => {
                 <button
                   onClick={() => handleDelete(method)}
                   disabled={saving === method.id}
-                  className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
+                  className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
                   title="Delete"
                 >
                   {saving === method.id ? (
@@ -360,7 +360,7 @@ const PaymentSettingsManagement = () => {
           resetForm();
         }
       }}>
-        <DialogContent className="bg-[#111113] border-[#27272a] text-white max-w-lg">
+        <DialogContent className="bg-[#1a1a24] border-white/10 text-white max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-white">
               {editingMethod ? 'Edit Payment Method' : 'Add Payment Method'}
@@ -375,7 +375,7 @@ const PaymentSettingsManagement = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., bKash"
-                  className="bg-[#0c0c0e] border-[#27272a] text-white mt-1"
+                  className="bg-white/5 border-white/10 text-white mt-1"
                 />
               </div>
               <div>
@@ -384,7 +384,7 @@ const PaymentSettingsManagement = () => {
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                   placeholder="e.g., bkash"
-                  className="bg-[#0c0c0e] border-[#27272a] text-white mt-1"
+                  className="bg-white/5 border-white/10 text-white mt-1"
                   disabled={!!editingMethod}
                 />
               </div>
@@ -396,7 +396,7 @@ const PaymentSettingsManagement = () => {
                 value={formData.icon_url}
                 onChange={(e) => setFormData({ ...formData, icon_url: e.target.value })}
                 placeholder="https://example.com/logo.png"
-                className="bg-[#0c0c0e] border-[#27272a] text-white mt-1"
+                className="bg-white/5 border-white/10 text-white mt-1"
               />
             </div>
             
@@ -407,7 +407,7 @@ const PaymentSettingsManagement = () => {
                   value={formData.account_number}
                   onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
                   placeholder="e.g., 01712-XXXXXX"
-                  className="bg-[#0c0c0e] border-[#27272a] text-white mt-1"
+                  className="bg-white/5 border-white/10 text-white mt-1"
                 />
               </div>
               <div>
@@ -416,7 +416,7 @@ const PaymentSettingsManagement = () => {
                   value={formData.account_name}
                   onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
                   placeholder="Account holder name"
-                  className="bg-[#0c0c0e] border-[#27272a] text-white mt-1"
+                  className="bg-white/5 border-white/10 text-white mt-1"
                 />
               </div>
             </div>
@@ -427,7 +427,7 @@ const PaymentSettingsManagement = () => {
                 value={formData.instructions}
                 onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
                 placeholder="Instructions shown to users when they select this payment method..."
-                className="bg-[#0c0c0e] border-[#27272a] text-white mt-1 min-h-[80px]"
+                className="bg-white/5 border-white/10 text-white mt-1 min-h-[80px]"
               />
             </div>
             
@@ -441,7 +441,7 @@ const PaymentSettingsManagement = () => {
                       <img 
                         src={formData.qr_image_url} 
                         alt="QR Code" 
-                        className="w-32 h-32 object-contain border border-[#27272a] rounded-lg bg-white p-2"
+                        className="w-32 h-32 object-contain border border-white/10 rounded-lg bg-white p-2"
                       />
                       <button
                         type="button"
@@ -457,7 +457,7 @@ const PaymentSettingsManagement = () => {
                         value={formData.qr_image_url}
                         onChange={(e) => setFormData({ ...formData, qr_image_url: e.target.value })}
                         placeholder="https://example.com/qr-code.png"
-                        className="bg-[#0c0c0e] border-[#27272a] text-white"
+                        className="bg-white/5 border-white/10 text-white"
                       />
                       <p className="text-gray-500 text-xs mt-1">Paste QR code image URL for manual payments</p>
                     </div>
@@ -466,7 +466,7 @@ const PaymentSettingsManagement = () => {
               </div>
             )}
             
-            <div className="flex items-center justify-between p-3 bg-[#18181b] border border-[#27272a] rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
               <div>
                 <p className="text-white font-medium">Automatic Payment</p>
                 <p className="text-gray-400 text-sm">Process payments automatically (like Stripe)</p>

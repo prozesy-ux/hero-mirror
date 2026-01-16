@@ -215,7 +215,7 @@ const AccountOrdersManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-[#27272a] border-t-white animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
     );
   }
@@ -245,12 +245,12 @@ const AccountOrdersManagement = () => {
       {/* Edit Modal */}
       {editingOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-          <div className="bg-[#0a0a0a] border border-[#27272a] rounded-2xl max-w-md w-full p-6">
+          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-white">Edit Order</h3>
               <button 
                 onClick={() => setEditingOrder(null)}
-                className="p-2 text-gray-400 hover:text-white hover:bg-[#1a1a1e] rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
               >
                 <X size={20} />
               </button>
@@ -262,7 +262,7 @@ const AccountOrdersManagement = () => {
                 <select
                   value={editFormData.payment_status}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, payment_status: e.target.value }))}
-                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 >
                   <option value="pending">Pending</option>
                   <option value="completed">Completed</option>
@@ -275,7 +275,7 @@ const AccountOrdersManagement = () => {
                 <select
                   value={editFormData.delivery_status}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, delivery_status: e.target.value }))}
-                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 >
                   <option value="pending">Pending</option>
                   <option value="delivered">Delivered</option>
@@ -288,7 +288,7 @@ const AccountOrdersManagement = () => {
                   type="number"
                   value={editFormData.amount}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
               </div>
               
@@ -299,7 +299,7 @@ const AccountOrdersManagement = () => {
                   value={editFormData.account_credentials}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, account_credentials: e.target.value }))}
                   placeholder="email:password or link"
-                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
               </div>
               
@@ -314,7 +314,7 @@ const AccountOrdersManagement = () => {
                 </button>
                 <button
                   onClick={() => setEditingOrder(null)}
-                  className="px-6 py-3 bg-[#18181b] border border-[#27272a] text-white rounded-xl hover:bg-[#1f1f23] transition-colors"
+                  className="px-6 py-3 bg-white/5 text-white rounded-xl hover:bg-white/10 transition-colors"
                 >
                   Cancel
                 </button>
@@ -373,7 +373,7 @@ const AccountOrdersManagement = () => {
                   {/* Action Buttons */}
                   <button
                     onClick={() => handleEdit(order)}
-                    className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23] hover:text-white transition-all"
+                    className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
                     title="Edit Order"
                   >
                     <Edit size={18} />
@@ -381,7 +381,7 @@ const AccountOrdersManagement = () => {
                   <button
                     onClick={() => handleDelete(order.id)}
                     disabled={deletingId === order.id}
-                    className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
+                    className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
                     title="Delete Order"
                   >
                     {deletingId === order.id ? (
