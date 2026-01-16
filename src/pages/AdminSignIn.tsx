@@ -50,13 +50,9 @@ const AdminSignIn = () => {
       return;
     }
 
-    // Get the current session to ensure we have the user ID
+    // Ensure session is established before role check (helps in some browsers)
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id || authData?.user?.id;
-    
-    console.log("Auth data:", authData);
-    console.log("Session data:", sessionData);
-    console.log("User ID:", userId);
 
     if (!userId) {
       setSubmitting(false);
@@ -64,15 +60,24 @@ const AdminSignIn = () => {
       return;
     }
 
-    const { data: isAdminRole, error: roleError } = await supabase
-      .rpc('has_role', { _user_id: userId, _role: 'admin' });
+    // Verify admin role (retry once if the session hasn't propagated yet)
+    const runAdminCheck = async () =>
+      supabase.rpc('has_role', { _user_id: userId, _role: 'admin' });
 
-    console.log("Admin role check:", { isAdminRole, roleError });
+    let { data: isAdminRole, error: roleError } = await runAdminCheck();
+    if (roleError) {
+      await new Promise((r) => setTimeout(r, 250));
+      ({ data: isAdminRole, error: roleError } = await runAdminCheck());
+    }
 
     setSubmitting(false);
 
-    if (roleError || !isAdminRole) {
-      // Sign out since they're not an admin
+    if (roleError) {
+      toast.error("Couldn't verify admin access. Please try again.");
+      return;
+    }
+
+    if (isAdminRole !== true) {
       await supabase.auth.signOut();
       toast.error("Access denied. This login is for administrators only.");
       return;
