@@ -132,7 +132,7 @@ const RefundRequestsManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-[#27272a] border-t-white animate-spin" />
       </div>
     );
   }

@@ -231,7 +231,7 @@ const WalletManagement = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-white/10 pb-2">
+      <div className="flex gap-2 border-b border-[#27272a] pb-2">
         <button
           onClick={() => setActiveTab('wallets')}
           className={`px-4 py-2 rounded-lg transition-all ${
@@ -270,7 +270,7 @@ const WalletManagement = () => {
           placeholder="Search by email or gateway..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-white/5 border-white/10"
+          className="pl-10 bg-[#0c0c0e] border-[#27272a] text-white"
         />
       </div>
 
@@ -301,7 +301,7 @@ const WalletManagement = () => {
                 </TableRow>
               ) : (
                 filteredWallets.map((wallet) => (
-                  <TableRow key={wallet.id} className="border-white/10">
+                  <TableRow key={wallet.id} className="border-[#27272a]">
                     <TableCell className="text-white">{wallet.user_email}</TableCell>
                     <TableCell className="text-green-400 font-semibold">
                       ${parseFloat(String(wallet.balance)).toFixed(2)}
@@ -351,7 +351,7 @@ const WalletManagement = () => {
                 </TableRow>
               ) : (
                 filteredTransactions.map((tx) => (
-                  <TableRow key={tx.id} className="border-white/10">
+                  <TableRow key={tx.id} className="border-[#27272a]">
                     <TableCell className="text-white">{tx.user_email}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-xs ${
@@ -434,7 +434,7 @@ const WalletManagement = () => {
                 </TableRow>
               ) : (
                 filteredPendingTransactions.map((tx) => (
-                  <TableRow key={tx.id} className="border-white/10">
+                  <TableRow key={tx.id} className="border-[#27272a]">
                     <TableCell className="text-white">{tx.user_email}</TableCell>
                     <TableCell className="text-green-400 font-semibold">
                       +${parseFloat(String(tx.amount)).toFixed(2)}

@@ -56,7 +56,7 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
         className={`group flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-300 ${
           active 
             ? 'bg-white text-black' 
-            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            : 'text-gray-400 hover:bg-[#1a1a1e] hover:text-white'
         } ${isCollapsed ? 'justify-center' : ''}`}
       >
         <span className={`transition-transform duration-300 flex-shrink-0 ${active ? '' : 'group-hover:scale-110'}`}>
@@ -85,7 +85,7 @@ const NavItem = forwardRef<HTMLAnchorElement, NavItemProps>(
           <TooltipTrigger asChild>
             {linkContent}
           </TooltipTrigger>
-          <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
+          <TooltipContent side="right" className="bg-[#1a1a24] text-white border-[#27272a]">
             {label}
           </TooltipContent>
         </Tooltip>
@@ -164,7 +164,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                       <LogOut size={22} />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
+                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-[#27272a]">
                     Sign Out
                   </TooltipContent>
                 </Tooltip>
@@ -184,12 +184,12 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                   <TooltipTrigger asChild>
                     <button
                       onClick={onToggleCollapse}
-                      className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all duration-300 flex-shrink-0"
+                      className="p-3 rounded-xl bg-[#18181b] border border-[#27272a] hover:bg-[#1f1f23] text-gray-400 hover:text-white transition-all duration-300 flex-shrink-0"
                     >
                       {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-white/10">
+                  <TooltipContent side="right" className="bg-[#1a1a24] text-white border-[#27272a]">
                     {isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                   </TooltipContent>
                 </Tooltip>
@@ -230,7 +230,7 @@ const AdminSidebar = () => {
           </div>
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-            className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 text-white hover:bg-[#1a1a1e] rounded-lg transition-colors"
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -240,7 +240,7 @@ const AdminSidebar = () => {
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
-          className="lg:hidden fixed inset-0 z-40 bg-black/80 backdrop-blur-sm"
+          className="lg:hidden fixed inset-0 z-40 bg-black/85"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
