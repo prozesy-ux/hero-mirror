@@ -116,20 +116,20 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     };
 
     const navItems = [
-      { icon: <LayoutDashboard size={22} />, label: 'Dashboard', to: '/admin' },
-      { icon: <FileText size={22} />, label: 'Prompts', to: '/admin/prompts' },
-      { icon: <FolderOpen size={22} />, label: 'Categories & Tools', to: '/admin/categories' },
-      { icon: <Users size={22} />, label: 'Users', to: '/admin/users' },
-      { icon: <CreditCard size={22} />, label: 'Purchases', to: '/admin/purchases' },
-      { icon: <Wallet size={22} />, label: 'Wallets', to: '/admin/wallets' },
-      { icon: <Settings size={22} />, label: 'Payment Settings', to: '/admin/payments' },
-      { icon: <Bot size={22} />, label: 'AI Accounts', to: '/admin/ai-accounts' },
-      { icon: <Package size={22} />, label: 'Account Orders', to: '/admin/account-orders' },
-      { icon: <RefreshCcw size={22} />, label: 'Refund Requests', to: '/admin/refunds' },
-      { icon: <XCircle size={22} />, label: 'Cancellations', to: '/admin/cancellations' },
-      { icon: <Trash2 size={22} />, label: 'Deletions', to: '/admin/deletions' },
-      { icon: <MessageCircle size={22} />, label: 'Support Chats', to: '/admin/chats' },
-      { icon: <Shield size={22} />, label: 'Security Logs', to: '/admin/security' },
+      { icon: <LayoutDashboard size={22} />, label: 'Dashboard', to: '/adminpro' },
+      { icon: <FileText size={22} />, label: 'Prompts', to: '/adminpro/prompts' },
+      { icon: <FolderOpen size={22} />, label: 'Categories & Tools', to: '/adminpro/categories' },
+      { icon: <Users size={22} />, label: 'Users', to: '/adminpro/users' },
+      { icon: <CreditCard size={22} />, label: 'Purchases', to: '/adminpro/purchases' },
+      { icon: <Wallet size={22} />, label: 'Wallets', to: '/adminpro/wallets' },
+      { icon: <Settings size={22} />, label: 'Payment Settings', to: '/adminpro/payments' },
+      { icon: <Bot size={22} />, label: 'AI Accounts', to: '/adminpro/ai-accounts' },
+      { icon: <Package size={22} />, label: 'Account Orders', to: '/adminpro/account-orders' },
+      { icon: <RefreshCcw size={22} />, label: 'Refund Requests', to: '/adminpro/refunds' },
+      { icon: <XCircle size={22} />, label: 'Cancellations', to: '/adminpro/cancellations' },
+      { icon: <Trash2 size={22} />, label: 'Deletions', to: '/adminpro/deletions' },
+      { icon: <MessageCircle size={22} />, label: 'Support Chats', to: '/adminpro/chats' },
+      { icon: <Shield size={22} />, label: 'Security Logs', to: '/adminpro/security' },
     ];
 
     return (
