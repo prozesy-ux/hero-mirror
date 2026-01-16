@@ -160,9 +160,9 @@ const Admin = () => {
     );
   }
 
-  // Redirect to sign in if not authenticated
+  // Redirect to admin login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/signin" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   // Redirect to dashboard if not admin
