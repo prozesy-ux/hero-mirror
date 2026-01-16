@@ -121,6 +121,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       { icon: <Users size={22} />, label: 'Users', to: '/admin/users' },
       { icon: <CreditCard size={22} />, label: 'Purchases', to: '/admin/purchases' },
       { icon: <Wallet size={22} />, label: 'Wallets', to: '/admin/wallets' },
+      { icon: <CreditCard size={22} />, label: 'Payment Settings', to: '/admin/payment-settings' },
       { icon: <Bot size={22} />, label: 'AI Accounts', to: '/admin/ai-accounts' },
       { icon: <Package size={22} />, label: 'Account Orders', to: '/admin/account-orders' },
       { icon: <RefreshCcw size={22} />, label: 'Refund Requests', to: '/admin/refunds' },

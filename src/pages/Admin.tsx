@@ -12,6 +12,7 @@ import CancellationRequestsManagement from '@/components/admin/CancellationReque
 import DeletionRequestsManagement from '@/components/admin/DeletionRequestsManagement';
 import ChatManagement from '@/components/admin/ChatManagement';
 import WalletManagement from '@/components/admin/WalletManagement';
+import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
@@ -104,6 +105,7 @@ const AdminContent = () => {
           <Route path="users" element={<UsersManagement />} />
           <Route path="purchases" element={<PurchasesManagement />} />
           <Route path="wallets" element={<WalletManagement />} />
+          <Route path="payment-settings" element={<PaymentSettingsManagement />} />
           <Route path="ai-accounts" element={<AIAccountsManagement />} />
           <Route path="account-orders" element={<AccountOrdersManagement />} />
           <Route path="refunds" element={<RefundRequestsManagement />} />
