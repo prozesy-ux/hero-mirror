@@ -713,7 +713,6 @@ export type Database = {
     }
     Functions: {
       clean_old_rate_limits: { Args: never; Returns: undefined }
-      cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

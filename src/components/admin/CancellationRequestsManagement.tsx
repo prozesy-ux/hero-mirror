@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, XCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useAdminApi } from '@/hooks/useAdminApi';
 
 interface CancellationRequest {
   id: string;
@@ -15,45 +15,61 @@ interface CancellationRequest {
   user_name?: string;
 }
 
-interface Profile {
-  user_id: string;
-  email: string;
-  full_name: string | null;
-}
-
 const CancellationRequestsManagement = () => {
   const [requests, setRequests] = useState<CancellationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
-  const { fetchData, updateData } = useAdminApi();
 
   useEffect(() => {
     fetchRequests();
+    subscribeToRequests();
   }, []);
 
   const fetchRequests = async () => {
-    const [requestsResult, profilesResult] = await Promise.all([
-      fetchData<CancellationRequest>('cancellation_requests', {
-        select: '*',
-        order: { column: 'created_at', ascending: false }
-      }),
-      fetchData<Profile>('profiles', { select: 'user_id, email, full_name' })
-    ]);
+    const { data: requestsData, error } = await supabase
+      .from('cancellation_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    const requestsData = requestsResult.data || [];
-    const profiles = profilesResult.data || [];
+    if (!error && requestsData) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, email, full_name');
 
-    const profileMap = new Map(profiles.map(p => [p.user_id, p]));
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
-    const enrichedRequests = requestsData.map(req => ({
-      ...req,
-      user_email: profileMap.get(req.user_id)?.email || 'Unknown',
-      user_name: profileMap.get(req.user_id)?.full_name || 'Unknown'
-    }));
+      const enrichedRequests = requestsData.map(req => ({
+        ...req,
+        user_email: profileMap.get(req.user_id)?.email || 'Unknown',
+        user_name: profileMap.get(req.user_id)?.full_name || 'Unknown'
+      }));
 
-    setRequests(enrichedRequests);
+      setRequests(enrichedRequests as CancellationRequest[]);
+    }
     setLoading(false);
+  };
+
+  const subscribeToRequests = () => {
+    const channel = supabase
+      .channel('cancellation-requests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cancellation_requests'
+        },
+        () => {
+          fetchRequests();
+          toast.info('New cancellation request!');
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   };
 
   const handleProcess = async (requestId: string, action: 'approved' | 'rejected') => {
@@ -62,17 +78,23 @@ const CancellationRequestsManagement = () => {
     const request = requests.find(r => r.id === requestId);
     if (!request) return;
 
-    const { error } = await updateData('cancellation_requests', requestId, {
-      status: action,
-      admin_notes: adminNotes[requestId] || null,
-      processed_at: new Date().toISOString()
-    });
+    const { error } = await supabase
+      .from('cancellation_requests')
+      .update({
+        status: action,
+        admin_notes: adminNotes[requestId] || null,
+        processed_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
 
     if (error) {
       toast.error(`Failed to ${action} cancellation`);
     } else {
       if (action === 'approved') {
-        await updateData('profiles', null, { is_pro: false }, { eq: { user_id: request.user_id } });
+        await supabase
+          .from('profiles')
+          .update({ is_pro: false })
+          .eq('user_id', request.user_id);
       }
 
       toast.success(`Cancellation ${action} successfully`);

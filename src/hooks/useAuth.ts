@@ -47,105 +47,61 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
-    let isMounted = true;
-
-    // Helper function with timeout protection
-    const checkAdminWithTimeout = async (userId: string): Promise<boolean> => {
-      try {
-        const result = await Promise.race([
-          checkAdminRole(userId),
-          new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000))
-        ]);
-        return result;
-      } catch (error) {
-        console.error('Error checking admin role:', error);
-        return false;
-      }
-    };
-
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!isMounted) return;
-        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          try {
-            // Check admin role with timeout
-            const adminStatus = await checkAdminWithTimeout(session.user.id);
-            if (isMounted) setIsAdmin(adminStatus);
-            
-            // Fetch profile
+          // Check admin role
+          const adminStatus = await checkAdminRole(session.user.id);
+          setIsAdmin(adminStatus);
+          
+          // Fetch profile using setTimeout to avoid race condition
+          setTimeout(async () => {
             const { data: profileData } = await supabase
               .from('profiles')
               .select('*')
               .eq('user_id', session.user.id)
               .maybeSingle();
             
-            if (isMounted) setProfile(profileData);
-          } catch (error) {
-            console.error('Error in auth state change:', error);
-            if (isMounted) {
-              setIsAdmin(false);
-              setProfile(null);
-            }
-          }
+            setProfile(profileData);
+          }, 0);
         } else {
           setProfile(null);
           setIsAdmin(false);
         }
         
-        if (isMounted) setLoading(false);
+        setLoading(false);
       }
     );
 
     // THEN check for existing session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        // Check admin role
+        const adminStatus = await checkAdminRole(session.user.id);
+        setIsAdmin(adminStatus);
         
-        if (!isMounted) return;
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          try {
-            // Check admin role with timeout
-            const adminStatus = await checkAdminWithTimeout(session.user.id);
-            if (isMounted) setIsAdmin(adminStatus);
-            
-            // Fetch profile
-            const { data } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .maybeSingle();
-            
-            if (isMounted) setProfile(data);
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-            if (isMounted) {
-              setIsAdmin(false);
-              setProfile(null);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error getting session:', error);
-      } finally {
-        if (isMounted) setLoading(false);
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            setProfile(data);
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
       }
-    };
+    });
 
-    initializeAuth();
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {

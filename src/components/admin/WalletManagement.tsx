@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Wallet, Search, DollarSign, ArrowUpRight, RefreshCcw, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useAdminApi } from '@/hooks/useAdminApi';
 
 interface WalletWithUser {
   id: string;
@@ -34,78 +34,89 @@ interface Transaction {
   transaction_id?: string;
 }
 
-interface Profile {
-  user_id: string;
-  email: string;
-}
-
 const WalletManagement = () => {
   const [wallets, setWallets] = useState<WalletWithUser[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'wallets' | 'transactions' | 'pending'>('wallets');
-  const { fetchData, updateData } = useAdminApi();
 
   useEffect(() => {
-    fetchAllData();
+    fetchData();
+    subscribeToUpdates();
   }, []);
 
-  const fetchAllData = async () => {
+  const fetchData = async () => {
     setLoading(true);
     
-    const [walletsResult, txResult] = await Promise.all([
-      fetchData<WalletWithUser>('user_wallets', {
-        select: '*',
-        order: { column: 'updated_at', ascending: false }
-      }),
-      fetchData<Transaction>('wallet_transactions', {
-        select: '*',
-        order: { column: 'created_at', ascending: false },
-        limit: 100
-      })
-    ]);
+    // Fetch wallets with user profiles
+    const { data: walletsData } = await supabase
+      .from('user_wallets')
+      .select('*')
+      .order('updated_at', { ascending: false });
 
-    const walletsData = walletsResult.data || [];
-    const txData = txResult.data || [];
+    // Fetch user emails for wallets
+    if (walletsData) {
+      const userIds = walletsData.map(w => w.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, email')
+        .in('user_id', userIds);
 
-    // Get all user IDs
-    const allUserIds = [...new Set([
-      ...walletsData.map(w => w.user_id),
-      ...txData.map(t => t.user_id)
-    ])];
+      const walletsWithEmail = walletsData.map(wallet => ({
+        ...wallet,
+        user_email: profiles?.find(p => p.user_id === wallet.user_id)?.email || 'Unknown'
+      }));
+      setWallets(walletsWithEmail);
+    }
 
-    // Fetch profiles
-    const { data: profiles } = await fetchData<Profile>('profiles', {
-      select: 'user_id, email'
-    });
+    // Fetch transactions
+    const { data: txData } = await supabase
+      .from('wallet_transactions')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
 
-    const profileMap = new Map((profiles || []).map(p => [p.user_id, p.email]));
+    if (txData) {
+      const userIds = [...new Set(txData.map(t => t.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, email')
+        .in('user_id', userIds);
 
-    // Enrich data with emails
-    const walletsWithEmail = walletsData.map(wallet => ({
-      ...wallet,
-      user_email: profileMap.get(wallet.user_id) || 'Unknown'
-    }));
-    setWallets(walletsWithEmail);
-
-    const txWithEmail = txData.map(tx => ({
-      ...tx,
-      user_email: profileMap.get(tx.user_id) || 'Unknown'
-    }));
-    setTransactions(txWithEmail);
+      const txWithEmail = txData.map(tx => ({
+        ...tx,
+        user_email: profiles?.find(p => p.user_id === tx.user_id)?.email || 'Unknown'
+      }));
+      setTransactions(txWithEmail);
+    }
 
     setLoading(false);
   };
 
+  const subscribeToUpdates = () => {
+    const channel = supabase
+      .channel('admin-wallet-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_transactions' }, fetchData)
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  };
+
   const updateTransactionStatus = async (id: string, status: string) => {
+    // Find the transaction
     const tx = transactions.find(t => t.id === id);
     if (!tx) {
       toast.error('Transaction not found');
       return;
     }
 
-    const { error } = await updateData('wallet_transactions', id, { status });
+    // Update transaction status
+    const { error } = await supabase
+      .from('wallet_transactions')
+      .update({ status })
+      .eq('id', id);
 
     if (error) {
       toast.error('Failed to update transaction');
@@ -114,18 +125,28 @@ const WalletManagement = () => {
 
     // If approving a topup, credit the user's wallet
     if (status === 'completed' && tx.type === 'topup') {
-      const wallet = wallets.find(w => w.user_id === tx.user_id);
+      // Get current wallet balance
+      const { data: wallet } = await supabase
+        .from('user_wallets')
+        .select('balance')
+        .eq('user_id', tx.user_id)
+        .single();
+
       const currentBalance = wallet?.balance || 0;
       const newBalance = currentBalance + tx.amount;
 
-      const { error: walletError } = await updateData('user_wallets', null, {
-        balance: newBalance,
-        updated_at: new Date().toISOString()
-      }, { eq: { user_id: tx.user_id } });
+      // Upsert wallet with new balance
+      const { error: walletError } = await supabase
+        .from('user_wallets')
+        .upsert({
+          user_id: tx.user_id,
+          balance: newBalance,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
 
       if (walletError) {
         toast.error('Transaction approved but failed to credit wallet');
-        fetchAllData();
+        fetchData();
         return;
       }
 
@@ -134,7 +155,7 @@ const WalletManagement = () => {
       toast.success(`Transaction marked as ${status}`);
     }
     
-    fetchAllData();
+    fetchData();
   };
 
   const filteredWallets = wallets.filter(w =>

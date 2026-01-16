@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, X, Eye, Image, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import RichTextEditor from './RichTextEditor';
 import ImageUploader from './ImageUploader';
-import { useAdminApi } from '@/hooks/useAdminApi';
 
 interface Prompt {
   id: string;
@@ -52,33 +52,48 @@ const PromptsManagement = () => {
     is_trending: false,
     category_id: ''
   });
-  const { fetchData, insertData, updateData, deleteData } = useAdminApi();
 
   useEffect(() => {
-    fetchAllData();
+    fetchData();
+
+    // Subscribe to realtime updates for prompts
+    const channel = supabase
+      .channel('admin-prompts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'prompts'
+        },
+        () => {
+          // Refetch data when prompts change
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  const fetchAllData = async () => {
+  const fetchData = async () => {
     try {
-      const [promptsResult, categoriesResult, toolsResult] = await Promise.all([
-        fetchData<Prompt>('prompts', { 
-          select: 'id, title, description, content, image_url, tool, is_free, is_featured, is_trending, category_id',
-          order: { column: 'created_at', ascending: false }
-        }),
-        fetchData<Category>('categories', { 
-          select: 'id, name',
-          order: { column: 'name', ascending: true }
-        }),
-        fetchData<AITool>('ai_tools', { 
-          select: 'id, name, is_active',
-          eq: { is_active: true },
-          order: { column: 'display_order', ascending: true }
-        })
+      const [{ data: promptsData, error: promptsError }, { data: categoriesData }, { data: toolsData }] = await Promise.all([
+        supabase.from('prompts').select('id, title, description, content, image_url, tool, is_free, is_featured, category_id, categories(name)').order('created_at', { ascending: false }),
+        supabase.from('categories').select('id, name').order('name'),
+        supabase.from('ai_tools').select('id, name, is_active').eq('is_active', true).order('display_order')
       ]);
 
-      setPrompts(promptsResult.data || []);
-      setCategories(categoriesResult.data || []);
-      setAITools(toolsResult.data || []);
+      if (promptsError) {
+        console.error('Error fetching prompts:', promptsError);
+        toast.error('Failed to load prompts');
+      }
+
+      setPrompts(promptsData || []);
+      setCategories(categoriesData || []);
+      setAITools(toolsData || []);
     } catch (error) {
       console.error('Fetch error:', error);
       toast.error('Failed to load data');
@@ -109,22 +124,22 @@ const PromptsManagement = () => {
 
     try {
       if (editingId) {
-        const { error } = await updateData('prompts', editingId, promptData);
+        const { error } = await supabase.from('prompts').update(promptData).eq('id', editingId);
         if (error) {
-          toast.error(`Failed to update: ${error}`);
+          console.error('Update error:', error);
+          toast.error(`Failed to update: ${error.message}`);
         } else {
           toast.success('Prompt updated successfully!');
           resetForm();
-          fetchAllData();
         }
       } else {
-        const { error } = await insertData('prompts', promptData);
+        const { error } = await supabase.from('prompts').insert(promptData);
         if (error) {
-          toast.error(`Failed to create: ${error}`);
+          console.error('Insert error:', error);
+          toast.error(`Failed to create: ${error.message}`);
         } else {
           toast.success('Prompt created successfully!');
           resetForm();
-          fetchAllData();
         }
       }
     } catch (error: any) {
@@ -157,12 +172,12 @@ const PromptsManagement = () => {
     setDeleting(id);
 
     try {
-      const { error } = await deleteData('prompts', id);
+      const { error } = await supabase.from('prompts').delete().eq('id', id);
       if (error) {
-        toast.error(`Failed to delete: ${error}`);
+        console.error('Delete error:', error);
+        toast.error(`Failed to delete: ${error.message}`);
       } else {
         toast.success('Prompt deleted successfully!');
-        fetchAllData();
       }
     } catch (error: any) {
       console.error('Delete error:', error);
