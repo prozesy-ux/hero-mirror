@@ -193,7 +193,7 @@ const AIToolsTab = () => {
         <img 
           src={tool.image_url} 
           alt={tool.name} 
-          className="w-10 h-10 rounded-lg object-contain bg-white/10 p-1"
+          className="w-10 h-10 rounded-lg object-contain bg-white/5 p-1"
           onError={(e) => {
             // Fallback to icon if image fails to load
             e.currentTarget.style.display = 'none';
@@ -203,7 +203,7 @@ const AIToolsTab = () => {
     }
     // Otherwise show the gradient with icon
     return (
-      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tool.color || 'from-zinc-500 to-zinc-600'} flex items-center justify-center text-white shadow-lg border border-[#27272a]`}>
+      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tool.color || 'from-zinc-500 to-zinc-600'} flex items-center justify-center text-white shadow-lg border border-[#1a1a1a]`}>
         {renderIcon(tool.icon)}
       </div>
     );
@@ -212,7 +212,7 @@ const AIToolsTab = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
     );
   }
@@ -222,7 +222,7 @@ const AIToolsTab = () => {
       <div className="flex justify-end">
         <button 
           onClick={() => setShowForm(true)} 
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-white text-black font-semibold px-4 py-2 rounded-lg hover:bg-white/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add AI Tool
@@ -230,7 +230,7 @@ const AIToolsTab = () => {
       </div>
 
       {showForm && (
-        <div className="bg-[#111113] rounded-xl p-6 mb-6 border border-[#27272a]">
+        <div className="bg-[#09090b] rounded-xl p-6 mb-6 border border-[#1a1a1a]">
           <h3 className="text-lg font-semibold text-white mb-4">
             {editing ? 'Edit AI Tool' : 'Add New AI Tool'}
           </h3>
@@ -243,7 +243,7 @@ const AIToolsTab = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. ChatGPT"
-                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
+                  className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
                 />
               </div>
               <div className="space-y-2 relative">
@@ -252,7 +252,7 @@ const AIToolsTab = () => {
                   <button
                     type="button"
                     onClick={() => setShowIconPicker(!showIconPicker)}
-                    className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-2 text-left text-white flex items-center justify-between hover:border-[#3f3f46] focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
+                    className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-2 text-left text-white flex items-center justify-between hover:bg-[#0f0f11] focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
                   >
                     <span className="flex items-center gap-2">
                       {formData.icon ? (
@@ -268,8 +268,8 @@ const AIToolsTab = () => {
                   </button>
                   
                   {showIconPicker && (
-                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#0c0c0e] border border-[#27272a] rounded-lg shadow-xl max-h-72 overflow-hidden">
-                      <div className="p-2 border-b border-[#27272a]">
+                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#030303] border border-[#1a1a1a] rounded-lg shadow-xl max-h-72 overflow-hidden">
+                      <div className="p-2 border-b border-[#1a1a1a]">
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                           <input
@@ -277,7 +277,7 @@ const AIToolsTab = () => {
                             value={iconSearch}
                             onChange={(e) => setIconSearch(e.target.value)}
                             placeholder="Search icons..."
-                            className="w-full bg-[#18181b] border border-[#27272a] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
+                            className="w-full bg-[#09090b] border border-[#1a1a1a] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                             autoFocus
                           />
                         </div>
@@ -292,8 +292,8 @@ const AIToolsTab = () => {
                               key={iconName}
                               type="button"
                               onClick={() => selectIcon(iconName)}
-                              className={`p-2 rounded-lg hover:bg-[#1a1a1e] flex items-center justify-center transition-colors ${
-                                formData.icon === iconName ? 'bg-purple-600 hover:bg-purple-700' : ''
+                              className={`p-2 rounded-lg hover:bg-[#0f0f11] flex items-center justify-center transition-colors ${
+                                formData.icon === iconName ? 'bg-white text-black' : ''
                               }`}
                               title={iconName}
                             >
@@ -322,7 +322,7 @@ const AIToolsTab = () => {
                   value={formData.image_url}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                   placeholder="https://example.com/logo.png"
-                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
+                  className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
                 />
                 <p className="text-xs text-zinc-500">If provided, this image will be used instead of the icon</p>
               </div>
@@ -333,7 +333,7 @@ const AIToolsTab = () => {
                   value={formData.color}
                   onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                   placeholder="e.g. from-green-500 to-emerald-600"
-                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
+                  className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
                 />
               </div>
             </div>
@@ -346,11 +346,11 @@ const AIToolsTab = () => {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Brief description of the AI tool"
                   rows={2}
-                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent resize-none"
+                  className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-transparent resize-none transition-all"
                 />
               </div>
               <div className="space-y-2 flex flex-col justify-end">
-                <div className="flex items-center gap-3 bg-[#0c0c0e] px-4 py-3 rounded-lg border border-[#27272a]">
+                <div className="flex items-center gap-3 bg-[#030303] px-4 py-3 rounded-lg border border-[#1a1a1a]">
                   <Switch
                     id="is_active"
                     checked={formData.is_active}
@@ -364,14 +364,14 @@ const AIToolsTab = () => {
             <div className="flex gap-2 pt-2">
               <button 
                 onClick={handleSave}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center gap-2 bg-white text-black font-semibold px-4 py-2 rounded-lg hover:bg-white/90 transition-colors"
               >
                 <Save className="w-4 h-4" />
                 {editing ? 'Update' : 'Create'} AI Tool
               </button>
               <button 
                 onClick={resetForm}
-                className="flex items-center gap-2 bg-[#18181b] border border-[#27272a] hover:bg-[#1f1f23] text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center gap-2 bg-[#09090b] border border-[#1a1a1a] hover:bg-[#0f0f11] text-white px-4 py-2 rounded-lg transition-colors"
               >
                 <X className="w-4 h-4" />
                 Cancel
@@ -381,9 +381,9 @@ const AIToolsTab = () => {
         </div>
       )}
 
-      <div className="bg-[#111113] rounded-xl overflow-hidden border border-[#27272a]">
+      <div className="bg-[#09090b] rounded-xl overflow-hidden border border-[#1a1a1a]">
         <table className="w-full">
-          <thead className="bg-[#18181b]">
+          <thead className="bg-[#0d0d0f]">
             <tr>
               <th className="text-left px-4 py-4 text-zinc-400 font-medium w-12">#</th>
               <th className="text-left px-4 py-4 text-zinc-400 font-medium w-16">Logo</th>
@@ -396,7 +396,7 @@ const AIToolsTab = () => {
           </thead>
           <tbody>
             {tools.map((tool, index) => (
-              <tr key={tool.id} className="border-t border-[#27272a] hover:bg-[#1a1a1e] transition-colors">
+              <tr key={tool.id} className="border-t border-[#1a1a1a] hover:bg-[#0f0f11] transition-colors">
                 <td className="px-4 py-4 text-zinc-400">
                   <GripVertical className="w-4 h-4 inline mr-1 cursor-grab" />
                   {index + 1}
@@ -406,7 +406,7 @@ const AIToolsTab = () => {
                 </td>
                 <td className="px-4 py-4 font-medium text-white">{tool.name}</td>
                 <td className="px-4 py-4">
-                  <code className="text-xs bg-[#18181b] text-zinc-300 px-2 py-1 rounded border border-[#27272a]">
+                  <code className="text-xs bg-[#0d0d0f] text-zinc-300 px-2 py-1 rounded border border-[#1a1a1a]">
                     {tool.color || 'none'}
                   </code>
                 </td>
@@ -416,8 +416,8 @@ const AIToolsTab = () => {
                 <td className="px-4 py-4">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     tool.is_active 
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      ? 'bg-green-500/10 text-green-400' 
+                      : 'bg-red-500/10 text-red-400'
                   }`}>
                     {tool.is_active ? 'Active' : 'Inactive'}
                   </span>
@@ -426,14 +426,14 @@ const AIToolsTab = () => {
                   <div className="flex gap-1">
                     <button 
                       onClick={() => handleEdit(tool)}
-                      className="p-2 text-blue-400 hover:bg-[#1a1a1e] rounded-lg transition-colors"
+                      className="p-2 text-zinc-400 hover:text-white hover:bg-[#0f0f11] rounded-lg transition-colors"
                       title="Edit"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => handleDelete(tool.id)}
-                      className="p-2 text-red-400 hover:bg-[#1a1a1e] rounded-lg transition-colors"
+                      className="p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -444,7 +444,7 @@ const AIToolsTab = () => {
             ))}
             {tools.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-zinc-500">
+                <td colSpan={7} className="text-center text-zinc-500 py-8">
                   No AI tools found. Add your first one!
                 </td>
               </tr>

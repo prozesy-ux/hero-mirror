@@ -212,7 +212,7 @@ const PromptsManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
       </div>
     );
   }
@@ -222,7 +222,7 @@ const PromptsManagement = () => {
       <div className="flex items-center justify-end mb-6">
         <button 
           onClick={() => setShowForm(true)} 
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-white text-black font-semibold px-4 py-2 rounded-lg hover:bg-white/90 transition-colors"
         >
           <Plus size={18} />
           Add Prompt
@@ -231,15 +231,15 @@ const PromptsManagement = () => {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 overflow-y-auto">
-          <div className="bg-[#111113] border border-[#27272a] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
-            <div className="sticky top-0 bg-[#111113] border-b border-[#27272a] px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 overflow-y-auto">
+          <div className="bg-[#09090b] border border-[#1a1a1a] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
+            <div className="sticky top-0 bg-[#09090b] border-b border-[#1a1a1a] px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-white">
                 {editingId ? 'Edit Prompt' : 'Create New Prompt'}
               </h3>
               <button 
                 onClick={resetForm} 
-                className="p-2 text-zinc-400 hover:text-white hover:bg-[#1a1a1e] rounded-lg transition-colors"
+                className="p-2 text-zinc-400 hover:text-white hover:bg-[#0f0f11] rounded-lg transition-colors"
               >
                 <X size={20} />
               </button>
@@ -256,7 +256,7 @@ const PromptsManagement = () => {
                       placeholder="Enter prompt title" 
                       value={formData.title} 
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })} 
-                      className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent" 
+                      className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all" 
                     />
                   </div>
 
@@ -266,7 +266,7 @@ const PromptsManagement = () => {
                       placeholder="Brief description of the prompt" 
                       value={formData.description} 
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
-                      className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-3 text-white placeholder-zinc-500 h-24 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent resize-none" 
+                      className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-3 text-white placeholder-zinc-500 h-24 focus:ring-2 focus:ring-white/20 focus:border-transparent resize-none transition-all" 
                     />
                   </div>
 
@@ -276,7 +276,7 @@ const PromptsManagement = () => {
                       <select 
                         value={formData.tool} 
                         onChange={(e) => setFormData({ ...formData, tool: e.target.value })} 
-                        className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
+                        className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
                       >
                         {aiTools.map(tool => (
                           <option key={tool.id} value={tool.name}>{tool.name}</option>
@@ -288,7 +288,7 @@ const PromptsManagement = () => {
                       <select 
                         value={formData.category_id} 
                         onChange={(e) => setFormData({ ...formData, category_id: e.target.value })} 
-                        className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
+                        className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
                       >
                         <option value="">No Category</option>
                         {categories.map(c => (
@@ -304,7 +304,7 @@ const PromptsManagement = () => {
                         type="checkbox" 
                         checked={formData.is_free} 
                         onChange={(e) => setFormData({ ...formData, is_free: e.target.checked })} 
-                        className="w-5 h-5 rounded bg-[#0c0c0e] border-[#27272a] text-purple-500 focus:ring-purple-500" 
+                        className="w-5 h-5 rounded bg-[#030303] border-[#1a1a1a] text-white focus:ring-white/20" 
                       />
                       <span>Free Prompt</span>
                     </label>
@@ -313,7 +313,7 @@ const PromptsManagement = () => {
                         type="checkbox" 
                         checked={formData.is_featured} 
                         onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })} 
-                        className="w-5 h-5 rounded bg-[#0c0c0e] border-[#27272a] text-purple-500 focus:ring-purple-500" 
+                        className="w-5 h-5 rounded bg-[#030303] border-[#1a1a1a] text-white focus:ring-white/20" 
                       />
                       <span>Featured</span>
                     </label>
@@ -322,7 +322,7 @@ const PromptsManagement = () => {
                         type="checkbox" 
                         checked={formData.is_trending} 
                         onChange={(e) => setFormData({ ...formData, is_trending: e.target.checked })} 
-                        className="w-5 h-5 rounded bg-[#0c0c0e] border-[#27272a] text-orange-500 focus:ring-orange-500" 
+                        className="w-5 h-5 rounded bg-[#030303] border-[#1a1a1a] text-orange-500 focus:ring-orange-500/20" 
                       />
                       <span>Trending</span>
                     </label>
@@ -350,11 +350,11 @@ const PromptsManagement = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t border-[#27272a]">
+              <div className="flex gap-3 pt-4 border-t border-[#1a1a1a]">
                 <button 
                   onClick={handleSave} 
                   disabled={saving}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  className="flex items-center gap-2 bg-white text-black font-semibold disabled:bg-zinc-600 disabled:text-zinc-400 px-6 py-3 rounded-lg transition-colors hover:bg-white/90"
                 >
                   {saving ? (
                     <>
@@ -376,14 +376,14 @@ const PromptsManagement = () => {
                       ? { name: categories.find(c => c.id === formData.category_id)!.name } 
                       : null 
                   } as Prompt)} 
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  className="flex items-center gap-2 bg-[#09090b] border border-[#1a1a1a] hover:bg-[#0f0f11] text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 >
                   <Eye size={18} />
                   Preview
                 </button>
                 <button 
                   onClick={resetForm} 
-                  className="flex items-center gap-2 bg-[#18181b] border border-[#27272a] hover:bg-[#1f1f23] text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  className="flex items-center gap-2 bg-[#09090b] border border-[#1a1a1a] hover:bg-[#0f0f11] text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 >
                   <X size={18} />
                   Cancel
@@ -396,8 +396,8 @@ const PromptsManagement = () => {
 
       {/* Preview Modal */}
       {previewPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-          <div className="bg-[#111113] border border-[#27272a] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
+          <div className="bg-[#09090b] border border-[#1a1a1a] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="relative">
               {previewPrompt.image_url ? (
                 <img 
@@ -406,7 +406,7 @@ const PromptsManagement = () => {
                   className="w-full h-48 object-cover"
                 />
               ) : (
-                <div className="w-full h-48 bg-gradient-to-br from-purple-900/50 to-pink-900/50 flex items-center justify-center">
+                <div className="w-full h-48 bg-gradient-to-br from-zinc-900 to-zinc-800 flex items-center justify-center">
                   <Image size={48} className="text-zinc-600" />
                 </div>
               )}
@@ -420,16 +420,16 @@ const PromptsManagement = () => {
             
             <div className="p-6">
               <div className="flex items-center gap-2 mb-3">
-                <span className="px-3 py-1 bg-purple-600 text-xs font-medium text-white rounded-full">
+                <span className="px-3 py-1 bg-white/10 text-xs font-medium text-white rounded-full">
                   {previewPrompt.tool}
                 </span>
                 {previewPrompt.categories && (
-                  <span className="px-3 py-1 bg-[#27272a] text-xs font-medium text-zinc-300 rounded-full">
+                  <span className="px-3 py-1 bg-[#1a1a1a] text-xs font-medium text-zinc-300 rounded-full">
                     {previewPrompt.categories.name}
                   </span>
                 )}
                 {previewPrompt.is_free && (
-                  <span className="px-3 py-1 bg-green-600 text-xs font-medium text-white rounded-full">
+                  <span className="px-3 py-1 bg-green-500/10 text-xs font-medium text-green-400 rounded-full">
                     Free
                   </span>
                 )}
@@ -450,23 +450,23 @@ const PromptsManagement = () => {
       )}
 
       {/* Prompts Table */}
-      <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
+      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-[#18181b]">
-                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-300">Image</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-300">Title</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-300">Tool</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-300">Category</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-300">Status</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-zinc-300">Actions</th>
+              <tr className="bg-[#0d0d0f]">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-400">Image</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-400">Title</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-400">Tool</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-400">Category</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-zinc-400">Status</th>
+                <th className="px-6 py-4 text-right text-sm font-semibold text-zinc-400">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#27272a]">
+            <tbody>
               {prompts.map((prompt) => (
                 <>
-                  <tr key={prompt.id} className="hover:bg-[#1a1a1e] transition-colors">
+                  <tr key={prompt.id} className="border-t border-[#1a1a1a] hover:bg-[#0f0f11] transition-all">
                     <td className="px-6 py-4">
                       {prompt.image_url ? (
                         <img 
@@ -475,65 +475,64 @@ const PromptsManagement = () => {
                           className="w-12 h-12 object-cover rounded-lg"
                         />
                       ) : (
-                        <div className="w-12 h-12 bg-[#27272a] rounded-lg flex items-center justify-center">
-                          <Image size={20} className="text-zinc-500" />
+                        <div className="w-12 h-12 bg-[#0d0d0f] rounded-lg flex items-center justify-center">
+                          <Image size={20} className="text-zinc-600" />
                         </div>
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <button 
-                        onClick={() => toggleRowExpand(prompt.id)}
-                        className="flex items-center gap-2 text-white hover:text-purple-400 transition-colors"
-                      >
-                        {expandedRows.includes(prompt.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        <span className="font-medium">{prompt.title}</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => toggleRowExpand(prompt.id)}
+                          className="p-1 text-zinc-500 hover:text-white transition-colors"
+                        >
+                          {expandedRows.includes(prompt.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                        <span className="text-white font-medium">{prompt.title}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-zinc-300">{prompt.tool}</td>
-                    <td className="px-6 py-4 text-zinc-300">{prompt.categories?.name || '-'}</td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2 py-1 bg-white/5 text-zinc-300 text-sm rounded">
+                        {prompt.tool}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-zinc-400">
+                      {prompt.categories?.name || '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
                         {prompt.is_free && (
-                          <span className="px-2 py-1 bg-green-600/20 text-green-400 text-xs rounded-full">
-                            Free
-                          </span>
+                          <span className="px-2 py-1 bg-green-500/10 text-green-400 text-xs rounded-full">Free</span>
                         )}
                         {prompt.is_featured && (
-                          <span className="px-2 py-1 bg-yellow-600/20 text-yellow-400 text-xs rounded-full">
-                            Featured
-                          </span>
+                          <span className="px-2 py-1 bg-purple-500/10 text-purple-400 text-xs rounded-full">Featured</span>
                         )}
                         {prompt.is_trending && (
-                          <span className="px-2 py-1 bg-orange-600/20 text-orange-400 text-xs rounded-full">
-                            Trending
-                          </span>
+                          <span className="px-2 py-1 bg-orange-500/10 text-orange-400 text-xs rounded-full">Trending</span>
                         )}
                         {!prompt.is_free && !prompt.is_featured && !prompt.is_trending && (
-                          <span className="text-zinc-500 text-sm">Premium</span>
+                          <span className="text-zinc-500">-</span>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => setPreviewPrompt(prompt)}
-                          className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 rounded-lg transition-colors"
-                          title="Preview"
+                          className="p-2 text-zinc-400 hover:text-white hover:bg-[#0f0f11] rounded-lg transition-colors"
                         >
                           <Eye size={18} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleEdit(prompt)}
-                          className="p-2 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20 rounded-lg transition-colors"
-                          title="Edit"
+                          className="p-2 text-zinc-400 hover:text-white hover:bg-[#0f0f11] rounded-lg transition-colors"
                         >
                           <Edit size={18} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDelete(prompt.id)}
                           disabled={deleting === prompt.id}
-                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
-                          title="Delete"
+                          className="p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
                         >
                           {deleting === prompt.id ? (
                             <Loader2 size={18} className="animate-spin" />
@@ -545,23 +544,17 @@ const PromptsManagement = () => {
                     </td>
                   </tr>
                   {expandedRows.includes(prompt.id) && (
-                    <tr key={`${prompt.id}-expanded`} className="bg-[#0c0c0e]">
-                      <td colSpan={6} className="px-6 py-4">
-                        <div className="space-y-3">
+                    <tr key={`${prompt.id}-expanded`} className="border-t border-[#1a1a1a]">
+                      <td colSpan={6} className="px-6 py-4 bg-[#050506]">
+                        <div className="space-y-2">
                           {prompt.description && (
-                            <div>
-                              <span className="text-sm font-medium text-zinc-400">Description:</span>
-                              <p className="text-zinc-300 mt-1">{prompt.description}</p>
-                            </div>
+                            <p className="text-zinc-400 text-sm">{prompt.description}</p>
                           )}
                           {prompt.content && (
-                            <div>
-                              <span className="text-sm font-medium text-zinc-400">Content Preview:</span>
-                              <div 
-                                className="text-zinc-300 mt-1 prose prose-sm prose-invert max-w-none line-clamp-3"
-                                dangerouslySetInnerHTML={{ __html: prompt.content }}
-                              />
-                            </div>
+                            <div 
+                              className="prose prose-invert prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: prompt.content }}
+                            />
                           )}
                         </div>
                       </td>
@@ -569,14 +562,15 @@ const PromptsManagement = () => {
                   )}
                 </>
               ))}
+              {prompts.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-zinc-500">
+                    No prompts found. Add your first one!
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
-          
-          {prompts.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-zinc-400">No prompts found. Create your first prompt!</p>
-            </div>
-          )}
         </div>
       </div>
     </div>
