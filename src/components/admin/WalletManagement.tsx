@@ -186,7 +186,7 @@ const WalletManagement = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#1a2e1f] rounded-lg">
+            <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
               <DollarSign className="text-green-400" size={20} />
             </div>
             <div>
@@ -197,7 +197,7 @@ const WalletManagement = () => {
         </div>
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#1f1a2e] rounded-lg">
+            <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
               <ArrowUpRight className="text-purple-400" size={20} />
             </div>
             <div>
@@ -208,7 +208,7 @@ const WalletManagement = () => {
         </div>
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#2e2a1a] rounded-lg">
+            <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
               <RefreshCcw className="text-yellow-400" size={20} />
             </div>
             <div>
@@ -219,7 +219,7 @@ const WalletManagement = () => {
         </div>
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#1a1f2e] rounded-lg">
+            <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
               <User className="text-blue-400" size={20} />
             </div>
             <div>

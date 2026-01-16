@@ -281,7 +281,7 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
-            <div className="p-1.5 bg-[#1a1f2e] rounded-lg">
+            <div className="p-1.5 bg-blue-500/10 rounded-lg">
               <Wallet size={14} className="text-blue-400" />
             </div>
             Balance
@@ -290,7 +290,7 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
         </div>
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
-            <div className="p-1.5 bg-[#1a2e1f] rounded-lg">
+            <div className="p-1.5 bg-green-500/10 rounded-lg">
               <ArrowUpRight size={14} className="text-green-400" />
             </div>
             Total Topup
@@ -299,7 +299,7 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
         </div>
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
-            <div className="p-1.5 bg-[#1f1a2e] rounded-lg">
+            <div className="p-1.5 bg-purple-500/10 rounded-lg">
               <ShoppingBag size={14} className="text-purple-400" />
             </div>
             Purchases
@@ -308,7 +308,7 @@ const UserDetailView = ({ userId, userIdAuth, onBack, onUserDeleted }: UserDetai
         </div>
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
-            <div className="p-1.5 bg-[#2e1a26] rounded-lg">
+            <div className="p-1.5 bg-pink-500/10 rounded-lg">
               <Heart size={14} className="text-pink-400" />
             </div>
             Favorites

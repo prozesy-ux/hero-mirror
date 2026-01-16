@@ -318,7 +318,7 @@ const DeletionRequestsManagement = () => {
                               setSelectedRequest(request);
                               setShowApproveDialog(true);
                             }}
-                            className="text-green-400 hover:text-green-300 hover:bg-[#1a2e1f]"
+                            className="text-green-400 hover:text-green-300 hover:bg-green-500/10"
                           >
                             <CheckCircle className="w-4 h-4" />
                           </Button>
@@ -329,7 +329,7 @@ const DeletionRequestsManagement = () => {
                               setSelectedRequest(request);
                               setShowRejectDialog(true);
                             }}
-                            className="text-red-400 hover:text-red-300 hover:bg-[#2e1a1a]"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                           >
                             <XCircle className="w-4 h-4" />
                           </Button>

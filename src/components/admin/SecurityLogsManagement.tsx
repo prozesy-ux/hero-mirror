@@ -165,7 +165,7 @@ const SecurityLogsManagement = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-[#1a1f2e] rounded-lg">
+            <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
               <Shield className="h-4 w-4 text-blue-400" />
             </div>
             <span className="text-sm font-medium text-zinc-400">Total Events</span>
@@ -174,7 +174,7 @@ const SecurityLogsManagement = () => {
         </div>
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-[#2e1a1a] rounded-lg">
+            <div className="p-2 bg-red-500/10 rounded-lg border border-red-500/20">
               <AlertTriangle className="h-4 w-4 text-red-400" />
             </div>
             <span className="text-sm font-medium text-zinc-400">Blocked IPs</span>
@@ -183,7 +183,7 @@ const SecurityLogsManagement = () => {
         </div>
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-[#2e231a] rounded-lg">
+            <div className="p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
               <Shield className="h-4 w-4 text-orange-400" />
             </div>
             <span className="text-sm font-medium text-zinc-400">DevTools Detections</span>

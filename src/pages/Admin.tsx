@@ -16,7 +16,7 @@ import SecurityLogsManagement from '@/components/admin/SecurityLogsManagement';
 import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, FileText, Users, Crown, DollarSign } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -62,8 +62,8 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-[#1f1a2e] rounded-xl">
-              <FileText size={20} className="text-purple-400" />
+            <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+              <span className="text-purple-400 text-xl">📝</span>
             </div>
             <div>
               <div className="text-zinc-400 text-sm font-medium">Total Prompts</div>
@@ -75,8 +75,8 @@ const AdminDashboard = () => {
         </div>
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-[#1a1f2e] rounded-xl">
-              <Users size={20} className="text-blue-400" />
+            <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
+              <span className="text-blue-400 text-xl">👥</span>
             </div>
             <div>
               <div className="text-zinc-400 text-sm font-medium">Total Users</div>
@@ -88,8 +88,8 @@ const AdminDashboard = () => {
         </div>
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-[#2e2a1a] rounded-xl">
-              <Crown size={20} className="text-amber-400" />
+            <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
+              <span className="text-amber-400 text-xl">👑</span>
             </div>
             <div>
               <div className="text-zinc-400 text-sm font-medium">Pro Users</div>
@@ -101,8 +101,8 @@ const AdminDashboard = () => {
         </div>
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-[#1a2e1f] rounded-xl">
-              <DollarSign size={20} className="text-green-400" />
+            <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+              <span className="text-green-400 text-xl">💰</span>
             </div>
             <div>
               <div className="text-zinc-400 text-sm font-medium">Revenue</div>

@@ -61,7 +61,7 @@ const PurchasesManagement = () => {
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-[#1a2e1f] rounded-xl">
+            <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20">
               <DollarSign size={24} className="text-green-400" />
             </div>
             <div>
@@ -73,7 +73,7 @@ const PurchasesManagement = () => {
 
         <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-[#1f1a2e] rounded-xl">
+            <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
               <TrendingUp size={24} className="text-purple-400" />
             </div>
             <div>

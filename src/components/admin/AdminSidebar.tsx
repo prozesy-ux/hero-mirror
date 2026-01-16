@@ -159,7 +159,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                   <TooltipTrigger asChild>
                     <button
                       onClick={handleLogout}
-                      className="flex items-center justify-center p-3 w-full text-gray-400 hover:bg-[#2e1a1a] hover:text-red-400 rounded-xl transition-all duration-300"
+                      className="flex items-center justify-center p-3 w-full text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-300"
                     >
                       <LogOut size={22} />
                     </button>
@@ -171,7 +171,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
               ) : (
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-3.5 px-4 py-3 flex-1 text-gray-400 hover:bg-[#2e1a1a] hover:text-red-400 rounded-xl transition-all duration-300"
+                  className="flex items-center gap-3.5 px-4 py-3 flex-1 text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-300"
                 >
                   <LogOut size={22} />
                   <span className="font-medium text-base">Sign Out</span>
