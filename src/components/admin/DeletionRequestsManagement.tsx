@@ -167,21 +167,21 @@ const DeletionRequestsManagement = () => {
     switch (status) {
       case 'pending':
         return (
-          <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
             <Clock className="w-3 h-3 mr-1" />
             Pending
           </Badge>
         );
       case 'approved':
         return (
-          <Badge className="bg-green-500/10 text-green-400 border-green-500/20">
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
             <CheckCircle className="w-3 h-3 mr-1" />
             Approved
           </Badge>
         );
       case 'rejected':
         return (
-          <Badge className="bg-red-500/10 text-red-400 border-red-500/20">
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
             <XCircle className="w-3 h-3 mr-1" />
             Rejected
           </Badge>
@@ -214,7 +214,7 @@ const DeletionRequestsManagement = () => {
       {/* Header */}
       {pendingCount > 0 && (
         <div className="flex items-center justify-end">
-          <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-sm px-3 py-1">
+          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-sm px-3 py-1">
             <AlertTriangle className="w-4 h-4 mr-2" />
             {pendingCount} pending request{pendingCount !== 1 ? 's' : ''}
           </Badge>
@@ -224,19 +224,19 @@ const DeletionRequestsManagement = () => {
       {/* Search and Refresh */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
           <Input
             placeholder="Search by user email, name, or reason..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-[#030303] border-[#1a1a1a] text-white placeholder:text-zinc-500 focus:ring-white/20"
+            className="pl-10 bg-[#0c0c0e] border-[#27272a] text-white placeholder:text-zinc-500"
           />
         </div>
         <Button
           variant="outline"
           onClick={fetchRequests}
           disabled={loading}
-          className="border-[#1a1a1a] text-zinc-300 hover:bg-[#0f0f11]"
+          className="border-[#27272a] text-gray-300 hover:bg-[#1a1a1e]"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -244,10 +244,10 @@ const DeletionRequestsManagement = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl overflow-hidden">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="border-[#1a1a1a] hover:bg-transparent bg-[#0d0d0f]">
+            <TableRow className="border-[#27272a] hover:bg-transparent bg-[#18181b]">
               <TableHead className="text-zinc-400">User</TableHead>
               <TableHead className="text-zinc-400">Reason</TableHead>
               <TableHead className="text-zinc-400">Status</TableHead>
@@ -259,39 +259,39 @@ const DeletionRequestsManagement = () => {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-zinc-400 mx-auto" />
-                  <p className="text-zinc-500 mt-2">Loading requests...</p>
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-400 mx-auto" />
+                  <p className="text-gray-500 mt-2">Loading requests...</p>
                 </TableCell>
               </TableRow>
             ) : filteredRequests.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-12">
-                  <Trash2 className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-                  <p className="text-zinc-500">No deletion requests found</p>
+                  <Trash2 className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-500">No deletion requests found</p>
                 </TableCell>
               </TableRow>
             ) : (
               filteredRequests.map((request) => (
-                <TableRow key={request.id} className="border-[#1a1a1a] hover:bg-[#0f0f11]">
+                <TableRow key={request.id} className="border-[#27272a] hover:bg-[#1a1a1e]">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
-                        <User className="w-4 h-4 text-zinc-400" />
+                      <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+                        <User className="w-4 h-4 text-gray-400" />
                       </div>
                       <div>
                         <p className="text-white font-medium text-sm">{request.user_name}</p>
-                        <p className="text-zinc-500 text-xs">{request.user_email}</p>
+                        <p className="text-gray-500 text-xs">{request.user_email}</p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <p className="text-zinc-300 text-sm truncate max-w-[200px]">
+                    <p className="text-gray-300 text-sm truncate max-w-[200px]">
                       {request.reason || 'No reason provided'}
                     </p>
                   </TableCell>
                   <TableCell>{getStatusBadge(request.status)}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5 text-zinc-400 text-sm">
+                    <div className="flex items-center gap-1.5 text-gray-400 text-sm">
                       <Calendar className="w-3.5 h-3.5" />
                       {formatDate(request.requested_at)}
                     </div>
@@ -305,7 +305,7 @@ const DeletionRequestsManagement = () => {
                           setSelectedRequest(request);
                           setShowDetailsDialog(true);
                         }}
-                        className="text-zinc-400 hover:text-white hover:bg-[#0f0f11]"
+                        className="text-gray-400 hover:text-white hover:bg-white/10"
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -346,56 +346,56 @@ const DeletionRequestsManagement = () => {
 
       {/* Details Dialog */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="bg-[#09090b] border-[#1a1a1a] text-white max-w-md">
+        <DialogContent className="bg-[#111113] border-[#27272a] text-white max-w-md">
           <DialogHeader>
             <DialogTitle>Deletion Request Details</DialogTitle>
-            <DialogDescription className="text-zinc-400">
+            <DialogDescription className="text-gray-400">
               Full details of the account deletion request
             </DialogDescription>
           </DialogHeader>
           {selectedRequest && (
             <div className="space-y-4 py-4">
-              <div className="flex items-center gap-3 p-3 bg-[#0d0d0f] border border-[#1a1a1a] rounded-lg">
-                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
-                  <User className="w-5 h-5 text-zinc-400" />
+              <div className="flex items-center gap-3 p-3 bg-[#18181b] border border-[#27272a] rounded-lg">
+                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
+                  <User className="w-5 h-5 text-gray-400" />
                 </div>
                 <div>
                   <p className="text-white font-medium">{selectedRequest.user_name}</p>
-                  <p className="text-zinc-500 text-sm">{selectedRequest.user_email}</p>
+                  <p className="text-gray-500 text-sm">{selectedRequest.user_email}</p>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Status
                 </label>
                 <div className="mt-1">{getStatusBadge(selectedRequest.status)}</div>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Reason for Deletion
                 </label>
-                <p className="mt-1 text-zinc-300 text-sm bg-[#0d0d0f] border border-[#1a1a1a] p-3 rounded-lg">
+                <p className="mt-1 text-gray-300 text-sm bg-[#18181b] border border-[#27272a] p-3 rounded-lg">
                   {selectedRequest.reason || 'No reason provided'}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                     Requested
                   </label>
-                  <p className="mt-1 text-zinc-300 text-sm">
+                  <p className="mt-1 text-gray-300 text-sm">
                     {formatDate(selectedRequest.requested_at)}
                   </p>
                 </div>
                 {selectedRequest.processed_at && (
                   <div>
-                    <label className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                       Processed
                     </label>
-                    <p className="mt-1 text-zinc-300 text-sm">
+                    <p className="mt-1 text-gray-300 text-sm">
                       {formatDate(selectedRequest.processed_at)}
                     </p>
                   </div>
@@ -407,7 +407,7 @@ const DeletionRequestsManagement = () => {
             <Button
               variant="outline"
               onClick={() => setShowDetailsDialog(false)}
-              className="border-[#1a1a1a] text-zinc-300 hover:bg-[#0f0f11]"
+              className="border-[#27272a] text-gray-300"
             >
               Close
             </Button>
@@ -417,19 +417,19 @@ const DeletionRequestsManagement = () => {
 
       {/* Approve Dialog */}
       <AlertDialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
-        <AlertDialogContent className="bg-[#09090b] border-[#1a1a1a] text-white">
+        <AlertDialogContent className="bg-[#111113] border-[#27272a] text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-green-400">
               Approve Deletion Request?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-400">
+            <AlertDialogDescription className="text-gray-400">
               This will approve the account deletion request for{' '}
               <span className="text-white font-medium">{selectedRequest?.user_email}</span>.
               The user's account and all associated data will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-[#1a1a1a] text-zinc-300 hover:bg-[#0f0f11]">
+            <AlertDialogCancel className="border-[#27272a] text-gray-300 hover:bg-[#1a1a1e]">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -452,31 +452,31 @@ const DeletionRequestsManagement = () => {
 
       {/* Reject Dialog */}
       <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <AlertDialogContent className="bg-[#09090b] border-[#1a1a1a] text-white">
+        <AlertDialogContent className="bg-[#111113] border-[#27272a] text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-400">
               Reject Deletion Request?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-400">
+            <AlertDialogDescription className="text-gray-400">
               This will reject the account deletion request for{' '}
               <span className="text-white font-medium">{selectedRequest?.user_email}</span>.
               The user's account will remain active.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
-            <label className="text-sm font-medium text-zinc-300">
+            <label className="text-sm font-medium text-gray-300">
               Admin Notes (optional)
             </label>
             <Textarea
               value={adminNotes}
               onChange={(e) => setAdminNotes(e.target.value)}
               placeholder="Add notes about why this request was rejected..."
-              className="mt-2 bg-[#030303] border-[#1a1a1a] text-white placeholder:text-zinc-500 focus:ring-white/20"
+              className="mt-2 bg-[#0c0c0e] border-[#27272a] text-white placeholder:text-zinc-500"
               rows={3}
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-[#1a1a1a] text-zinc-300 hover:bg-[#0f0f11]">
+            <AlertDialogCancel className="border-[#27272a] text-gray-300 hover:bg-[#1a1a1e]">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction

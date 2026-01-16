@@ -54,7 +54,7 @@ const RichTextEditor = ({ value, onChange, placeholder = 'Write your content...'
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
       const code = document.createElement('code');
-      code.className = 'bg-[#1a1a1a] px-1 rounded text-white';
+      code.className = 'bg-[#27272a] px-1 rounded text-purple-400';
       code.textContent = range.toString();
       range.deleteContents();
       range.insertNode(code);
@@ -92,20 +92,20 @@ const RichTextEditor = ({ value, onChange, placeholder = 'Write your content...'
       type="button"
       onClick={onClick}
       title={title}
-      className="p-2 text-zinc-400 hover:text-white hover:bg-[#0f0f11] rounded transition-colors"
+      className="p-2 text-zinc-400 hover:text-white hover:bg-[#1a1a1e] rounded transition-colors"
     >
       {children}
     </button>
   );
 
   const Divider = () => (
-    <div className="w-px h-6 bg-[#1a1a1a] mx-1" />
+    <div className="w-px h-6 bg-[#27272a] mx-1" />
   );
 
   return (
-    <div className="border border-[#111] rounded-sm overflow-hidden bg-black">
+    <div className="border border-[#27272a] rounded-lg overflow-hidden bg-[#0c0c0e]">
       {/* Toolbar */}
-      <div className="bg-[#0d0d0f] border-b border-[#1a1a1a] p-2 flex flex-wrap items-center gap-1">
+      <div className="bg-[#18181b] border-b border-[#27272a] p-2 flex flex-wrap items-center gap-1">
         {/* Undo/Redo */}
         <ToolbarButton onClick={() => execCommand('undo')} title="Undo">
           <Undo size={16} />
@@ -182,25 +182,25 @@ const RichTextEditor = ({ value, onChange, placeholder = 'Write your content...'
 
       {/* Link Modal */}
       {showLinkModal && (
-        <div className="bg-[#0d0d0f] border-b border-[#1a1a1a] p-3 flex items-center gap-2">
+        <div className="bg-[#18181b] border-b border-[#27272a] p-3 flex items-center gap-2">
           <input
             type="url"
             value={linkUrl}
             onChange={(e) => setLinkUrl(e.target.value)}
             placeholder="Enter URL..."
-            className="flex-1 bg-[#030303] border border-[#1a1a1a] rounded px-3 py-1.5 text-white text-sm placeholder-zinc-500 focus:ring-2 focus:ring-white/20 focus:border-transparent"
+            className="flex-1 bg-[#0c0c0e] border border-[#27272a] rounded px-3 py-1.5 text-white text-sm placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
           />
           <button
             type="button"
             onClick={handleLink}
-            className="px-3 py-1.5 bg-white text-black font-medium rounded text-sm hover:bg-white/90"
+            className="px-3 py-1.5 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
           >
             Insert
           </button>
           <button
             type="button"
             onClick={() => setShowLinkModal(false)}
-            className="px-3 py-1.5 bg-[#0d0d0f] border border-[#1a1a1a] text-white rounded text-sm hover:bg-[#0f0f11]"
+            className="px-3 py-1.5 bg-[#18181b] border border-[#27272a] text-white rounded text-sm hover:bg-[#1f1f23]"
           >
             Cancel
           </button>
@@ -221,9 +221,9 @@ const RichTextEditor = ({ value, onChange, placeholder = 'Write your content...'
           [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2
           [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2
           [&_li]:text-zinc-300 [&_li]:my-1
-          [&_a]:text-white [&_a]:underline
-          [&_blockquote]:border-l-4 [&_blockquote]:border-white/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-zinc-400
-          [&_code]:bg-[#1a1a1a] [&_code]:px-1 [&_code]:rounded [&_code]:text-white
+          [&_a]:text-purple-400 [&_a]:underline
+          [&_blockquote]:border-l-4 [&_blockquote]:border-purple-500 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-zinc-400
+          [&_code]:bg-[#27272a] [&_code]:px-1 [&_code]:rounded [&_code]:text-purple-400
           [&_strong]:font-bold [&_strong]:text-white
           [&_em]:italic
           [&_u]:underline
@@ -235,7 +235,7 @@ const RichTextEditor = ({ value, onChange, placeholder = 'Write your content...'
       />
 
       {/* Character count */}
-      <div className="bg-[#050505] border-t border-[#111] px-4 py-2 text-xs text-zinc-500">
+      <div className="bg-[#18181b] border-t border-[#27272a] px-4 py-2 text-xs text-zinc-500">
         {value.replace(/<[^>]*>/g, '').length} characters
       </div>
     </div>

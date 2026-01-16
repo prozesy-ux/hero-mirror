@@ -60,9 +60,9 @@ const AdminDashboard = () => {
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#0a0a0b] border border-[#151516] rounded-none p-6 hover:bg-[#0e0e10] transition-all">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-purple-500/5 rounded-sm">
+            <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
               <span className="text-purple-400 text-xl">📝</span>
             </div>
             <div>
@@ -73,9 +73,9 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
-        <div className="bg-[#0a0a0b] border border-[#151516] rounded-none p-6 hover:bg-[#0e0e10] transition-all">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-500/5 rounded-sm">
+            <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
               <span className="text-blue-400 text-xl">👥</span>
             </div>
             <div>
@@ -86,9 +86,9 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
-        <div className="bg-[#0a0a0b] border border-[#151516] rounded-none p-6 hover:bg-[#0e0e10] transition-all">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-amber-500/5 rounded-sm">
+            <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
               <span className="text-amber-400 text-xl">👑</span>
             </div>
             <div>
@@ -99,9 +99,9 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
-        <div className="bg-[#0a0a0b] border border-[#151516] rounded-none p-6 hover:bg-[#0e0e10] transition-all">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-500/5 rounded-sm">
+            <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20">
               <span className="text-green-400 text-xl">💰</span>
             </div>
             <div>
@@ -160,9 +160,9 @@ const Admin = () => {
     );
   }
 
-  // Redirect to admin login if not authenticated
+  // Redirect to sign in if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/signin" replace />;
   }
 
   // Redirect to dashboard if not admin

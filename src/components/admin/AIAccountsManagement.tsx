@@ -150,7 +150,7 @@ const AIAccountsManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
       </div>
     );
   }
@@ -160,7 +160,7 @@ const AIAccountsManagement = () => {
       <div className="flex items-center justify-end mb-6">
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-white text-black font-semibold px-4 py-2 rounded-lg hover:bg-white/90 transition-colors"
+          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add Account
@@ -169,13 +169,13 @@ const AIAccountsManagement = () => {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">
                 {editingAccount ? 'Edit Account' : 'Add New Account'}
               </h3>
-              <button onClick={resetForm} className="text-zinc-400 hover:text-white transition-colors">
+              <button onClick={resetForm} className="text-zinc-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -192,7 +192,7 @@ const AIAccountsManagement = () => {
                     <img
                       src={formData.icon_url}
                       alt="Product preview"
-                      className="w-full h-40 object-cover rounded-lg border border-[#1a1a1a]"
+                      className="w-full h-40 object-cover rounded-lg border border-[#27272a]"
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                       <button
@@ -221,7 +221,7 @@ const AIAccountsManagement = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
+                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                   placeholder="ChatGPT Premium"
                 />
               </div>
@@ -231,7 +231,7 @@ const AIAccountsManagement = () => {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
+                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                   rows={3}
                   placeholder="Premium AI account with full access"
                 />
@@ -247,7 +247,7 @@ const AIAccountsManagement = () => {
                     required
                     min="0"
                     step="0.01"
-                    className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
+                    className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                   />
                 </div>
 
@@ -258,7 +258,7 @@ const AIAccountsManagement = () => {
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                     min="0"
-                    className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
+                    className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                     placeholder="Unlimited"
                   />
                 </div>
@@ -269,7 +269,7 @@ const AIAccountsManagement = () => {
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full bg-[#030303] border border-[#1a1a1a] rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
+                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                 >
                   <option value="chatgpt">ChatGPT</option>
                   <option value="claude">Claude</option>
@@ -285,7 +285,7 @@ const AIAccountsManagement = () => {
                   id="is_available"
                   checked={formData.is_available}
                   onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
-                  className="w-4 h-4 rounded border-[#1a1a1a] bg-[#030303] text-white"
+                  className="w-4 h-4 rounded border-[#27272a] bg-[#0c0c0e] text-purple-600"
                 />
                 <label htmlFor="is_available" className="text-sm text-zinc-300">Available for purchase</label>
               </div>
@@ -294,14 +294,14 @@ const AIAccountsManagement = () => {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 bg-[#09090b] border border-[#1a1a1a] hover:bg-[#0f0f11] text-white py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-[#18181b] border border-[#27272a] hover:bg-[#1f1f23] text-white py-2 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-2 bg-white text-black font-semibold py-2 rounded-lg hover:bg-white/90 transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg transition-colors disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   {editingAccount ? 'Update' : 'Create'}
@@ -314,7 +314,7 @@ const AIAccountsManagement = () => {
 
       {/* Accounts Grid */}
       {accounts.length === 0 ? (
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-12 text-center">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-12 text-center">
           <Bot className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No AI Accounts</h3>
           <p className="text-zinc-400">Add your first AI account for sale</p>
@@ -324,7 +324,7 @@ const AIAccountsManagement = () => {
           {accounts.map((account) => (
             <div
               key={account.id}
-              className={`bg-[#09090b] rounded-xl overflow-hidden border ${account.is_available ? 'border-[#1a1a1a]' : 'border-red-500/30'} hover:bg-[#0f0f11] transition-all`}
+              className={`bg-[#111113] rounded-xl overflow-hidden border ${account.is_available ? 'border-[#27272a]' : 'border-red-500/30'} hover:border-[#3f3f46] transition-colors`}
             >
               {/* Product Image */}
               {account.icon_url ? (
@@ -334,7 +334,7 @@ const AIAccountsManagement = () => {
                   className="w-full h-32 object-cover"
                 />
               ) : (
-                <div className="w-full h-32 bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
+                <div className="w-full h-32 bg-gradient-to-br from-purple-600/20 to-pink-600/20 flex items-center justify-center">
                   <span className="text-5xl">{getCategoryIcon(account.category)}</span>
                 </div>
               )}
@@ -343,18 +343,18 @@ const AIAccountsManagement = () => {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-semibold text-white">{account.name}</h3>
-                    <span className="text-sm text-zinc-500 capitalize">{account.category}</span>
+                    <span className="text-sm text-zinc-400 capitalize">{account.category}</span>
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleEdit(account)}
-                      className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors"
+                      className="p-2 hover:bg-[#1a1a1e] rounded-lg transition-colors"
                     >
                       <Edit className="w-4 h-4 text-zinc-400" />
                     </button>
                     <button
                       onClick={() => handleDelete(account.id)}
-                      className="p-2 hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="p-2 hover:bg-[#1a1a1e] rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
@@ -367,9 +367,9 @@ const AIAccountsManagement = () => {
                   <span className="text-2xl font-bold text-white">${account.price}</span>
                   <div className="flex items-center gap-2">
                     {account.stock !== null && (
-                      <span className="text-zinc-500">Stock: {account.stock}</span>
+                      <span className="text-zinc-400">Stock: {account.stock}</span>
                     )}
-                    <span className={`px-2 py-1 rounded-full text-xs ${account.is_available ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                    <span className={`px-2 py-1 rounded-full text-xs ${account.is_available ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                       {account.is_available ? 'Available' : 'Unavailable'}
                     </span>
                   </div>

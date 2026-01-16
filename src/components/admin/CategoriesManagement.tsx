@@ -112,7 +112,7 @@ const CategoriesManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
       </div>
     );
   }
@@ -120,11 +120,11 @@ const CategoriesManagement = () => {
   return (
     <div>
       <Tabs defaultValue="categories" className="w-full">
-        <TabsList className="mb-6 bg-[#0d0d0f] border border-[#1a1a1a]">
-          <TabsTrigger value="categories" className="data-[state=active]:bg-white data-[state=active]:text-black">
+        <TabsList className="mb-6 bg-[#18181b] border border-[#27272a]">
+          <TabsTrigger value="categories" className="data-[state=active]:bg-purple-600">
             Categories
           </TabsTrigger>
-          <TabsTrigger value="ai-tools" className="data-[state=active]:bg-white data-[state=active]:text-black">
+          <TabsTrigger value="ai-tools" className="data-[state=active]:bg-purple-600">
             AI Tools
           </TabsTrigger>
         </TabsList>
@@ -133,7 +133,7 @@ const CategoriesManagement = () => {
           <div className="flex items-center justify-end mb-6">
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 bg-white text-black font-semibold px-4 py-2 rounded-lg hover:bg-white/90 transition-colors"
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               <Plus size={18} />
               Add Category
@@ -142,7 +142,7 @@ const CategoriesManagement = () => {
 
           {/* Form */}
           {showForm && (
-            <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-6 mb-6">
+            <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 mb-6">
               <h3 className="text-lg font-semibold text-white mb-4">
                 {editingId ? 'Edit Category' : 'New Category'}
               </h3>
@@ -152,34 +152,34 @@ const CategoriesManagement = () => {
                   placeholder="Category name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
+                  className="bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                 />
                 <input
                   type="text"
                   placeholder="Icon (emoji)"
                   value={formData.icon}
                   onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                  className="bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
+                  className="bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                 />
                 <input
                   type="text"
                   placeholder="Description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="bg-[#030303] border border-[#1a1a1a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-white/20 focus:border-transparent transition-all"
+                  className="bg-[#0c0c0e] border border-[#27272a] rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#3f3f46] focus:border-transparent"
                 />
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={handleSave}
-                  className="flex items-center gap-2 bg-white text-black font-semibold px-4 py-2 rounded-lg hover:bg-white/90 transition-colors"
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
                 >
                   <Save size={18} />
                   Save
                 </button>
                 <button
                   onClick={resetForm}
-                  className="flex items-center gap-2 bg-[#09090b] border border-[#1a1a1a] hover:bg-[#0f0f11] text-white px-4 py-2 rounded-lg transition-colors"
+                  className="flex items-center gap-2 bg-[#18181b] border border-[#27272a] hover:bg-[#1f1f23] text-white px-4 py-2 rounded-lg"
                 >
                   <X size={18} />
                   Cancel
@@ -189,9 +189,9 @@ const CategoriesManagement = () => {
           )}
 
           {/* Categories Table */}
-          <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl overflow-hidden">
+          <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
             <table className="w-full">
-              <thead className="bg-[#0d0d0f]">
+              <thead className="bg-[#18181b]">
                 <tr>
                   <th className="text-left px-6 py-4 text-zinc-400 font-medium">Icon</th>
                   <th className="text-left px-6 py-4 text-zinc-400 font-medium">Name</th>
@@ -201,7 +201,7 @@ const CategoriesManagement = () => {
               </thead>
               <tbody>
                 {categories.map((category) => (
-                  <tr key={category.id} className="border-t border-[#1a1a1a] hover:bg-[#0f0f11] transition-colors">
+                  <tr key={category.id} className="border-t border-[#27272a] hover:bg-[#1a1a1e] transition-colors">
                     <td className="px-6 py-4 text-2xl">{category.icon || '📁'}</td>
                     <td className="px-6 py-4 text-white font-medium">{category.name}</td>
                     <td className="px-6 py-4 text-zinc-400">{category.description || '-'}</td>
@@ -209,13 +209,13 @@ const CategoriesManagement = () => {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => handleEdit(category)}
-                          className="p-2 text-zinc-400 hover:text-white hover:bg-[#0f0f11] rounded-lg transition-colors"
+                          className="p-2 text-blue-400 hover:bg-[#1a1a1e] rounded"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(category.id)}
-                          className="p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          className="p-2 text-red-400 hover:bg-[#1a1a1e] rounded"
                         >
                           <Trash2 size={18} />
                         </button>

@@ -109,7 +109,7 @@ const CancellationRequestsManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-[#27272a] border-t-white animate-spin" />
       </div>
     );
   }
@@ -118,7 +118,7 @@ const CancellationRequestsManagement = () => {
     <div>
       {pendingCount > 0 && (
         <div className="flex items-center justify-end mb-6">
-          <span className="flex items-center gap-2 bg-yellow-500/10 text-yellow-400 px-3 py-1 rounded-full">
+          <span className="flex items-center gap-2 bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full">
             <AlertTriangle className="w-4 h-4" />
             {pendingCount} Pending
           </span>
@@ -126,42 +126,42 @@ const CancellationRequestsManagement = () => {
       )}
 
       {requests.length === 0 ? (
-        <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl p-12 text-center">
-          <XCircle className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-12 text-center">
+          <XCircle className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No Cancellation Requests</h3>
-          <p className="text-zinc-500">Plan cancellation requests will appear here</p>
+          <p className="text-zinc-400">Plan cancellation requests will appear here</p>
         </div>
       ) : (
         <div className="space-y-4">
           {requests.map((request) => (
             <div
               key={request.id}
-              className={`bg-[#09090b] border rounded-xl p-5 ${
-                request.status === 'pending' ? 'border-yellow-500/20' : 'border-[#1a1a1a]'
-              } hover:bg-[#0f0f11] transition-all`}
+              className={`bg-[#111113] border rounded-xl p-5 ${
+                request.status === 'pending' ? 'border-yellow-500/30' : 'border-[#27272a]'
+              }`}
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="font-semibold text-white">{request.user_email}</h3>
-                  <p className="text-zinc-500 text-sm">{request.user_name}</p>
-                  <p className="text-zinc-600 text-xs mt-1">
+                  <p className="text-gray-400 text-sm">{request.user_name}</p>
+                  <p className="text-gray-500 text-xs mt-1">
                     {new Date(request.created_at).toLocaleString()}
                   </p>
                 </div>
 
                 <div>
                   {request.status === 'pending' ? (
-                    <span className="flex items-center gap-1 bg-yellow-500/10 text-yellow-400 px-3 py-1 rounded-full text-sm">
+                    <span className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm">
                       <Clock className="w-4 h-4" />
                       Pending
                     </span>
                   ) : request.status === 'approved' ? (
-                    <span className="flex items-center gap-1 bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-sm">
+                    <span className="flex items-center gap-1 bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm">
                       <CheckCircle className="w-4 h-4" />
                       Approved
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 bg-red-500/10 text-red-400 px-3 py-1 rounded-full text-sm">
+                    <span className="flex items-center gap-1 bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-sm">
                       <XCircle className="w-4 h-4" />
                       Rejected
                     </span>
@@ -170,9 +170,9 @@ const CancellationRequestsManagement = () => {
               </div>
 
               {request.reason && (
-                <div className="p-3 bg-[#0d0d0f] border border-[#1a1a1a] rounded-xl mb-4">
-                  <p className="text-sm text-zinc-400">
-                    <span className="text-zinc-600">Reason: </span>
+                <div className="p-3 bg-[#18181b] border border-[#27272a] rounded-xl mb-4">
+                  <p className="text-sm text-zinc-300">
+                    <span className="text-zinc-500">Reason: </span>
                     {request.reason}
                   </p>
                 </div>
@@ -185,13 +185,13 @@ const CancellationRequestsManagement = () => {
                     value={adminNotes[request.id] || ''}
                     onChange={(e) => setAdminNotes(prev => ({ ...prev, [request.id]: e.target.value }))}
                     placeholder="Admin notes (optional)"
-                    className="w-full bg-[#050506] border border-[#1a1a1a] rounded-xl px-4 py-2 text-white placeholder-zinc-600 focus:outline-none focus:border-[#252528]"
+                    className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
                   />
                   <div className="flex gap-3">
                     <button
                       onClick={() => handleProcess(request.id, 'approved')}
                       disabled={processing === request.id}
-                      className="flex-1 flex items-center justify-center gap-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 py-2 rounded-xl transition-all disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl transition-colors disabled:opacity-50"
                     >
                       {processing === request.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -203,7 +203,7 @@ const CancellationRequestsManagement = () => {
                     <button
                       onClick={() => handleProcess(request.id, 'rejected')}
                       disabled={processing === request.id}
-                      className="flex-1 flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-2 rounded-xl transition-all disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl transition-colors disabled:opacity-50"
                     >
                       {processing === request.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -217,9 +217,9 @@ const CancellationRequestsManagement = () => {
               )}
 
               {request.admin_notes && request.status !== 'pending' && (
-                <div className="p-3 bg-[#0d0d0f] border border-[#1a1a1a] rounded-xl mt-3">
-                  <p className="text-sm text-zinc-500">
-                    <span className="text-zinc-600">Admin Notes: </span>
+                <div className="p-3 bg-[#18181b] border border-[#27272a] rounded-xl mt-3">
+                  <p className="text-sm text-zinc-400">
+                    <span className="text-zinc-500">Admin Notes: </span>
                     {request.admin_notes}
                   </p>
                 </div>

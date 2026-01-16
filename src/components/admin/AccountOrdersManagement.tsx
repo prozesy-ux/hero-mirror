@@ -305,7 +305,7 @@ const AccountOrdersManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-[#27272a] border-t-white animate-spin" />
       </div>
     );
   }
@@ -314,49 +314,49 @@ const AccountOrdersManagement = () => {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-black border border-[#111] rounded-none p-5 hover:bg-[#080808] transition-all">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-5 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-500/5 rounded-sm">
+            <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
               <Package size={22} className="text-blue-400" />
             </div>
             <div>
-              <p className="text-zinc-500 text-sm font-medium">Total Orders</p>
+              <p className="text-zinc-400 text-sm font-medium">Total Orders</p>
               <p className="text-2xl font-bold text-white">{stats.total}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-black border border-[#111] rounded-none p-5 hover:bg-[#080808] transition-all">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-5 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-yellow-500/5 rounded-sm">
+            <div className="p-3 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
               <Clock size={22} className="text-yellow-400" />
             </div>
             <div>
-              <p className="text-zinc-500 text-sm font-medium">Pending</p>
+              <p className="text-zinc-400 text-sm font-medium">Pending</p>
               <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-black border border-[#111] rounded-none p-5 hover:bg-[#080808] transition-all">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-5 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-green-500/5 rounded-sm">
+            <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20">
               <CheckCircle size={22} className="text-green-400" />
             </div>
             <div>
-              <p className="text-zinc-500 text-sm font-medium">Delivered</p>
+              <p className="text-zinc-400 text-sm font-medium">Delivered</p>
               <p className="text-2xl font-bold text-green-400">{stats.delivered}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-black border border-[#111] rounded-none p-5 hover:bg-[#080808] transition-all">
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-5 hover:border-[#3f3f46] transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-purple-500/5 rounded-sm">
+            <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
               <DollarSign size={22} className="text-purple-400" />
             </div>
             <div>
-              <p className="text-zinc-500 text-sm font-medium">Revenue</p>
+              <p className="text-zinc-400 text-sm font-medium">Revenue</p>
               <p className="text-2xl font-bold text-purple-400">${stats.revenue.toFixed(2)}</p>
             </div>
           </div>
@@ -364,17 +364,17 @@ const AccountOrdersManagement = () => {
       </div>
 
       {/* Search & Filters Bar */}
-      <div className="bg-black border border-[#111] rounded-none p-4">
+      <div className="bg-[#111113] border border-[#27272a] rounded-xl p-4">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search Input */}
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by email, name, product, or order ID..."
-              className="w-full bg-black border border-[#111] rounded-sm pl-11 pr-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#1a1a1a] transition-all"
+              className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl pl-11 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46] transition-all"
             />
           </div>
 
@@ -383,7 +383,7 @@ const AccountOrdersManagement = () => {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
-              className="bg-[#050506] border border-[#1a1a1a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#252528]"
+              className="bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
             >
               <option value="all">All Delivery</option>
               <option value="pending">Pending</option>
@@ -393,7 +393,7 @@ const AccountOrdersManagement = () => {
             <select
               value={filterPayment}
               onChange={(e) => setFilterPayment(e.target.value as typeof filterPayment)}
-              className="bg-[#050506] border border-[#1a1a1a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#252528]"
+              className="bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
             >
               <option value="all">All Payments</option>
               <option value="pending">Payment Pending</option>
@@ -404,7 +404,7 @@ const AccountOrdersManagement = () => {
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="flex items-center gap-2 bg-[#0d0d0f] border border-[#1a1a1a] text-white px-4 py-3 rounded-xl hover:bg-[#111114] transition-all"
+              className="flex items-center gap-2 bg-[#18181b] border border-[#27272a] text-white px-4 py-3 rounded-xl hover:bg-[#1f1f23] transition-colors"
             >
               <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
               Refresh
@@ -412,7 +412,7 @@ const AccountOrdersManagement = () => {
 
             <button
               onClick={exportToCSV}
-              className="flex items-center gap-2 bg-[#0d0d0f] border border-[#1a1a1a] text-white px-4 py-3 rounded-xl hover:bg-[#111114] transition-all"
+              className="flex items-center gap-2 bg-[#18181b] border border-[#27272a] text-white px-4 py-3 rounded-xl hover:bg-[#1f1f23] transition-colors"
             >
               <Download size={18} />
               Export
@@ -421,7 +421,7 @@ const AccountOrdersManagement = () => {
         </div>
 
         {/* Results Count */}
-        <div className="mt-4 flex items-center justify-between text-sm text-zinc-500">
+        <div className="mt-4 flex items-center justify-between text-sm text-zinc-400">
           <span>
             Showing {paginatedOrders.length} of {filteredOrders.length} orders
             {searchQuery && ` matching "${searchQuery}"`}
@@ -437,13 +437,13 @@ const AccountOrdersManagement = () => {
 
       {/* Edit Modal */}
       {editingOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
-          <div className="bg-[#09090b] border border-[#1a1a1a] rounded-2xl max-w-md w-full p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+          <div className="bg-[#0a0a0a] border border-[#27272a] rounded-2xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-white">Edit Order</h3>
               <button 
                 onClick={() => setEditingOrder(null)}
-                className="p-2 text-zinc-500 hover:text-white hover:bg-[#111114] rounded-lg transition-all"
+                className="p-2 text-gray-400 hover:text-white hover:bg-[#1a1a1e] rounded-lg transition-colors"
               >
                 <X size={20} />
               </button>
@@ -451,11 +451,11 @@ const AccountOrdersManagement = () => {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-500 mb-2">Payment Status</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Payment Status</label>
                 <select
                   value={editFormData.payment_status}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, payment_status: e.target.value }))}
-                  className="w-full bg-[#050506] border border-[#1a1a1a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#252528]"
+                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
                 >
                   <option value="pending">Pending</option>
                   <option value="completed">Completed</option>
@@ -464,11 +464,11 @@ const AccountOrdersManagement = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-zinc-500 mb-2">Delivery Status</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Delivery Status</label>
                 <select
                   value={editFormData.delivery_status}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, delivery_status: e.target.value }))}
-                  className="w-full bg-[#050506] border border-[#1a1a1a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#252528]"
+                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
                 >
                   <option value="pending">Pending</option>
                   <option value="delivered">Delivered</option>
@@ -476,23 +476,23 @@ const AccountOrdersManagement = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-zinc-500 mb-2">Amount ($)</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Amount ($)</label>
                 <input
                   type="number"
                   value={editFormData.amount}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                  className="w-full bg-[#050506] border border-[#1a1a1a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#252528]"
+                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-zinc-500 mb-2">Account Credentials</label>
-                <textarea
+                <label className="block text-sm font-medium text-gray-400 mb-2">Account Credentials</label>
+                <input
+                  type="text"
                   value={editFormData.account_credentials}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, account_credentials: e.target.value }))}
-                  placeholder="Email:password or credentials"
-                  rows={3}
-                  className="w-full bg-[#050506] border border-[#1a1a1a] rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#252528] resize-none"
+                  placeholder="email:password or link"
+                  className="w-full bg-[#0c0c0e] border border-[#27272a] rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#3f3f46]"
                 />
               </div>
               
@@ -500,14 +500,14 @@ const AccountOrdersManagement = () => {
                 <button
                   onClick={handleSaveEdit}
                   disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-2 bg-white text-black py-3 rounded-xl font-medium hover:bg-white/90 transition-all disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 bg-white text-black font-semibold py-3 rounded-xl hover:bg-gray-100 transition-colors disabled:opacity-50"
                 >
                   {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   Save Changes
                 </button>
                 <button
                   onClick={() => setEditingOrder(null)}
-                  className="flex-1 bg-[#0d0d0f] border border-[#1a1a1a] text-white py-3 rounded-xl font-medium hover:bg-[#111114] transition-all"
+                  className="px-6 py-3 bg-[#18181b] border border-[#27272a] text-white rounded-xl hover:bg-[#1f1f23] transition-colors"
                 >
                   Cancel
                 </button>
@@ -518,29 +518,46 @@ const AccountOrdersManagement = () => {
       )}
 
       {/* Orders Table */}
-      <div className="bg-[#09090b] border border-[#1a1a1a] rounded-xl overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-b border-[#1a1a1a] hover:bg-transparent bg-[#0d0d0f]">
-              <TableHead className="text-zinc-500 font-medium">Customer</TableHead>
-              <TableHead className="text-zinc-500 font-medium">Product</TableHead>
-              <TableHead className="text-zinc-500 font-medium">Amount</TableHead>
-              <TableHead className="text-zinc-500 font-medium">Payment</TableHead>
-              <TableHead className="text-zinc-500 font-medium">Delivery</TableHead>
-              <TableHead className="text-zinc-500 font-medium">Date</TableHead>
-              <TableHead className="text-zinc-500 font-medium text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedOrders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12 text-zinc-500">
-                  No orders found
-                </TableCell>
+      {filteredOrders.length === 0 ? (
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl p-12 text-center">
+          <Package className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">
+            {orders.length === 0 ? 'No Orders Yet' : 'No Orders Found'}
+          </h3>
+          <p className="text-zinc-400">
+            {orders.length === 0 
+              ? 'AI account orders will appear here' 
+              : 'Try adjusting your search or filters'}
+          </p>
+        </div>
+      ) : (
+        <div className="bg-[#111113] border border-[#27272a] rounded-xl overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-[#27272a] hover:bg-transparent">
+                <TableHead className="text-zinc-400">Product</TableHead>
+                <TableHead className="text-zinc-400">Customer</TableHead>
+                <TableHead className="text-zinc-400">Amount</TableHead>
+                <TableHead className="text-zinc-400">Payment</TableHead>
+                <TableHead className="text-zinc-400">Delivery</TableHead>
+                <TableHead className="text-zinc-400">Date</TableHead>
+                <TableHead className="text-zinc-400 text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              paginatedOrders.map((order) => (
-                <TableRow key={order.id} className="border-b border-[#1a1a1a] hover:bg-[#0f0f11] transition-all">
+            </TableHeader>
+            <TableBody>
+              {paginatedOrders.map((order) => (
+                <TableRow key={order.id} className="border-[#27272a] hover:bg-[#1a1a1e]">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#18181b] border border-[#27272a] flex items-center justify-center text-lg">
+                        {getCategoryIcon(order.ai_accounts?.category)}
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">{order.ai_accounts?.name || 'AI Account'}</p>
+                        <p className="text-xs text-zinc-500">{order.ai_accounts?.category || 'Unknown'}</p>
+                      </div>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div>
                       <p className="text-white font-medium">{order.user_name || 'Unknown'}</p>
@@ -548,50 +565,53 @@ const AccountOrdersManagement = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{getCategoryIcon(order.ai_accounts?.category)}</span>
-                      <span className="text-white">{order.ai_accounts?.name || 'N/A'}</span>
-                    </div>
+                    <span className="text-white font-semibold">${Number(order.amount).toFixed(2)}</span>
                   </TableCell>
-                  <TableCell className="text-white font-medium">${order.amount}</TableCell>
                   <TableCell>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      order.payment_status === 'completed' 
-                        ? 'bg-green-500/10 text-green-400' 
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                      order.payment_status === 'completed'
+                        ? 'bg-green-500/20 text-green-400'
                         : order.payment_status === 'failed'
-                        ? 'bg-red-500/10 text-red-400'
-                        : 'bg-yellow-500/10 text-yellow-400'
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'bg-yellow-500/20 text-yellow-400'
                     }`}>
+                      {order.payment_status === 'completed' && <CheckCircle size={12} />}
+                      {order.payment_status === 'pending' && <Clock size={12} />}
+                      {order.payment_status === 'failed' && <X size={12} />}
                       {order.payment_status}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      order.delivery_status === 'delivered' 
-                        ? 'bg-green-500/10 text-green-400' 
-                        : 'bg-yellow-500/10 text-yellow-400'
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                      order.delivery_status === 'delivered'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-yellow-500/20 text-yellow-400'
                     }`}>
+                      {order.delivery_status === 'delivered' ? <CheckCircle size={12} /> : <Clock size={12} />}
                       {order.delivery_status}
                     </span>
                   </TableCell>
-                  <TableCell className="text-zinc-400 text-sm">
-                    {new Date(order.purchased_at).toLocaleDateString()}
+                  <TableCell>
+                    <div>
+                      <p className="text-white text-sm">{new Date(order.purchased_at).toLocaleDateString()}</p>
+                      <p className="text-zinc-500 text-xs">{new Date(order.purchased_at).toLocaleTimeString()}</p>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center justify-end gap-1">
+                    <div className="flex items-center justify-end gap-2">
                       {order.delivery_status === 'pending' && order.payment_status === 'completed' && (
-                        <div className="flex items-center gap-2 mr-2">
+                        <div className="flex items-center gap-2">
                           <input
                             type="text"
                             value={credentials[order.id] || ''}
                             onChange={(e) => setCredentials(prev => ({ ...prev, [order.id]: e.target.value }))}
                             placeholder="Credentials..."
-                            className="w-32 bg-[#050506] border border-[#1a1a1a] rounded-lg px-3 py-1.5 text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-[#252528]"
+                            className="w-32 bg-[#0c0c0e] border border-[#27272a] rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#3f3f46]"
                           />
                           <button
                             onClick={() => handleDeliver(order.id)}
                             disabled={delivering === order.id}
-                            className="p-1.5 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition-all"
+                            className="p-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
                             title="Deliver"
                           >
                             {delivering === order.id ? (
@@ -602,18 +622,32 @@ const AccountOrdersManagement = () => {
                           </button>
                         </div>
                       )}
+                      
+                      {order.delivery_status === 'delivered' && order.account_credentials && (
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(order.account_credentials!);
+                            toast.success('Credentials copied');
+                          }}
+                          className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-zinc-400 hover:bg-[#1f1f23] hover:text-white transition-all"
+                          title="Copy credentials"
+                        >
+                          <Eye size={16} />
+                        </button>
+                      )}
+                      
                       <button
                         onClick={() => handleEdit(order)}
-                        className="p-1.5 text-zinc-500 hover:text-white hover:bg-[#111114] rounded-lg transition-all"
-                        title="Edit"
+                        className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-zinc-400 hover:bg-[#1f1f23] hover:text-white transition-all"
+                        title="Edit Order"
                       >
                         <Edit size={16} />
                       </button>
                       <button
                         onClick={() => handleDelete(order.id)}
                         disabled={deletingId === order.id}
-                        className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                        title="Delete"
+                        className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-zinc-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
+                        title="Delete Order"
                       >
                         {deletingId === order.id ? (
                           <Loader2 size={16} className="animate-spin" />
@@ -624,44 +658,54 @@ const AccountOrdersManagement = () => {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableBody>
+          </Table>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(
-              Math.max(0, currentPage - 3),
-              Math.min(totalPages, currentPage + 2)
-            ).map(page => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  onClick={() => setCurrentPage(page)}
-                  isActive={currentPage === page}
-                  className="cursor-pointer"
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext 
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="border-t border-[#27272a] p-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className={`cursor-pointer ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''}`}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(page => {
+                      if (totalPages <= 5) return true;
+                      if (page === 1 || page === totalPages) return true;
+                      return Math.abs(page - currentPage) <= 1;
+                    })
+                    .map((page, index, arr) => (
+                      <PaginationItem key={page}>
+                        {index > 0 && arr[index - 1] !== page - 1 && (
+                          <span className="px-2 text-zinc-500">...</span>
+                        )}
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className={`cursor-pointer ${currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}`}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

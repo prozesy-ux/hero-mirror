@@ -212,7 +212,7 @@ const PaymentSettingsManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-[#27272a] border-t-white animate-spin" />
       </div>
     );
   }
@@ -223,7 +223,7 @@ const PaymentSettingsManagement = () => {
       <div className="flex items-center justify-end mb-6">
         <button
           onClick={openAddModal}
-          className="flex items-center gap-2 px-4 py-2 bg-white text-black font-semibold rounded-sm hover:bg-white/90 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition-colors"
         >
           <Plus size={18} />
           Add Method
@@ -235,14 +235,14 @@ const PaymentSettingsManagement = () => {
         {paymentMethods.map((method, index) => (
           <div 
             key={method.id}
-            className={`bg-[#0a0a0b] border border-[#151516] rounded-none p-4 transition-all hover:bg-[#0e0e10] ${
+            className={`bg-[#111113] border border-[#27272a] rounded-xl p-4 transition-all hover:border-[#3f3f46] ${
               !method.is_enabled ? 'opacity-60' : ''
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 {/* Logo */}
-                <div className="w-14 h-14 rounded-sm bg-[#0d0d0f] border border-[#151516] flex items-center justify-center overflow-hidden">
+                <div className="w-14 h-14 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center overflow-hidden">
                   {method.icon_url ? (
                     <img 
                       src={method.icon_url} 
@@ -250,7 +250,7 @@ const PaymentSettingsManagement = () => {
                       className="w-10 h-10 object-contain"
                     />
                   ) : (
-                    <CreditCard size={24} className="text-zinc-500" />
+                    <CreditCard size={24} className="text-gray-400" />
                   )}
                 </div>
                 
@@ -259,20 +259,20 @@ const PaymentSettingsManagement = () => {
                   <div className="flex items-center gap-2">
                     <h3 className="text-white font-semibold">{method.name}</h3>
                     {method.is_automatic ? (
-                      <span className="flex items-center gap-1 px-2 py-0.5 bg-white/5 text-white text-xs rounded-sm">
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full">
                         <Zap size={10} /> Automatic
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-400 text-xs rounded-sm">
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full">
                         <Clock size={10} /> Manual
                       </span>
                     )}
                   </div>
-                  <p className="text-zinc-500 text-sm">Code: {method.code}</p>
+                  <p className="text-gray-500 text-sm">Code: {method.code}</p>
                   {method.account_number && (
-                    <p className="text-zinc-400 text-sm mt-1">
+                    <p className="text-gray-400 text-sm mt-1">
                       Account: <span className="font-mono">{method.account_number}</span>
-                      {method.account_name && <span className="text-zinc-500"> ({method.account_name})</span>}
+                      {method.account_name && <span className="text-gray-500"> ({method.account_name})</span>}
                     </p>
                   )}
                 </div>
@@ -285,14 +285,14 @@ const PaymentSettingsManagement = () => {
                   <button
                     onClick={() => handleMoveOrder(method, 'up')}
                     disabled={index === 0}
-                    className="p-1 rounded-sm bg-[#0d0d0f] border border-[#151516] text-zinc-400 hover:bg-[#0e0e10] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="p-1 rounded bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     <ArrowUp size={14} />
                   </button>
                   <button
                     onClick={() => handleMoveOrder(method, 'down')}
                     disabled={index === paymentMethods.length - 1}
-                    className="p-1 rounded-sm bg-[#0d0d0f] border border-[#151516] text-zinc-400 hover:bg-[#0e0e10] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="p-1 rounded bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     <ArrowDown size={14} />
                   </button>
@@ -304,8 +304,8 @@ const PaymentSettingsManagement = () => {
                   disabled={saving === method.id}
                   className={`p-2 rounded-lg transition-all ${
                     method.is_enabled 
-                      ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20' 
-                      : 'bg-[#0d0d0f] border border-[#1a1a1a] text-zinc-400 hover:bg-[#0f0f11]'
+                      ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
+                      : 'bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23]'
                   }`}
                   title={method.is_enabled ? 'Disable' : 'Enable'}
                 >
@@ -321,7 +321,7 @@ const PaymentSettingsManagement = () => {
                 {/* Edit */}
                 <button
                   onClick={() => openEditModal(method)}
-                  className="p-2 rounded-sm bg-[#0d0d0f] border border-[#151516] text-zinc-400 hover:bg-[#0e0e10] hover:text-white transition-all"
+                  className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-[#1f1f23] hover:text-white transition-all"
                   title="Edit"
                 >
                   <Edit2 size={18} />
@@ -331,7 +331,7 @@ const PaymentSettingsManagement = () => {
                 <button
                   onClick={() => handleDelete(method)}
                   disabled={saving === method.id}
-                  className="p-2 rounded-sm bg-[#0d0d0f] border border-[#151516] text-zinc-400 hover:bg-red-500/10 hover:text-red-400 transition-all"
+                  className="p-2 rounded-lg bg-[#18181b] border border-[#27272a] text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
                   title="Delete"
                 >
                   {saving === method.id ? (
@@ -346,7 +346,7 @@ const PaymentSettingsManagement = () => {
         ))}
         
         {paymentMethods.length === 0 && (
-          <div className="text-center py-12 text-zinc-500 bg-[#0a0a0b] rounded-none border border-[#151516]">
+          <div className="text-center py-12 text-zinc-400 bg-[#111113] rounded-xl border border-[#27272a]">
             No payment methods configured. Add one to get started.
           </div>
         )}
@@ -360,7 +360,7 @@ const PaymentSettingsManagement = () => {
           resetForm();
         }
       }}>
-        <DialogContent className="bg-[#09090b] border-[#1a1a1a] text-white max-w-lg">
+        <DialogContent className="bg-[#111113] border-[#27272a] text-white max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-white">
               {editingMethod ? 'Edit Payment Method' : 'Add Payment Method'}
@@ -370,78 +370,78 @@ const PaymentSettingsManagement = () => {
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-zinc-400">Name *</Label>
+                <Label className="text-gray-400">Name *</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., bKash"
-                  className="bg-[#030303] border-[#1a1a1a] text-white mt-1 focus:ring-white/20"
+                  className="bg-[#0c0c0e] border-[#27272a] text-white mt-1"
                 />
               </div>
               <div>
-                <Label className="text-zinc-400">Code *</Label>
+                <Label className="text-gray-400">Code *</Label>
                 <Input
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                   placeholder="e.g., bkash"
-                  className="bg-[#030303] border-[#1a1a1a] text-white mt-1 focus:ring-white/20"
+                  className="bg-[#0c0c0e] border-[#27272a] text-white mt-1"
                   disabled={!!editingMethod}
                 />
               </div>
             </div>
             
             <div>
-              <Label className="text-zinc-400">Logo URL</Label>
+              <Label className="text-gray-400">Logo URL</Label>
               <Input
                 value={formData.icon_url}
                 onChange={(e) => setFormData({ ...formData, icon_url: e.target.value })}
                 placeholder="https://example.com/logo.png"
-                className="bg-[#030303] border-[#1a1a1a] text-white mt-1 focus:ring-white/20"
+                className="bg-[#0c0c0e] border-[#27272a] text-white mt-1"
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-zinc-400">Account Number</Label>
+                <Label className="text-gray-400">Account Number</Label>
                 <Input
                   value={formData.account_number}
                   onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
                   placeholder="e.g., 01712-XXXXXX"
-                  className="bg-[#030303] border-[#1a1a1a] text-white mt-1 focus:ring-white/20"
+                  className="bg-[#0c0c0e] border-[#27272a] text-white mt-1"
                 />
               </div>
               <div>
-                <Label className="text-zinc-400">Account Name</Label>
+                <Label className="text-gray-400">Account Name</Label>
                 <Input
                   value={formData.account_name}
                   onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
                   placeholder="Account holder name"
-                  className="bg-[#030303] border-[#1a1a1a] text-white mt-1 focus:ring-white/20"
+                  className="bg-[#0c0c0e] border-[#27272a] text-white mt-1"
                 />
               </div>
             </div>
             
             <div>
-              <Label className="text-zinc-400">Instructions for Users</Label>
+              <Label className="text-gray-400">Instructions for Users</Label>
               <Textarea
                 value={formData.instructions}
                 onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
                 placeholder="Instructions shown to users when they select this payment method..."
-                className="bg-[#030303] border-[#1a1a1a] text-white mt-1 min-h-[80px] focus:ring-white/20"
+                className="bg-[#0c0c0e] border-[#27272a] text-white mt-1 min-h-[80px]"
               />
             </div>
             
             {/* QR Code Upload - Only for Manual Payments */}
             {!formData.is_automatic && (
               <div>
-                <Label className="text-zinc-400 mb-2 block">QR Code Image (Optional)</Label>
+                <Label className="text-gray-400 mb-2 block">QR Code Image (Optional)</Label>
                 <div className="flex items-start gap-4">
                   {formData.qr_image_url ? (
                     <div className="relative">
                       <img 
                         src={formData.qr_image_url} 
                         alt="QR Code" 
-                        className="w-32 h-32 object-contain border border-[#1a1a1a] rounded-lg bg-white p-2"
+                        className="w-32 h-32 object-contain border border-[#27272a] rounded-lg bg-white p-2"
                       />
                       <button
                         type="button"
@@ -457,19 +457,19 @@ const PaymentSettingsManagement = () => {
                         value={formData.qr_image_url}
                         onChange={(e) => setFormData({ ...formData, qr_image_url: e.target.value })}
                         placeholder="https://example.com/qr-code.png"
-                        className="bg-[#030303] border-[#1a1a1a] text-white focus:ring-white/20"
+                        className="bg-[#0c0c0e] border-[#27272a] text-white"
                       />
-                      <p className="text-zinc-500 text-xs mt-1">Paste QR code image URL for manual payments</p>
+                      <p className="text-gray-500 text-xs mt-1">Paste QR code image URL for manual payments</p>
                     </div>
                   )}
                 </div>
               </div>
             )}
             
-            <div className="flex items-center justify-between p-3 bg-[#0d0d0f] border border-[#1a1a1a] rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-[#18181b] border border-[#27272a] rounded-lg">
               <div>
                 <p className="text-white font-medium">Automatic Payment</p>
-                <p className="text-zinc-500 text-sm">Process payments automatically via gateway</p>
+                <p className="text-gray-400 text-sm">Process payments automatically (like Stripe)</p>
               </div>
               <Switch
                 checked={formData.is_automatic}
@@ -477,10 +477,10 @@ const PaymentSettingsManagement = () => {
               />
             </div>
             
-            <div className="flex items-center justify-between p-3 bg-[#0d0d0f] border border-[#1a1a1a] rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
               <div>
                 <p className="text-white font-medium">Enabled</p>
-                <p className="text-zinc-500 text-sm">Show this payment method to users</p>
+                <p className="text-gray-400 text-sm">Show this payment method to users</p>
               </div>
               <Switch
                 checked={formData.is_enabled}
@@ -489,7 +489,7 @@ const PaymentSettingsManagement = () => {
             </div>
           </div>
           
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => {
@@ -497,7 +497,7 @@ const PaymentSettingsManagement = () => {
                 setEditingMethod(null);
                 resetForm();
               }}
-              className="border-[#1a1a1a] text-zinc-300 hover:bg-[#0f0f11]"
+              className="border-white/10 text-gray-400 hover:text-white"
             >
               Cancel
             </Button>
@@ -507,11 +507,11 @@ const PaymentSettingsManagement = () => {
               className="bg-white text-black hover:bg-white/90"
             >
               {saving === 'form' ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 size={16} className="animate-spin mr-2" />
               ) : (
-                <Save className="w-4 h-4 mr-2" />
+                <Save size={16} className="mr-2" />
               )}
-              {editingMethod ? 'Update' : 'Add'} Method
+              {editingMethod ? 'Update' : 'Add Method'}
             </Button>
           </DialogFooter>
         </DialogContent>
