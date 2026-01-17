@@ -8,7 +8,7 @@ import AIAccountsSection from '@/components/dashboard/AIAccountsSection';
 import ChatSection from '@/components/dashboard/ChatSection';
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Sparkles, Crown } from 'lucide-react';
+import { Crown } from 'lucide-react';
 
 // Mobile Header Component with Profile Avatar
 const MobileHeader = () => {
@@ -16,16 +16,7 @@ const MobileHeader = () => {
 
   return (
     <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm safe-area-top">
-      <div className="flex items-center justify-between px-4 py-3">
-        {/* Logo/Title */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <Sparkles size={16} className="text-white" />
-          </div>
-          <span className="font-bold text-lg text-gray-900 tracking-tight">PromptGod</span>
-        </div>
-        
-        {/* Profile Avatar */}
+      <div className="flex items-center justify-end px-4 py-3">
         <Link
           to="/dashboard/profile"
           className="relative"
