@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { MessageCircle, Send, Users, Search, Check, CheckCheck, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
+import { 
+  MessageCircle, Send, Users, Search, Check, CheckCheck, 
+  Trash2, AlertTriangle, Loader2, Image, Video, FileText, 
+  Download, Monitor, X
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useAdminData } from '@/hooks/useAdminData';
@@ -26,16 +30,39 @@ interface Message {
   created_at: string;
 }
 
+interface ChatAttachment {
+  id: string;
+  message_id: string | null;
+  user_id: string;
+  file_url: string;
+  file_type: string;
+  file_name: string;
+  file_size: number | null;
+  created_at: string;
+}
+
+interface ScreenShareSession {
+  id: string;
+  user_id: string;
+  status: string;
+  peer_id: string | null;
+  created_at: string;
+  ended_at: string | null;
+}
+
 const ChatManagement = () => {
   const { supportMessages, profiles, isLoading, refreshTable } = useAdminDataContext();
   const { fetchData } = useAdminData();
   const [selectedUser, setSelectedUser] = useState<ChatUser | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [attachments, setAttachments] = useState<Map<string, ChatAttachment[]>>(new Map());
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [deletingAllChat, setDeletingAllChat] = useState(false);
+  const [activeScreenShare, setActiveScreenShare] = useState<ScreenShareSession | null>(null);
+  const [showScreenShareModal, setShowScreenShareModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const users = useMemo(() => {
@@ -91,6 +118,7 @@ const ChatManagement = () => {
     if (selectedUser) {
       fetchMessages(selectedUser.user_id);
       markMessagesAsRead(selectedUser.user_id);
+      checkActiveScreenShare(selectedUser.user_id);
     }
   }, [selectedUser]);
 
@@ -110,6 +138,11 @@ const ChatManagement = () => {
           fetchMessages(selectedUser.user_id);
         }
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'screen_share_sessions' }, () => {
+        if (selectedUser) {
+          checkActiveScreenShare(selectedUser.user_id);
+        }
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -124,7 +157,43 @@ const ChatManagement = () => {
       filters: [{ column: 'user_id', value: userId }],
       order: { column: 'created_at', ascending: true }
     });
-    if (data) setMessages(data as Message[]);
+    if (data) {
+      setMessages(data as Message[]);
+      
+      // Fetch attachments
+      const messageIds = (data as Message[]).map(m => m.id);
+      if (messageIds.length > 0) {
+        const { data: attachmentData } = await supabase
+          .from('chat_attachments')
+          .select('*')
+          .in('message_id', messageIds);
+        
+        if (attachmentData) {
+          const attachmentMap = new Map<string, ChatAttachment[]>();
+          attachmentData.forEach(att => {
+            const existing = attachmentMap.get(att.message_id || '') || [];
+            attachmentMap.set(att.message_id || '', [...existing, att]);
+          });
+          setAttachments(attachmentMap);
+        }
+      }
+    }
+  };
+
+  const checkActiveScreenShare = async (userId: string) => {
+    const { data } = await supabase
+      .from('screen_share_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    if (data && data.length > 0) {
+      setActiveScreenShare(data[0] as ScreenShareSession);
+    } else {
+      setActiveScreenShare(null);
+    }
   };
 
   const markMessagesAsRead = async (userId: string) => {
@@ -213,6 +282,48 @@ const ChatManagement = () => {
       fetchMessages(selectedUser.user_id);
       refreshTable('support_messages');
     }
+  };
+
+  const renderAttachment = (att: ChatAttachment, isAdmin: boolean) => {
+    const bgClass = isAdmin ? 'bg-black/10' : 'bg-white/10';
+    const hoverClass = isAdmin ? 'hover:bg-black/20' : 'hover:bg-white/20';
+    
+    if (att.file_type === 'image') {
+      return (
+        <a href={att.file_url} target="_blank" rel="noopener noreferrer" className="block">
+          <img 
+            src={att.file_url} 
+            alt={att.file_name} 
+            className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-white/20"
+          />
+        </a>
+      );
+    }
+    
+    if (att.file_type === 'video') {
+      return (
+        <div className="relative max-w-[250px]">
+          <video 
+            src={att.file_url} 
+            controls 
+            className="rounded-lg max-h-[200px]"
+          />
+        </div>
+      );
+    }
+    
+    return (
+      <a 
+        href={att.file_url} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className={`flex items-center gap-2 px-3 py-2 ${bgClass} ${hoverClass} rounded-lg transition-colors`}
+      >
+        <FileText size={18} />
+        <span className="text-sm truncate max-w-[150px]">{att.file_name}</span>
+        <Download size={14} />
+      </a>
+    );
   };
 
   const filteredUsers = users.filter(user =>
@@ -326,24 +437,38 @@ const ChatManagement = () => {
                     </div>
                   </div>
                   
-                  <button
-                    onClick={handleDeleteAllChat}
-                    disabled={deletingAllChat}
-                    className="flex items-center gap-2 px-3 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors text-sm"
-                  >
-                    {deletingAllChat ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <Trash2 size={16} />
+                  <div className="flex items-center gap-2">
+                    {/* Screen Share Indicator */}
+                    {activeScreenShare && (
+                      <button
+                        onClick={() => setShowScreenShareModal(true)}
+                        className="flex items-center gap-2 px-3 py-2 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded-lg transition-colors text-sm animate-pulse"
+                      >
+                        <Monitor size={16} />
+                        User Sharing Screen
+                      </button>
                     )}
-                    Delete Old Messages
-                  </button>
+                    
+                    <button
+                      onClick={handleDeleteAllChat}
+                      disabled={deletingAllChat}
+                      className="flex items-center gap-2 px-3 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors text-sm"
+                    >
+                      {deletingAllChat ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
+                      Delete Old Messages
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg) => {
                   const isDeletable = canDeleteMessage(msg.created_at);
+                  const msgAttachments = attachments.get(msg.id) || [];
                   
                   return (
                     <div
@@ -373,6 +498,18 @@ const ChatManagement = () => {
                           }`}
                         >
                           <p className="whitespace-pre-wrap">{msg.message}</p>
+                          
+                          {/* Attachments */}
+                          {msgAttachments.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              {msgAttachments.map((att) => (
+                                <div key={att.id}>
+                                  {renderAttachment(att, msg.sender_type === 'admin')}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
                           <div className="flex items-center gap-1 mt-1">
                             <span className={`text-xs ${msg.sender_type === 'admin' ? 'text-black/50' : 'text-white/50'}`}>
                               {format(new Date(msg.created_at), 'h:mm a')}
@@ -438,6 +575,41 @@ const ChatManagement = () => {
           )}
         </div>
       </div>
+
+      {/* Screen Share Modal */}
+      {showScreenShareModal && activeScreenShare && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <Monitor className="text-green-400" size={20} />
+                <h3 className="text-white font-semibold">
+                  {selectedUser?.full_name || selectedUser?.email} is sharing their screen
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowScreenShareModal(false)}
+                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-8 text-center">
+              <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                <Monitor className="text-green-400" size={40} />
+              </div>
+              <h4 className="text-white text-lg font-medium mb-2">Screen Share Active</h4>
+              <p className="text-gray-400 mb-4">
+                The user has started sharing their screen. In a full implementation,
+                you would see their screen here via WebRTC connection.
+              </p>
+              <p className="text-gray-500 text-sm">
+                Session started: {format(new Date(activeScreenShare.created_at), 'MMM d, h:mm a')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
