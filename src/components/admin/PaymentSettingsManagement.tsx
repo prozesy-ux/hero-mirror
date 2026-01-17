@@ -101,28 +101,39 @@ const PaymentSettingsManagement = () => {
       display_order: formData.display_order
     };
 
-    let error;
-
-    if (editingMethod) {
-      ({ error } = await supabase
-        .from('payment_methods')
-        .update(payload)
-        .eq('id', editingMethod.id));
-    } else {
-      ({ error } = await supabase
-        .from('payment_methods')
-        .insert(payload));
+    // Get admin session token
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+      toast.error('Admin session expired');
+      setSaving(false);
+      return;
     }
 
-    setSaving(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-mutate-data', {
+        body: {
+          token,
+          table: 'payment_methods',
+          operation: editingMethod ? 'update' : 'insert',
+          data: payload,
+          id: editingMethod?.id
+        }
+      });
 
-    if (error) {
+      setSaving(false);
+
+      if (error || data?.error) {
+        toast.error(data?.error || 'Failed to save payment method');
+        console.error(error || data?.error);
+      } else {
+        toast.success(editingMethod ? 'Payment method updated' : 'Payment method added');
+        setShowModal(false);
+        refreshTable('payment_methods');
+      }
+    } catch (err) {
+      setSaving(false);
       toast.error('Failed to save payment method');
-      console.error(error);
-    } else {
-      toast.success(editingMethod ? 'Payment method updated' : 'Payment method added');
-      setShowModal(false);
-      refreshTable('payment_methods');
+      console.error(err);
     }
   };
 
@@ -131,32 +142,65 @@ const PaymentSettingsManagement = () => {
 
     setDeletingId(id);
 
-    const { error } = await supabase
-      .from('payment_methods')
-      .delete()
-      .eq('id', id);
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+      toast.error('Admin session expired');
+      setDeletingId(null);
+      return;
+    }
 
-    setDeletingId(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-mutate-data', {
+        body: {
+          token,
+          table: 'payment_methods',
+          operation: 'delete',
+          id
+        }
+      });
 
-    if (error) {
+      setDeletingId(null);
+
+      if (error || data?.error) {
+        toast.error(data?.error || 'Failed to delete payment method');
+      } else {
+        toast.success('Payment method deleted');
+        refreshTable('payment_methods');
+      }
+    } catch (err) {
+      setDeletingId(null);
       toast.error('Failed to delete payment method');
-    } else {
-      toast.success('Payment method deleted');
-      refreshTable('payment_methods');
+      console.error(err);
     }
   };
 
   const toggleEnabled = async (method: PaymentMethod) => {
-    const { error } = await supabase
-      .from('payment_methods')
-      .update({ is_enabled: !method.is_enabled })
-      .eq('id', method.id);
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+      toast.error('Admin session expired');
+      return;
+    }
 
-    if (error) {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-mutate-data', {
+        body: {
+          token,
+          table: 'payment_methods',
+          operation: 'update',
+          data: { is_enabled: !method.is_enabled },
+          id: method.id
+        }
+      });
+
+      if (error || data?.error) {
+        toast.error(data?.error || 'Failed to update status');
+      } else {
+        toast.success(method.is_enabled ? 'Payment method disabled' : 'Payment method enabled');
+        refreshTable('payment_methods');
+      }
+    } catch (err) {
       toast.error('Failed to update status');
-    } else {
-      toast.success(method.is_enabled ? 'Payment method disabled' : 'Payment method enabled');
-      refreshTable('payment_methods');
+      console.error(err);
     }
   };
 

@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.admin-fetch-data]
 verify_jwt = false
+
+[functions.admin-mutate-data]
+verify_jwt = false
+
+[functions.export-user-data]
+verify_jwt = false
