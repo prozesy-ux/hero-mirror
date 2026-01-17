@@ -127,11 +127,35 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
       sidebarCollapsed ? 'left-[72px]' : 'left-60'
     }`}>
       <div className="flex items-center justify-between w-full px-6">
-        {/* Left Section - Logo & Navigation */}
-        <div className="flex items-center gap-6">
+        {/* Left Section - Logo, Search & Navigation */}
+        <div className="flex items-center gap-4">
           <Link to="/dashboard/prompts" className="flex items-center gap-3 flex-shrink-0">
             <img src={theLogo} alt="Logo" className="h-8 w-auto" />
           </Link>
+
+          {/* Search Bar */}
+          <div className={`relative w-64 transition-all duration-300 ${isSearchFocused ? 'w-80' : ''}`}>
+            <div className={`relative flex items-center bg-gray-100 rounded-full transition-all duration-300 ${isSearchFocused ? 'ring-2 ring-violet-500 bg-white shadow-lg' : 'hover:bg-gray-200'}`}>
+              <Search size={16} className="absolute left-3 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                className="w-full bg-transparent py-2 pl-9 pr-8 text-sm text-gray-900 placeholder-gray-500 focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 p-0.5 rounded-full hover:bg-gray-200 transition-colors"
+                >
+                  <X size={12} className="text-gray-400" />
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* Navigation Tabs */}
           <nav className="flex items-center gap-1">
@@ -185,30 +209,6 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
               )}
             </Link>
           </nav>
-        </div>
-
-        {/* Center Section - Search Bar */}
-        <div className={`relative flex-1 max-w-xl mx-8 transition-all duration-300 ${isSearchFocused ? 'max-w-2xl' : ''}`}>
-          <div className={`relative flex items-center bg-gray-100 rounded-full transition-all duration-300 ${isSearchFocused ? 'ring-2 ring-violet-500 bg-white shadow-lg' : 'hover:bg-gray-200'}`}>
-            <Search size={18} className="absolute left-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search prompts, tools, categories..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              className="w-full bg-transparent py-2.5 pl-11 pr-10 text-sm text-gray-900 placeholder-gray-500 focus:outline-none"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 p-1 rounded-full hover:bg-gray-200 transition-colors"
-              >
-                <X size={14} className="text-gray-400" />
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Spacer to push right section to the end */}
