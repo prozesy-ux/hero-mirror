@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import DashboardSidebar, { useSidebarContext } from '@/components/dashboard/DashboardSidebar';
+import DashboardTopHeader from '@/components/dashboard/DashboardTopHeader';
 import DashboardHome from '@/components/dashboard/DashboardHome';
 import PromptsGrid from '@/components/dashboard/PromptsGrid';
 import ProfileSection from '@/components/dashboard/ProfileSection';
@@ -67,7 +68,7 @@ const DashboardContent = () => {
 
   return (
     <main 
-      className={`pb-24 lg:pb-0 pt-16 lg:pt-0 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white transition-all duration-300 ease-in-out ${
+      className={`pb-24 lg:pb-0 pt-16 lg:pt-16 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white transition-all duration-300 ease-in-out ${
         isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-72'
       }`}
     >
@@ -91,6 +92,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <MobileHeader />
+      <DashboardTopHeader />
       <DashboardSidebar />
       <DashboardContent />
     </div>
