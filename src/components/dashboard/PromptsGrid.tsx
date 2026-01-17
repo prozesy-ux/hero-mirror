@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, FolderOpen, Star, Bookmark, Check, ChevronRight, Crown, Wallet, Plus } from 'lucide-react';
+import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, FolderOpen, Star, Bookmark, Check, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useSearchContext } from '@/contexts/SearchContext';
@@ -407,37 +407,8 @@ const PromptsGrid = () => {
 
       {/* Tab Navigation - Mobile Optimized Premium Design */}
       <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
-        {/* Mobile: Wallet on top, tabs below */}
+        {/* Tab buttons only */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
-          {/* Wallet & Actions - Mobile: Full width row on top */}
-          <div className="flex items-center gap-2 lg:order-2 lg:ml-auto overflow-x-auto hide-scrollbar pb-1 lg:pb-0">
-            {/* Wallet Balance */}
-            <div className="flex items-center gap-1.5 bg-violet-100 border border-violet-200 px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-xl flex-shrink-0">
-              <Wallet size={14} className="text-violet-600" />
-              <span className="text-violet-700 font-bold text-xs lg:text-sm">
-                ${wallet?.balance?.toFixed(2) || '0.00'}
-              </span>
-            </div>
-            <button
-              onClick={() => navigate('/dashboard/billing')}
-              className="flex items-center gap-1.5 bg-violet-500 hover:bg-violet-600 text-white px-2.5 py-1.5 lg:px-4 lg:py-2 rounded-xl font-medium text-xs lg:text-sm transition-all active:scale-95 whitespace-nowrap flex-shrink-0"
-            >
-              <Plus size={14} />
-              <span className="hidden sm:inline">Add Funds</span>
-              <span className="sm:hidden">Add</span>
-            </button>
-
-            {/* Unlock Pro - Hidden on small mobile, show on larger screens */}
-            {!isPro && (
-              <button
-                onClick={() => navigate('/dashboard/billing')}
-                className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black px-2.5 py-1.5 lg:px-4 lg:py-2 rounded-xl font-semibold text-xs lg:text-sm transition-all active:scale-95 shadow-lg whitespace-nowrap flex-shrink-0"
-              >
-                <Crown size={14} />
-                Unlock Pro
-              </button>
-            )}
-          </div>
 
           {/* Tab buttons - Horizontal scroll on mobile */}
           <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar lg:order-1">

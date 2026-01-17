@@ -170,28 +170,26 @@ const SidebarContent = ({
           {/* All Category */}
           <button
             onClick={() => onCategorySelect('all')}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-all border-l-3 ${
+            className={`w-full px-3 py-2.5 text-left transition-all border-l-3 ${
               selectedCategory === 'all'
                 ? 'bg-gray-100 border-l-gray-900 font-semibold'
                 : 'border-l-transparent hover:bg-gray-50'
             }`}
           >
-            <span className="text-base">📦</span>
             <span className="text-sm text-gray-900">All Products</span>
           </button>
 
-          {/* Dynamic Categories */}
+          {/* Dynamic Categories - Names Only */}
           {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => onCategorySelect(category.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-all border-l-3 ${
+              className={`w-full px-3 py-2.5 text-left transition-all border-l-3 ${
                 selectedCategory === category.id
                   ? `bg-gray-100 ${getCategoryBorderClass(category.color)} font-semibold`
                   : 'border-l-transparent hover:bg-gray-50'
               }`}
             >
-              <span className="text-base">{category.icon || '📁'}</span>
               <span className="text-sm text-gray-900">{category.name}</span>
             </button>
           ))}
