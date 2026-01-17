@@ -184,21 +184,32 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       { to: '/dashboard/prompts', icon: <FileText size={22} />, label: 'All Prompts' },
       { to: '/dashboard/ai-accounts', icon: <Bot size={22} />, label: 'Marketplace' },
       { to: '/dashboard/billing', icon: <CreditCard size={22} />, label: 'Billing' },
-      { to: '/dashboard/profile', icon: <User size={22} />, label: 'Profile' },
       { to: '/dashboard/chat', icon: <MessageCircle size={22} />, label: 'Chat', badge: unreadCount > 0 ? unreadCount : undefined },
     ];
 
     return (
       <TooltipProvider>
         <div ref={ref} className="flex flex-col h-full overflow-y-auto bg-white">
-          {/* User Card - Premium Design */}
-          <div className={`mx-3 mb-4 mt-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 overflow-hidden ${isCollapsed ? '' : ''}`}>
-            {/* Profile Header with gradient background */}
-            <div className={`bg-gradient-to-r from-violet-50 to-purple-50 ${isCollapsed ? 'p-3' : 'p-4'}`}>
-              <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'}`}>
-                {/* Avatar with gradient ring */}
-                <div className="relative flex-shrink-0">
-                  <div className={`rounded-full bg-gradient-to-br from-violet-500 to-purple-600 p-0.5 ${isCollapsed ? 'w-11 h-11' : 'w-14 h-14'}`}>
+          {/* Header with Logo + Profile Avatar */}
+          <div className={`flex items-center justify-between px-4 py-4 border-b border-gray-100 ${isCollapsed ? 'px-2 justify-center' : ''}`}>
+            {/* Logo/Title */}
+            {!isCollapsed && (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Sparkles size={16} className="text-white" />
+                </div>
+                <span className="font-bold text-lg text-gray-900 tracking-tight">PromptGod</span>
+              </div>
+            )}
+            
+            {/* Profile Avatar - Clickable */}
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/dashboard/profile"
+                  className="relative group"
+                >
+                  <div className={`rounded-full bg-gradient-to-br from-violet-500 to-purple-600 p-0.5 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-violet-500/25 ${isCollapsed ? 'w-10 h-10' : 'w-10 h-10'}`}>
                     {profile?.avatar_url ? (
                       <img 
                         src={profile.avatar_url} 
@@ -206,57 +217,23 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                         className="w-full h-full rounded-full object-cover bg-white"
                       />
                     ) : (
-                      <div className="w-full h-full rounded-full bg-violet-500 flex items-center justify-center text-white font-bold text-lg">
+                      <div className="w-full h-full rounded-full bg-violet-500 flex items-center justify-center text-white font-bold text-sm">
                         {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
                       </div>
                     )}
                   </div>
-                  {/* Crown badge on avatar */}
+                  {/* PRO Crown badge */}
                   {profile?.is_pro && (
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-2 ring-white shadow-lg">
-                      <Crown size={12} className="text-black" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-1.5 ring-white shadow-md">
+                      <Crown size={8} className="text-black" />
                     </div>
                   )}
-                </div>
-                
-                {/* User Info */}
-                {!isCollapsed && (
-                  <div className="flex-1 min-w-0">
-                    <p className="text-gray-900 font-bold text-lg tracking-tight truncate uppercase">
-                      {profile?.full_name || 'User'}
-                    </p>
-                    <p className="text-gray-500 text-sm truncate">
-                      {profile?.email}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* PRO Badge - Premium style */}
-            {!isCollapsed && (
-              <div className="px-4 pb-4 pt-3">
-                {profile?.is_pro ? (
-                  <div className="flex items-center gap-2 px-3 py-2.5 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200">
-                    <Crown size={14} className="text-amber-500" />
-                    <span className="text-amber-600 font-semibold text-sm">PRO Member</span>
-                    <span className="ml-auto flex items-center gap-1 text-amber-500 text-xs">
-                      <Sparkles size={10} />
-                      Active
-                    </span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => navigate('/dashboard/billing')}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 rounded-xl text-black font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-amber-500/25"
-                  >
-                    <Crown size={14} />
-                    Upgrade to Pro
-                    <ArrowRight size={14} className="ml-auto" />
-                  </button>
-                )}
-              </div>
-            )}
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side={isCollapsed ? "right" : "bottom"} className="bg-gray-900 text-white border-gray-800">
+                View Profile
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Navigation */}
@@ -423,7 +400,6 @@ const MobileBottomNav = () => {
     { to: '/dashboard/prompts', icon: FileText, label: 'Prompts' },
     { to: '/dashboard/ai-accounts', icon: Bot, label: 'Marketplace' },
     { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
-    { to: '/dashboard/profile', icon: User, label: 'Profile' },
     { to: '/dashboard/chat', icon: MessageCircle, label: 'Chat', badge: unreadCount },
   ];
 
