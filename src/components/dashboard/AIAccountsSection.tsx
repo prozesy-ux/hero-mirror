@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, Plus, X, MessageCircle, Send, Star, ChevronRight, Lock, ExternalLink, ArrowRight } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { ShoppingCart, Loader2, Search, TrendingUp, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, X, MessageCircle, Send, Star, ChevronRight, ExternalLink, ArrowRight, Filter } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import MarketplaceSidebar from './MarketplaceSidebar';
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -88,8 +89,8 @@ const AIAccountsSection = () => {
   const [purchasesLoading, setPurchasesLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [hoveredAccount, setHoveredAccount] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showCredentials, setShowCredentials] = useState<Record<string, boolean>>({});
   const [insufficientFundsModal, setInsufficientFundsModal] = useState<InsufficientFundsModal>({
     show: false,
@@ -474,13 +475,41 @@ const AIAccountsSection = () => {
     toast.success('Credentials copied to clipboard');
   };
 
-  const filteredAccounts = accounts.filter(account => {
-    const matchesSearch = account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      account.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      account.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory = categoryFilter === 'all' || account.category_id === categoryFilter || account.category === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
+  const handleTagSelect = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const getCategoryCount = (categoryId: string) => {
+    return accounts.filter(a => a.category_id === categoryId).length;
+  };
+
+  const getCategoryName = (categoryId: string | null) => {
+    if (!categoryId) return 'AI';
+    const category = dynamicCategories.find(c => c.id === categoryId);
+    return category?.name || 'AI';
+  };
+
+  const getCategoryColor = (categoryId: string | null) => {
+    if (!categoryId) return 'violet';
+    const category = dynamicCategories.find(c => c.id === categoryId);
+    return category?.color || 'violet';
+  };
+
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter(account => {
+      const matchesSearch = account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        account.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        account.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesCategory = categoryFilter === 'all' || account.category_id === categoryFilter || account.category === categoryFilter;
+      const matchesTags = selectedTags.length === 0 || 
+        account.tags?.some(tag => selectedTags.includes(tag));
+      return matchesSearch && matchesCategory && matchesTags;
+    });
+  }, [accounts, searchQuery, categoryFilter, selectedTags]);
 
   // Trending accounts
   const trendingAccounts = accounts.filter(account => account.is_trending);
@@ -490,17 +519,6 @@ const AIAccountsSection = () => {
   const totalSpent = purchases.reduce((sum, p) => sum + Number(p.amount), 0);
   const deliveredCount = purchases.filter(p => p.delivery_status === 'delivered').length;
   const pendingCount = purchases.filter(p => p.delivery_status === 'pending').length;
-
-  // Build categories list from dynamic data
-  const categories: { value: string; label: string; icon?: string | null; color?: string | null }[] = [
-    { value: 'all', label: 'All' },
-    ...dynamicCategories.map(cat => ({
-      value: cat.id,
-      label: cat.name,
-      icon: cat.icon,
-      color: cat.color
-    }))
-  ];
 
   const getCategoryColorClass = (color: string | null) => {
     const colorMap: Record<string, string> = {
@@ -574,209 +592,262 @@ const AIAccountsSection = () => {
         </div>
       </div>
 
-      {/* Browse Accounts Tab */}
+      {/* Browse Accounts Tab - New Layout with Sidebar */}
       {activeTab === 'browse' && (
-        <>
-          {/* Premium Search Bar */}
-          <div className="relative mb-6">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
-              <Search size={18} className="text-gray-500" />
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search AI accounts..."
-              className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium text-lg shadow-md"
-            />
-          </div>
+        <div className="flex gap-6">
+          {/* Left Sidebar */}
+          <MarketplaceSidebar
+            trendingAccounts={trendingAccounts}
+            categories={dynamicCategories}
+            accounts={accounts}
+            selectedCategory={categoryFilter}
+            selectedTags={selectedTags}
+            onCategorySelect={setCategoryFilter}
+            onTagSelect={handleTagSelect}
+            onAccountClick={(account) => {
+              setSelectedAccount(account);
+              setShowDetailsModal(true);
+            }}
+            getCategoryCount={getCategoryCount}
+          />
 
-          {/* Category Filters */}
-          <div className="flex gap-2 mb-6 flex-wrap">
-            {categories.map((cat) => (
-              <button
-                key={cat.value}
-                onClick={() => setCategoryFilter(cat.value)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
-                  categoryFilter === cat.value
-                    ? 'bg-gray-900 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-md hover:shadow-lg'
-                }`}
-              >
-                {cat.icon && <span>{cat.icon}</span>}
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Trending Section */}
-          {trendingAccounts.length > 0 && (
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-5 h-5 text-orange-500" />
-                <h2 className="text-lg font-bold text-gray-900">Trending Now</h2>
+          {/* Main Content */}
+          <div className="flex-1 min-w-0">
+            {/* Search and Filter Row */}
+            <div className="flex gap-3 mb-6">
+              {/* Mobile Filter Button */}
+              <div className="lg:hidden">
+                <MarketplaceSidebar
+                  trendingAccounts={trendingAccounts}
+                  categories={dynamicCategories}
+                  accounts={accounts}
+                  selectedCategory={categoryFilter}
+                  selectedTags={selectedTags}
+                  onCategorySelect={setCategoryFilter}
+                  onTagSelect={handleTagSelect}
+                  onAccountClick={(account) => {
+                    setSelectedAccount(account);
+                    setShowDetailsModal(true);
+                  }}
+                  getCategoryCount={getCategoryCount}
+                />
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar">
-                {trendingAccounts.slice(0, 5).map((account) => (
-                  <div
-                    key={account.id}
-                    className="flex-shrink-0 w-64 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-4 border border-orange-200 cursor-pointer hover:shadow-lg transition-all"
+
+              {/* Search Bar */}
+              <div className="relative flex-1">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
+                  <Search size={18} className="text-gray-500" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search products, categories, tags..."
+                  className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium shadow-md"
+                />
+                {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
+                  <button
                     onClick={() => {
-                      setSelectedAccount(account);
-                      setShowDetailsModal(true);
+                      setSearchQuery('');
+                      setSelectedTags([]);
+                      setCategoryFilter('all');
                     }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <div className="flex items-center gap-3 mb-2">
-                      {account.icon_url ? (
-                        <img src={account.icon_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-xl bg-orange-200 flex items-center justify-center">
-                          <TrendingUp className="w-6 h-6 text-orange-600" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-gray-900 truncate">{account.name}</h3>
-                        <p className="text-orange-600 font-semibold">${account.price}</p>
-                      </div>
-                    </div>
-                  </div>
+                    <X size={18} className="text-gray-400" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Active Filters Pills */}
+            {(selectedTags.length > 0 || categoryFilter !== 'all') && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {categoryFilter !== 'all' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full text-xs font-medium">
+                    {getCategoryName(categoryFilter)}
+                    <button onClick={() => setCategoryFilter('all')} className="hover:bg-white/20 rounded-full p-0.5">
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {selectedTags.map(tag => (
+                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-500 text-white rounded-full text-xs font-medium">
+                    {tag}
+                    <button onClick={() => handleTagSelect(tag)} className="hover:bg-white/20 rounded-full p-0.5">
+                      <X size={12} />
+                    </button>
+                  </span>
                 ))}
               </div>
+            )}
+
+            {/* Results Count */}
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm text-gray-500">
+                Showing <span className="font-semibold text-gray-900">{filteredAccounts.length}</span> products
+              </p>
             </div>
-          )}
 
-
-          {filteredAccounts.length === 0 ? (
-            <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
-              <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
-                <ShoppingCart className="w-10 h-10 text-gray-400" />
+            {/* Products Grid */}
+            {filteredAccounts.length === 0 ? (
+              <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
+                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+                  <ShoppingCart className="w-10 h-10 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Products Found</h3>
+                <p className="text-gray-500 mb-4">Try adjusting your search or filters</p>
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedTags([]);
+                    setCategoryFilter('all');
+                  }}
+                  className="text-violet-600 font-medium hover:underline"
+                >
+                  Clear all filters
+                </button>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Accounts Found</h3>
-              <p className="text-gray-500">Try adjusting your search or filters</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
-              {filteredAccounts.map((account) => {
-                const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
-                
-                return (
-                  <div
-                    key={account.id}
-                    className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                  >
-                    {/* Image */}
-                    <div className="relative aspect-[4/3] overflow-hidden">
-                      {account.icon_url ? (
-                        <img 
-                          src={account.icon_url} 
-                          alt={account.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
+                {filteredAccounts.map((account) => {
+                  const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
+                  
+                  return (
+                    <div
+                      key={account.id}
+                      className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                    >
+                      {/* Image */}
+                      <div className="relative aspect-[4/3] overflow-hidden">
+                        {account.icon_url ? (
                           <img 
-                            src={getProductImage(account.category)} 
+                            src={account.icon_url} 
                             alt={account.name}
-                            className="h-20 w-20 object-contain"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                            <img 
+                              src={getProductImage(account.category)} 
+                              alt={account.name}
+                              className="h-20 w-20 object-contain"
+                            />
+                          </div>
+                        )}
+
+                        {/* Category Badge */}
+                        <div className={`absolute top-3 left-3 px-3 py-1.5 ${getCategoryColorClass(getCategoryColor(account.category_id))} text-white rounded-full text-xs font-bold uppercase shadow-lg`}>
+                          {getCategoryName(account.category_id) || account.category || 'AI'}
                         </div>
-                      )}
 
-                      {/* Category Badge */}
-                      <div className="absolute top-3 left-3 px-3 py-1.5 bg-violet-500 text-white rounded-full text-xs font-bold uppercase shadow-lg">
-                        {account.category || 'AI'}
+                        {/* Trending Badge */}
+                        {account.is_trending && (
+                          <div className="absolute top-3 right-3 w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
+                            <TrendingUp size={16} className="text-white" />
+                          </div>
+                        )}
+
+                        {/* Low Balance Overlay */}
+                        {!hasEnoughBalance && (
+                          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
+                            <Wallet size={28} className="text-white mb-2" />
+                            <span className="text-white text-sm font-semibold">Low Balance</span>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Purchase Count Badge */}
-                      <div className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
-                        <Users size={16} className="text-gray-600" />
-                      </div>
+                      {/* Content */}
+                      <div className="p-5">
+                        <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">
+                          {account.name}
+                        </h3>
+                        
+                        {/* Description */}
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                          {account.description || 'Premium account with full access'}
+                        </p>
 
-                      {/* Low Balance Overlay */}
-                      {!hasEnoughBalance && (
-                        <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
-                          <Wallet size={28} className="text-white mb-2" />
-                          <span className="text-white text-sm font-semibold">Low Balance</span>
-                        </div>
-                      )}
-                    </div>
+                        {/* Tags */}
+                        {account.tags && account.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {account.tags.slice(0, 3).map(tag => (
+                              <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
-                    {/* Content */}
-                    <div className="p-5">
-                      <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">
-                        {account.name}
-                      </h3>
-                      
-                      {/* Description */}
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {account.description || 'Premium AI account with full access'}
-                      </p>
-
-                      {/* Price Badge */}
-                      <div className="mb-3">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                          <Check size={12} />
-                          ${account.price} one-time
-                        </span>
-                      </div>
-
-                      {/* Review Section */}
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="flex gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />
-                          ))}
-                        </div>
-                        <span className="text-sm text-gray-600 font-medium">{getPurchaseCount(account.id)}+ sold</span>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedAccount(account);
-                            setShowDetailsModal(true);
-                          }}
-                          className="flex-1 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
-                        >
-                          <Eye size={16} />
-                          View
-                        </button>
-                        <button
-                          onClick={() => handlePurchase(account)}
-                          disabled={purchasing === account.id}
-                          className={`flex-1 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
-                            purchasing === account.id
-                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                              : hasEnoughBalance
-                              ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
-                              : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
-                          }`}
-                        >
-                          {purchasing === account.id ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            </>
-                          ) : !hasEnoughBalance ? (
-                            <>
-                              <Wallet className="w-4 h-4" />
-                              Top Up
-                            </>
-                          ) : (
-                            <>
-                              Buy
-                              <ChevronRight size={16} />
-                            </>
+                        {/* Price Badge */}
+                        <div className="mb-3 flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                            <Check size={12} />
+                            ${account.price}
+                          </span>
+                          {account.original_price && account.original_price > account.price && (
+                            <span className="text-xs text-gray-400 line-through">${account.original_price}</span>
                           )}
-                        </button>
+                        </div>
+
+                        {/* Review Section */}
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />
+                            ))}
+                          </div>
+                          <span className="text-sm text-gray-600 font-medium">{getPurchaseCount(account.id)}+ sold</span>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedAccount(account);
+                              setShowDetailsModal(true);
+                            }}
+                            className="flex-1 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
+                          >
+                            <Eye size={16} />
+                            View
+                          </button>
+                          <button
+                            onClick={() => handlePurchase(account)}
+                            disabled={purchasing === account.id}
+                            className={`flex-1 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                              purchasing === account.id
+                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                : hasEnoughBalance
+                                ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
+                                : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
+                            }`}
+                          >
+                            {purchasing === account.id ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              </>
+                            ) : !hasEnoughBalance ? (
+                              <>
+                                <Wallet className="w-4 h-4" />
+                                Top Up
+                              </>
+                            ) : (
+                              <>
+                                Buy
+                                <ChevronRight size={16} />
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* My Purchases Tab */}
@@ -792,12 +863,12 @@ const AIAccountsSection = () => {
                 <Package className="w-10 h-10 text-gray-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Purchases Yet</h3>
-              <p className="text-gray-500 mb-6">Your purchased AI accounts will appear here</p>
+              <p className="text-gray-500 mb-6">Your purchased accounts will appear here</p>
               <button
                 onClick={() => setActiveTab('browse')}
                 className="bg-gray-900 text-white font-semibold px-6 py-3 rounded-xl hover:bg-gray-800 transition-all"
               >
-                Browse Accounts
+                Browse Products
               </button>
             </div>
           ) : (
@@ -812,13 +883,13 @@ const AIAccountsSection = () => {
                               <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
                                 <img 
                                   src={purchase.ai_accounts?.icon_url || getProductImage(purchase.ai_accounts?.category)}
-                                  alt={purchase.ai_accounts?.name || 'AI Account'}
+                                  alt={purchase.ai_accounts?.name || 'Account'}
                                   className="w-10 h-10 object-contain"
                                 />
                               </div>
                       <div>
                         <h3 className="text-lg font-bold text-gray-900 tracking-tight">
-                          {purchase.ai_accounts?.name || 'AI Account'}
+                          {purchase.ai_accounts?.name || 'Account'}
                         </h3>
                         <p className="text-gray-500 text-sm">
                           Purchased on {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
@@ -873,18 +944,13 @@ const AIAccountsSection = () => {
                           </button>
                         </div>
                       </div>
-                      <code className="text-sm text-gray-900 font-mono">
-                        {showCredentials[purchase.id]
-                          ? purchase.account_credentials
-                          : '••••••••••••••••••••'}
+                      <code className="text-sm text-gray-800 font-mono block bg-gray-200 p-3 rounded-lg">
+                        {showCredentials[purchase.id] 
+                          ? purchase.account_credentials 
+                          : '••••••••••••••••'}
                       </code>
                     </div>
                   )}
-
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Amount Paid</span>
-                    <span className="text-gray-900 font-bold text-lg">${purchase.amount}</span>
-                  </div>
                 </div>
               ))}
             </div>
@@ -895,108 +961,46 @@ const AIAccountsSection = () => {
       {/* Stats Tab */}
       {activeTab === 'stats' && (
         <>
-          {/* Wallet Balance Card */}
-          <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl p-6 mb-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-violet-200 text-sm font-medium mb-1">Wallet Balance</p>
-                <p className="text-4xl font-bold tracking-tight">${wallet?.balance?.toFixed(2) || '0.00'}</p>
-              </div>
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
-                <Wallet className="w-8 h-8" />
-              </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
+            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
+              <p className="text-xs lg:text-sm text-gray-500 mb-1">Total Purchases</p>
+              <p className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">{totalPurchases}</p>
             </div>
-            <button
-              onClick={() => navigate('/dashboard/billing')}
-              className="mt-4 w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-            >
-              <Plus size={18} />
-              Add Funds to Wallet
-            </button>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2.5 bg-blue-50 rounded-xl">
-                  <Package size={20} className="text-blue-600" />
-                </div>
-                <span className="text-gray-500 text-sm font-medium">Total Purchases</span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900 tracking-tight">{totalPurchases}</p>
+            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
+              <p className="text-xs lg:text-sm text-gray-500 mb-1">Total Spent</p>
+              <p className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">${totalSpent.toFixed(2)}</p>
             </div>
-
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2.5 bg-violet-50 rounded-xl">
-                  <BarChart3 size={20} className="text-violet-600" />
-                </div>
-                <span className="text-gray-500 text-sm font-medium">Total Spent</span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900 tracking-tight">${totalSpent.toFixed(2)}</p>
+            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
+              <p className="text-xs lg:text-sm text-gray-500 mb-1">Delivered</p>
+              <p className="text-2xl lg:text-3xl font-bold text-emerald-600 tracking-tight">{deliveredCount}</p>
             </div>
-
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2.5 bg-green-50 rounded-xl">
-                  <CheckCircle size={20} className="text-green-600" />
-                </div>
-                <span className="text-gray-500 text-sm font-medium">Delivered</span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900 tracking-tight">{deliveredCount}</p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2.5 bg-amber-50 rounded-xl">
-                  <Clock size={20} className="text-amber-600" />
-                </div>
-                <span className="text-gray-500 text-sm font-medium">Pending</span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900 tracking-tight">{pendingCount}</p>
+            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
+              <p className="text-xs lg:text-sm text-gray-500 mb-1">Pending</p>
+              <p className="text-2xl lg:text-3xl font-bold text-amber-600 tracking-tight">{pendingCount}</p>
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 tracking-tight">Recent Activity</h3>
-            {purchases.length === 0 ? (
-              <p className="text-gray-500">No recent activity</p>
-            ) : (
-              <div className="space-y-3">
-                {purchases.slice(0, 5).map((purchase) => (
-                  <div key={purchase.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                        <img 
-                          src={getProductImage(purchase.ai_accounts?.category)}
-                          alt=""
-                          className="w-6 h-6 object-contain"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-gray-900 font-medium text-sm">{purchase.ai_accounts?.name}</p>
-                        <p className="text-gray-500 text-xs">
-                          {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric' 
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-gray-900 font-semibold">${purchase.amount}</span>
-                      {purchase.delivery_status === 'delivered' ? (
-                        <CheckCircle size={16} className="text-green-500" />
-                      ) : (
-                        <Clock size={16} className="text-amber-500" />
-                      )}
-                    </div>
-                  </div>
-                ))}
+          {/* Wallet Section */}
+          <div className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-2xl p-6 lg:p-8 text-white shadow-xl mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Wallet className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-white/70 text-sm">Current Balance</p>
+                  <p className="text-3xl lg:text-4xl font-bold tracking-tight">
+                    ${wallet?.balance?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
               </div>
-            )}
+              <button
+                onClick={() => navigate('/dashboard/billing')}
+                className="px-6 py-3 bg-white text-violet-700 rounded-xl font-semibold hover:bg-white/90 transition-all"
+              >
+                Top Up
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -1096,8 +1100,8 @@ const AIAccountsSection = () => {
                   </div>
                 )}
                 {/* Category Badge */}
-                <div className="absolute top-3 left-3 px-3 py-1.5 bg-violet-500 text-white rounded-full text-xs font-bold uppercase shadow-lg">
-                  {selectedAccount.category || 'AI'}
+                <div className={`absolute top-3 left-3 px-3 py-1.5 ${getCategoryColorClass(getCategoryColor(selectedAccount.category_id))} text-white rounded-full text-xs font-bold uppercase shadow-lg`}>
+                  {getCategoryName(selectedAccount.category_id) || selectedAccount.category || 'AI'}
                 </div>
               </div>
 
@@ -1123,16 +1127,32 @@ const AIAccountsSection = () => {
                   </div>
                 </div>
 
+                {/* Tags */}
+                {selectedAccount.tags && selectedAccount.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {selectedAccount.tags.map(tag => (
+                      <span key={tag} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 {/* Description */}
                 <p className="text-gray-600 text-sm leading-relaxed mb-4">
-                  {selectedAccount.description || 'Premium AI account with full access to all features. Get instant access to the most powerful AI tools available.'}
+                  {selectedAccount.description || 'Premium account with full access to all features. Get instant access to the most powerful tools available.'}
                 </p>
 
                 {/* Price & Stock */}
                 <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-xl">
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Price</p>
-                    <p className="text-2xl font-bold text-gray-900">${selectedAccount.price}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-2xl font-bold text-gray-900">${selectedAccount.price}</p>
+                      {selectedAccount.original_price && selectedAccount.original_price > selectedAccount.price && (
+                        <span className="text-sm text-gray-400 line-through">${selectedAccount.original_price}</span>
+                      )}
+                    </div>
                     <p className="text-xs text-emerald-600 font-medium">One-time payment</p>
                   </div>
                   {selectedAccount.stock !== null && (
