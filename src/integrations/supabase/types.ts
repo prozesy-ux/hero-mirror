@@ -423,7 +423,9 @@ export type Database = {
           account_number: string | null
           code: string
           created_at: string | null
+          currency_code: string | null
           display_order: number | null
+          exchange_rate: number | null
           icon_url: string | null
           id: string
           instructions: string | null
@@ -438,7 +440,9 @@ export type Database = {
           account_number?: string | null
           code: string
           created_at?: string | null
+          currency_code?: string | null
           display_order?: number | null
+          exchange_rate?: number | null
           icon_url?: string | null
           id?: string
           instructions?: string | null
@@ -453,7 +457,9 @@ export type Database = {
           account_number?: string | null
           code?: string
           created_at?: string | null
+          currency_code?: string | null
           display_order?: number | null
+          exchange_rate?: number | null
           icon_url?: string | null
           id?: string
           instructions?: string | null

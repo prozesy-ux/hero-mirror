@@ -21,8 +21,17 @@ interface PaymentMethod {
   is_automatic: boolean;
   is_enabled: boolean;
   display_order: number;
+  currency_code: string | null;
+  exchange_rate: number | null;
   created_at: string;
 }
+
+const CURRENCY_OPTIONS = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' },
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+  { code: 'PKR', symbol: 'Rs', name: 'Pakistani Rupee' },
+];
 
 const PaymentSettingsManagement = () => {
   const { paymentMethods, isLoading, refreshTable } = useAdminDataContext();
@@ -41,7 +50,9 @@ const PaymentSettingsManagement = () => {
     instructions: '',
     is_automatic: false,
     is_enabled: true,
-    display_order: 0
+    display_order: 0,
+    currency_code: 'USD',
+    exchange_rate: 1
   });
 
   const methods = paymentMethods as PaymentMethod[];
@@ -58,7 +69,9 @@ const PaymentSettingsManagement = () => {
       instructions: '',
       is_automatic: false,
       is_enabled: true,
-      display_order: methods.length
+      display_order: methods.length,
+      currency_code: 'USD',
+      exchange_rate: 1
     });
     setShowModal(true);
   };
@@ -75,7 +88,9 @@ const PaymentSettingsManagement = () => {
       instructions: method.instructions || '',
       is_automatic: method.is_automatic || false,
       is_enabled: method.is_enabled ?? true,
-      display_order: method.display_order || 0
+      display_order: method.display_order || 0,
+      currency_code: method.currency_code || 'USD',
+      exchange_rate: method.exchange_rate || 1
     });
     setShowModal(true);
   };
@@ -98,7 +113,9 @@ const PaymentSettingsManagement = () => {
       instructions: formData.instructions || null,
       is_automatic: formData.is_automatic,
       is_enabled: formData.is_enabled,
-      display_order: formData.display_order
+      display_order: formData.display_order,
+      currency_code: formData.currency_code || 'USD',
+      exchange_rate: formData.exchange_rate || 1
     };
 
     // Get admin session token
@@ -246,6 +263,7 @@ const PaymentSettingsManagement = () => {
             <tr>
               <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Method</th>
               <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Account</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Rate</th>
               <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Type</th>
               <th className="text-left px-6 py-4 text-gray-400 font-medium text-sm">Status</th>
               <th className="text-right px-6 py-4 text-gray-400 font-medium text-sm">Actions</th>
@@ -315,6 +333,21 @@ const PaymentSettingsManagement = () => {
                         </div>
                       ) : (
                         <span className="text-gray-500">-</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm">
+                      {method.currency_code && method.currency_code !== 'USD' ? (
+                        <div>
+                          <span className="text-white font-medium">
+                            {CURRENCY_OPTIONS.find(c => c.code === method.currency_code)?.symbol || ''}
+                            {method.exchange_rate}
+                          </span>
+                          <span className="text-gray-500 text-xs ml-1">/ $1</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500">USD</span>
                       )}
                     </div>
                   </td>
@@ -468,6 +501,50 @@ const PaymentSettingsManagement = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, display_order: parseInt(e.target.value) || 0 }))}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
+              </div>
+
+              {/* Currency Code */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Currency</label>
+                <select
+                  value={formData.currency_code}
+                  onChange={(e) => setFormData(prev => ({ ...prev, currency_code: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                >
+                  {CURRENCY_OPTIONS.map(currency => (
+                    <option key={currency.code} value={currency.code} className="bg-[#1a1a1a]">
+                      {currency.symbol} {currency.code} - {currency.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Exchange Rate */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Exchange Rate (1 USD = ?)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={formData.exchange_rate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, exchange_rate: parseFloat(e.target.value) || 1 }))}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                    disabled={formData.currency_code === 'USD'}
+                  />
+                  {formData.currency_code !== 'USD' && (
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                      {CURRENCY_OPTIONS.find(c => c.code === formData.currency_code)?.symbol}
+                    </span>
+                  )}
+                </div>
+                {formData.currency_code !== 'USD' && (
+                  <p className="text-gray-500 text-xs mt-1">
+                    Example: $10 = {CURRENCY_OPTIONS.find(c => c.code === formData.currency_code)?.symbol}{(10 * formData.exchange_rate).toFixed(0)}
+                  </p>
+                )}
               </div>
 
               {/* Toggles */}
