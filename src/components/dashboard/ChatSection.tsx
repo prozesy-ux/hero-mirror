@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   MessageCircle, Send, Loader2, Image, Video, Paperclip, 
-  Monitor, X, Download, Play, FileText, StopCircle
+  X, Download, FileText, StopCircle, Circle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -40,8 +40,14 @@ const ChatSection = () => {
   const [loading, setLoading] = useState(true);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  
+  // Screen Recording State
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -80,8 +86,12 @@ const ChatSection = () => {
 
       return () => {
         supabase.removeChannel(channel);
-        if (screenStream) {
-          screenStream.getTracks().forEach(track => track.stop());
+        // Cleanup recording on unmount
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
         }
       };
     }
@@ -276,70 +286,135 @@ const ChatSection = () => {
     setPendingFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const startScreenShare = async () => {
+  // Screen Recording Functions
+  const startRecording = async () => {
     if (!user) return;
     
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false
+        video: { mediaSource: 'screen' } as any,
+        audio: true
       });
       
-      setScreenStream(stream);
-      setIsScreenSharing(true);
-      
-      // Create session record
-      await supabase.from('screen_share_sessions').insert({
-        user_id: user.id,
-        status: 'active',
-        peer_id: `screen_${user.id}_${Date.now()}`
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
+          ? 'video/webm;codecs=vp9' 
+          : 'video/webm'
       });
       
-      // Send notification message
-      await supabase.from('support_messages').insert({
-        user_id: user.id,
-        message: '📺 Screen sharing started',
-        sender_type: 'user',
-        is_read: false
-      });
+      recordedChunksRef.current = [];
       
-      toast.success('Screen sharing started!');
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = async () => {
+        // Cleanup timer
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
+        setRecordingTime(0);
+        
+        // Create video blob and upload
+        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+        const file = new File([blob], `screen-recording-${Date.now()}.webm`, { type: 'video/webm' });
+        
+        // Auto-upload the recording
+        await uploadAndSendRecording(file);
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
       
       // Handle when user stops sharing via browser UI
       stream.getVideoTracks()[0].onended = () => {
-        stopScreenShare();
+        if (mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+        setIsRecording(false);
       };
+      
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start(1000); // Collect data every second
+      setIsRecording(true);
+      
+      // Start timer
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
+      toast.success('Screen recording started!');
     } catch (error) {
-      console.error('Screen share error:', error);
-      toast.error('Failed to start screen sharing');
+      console.error('Screen recording error:', error);
+      toast.error('Failed to start screen recording');
     }
   };
 
-  const stopScreenShare = async () => {
-    if (screenStream) {
-      screenStream.getTracks().forEach(track => track.stop());
-      setScreenStream(null);
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      toast.info('Processing recording...');
     }
-    setIsScreenSharing(false);
+  };
+
+  const uploadAndSendRecording = async (file: File) => {
+    if (!user) return;
     
-    if (user) {
-      // Update session status
-      await supabase
-        .from('screen_share_sessions')
-        .update({ status: 'ended', ended_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .eq('status', 'active');
+    setUploadingFile(true);
+    setSendingMessage(true);
+    
+    try {
+      // Upload the video
+      const attachment = await uploadFile(file);
       
-      // Send notification message
-      await supabase.from('support_messages').insert({
-        user_id: user.id,
-        message: '📺 Screen sharing ended',
-        sender_type: 'user',
-        is_read: false
-      });
-      
-      toast.info('Screen sharing stopped');
+      if (attachment) {
+        // Create message with the recording
+        const { data: messageData, error: messageError } = await supabase
+          .from('support_messages')
+          .insert({
+            user_id: user.id,
+            message: '🎥 Screen Recording',
+            sender_type: 'user',
+            is_read: false,
+          })
+          .select()
+          .single();
+
+        if (messageError) throw messageError;
+
+        // Create attachment record
+        await supabase.from('chat_attachments').insert({
+          message_id: messageData.id,
+          user_id: user.id,
+          file_url: attachment.file_url,
+          file_type: 'video',
+          file_name: file.name,
+          file_size: file.size
+        });
+
+        playSound('messageSent');
+        toast.success('Screen recording sent!');
+        
+        // Refresh to get attachments
+        fetchAttachmentsForMessage(messageData.id);
+      }
+    } catch (error) {
+      console.error('Error sending recording:', error);
+      toast.error('Failed to send recording');
+    } finally {
+      setUploadingFile(false);
+      setSendingMessage(false);
     }
+  };
+
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const renderAttachment = (att: ChatAttachment) => {
@@ -433,11 +508,11 @@ const ChatSection = () => {
             </div>
           </div>
           
-          {/* Screen Share Status */}
-          {isScreenSharing && (
+          {/* Recording Status */}
+          {isRecording && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-red-100 border border-red-200 rounded-full">
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-xs font-medium text-red-700">Sharing Screen</span>
+              <span className="text-xs font-medium text-red-700">Recording {formatRecordingTime(recordingTime)}</span>
             </div>
           )}
         </div>
@@ -547,22 +622,23 @@ const ChatSection = () => {
               <Paperclip size={18} />
             </button>
             <div className="h-5 w-px bg-gray-200 mx-1" />
-            {isScreenSharing ? (
+            {isRecording ? (
               <button
-                onClick={stopScreenShare}
+                onClick={stopRecording}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
               >
                 <StopCircle size={16} />
-                <span className="hidden sm:inline">Stop Sharing</span>
+                <span className="hidden sm:inline">Stop Recording</span>
+                <span className="sm:hidden">Stop</span>
               </button>
             ) : (
               <button
-                onClick={startScreenShare}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors text-sm"
-                title="Share Screen"
+                onClick={startRecording}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
+                title="Record Screen"
               >
-                <Monitor size={16} />
-                <span className="hidden sm:inline">Screen Share</span>
+                <Circle size={16} className="text-red-500" />
+                <span className="hidden sm:inline">Record Screen</span>
               </button>
             )}
           </div>

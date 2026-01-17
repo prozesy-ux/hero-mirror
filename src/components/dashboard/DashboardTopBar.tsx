@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, FileText, Bot, CreditCard, MessageCircle, 
-  Crown, LogOut, User, ChevronDown, Wallet, X
+  Crown, LogOut, User, ChevronDown, Wallet, X, Check, ExternalLink
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useSearchContext } from '@/contexts/SearchContext';
 import { supabase } from '@/integrations/supabase/client';
 import { playSound } from '@/lib/sounds';
 import theLogo from '@/assets/the-logo.png';
+import { format } from 'date-fns';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,16 @@ interface DashboardTopBarProps {
   sidebarCollapsed?: boolean;
 }
 
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  link: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
 const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -30,6 +41,8 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
   const [unreadCount, setUnreadCount] = useState(0);
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const prevUnreadCountRef = useRef<number>(0);
 
   // Play sound when unread count increases
@@ -121,6 +134,84 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
       supabase.removeChannel(walletChannel);
     };
   }, [user]);
+
+  // Fetch notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchNotifications = async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (!error && data) {
+        setNotifications(data);
+      }
+    };
+
+    fetchNotifications();
+
+    const notifChannel = supabase
+      .channel('topbar-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => fetchNotifications()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(notifChannel);
+    };
+  }, [user]);
+
+  const unreadNotifications = notifications.filter(n => !n.is_read).length;
+  const totalUnread = unreadCount + unreadNotifications;
+
+  const markNotificationAsRead = async (notificationId: string) => {
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId);
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    if (!user) return;
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false);
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    markNotificationAsRead(notification.id);
+    if (notification.link) {
+      navigate(notification.link);
+    }
+    setNotificationsOpen(false);
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'message':
+        return <MessageCircle size={14} className="text-violet-500" />;
+      case 'purchase':
+        return <Bot size={14} className="text-green-500" />;
+      case 'topup':
+        return <Wallet size={14} className="text-blue-500" />;
+      default:
+        return <Bell size={14} className="text-gray-500" />;
+    }
+  };
 
   return (
     <header className={`hidden lg:flex fixed top-0 right-0 z-50 h-16 bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm transition-all duration-300 ${
@@ -227,13 +318,93 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
             </span>
           </button>
 
-          {/* Notification Bell */}
-          <button className="relative p-2.5 rounded-xl text-gray-500 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200">
-            <Bell size={20} />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white animate-pulse" />
-            )}
-          </button>
+          {/* Notification Bell with Dropdown */}
+          <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+            <DropdownMenuTrigger asChild>
+              <button className="relative p-2.5 rounded-xl text-gray-500 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200">
+                <Bell size={20} />
+                {totalUnread > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                    {totalUnread > 9 ? '9+' : totalUnread}
+                  </span>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 p-0 max-h-[400px] overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900">Notifications</h3>
+                {unreadNotifications > 0 && (
+                  <button 
+                    onClick={markAllNotificationsAsRead}
+                    className="text-xs text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
+                  >
+                    <Check size={12} />
+                    Mark all read
+                  </button>
+                )}
+              </div>
+              
+              <div className="max-h-[320px] overflow-y-auto">
+                {/* Unread Messages Section */}
+                {unreadCount > 0 && (
+                  <button
+                    onClick={() => {
+                      navigate('/dashboard/chat');
+                      setNotificationsOpen(false);
+                    }}
+                    className="w-full flex items-start gap-3 px-4 py-3 hover:bg-violet-50 transition-colors border-b border-gray-50"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                      <MessageCircle size={14} className="text-violet-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-medium text-gray-900">New Support Messages</p>
+                      <p className="text-xs text-gray-500">You have {unreadCount} unread message{unreadCount > 1 ? 's' : ''}</p>
+                    </div>
+                    <ExternalLink size={14} className="text-gray-400 mt-1" />
+                  </button>
+                )}
+
+                {/* Notifications List */}
+                {notifications.length > 0 ? (
+                  notifications.map((notification) => (
+                    <button
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 ${
+                        !notification.is_read ? 'bg-violet-50/50' : ''
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        !notification.is_read ? 'bg-violet-100' : 'bg-gray-100'
+                      }`}>
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className={`text-sm truncate ${!notification.is_read ? 'font-medium text-gray-900' : 'text-gray-700'}`}>
+                          {notification.title}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">{notification.message}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {format(new Date(notification.created_at), 'MMM d, h:mm a')}
+                        </p>
+                      </div>
+                      {!notification.is_read && (
+                        <span className="w-2 h-2 bg-violet-500 rounded-full flex-shrink-0 mt-2" />
+                      )}
+                    </button>
+                  ))
+                ) : unreadCount === 0 ? (
+                  <div className="px-4 py-8 text-center">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                      <Bell size={20} className="text-gray-400" />
+                    </div>
+                    <p className="text-sm text-gray-500">No notifications yet</p>
+                  </div>
+                ) : null}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Profile Dropdown */}
           <DropdownMenu>
