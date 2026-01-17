@@ -7,6 +7,7 @@ import PromptsGrid from '@/components/dashboard/PromptsGrid';
 import ProfileSection from '@/components/dashboard/ProfileSection';
 import BillingSection from '@/components/dashboard/BillingSection';
 import AIAccountsSection from '@/components/dashboard/AIAccountsSection';
+import AccountDetailPage from '@/components/dashboard/AccountDetailPage';
 import ChatSection from '@/components/dashboard/ChatSection';
 import { SearchProvider } from '@/contexts/SearchContext';
 import { SidebarProvider, useSidebarContext } from '@/contexts/SidebarContext';
@@ -75,6 +76,7 @@ const DashboardContent = () => {
           <Route path="favorites" element={<Navigate to="/dashboard/prompts" replace />} />
           <Route path="tools" element={<Navigate to="/dashboard/prompts" replace />} />
           <Route path="ai-accounts" element={<AIAccountsSection />} />
+          <Route path="ai-accounts/:accountId" element={<AccountDetailPage />} />
           <Route path="billing" element={<BillingSection />} />
           <Route path="profile" element={<ProfileSection />} />
           <Route path="chat" element={<ChatSection />} />

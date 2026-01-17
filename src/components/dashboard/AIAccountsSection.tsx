@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, Plus, X, MessageCircle, Send, Star, ChevronRight, Lock } from 'lucide-react';
+import { ShoppingCart, Loader2, Search, TrendingUp, BadgeCheck, ShieldCheck, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, Plus, X, MessageCircle, Send, Star, ChevronRight, Lock, ExternalLink, ArrowRight } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -83,6 +84,10 @@ const AIAccountsSection = () => {
     current: 0,
     shortfall: 0
   });
+
+  // View Details Modal state
+  const [selectedAccount, setSelectedAccount] = useState<AIAccount | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   // Chat state
   const [messages, setMessages] = useState<SupportMessage[]>([]);
@@ -619,35 +624,46 @@ const AIAccountsSection = () => {
                         <span className="text-sm text-gray-600 font-medium">{getPurchaseCount(account.id)}+ sold</span>
                       </div>
 
-                      {/* Yellow CTA Button */}
-                      <button
-                        onClick={() => handlePurchase(account)}
-                        disabled={purchasing === account.id}
-                        className={`w-full font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
-                          purchasing === account.id
-                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                            : hasEnoughBalance
-                            ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
-                            : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
-                        }`}
-                      >
-                        {purchasing === account.id ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Processing...
-                          </>
-                        ) : !hasEnoughBalance ? (
-                          <>
-                            <Wallet className="w-4 h-4" />
-                            Top Up & Buy
-                          </>
-                        ) : (
-                          <>
-                            Buy Now
-                            <ChevronRight size={16} />
-                          </>
-                        )}
-                      </button>
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedAccount(account);
+                            setShowDetailsModal(true);
+                          }}
+                          className="flex-1 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
+                        >
+                          <Eye size={16} />
+                          View
+                        </button>
+                        <button
+                          onClick={() => handlePurchase(account)}
+                          disabled={purchasing === account.id}
+                          className={`flex-1 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                            purchasing === account.id
+                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                              : hasEnoughBalance
+                              ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
+                              : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
+                          }`}
+                        >
+                          {purchasing === account.id ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            </>
+                          ) : !hasEnoughBalance ? (
+                            <>
+                              <Wallet className="w-4 h-4" />
+                              Top Up
+                            </>
+                          ) : (
+                            <>
+                              Buy
+                              <ChevronRight size={16} />
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -950,6 +966,116 @@ const AIAccountsSection = () => {
           </div>
         </div>
       )}
+
+      {/* View Details Modal */}
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+        <DialogContent className="max-w-lg p-0 overflow-hidden">
+          {selectedAccount && (
+            <>
+              {/* Account Image */}
+              <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200">
+                {selectedAccount.icon_url ? (
+                  <img 
+                    src={selectedAccount.icon_url} 
+                    alt={selectedAccount.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <img 
+                      src={getProductImage(selectedAccount.category)} 
+                      alt={selectedAccount.name}
+                      className="h-20 w-20 object-contain"
+                    />
+                  </div>
+                )}
+                {/* Category Badge */}
+                <div className="absolute top-3 left-3 px-3 py-1.5 bg-violet-500 text-white rounded-full text-xs font-bold uppercase shadow-lg">
+                  {selectedAccount.category || 'AI'}
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <DialogHeader className="mb-4">
+                  <DialogTitle className="text-xl font-bold text-gray-900">
+                    {selectedAccount.name}
+                  </DialogTitle>
+                </DialogHeader>
+
+                {/* Rating & Sales */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />
+                    ))}
+                    <span className="text-gray-600 text-sm font-medium ml-1">5.0</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-gray-500 text-sm">
+                    <Users size={14} />
+                    <span className="font-medium">{getPurchaseCount(selectedAccount.id)}+ sold</span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                  {selectedAccount.description || 'Premium AI account with full access to all features. Get instant access to the most powerful AI tools available.'}
+                </p>
+
+                {/* Price & Stock */}
+                <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-xl">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Price</p>
+                    <p className="text-2xl font-bold text-gray-900">${selectedAccount.price}</p>
+                    <p className="text-xs text-emerald-600 font-medium">One-time payment</p>
+                  </div>
+                  {selectedAccount.stock !== null && (
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500 mb-1">In Stock</p>
+                      <p className="text-xl font-bold text-gray-900">{selectedAccount.stock}</p>
+                      <p className="text-xs text-gray-500">Available</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Features */}
+                <div className="space-y-2 mb-6">
+                  {['Full account access', 'Instant delivery', '24/7 Support'].map((feature, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm text-gray-600">
+                      <Check size={14} className="text-emerald-500" />
+                      {feature}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      navigate(`/dashboard/ai-accounts/${selectedAccount.id}`);
+                    }}
+                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-700 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <ExternalLink size={16} />
+                    Full Page
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      handlePurchase(selectedAccount);
+                    }}
+                    className="flex-1 px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                  >
+                    Buy Now
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Insufficient Funds Modal */}
       {insufficientFundsModal.show && (
