@@ -1,6 +1,4 @@
-import { Link } from 'react-router-dom';
-import { Crown, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { useSidebarContext } from '@/contexts/SidebarContext';
 import metaLogo from '@/assets/meta-logo.png';
 import googleAdsLogo from '@/assets/google-ads-logo.png';
@@ -12,7 +10,6 @@ import {
 } from '@/components/ui/tooltip';
 
 const DashboardSidebar = () => {
-  const { profile } = useAuthContext();
   const { isCollapsed, toggleSidebar } = useSidebarContext();
 
   return (
@@ -22,48 +19,6 @@ const DashboardSidebar = () => {
           isCollapsed ? 'w-[72px]' : 'w-60'
         }`}
       >
-        {/* Profile Section */}
-        <div className={`p-4 border-b border-gray-100 ${isCollapsed ? 'px-3' : ''}`}>
-          <Link 
-            to="/dashboard/profile" 
-            className={`flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors ${isCollapsed ? 'justify-center p-2' : ''}`}
-          >
-            <div className="relative flex-shrink-0">
-              <div className="rounded-full bg-gradient-to-br from-violet-500 to-purple-600 p-0.5 w-10 h-10">
-                {profile?.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt="Avatar" 
-                    className="w-full h-full rounded-full object-cover bg-white"
-                  />
-                ) : (
-                  <div className="w-full h-full rounded-full bg-violet-500 flex items-center justify-center text-white font-bold text-sm">
-                    {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
-                  </div>
-                )}
-              </div>
-              {profile?.is_pro && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-2 ring-white">
-                  <Crown size={8} className="text-black" />
-                </div>
-              )}
-            </div>
-            {!isCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate flex items-center gap-1.5">
-                  {profile?.full_name || 'User'}
-                  {profile?.is_pro && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-gradient-to-r from-amber-400 to-yellow-500 rounded text-[9px] font-bold text-black">
-                      PRO
-                    </span>
-                  )}
-                </p>
-                <p className="text-xs text-gray-500 truncate">{profile?.email}</p>
-              </div>
-            )}
-          </Link>
-        </div>
-
         {/* Spacer */}
         <div className="flex-1" />
 

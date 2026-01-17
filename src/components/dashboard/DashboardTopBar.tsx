@@ -127,10 +127,65 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
       sidebarCollapsed ? 'left-[72px]' : 'left-60'
     }`}>
       <div className="flex items-center justify-between w-full px-6">
-        {/* Left Section - Logo */}
-        <Link to="/dashboard/prompts" className="flex items-center gap-3 flex-shrink-0">
-          <img src={theLogo} alt="Logo" className="h-8 w-auto" />
-        </Link>
+        {/* Left Section - Logo & Navigation */}
+        <div className="flex items-center gap-6">
+          <Link to="/dashboard/prompts" className="flex items-center gap-3 flex-shrink-0">
+            <img src={theLogo} alt="Logo" className="h-8 w-auto" />
+          </Link>
+
+          {/* Navigation Tabs */}
+          <nav className="flex items-center gap-1">
+            <Link
+              to="/dashboard/prompts"
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                location.pathname === '/dashboard/prompts'
+                  ? 'bg-violet-100 text-violet-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              <FileText size={16} />
+              Prompts
+            </Link>
+            <Link
+              to="/dashboard/ai-accounts"
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                location.pathname === '/dashboard/ai-accounts'
+                  ? 'bg-violet-100 text-violet-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              <Bot size={16} />
+              Marketplace
+            </Link>
+            <Link
+              to="/dashboard/billing"
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                location.pathname === '/dashboard/billing'
+                  ? 'bg-violet-100 text-violet-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              <CreditCard size={16} />
+              Billing
+            </Link>
+            <Link
+              to="/dashboard/chat"
+              className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                location.pathname === '/dashboard/chat'
+                  ? 'bg-violet-100 text-violet-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              <MessageCircle size={16} />
+              Chat
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
+          </nav>
+        </div>
 
         {/* Center Section - Search Bar */}
         <div className={`relative flex-1 max-w-xl mx-8 transition-all duration-300 ${isSearchFocused ? 'max-w-2xl' : ''}`}>
