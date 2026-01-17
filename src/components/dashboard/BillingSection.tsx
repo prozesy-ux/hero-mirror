@@ -64,7 +64,34 @@ interface PaymentMethodDB {
   is_automatic: boolean;
   is_enabled: boolean;
   display_order: number;
+  currency_code: string | null;
+  exchange_rate: number | null;
 }
+
+// Currency helper functions
+const getCurrencySymbol = (code: string | null): string => {
+  switch (code) {
+    case 'BDT': return '৳';
+    case 'INR': return '₹';
+    case 'PKR': return 'Rs';
+    default: return '$';
+  }
+};
+
+const convertToLocalCurrency = (usdAmount: number, method: PaymentMethodDB | undefined): number => {
+  if (!method) return usdAmount;
+  const rate = method.exchange_rate || 1;
+  return usdAmount * rate;
+};
+
+const formatLocalAmount = (usdAmount: number, method: PaymentMethodDB | undefined): string => {
+  if (!method || method.currency_code === 'USD' || !method.currency_code) {
+    return `$${usdAmount}`;
+  }
+  const localAmount = convertToLocalCurrency(usdAmount, method);
+  const symbol = getCurrencySymbol(method.currency_code);
+  return `${symbol}${localAmount.toFixed(0)}`;
+};
 
 type BillingTab = 'wallet' | 'transactions' | 'plan' | 'purchases';
 
@@ -906,30 +933,42 @@ const BillingSection = () => {
 
             {/* Quick Amount Buttons */}
             <div className="mb-6">
-              <p className="text-gray-500 text-sm mb-3 font-medium">Select amount</p>
+              <p className="text-gray-500 text-sm mb-3 font-medium">Select amount (USD)</p>
               <div className="grid grid-cols-5 gap-2">
                 {quickAmounts.map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setTopupAmount(amount)}
-                    className={`py-3 rounded-xl font-semibold transition-all ${
+                    className={`py-3 rounded-xl font-semibold transition-all flex flex-col items-center ${
                       topupAmount === amount
                         ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    ${amount}
+                    <span>${amount}</span>
+                    {selectedMethod && selectedMethod.currency_code && selectedMethod.currency_code !== 'USD' && (
+                      <span className={`text-xs ${topupAmount === amount ? 'text-white/70' : 'text-gray-500'}`}>
+                        {formatLocalAmount(amount, selectedMethod)}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
               <div className="mt-3">
-                <input
-                  type="number"
-                  value={topupAmount}
-                  onChange={(e) => setTopupAmount(Math.max(1, parseInt(e.target.value) || 0))}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-                  min="1"
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={topupAmount}
+                    onChange={(e) => setTopupAmount(Math.max(1, parseInt(e.target.value) || 0))}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+                    min="1"
+                  />
+                </div>
+                {selectedMethod && selectedMethod.currency_code && selectedMethod.currency_code !== 'USD' && (
+                  <p className="text-center text-gray-500 text-sm mt-2">
+                    ≈ {formatLocalAmount(topupAmount, selectedMethod)} at rate {getCurrencySymbol(selectedMethod.currency_code)}{selectedMethod.exchange_rate}/$1
+                  </p>
+                )}
               </div>
             </div>
 
@@ -970,13 +1009,23 @@ const BillingSection = () => {
                 <div className="mb-3">
                   <p className="text-gray-800 font-semibold mb-1">{selectedMethod.name} Payment</p>
                   {selectedMethod.account_number && (
-                    <p className="text-gray-600 text-sm">
-                      Send <span className="font-bold">${topupAmount}</span> to: <span className="font-mono font-bold select-all">{selectedMethod.account_number}</span>
-                      {selectedMethod.account_name && <span className="text-gray-500"> ({selectedMethod.account_name})</span>}
-                    </p>
+                    <div className="text-gray-600 text-sm">
+                      <p className="mb-1">
+                        Send{' '}
+                        <span className="font-bold text-violet-600 text-lg">
+                          {formatLocalAmount(topupAmount, selectedMethod)}
+                        </span>
+                        {selectedMethod.currency_code && selectedMethod.currency_code !== 'USD' && (
+                          <span className="text-gray-400 text-xs ml-1">(≈ ${topupAmount} USD)</span>
+                        )}
+                        {' '}to:
+                      </p>
+                      <p className="font-mono font-bold text-gray-900 select-all text-lg">{selectedMethod.account_number}</p>
+                      {selectedMethod.account_name && <p className="text-gray-500 text-sm">{selectedMethod.account_name}</p>}
+                    </div>
                   )}
                   {selectedMethod.instructions && (
-                    <p className="text-gray-600 text-sm mt-1">{selectedMethod.instructions}</p>
+                    <p className="text-gray-600 text-sm mt-2">{selectedMethod.instructions}</p>
                   )}
                   {selectedMethod.qr_image_url && (
                     <div className="mt-3">
@@ -1035,7 +1084,10 @@ const BillingSection = () => {
                 className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
               >
                 {processingTopup ? <Loader2 className="animate-spin" size={18} /> : null}
-                {selectedGateway === 'stripe' ? `Pay $${topupAmount}` : `Submit $${topupAmount} Request`}
+                {selectedMethod?.is_automatic 
+                  ? `Pay $${topupAmount}` 
+                  : `Submit ${formatLocalAmount(topupAmount, selectedMethod)} Request`
+                }
               </button>
             </div>
           </div>
