@@ -159,8 +159,19 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
         {/* Spacer to push right section to the end */}
         <div className="flex-1" />
 
-        {/* Right Section - Notifications, Profile */}
+        {/* Right Section - Wallet, Notifications, Profile */}
         <div className="flex items-center gap-3 ml-6">
+          {/* Wallet Balance */}
+          <button
+            onClick={() => navigate('/dashboard/billing')}
+            className="flex items-center gap-2 bg-violet-100 hover:bg-violet-200 border border-violet-200 px-3 py-2 rounded-xl transition-colors"
+          >
+            <Wallet size={16} className="text-violet-600" />
+            <span className="text-violet-700 font-bold text-sm">
+              ${wallet?.balance?.toFixed(2) || '0.00'}
+            </span>
+          </button>
+
           {/* Notification Bell */}
           <button className="relative p-2.5 rounded-xl text-gray-500 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200">
             <Bell size={20} />
