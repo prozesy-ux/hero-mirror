@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
+import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import MobileNavigation from '@/components/dashboard/MobileNavigation';
 import DashboardHome from '@/components/dashboard/DashboardHome';
 import PromptsGrid from '@/components/dashboard/PromptsGrid';
@@ -8,6 +9,7 @@ import BillingSection from '@/components/dashboard/BillingSection';
 import AIAccountsSection from '@/components/dashboard/AIAccountsSection';
 import ChatSection from '@/components/dashboard/ChatSection';
 import { SearchProvider } from '@/contexts/SearchContext';
+import { SidebarProvider, useSidebarContext } from '@/contexts/SidebarContext';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Crown, Bell } from 'lucide-react';
 
@@ -60,8 +62,12 @@ const MobileHeader = () => {
 };
 
 const DashboardContent = () => {
+  const { isCollapsed } = useSidebarContext();
+
   return (
-    <main className="pb-24 lg:pb-0 pt-16 lg:pt-16 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white">
+    <main className={`pb-24 lg:pb-0 pt-16 lg:pt-16 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white transition-all duration-300 ${
+      isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-60'
+    }`}>
       <div className="relative p-3 sm:p-4 lg:p-8">
         <Routes>
           <Route index element={<Navigate to="/dashboard/prompts" replace />} />
@@ -78,23 +84,36 @@ const DashboardContent = () => {
   );
 };
 
+const DashboardLayout = () => {
+  const { isCollapsed } = useSidebarContext();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile Header */}
+      <MobileHeader />
+      
+      {/* Desktop Sidebar */}
+      <DashboardSidebar />
+      
+      {/* Desktop Top Bar */}
+      <DashboardTopBar sidebarCollapsed={isCollapsed} />
+      
+      {/* Mobile Bottom Navigation */}
+      <MobileNavigation />
+      
+      {/* Main Content */}
+      <DashboardContent />
+    </div>
+  );
+};
+
 const Dashboard = () => {
   return (
-    <SearchProvider>
-      <div className="min-h-screen bg-gray-50">
-        {/* Mobile Header */}
-        <MobileHeader />
-        
-        {/* Desktop Top Bar */}
-        <DashboardTopBar />
-        
-        {/* Mobile Bottom Navigation */}
-        <MobileNavigation />
-        
-        {/* Main Content */}
-        <DashboardContent />
-      </div>
-    </SearchProvider>
+    <SidebarProvider>
+      <SearchProvider>
+        <DashboardLayout />
+      </SearchProvider>
+    </SidebarProvider>
   );
 };
 
