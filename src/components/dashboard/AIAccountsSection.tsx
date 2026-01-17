@@ -441,6 +441,16 @@ const AIAccountsSection = () => {
         throw new Error('Failed to create purchase record');
       }
 
+      // Create notification for the purchase
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'purchase',
+        title: 'Purchase Successful',
+        message: `You purchased ${account.name} for $${account.price}`,
+        link: '/dashboard/ai-accounts?tab=purchases',
+        is_read: false
+      });
+
       toast.success('Purchase successful! Account credentials will be delivered soon.');
       fetchWallet();
       fetchPurchases();
@@ -682,12 +692,6 @@ const AIAccountsSection = () => {
               </div>
             )}
 
-            {/* Results Count */}
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-gray-500">
-                Showing <span className="font-semibold text-gray-900">{filteredAccounts.length}</span> products
-              </p>
-            </div>
 
             {/* Products Grid */}
             {filteredAccounts.length === 0 ? (

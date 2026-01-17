@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { 
   CreditCard, Plus, Edit, Trash2, Save, X, Loader2, 
-  Check, QrCode
+  Check, QrCode, Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ImageUploader from './ImageUploader';
@@ -295,12 +295,24 @@ const PaymentSettingsManagement = () => {
                   <td className="px-6 py-4">
                     <div className="text-gray-400 text-sm">
                       {method.account_number ? (
-                        <>
-                          <p className="font-mono">{method.account_number}</p>
-                          {method.account_name && (
-                            <p className="text-gray-500 text-xs">{method.account_name}</p>
-                          )}
-                        </>
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <p className="font-mono">{method.account_number}</p>
+                            {method.account_name && (
+                              <p className="text-gray-500 text-xs">{method.account_name}</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(method.account_number!);
+                              toast.success('Account number copied!');
+                            }}
+                            className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+                            title="Copy Account Number"
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </div>
                       ) : (
                         <span className="text-gray-500">-</span>
                       )}
