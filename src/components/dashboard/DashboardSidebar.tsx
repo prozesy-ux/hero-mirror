@@ -8,6 +8,8 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { playSound } from '@/lib/sounds';
+import metaLogo from '@/assets/meta-logo.png';
+import googleAdsLogo from '@/assets/google-ads-logo.png';
 
 // Context for sidebar collapse state
 interface SidebarContextType {
@@ -22,31 +24,6 @@ const SidebarContext = createContext<SidebarContextType>({
 
 export const useSidebarContext = () => useContext(SidebarContext);
 
-// Meta Logo SVG Component (Official Infinity Logo)
-const MetaLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
-  <svg viewBox="0 0 36 36" fill="none" className={className}>
-    <path 
-      d="M7.5 18c0-4.5 2.5-9 6-9 2.5 0 4 1.5 5.5 4l1 1.5 1-1.5c1.5-2.5 3-4 5.5-4 3.5 0 6 4.5 6 9s-2.5 9-6 9c-2.5 0-4-1.5-5.5-4l-1-1.5-1 1.5c-1.5 2.5-3 4-5.5 4-3.5 0-6-4.5-6-9z" 
-      stroke="white"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      fill="none"
-    />
-  </svg>
-);
-
-// Google Ads Logo SVG Component (Official Triangle Design)
-const GoogleAdsLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
-  <svg viewBox="0 0 48 48" className={className}>
-    {/* Yellow bar */}
-    <rect x="4" y="28" width="16" height="40" rx="8" transform="rotate(-60 4 28)" fill="#FBBC04"/>
-    {/* Blue bar */}
-    <rect x="28" y="8" width="16" height="40" rx="8" transform="rotate(60 28 8)" fill="#4285F4"/>
-    {/* Green circle */}
-    <circle cx="12" cy="38" r="6" fill="#34A853"/>
-  </svg>
-);
 
 interface NavItemProps {
   to: string;
@@ -190,8 +167,8 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     return (
       <TooltipProvider>
         <div ref={ref} className="flex flex-col h-full overflow-y-auto bg-white">
-          {/* Header with Logo + Profile Avatar */}
-          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-end'} px-4 py-4 border-b border-gray-100 ${isCollapsed ? 'px-2' : ''}`}>
+          {/* Header with Profile Avatar */}
+          <div className={`flex items-center justify-center py-5 border-b border-gray-100 ${isCollapsed ? 'px-2' : 'px-4'}`}>
             {/* Profile Avatar - Clickable */}
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
@@ -199,7 +176,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                   to="/dashboard/profile"
                   className="relative group"
                 >
-                  <div className={`rounded-full bg-gradient-to-br from-violet-500 to-purple-600 p-0.5 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-violet-500/25 ${isCollapsed ? 'w-10 h-10' : 'w-10 h-10'}`}>
+                  <div className={`rounded-full bg-gradient-to-br from-violet-500 to-purple-600 p-0.5 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-violet-500/25 ${isCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`}>
                     {profile?.avatar_url ? (
                       <img 
                         src={profile.avatar_url} 
@@ -207,15 +184,15 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                         className="w-full h-full rounded-full object-cover bg-white"
                       />
                     ) : (
-                      <div className="w-full h-full rounded-full bg-violet-500 flex items-center justify-center text-white font-bold text-sm">
+                      <div className="w-full h-full rounded-full bg-violet-500 flex items-center justify-center text-white font-bold text-base">
                         {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
                       </div>
                     )}
                   </div>
                   {/* PRO Crown badge */}
                   {profile?.is_pro && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-1.5 ring-white shadow-md">
-                      <Crown size={8} className="text-black" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-2 ring-white shadow-md">
+                      <Crown size={10} className="text-black" />
                     </div>
                   )}
                 </Link>
@@ -266,9 +243,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                     className="flex-1 flex items-center justify-center py-3 bg-white border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-all group shadow-sm"
                     title="Meta Ads"
                   >
-                    <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center">
-                      <MetaLogo className="w-4 h-4" />
-                    </div>
+                    <img src={metaLogo} alt="Meta" className="h-6 w-auto object-contain" />
                   </a>
                   <a
                     href="https://ads.google.com"
@@ -277,9 +252,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                     className="flex-1 flex items-center justify-center py-3 bg-white border border-gray-200 rounded-xl hover:bg-amber-50 hover:border-amber-200 transition-all group shadow-sm"
                     title="Google Ads"
                   >
-                    <div className="w-6 h-6 bg-amber-400 rounded flex items-center justify-center">
-                      <GoogleAdsLogo className="w-4 h-4" />
-                    </div>
+                    <img src={googleAdsLogo} alt="Google Ads" className="h-6 w-auto object-contain" />
                   </a>
                 </div>
                 
