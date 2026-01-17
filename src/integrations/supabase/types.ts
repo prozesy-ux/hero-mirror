@@ -144,41 +144,70 @@ export type Database = {
       ai_accounts: {
         Row: {
           category: string | null
+          category_id: string | null
           created_at: string | null
           description: string | null
+          display_order: number | null
           icon_url: string | null
           id: string
           is_available: boolean | null
+          is_featured: boolean | null
+          is_trending: boolean | null
           name: string
+          original_price: number | null
           price: number
+          sold_count: number | null
           stock: number | null
+          tags: string[] | null
           updated_at: string | null
         }
         Insert: {
           category?: string | null
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           icon_url?: string | null
           id?: string
           is_available?: boolean | null
+          is_featured?: boolean | null
+          is_trending?: boolean | null
           name: string
+          original_price?: number | null
           price?: number
+          sold_count?: number | null
           stock?: number | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
           category?: string | null
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           icon_url?: string | null
           id?: string
           is_available?: boolean | null
+          is_featured?: boolean | null
+          is_trending?: boolean | null
           name?: string
+          original_price?: number | null
           price?: number
+          sold_count?: number | null
           stock?: number | null
+          tags?: string[] | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_accounts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_tools: {
         Row: {
@@ -248,24 +277,36 @@ export type Database = {
       }
       categories: {
         Row: {
+          color: string | null
           created_at: string | null
           description: string | null
+          display_order: number | null
           icon: string | null
           id: string
+          image_url: string | null
+          is_active: boolean | null
           name: string
         }
         Insert: {
+          color?: string | null
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           icon?: string | null
           id?: string
+          image_url?: string | null
+          is_active?: boolean | null
           name: string
         }
         Update: {
+          color?: string | null
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           icon?: string | null
           id?: string
+          image_url?: string | null
+          is_active?: boolean | null
           name?: string
         }
         Relationships: []

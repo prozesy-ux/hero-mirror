@@ -19,7 +19,12 @@ interface AIAccount {
   price: number;
   icon_url: string | null;
   category: string | null;
+  category_id: string | null;
   is_available: boolean;
+  is_trending: boolean;
+  is_featured: boolean;
+  original_price: number | null;
+  tags: string[] | null;
   stock: number | null;
 }
 
@@ -55,6 +60,14 @@ interface SupportMessage {
   created_at: string;
 }
 
+interface DynamicCategory {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+  is_active: boolean;
+}
+
 // Generate stable random purchase count per account
 const getPurchaseCount = (accountId: string) => {
   const hash = accountId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -62,13 +75,13 @@ const getPurchaseCount = (accountId: string) => {
 };
 
 type TabType = 'browse' | 'purchases' | 'stats' | 'chat';
-type CategoryFilter = 'all' | 'chatgpt' | 'midjourney' | 'claude' | 'gemini';
 
 const AIAccountsSection = () => {
   const { user } = useAuthContext();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('browse');
   const [accounts, setAccounts] = useState<AIAccount[]>([]);
+  const [dynamicCategories, setDynamicCategories] = useState<DynamicCategory[]>([]);
   const [purchases, setPurchases] = useState<PurchasedAccount[]>([]);
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +89,7 @@ const AIAccountsSection = () => {
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredAccount, setHoveredAccount] = useState<string | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showCredentials, setShowCredentials] = useState<Record<string, boolean>>({});
   const [insufficientFundsModal, setInsufficientFundsModal] = useState<InsufficientFundsModal>({
     show: false,
@@ -98,7 +111,40 @@ const AIAccountsSection = () => {
 
   useEffect(() => {
     fetchAccounts();
+    fetchCategories();
+    
+    // Subscribe to realtime updates for categories and accounts
+    const categoriesChannel = supabase
+      .channel('categories-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        fetchCategories();
+      })
+      .subscribe();
+
+    const accountsChannel = supabase
+      .channel('accounts-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ai_accounts' }, () => {
+        fetchAccounts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(categoriesChannel);
+      supabase.removeChannel(accountsChannel);
+    };
   }, []);
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('id, name, icon, color, is_active')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+
+    if (!error && data) {
+      setDynamicCategories(data);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -430,10 +476,14 @@ const AIAccountsSection = () => {
 
   const filteredAccounts = accounts.filter(account => {
     const matchesSearch = account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      account.category?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || account.category === categoryFilter;
+      account.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      account.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCategory = categoryFilter === 'all' || account.category_id === categoryFilter || account.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
+
+  // Trending accounts
+  const trendingAccounts = accounts.filter(account => account.is_trending);
 
   // Stats calculations
   const totalPurchases = purchases.length;
@@ -441,13 +491,32 @@ const AIAccountsSection = () => {
   const deliveredCount = purchases.filter(p => p.delivery_status === 'delivered').length;
   const pendingCount = purchases.filter(p => p.delivery_status === 'pending').length;
 
-  const categories: { value: CategoryFilter; label: string }[] = [
+  // Build categories list from dynamic data
+  const categories: { value: string; label: string; icon?: string | null; color?: string | null }[] = [
     { value: 'all', label: 'All' },
-    { value: 'chatgpt', label: 'ChatGPT' },
-    { value: 'midjourney', label: 'Midjourney' },
-    { value: 'claude', label: 'Claude' },
-    { value: 'gemini', label: 'Gemini' },
+    ...dynamicCategories.map(cat => ({
+      value: cat.id,
+      label: cat.name,
+      icon: cat.icon,
+      color: cat.color
+    }))
   ];
+
+  const getCategoryColorClass = (color: string | null) => {
+    const colorMap: Record<string, string> = {
+      violet: 'bg-violet-500',
+      emerald: 'bg-emerald-500',
+      blue: 'bg-blue-500',
+      rose: 'bg-rose-500',
+      amber: 'bg-amber-500',
+      cyan: 'bg-cyan-500',
+      pink: 'bg-pink-500',
+      indigo: 'bg-indigo-500',
+      teal: 'bg-teal-500',
+      orange: 'bg-orange-500',
+    };
+    return colorMap[color || 'violet'] || 'bg-violet-500';
+  };
 
   if (loading) {
     return (
@@ -523,21 +592,58 @@ const AIAccountsSection = () => {
           </div>
 
           {/* Category Filters */}
-          <div className="flex gap-2 mb-8 flex-wrap">
+          <div className="flex gap-2 mb-6 flex-wrap">
             {categories.map((cat) => (
               <button
                 key={cat.value}
                 onClick={() => setCategoryFilter(cat.value)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                   categoryFilter === cat.value
                     ? 'bg-gray-900 text-white shadow-md'
                     : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 shadow-md hover:shadow-lg'
                 }`}
               >
+                {cat.icon && <span>{cat.icon}</span>}
                 {cat.label}
               </button>
             ))}
           </div>
+
+          {/* Trending Section */}
+          {trendingAccounts.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="w-5 h-5 text-orange-500" />
+                <h2 className="text-lg font-bold text-gray-900">Trending Now</h2>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar">
+                {trendingAccounts.slice(0, 5).map((account) => (
+                  <div
+                    key={account.id}
+                    className="flex-shrink-0 w-64 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-4 border border-orange-200 cursor-pointer hover:shadow-lg transition-all"
+                    onClick={() => {
+                      setSelectedAccount(account);
+                      setShowDetailsModal(true);
+                    }}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      {account.icon_url ? (
+                        <img src={account.icon_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl bg-orange-200 flex items-center justify-center">
+                          <TrendingUp className="w-6 h-6 text-orange-600" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-gray-900 truncate">{account.name}</h3>
+                        <p className="text-orange-600 font-semibold">${account.price}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
 
           {filteredAccounts.length === 0 ? (
