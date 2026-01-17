@@ -2,7 +2,7 @@ import { useState, forwardRef, createContext, useContext, useEffect, useRef } fr
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileText, CreditCard, User, LogOut, Menu, X, 
-  Crown, Bot, ArrowRight, ChevronLeft, ChevronRight, MessageCircle, Sparkles, ExternalLink
+  Crown, Bot, ArrowRight, ChevronLeft, ChevronRight, MessageCircle, ExternalLink
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -191,17 +191,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       <TooltipProvider>
         <div ref={ref} className="flex flex-col h-full overflow-y-auto bg-white">
           {/* Header with Logo + Profile Avatar */}
-          <div className={`flex items-center justify-between px-4 py-4 border-b border-gray-100 ${isCollapsed ? 'px-2 justify-center' : ''}`}>
-            {/* Logo/Title */}
-            {!isCollapsed && (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Sparkles size={16} className="text-white" />
-                </div>
-                <span className="font-bold text-lg text-gray-900 tracking-tight">PromptGod</span>
-              </div>
-            )}
-            
+          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-end'} px-4 py-4 border-b border-gray-100 ${isCollapsed ? 'px-2' : ''}`}>
             {/* Profile Avatar - Clickable */}
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
