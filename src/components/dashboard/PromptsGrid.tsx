@@ -383,35 +383,11 @@ const PromptsGrid = () => {
 
   return (
     <div className="space-y-6 lg:space-y-8 section-prompts animate-fade-up">
-      {/* Search Box */}
-      <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-md">
-        <div className="relative w-full max-w-md">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search prompts..."
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
-            className="w-full pl-11 pr-10 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all"
-          />
-          {localSearch && (
-            <button
-              onClick={() => setLocalSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 transition-colors"
-            >
-              <X size={14} className="text-gray-500" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Tab Navigation - Mobile Optimized Premium Design */}
+      {/* Tab Navigation with Integrated Search */}
       <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
-        {/* Tab buttons only */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
-
           {/* Tab buttons - Horizontal scroll on mobile */}
-          <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar lg:order-1">
+          <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
             <button
               onClick={() => setActiveTab('all')}
               className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
@@ -470,6 +446,26 @@ const PromptsGrid = () => {
               <FolderOpen size={14} />
               Categories
             </button>
+          </div>
+
+          {/* Search Box - Integrated into Tab Bar */}
+          <div className="relative w-full lg:w-64">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search prompts..."
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all"
+            />
+            {localSearch && (
+              <button
+                onClick={() => setLocalSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 transition-colors"
+              >
+                <X size={12} className="text-gray-500" />
+              </button>
+            )}
           </div>
         </div>
       </div>

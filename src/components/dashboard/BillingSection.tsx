@@ -232,7 +232,7 @@ const BillingSection = () => {
       .channel('billing-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'refund_requests', filter: `user_id=eq.${user?.id}` }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cancellation_requests', filter: `user_id=eq.${user?.id}` }, fetchData)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_wallets', filter: `user_id=eq.${user?.id}` }, (payload) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_wallets', filter: `user_id=eq.${user?.id}` }, async (payload) => {
         const newBalance = (payload.new as { balance: number })?.balance || 0;
         const oldBalance = prevWalletBalanceRef.current;
         
@@ -240,6 +240,16 @@ const BillingSection = () => {
         if (oldBalance !== null && newBalance > oldBalance) {
           playSound('walletCredited');
           toast.success(`$${(newBalance - oldBalance).toFixed(2)} added to your wallet!`);
+          
+          // Create notification for wallet top-up
+          await supabase.from('notifications').insert({
+            user_id: user?.id,
+            type: 'topup',
+            title: 'Wallet Credited',
+            message: `$${(newBalance - oldBalance).toFixed(2)} has been added to your wallet`,
+            link: '/dashboard/billing',
+            is_read: false
+          });
         }
         
         prevWalletBalanceRef.current = newBalance;
