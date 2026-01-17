@@ -2,7 +2,7 @@ import { useState, forwardRef, createContext, useContext, useEffect, useRef } fr
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileText, CreditCard, User, LogOut, Menu, X, 
-  Crown, Bot, ArrowRight, ChevronLeft, ChevronRight, MessageCircle, ExternalLink
+  Crown, Bot, ArrowRight, ChevronLeft, ChevronRight, MessageCircle, ExternalLink, Bell
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -167,16 +167,16 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     return (
       <TooltipProvider>
         <div ref={ref} className="flex flex-col h-full overflow-y-auto bg-white">
-          {/* Header with Profile Avatar */}
-          <div className={`flex items-center justify-center py-5 border-b border-gray-100 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+          {/* Header with Profile Avatar & Notification Bell */}
+          <div className={`flex items-center gap-3 py-4 border-b border-gray-100 ${isCollapsed ? 'px-2 justify-center flex-col' : 'px-4'}`}>
             {/* Profile Avatar - Clickable */}
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <Link
                   to="/dashboard/profile"
-                  className="relative group"
+                  className="relative group flex-shrink-0"
                 >
-                  <div className={`rounded-full bg-gradient-to-br from-violet-500 to-purple-600 p-0.5 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-violet-500/25 ${isCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`}>
+                  <div className={`rounded-full bg-gradient-to-br from-violet-500 to-purple-600 p-0.5 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-violet-500/25 ${isCollapsed ? 'w-10 h-10' : 'w-11 h-11'}`}>
                     {profile?.avatar_url ? (
                       <img 
                         src={profile.avatar_url} 
@@ -184,15 +184,15 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                         className="w-full h-full rounded-full object-cover bg-white"
                       />
                     ) : (
-                      <div className="w-full h-full rounded-full bg-violet-500 flex items-center justify-center text-white font-bold text-base">
+                      <div className="w-full h-full rounded-full bg-violet-500 flex items-center justify-center text-white font-bold text-sm">
                         {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
                       </div>
                     )}
                   </div>
                   {/* PRO Crown badge */}
                   {profile?.is_pro && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-2 ring-white shadow-md">
-                      <Crown size={10} className="text-black" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-2 ring-white shadow-md">
+                      <Crown size={8} className="text-black" />
                     </div>
                   )}
                 </Link>
@@ -201,10 +201,36 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
                 View Profile
               </TooltipContent>
             </Tooltip>
+
+            {/* User Info - Only when expanded */}
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {profile?.full_name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {profile?.email}
+                </p>
+              </div>
+            )}
+
+            {/* Notification Bell */}
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <button className={`relative p-2 rounded-xl text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200 ${isCollapsed ? 'mt-2' : ''}`}>
+                  <Bell size={18} />
+                  {/* Notification dot */}
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side={isCollapsed ? "right" : "bottom"} className="bg-gray-900 text-white border-gray-800">
+                Notifications
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Navigation */}
-          <nav className={`flex-1 space-y-1.5 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+          <nav className={`flex-1 space-y-1.5 pt-4 ${isCollapsed ? 'px-2' : 'px-4'}`}>
             {navItems.map((item) => (
               <NavItem
                 key={item.to}
