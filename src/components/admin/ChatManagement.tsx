@@ -222,6 +222,30 @@ const ChatManagement = () => {
       toast.error('Failed to send message');
     } else {
       playSound('messageSent');
+      
+      // Create notification for the user
+      const token = localStorage.getItem('admin_session_token');
+      if (token) {
+        try {
+          await supabase.functions.invoke('admin-mutate-data', {
+            body: {
+              token,
+              table: 'notifications',
+              operation: 'insert',
+              data: {
+                user_id: selectedUser.user_id,
+                type: 'message',
+                title: 'New message from Support',
+                message: newMessage.trim().substring(0, 100) + (newMessage.trim().length > 100 ? '...' : ''),
+                is_read: false
+              }
+            }
+          });
+        } catch (notifError) {
+          console.error('Failed to create notification:', notifError);
+        }
+      }
+      
       setNewMessage('');
       fetchMessages(selectedUser.user_id);
       toast.success('Message sent!');

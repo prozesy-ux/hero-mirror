@@ -54,6 +54,12 @@ const CategoriesManagement = () => {
       return;
     }
 
+    const token = localStorage.getItem('admin_session_token');
+    if (!token) {
+      toast.error('Admin session expired. Please login again.');
+      return;
+    }
+
     const categoryData = {
       name: formData.name,
       icon: formData.icon || null,
@@ -65,32 +71,30 @@ const CategoriesManagement = () => {
       category_type: formData.category_type
     };
 
-    if (editingId) {
-      const { error } = await supabase
-        .from('categories')
-        .update(categoryData)
-        .eq('id', editingId);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-mutate-data', {
+        body: {
+          token,
+          table: 'categories',
+          operation: editingId ? 'update' : 'insert',
+          data: categoryData,
+          id: editingId
+        }
+      });
 
-      if (error) {
-        toast.error('Failed to update category');
-      } else {
-        toast.success('Category updated');
-        refreshTable('categories');
+      if (error || data?.error) {
+        console.error('Category save error:', error || data?.error);
+        toast.error(data?.error || 'Failed to save category');
+        return;
       }
-    } else {
-      const { error } = await supabase
-        .from('categories')
-        .insert(categoryData);
 
-      if (error) {
-        toast.error('Failed to create category');
-      } else {
-        toast.success('Category created');
-        refreshTable('categories');
-      }
+      toast.success(editingId ? 'Category updated' : 'Category created');
+      refreshTable('categories');
+      resetForm();
+    } catch (err) {
+      console.error('Category save exception:', err);
+      toast.error('Failed to save category');
     }
-
-    resetForm();
   };
 
   const handleEdit = (category: Category) => {
@@ -111,27 +115,65 @@ const CategoriesManagement = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this category?')) return;
 
-    const { error } = await supabase.from('categories').delete().eq('id', id);
+    const token = localStorage.getItem('admin_session_token');
+    if (!token) {
+      toast.error('Admin session expired. Please login again.');
+      return;
+    }
 
-    if (error) {
-      toast.error('Failed to delete category');
-    } else {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-mutate-data', {
+        body: {
+          token,
+          table: 'categories',
+          operation: 'delete',
+          id
+        }
+      });
+
+      if (error || data?.error) {
+        console.error('Category delete error:', error || data?.error);
+        toast.error(data?.error || 'Failed to delete category');
+        return;
+      }
+
       toast.success('Category deleted');
       refreshTable('categories');
+    } catch (err) {
+      console.error('Category delete exception:', err);
+      toast.error('Failed to delete category');
     }
   };
 
   const handleToggleActive = async (category: Category) => {
-    const { error } = await supabase
-      .from('categories')
-      .update({ is_active: !category.is_active })
-      .eq('id', category.id);
+    const token = localStorage.getItem('admin_session_token');
+    if (!token) {
+      toast.error('Admin session expired. Please login again.');
+      return;
+    }
 
-    if (error) {
-      toast.error('Failed to update category');
-    } else {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-mutate-data', {
+        body: {
+          token,
+          table: 'categories',
+          operation: 'update',
+          data: { is_active: !category.is_active },
+          id: category.id
+        }
+      });
+
+      if (error || data?.error) {
+        console.error('Category toggle error:', error || data?.error);
+        toast.error(data?.error || 'Failed to update category');
+        return;
+      }
+
       toast.success(category.is_active ? 'Category hidden' : 'Category visible');
       refreshTable('categories');
+    } catch (err) {
+      console.error('Category toggle exception:', err);
+      toast.error('Failed to update category');
     }
   };
 

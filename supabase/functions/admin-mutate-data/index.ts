@@ -67,7 +67,8 @@ serve(async (req) => {
       'favorites',
       'user_roles',
       'user_preferences',
-      'user_sessions'
+      'user_sessions',
+      'notifications'
     ];
 
     if (!allowedTables.includes(table)) {
