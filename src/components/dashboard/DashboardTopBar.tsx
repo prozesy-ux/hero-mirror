@@ -18,7 +18,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const DashboardTopBar = () => {
+interface DashboardTopBarProps {
+  sidebarCollapsed?: boolean;
+}
+
+const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut, user } = useAuthContext();
@@ -118,17 +122,10 @@ const DashboardTopBar = () => {
     };
   }, [user]);
 
-  const navItems = [
-    { to: '/dashboard/prompts', icon: FileText, label: 'Prompts' },
-    { to: '/dashboard/ai-accounts', icon: Bot, label: 'Marketplace' },
-    { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
-    { to: '/dashboard/chat', icon: MessageCircle, label: 'Chat', badge: unreadCount > 0 ? unreadCount : undefined },
-  ];
-
-  const isActive = (path: string) => location.pathname === path;
-
   return (
-    <header className="hidden lg:flex fixed top-0 left-0 right-0 z-50 h-16 bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm">
+    <header className={`hidden lg:flex fixed top-0 right-0 z-50 h-16 bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm transition-all duration-300 ${
+      sidebarCollapsed ? 'left-[72px]' : 'left-60'
+    }`}>
       <div className="flex items-center justify-between w-full px-6">
         {/* Left Section - Logo */}
         <Link to="/dashboard/prompts" className="flex items-center gap-3 flex-shrink-0">
@@ -159,34 +156,8 @@ const DashboardTopBar = () => {
           </div>
         </div>
 
-        {/* Center-Right Section - Navigation Tabs */}
-        <nav className="flex items-center gap-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.to);
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`relative flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                  active
-                    ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-              >
-                <Icon size={16} />
-                <span>{item.label}</span>
-                {item.badge && item.badge > 0 && (
-                  <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold rounded-full px-1 ${
-                    active ? 'bg-white text-violet-600' : 'bg-red-500 text-white animate-pulse'
-                  }`}>
-                    {item.badge > 9 ? '9+' : item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Spacer to push right section to the end */}
+        <div className="flex-1" />
 
         {/* Right Section - Wallet, Notifications, Profile */}
         <div className="flex items-center gap-3 ml-6">
