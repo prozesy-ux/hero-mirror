@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { 
   FileText, Bot, CreditCard, MessageCircle, 
-  Crown, ChevronLeft, ChevronRight, Sparkles
+  Crown, ChevronLeft, ChevronRight, Megaphone
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useSidebarContext } from '@/contexts/SidebarContext';
@@ -61,6 +61,7 @@ const DashboardSidebar = () => {
     { to: '/dashboard/ai-accounts', icon: Bot, label: 'Marketplace' },
     { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
     { to: '/dashboard/chat', icon: MessageCircle, label: 'Chat', badge: unreadCount > 0 ? unreadCount : undefined },
+    { to: '/dashboard/ads-agency', icon: Megaphone, label: 'Ads Agency' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -159,22 +160,6 @@ const DashboardSidebar = () => {
             <NavItem key={item.to} item={item} />
           ))}
         </nav>
-
-        {/* Agency Promo Card */}
-        {!isCollapsed && (
-          <div className="p-3">
-            <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 rounded-2xl p-4 text-white">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={16} className="text-yellow-300" />
-                <span className="text-xs font-bold uppercase tracking-wide">Ads Agency</span>
-              </div>
-              <p className="text-xs text-white/80 mb-3">Get professional ad campaigns managed by experts</p>
-              <button className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors">
-                Learn More
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Collapse Toggle */}
         <div className="p-3 border-t border-gray-100">
