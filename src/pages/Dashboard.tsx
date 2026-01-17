@@ -1,12 +1,13 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
-import DashboardSidebar, { useSidebarContext } from '@/components/dashboard/DashboardSidebar';
+import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
+import MobileNavigation from '@/components/dashboard/MobileNavigation';
 import DashboardHome from '@/components/dashboard/DashboardHome';
 import PromptsGrid from '@/components/dashboard/PromptsGrid';
 import ProfileSection from '@/components/dashboard/ProfileSection';
 import BillingSection from '@/components/dashboard/BillingSection';
 import AIAccountsSection from '@/components/dashboard/AIAccountsSection';
 import ChatSection from '@/components/dashboard/ChatSection';
-import { useState, useEffect } from 'react';
+import { SearchProvider } from '@/contexts/SearchContext';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Crown, Bell } from 'lucide-react';
 
@@ -59,30 +60,8 @@ const MobileHeader = () => {
 };
 
 const DashboardContent = () => {
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebar-collapsed') === 'true';
-    }
-    return false;
-  });
-
-  // Listen for storage changes to sync collapse state
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setIsCollapsed(localStorage.getItem('sidebar-collapsed') === 'true');
-    };
-
-    // Check periodically for changes (since storage event doesn't fire in same window)
-    const interval = setInterval(handleStorageChange, 100);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
-    <main 
-      className={`pb-24 lg:pb-0 pt-16 lg:pt-0 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white transition-all duration-300 ease-in-out ${
-        isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-72'
-      }`}
-    >
+    <main className="pb-24 lg:pb-0 pt-16 lg:pt-16 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white">
       <div className="relative p-3 sm:p-4 lg:p-8">
         <Routes>
           <Route index element={<Navigate to="/dashboard/prompts" replace />} />
@@ -101,11 +80,21 @@ const DashboardContent = () => {
 
 const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <MobileHeader />
-      <DashboardSidebar />
-      <DashboardContent />
-    </div>
+    <SearchProvider>
+      <div className="min-h-screen bg-gray-50">
+        {/* Mobile Header */}
+        <MobileHeader />
+        
+        {/* Desktop Top Bar */}
+        <DashboardTopBar />
+        
+        {/* Mobile Bottom Navigation */}
+        <MobileNavigation />
+        
+        {/* Main Content */}
+        <DashboardContent />
+      </div>
+    </SearchProvider>
   );
 };
 
