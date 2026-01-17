@@ -162,27 +162,22 @@ const SidebarContent = ({
 
       {/* Categories Section */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden flex-1 min-h-0 flex flex-col">
-        <div className="flex items-center gap-2 p-4 border-b border-gray-100">
-          <Sparkles className="w-5 h-5 text-violet-500" />
+        <div className="flex items-center gap-2 p-3 border-b border-gray-100">
+          <Sparkles className="w-4 h-4 text-violet-500" />
           <h3 className="font-bold text-gray-900 text-sm">Categories</h3>
         </div>
         <div className="flex-1 overflow-y-auto">
           {/* All Category */}
           <button
             onClick={() => onCategorySelect('all')}
-            className={`w-full flex items-center justify-between px-4 py-3 text-left transition-all border-l-4 ${
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-all border-l-3 ${
               selectedCategory === 'all'
                 ? 'bg-gray-100 border-l-gray-900 font-semibold'
                 : 'border-l-transparent hover:bg-gray-50'
             }`}
           >
-            <div className="flex items-center gap-3">
-              <span className="text-lg">📦</span>
-              <span className="text-sm text-gray-900">All Products</span>
-            </div>
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full font-medium">
-              {accounts.length}
-            </span>
+            <span className="text-base">📦</span>
+            <span className="text-sm text-gray-900">All Products</span>
           </button>
 
           {/* Dynamic Categories */}
@@ -190,19 +185,14 @@ const SidebarContent = ({
             <button
               key={category.id}
               onClick={() => onCategorySelect(category.id)}
-              className={`w-full flex items-center justify-between px-4 py-3 text-left transition-all border-l-4 ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-all border-l-3 ${
                 selectedCategory === category.id
                   ? `bg-gray-100 ${getCategoryBorderClass(category.color)} font-semibold`
                   : 'border-l-transparent hover:bg-gray-50'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-lg">{category.icon || '📁'}</span>
-                <span className="text-sm text-gray-900">{category.name}</span>
-              </div>
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full font-medium">
-                {getCategoryCount(category.id)}
-              </span>
+              <span className="text-base">{category.icon || '📁'}</span>
+              <span className="text-sm text-gray-900">{category.name}</span>
             </button>
           ))}
         </div>

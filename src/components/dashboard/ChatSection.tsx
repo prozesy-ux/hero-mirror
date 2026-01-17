@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   MessageCircle, Send, Loader2, Image, Video, Paperclip, 
-  X, Download, FileText, StopCircle, Circle
+  X, Download, FileText, StopCircle, Circle, Mic, Headphones
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -424,7 +424,11 @@ const ChatSection = () => {
           <img 
             src={att.file_url} 
             alt={att.file_name} 
-            className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-white/20"
+            className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-gray-200 shadow-sm"
+            onError={(e) => {
+              e.currentTarget.src = '/placeholder.svg';
+              e.currentTarget.className = 'max-w-[200px] max-h-[200px] rounded-lg object-cover border border-gray-200 bg-gray-100 p-4';
+            }}
           />
         </a>
       );
@@ -432,11 +436,14 @@ const ChatSection = () => {
     
     if (att.file_type === 'video') {
       return (
-        <div className="relative max-w-[250px]">
+        <div className="relative max-w-[280px]">
           <video 
             src={att.file_url} 
             controls 
-            className="rounded-lg max-h-[200px]"
+            className="rounded-lg max-h-[200px] w-full"
+            onError={(e) => {
+              console.error('Video failed to load:', att.file_url);
+            }}
           />
         </div>
       );
@@ -447,11 +454,11 @@ const ChatSection = () => {
         href={att.file_url} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+        className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border border-gray-200"
       >
-        <FileText size={18} />
-        <span className="text-sm truncate max-w-[150px]">{att.file_name}</span>
-        <Download size={14} />
+        <FileText size={18} className="text-gray-600" />
+        <span className="text-sm truncate max-w-[150px] text-gray-700">{att.file_name}</span>
+        <Download size={14} className="text-gray-500" />
       </a>
     );
   };
@@ -465,7 +472,7 @@ const ChatSection = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-0 sm:px-0">
+    <div className="flex flex-col h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)]">
       {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
@@ -492,18 +499,18 @@ const ChatSection = () => {
       />
 
       {/* Chat Container */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 shadow-lg overflow-hidden flex flex-col flex-1">
         {/* Chat Header */}
-        <div className="p-3 sm:p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-violet-50 to-purple-50">
+        <div className="p-3 sm:p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-violet-50 to-purple-50 flex-shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md flex-shrink-0">
-              <MessageCircle className="text-white w-5 h-5 sm:w-[22px] sm:h-[22px]" />
+              <Headphones className="text-white w-5 h-5 sm:w-[22px] sm:h-[22px]" />
             </div>
             <div className="min-w-0">
               <h3 className="text-gray-900 font-bold text-base sm:text-lg truncate">Support Team</h3>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0"></span>
-                <p className="text-gray-500 text-xs sm:text-sm truncate">Replies within hours</p>
+                <p className="text-gray-500 text-xs sm:text-sm truncate">We typically reply within a few hours</p>
               </div>
             </div>
           </div>
@@ -518,7 +525,7 @@ const ChatSection = () => {
         </div>
 
         {/* Messages Area */}
-        <div className="h-[320px] sm:h-[400px] lg:h-[450px] overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gradient-to-b from-gray-50 to-white">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gradient-to-b from-gray-50 to-white">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-violet-100 flex items-center justify-center mb-3 sm:mb-4">
@@ -620,6 +627,14 @@ const ChatSection = () => {
               title="Upload File"
             >
               <Paperclip size={18} />
+            </button>
+            <div className="h-5 w-px bg-gray-200 mx-1" />
+            <button
+              className="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+              title="Voice Message (Coming Soon)"
+              disabled
+            >
+              <Mic size={18} />
             </button>
             <div className="h-5 w-px bg-gray-200 mx-1" />
             {isRecording ? (

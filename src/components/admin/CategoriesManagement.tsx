@@ -16,6 +16,7 @@ interface Category {
   is_active: boolean;
   color: string | null;
   image_url: string | null;
+  category_type: string;
   created_at: string;
 }
 
@@ -43,7 +44,8 @@ const CategoriesManagement = () => {
     display_order: 0,
     is_active: true,
     color: 'violet',
-    image_url: null as string | null
+    image_url: null as string | null,
+    category_type: 'product' as 'product' | 'prompt'
   });
 
   const handleSave = async () => {
@@ -59,7 +61,8 @@ const CategoriesManagement = () => {
       display_order: formData.display_order,
       is_active: formData.is_active,
       color: formData.color,
-      image_url: formData.image_url
+      image_url: formData.image_url,
+      category_type: formData.category_type
     };
 
     if (editingId) {
@@ -98,7 +101,8 @@ const CategoriesManagement = () => {
       display_order: category.display_order || 0,
       is_active: category.is_active !== false,
       color: category.color || 'violet',
-      image_url: category.image_url
+      image_url: category.image_url,
+      category_type: (category.category_type as 'product' | 'prompt') || 'product'
     });
     setEditingId(category.id);
     setShowForm(true);
@@ -139,7 +143,8 @@ const CategoriesManagement = () => {
       display_order: 0,
       is_active: true,
       color: 'violet',
-      image_url: null
+      image_url: null,
+      category_type: 'product'
     });
     setEditingId(null);
     setShowForm(false);
@@ -244,6 +249,42 @@ const CategoriesManagement = () => {
                 </div>
               </div>
 
+              {/* Category Type Selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Category Type *</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, category_type: 'product' })}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                      formData.category_type === 'product'
+                        ? 'border-violet-500 bg-violet-500/20 text-white'
+                        : 'border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-600'
+                    }`}
+                  >
+                    <span className="text-lg">🛒</span>
+                    <span className="font-medium">Marketplace</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, category_type: 'prompt' })}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                      formData.category_type === 'prompt'
+                        ? 'border-emerald-500 bg-emerald-500/20 text-white'
+                        : 'border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-600'
+                    }`}
+                  >
+                    <span className="text-lg">📝</span>
+                    <span className="font-medium">Prompts</span>
+                  </button>
+                </div>
+                <p className="text-gray-500 text-xs mt-1.5">
+                  {formData.category_type === 'product' 
+                    ? 'This category will appear in the AI Accounts marketplace' 
+                    : 'This category will appear in the Prompts section'}
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
                 <input
@@ -324,6 +365,7 @@ const CategoriesManagement = () => {
             <tr>
               <th className="text-left px-6 py-4 text-gray-400 font-medium w-12">#</th>
               <th className="text-left px-6 py-4 text-gray-400 font-medium">Category</th>
+              <th className="text-left px-6 py-4 text-gray-400 font-medium">Type</th>
               <th className="text-left px-6 py-4 text-gray-400 font-medium">Badge</th>
               <th className="text-left px-6 py-4 text-gray-400 font-medium">Accounts</th>
               <th className="text-left px-6 py-4 text-gray-400 font-medium">Status</th>
@@ -337,6 +379,7 @@ const CategoriesManagement = () => {
                   <td className="px-6 py-4"><Skeleton className="h-8 w-8 bg-white/10" /></td>
                   <td className="px-6 py-4"><Skeleton className="h-4 w-32 bg-white/10" /></td>
                   <td className="px-6 py-4"><Skeleton className="h-6 w-20 bg-white/10" /></td>
+                  <td className="px-6 py-4"><Skeleton className="h-6 w-20 bg-white/10" /></td>
                   <td className="px-6 py-4"><Skeleton className="h-4 w-12 bg-white/10" /></td>
                   <td className="px-6 py-4"><Skeleton className="h-6 w-16 bg-white/10" /></td>
                   <td className="px-6 py-4"><Skeleton className="h-8 w-20 ml-auto bg-white/10" /></td>
@@ -344,7 +387,7 @@ const CategoriesManagement = () => {
               ))
             ) : categoryList.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                   No categories yet. Add your first category to get started.
                 </td>
               </tr>
@@ -366,6 +409,15 @@ const CategoriesManagement = () => {
                         )}
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                      category.category_type === 'prompt' 
+                        ? 'bg-emerald-500/20 text-emerald-400' 
+                        : 'bg-violet-500/20 text-violet-400'
+                    }`}>
+                      {category.category_type === 'prompt' ? '📝 Prompts' : '🛒 Marketplace'}
+                    </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getColorClass(category.color)}`}>

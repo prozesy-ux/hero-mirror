@@ -352,14 +352,15 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
                       navigate('/dashboard/chat');
                       setNotificationsOpen(false);
                     }}
-                    className="w-full flex items-start gap-3 px-4 py-3 hover:bg-violet-50 transition-colors border-b border-gray-50"
+                    className="w-full flex items-start gap-3 px-4 py-3 hover:bg-violet-50 transition-colors border-b border-gray-50 bg-violet-50/50"
                   >
                     <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
                       <MessageCircle size={14} className="text-violet-600" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-medium text-gray-900">New Support Messages</p>
+                      <p className="text-sm font-medium text-gray-900">Message from Support Team</p>
                       <p className="text-xs text-gray-500">You have {unreadCount} unread message{unreadCount > 1 ? 's' : ''}</p>
+                      <p className="text-[10px] text-violet-500 mt-0.5 font-medium">Tap to view conversation</p>
                     </div>
                     <ExternalLink size={14} className="text-gray-400 mt-1" />
                   </button>

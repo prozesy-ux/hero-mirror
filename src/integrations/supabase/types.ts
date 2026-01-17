@@ -277,6 +277,7 @@ export type Database = {
       }
       categories: {
         Row: {
+          category_type: string | null
           color: string | null
           created_at: string | null
           description: string | null
@@ -288,6 +289,7 @@ export type Database = {
           name: string
         }
         Insert: {
+          category_type?: string | null
           color?: string | null
           created_at?: string | null
           description?: string | null
@@ -299,6 +301,7 @@ export type Database = {
           name: string
         }
         Update: {
+          category_type?: string | null
           color?: string | null
           created_at?: string | null
           description?: string | null

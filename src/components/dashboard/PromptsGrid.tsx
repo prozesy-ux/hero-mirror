@@ -36,6 +36,7 @@ const PromptsGrid = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const { searchQuery } = useSearchContext();
+  const [localSearch, setLocalSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -226,10 +227,13 @@ const PromptsGrid = () => {
     return 'bg-gray-500';
   };
 
+  // Combined search from header and local search
+  const combinedSearch = searchQuery || localSearch;
+
   // Filter logic for All Prompts tab - Search and category filter
   let filteredPrompts = prompts.filter(prompt => {
-    const matchesSearch = prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          prompt.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = prompt.title.toLowerCase().includes(combinedSearch.toLowerCase()) ||
+                          prompt.description?.toLowerCase().includes(combinedSearch.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || prompt.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -379,6 +383,28 @@ const PromptsGrid = () => {
 
   return (
     <div className="space-y-6 lg:space-y-8 section-prompts animate-fade-up">
+      {/* Search Box */}
+      <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-md">
+        <div className="relative w-full max-w-md">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search prompts..."
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
+            className="w-full pl-11 pr-10 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all"
+          />
+          {localSearch && (
+            <button
+              onClick={() => setLocalSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 transition-colors"
+            >
+              <X size={14} className="text-gray-500" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Tab Navigation - Mobile Optimized Premium Design */}
       <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
         {/* Mobile: Wallet on top, tabs below */}

@@ -102,7 +102,7 @@ const PaymentSettingsManagement = () => {
     };
 
     // Get admin session token
-    const token = sessionStorage.getItem('adminToken');
+    const token = localStorage.getItem('admin_session_token');
     if (!token) {
       toast.error('Admin session expired');
       setSaving(false);
@@ -142,7 +142,7 @@ const PaymentSettingsManagement = () => {
 
     setDeletingId(id);
 
-    const token = sessionStorage.getItem('adminToken');
+    const token = localStorage.getItem('admin_session_token');
     if (!token) {
       toast.error('Admin session expired');
       setDeletingId(null);
@@ -175,7 +175,7 @@ const PaymentSettingsManagement = () => {
   };
 
   const toggleEnabled = async (method: PaymentMethod) => {
-    const token = sessionStorage.getItem('adminToken');
+    const token = localStorage.getItem('admin_session_token');
     if (!token) {
       toast.error('Admin session expired');
       return;

@@ -737,14 +737,48 @@ const ProfileSection = () => {
 
                 {/* Active Sessions */}
                 <div className="py-3">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Monitor className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Active Sessions</p>
-                      <p className="text-xs text-gray-500">
-                        {sessionsLoading ? 'Loading...' : `${sessions.length} device${sessions.length !== 1 ? 's' : ''} logged in`}
-                      </p>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <Monitor className="h-4 w-4 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Active Sessions</p>
+                        <p className="text-xs text-gray-500">
+                          {sessionsLoading ? 'Loading...' : `${sessions.length} device${sessions.length !== 1 ? 's' : ''} logged in`}
+                        </p>
+                      </div>
                     </div>
+                    {sessions.length > 1 && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-amber-600 border-amber-200 hover:bg-amber-50 text-xs"
+                          >
+                            <LogOut className="h-3 w-3 mr-1" />
+                            Sign Out All
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-white border border-gray-200">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Sign out from all devices?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will log you out from all devices, including this one. You'll need to sign in again.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleSignOutAll}
+                              disabled={isSigningOutAll}
+                              className="bg-amber-600 hover:bg-amber-700"
+                            >
+                              {isSigningOutAll ? 'Signing out...' : 'Sign Out All'}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                   
                   {sessionsLoading ? (
@@ -781,7 +815,9 @@ const ProfileSection = () => {
                               </div>
                               <div className="flex items-center gap-2 text-xs text-gray-500">
                                 <Globe className="h-3 w-3" />
-                                <span>{session.location || 'Unknown'}</span>
+                                <span>{session.ip_address || 'Unknown IP'}</span>
+                                <span>•</span>
+                                <span>{session.location || 'Unknown Location'}</span>
                                 <span>•</span>
                                 <span>{new Date(session.last_active).toLocaleDateString()}</span>
                               </div>
@@ -918,47 +954,6 @@ const ProfileSection = () => {
                       </>
                     )}
                   </Button>
-                </div>
-
-                {/* Sign Out All Devices */}
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <LogOut className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Sign Out All Devices</p>
-                      <p className="text-xs text-gray-500">Log out from all other sessions</p>
-                    </div>
-                  </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-amber-600 border-amber-200 hover:bg-amber-50 text-xs"
-                      >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Sign Out All
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-white border border-gray-200">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Sign out from all devices?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will log you out from all devices, including this one. You'll need to sign in again.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleSignOutAll}
-                          disabled={isSigningOutAll}
-                          className="bg-amber-600 hover:bg-amber-700"
-                        >
-                          {isSigningOutAll ? 'Signing out...' : 'Sign Out All'}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
                 </div>
 
                 {/* Delete Account */}
