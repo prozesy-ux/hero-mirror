@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Heart, Lock, Search, Copy, X, Image as ImageIcon, TrendingUp, Layers, FolderOpen, Star, Bookmark, Check, ChevronRight, Crown, Wallet, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useSearchContext } from '@/contexts/SearchContext';
 import { toast } from 'sonner';
-
 interface Prompt {
   id: string;
   title: string;
@@ -35,7 +35,7 @@ const PromptsGrid = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { searchQuery } = useSearchContext();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -480,20 +480,6 @@ const PromptsGrid = () => {
       {/* All Prompts Tab */}
       {activeTab === 'all' && (
         <>
-          {/* Clean Search Bar - Matching AI Accounts Style */}
-          <div className="relative mb-6 lg:mb-8">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
-              <Search size={18} className="text-gray-500" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search prompts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium text-lg shadow-md"
-            />
-          </div>
-
           {/* Prompts Grid */}
           {filteredPrompts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
@@ -507,7 +493,7 @@ const PromptsGrid = () => {
                 <Search size={24} className="text-gray-400" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">No prompts found</h3>
-              <p className="text-gray-500">Try adjusting your search</p>
+              <p className="text-gray-500">Try adjusting your search in the header</p>
             </div>
           )}
         </>
