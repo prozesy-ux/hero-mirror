@@ -123,8 +123,8 @@ const SellerProducts = () => {
         category_id: formData.category_id || null,
         icon_url: formData.icon_url.trim() || null,
         is_available: formData.is_available,
-        chat_allowed: formData.chat_allowed,
-        is_approved: false
+        chat_allowed: formData.chat_allowed
+        // Note: is_approved is handled by database triggers for both insert and update
       };
 
       if (editingProduct) {
