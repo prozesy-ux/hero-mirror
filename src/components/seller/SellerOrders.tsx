@@ -125,11 +125,6 @@ const SellerOrders = () => {
 
   return (
     <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
-        <p className="text-sm text-slate-500">{orders.length} total orders</p>
-      </div>
 
       {/* Search */}
       <div className="relative mb-6">

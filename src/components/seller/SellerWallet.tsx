@@ -168,11 +168,7 @@ const SellerWallet = () => {
   return (
     <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Wallet</h1>
-          <p className="text-sm text-slate-500">Manage your earnings</p>
-        </div>
+      <div className="flex justify-end mb-6">
         <Button 
           onClick={() => setIsDialogOpen(true)}
           className="bg-emerald-500 hover:bg-emerald-600 shadow-sm"

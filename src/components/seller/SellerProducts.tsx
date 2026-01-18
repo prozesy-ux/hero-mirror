@@ -201,11 +201,7 @@ const SellerProducts = () => {
   return (
     <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Products</h1>
-          <p className="text-sm text-slate-500">{products.length} products</p>
-        </div>
+      <div className="flex justify-end mb-6">
         <Button onClick={() => handleOpenDialog()} className="bg-emerald-500 hover:bg-emerald-600 shadow-sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Product

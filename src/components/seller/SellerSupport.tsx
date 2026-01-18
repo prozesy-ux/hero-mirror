@@ -136,11 +136,6 @@ const SellerSupport = () => {
 
   return (
     <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Support</h1>
-        <p className="text-sm text-slate-500">Chat with our support team</p>
-      </div>
 
       {/* Chat Card */}
       <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden h-[calc(100vh-200px)] flex flex-col">

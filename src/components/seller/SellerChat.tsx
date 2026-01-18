@@ -232,18 +232,14 @@ const SellerChat = () => {
 
   return (
     <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Messages</h1>
-          <p className="text-sm text-slate-500">Chat with your customers</p>
-        </div>
-        {totalUnread > 0 && (
+      {/* Unread Badge */}
+      {totalUnread > 0 && (
+        <div className="flex justify-end mb-4">
           <Badge className="bg-emerald-500 text-white">
             {totalUnread} unread
           </Badge>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Chat Interface */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-200px)]">

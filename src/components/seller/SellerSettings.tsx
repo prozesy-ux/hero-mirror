@@ -102,11 +102,6 @@ const SellerSettings = () => {
   return (
     <div className="space-y-6">
       <div className="max-w-2xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-          <p className="text-sm text-slate-500">Manage your store settings</p>
-        </div>
 
         {/* Store Info Card */}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6 mb-6">

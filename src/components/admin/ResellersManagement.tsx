@@ -171,11 +171,6 @@ const ResellersManagement = () => {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Resellers Management</h1>
-        <p className="text-muted-foreground">Manage sellers, verify applications, and view their data</p>
-      </div>
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
