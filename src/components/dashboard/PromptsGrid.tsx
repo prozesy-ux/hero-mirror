@@ -14,11 +14,13 @@ interface Prompt {
   image_url: string | null;
   tool: string;
   is_free: boolean;
-  is_featured: boolean;
+  is_featured?: boolean;
+  is_trending?: boolean;
   category_id: string | null;
   categories?: {
+    id?: string;
     name: string;
-    icon: string | null;
+    icon?: string | null;
   } | null;
 }
 
@@ -42,8 +44,18 @@ const PromptsGrid = () => {
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   const { user, isPro } = useAuthContext();
+
+  // Tag toggle handler
+  const handleTagSelect = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag) 
+        : [...prev, tag]
+    );
+  };
 
   const fetchWallet = async () => {
     if (!user) return;
@@ -231,12 +243,13 @@ const PromptsGrid = () => {
   // Combined search from header and local search
   const combinedSearch = searchQuery || localSearch;
 
-  // Filter logic for All Prompts tab - Search and category filter
+  // Filter logic for All Prompts tab - Search, category, and tag filter
   let filteredPrompts = prompts.filter(prompt => {
     const matchesSearch = prompt.title.toLowerCase().includes(combinedSearch.toLowerCase()) ||
                           prompt.description?.toLowerCase().includes(combinedSearch.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || prompt.category_id === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesTags = selectedTags.length === 0 || selectedTags.includes(prompt.tool);
+    return matchesSearch && matchesCategory && matchesTags;
   });
 
   const trendingPrompts = prompts.filter(p => p.is_featured);
@@ -471,26 +484,76 @@ const PromptsGrid = () => {
         </div>
       </div>
 
-      {/* All Prompts Tab */}
+      {/* All Prompts Tab - Marketplace Layout with Sidebar */}
       {activeTab === 'all' && (
-        <>
-          {/* Prompts Grid */}
-          {filteredPrompts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-5">
-              {filteredPrompts.map((prompt) => (
-                <PromptCard key={prompt.id} prompt={prompt} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-md">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <Search size={24} className="text-gray-400" />
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar */}
+          <PromptsSidebar
+            trendingPrompts={trendingPrompts}
+            categories={categories}
+            prompts={prompts}
+            selectedCategory={selectedCategory}
+            selectedTags={selectedTags}
+            onCategorySelect={handleCategoryClick}
+            onTagSelect={handleTagSelect}
+            onPromptClick={handlePromptClick}
+            getCategoryCount={getCategoryPromptCount}
+          />
+
+          {/* Main Content Area */}
+          <div className="flex-1 min-w-0">
+            {/* Active Filter Pills */}
+            {(selectedCategory !== 'all' || selectedTags.length > 0) && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {selectedCategory !== 'all' && (
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-100 text-violet-700 rounded-full text-sm font-medium hover:bg-violet-200 transition-colors"
+                  >
+                    {categories.find(c => c.id === selectedCategory)?.name || 'Category'}
+                    <X size={14} />
+                  </button>
+                )}
+                {selectedTags.map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => handleTagSelect(tag)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-200 transition-colors"
+                  >
+                    {tag}
+                    <X size={14} />
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSelectedTags([]);
+                  }}
+                  className="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors"
+                >
+                  Clear all
+                </button>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">No prompts found</h3>
-              <p className="text-gray-500">Try adjusting your search in the header</p>
-            </div>
-          )}
-        </>
+            )}
+
+            {/* Prompts Grid */}
+            {filteredPrompts.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
+                {filteredPrompts.map((prompt) => (
+                  <PromptCard key={prompt.id} prompt={prompt} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-md">
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                  <Search size={24} className="text-gray-400" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">No prompts found</h3>
+                <p className="text-gray-500">Try adjusting your filters or search</p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Trending Tab */}
