@@ -209,8 +209,8 @@ const UnifiedResellersManagement: React.FC = () => {
   useEffect(() => {
     fetchAllData();
     
-    // Set up realtime subscription for feature requests
-    const channel = supabase
+    // Set up realtime subscriptions for all reseller-related tables
+    const featureRequestsChannel = supabase
       .channel('feature-requests-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_feature_requests' }, 
         () => {
@@ -219,9 +219,36 @@ const UnifiedResellersManagement: React.FC = () => {
         }
       )
       .subscribe();
+
+    const sellersChannel = supabase
+      .channel('admin-sellers-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_profiles' }, () => {
+        fetchData<SellerProfile>('seller_profiles', { order: { column: 'created_at', ascending: false } })
+          .then(res => setSellers(res.data || []));
+      })
+      .subscribe();
+
+    const productsChannel = supabase
+      .channel('admin-seller-products-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_products' }, () => {
+        fetchData<SellerProduct>('seller_products', { order: { column: 'created_at', ascending: false } })
+          .then(res => setProducts(res.data || []));
+      })
+      .subscribe();
+
+    const withdrawalsChannel = supabase
+      .channel('admin-seller-withdrawals-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_withdrawals' }, () => {
+        fetchData<Withdrawal>('seller_withdrawals', { order: { column: 'created_at', ascending: false } })
+          .then(res => setWithdrawals(res.data || []));
+      })
+      .subscribe();
     
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(featureRequestsChannel);
+      supabase.removeChannel(sellersChannel);
+      supabase.removeChannel(productsChannel);
+      supabase.removeChannel(withdrawalsChannel);
     };
   }, [fetchAllData]);
 

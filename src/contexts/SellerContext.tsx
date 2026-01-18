@@ -199,6 +199,7 @@ export const SellerProvider = ({
         filter: `seller_id=eq.${profile.id}`
       }, () => {
         refreshOrders();
+        refreshProfile();
       })
       .subscribe();
 
@@ -214,11 +215,38 @@ export const SellerProvider = ({
       })
       .subscribe();
 
+    const productsChannel = supabase
+      .channel('seller-products-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'seller_products',
+        filter: `seller_id=eq.${profile.id}`
+      }, () => {
+        refreshProducts();
+      })
+      .subscribe();
+
+    const withdrawalsChannel = supabase
+      .channel('seller-withdrawals-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'seller_withdrawals',
+        filter: `seller_id=eq.${profile.id}`
+      }, () => {
+        refreshWithdrawals();
+        refreshWallet();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(walletChannel);
+      supabase.removeChannel(productsChannel);
+      supabase.removeChannel(withdrawalsChannel);
     };
-  }, [profile.id]);
+  }, [profile.id, refreshOrders, refreshProfile, refreshWallet, refreshProducts, refreshWithdrawals]);
 
   return (
     <SellerContext.Provider value={{

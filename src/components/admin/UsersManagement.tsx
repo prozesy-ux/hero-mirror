@@ -88,6 +88,32 @@ const UsersManagement = () => {
 
   const users = profiles as UserProfile[];
 
+  // Real-time subscription for profiles and wallets
+  useEffect(() => {
+    const profilesChannel = supabase
+      .channel('admin-users-profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        refreshTable('profiles');
+      })
+      .subscribe();
+
+    const walletsChannel = supabase
+      .channel('admin-users-wallets')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets' }, () => {
+        // Refresh user details if a user is selected
+        if (selectedUser) {
+          fetchData('user_wallets', { filters: [{ column: 'user_id', value: selectedUser.user_id }] })
+            .then(res => setUserWallet(res.data?.[0] || { balance: 0 }));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profilesChannel);
+      supabase.removeChannel(walletsChannel);
+    };
+  }, [refreshTable, selectedUser]);
+
   const fetchUserDetails = async (user: UserProfile) => {
     setLoadingDetail(true);
     setSelectedUser(user);

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminDataState {
   profiles: any[];
@@ -183,6 +184,44 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setState(prev => ({ ...prev, [stateKey]: data }));
     }
   }, []);
+
+  // Real-time subscriptions for all admin tables
+  const channelsRef = useRef<any[]>([]);
+  
+  useEffect(() => {
+    const tables = [
+      { table: 'profiles', key: 'profiles' },
+      { table: 'purchases', key: 'purchases' },
+      { table: 'ai_account_purchases', key: 'ai_account_purchases' },
+      { table: 'prompts', key: 'prompts' },
+      { table: 'categories', key: 'categories' },
+      { table: 'seller_profiles', key: 'seller_profiles' },
+      { table: 'seller_products', key: 'seller_products' },
+      { table: 'seller_withdrawals', key: 'seller_withdrawals' },
+      { table: 'seller_feature_requests', key: 'seller_feature_requests' },
+      { table: 'seller_orders', key: 'seller_orders' },
+      { table: 'user_wallets', key: 'user_wallets' },
+      { table: 'wallet_transactions', key: 'wallet_transactions' },
+      { table: 'support_messages', key: 'support_messages' },
+      { table: 'seller_support_messages', key: 'seller_support_messages' },
+      { table: 'refund_requests', key: 'refund_requests' },
+      { table: 'cancellation_requests', key: 'cancellation_requests' },
+      { table: 'account_deletion_requests', key: 'account_deletion_requests' },
+    ];
+
+    channelsRef.current = tables.map(({ table, key }) =>
+      supabase
+        .channel(`admin-realtime-${table}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+          refreshTable(key);
+        })
+        .subscribe()
+    );
+
+    return () => {
+      channelsRef.current.forEach(channel => supabase.removeChannel(channel));
+    };
+  }, [refreshTable]);
 
   return (
     <AdminDataContext.Provider value={{ ...state, refreshAll, refreshTable, updateLocalData }}>
