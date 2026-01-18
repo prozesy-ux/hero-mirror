@@ -66,6 +66,26 @@ const SellerWallet = () => {
     fetchPaymentMethods();
   }, []);
 
+  // Real-time subscription for withdrawals
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const channel = supabase
+      .channel('seller-wallet-withdrawals-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'seller_withdrawals',
+        filter: `seller_id=eq.${profile.id}`
+      }, () => {
+        refreshWithdrawals();
+        refreshWallet();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.id, refreshWithdrawals, refreshWallet]);
+
   const fetchPaymentMethods = async () => {
     const { data } = await supabase
       .from('payment_methods')

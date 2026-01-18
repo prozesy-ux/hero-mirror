@@ -38,6 +38,25 @@ const SellerDashboard = () => {
     }
   }, [profile?.id]);
 
+  // Real-time subscription for trust score updates
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const channel = supabase
+      .channel('trust-score-updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'seller_trust_scores',
+        filter: `seller_id=eq.${profile.id}`
+      }, () => {
+        fetchTrustScore();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.id]);
+
   const fetchTrustScore = async () => {
     if (!profile?.id) return;
     
