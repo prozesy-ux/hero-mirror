@@ -1529,7 +1529,7 @@ const UnifiedResellersManagement = () => {
 
       {/* Active Chat Session Dialog - Full Chat Interface */}
       <Dialog open={!!activeChatSession} onOpenChange={() => setActiveChatSession(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col bg-white">
+        <DialogContent className="max-w-3xl h-[85vh] flex flex-col bg-white">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 text-slate-900">
               <Shield className="h-5 w-5 text-blue-500" />
@@ -1544,7 +1544,7 @@ const UnifiedResellersManagement = () => {
           {activeChatSession && (
             <>
               {/* Chat Messages */}
-              <ScrollArea className="flex-1 min-h-[400px] border border-slate-200 rounded-lg p-4">
+              <ScrollArea className="flex-1 border border-slate-200 rounded-lg p-4 overflow-hidden">
                 {activeChatSession.messages.length === 0 ? (
                   <div className="text-center py-8 text-slate-500">
                     <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
