@@ -133,6 +133,7 @@ const UnifiedResellersManagement: React.FC = () => {
     auto_approve_verified_only: false
   });
   const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSearch, setSettingsSearch] = useState('');
 
   const fetchData = async <T,>(table: string, options?: { select?: string; order?: { column: string; ascending?: boolean } }): Promise<{ data: T[] | null; error: any }> => {
     const token = localStorage.getItem(ADMIN_SESSION_KEY);
@@ -252,31 +253,61 @@ const UnifiedResellersManagement: React.FC = () => {
   };
 
   const toggleVerification = async (seller: SellerProfile) => {
-    const result = await mutateData('seller_profiles', 'update', { is_verified: !seller.is_verified }, seller.id);
+    const newStatus = !seller.is_verified;
+    
+    // Optimistic update
+    setSellers(prev => prev.map(s => 
+      s.id === seller.id ? { ...s, is_verified: newStatus } : s
+    ));
+    
+    const result = await mutateData('seller_profiles', 'update', { is_verified: newStatus }, seller.id);
     if (result.success) {
-      toast.success(`Seller ${!seller.is_verified ? 'verified' : 'unverified'}`);
-      fetchAllData();
+      toast.success(`Seller ${newStatus ? 'verified' : 'unverified'}`);
     } else {
+      // Revert on error
+      setSellers(prev => prev.map(s => 
+        s.id === seller.id ? { ...s, is_verified: seller.is_verified } : s
+      ));
       toast.error(result.error || 'Failed to update');
     }
   };
 
   const toggleActive = async (seller: SellerProfile) => {
-    const result = await mutateData('seller_profiles', 'update', { is_active: !seller.is_active }, seller.id);
+    const newStatus = !seller.is_active;
+    
+    // Optimistic update
+    setSellers(prev => prev.map(s => 
+      s.id === seller.id ? { ...s, is_active: newStatus } : s
+    ));
+    
+    const result = await mutateData('seller_profiles', 'update', { is_active: newStatus }, seller.id);
     if (result.success) {
-      toast.success(`Seller ${!seller.is_active ? 'activated' : 'suspended'}`);
-      fetchAllData();
+      toast.success(`Seller ${newStatus ? 'activated' : 'suspended'}`);
     } else {
+      // Revert on error
+      setSellers(prev => prev.map(s => 
+        s.id === seller.id ? { ...s, is_active: seller.is_active } : s
+      ));
       toast.error(result.error || 'Failed to update');
     }
   };
 
   const toggleAutoApprove = async (seller: SellerProfile) => {
-    const result = await mutateData('seller_profiles', 'update', { auto_approve_products: !seller.auto_approve_products }, seller.id);
+    const newStatus = !seller.auto_approve_products;
+    
+    // Optimistic update
+    setSellers(prev => prev.map(s => 
+      s.id === seller.id ? { ...s, auto_approve_products: newStatus } : s
+    ));
+    
+    const result = await mutateData('seller_profiles', 'update', { auto_approve_products: newStatus }, seller.id);
     if (result.success) {
-      toast.success(`Auto-approval ${!seller.auto_approve_products ? 'enabled' : 'disabled'} for ${seller.store_name}`);
-      fetchAllData();
+      toast.success(`Auto-approval ${newStatus ? 'enabled' : 'disabled'} for ${seller.store_name}`);
     } else {
+      // Revert on error
+      setSellers(prev => prev.map(s => 
+        s.id === seller.id ? { ...s, auto_approve_products: seller.auto_approve_products } : s
+      ));
       toast.error(result.error || 'Failed to update');
     }
   };
@@ -288,8 +319,8 @@ const UnifiedResellersManagement: React.FC = () => {
     if (result.success) {
       toast.success('Seller deleted successfully');
       setDeleteDialogOpen(false);
+      setSellers(prev => prev.filter(s => s.id !== sellerToDelete));
       setSellerToDelete(null);
-      fetchAllData();
     } else {
       toast.error(result.error || 'Failed to delete');
     }
@@ -297,11 +328,21 @@ const UnifiedResellersManagement: React.FC = () => {
 
   // Product functions
   const toggleProductApproval = async (product: SellerProduct) => {
-    const result = await mutateData('seller_products', 'update', { is_approved: !product.is_approved }, product.id);
+    const newStatus = !product.is_approved;
+    
+    // Optimistic update
+    setProducts(prev => prev.map(p => 
+      p.id === product.id ? { ...p, is_approved: newStatus } : p
+    ));
+    
+    const result = await mutateData('seller_products', 'update', { is_approved: newStatus }, product.id);
     if (result.success) {
-      toast.success(`Product ${!product.is_approved ? 'approved' : 'unapproved'}`);
-      fetchAllData();
+      toast.success(`Product ${newStatus ? 'approved' : 'unapproved'}`);
     } else {
+      // Revert on error
+      setProducts(prev => prev.map(p => 
+        p.id === product.id ? { ...p, is_approved: product.is_approved } : p
+      ));
       toast.error(result.error || 'Failed to update');
     }
   };
@@ -941,103 +982,126 @@ const UnifiedResellersManagement: React.FC = () => {
 
         {/* Settings Tab */}
         <TabsContent value="settings" className="mt-6">
-          <div className="grid gap-6">
-            {/* Global Auto-Approval Settings */}
-            <Card className="bg-white border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Zap className="w-5 h-5" />
-                  Global Auto-Approval Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <Label className="text-base font-medium">Auto-approve ALL seller products</Label>
-                    <p className="text-sm text-muted-foreground">
-                      When enabled, all new products from any seller will be automatically approved
-                    </p>
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Left Column - Global Settings & Bulk Actions */}
+            <div className="space-y-6">
+              {/* Global Auto-Approval */}
+              <Card className="bg-white border">
+                <CardContent className="p-5 space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Settings className="w-5 h-5 text-muted-foreground" />
+                    <span className="font-semibold">Global Settings</span>
                   </div>
-                  <Switch
-                    checked={autoApprovalSettings.auto_approve_all}
-                    onCheckedChange={(checked) => 
-                      setAutoApprovalSettings(prev => ({ ...prev, auto_approve_all: checked, auto_approve_verified_only: checked ? false : prev.auto_approve_verified_only }))
-                    }
+                  
+                  <div className="flex items-center justify-between py-3 border-b">
+                    <div className="flex items-center gap-3">
+                      <Zap className="w-4 h-4 text-amber-500" />
+                      <div>
+                        <p className="text-sm font-medium">Auto-approve ALL products</p>
+                        <p className="text-xs text-muted-foreground">All new products auto-approved</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={autoApprovalSettings.auto_approve_all}
+                      onCheckedChange={(checked) => 
+                        setAutoApprovalSettings(prev => ({ ...prev, auto_approve_all: checked, auto_approve_verified_only: checked ? false : prev.auto_approve_verified_only }))
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-4 h-4 text-green-500" />
+                      <div>
+                        <p className="text-sm font-medium">Verified sellers only</p>
+                        <p className="text-xs text-muted-foreground">Only verified sellers get auto-approval</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={autoApprovalSettings.auto_approve_verified_only}
+                      disabled={autoApprovalSettings.auto_approve_all}
+                      onCheckedChange={(checked) => 
+                        setAutoApprovalSettings(prev => ({ ...prev, auto_approve_verified_only: checked }))
+                      }
+                    />
+                  </div>
+
+                  <Button onClick={saveAutoApprovalSettings} disabled={savingSettings} className="w-full mt-2">
+                    {savingSettings && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Save Settings
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Bulk Actions */}
+              <Card className="bg-white border">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-5 h-5 text-muted-foreground" />
+                    <span className="font-semibold">Bulk Actions</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    <Button variant="outline" size="sm" onClick={() => bulkEnableAutoApprove(false)} className="justify-start">
+                      <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                      Enable for ALL Sellers
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => bulkEnableAutoApprove(true)} className="justify-start">
+                      <Shield className="w-4 h-4 mr-2 text-blue-500" />
+                      Enable for Verified Only
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={bulkDisableAutoApprove} className="justify-start text-destructive hover:text-destructive">
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Disable for All
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column - Per-Seller Auto-Approval */}
+            <Card className="bg-white border">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Store className="w-5 h-5 text-muted-foreground" />
+                    <span className="font-semibold">Per-Seller Settings</span>
+                    <Badge variant="secondary" className="text-xs">{stats.autoApproveSellers} enabled</Badge>
+                  </div>
+                </div>
+                
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search sellers..."
+                    value={settingsSearch}
+                    onChange={(e) => setSettingsSearch(e.target.value)}
+                    className="pl-9 h-9"
                   />
                 </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <Label className="text-base font-medium">Auto-approve verified sellers only</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Only products from verified sellers will be automatically approved
-                    </p>
-                  </div>
-                  <Switch
-                    checked={autoApprovalSettings.auto_approve_verified_only}
-                    disabled={autoApprovalSettings.auto_approve_all}
-                    onCheckedChange={(checked) => 
-                      setAutoApprovalSettings(prev => ({ ...prev, auto_approve_verified_only: checked }))
-                    }
-                  />
-                </div>
-
-                <Button onClick={saveAutoApprovalSettings} disabled={savingSettings}>
-                  {savingSettings && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Save Global Settings
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Bulk Actions */}
-            <Card className="bg-white border">
-              <CardHeader>
-                <CardTitle className="text-lg">Bulk Auto-Approval Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-4">
-                  <Button variant="outline" onClick={() => bulkEnableAutoApprove(false)}>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Enable for ALL Sellers
-                  </Button>
-                  <Button variant="outline" onClick={() => bulkEnableAutoApprove(true)}>
-                    <Shield className="w-4 h-4 mr-2" />
-                    Enable for Verified Only
-                  </Button>
-                  <Button variant="destructive" onClick={bulkDisableAutoApprove}>
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Disable for All
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Per-Seller Auto-Approval */}
-            <Card className="bg-white border">
-              <CardHeader>
-                <CardTitle className="text-lg">Per-Seller Auto-Approval</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[400px]">
-                  <div className="space-y-2">
-                    {sellers.map((seller) => (
-                      <div key={seller.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                
+                <ScrollArea className="h-[350px]">
+                  <div className="space-y-1">
+                    {sellers
+                      .filter(s => s.store_name.toLowerCase().includes(settingsSearch.toLowerCase()))
+                      .map((seller) => (
+                      <div key={seller.id} className="flex items-center justify-between p-2.5 hover:bg-muted/50 rounded-lg transition-colors">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-full bg-muted flex-shrink-0 flex items-center justify-center overflow-hidden">
                             {seller.store_logo_url ? (
-                              <img src={seller.store_logo_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                              <img src={seller.store_logo_url} alt="" className="w-7 h-7 rounded-full object-cover" />
                             ) : (
-                              <Store className="w-4 h-4 text-muted-foreground" />
+                              <Store className="w-3.5 h-3.5 text-muted-foreground" />
                             )}
                           </div>
-                          <div>
-                            <p className="font-medium">{seller.store_name}</p>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{seller.store_name}</p>
                             <div className="flex gap-1">
                               {seller.is_verified && (
-                                <Badge className="bg-green-100 text-green-700 text-xs">Verified</Badge>
+                                <Badge className="bg-green-100 text-green-700 text-[10px] h-4 px-1">Verified</Badge>
                               )}
                               {!seller.is_active && (
-                                <Badge variant="destructive" className="text-xs">Suspended</Badge>
+                                <Badge variant="destructive" className="text-[10px] h-4 px-1">Suspended</Badge>
                               )}
                             </div>
                           </div>
