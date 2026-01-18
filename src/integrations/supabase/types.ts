@@ -1018,6 +1018,7 @@ export type Database = {
         Row: {
           amount: number
           buyer_approved: boolean | null
+          buyer_email_input: string | null
           buyer_id: string
           created_at: string | null
           credentials: string | null
@@ -1031,6 +1032,7 @@ export type Database = {
         Insert: {
           amount: number
           buyer_approved?: boolean | null
+          buyer_email_input?: string | null
           buyer_id: string
           created_at?: string | null
           credentials?: string | null
@@ -1044,6 +1046,7 @@ export type Database = {
         Update: {
           amount?: number
           buyer_approved?: boolean | null
+          buyer_email_input?: string | null
           buyer_id?: string
           created_at?: string | null
           credentials?: string | null
@@ -1083,6 +1086,7 @@ export type Database = {
           is_available: boolean | null
           name: string
           price: number
+          requires_email: boolean | null
           seller_id: string
           sold_count: number | null
           stock: number | null
@@ -1100,6 +1104,7 @@ export type Database = {
           is_available?: boolean | null
           name: string
           price?: number
+          requires_email?: boolean | null
           seller_id: string
           sold_count?: number | null
           stock?: number | null
@@ -1117,6 +1122,7 @@ export type Database = {
           is_available?: boolean | null
           name?: string
           price?: number
+          requires_email?: boolean | null
           seller_id?: string
           sold_count?: number | null
           stock?: number | null
