@@ -964,6 +964,7 @@ export type Database = {
       seller_products: {
         Row: {
           category_id: string | null
+          chat_allowed: boolean | null
           created_at: string | null
           description: string | null
           icon_url: string | null
@@ -980,6 +981,7 @@ export type Database = {
         }
         Insert: {
           category_id?: string | null
+          chat_allowed?: boolean | null
           created_at?: string | null
           description?: string | null
           icon_url?: string | null
@@ -996,6 +998,7 @@ export type Database = {
         }
         Update: {
           category_id?: string | null
+          chat_allowed?: boolean | null
           created_at?: string | null
           description?: string | null
           icon_url?: string | null

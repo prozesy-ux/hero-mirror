@@ -35,6 +35,7 @@ interface SellerProduct {
   is_approved: boolean;
   sold_count: number;
   tags: string[];
+  chat_allowed: boolean | null;
   created_at: string;
 }
 
