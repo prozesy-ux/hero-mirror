@@ -14,9 +14,9 @@ interface Prompt {
   is_trending?: boolean;
   category_id: string | null;
   categories?: {
-    id: string;
+    id?: string;
     name: string;
-    icon?: string;
+    icon?: string | null;
   } | null;
 }
 
