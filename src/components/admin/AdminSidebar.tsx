@@ -136,10 +136,8 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       { icon: <XCircle size={22} />, label: 'Cancellations', to: '/admin/cancellations' },
       { icon: <Trash2 size={22} />, label: 'Deletions', to: '/admin/deletions' },
       { icon: <MessageCircle size={22} />, label: 'Support Chats', to: '/admin/chats' },
-      // Seller Management Section
+      // Seller Management Section (includes products & withdrawals)
       { icon: <Store size={22} />, label: 'Resellers', to: '/admin/resellers' },
-      { icon: <ShoppingBag size={22} />, label: 'Seller Products', to: '/admin/seller-products' },
-      { icon: <Banknote size={22} />, label: 'Seller Withdrawals', to: '/admin/seller-withdrawals' },
     ];
 
     return (

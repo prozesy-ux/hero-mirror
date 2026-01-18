@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import MarketplaceSidebar from './MarketplaceSidebar';
-import SellerChatModal from './SellerChatModal';
+import { useFloatingChat } from '@/contexts/FloatingChatContext';
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -153,13 +153,7 @@ const AIAccountsSection = () => {
 
   // Seller products state
   const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([]);
-  const [sellerChatOpen, setSellerChatOpen] = useState(false);
-  const [selectedSeller, setSelectedSeller] = useState<{
-    sellerId: string;
-    sellerName: string;
-    productId?: string;
-    productName?: string;
-  } | null>(null);
+  const { openChat } = useFloatingChat();
 
   // View Details Modal state
   const [selectedAccount, setSelectedAccount] = useState<AIAccount | null>(null);
@@ -1243,13 +1237,12 @@ const AIAccountsSection = () => {
                           {product.chat_allowed !== false && (
                             <button
                               onClick={() => {
-                                setSelectedSeller({
+                                openChat({
                                   sellerId: product.seller_id,
                                   sellerName: product.seller_profiles?.store_name || 'Seller',
                                   productId: product.id,
                                   productName: product.name
                                 });
-                                setSellerChatOpen(true);
                               }}
                               className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700"
                             >
@@ -1291,18 +1284,6 @@ const AIAccountsSection = () => {
             )}
           </div>
         </div>
-      )}
-
-      {/* Seller Chat Modal */}
-      {selectedSeller && (
-        <SellerChatModal
-          open={sellerChatOpen}
-          onOpenChange={setSellerChatOpen}
-          sellerId={selectedSeller.sellerId}
-          sellerName={selectedSeller.sellerName}
-          productId={selectedSeller.productId}
-          productName={selectedSeller.productName}
-        />
       )}
 
       {/* Seller Product Details Modal */}
@@ -1390,13 +1371,12 @@ const AIAccountsSection = () => {
                     <button
                       onClick={() => {
                         setShowSellerDetailsModal(false);
-                        setSelectedSeller({
+                        openChat({
                           sellerId: selectedSellerProduct.seller_id,
                           sellerName: selectedSellerProduct.seller_profiles?.store_name || 'Seller',
                           productId: selectedSellerProduct.id,
                           productName: selectedSellerProduct.name
                         });
-                        setSellerChatOpen(true);
                       }}
                       className="flex-1 px-4 py-3 bg-emerald-100 text-emerald-700 rounded-xl font-semibold hover:bg-emerald-200 transition-colors flex items-center justify-center gap-2"
                     >
@@ -1565,13 +1545,12 @@ const AIAccountsSection = () => {
                         </button>
                         <button
                           onClick={() => {
-                            setSelectedSeller({
+                            openChat({
                               sellerId: order.seller_id,
                               sellerName: order.seller_profiles?.store_name || 'Seller',
                               productId: order.product_id,
                               productName: order.seller_products?.name
                             });
-                            setSellerChatOpen(true);
                           }}
                           className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all"
                         >

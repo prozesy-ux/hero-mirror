@@ -248,6 +248,42 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_withdrawals: {
+        Row: {
+          account_details: string
+          admin_notes: string | null
+          amount: number
+          created_at: string | null
+          id: string
+          payment_method: string
+          processed_at: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          account_details: string
+          admin_notes?: string | null
+          amount: number
+          created_at?: string | null
+          id?: string
+          payment_method: string
+          processed_at?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          account_details?: string
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string | null
+          id?: string
+          payment_method?: string
+          processed_at?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       cancellation_requests: {
         Row: {
           admin_notes: string | null
