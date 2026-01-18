@@ -73,7 +73,8 @@ serve(async (req) => {
       'seller_withdrawals',
       'seller_chats',
       'seller_reports',
-      'seller_trust_scores'
+      'seller_trust_scores',
+      'chat_join_requests'
     ];
 
     if (!allowedTables.includes(table)) {
