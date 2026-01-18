@@ -45,6 +45,7 @@ interface ProductFormData {
   icon_url: string;
   is_available: boolean;
   chat_allowed: boolean;
+  requires_email: boolean;
 }
 
 const initialFormData: ProductFormData = {
@@ -55,7 +56,8 @@ const initialFormData: ProductFormData = {
   category_id: '',
   icon_url: '',
   is_available: true,
-  chat_allowed: true
+  chat_allowed: true,
+  requires_email: false
 };
 
 const SellerProducts = () => {
@@ -93,7 +95,8 @@ const SellerProducts = () => {
           category_id: product.category_id || '',
           icon_url: product.icon_url || '',
           is_available: product.is_available,
-          chat_allowed: product.chat_allowed !== false
+          chat_allowed: product.chat_allowed !== false,
+          requires_email: (product as any).requires_email || false
         });
         setEditingProduct(productId);
       }
@@ -123,7 +126,8 @@ const SellerProducts = () => {
         category_id: formData.category_id || null,
         icon_url: formData.icon_url.trim() || null,
         is_available: formData.is_available,
-        chat_allowed: formData.chat_allowed
+        chat_allowed: formData.chat_allowed,
+        requires_email: formData.requires_email
         // Note: is_approved is handled by database triggers for both insert and update
       };
 
@@ -432,6 +436,20 @@ const SellerProducts = () => {
                 id="chat_allowed"
                 checked={formData.chat_allowed}
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, chat_allowed: checked }))}
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-t border-slate-100 pt-4">
+              <div className="flex flex-col">
+                <Label htmlFor="requires_email" className="font-medium text-slate-700">Email Required</Label>
+                <span className="text-xs text-slate-500 mt-0.5">
+                  Buyer must provide email for shared access (e.g., ChatGPT, Netflix)
+                </span>
+              </div>
+              <Switch
+                id="requires_email"
+                checked={formData.requires_email}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requires_email: checked }))}
               />
             </div>
 

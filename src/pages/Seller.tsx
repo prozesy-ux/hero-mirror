@@ -22,6 +22,7 @@ import SellerWallet from '@/components/seller/SellerWallet';
 import SellerSupport from '@/components/seller/SellerSupport';
 import SellerSettings from '@/components/seller/SellerSettings';
 import SellerFeatureRequests from '@/components/seller/SellerFeatureRequests';
+import SellerAnalytics from '@/components/seller/SellerAnalytics';
 
 interface SellerProfile {
   id: string;
@@ -196,6 +197,7 @@ const SellerMainContent = () => {
         <Route path="/" element={<SellerDashboard />} />
         <Route path="/products" element={<SellerProducts />} />
         <Route path="/orders" element={<SellerOrders />} />
+        <Route path="/analytics" element={<SellerAnalytics />} />
         <Route path="/chat" element={<SellerChat />} />
         <Route path="/wallet" element={<SellerWallet />} />
         <Route path="/feature-requests" element={<SellerFeatureRequests />} />

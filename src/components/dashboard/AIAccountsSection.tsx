@@ -45,6 +45,7 @@ interface SellerProduct {
   sold_count: number | null;
   seller_id: string;
   chat_allowed: boolean | null;
+  requires_email: boolean | null;
   seller_profiles: {
     id: string;
     store_name: string;
@@ -162,6 +163,13 @@ const AIAccountsSection = () => {
   // Seller Product Details Modal state
   const [selectedSellerProduct, setSelectedSellerProduct] = useState<SellerProduct | null>(null);
   const [showSellerDetailsModal, setShowSellerDetailsModal] = useState(false);
+
+  // Email-required product purchase modal
+  const [emailRequiredModal, setEmailRequiredModal] = useState<{
+    show: boolean;
+    product: SellerProduct | null;
+    email: string;
+  }>({ show: false, product: null, email: '' });
 
   // Chat state
   const [messages, setMessages] = useState<SupportMessage[]>([]);
@@ -395,9 +403,19 @@ const AIAccountsSection = () => {
     }
   };
 
-  const handleSellerProductPurchase = async (product: SellerProduct) => {
+  const handleSellerProductPurchase = async (product: SellerProduct, buyerEmailInput?: string) => {
     if (!user) {
       toast.error('Please sign in to purchase');
+      return;
+    }
+
+    // Check if email is required and not provided
+    if (product.requires_email && !buyerEmailInput) {
+      setEmailRequiredModal({
+        show: true,
+        product: product,
+        email: ''
+      });
       return;
     }
 
@@ -463,17 +481,23 @@ const AIAccountsSection = () => {
         throw new Error('Failed to create transaction record');
       }
 
-      // 3. Create seller order
+      // 3. Create seller order with buyer email if required
+      const orderData: any = {
+        seller_id: product.seller_id,
+        buyer_id: user.id,
+        product_id: product.id,
+        amount: product.price,
+        seller_earning: sellerEarning,
+        status: 'pending'
+      };
+      
+      if (product.requires_email && buyerEmailInput) {
+        orderData.buyer_email_input = buyerEmailInput;
+      }
+
       const { error: orderError } = await supabase
         .from('seller_orders')
-        .insert({
-          seller_id: product.seller_id,
-          buyer_id: user.id,
-          product_id: product.id,
-          amount: product.price,
-          seller_earning: sellerEarning,
-          status: 'pending'
-        });
+        .insert(orderData);
 
       if (orderError) {
         await supabase.from('user_wallets').update({ balance: currentBalance }).eq('user_id', user.id);
@@ -496,9 +520,13 @@ const AIAccountsSection = () => {
         is_read: false
       });
 
+      // Close email modal if open
+      setEmailRequiredModal({ show: false, product: null, email: '' });
+
       toast.success('Purchase successful! The seller will deliver your account soon.');
       fetchWallet();
       fetchPurchases();
+      fetchSellerOrders();
       setActiveTab('purchases');
     } catch (error: any) {
       console.error('Purchase error:', error);
@@ -2003,6 +2031,74 @@ const AIAccountsSection = () => {
                 >
                   <Wallet size={18} />
                   Top Up Wallet
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Required Modal */}
+      {emailRequiredModal.show && emailRequiredModal.product && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+            <button
+              onClick={() => setEmailRequiredModal({ show: false, product: null, email: '' })}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Email Required</h3>
+              
+              <p className="text-gray-600 mb-4">
+                <span className="font-semibold text-gray-900">{emailRequiredModal.product.name}</span> requires your email for shared access. The seller will use this to add your account.
+              </p>
+              
+              <div className="mb-6">
+                <input
+                  type="email"
+                  value={emailRequiredModal.email}
+                  onChange={(e) => setEmailRequiredModal(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="Enter your email address"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  This email will be shared with the seller for product access
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setEmailRequiredModal({ show: false, product: null, email: '' })}
+                  className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (!emailRequiredModal.email.trim() || !emailRequiredModal.email.includes('@')) {
+                      toast.error('Please enter a valid email address');
+                      return;
+                    }
+                    handleSellerProductPurchase(emailRequiredModal.product!, emailRequiredModal.email.trim());
+                  }}
+                  disabled={!emailRequiredModal.email.trim() || purchasing === emailRequiredModal.product?.id}
+                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {purchasing === emailRequiredModal.product?.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Confirm Purchase'
+                  )}
                 </button>
               </div>
             </div>

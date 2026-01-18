@@ -287,6 +287,14 @@ const SellerOrders = () => {
                         <div className="space-y-1">
                           <h3 className="font-semibold text-slate-900">{order.product?.name || 'Product'}</h3>
                           <p className="text-sm text-slate-500">{order.buyer?.email || 'Unknown buyer'}</p>
+                          {/* Show buyer email input if product requires email */}
+                          {(order as any).buyer_email_input && (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full font-medium">
+                                📧 {(order as any).buyer_email_input}
+                              </span>
+                            </div>
+                          )}
                           <p className="text-xs text-slate-400">
                             {format(new Date(order.created_at), 'MMM d, yyyy • h:mm a')}
                           </p>
