@@ -18,7 +18,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Wallet,
-  Trash2
+  Trash2,
+  Store,
+  ShoppingBag,
+  Banknote
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -133,6 +136,10 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       { icon: <XCircle size={22} />, label: 'Cancellations', to: '/admin/cancellations' },
       { icon: <Trash2 size={22} />, label: 'Deletions', to: '/admin/deletions' },
       { icon: <MessageCircle size={22} />, label: 'Support Chats', to: '/admin/chats' },
+      // Seller Management Section
+      { icon: <Store size={22} />, label: 'Resellers', to: '/admin/resellers' },
+      { icon: <ShoppingBag size={22} />, label: 'Seller Products', to: '/admin/seller-products' },
+      { icon: <Banknote size={22} />, label: 'Seller Withdrawals', to: '/admin/seller-withdrawals' },
     ];
 
     return (

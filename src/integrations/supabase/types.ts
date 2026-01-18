@@ -1193,6 +1193,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_seller_pending_balance: {
+        Args: { p_amount: number; p_seller_id: string }
+        Returns: undefined
+      }
       clean_old_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
       has_role: {
