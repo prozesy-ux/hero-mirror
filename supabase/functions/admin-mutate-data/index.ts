@@ -68,7 +68,12 @@ serve(async (req) => {
       'user_roles',
       'user_preferences',
       'user_sessions',
-      'notifications'
+      'notifications',
+      'seller_profiles',
+      'seller_products',
+      'seller_withdrawals',
+      'seller_feature_requests',
+      'auto_approval_settings'
     ];
 
     if (!allowedTables.includes(table)) {
