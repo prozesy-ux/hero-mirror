@@ -1126,7 +1126,15 @@ const AIAccountsSection = () => {
                           {/* Chat Button - Only show if chat is allowed */}
                           {account.chat_allowed !== false && (
                             <button
-                              onClick={() => setActiveTab('chat')}
+                              onClick={() => {
+                                openChat({
+                                  sellerId: 'support',
+                                  sellerName: 'Uptoza Support',
+                                  productId: account.id,
+                                  productName: account.name,
+                                  type: 'support'
+                                });
+                              }}
                               className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700"
                             >
                               <MessageCircle size={14} />
@@ -1241,7 +1249,8 @@ const AIAccountsSection = () => {
                                   sellerId: product.seller_id,
                                   sellerName: product.seller_profiles?.store_name || 'Seller',
                                   productId: product.id,
-                                  productName: product.name
+                                  productName: product.name,
+                                  type: 'seller'
                                 });
                               }}
                               className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700"
@@ -1375,7 +1384,8 @@ const AIAccountsSection = () => {
                           sellerId: selectedSellerProduct.seller_id,
                           sellerName: selectedSellerProduct.seller_profiles?.store_name || 'Seller',
                           productId: selectedSellerProduct.id,
-                          productName: selectedSellerProduct.name
+                          productName: selectedSellerProduct.name,
+                          type: 'seller'
                         });
                       }}
                       className="flex-1 px-4 py-3 bg-emerald-100 text-emerald-700 rounded-xl font-semibold hover:bg-emerald-200 transition-colors flex items-center justify-center gap-2"
@@ -1549,7 +1559,8 @@ const AIAccountsSection = () => {
                               sellerId: order.seller_id,
                               sellerName: order.seller_profiles?.store_name || 'Seller',
                               productId: order.product_id,
-                              productName: order.seller_products?.name
+                              productName: order.seller_products?.name,
+                              type: 'seller'
                             });
                           }}
                           className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all"
@@ -1908,7 +1919,13 @@ const AIAccountsSection = () => {
                     <button
                       onClick={() => {
                         setShowDetailsModal(false);
-                        setActiveTab('chat');
+                        openChat({
+                          sellerId: 'support',
+                          sellerName: 'Uptoza Support',
+                          productId: selectedAccount.id,
+                          productName: selectedAccount.name,
+                          type: 'support'
+                        });
                       }}
                       className="flex-1 px-4 py-3 bg-violet-100 text-violet-700 rounded-xl font-semibold hover:bg-violet-200 transition-colors flex items-center justify-center gap-2"
                     >
