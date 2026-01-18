@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
-import { LayoutDashboard, Package, ShoppingCart, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, MessageSquare, Lightbulb } from 'lucide-react';
 
 const SellerMobileNavigation = () => {
   const location = useLocation();
@@ -9,10 +9,10 @@ const SellerMobileNavigation = () => {
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
 
   const navItems = [
-    { to: '/seller', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+    { to: '/seller', icon: LayoutDashboard, label: 'Home', exact: true },
     { to: '/seller/products', icon: Package, label: 'Products' },
     { to: '/seller/orders', icon: ShoppingCart, label: 'Orders', badge: pendingOrders },
-    { to: '/seller/chat', icon: MessageSquare, label: 'Messages' },
+    { to: '/seller/feature-requests', icon: Lightbulb, label: 'Requests' },
   ];
 
   const isActive = (path: string, exact?: boolean) => {
