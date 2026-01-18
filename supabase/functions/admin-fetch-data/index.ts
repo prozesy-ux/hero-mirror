@@ -62,7 +62,18 @@ serve(async (req) => {
       'favorites',
       'user_roles',
       'user_preferences',
-      'user_sessions'
+      'user_sessions',
+      'seller_profiles',
+      'seller_support_messages',
+      'seller_chat_attachments',
+      'seller_notifications',
+      'seller_orders',
+      'seller_products',
+      'seller_wallets',
+      'seller_withdrawals',
+      'seller_chats',
+      'seller_reports',
+      'seller_trust_scores'
     ];
 
     if (!allowedTables.includes(table)) {
