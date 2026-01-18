@@ -68,13 +68,23 @@ const SellerOrders = () => {
 
       if (orderError) throw orderError;
 
-      // Create notification for buyer
+      // Create notification for buyer (in notifications table - for buyers)
       await supabase.from('notifications').insert({
         user_id: order.buyer_id,
         type: 'delivery',
         title: 'Order Delivered!',
         message: `Your order for ${order.product?.name || 'Product'} has been delivered. Check credentials and approve.`,
         link: '/dashboard/ai-accounts?tab=purchases',
+        is_read: false
+      });
+
+      // Create seller notification (in seller_notifications table - for seller)
+      await supabase.from('seller_notifications').insert({
+        seller_id: profile?.id,
+        type: 'order_delivered',
+        title: 'Order Delivered',
+        message: `You delivered "${order.product?.name || 'Product'}" to buyer. Awaiting approval.`,
+        link: '/seller/orders',
         is_read: false
       });
 
@@ -119,7 +129,7 @@ const SellerOrders = () => {
 
       if (orderError) throw orderError;
 
-      // Create notification for buyer
+      // Create notification for buyer (in notifications table - for buyers)
       await supabase.from('notifications').insert({
         user_id: order.buyer_id,
         type: 'update',

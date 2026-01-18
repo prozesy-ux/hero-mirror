@@ -60,16 +60,15 @@ const SellerTopBar = () => {
 
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
 
-  // Fetch notifications
+  // Fetch seller notifications
   useEffect(() => {
     const fetchNotifications = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!profile?.id) return;
 
       const { data } = await supabase
-        .from('notifications')
+        .from('seller_notifications')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('seller_id', profile.id)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -80,11 +79,11 @@ const SellerTopBar = () => {
 
     const channel = supabase
       .channel('seller-notifications')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, fetchNotifications)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_notifications' }, fetchNotifications)
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [profile?.id]);
 
   // Fetch unread chat count
   useEffect(() => {
@@ -124,14 +123,13 @@ const SellerTopBar = () => {
   };
 
   const markAsRead = async (id: string) => {
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    await supabase.from('seller_notifications').update({ is_read: true }).eq('id', id);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
   };
 
   const markAllAsRead = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id);
+    if (!profile?.id) return;
+    await supabase.from('seller_notifications').update({ is_read: true }).eq('seller_id', profile.id);
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   };
 

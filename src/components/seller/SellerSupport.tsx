@@ -23,19 +23,19 @@ import {
   StopCircle
 } from 'lucide-react';
 
-interface SupportMessage {
+interface SellerSupportMessage {
   id: string;
-  user_id: string;
+  seller_id: string;
   message: string;
   sender_type: string;
   is_read: boolean;
   created_at: string;
 }
 
-interface ChatAttachment {
+interface SellerChatAttachment {
   id: string;
   message_id: string | null;
-  user_id: string;
+  seller_id: string;
   file_url: string;
   file_type: string;
   file_name: string;
@@ -48,8 +48,8 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const SellerSupport = () => {
   const { profile } = useSellerContext();
   const { user } = useAuthContext();
-  const [messages, setMessages] = useState<SupportMessage[]>([]);
-  const [attachments, setAttachments] = useState<Map<string, ChatAttachment[]>>(new Map());
+  const [messages, setMessages] = useState<SellerSupportMessage[]>([]);
+  const [attachments, setAttachments] = useState<Map<string, SellerChatAttachment[]>>(new Map());
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -66,12 +66,12 @@ const SellerSupport = () => {
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (user) {
+    if (profile?.id) {
       fetchMessages();
       const cleanup = subscribeToMessages();
       return cleanup;
     }
-  }, [user]);
+  }, [profile?.id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -82,13 +82,13 @@ const SellerSupport = () => {
   };
 
   const fetchMessages = async () => {
-    if (!user) return;
+    if (!profile?.id) return;
     
     try {
       const { data, error } = await supabase
-        .from('support_messages')
+        .from('seller_support_messages')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('seller_id', profile.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -98,12 +98,12 @@ const SellerSupport = () => {
       if (data && data.length > 0) {
         const messageIds = data.map(m => m.id);
         const { data: attachmentData } = await supabase
-          .from('chat_attachments')
+          .from('seller_chat_attachments')
           .select('*')
           .in('message_id', messageIds);
         
         if (attachmentData) {
-          const attachmentMap = new Map<string, ChatAttachment[]>();
+          const attachmentMap = new Map<string, SellerChatAttachment[]>();
           attachmentData.forEach(att => {
             const existing = attachmentMap.get(att.message_id || '') || [];
             attachmentMap.set(att.message_id || '', [...existing, att]);
@@ -114,9 +114,9 @@ const SellerSupport = () => {
 
       // Mark admin messages as read
       await supabase
-        .from('support_messages')
+        .from('seller_support_messages')
         .update({ is_read: true })
-        .eq('user_id', user.id)
+        .eq('seller_id', profile.id)
         .eq('sender_type', 'admin');
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -126,15 +126,15 @@ const SellerSupport = () => {
   };
 
   const subscribeToMessages = () => {
-    if (!user) return () => {};
+    if (!profile?.id) return () => {};
 
     const channel = supabase
       .channel('seller-support')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
-        table: 'support_messages',
-        filter: `user_id=eq.${user.id}`
+        table: 'seller_support_messages',
+        filter: `seller_id=eq.${profile.id}`
       }, () => {
         fetchMessages();
       })
@@ -145,8 +145,8 @@ const SellerSupport = () => {
     };
   };
 
-  const uploadFile = async (file: File): Promise<ChatAttachment | null> => {
-    if (!user) return null;
+  const uploadFile = async (file: File): Promise<SellerChatAttachment | null> => {
+    if (!profile?.id) return null;
     
     if (file.size > MAX_FILE_SIZE) {
       toast.error(`File ${file.name} is too large. Max size is 50MB.`);
@@ -154,7 +154,7 @@ const SellerSupport = () => {
     }
 
     const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const fileName = `seller/${profile.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
     
     let fileType: 'image' | 'video' | 'file' = 'file';
     if (file.type.startsWith('image/')) fileType = 'image';
@@ -177,7 +177,7 @@ const SellerSupport = () => {
     return {
       id: '',
       message_id: null,
-      user_id: user.id,
+      seller_id: profile.id,
       file_url: publicUrl,
       file_type: fileType,
       file_name: file.name,
@@ -187,18 +187,18 @@ const SellerSupport = () => {
   };
 
   const sendMessage = async () => {
-    if (!user || (!newMessage.trim() && pendingFiles.length === 0)) return;
+    if (!profile?.id || (!newMessage.trim() && pendingFiles.length === 0)) return;
 
     setSending(true);
     setUploadingFile(pendingFiles.length > 0);
 
     try {
       const { data: messageData, error } = await supabase
-        .from('support_messages')
+        .from('seller_support_messages')
         .insert({
-          user_id: user.id,
-          message: `[SELLER: ${profile.store_name}] ${newMessage.trim() || (pendingFiles.length > 0 ? `[${pendingFiles.length} attachment(s)]` : '')}`,
-          sender_type: 'user'
+          seller_id: profile.id,
+          message: newMessage.trim() || (pendingFiles.length > 0 ? `[${pendingFiles.length} attachment(s)]` : ''),
+          sender_type: 'seller'
         })
         .select()
         .single();
@@ -209,9 +209,9 @@ const SellerSupport = () => {
       for (const file of pendingFiles) {
         const attachment = await uploadFile(file);
         if (attachment && messageData) {
-          await supabase.from('chat_attachments').insert({
+          await supabase.from('seller_chat_attachments').insert({
             message_id: messageData.id,
-            user_id: user.id,
+            seller_id: profile.id,
             file_url: attachment.file_url,
             file_type: attachment.file_type,
             file_name: attachment.file_name,
@@ -327,7 +327,7 @@ const SellerSupport = () => {
   };
 
   const uploadAndSendRecording = async (file: File) => {
-    if (!user) return;
+    if (!profile?.id) return;
     
     setUploadingFile(true);
     setSending(true);
@@ -337,11 +337,11 @@ const SellerSupport = () => {
       
       if (attachment) {
         const { data: messageData, error: messageError } = await supabase
-          .from('support_messages')
+          .from('seller_support_messages')
           .insert({
-            user_id: user.id,
-            message: `[SELLER: ${profile.store_name}] 🎥 Screen Recording`,
-            sender_type: 'user',
+            seller_id: profile.id,
+            message: '🎥 Screen Recording',
+            sender_type: 'seller',
             is_read: false,
           })
           .select()
@@ -349,9 +349,9 @@ const SellerSupport = () => {
 
         if (messageError) throw messageError;
 
-        await supabase.from('chat_attachments').insert({
+        await supabase.from('seller_chat_attachments').insert({
           message_id: messageData.id,
-          user_id: user.id,
+          seller_id: profile.id,
           file_url: attachment.file_url,
           file_type: 'video',
           file_name: file.name,
@@ -376,7 +376,7 @@ const SellerSupport = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const renderAttachment = (att: ChatAttachment) => {
+  const renderAttachment = (att: SellerChatAttachment) => {
     if (att.file_type === 'image') {
       return (
         <a href={att.file_url} target="_blank" rel="noopener noreferrer" className="block">
@@ -491,7 +491,7 @@ const SellerSupport = () => {
                         : 'bg-slate-100 text-slate-900'
                     }`}>
                       <p className="text-sm whitespace-pre-wrap break-words">
-                        {msg.message.replace(`[SELLER: ${profile.store_name}] `, '')}
+                        {msg.message}
                       </p>
                       
                       {messageAttachments.length > 0 && (

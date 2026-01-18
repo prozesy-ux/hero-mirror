@@ -10,10 +10,12 @@ interface AdminDataState {
   wallets: any[];
   transactions: any[];
   supportMessages: any[];
+  sellerSupportMessages: any[];
   paymentMethods: any[];
   refundRequests: any[];
   cancellationRequests: any[];
   deletionRequests: any[];
+  sellerProfiles: any[];
   isLoading: boolean;
   isInitialized: boolean;
 }
@@ -39,10 +41,12 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     wallets: [],
     transactions: [],
     supportMessages: [],
+    sellerSupportMessages: [],
     paymentMethods: [],
     refundRequests: [],
     cancellationRequests: [],
     deletionRequests: [],
+    sellerProfiles: [],
     isLoading: true,
     isInitialized: false,
   });
@@ -82,10 +86,12 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       walletsRes,
       transactionsRes,
       supportMessagesRes,
+      sellerSupportMessagesRes,
       paymentMethodsRes,
       refundRequestsRes,
       cancellationRequestsRes,
       deletionRequestsRes,
+      sellerProfilesRes,
     ] = await Promise.all([
       fetchData('profiles'),
       fetchData('purchases', { order: { column: 'purchased_at', ascending: false } }),
@@ -96,10 +102,12 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       fetchData('user_wallets'),
       fetchData('wallet_transactions', { order: { column: 'created_at', ascending: false } }),
       fetchData('support_messages', { order: { column: 'created_at', ascending: false } }),
+      fetchData('seller_support_messages', { order: { column: 'created_at', ascending: false } }),
       fetchData('payment_methods', { order: { column: 'display_order', ascending: true } }),
       fetchData('refund_requests', { order: { column: 'created_at', ascending: false } }),
       fetchData('cancellation_requests', { order: { column: 'created_at', ascending: false } }),
       fetchData('account_deletion_requests', { order: { column: 'requested_at', ascending: false } }),
+      fetchData('seller_profiles'),
     ]);
 
     setState({
@@ -112,10 +120,12 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       wallets: walletsRes.data || [],
       transactions: transactionsRes.data || [],
       supportMessages: supportMessagesRes.data || [],
+      sellerSupportMessages: sellerSupportMessagesRes.data || [],
       paymentMethods: paymentMethodsRes.data || [],
       refundRequests: refundRequestsRes.data || [],
       cancellationRequests: cancellationRequestsRes.data || [],
       deletionRequests: deletionRequestsRes.data || [],
+      sellerProfiles: sellerProfilesRes.data || [],
       isLoading: false,
       isInitialized: true,
     });
@@ -132,10 +142,12 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       user_wallets: 'wallets',
       wallet_transactions: 'transactions',
       support_messages: 'supportMessages',
+      seller_support_messages: 'sellerSupportMessages',
       payment_methods: 'paymentMethods',
       refund_requests: 'refundRequests',
       cancellation_requests: 'cancellationRequests',
       account_deletion_requests: 'deletionRequests',
+      seller_profiles: 'sellerProfiles',
     };
 
     const stateKey = tableMap[table];
@@ -158,10 +170,12 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       user_wallets: 'wallets',
       wallet_transactions: 'transactions',
       support_messages: 'supportMessages',
+      seller_support_messages: 'sellerSupportMessages',
       payment_methods: 'paymentMethods',
       refund_requests: 'refundRequests',
       cancellation_requests: 'cancellationRequests',
       account_deletion_requests: 'deletionRequests',
+      seller_profiles: 'sellerProfiles',
     };
 
     const stateKey = tableMap[table];
