@@ -340,13 +340,10 @@ const SellerWallet = () => {
                   <button
                     key={amount}
                     onClick={() => setWithdrawAmount(amount)}
-                    disabled={amount > (wallet?.balance || 0)}
                     className={`py-3 rounded-xl font-semibold transition-all flex flex-col items-center ${
                       withdrawAmount === amount
                         ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white'
-                        : amount > (wallet?.balance || 0)
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
                     <span>${amount}</span>
@@ -365,16 +362,7 @@ const SellerWallet = () => {
                   onChange={(e) => setWithdrawAmount(Math.max(1, parseInt(e.target.value) || 0))}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-violet-500/30"
                   min="5"
-                  max={wallet?.balance || 0}
                 />
-                <p className="text-center text-gray-500 text-sm mt-2">
-                  Available: ${(wallet?.balance || 0).toFixed(2)} • Min: $5.00
-                </p>
-                {selectedPaymentMethod && selectedPaymentMethod.currency_code && selectedPaymentMethod.currency_code !== 'USD' && (
-                  <p className="text-center text-gray-500 text-sm mt-1">
-                    ≈ {formatLocalAmount(withdrawAmount, selectedPaymentMethod)} at rate {getCurrencySymbol(selectedPaymentMethod.currency_code)}{selectedPaymentMethod.exchange_rate}/$1
-                  </p>
-                )}
               </div>
             </div>
 
@@ -409,10 +397,10 @@ const SellerWallet = () => {
               </div>
             </div>
 
-            {/* Account Details Section */}
-            {selectedPaymentMethod && (
+            {/* Selected Method Info Section - Matching Buyer Modal Exactly */}
+            {selectedPaymentMethod && selectedPaymentMethod.is_automatic && (
               <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3">
                   {selectedPaymentMethod.icon_url ? (
                     <img 
                       src={selectedPaymentMethod.icon_url} 
@@ -423,21 +411,33 @@ const SellerWallet = () => {
                     <CreditCard size={24} className="text-gray-600" />
                   )}
                   <div>
-                    <p className="font-medium text-gray-900">Withdraw via {selectedPaymentMethod.name}</p>
-                    {selectedPaymentMethod.currency_code && selectedPaymentMethod.currency_code !== 'USD' && (
-                      <p className="text-xs text-gray-500">
-                        You'll receive: <span className="font-bold text-violet-600">{formatLocalAmount(withdrawAmount, selectedPaymentMethod)}</span>
-                      </p>
-                    )}
+                    <p className="font-medium text-gray-900">Secure Payment via {selectedPaymentMethod.name}</p>
+                    <p className="text-xs text-gray-500">Instant processing</p>
                   </div>
                 </div>
-                <textarea
+              </div>
+            )}
+
+            {selectedPaymentMethod && !selectedPaymentMethod.is_automatic && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="mb-3">
+                  <p className="text-gray-800 font-semibold mb-1">{selectedPaymentMethod.name} Withdrawal</p>
+                  <p className="text-gray-600 text-sm">
+                    You'll receive{' '}
+                    <span className="font-bold text-violet-600 text-lg">
+                      {formatLocalAmount(withdrawAmount, selectedPaymentMethod)}
+                    </span>
+                    {selectedPaymentMethod.currency_code !== 'USD' && (
+                      <span className="text-gray-400 text-xs ml-1">(≈ ${withdrawAmount} USD)</span>
+                    )}
+                  </p>
+                </div>
+                <input
+                  type="text"
                   value={accountDetails}
                   onChange={(e) => setAccountDetails(e.target.value)}
-                  placeholder={`Enter your ${selectedPaymentMethod.name} account number or wallet address...`}
-                  rows={3}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30 resize-none"
-                  required
+                  placeholder={`Enter your ${selectedPaymentMethod.name} account number/wallet address`}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
                 />
               </div>
             )}
@@ -457,11 +457,14 @@ const SellerWallet = () => {
               </button>
               <button
                 onClick={handleWithdraw}
-                disabled={submitting || !withdrawAmount || withdrawAmount < 5 || !selectedMethod || !accountDetails.trim()}
-                className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
+                disabled={submitting || !withdrawAmount || withdrawAmount < 5 || withdrawAmount > (wallet?.balance || 0) || !selectedMethod || (!selectedPaymentMethod?.is_automatic && !accountDetails.trim())}
+                className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
               >
-                {submitting ? <Loader2 className="animate-spin" size={18} /> : null}
-                Withdraw ${withdrawAmount || 0}
+                {submitting && <Loader2 className="animate-spin" size={18} />}
+                {selectedPaymentMethod?.is_automatic 
+                  ? `Withdraw $${withdrawAmount}` 
+                  : `Submit ${formatLocalAmount(withdrawAmount, selectedPaymentMethod)} Withdrawal`
+                }
               </button>
             </div>
           </div>
