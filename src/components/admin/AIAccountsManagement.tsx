@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Loader2, Bot, Save, X, Image as ImageIcon, TrendingUp, Star, Tag } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Bot, Save, X, Image as ImageIcon, TrendingUp, Star, Tag, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { toast } from 'sonner';
@@ -18,6 +18,7 @@ interface AIAccount {
   is_available: boolean;
   is_trending: boolean;
   is_featured: boolean;
+  chat_allowed: boolean;
   display_order: number;
   tags: string[] | null;
   original_price: number | null;
@@ -51,6 +52,7 @@ const AIAccountsManagement = () => {
     is_available: true,
     is_trending: false,
     is_featured: false,
+    chat_allowed: true,
     display_order: 0,
     tags: [] as string[],
     icon_url: null as string | null
@@ -76,6 +78,7 @@ const AIAccountsManagement = () => {
       is_available: formData.is_available,
       is_trending: formData.is_trending,
       is_featured: formData.is_featured,
+      chat_allowed: formData.chat_allowed,
       display_order: formData.display_order,
       tags: formData.tags.length > 0 ? formData.tags : null,
       icon_url: formData.icon_url
@@ -123,6 +126,7 @@ const AIAccountsManagement = () => {
       is_available: account.is_available,
       is_trending: account.is_trending || false,
       is_featured: account.is_featured || false,
+      chat_allowed: account.chat_allowed !== false,
       display_order: account.display_order || 0,
       tags: account.tags || [],
       icon_url: account.icon_url
@@ -171,6 +175,7 @@ const AIAccountsManagement = () => {
       is_available: true,
       is_trending: false,
       is_featured: false,
+      chat_allowed: true,
       display_order: 0,
       tags: [],
       icon_url: null
@@ -410,7 +415,7 @@ const AIAccountsManagement = () => {
               </div>
 
               {/* Toggle Options */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center justify-between bg-gray-900 rounded-lg p-4 border border-gray-700">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -447,6 +452,19 @@ const AIAccountsManagement = () => {
                   <Switch
                     checked={formData.is_featured}
                     onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between bg-gray-900 rounded-lg p-4 border border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
+                      <MessageCircle className="w-4 h-4 text-violet-400" />
+                    </div>
+                    <span className="text-white text-sm">Allow Chat</span>
+                  </div>
+                  <Switch
+                    checked={formData.chat_allowed}
+                    onCheckedChange={(checked) => setFormData({ ...formData, chat_allowed: checked })}
                   />
                 </div>
               </div>

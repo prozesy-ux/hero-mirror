@@ -145,6 +145,7 @@ export type Database = {
         Row: {
           category: string | null
           category_id: string | null
+          chat_allowed: boolean | null
           created_at: string | null
           description: string | null
           display_order: number | null
@@ -164,6 +165,7 @@ export type Database = {
         Insert: {
           category?: string | null
           category_id?: string | null
+          chat_allowed?: boolean | null
           created_at?: string | null
           description?: string | null
           display_order?: number | null
@@ -183,6 +185,7 @@ export type Database = {
         Update: {
           category?: string | null
           category_id?: string | null
+          chat_allowed?: boolean | null
           created_at?: string | null
           description?: string | null
           display_order?: number | null
