@@ -9,7 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Loader2, Store, ArrowRight, Clock, AlertTriangle } from 'lucide-react';
 import { SellerProvider } from '@/contexts/SellerContext';
+import { SellerSidebarProvider, useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import SellerSidebar from '@/components/seller/SellerSidebar';
+import SellerTopBar from '@/components/seller/SellerTopBar';
+import SellerMobileHeader from '@/components/seller/SellerMobileHeader';
+import SellerMobileNavigation from '@/components/seller/SellerMobileNavigation';
 import SellerDashboard from '@/components/seller/SellerDashboard';
 import SellerProducts from '@/components/seller/SellerProducts';
 import SellerOrders from '@/components/seller/SellerOrders';
@@ -177,23 +181,50 @@ const SuspendedAccount = () => (
   </div>
 );
 
+// Main Content Area with dynamic margin
+const SellerMainContent = () => {
+  const { isCollapsed } = useSellerSidebarContext();
+  
+  return (
+    <main className={`
+      min-h-screen bg-slate-50 transition-all duration-300
+      pt-16 pb-20 lg:pb-0
+      lg:pt-16 ${isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-60'}
+    `}>
+      <Routes>
+        <Route path="/" element={<SellerDashboard />} />
+        <Route path="/products" element={<SellerProducts />} />
+        <Route path="/orders" element={<SellerOrders />} />
+        <Route path="/chat" element={<SellerChat />} />
+        <Route path="/wallet" element={<SellerWallet />} />
+        <Route path="/support" element={<SellerSupport />} />
+        <Route path="/settings" element={<SellerSettings />} />
+      </Routes>
+    </main>
+  );
+};
+
 // Main Seller Content with Routes
 const SellerContent = () => {
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <SellerSidebar />
-      <main className="flex-1 overflow-auto lg:ml-0">
-        <Routes>
-          <Route path="/" element={<SellerDashboard />} />
-          <Route path="/products" element={<SellerProducts />} />
-          <Route path="/orders" element={<SellerOrders />} />
-          <Route path="/chat" element={<SellerChat />} />
-          <Route path="/wallet" element={<SellerWallet />} />
-          <Route path="/support" element={<SellerSupport />} />
-          <Route path="/settings" element={<SellerSettings />} />
-        </Routes>
-      </main>
-    </div>
+    <SellerSidebarProvider>
+      <div className="min-h-screen bg-slate-50">
+        {/* Mobile Header - Only visible on mobile */}
+        <SellerMobileHeader />
+        
+        {/* Desktop Sidebar */}
+        <SellerSidebar />
+        
+        {/* Desktop Top Header */}
+        <SellerTopBar />
+        
+        {/* Main Content */}
+        <SellerMainContent />
+        
+        {/* Mobile Bottom Navigation */}
+        <SellerMobileNavigation />
+      </div>
+    </SellerSidebarProvider>
   );
 };
 
