@@ -1,14 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   MessageCircle, Send, Loader2, Image, Video, Paperclip, 
-  X, Download, FileText, StopCircle, Circle, Mic, Headphones
+  X, Download, FileText, StopCircle, Circle, Headphones, Store, ArrowLeft, Search
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { playSound } from '@/lib/sounds';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
+// Types
 interface SupportMessage {
   id: string;
   user_id: string;
@@ -16,6 +21,17 @@ interface SupportMessage {
   sender_type: string;
   is_read: boolean | null;
   created_at: string | null;
+}
+
+interface SellerMessage {
+  id: string;
+  buyer_id: string;
+  seller_id: string;
+  message: string;
+  sender_type: string;
+  is_read: boolean | null;
+  created_at: string | null;
+  product_id: string | null;
 }
 
 interface ChatAttachment {
@@ -29,24 +45,48 @@ interface ChatAttachment {
   created_at: string;
 }
 
+interface Conversation {
+  id: string;
+  type: 'support' | 'seller';
+  name: string;
+  avatar?: string;
+  lastMessage: string;
+  lastMessageTime: string | null;
+  unreadCount: number;
+  sellerId?: string;
+}
+
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 const ChatSection = () => {
   const { user } = useAuthContext();
-  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  
+  // Conversations state
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Messages state
+  const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
+  const [sellerMessages, setSellerMessages] = useState<SellerMessage[]>([]);
   const [attachments, setAttachments] = useState<Map<string, ChatAttachment[]>>(new Map());
+  
+  // Input state
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   
-  // Screen Recording State
+  // Screen Recording State (only for support chat)
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Mobile view state
+  const [showChatOnMobile, setShowChatOnMobile] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,36 +97,54 @@ const ChatSection = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Fetch all conversations
   useEffect(() => {
     if (user) {
-      fetchMessages();
-      markMessagesAsRead();
-
-      const channel = supabase
-        .channel('support-messages-chat')
+      fetchConversations();
+      
+      // Subscribe to support messages
+      const supportChannel = supabase
+        .channel('support-messages-multichat')
         .on(
           'postgres_changes',
           {
-            event: 'INSERT',
+            event: '*',
             schema: 'public',
             table: 'support_messages',
             filter: `user_id=eq.${user.id}`,
           },
-          (payload) => {
-            const newMsg = payload.new as SupportMessage;
-            setMessages((prev) => [...prev, newMsg]);
-            fetchAttachmentsForMessage(newMsg.id);
-            if (newMsg.sender_type === 'admin') {
-              playSound('messageReceived');
-              markMessagesAsRead();
+          () => {
+            fetchConversations();
+            if (selectedConversation?.type === 'support') {
+              fetchSupportMessages();
+            }
+          }
+        )
+        .subscribe();
+      
+      // Subscribe to seller chats
+      const sellerChannel = supabase
+        .channel('seller-chats-multichat')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'seller_chats',
+            filter: `buyer_id=eq.${user.id}`,
+          },
+          () => {
+            fetchConversations();
+            if (selectedConversation?.type === 'seller') {
+              fetchSellerMessages(selectedConversation.sellerId!);
             }
           }
         )
         .subscribe();
 
       return () => {
-        supabase.removeChannel(channel);
-        // Cleanup recording on unmount
+        supabase.removeChannel(supportChannel);
+        supabase.removeChannel(sellerChannel);
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
           mediaRecorderRef.current.stop();
         }
@@ -97,11 +155,124 @@ const ChatSection = () => {
     }
   }, [user]);
 
+  // Fetch messages when conversation changes
+  useEffect(() => {
+    if (selectedConversation) {
+      if (selectedConversation.type === 'support') {
+        fetchSupportMessages();
+      } else if (selectedConversation.sellerId) {
+        fetchSellerMessages(selectedConversation.sellerId);
+      }
+    }
+  }, [selectedConversation?.id]);
+
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [supportMessages, sellerMessages]);
 
-  const fetchMessages = async () => {
+  const fetchConversations = async () => {
+    if (!user) return;
+
+    try {
+      const convos: Conversation[] = [];
+      
+      // 1. Fetch support conversation
+      const { data: supportData } = await supabase
+        .from('support_messages')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      const { count: supportUnread } = await supabase
+        .from('support_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('sender_type', 'admin')
+        .eq('is_read', false);
+      
+      convos.push({
+        id: 'support',
+        type: 'support',
+        name: 'Support Team',
+        lastMessage: supportData?.[0]?.message || 'Start a conversation...',
+        lastMessageTime: supportData?.[0]?.created_at || null,
+        unreadCount: supportUnread || 0,
+      });
+      
+      // 2. Fetch seller conversations
+      const { data: sellerChats } = await supabase
+        .from('seller_chats')
+        .select('seller_id, message, created_at, is_read, sender_type')
+        .eq('buyer_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (sellerChats && sellerChats.length > 0) {
+        // Group by seller_id
+        const sellerGroups = new Map<string, { lastMessage: string; lastTime: string; unread: number }>();
+        
+        sellerChats.forEach(chat => {
+          if (!sellerGroups.has(chat.seller_id)) {
+            sellerGroups.set(chat.seller_id, {
+              lastMessage: chat.message,
+              lastTime: chat.created_at || '',
+              unread: 0
+            });
+          }
+          // Count unread from seller
+          if (chat.sender_type === 'seller' && !chat.is_read) {
+            const group = sellerGroups.get(chat.seller_id)!;
+            group.unread++;
+          }
+        });
+        
+        // Get seller profiles
+        const sellerIds = Array.from(sellerGroups.keys());
+        const { data: sellerProfiles } = await supabase
+          .from('seller_profiles')
+          .select('id, store_name, store_logo_url')
+          .in('id', sellerIds);
+        
+        if (sellerProfiles) {
+          sellerProfiles.forEach(seller => {
+            const group = sellerGroups.get(seller.id);
+            if (group) {
+              convos.push({
+                id: `seller-${seller.id}`,
+                type: 'seller',
+                name: seller.store_name,
+                avatar: seller.store_logo_url || undefined,
+                lastMessage: group.lastMessage,
+                lastMessageTime: group.lastTime,
+                unreadCount: group.unread,
+                sellerId: seller.id,
+              });
+            }
+          });
+        }
+      }
+      
+      // Sort by last message time (support always first if no messages)
+      convos.sort((a, b) => {
+        if (a.type === 'support' && !a.lastMessageTime) return -1;
+        if (b.type === 'support' && !b.lastMessageTime) return 1;
+        return new Date(b.lastMessageTime || 0).getTime() - new Date(a.lastMessageTime || 0).getTime();
+      });
+      
+      setConversations(convos);
+      
+      // Auto-select first conversation
+      if (!selectedConversation && convos.length > 0) {
+        setSelectedConversation(convos[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSupportMessages = async () => {
     if (!user) return;
 
     try {
@@ -112,7 +283,7 @@ const ChatSection = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      setSupportMessages(data || []);
       
       // Fetch attachments for all messages
       if (data && data.length > 0) {
@@ -131,37 +302,48 @@ const ChatSection = () => {
           setAttachments(attachmentMap);
         }
       }
+      
+      // Mark as read
+      await supabase
+        .from('support_messages')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('sender_type', 'admin')
+        .eq('is_read', false);
+        
     } catch (error) {
-      console.error('Error fetching messages:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching support messages:', error);
     }
   };
 
-  const fetchAttachmentsForMessage = async (messageId: string) => {
-    const { data } = await supabase
-      .from('chat_attachments')
-      .select('*')
-      .eq('message_id', messageId);
-    
-    if (data && data.length > 0) {
-      setAttachments(prev => {
-        const newMap = new Map(prev);
-        newMap.set(messageId, data);
-        return newMap;
-      });
-    }
-  };
-
-  const markMessagesAsRead = async () => {
+  const fetchSellerMessages = async (sellerId: string) => {
     if (!user) return;
 
-    await supabase
-      .from('support_messages')
-      .update({ is_read: true })
-      .eq('user_id', user.id)
-      .eq('sender_type', 'admin')
-      .eq('is_read', false);
+    try {
+      const { data, error } = await supabase
+        .from('seller_chats')
+        .select('*')
+        .eq('buyer_id', user.id)
+        .eq('seller_id', sellerId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setSellerMessages(data || []);
+      
+      // Mark as read
+      await supabase
+        .from('seller_chats')
+        .update({ is_read: true })
+        .eq('buyer_id', user.id)
+        .eq('seller_id', sellerId)
+        .eq('sender_type', 'seller')
+        .eq('is_read', false);
+        
+      // Refresh conversations to update unread count
+      fetchConversations();
+    } catch (error) {
+      console.error('Error fetching seller messages:', error);
+    }
   };
 
   const uploadFile = async (file: File): Promise<ChatAttachment | null> => {
@@ -206,50 +388,64 @@ const ChatSection = () => {
   };
 
   const sendMessage = async () => {
-    if ((!newMessage.trim() && pendingFiles.length === 0) || !user || sendingMessage) return;
+    if (!newMessage.trim() && pendingFiles.length === 0) return;
+    if (!user || sendingMessage || !selectedConversation) return;
 
     setSendingMessage(true);
     setUploadingFile(pendingFiles.length > 0);
     
     try {
-      // First create the message
-      const { data: messageData, error: messageError } = await supabase
-        .from('support_messages')
-        .insert({
-          user_id: user.id,
-          message: newMessage.trim() || (pendingFiles.length > 0 ? `[${pendingFiles.length} attachment(s)]` : ''),
-          sender_type: 'user',
-          is_read: false,
-        })
-        .select()
-        .single();
-
-      if (messageError) throw messageError;
-
-      // Upload files and create attachment records
-      for (const file of pendingFiles) {
-        const attachment = await uploadFile(file);
-        if (attachment && messageData) {
-          await supabase.from('chat_attachments').insert({
-            message_id: messageData.id,
+      if (selectedConversation.type === 'support') {
+        // Send support message
+        const { data: messageData, error: messageError } = await supabase
+          .from('support_messages')
+          .insert({
             user_id: user.id,
-            file_url: attachment.file_url,
-            file_type: attachment.file_type,
-            file_name: attachment.file_name,
-            file_size: attachment.file_size
-          });
+            message: newMessage.trim() || (pendingFiles.length > 0 ? `[${pendingFiles.length} attachment(s)]` : ''),
+            sender_type: 'user',
+            is_read: false,
+          })
+          .select()
+          .single();
+
+        if (messageError) throw messageError;
+
+        // Upload files and create attachment records
+        for (const file of pendingFiles) {
+          const attachment = await uploadFile(file);
+          if (attachment && messageData) {
+            await supabase.from('chat_attachments').insert({
+              message_id: messageData.id,
+              user_id: user.id,
+              file_url: attachment.file_url,
+              file_type: attachment.file_type,
+              file_name: attachment.file_name,
+              file_size: attachment.file_size
+            });
+          }
         }
+        
+        fetchSupportMessages();
+      } else if (selectedConversation.sellerId) {
+        // Send seller message
+        const { error: messageError } = await supabase
+          .from('seller_chats')
+          .insert({
+            buyer_id: user.id,
+            seller_id: selectedConversation.sellerId,
+            message: newMessage.trim(),
+            sender_type: 'buyer',
+            is_read: false,
+          });
+
+        if (messageError) throw messageError;
+        fetchSellerMessages(selectedConversation.sellerId);
       }
 
       playSound('messageSent');
       setNewMessage('');
       setPendingFiles([]);
-      toast.success('Message sent!');
-      
-      // Refresh to get attachments
-      if (pendingFiles.length > 0 && messageData) {
-        fetchAttachmentsForMessage(messageData.id);
-      }
+      fetchConversations();
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
@@ -266,7 +462,7 @@ const ChatSection = () => {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'file') => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     
@@ -286,9 +482,9 @@ const ChatSection = () => {
     setPendingFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Screen Recording Functions
+  // Screen Recording Functions (only for support)
   const startRecording = async () => {
-    if (!user) return;
+    if (!user || selectedConversation?.type !== 'support') return;
     
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -311,25 +507,19 @@ const ChatSection = () => {
       };
       
       mediaRecorder.onstop = async () => {
-        // Cleanup timer
         if (recordingTimerRef.current) {
           clearInterval(recordingTimerRef.current);
           recordingTimerRef.current = null;
         }
         setRecordingTime(0);
         
-        // Create video blob and upload
         const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
         const file = new File([blob], `screen-recording-${Date.now()}.webm`, { type: 'video/webm' });
         
-        // Auto-upload the recording
         await uploadAndSendRecording(file);
-        
-        // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
       };
       
-      // Handle when user stops sharing via browser UI
       stream.getVideoTracks()[0].onended = () => {
         if (mediaRecorder.state !== 'inactive') {
           mediaRecorder.stop();
@@ -338,10 +528,9 @@ const ChatSection = () => {
       };
       
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(1000); // Collect data every second
+      mediaRecorder.start(1000);
       setIsRecording(true);
       
-      // Start timer
       recordingTimerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
@@ -368,11 +557,9 @@ const ChatSection = () => {
     setSendingMessage(true);
     
     try {
-      // Upload the video
       const attachment = await uploadFile(file);
       
       if (attachment) {
-        // Create message with the recording
         const { data: messageData, error: messageError } = await supabase
           .from('support_messages')
           .insert({
@@ -386,7 +573,6 @@ const ChatSection = () => {
 
         if (messageError) throw messageError;
 
-        // Create attachment record
         await supabase.from('chat_attachments').insert({
           message_id: messageData.id,
           user_id: user.id,
@@ -398,9 +584,8 @@ const ChatSection = () => {
 
         playSound('messageSent');
         toast.success('Screen recording sent!');
-        
-        // Refresh to get attachments
-        fetchAttachmentsForMessage(messageData.id);
+        fetchSupportMessages();
+        fetchConversations();
       }
     } catch (error) {
       console.error('Error sending recording:', error);
@@ -424,11 +609,7 @@ const ChatSection = () => {
           <img 
             src={att.file_url} 
             alt={att.file_name} 
-            className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-gray-200 shadow-sm"
-            onError={(e) => {
-              e.currentTarget.src = '/placeholder.svg';
-              e.currentTarget.className = 'max-w-[200px] max-h-[200px] rounded-lg object-cover border border-gray-200 bg-gray-100 p-4';
-            }}
+            className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-border shadow-sm"
           />
         </a>
       );
@@ -441,9 +622,6 @@ const ChatSection = () => {
             src={att.file_url} 
             controls 
             className="rounded-lg max-h-[200px] w-full"
-            onError={(e) => {
-              console.error('Video failed to load:', att.file_url);
-            }}
           />
         </div>
       );
@@ -454,25 +632,38 @@ const ChatSection = () => {
         href={att.file_url} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border border-gray-200"
+        className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors border border-border"
       >
-        <FileText size={18} className="text-gray-600" />
-        <span className="text-sm truncate max-w-[150px] text-gray-700">{att.file_name}</span>
-        <Download size={14} className="text-gray-500" />
+        <FileText size={18} className="text-muted-foreground" />
+        <span className="text-sm truncate max-w-[150px]">{att.file_name}</span>
+        <Download size={14} className="text-muted-foreground" />
       </a>
     );
   };
 
+  const filteredConversations = conversations.filter(conv =>
+    conv.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const currentMessages = selectedConversation?.type === 'support' ? supportMessages : sellerMessages;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
+  const handleConversationSelect = (conv: Conversation) => {
+    setSelectedConversation(conv);
+    setShowChatOnMobile(true);
+    setNewMessage('');
+    setPendingFiles([]);
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)]">
+    <div className="flex h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] bg-background rounded-xl border border-border overflow-hidden">
       {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
@@ -480,7 +671,7 @@ const ChatSection = () => {
         accept="image/*"
         multiple
         className="hidden"
-        onChange={(e) => handleFileSelect(e, 'image')}
+        onChange={handleFileSelect}
       />
       <input
         ref={videoInputRef}
@@ -488,202 +679,347 @@ const ChatSection = () => {
         accept="video/*"
         multiple
         className="hidden"
-        onChange={(e) => handleFileSelect(e, 'video')}
+        onChange={handleFileSelect}
       />
       <input
         ref={fileInputRef}
         type="file"
         multiple
         className="hidden"
-        onChange={(e) => handleFileSelect(e, 'file')}
+        onChange={handleFileSelect}
       />
 
-      {/* Chat Container */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 shadow-lg overflow-hidden flex flex-col flex-1">
-        {/* Chat Header */}
-        <div className="p-3 sm:p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-violet-50 to-purple-50 flex-shrink-0">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md flex-shrink-0">
-              <Headphones className="text-white w-5 h-5 sm:w-[22px] sm:h-[22px]" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-gray-900 font-bold text-base sm:text-lg truncate">Support Team</h3>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0"></span>
-                <p className="text-gray-500 text-xs sm:text-sm truncate">We typically reply within a few hours</p>
-              </div>
-            </div>
+      {/* Conversations List Panel */}
+      <div className={cn(
+        "w-full lg:w-80 border-r border-border flex flex-col bg-card",
+        showChatOnMobile && "hidden lg:flex"
+      )}>
+        {/* Header */}
+        <div className="p-4 border-b border-border">
+          <h2 className="text-lg font-semibold mb-3">Messages</h2>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search conversations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
           </div>
-          
-          {/* Recording Status */}
-          {isRecording && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-100 border border-red-200 rounded-full">
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-xs font-medium text-red-700">Recording {formatRecordingTime(recordingTime)}</span>
-            </div>
-          )}
         </div>
-
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gradient-to-b from-gray-50 to-white">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-violet-100 flex items-center justify-center mb-3 sm:mb-4">
-                <MessageCircle className="w-8 h-8 sm:w-10 sm:h-10 text-violet-500" />
+        
+        {/* Conversations List */}
+        <div className="flex-1 overflow-y-auto">
+          {filteredConversations.map((conv) => (
+            <button
+              key={conv.id}
+              onClick={() => handleConversationSelect(conv)}
+              className={cn(
+                "w-full p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors text-left border-b border-border/50",
+                selectedConversation?.id === conv.id && "bg-muted"
+              )}
+            >
+              {/* Avatar */}
+              <div className={cn(
+                "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0",
+                conv.type === 'support' 
+                  ? "bg-violet-100 dark:bg-violet-900/30" 
+                  : "bg-emerald-100 dark:bg-emerald-900/30"
+              )}>
+                {conv.type === 'support' ? (
+                  <Headphones className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                ) : conv.avatar ? (
+                  <Avatar className="w-12 h-12">
+                    <AvatarImage src={conv.avatar} alt={conv.name} />
+                    <AvatarFallback className="bg-emerald-100 text-emerald-700">
+                      <Store className="w-5 h-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <Store className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                )}
               </div>
-              <h3 className="text-gray-900 font-semibold text-base sm:text-lg mb-1.5 sm:mb-2">Start a conversation</h3>
-              <p className="text-gray-500 text-sm max-w-xs sm:max-w-sm">
-                Have a question? Send us a message and we'll get back to you soon.
-              </p>
-            </div>
-          ) : (
-            messages.map((msg) => {
-              const msgAttachments = attachments.get(msg.id) || [];
               
-              return (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm ${
-                      msg.sender_type === 'user'
-                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-br-md'
-                        : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md'
-                    }`}
-                  >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
-                    
-                    {/* Attachments */}
-                    {msgAttachments.length > 0 && (
-                      <div className="mt-2 space-y-2">
-                        {msgAttachments.map((att) => (
-                          <div key={att.id}>{renderAttachment(att)}</div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <p
-                      className={`text-[10px] sm:text-xs mt-1.5 sm:mt-2 ${
-                        msg.sender_type === 'user' ? 'text-violet-200' : 'text-gray-400'
-                      }`}
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium truncate">{conv.name}</span>
+                  {conv.lastMessageTime && (
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                      {format(new Date(conv.lastMessageTime), 'MMM d')}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between gap-2 mt-1">
+                  <p className="text-sm text-muted-foreground truncate">
+                    {conv.lastMessage}
+                  </p>
+                  {conv.unreadCount > 0 && (
+                    <Badge 
+                      variant="default"
+                      className={cn(
+                        "flex-shrink-0 h-5 min-w-[20px] flex items-center justify-center text-xs",
+                        conv.type === 'support' 
+                          ? "bg-violet-500 hover:bg-violet-500" 
+                          : "bg-emerald-500 hover:bg-emerald-500"
+                      )}
                     >
-                      {format(new Date(msg.created_at || new Date()), 'MMM d, h:mm a')}
-                    </p>
-                  </div>
+                      {conv.unreadCount}
+                    </Badge>
+                  )}
                 </div>
-              );
-            })
+              </div>
+            </button>
+          ))}
+          
+          {filteredConversations.length === 0 && (
+            <div className="p-8 text-center text-muted-foreground">
+              <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No conversations found</p>
+            </div>
           )}
-          <div ref={messagesEndRef} />
         </div>
+      </div>
 
-        {/* Pending Files Preview */}
-        {pendingFiles.length > 0 && (
-          <div className="px-3 sm:px-4 py-2 border-t border-gray-100 bg-gray-50">
-            <div className="flex flex-wrap gap-2">
-              {pendingFiles.map((file, index) => (
-                <div 
-                  key={index}
-                  className="relative flex items-center gap-2 px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-sm"
-                >
-                  {file.type.startsWith('image/') ? <Image size={14} className="text-violet-500" /> :
-                   file.type.startsWith('video/') ? <Video size={14} className="text-blue-500" /> :
-                   <FileText size={14} className="text-gray-500" />}
-                  <span className="text-gray-700 truncate max-w-[100px]">{file.name}</span>
-                  <button 
-                    onClick={() => removePendingFile(index)}
-                    className="text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
+      {/* Chat Area */}
+      <div className={cn(
+        "flex-1 flex flex-col",
+        !showChatOnMobile && "hidden lg:flex"
+      )}>
+        {selectedConversation ? (
+          <>
+            {/* Chat Header */}
+            <div className={cn(
+              "p-4 border-b border-border flex items-center gap-3",
+              selectedConversation.type === 'support' 
+                ? "bg-violet-50 dark:bg-violet-950/20" 
+                : "bg-emerald-50 dark:bg-emerald-950/20"
+            )}>
+              {/* Back button for mobile */}
+              <button
+                onClick={() => setShowChatOnMobile(false)}
+                className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              
+              <div className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center",
+                selectedConversation.type === 'support' 
+                  ? "bg-violet-100 dark:bg-violet-900/30" 
+                  : "bg-emerald-100 dark:bg-emerald-900/30"
+              )}>
+                {selectedConversation.type === 'support' ? (
+                  <Headphones className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                ) : (
+                  <Store className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                )}
+              </div>
+              <div>
+                <h3 className="font-semibold">{selectedConversation.name}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {selectedConversation.type === 'support' 
+                    ? 'We typically reply within a few hours' 
+                    : 'Seller chat'}
+                </p>
+              </div>
+            </div>
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {currentMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <MessageCircle className="w-16 h-16 mb-4 opacity-30" />
+                  <p className="text-lg">No messages yet</p>
+                  <p className="text-sm">Start the conversation!</p>
                 </div>
-              ))}
+              ) : (
+                selectedConversation.type === 'support' ? (
+                  // Support messages
+                  supportMessages.map((msg) => {
+                    const isUser = msg.sender_type === 'user';
+                    const messageAttachments = attachments.get(msg.id) || [];
+                    
+                    return (
+                      <div key={msg.id} className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+                        <div className={cn(
+                          "max-w-[80%] rounded-2xl px-4 py-2.5",
+                          isUser 
+                            ? "bg-violet-500 text-white rounded-br-md" 
+                            : "bg-muted rounded-bl-md"
+                        )}>
+                          <p className="whitespace-pre-wrap break-words">{msg.message}</p>
+                          
+                          {messageAttachments.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              {messageAttachments.map(att => (
+                                <div key={att.id}>{renderAttachment(att)}</div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <p className={cn(
+                            "text-[10px] mt-1",
+                            isUser ? "text-violet-200" : "text-muted-foreground"
+                          )}>
+                            {msg.created_at && format(new Date(msg.created_at), 'h:mm a')}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  // Seller messages
+                  sellerMessages.map((msg) => {
+                    const isUser = msg.sender_type === 'buyer';
+                    
+                    return (
+                      <div key={msg.id} className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+                        <div className={cn(
+                          "max-w-[80%] rounded-2xl px-4 py-2.5",
+                          isUser 
+                            ? "bg-emerald-500 text-white rounded-br-md" 
+                            : "bg-muted rounded-bl-md"
+                        )}>
+                          <p className="whitespace-pre-wrap break-words">{msg.message}</p>
+                          <p className={cn(
+                            "text-[10px] mt-1",
+                            isUser ? "text-emerald-200" : "text-muted-foreground"
+                          )}>
+                            {msg.created_at && format(new Date(msg.created_at), 'h:mm a')}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Pending Files Preview */}
+            {pendingFiles.length > 0 && selectedConversation.type === 'support' && (
+              <div className="px-4 py-2 border-t border-border bg-muted/50">
+                <div className="flex flex-wrap gap-2">
+                  {pendingFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-full border border-border">
+                      {file.type.startsWith('image/') ? (
+                        <Image size={14} className="text-violet-500" />
+                      ) : file.type.startsWith('video/') ? (
+                        <Video size={14} className="text-violet-500" />
+                      ) : (
+                        <Paperclip size={14} className="text-violet-500" />
+                      )}
+                      <span className="text-xs truncate max-w-[100px]">{file.name}</span>
+                      <button onClick={() => removePendingFile(index)} className="text-muted-foreground hover:text-destructive">
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recording Indicator */}
+            {isRecording && (
+              <div className="px-4 py-2 bg-red-50 dark:bg-red-950/30 border-t border-red-200 dark:border-red-900 flex items-center gap-3">
+                <div className="flex items-center gap-2 text-red-600">
+                  <Circle className="w-3 h-3 fill-current animate-pulse" />
+                  <span className="text-sm font-medium">Recording: {formatRecordingTime(recordingTime)}</span>
+                </div>
+                <button
+                  onClick={stopRecording}
+                  className="ml-auto px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                >
+                  <StopCircle size={16} />
+                  Stop Recording
+                </button>
+              </div>
+            )}
+
+            {/* Input Area */}
+            <div className="p-4 border-t border-border bg-background">
+              <div className="flex items-end gap-2">
+                {/* Attachment buttons (only for support) */}
+                {selectedConversation.type === 'support' && !isRecording && (
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => imageInputRef.current?.click()}
+                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
+                      title="Add image"
+                    >
+                      <Image size={20} />
+                    </button>
+                    <button
+                      onClick={() => videoInputRef.current?.click()}
+                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
+                      title="Add video"
+                    >
+                      <Video size={20} />
+                    </button>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
+                      title="Add file"
+                    >
+                      <Paperclip size={20} />
+                    </button>
+                    <button
+                      onClick={startRecording}
+                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
+                      title="Record screen"
+                    >
+                      <Circle size={20} />
+                    </button>
+                  </div>
+                )}
+                
+                {/* Message Input */}
+                <div className="flex-1 relative">
+                  <textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder={
+                      selectedConversation.type === 'support'
+                        ? "Type your message..."
+                        : `Message ${selectedConversation.name}...`
+                    }
+                    disabled={sendingMessage || isRecording}
+                    className="w-full px-4 py-3 bg-muted rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 min-h-[48px] max-h-[120px]"
+                    rows={1}
+                  />
+                </div>
+                
+                {/* Send Button */}
+                <button
+                  onClick={sendMessage}
+                  disabled={sendingMessage || isRecording || (!newMessage.trim() && pendingFiles.length === 0)}
+                  className={cn(
+                    "p-3 rounded-xl text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    selectedConversation.type === 'support'
+                      ? "bg-violet-500 hover:bg-violet-600"
+                      : "bg-emerald-500 hover:bg-emerald-600"
+                  )}
+                >
+                  {sendingMessage ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <Send size={20} />
+                  )}
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground">
+            <div className="text-center">
+              <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-30" />
+              <p className="text-lg">Select a conversation</p>
+              <p className="text-sm">Choose a chat from the list to start messaging</p>
             </div>
           </div>
         )}
-
-        {/* Input Area with Attachment Buttons */}
-        <div className="p-3 sm:p-4 border-t border-gray-100 bg-white">
-          {/* Attachment Toolbar */}
-          <div className="flex items-center gap-1 mb-2">
-            <button
-              onClick={() => imageInputRef.current?.click()}
-              className="p-2 text-gray-500 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
-              title="Upload Image"
-            >
-              <Image size={18} />
-            </button>
-            <button
-              onClick={() => videoInputRef.current?.click()}
-              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="Upload Video"
-            >
-              <Video size={18} />
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-              title="Upload File"
-            >
-              <Paperclip size={18} />
-            </button>
-            <div className="h-5 w-px bg-gray-200 mx-1" />
-            <button
-              className="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-              title="Voice Message (Coming Soon)"
-              disabled
-            >
-              <Mic size={18} />
-            </button>
-            <div className="h-5 w-px bg-gray-200 mx-1" />
-            {isRecording ? (
-              <button
-                onClick={stopRecording}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
-              >
-                <StopCircle size={16} />
-                <span className="hidden sm:inline">Stop Recording</span>
-                <span className="sm:hidden">Stop</span>
-              </button>
-            ) : (
-              <button
-                onClick={startRecording}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
-                title="Record Screen"
-              >
-                <Circle size={16} className="text-red-500" />
-                <span className="hidden sm:inline">Record Screen</span>
-              </button>
-            )}
-          </div>
-          
-          {/* Message Input */}
-          <div className="flex gap-2 sm:gap-3">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
-              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all"
-            />
-            <button
-              onClick={sendMessage}
-              disabled={(!newMessage.trim() && pendingFiles.length === 0) || sendingMessage}
-              className="px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl font-semibold hover:from-violet-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg flex items-center gap-1.5 sm:gap-2"
-            >
-              {sendingMessage ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <>
-                  <Send size={16} className="sm:w-[18px] sm:h-[18px]" />
-                  <span className="hidden sm:inline">Send</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
