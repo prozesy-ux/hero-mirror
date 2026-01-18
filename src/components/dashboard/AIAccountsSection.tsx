@@ -1125,22 +1125,32 @@ const AIAccountsSection = () => {
                           <span className="text-sm text-gray-600 font-medium">{getPurchaseCount(account.id)}+ sold</span>
                         </div>
 
-                        {/* Action Buttons */}
+                        {/* Action Buttons - 3 buttons */}
                         <div className="flex gap-2">
+                          {/* Chat Button */}
+                          <button
+                            onClick={() => setActiveTab('chat')}
+                            className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700"
+                          >
+                            <MessageCircle size={14} />
+                            Chat
+                          </button>
+                          {/* Full View Button */}
                           <button
                             onClick={() => {
                               setSelectedAccount(account);
                               setShowDetailsModal(true);
                             }}
-                            className="flex-1 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
+                            className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
                           >
-                            <Eye size={16} />
-                            View
+                            <Eye size={14} />
+                            Full View
                           </button>
+                          {/* Buy Button */}
                           <button
                             onClick={() => handlePurchase(account)}
                             disabled={purchasing === account.id}
-                            className={`flex-1 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                            className={`flex-1 font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors ${
                               purchasing === account.id
                                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                 : hasEnoughBalance
@@ -1149,19 +1159,14 @@ const AIAccountsSection = () => {
                             }`}
                           >
                             {purchasing === account.id ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              </>
+                              <Loader2 className="w-4 h-4 animate-spin" />
                             ) : !hasEnoughBalance ? (
                               <>
                                 <Wallet className="w-4 h-4" />
                                 Top Up
                               </>
                             ) : (
-                              <>
-                                Buy
-                                <ChevronRight size={16} />
-                              </>
+                              'Buy'
                             )}
                           </button>
                         </div>
@@ -1228,22 +1233,40 @@ const AIAccountsSection = () => {
                           <span className="text-sm text-gray-600 font-medium">{product.sold_count || 0}+ sold</span>
                         </div>
 
-                        {/* Action Buttons */}
+                        {/* Action Buttons - 3 buttons */}
                         <div className="flex gap-2">
+                          {/* Chat Button */}
+                          <button
+                            onClick={() => {
+                              setSelectedSeller({
+                                sellerId: product.seller_id,
+                                sellerName: product.seller_profiles?.store_name || 'Seller',
+                                productId: product.id,
+                                productName: product.name
+                              });
+                              setSellerChatOpen(true);
+                            }}
+                            className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700"
+                          >
+                            <MessageCircle size={14} />
+                            Chat
+                          </button>
+                          {/* Full View Button */}
                           <button
                             onClick={() => {
                               setSelectedSellerProduct(product);
                               setShowSellerDetailsModal(true);
                             }}
-                            className="flex-1 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
+                            className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
                           >
-                            <Eye size={16} />
-                            View
+                            <Eye size={14} />
+                            Full View
                           </button>
+                          {/* Buy Button */}
                           <button
                             onClick={() => handleSellerProductPurchase(product)}
                             disabled={purchasing === product.id}
-                            className={`flex-1 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                            className={`flex-1 font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors ${
                               purchasing === product.id
                                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                 : hasEnoughBalance
