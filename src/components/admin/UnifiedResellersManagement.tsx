@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { 
-  Users, Store, CheckCircle, TrendingUp, Search, Eye, Wallet,
-  Package, ShoppingCart, Clock, XCircle, DollarSign, MessageSquare,
-  AlertTriangle, UserPlus, Check, X
+  Users, Store, CheckCircle, Search, Eye, Wallet,
+  Package, Clock, XCircle, DollarSign, MessageSquare,
+  AlertTriangle, UserPlus, Check, X, Trash2, ShoppingCart,
+  Calendar, Mail, FileText, Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -28,10 +30,18 @@ interface SellerProfile {
   store_logo_url: string | null;
   is_verified: boolean;
   is_active: boolean;
-  commission_rate: number;
   total_sales: number;
   total_orders: number;
   created_at: string;
+}
+
+interface SellerDetails {
+  profile: SellerProfile;
+  wallet: { balance: number; pending_balance: number } | null;
+  products: any[];
+  orders: any[];
+  withdrawals: any[];
+  email: string | null;
 }
 
 interface SellerProduct {
@@ -86,6 +96,10 @@ const UnifiedResellersManagement = () => {
   // Sellers state
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [sellerTab, setSellerTab] = useState('all');
+  const [selectedSeller, setSelectedSeller] = useState<SellerDetails | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [deletingSeller, setDeletingSeller] = useState<SellerProfile | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Products state
   const [products, setProducts] = useState<SellerProduct[]>([]);
@@ -132,6 +146,28 @@ const UnifiedResellersManagement = () => {
     }
   };
 
+  const fetchSellerDetails = async (seller: SellerProfile) => {
+    setDetailsLoading(true);
+    
+    const [walletRes, productsRes, ordersRes, withdrawalsRes, profileRes] = await Promise.all([
+      supabase.from('seller_wallets').select('balance, pending_balance').eq('seller_id', seller.id).single(),
+      supabase.from('seller_products').select('*').eq('seller_id', seller.id).order('created_at', { ascending: false }),
+      supabase.from('seller_orders').select('*').eq('seller_id', seller.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('seller_withdrawals').select('*').eq('seller_id', seller.id).order('created_at', { ascending: false }),
+      supabase.from('profiles').select('email').eq('user_id', seller.user_id).single()
+    ]);
+
+    setSelectedSeller({
+      profile: seller,
+      wallet: walletRes.data,
+      products: productsRes.data || [],
+      orders: ordersRes.data || [],
+      withdrawals: withdrawalsRes.data || [],
+      email: profileRes.data?.email || null
+    });
+    setDetailsLoading(false);
+  };
+
   const toggleVerification = async (sellerId: string, currentStatus: boolean) => {
     const { error } = await supabase
       .from('seller_profiles')
@@ -158,6 +194,45 @@ const UnifiedResellersManagement = () => {
       toast.success(`Seller ${!currentStatus ? 'activated' : 'suspended'}`);
       fetchSellers();
     }
+  };
+
+  const handleDeleteSeller = async () => {
+    if (!deletingSeller) return;
+    setDeleteLoading(true);
+
+    try {
+      // Delete all related data in order
+      await Promise.all([
+        supabase.from('seller_products').delete().eq('seller_id', deletingSeller.id),
+        supabase.from('seller_orders').delete().eq('seller_id', deletingSeller.id),
+        supabase.from('seller_withdrawals').delete().eq('seller_id', deletingSeller.id),
+        supabase.from('seller_wallets').delete().eq('seller_id', deletingSeller.id),
+        supabase.from('seller_chats').delete().eq('seller_id', deletingSeller.id),
+        supabase.from('chat_join_requests').delete().eq('seller_id', deletingSeller.id),
+      ]);
+
+      // Remove seller role
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', deletingSeller.user_id)
+        .eq('role', 'seller');
+
+      // Finally delete seller profile
+      await supabase.from('seller_profiles').delete().eq('id', deletingSeller.id);
+
+      toast.success('Seller deleted successfully');
+      setDeletingSeller(null);
+      fetchSellers();
+      fetchProducts();
+      fetchWithdrawals();
+      fetchChatRequests();
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete seller');
+    }
+    
+    setDeleteLoading(false);
   };
 
   // Products Functions
@@ -217,7 +292,6 @@ const UnifiedResellersManagement = () => {
       toast.error('Failed to process withdrawal');
     } else {
       if (action === 'rejected') {
-        // Refund the balance
         const { data: wallet } = await supabase
           .from('seller_wallets')
           .select('balance')
@@ -247,7 +321,6 @@ const UnifiedResellersManagement = () => {
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      // Fetch buyer and seller profiles
       const buyerIds = [...new Set(data.map(r => r.buyer_id))];
       const sellerIds = [...new Set(data.map(r => r.seller_id))];
 
@@ -281,7 +354,6 @@ const UnifiedResellersManagement = () => {
   const handleJoinChat = async (request: ChatJoinRequest) => {
     setProcessingRequest(true);
     
-    // Update request status
     const { error } = await supabase
       .from('chat_join_requests')
       .update({
@@ -293,7 +365,6 @@ const UnifiedResellersManagement = () => {
     if (error) {
       toast.error('Failed to join chat');
     } else {
-      // Send system message to the chat
       await supabase.from('seller_chats').insert({
         buyer_id: request.buyer_id,
         seller_id: request.seller_id,
@@ -376,72 +447,96 @@ const UnifiedResellersManagement = () => {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
-        <Skeleton className="h-8 w-48" />
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48 bg-slate-200" />
         <div className="grid gap-4 md:grid-cols-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 bg-slate-200" />)}
         </div>
-        <Skeleton className="h-96" />
+        <Skeleton className="h-96 bg-slate-200" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Stats Overview */}
+    <div className="space-y-6">
+      {/* Stats Overview - White Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="cursor-pointer hover:border-blue-300 transition-colors" onClick={() => setMainTab('sellers')}>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <Users className="h-5 w-5 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.totalSellers}</p>
-              <p className="text-sm text-muted-foreground">
-                Total Sellers {stats.pendingSellers > 0 && <Badge className="ml-1 bg-yellow-500">{stats.pendingSellers} pending</Badge>}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="cursor-pointer hover:border-purple-300 transition-colors" onClick={() => setMainTab('products')}>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <Package className="h-5 w-5 text-purple-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.totalProducts}</p>
-              <p className="text-sm text-muted-foreground">
-                Products {stats.pendingProducts > 0 && <Badge className="ml-1 bg-yellow-500">{stats.pendingProducts} pending</Badge>}
-              </p>
+        <Card 
+          className="bg-white border border-slate-200 shadow-sm cursor-pointer hover:border-slate-300 transition-colors" 
+          onClick={() => setMainTab('sellers')}
+        >
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <Users className="h-6 w-6 text-slate-600" />
+              <div>
+                <p className="text-2xl font-bold text-slate-900">{stats.totalSellers}</p>
+                <p className="text-sm text-slate-500">
+                  Total Sellers
+                </p>
+                {stats.pendingSellers > 0 && (
+                  <Badge className="mt-1 bg-amber-100 text-amber-700 hover:bg-amber-100">{stats.pendingSellers} pending</Badge>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="cursor-pointer hover:border-emerald-300 transition-colors" onClick={() => setMainTab('withdrawals')}>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2 rounded-lg bg-emerald-500/10">
-              <DollarSign className="h-5 w-5 text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">${stats.pendingWithdrawalAmount.toFixed(2)}</p>
-              <p className="text-sm text-muted-foreground">
-                Pending Withdrawals {stats.pendingWithdrawals > 0 && <Badge className="ml-1 bg-yellow-500">{stats.pendingWithdrawals}</Badge>}
-              </p>
+        <Card 
+          className="bg-white border border-slate-200 shadow-sm cursor-pointer hover:border-slate-300 transition-colors" 
+          onClick={() => setMainTab('products')}
+        >
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <Package className="h-6 w-6 text-slate-600" />
+              <div>
+                <p className="text-2xl font-bold text-slate-900">{stats.totalProducts}</p>
+                <p className="text-sm text-slate-500">
+                  Products
+                </p>
+                {stats.pendingProducts > 0 && (
+                  <Badge className="mt-1 bg-amber-100 text-amber-700 hover:bg-amber-100">{stats.pendingProducts} pending</Badge>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="cursor-pointer hover:border-red-300 transition-colors" onClick={() => setMainTab('chat-requests')}>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2 rounded-lg bg-red-500/10">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
+        <Card 
+          className="bg-white border border-slate-200 shadow-sm cursor-pointer hover:border-slate-300 transition-colors" 
+          onClick={() => setMainTab('withdrawals')}
+        >
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <DollarSign className="h-6 w-6 text-slate-600" />
+              <div>
+                <p className="text-2xl font-bold text-slate-900">${stats.pendingWithdrawalAmount.toFixed(2)}</p>
+                <p className="text-sm text-slate-500">
+                  Pending Withdrawals
+                </p>
+                {stats.pendingWithdrawals > 0 && (
+                  <Badge className="mt-1 bg-amber-100 text-amber-700 hover:bg-amber-100">{stats.pendingWithdrawals}</Badge>
+                )}
+              </div>
             </div>
-            <div>
-              <p className="text-2xl font-bold">{stats.pendingChatRequests}</p>
-              <p className="text-sm text-muted-foreground">
-                Support Requests {stats.pendingChatRequests > 0 && <Badge className="ml-1 bg-red-500 animate-pulse">Action Needed</Badge>}
-              </p>
+          </CardContent>
+        </Card>
+        
+        <Card 
+          className="bg-white border border-slate-200 shadow-sm cursor-pointer hover:border-slate-300 transition-colors" 
+          onClick={() => setMainTab('chat-requests')}
+        >
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <AlertTriangle className="h-6 w-6 text-slate-600" />
+              <div>
+                <p className="text-2xl font-bold text-slate-900">{stats.pendingChatRequests}</p>
+                <p className="text-sm text-slate-500">
+                  Support Requests
+                </p>
+                {stats.pendingChatRequests > 0 && (
+                  <Badge className="mt-1 bg-red-100 text-red-700 hover:bg-red-100 animate-pulse">Action Needed</Badge>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -449,31 +544,31 @@ const UnifiedResellersManagement = () => {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input
           placeholder="Search across all sections..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className="pl-10 bg-white border-slate-200"
         />
       </div>
 
       {/* Main Tabs */}
       <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as MainTab)}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="sellers" className="gap-2">
+        <TabsList className="grid w-full grid-cols-4 bg-slate-100">
+          <TabsTrigger value="sellers" className="gap-2 data-[state=active]:bg-white">
             <Store className="h-4 w-4" />
             Sellers
           </TabsTrigger>
-          <TabsTrigger value="products" className="gap-2">
+          <TabsTrigger value="products" className="gap-2 data-[state=active]:bg-white">
             <Package className="h-4 w-4" />
             Products
           </TabsTrigger>
-          <TabsTrigger value="withdrawals" className="gap-2">
+          <TabsTrigger value="withdrawals" className="gap-2 data-[state=active]:bg-white">
             <Wallet className="h-4 w-4" />
             Withdrawals
           </TabsTrigger>
-          <TabsTrigger value="chat-requests" className="gap-2">
+          <TabsTrigger value="chat-requests" className="gap-2 data-[state=active]:bg-white">
             <MessageSquare className="h-4 w-4" />
             Chat Requests
             {stats.pendingChatRequests > 0 && (
@@ -485,59 +580,87 @@ const UnifiedResellersManagement = () => {
         {/* Sellers Tab */}
         <TabsContent value="sellers" className="mt-4">
           <Tabs value={sellerTab} onValueChange={setSellerTab}>
-            <TabsList>
-              <TabsTrigger value="all">All ({sellers.length})</TabsTrigger>
-              <TabsTrigger value="pending">Pending ({stats.pendingSellers})</TabsTrigger>
-              <TabsTrigger value="verified">Verified ({stats.verifiedSellers})</TabsTrigger>
-              <TabsTrigger value="suspended">Suspended</TabsTrigger>
+            <TabsList className="bg-slate-100">
+              <TabsTrigger value="all" className="data-[state=active]:bg-white">All ({sellers.length})</TabsTrigger>
+              <TabsTrigger value="pending" className="data-[state=active]:bg-white">Pending ({stats.pendingSellers})</TabsTrigger>
+              <TabsTrigger value="verified" className="data-[state=active]:bg-white">Verified ({stats.verifiedSellers})</TabsTrigger>
+              <TabsTrigger value="suspended" className="data-[state=active]:bg-white">Suspended</TabsTrigger>
             </TabsList>
 
             <TabsContent value={sellerTab} className="mt-4">
-              <Card>
+              <Card className="bg-white border border-slate-200 shadow-sm">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Store</TableHead>
-                      <TableHead>Orders</TableHead>
-                      <TableHead>Sales</TableHead>
-                      <TableHead>Commission</TableHead>
-                      <TableHead>Verified</TableHead>
-                      <TableHead>Active</TableHead>
+                    <TableRow className="bg-slate-50">
+                      <TableHead className="text-slate-600">Store</TableHead>
+                      <TableHead className="text-slate-600">Orders</TableHead>
+                      <TableHead className="text-slate-600">Sales</TableHead>
+                      <TableHead className="text-slate-600">Verified</TableHead>
+                      <TableHead className="text-slate-600">Active</TableHead>
+                      <TableHead className="text-slate-600">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredSellers.map((seller) => (
-                      <TableRow key={seller.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                              <Store className="h-5 w-5 text-emerald-500" />
-                            </div>
-                            <div>
-                              <p className="font-medium">{seller.store_name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {format(new Date(seller.created_at), 'MMM d, yyyy')}
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{seller.total_orders}</TableCell>
-                        <TableCell>${Number(seller.total_sales || 0).toFixed(2)}</TableCell>
-                        <TableCell>{seller.commission_rate}%</TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={seller.is_verified}
-                            onCheckedChange={() => toggleVerification(seller.id, seller.is_verified)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={seller.is_active}
-                            onCheckedChange={() => toggleActive(seller.id, seller.is_active)}
-                          />
+                    {filteredSellers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                          No sellers found
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredSellers.map((seller) => (
+                        <TableRow key={seller.id} className="hover:bg-slate-50">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                                <Store className="h-5 w-5 text-slate-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-slate-900">{seller.store_name}</p>
+                                <p className="text-xs text-slate-500">
+                                  {format(new Date(seller.created_at), 'MMM d, yyyy')}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-slate-700">{seller.total_orders}</TableCell>
+                          <TableCell className="text-slate-700">${Number(seller.total_sales || 0).toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={seller.is_verified}
+                              onCheckedChange={() => toggleVerification(seller.id, seller.is_verified)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={seller.is_active}
+                              onCheckedChange={() => toggleActive(seller.id, seller.is_active)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fetchSellerDetails(seller)}
+                                className="text-slate-600 border-slate-200 hover:bg-slate-50"
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeletingSeller(seller)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </Card>
@@ -548,77 +671,95 @@ const UnifiedResellersManagement = () => {
         {/* Products Tab */}
         <TabsContent value="products" className="mt-4">
           <Tabs value={productTab} onValueChange={setProductTab}>
-            <TabsList>
-              <TabsTrigger value="pending">Pending ({stats.pendingProducts})</TabsTrigger>
-              <TabsTrigger value="approved">Approved</TabsTrigger>
-              <TabsTrigger value="all">All ({products.length})</TabsTrigger>
+            <TabsList className="bg-slate-100">
+              <TabsTrigger value="pending" className="data-[state=active]:bg-white">Pending ({stats.pendingProducts})</TabsTrigger>
+              <TabsTrigger value="approved" className="data-[state=active]:bg-white">Approved</TabsTrigger>
+              <TabsTrigger value="all" className="data-[state=active]:bg-white">All ({products.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value={productTab} className="mt-4">
-              <Card>
+              <Card className="bg-white border border-slate-200 shadow-sm">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Seller</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                    <TableRow className="bg-slate-50">
+                      <TableHead className="text-slate-600">Product</TableHead>
+                      <TableHead className="text-slate-600">Seller</TableHead>
+                      <TableHead className="text-slate-600">Price</TableHead>
+                      <TableHead className="text-slate-600">Stock</TableHead>
+                      <TableHead className="text-slate-600">Status</TableHead>
+                      <TableHead className="text-slate-600">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredProducts.map((product) => (
-                      <TableRow key={product.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            {product.icon_url ? (
-                              <img src={product.icon_url} alt={product.name} className="h-10 w-10 rounded-lg object-cover" />
-                            ) : (
-                              <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                                <Package className="h-5 w-5 text-purple-500" />
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-medium">{product.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {format(new Date(product.created_at), 'MMM d, yyyy')}
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            <Store className="h-3.5 w-3.5 text-emerald-500" />
-                            {product.seller_profiles?.store_name || 'Unknown'}
-                            {product.seller_profiles?.is_verified && (
-                              <CheckCircle className="h-3.5 w-3.5 text-blue-500" />
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>${product.price}</TableCell>
-                        <TableCell>{product.stock ?? '∞'}</TableCell>
-                        <TableCell>
-                          <Badge variant={product.is_approved ? 'default' : 'outline'}>
-                            {product.is_approved ? 'Approved' : 'Pending'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant={product.is_approved ? 'outline' : 'default'}
-                            onClick={() => toggleProductApproval(product)}
-                            disabled={updatingProduct === product.id}
-                          >
-                            {product.is_approved ? (
-                              <><X className="h-4 w-4 mr-1" /> Revoke</>
-                            ) : (
-                              <><Check className="h-4 w-4 mr-1" /> Approve</>
-                            )}
-                          </Button>
+                    {filteredProducts.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                          No products found
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredProducts.map((product) => (
+                        <TableRow key={product.id} className="hover:bg-slate-50">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              {product.icon_url ? (
+                                <img src={product.icon_url} alt={product.name} className="h-10 w-10 rounded-lg object-cover" />
+                              ) : (
+                                <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                                  <Package className="h-5 w-5 text-slate-600" />
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-medium text-slate-900">{product.name}</p>
+                                <p className="text-xs text-slate-500">
+                                  {format(new Date(product.created_at), 'MMM d, yyyy')}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5 text-slate-700">
+                              <Store className="h-3.5 w-3.5 text-slate-500" />
+                              {product.seller_profiles?.store_name || 'Unknown'}
+                              {product.seller_profiles?.is_verified && (
+                                <CheckCircle className="h-3.5 w-3.5 text-blue-500" />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-slate-700">${product.price}</TableCell>
+                          <TableCell className="text-slate-700">{product.stock ?? '∞'}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant="outline" 
+                              className={product.is_approved 
+                                ? 'bg-green-50 text-green-700 border-green-200' 
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                              }
+                            >
+                              {product.is_approved ? 'Approved' : 'Pending'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant={product.is_approved ? 'outline' : 'default'}
+                              onClick={() => toggleProductApproval(product)}
+                              disabled={updatingProduct === product.id}
+                              className={product.is_approved 
+                                ? 'border-slate-200 text-slate-600 hover:bg-slate-50' 
+                                : 'bg-slate-900 hover:bg-slate-800'
+                              }
+                            >
+                              {product.is_approved ? (
+                                <><X className="h-4 w-4 mr-1" /> Revoke</>
+                              ) : (
+                                <><Check className="h-4 w-4 mr-1" /> Approve</>
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </Card>
@@ -629,59 +770,71 @@ const UnifiedResellersManagement = () => {
         {/* Withdrawals Tab */}
         <TabsContent value="withdrawals" className="mt-4">
           <Tabs value={withdrawalTab} onValueChange={setWithdrawalTab}>
-            <TabsList>
-              <TabsTrigger value="pending">Pending ({stats.pendingWithdrawals})</TabsTrigger>
-              <TabsTrigger value="approved">Approved</TabsTrigger>
-              <TabsTrigger value="rejected">Rejected</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
+            <TabsList className="bg-slate-100">
+              <TabsTrigger value="pending" className="data-[state=active]:bg-white">Pending ({stats.pendingWithdrawals})</TabsTrigger>
+              <TabsTrigger value="approved" className="data-[state=active]:bg-white">Approved</TabsTrigger>
+              <TabsTrigger value="rejected" className="data-[state=active]:bg-white">Rejected</TabsTrigger>
+              <TabsTrigger value="all" className="data-[state=active]:bg-white">All</TabsTrigger>
             </TabsList>
 
             <TabsContent value={withdrawalTab} className="mt-4">
-              <Card>
+              <Card className="bg-white border border-slate-200 shadow-sm">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Seller</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                    <TableRow className="bg-slate-50">
+                      <TableHead className="text-slate-600">Seller</TableHead>
+                      <TableHead className="text-slate-600">Amount</TableHead>
+                      <TableHead className="text-slate-600">Method</TableHead>
+                      <TableHead className="text-slate-600">Date</TableHead>
+                      <TableHead className="text-slate-600">Status</TableHead>
+                      <TableHead className="text-slate-600">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredWithdrawals.map((withdrawal) => (
-                      <TableRow key={withdrawal.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Store className="h-4 w-4 text-emerald-500" />
-                            {withdrawal.seller?.store_name || 'Unknown'}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">${withdrawal.amount.toFixed(2)}</TableCell>
-                        <TableCell>{withdrawal.payment_method}</TableCell>
-                        <TableCell>{format(new Date(withdrawal.created_at), 'MMM d, yyyy')}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={
-                            withdrawal.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                            withdrawal.status === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                            'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                          }>
-                            {withdrawal.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
-                            {withdrawal.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
-                            {withdrawal.status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
-                            {withdrawal.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {withdrawal.status === 'pending' && (
-                            <Button size="sm" onClick={() => setSelectedWithdrawal(withdrawal)}>
-                              Process
-                            </Button>
-                          )}
+                    {filteredWithdrawals.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                          No withdrawals found
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredWithdrawals.map((withdrawal) => (
+                        <TableRow key={withdrawal.id} className="hover:bg-slate-50">
+                          <TableCell>
+                            <div className="flex items-center gap-2 text-slate-700">
+                              <Store className="h-4 w-4 text-slate-500" />
+                              {withdrawal.seller?.store_name || 'Unknown'}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium text-slate-900">${withdrawal.amount.toFixed(2)}</TableCell>
+                          <TableCell className="text-slate-700">{withdrawal.payment_method}</TableCell>
+                          <TableCell className="text-slate-700">{format(new Date(withdrawal.created_at), 'MMM d, yyyy')}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={
+                              withdrawal.status === 'approved' ? 'bg-green-50 text-green-700 border-green-200' :
+                              withdrawal.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                              'bg-amber-50 text-amber-700 border-amber-200'
+                            }>
+                              {withdrawal.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
+                              {withdrawal.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
+                              {withdrawal.status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
+                              {withdrawal.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {withdrawal.status === 'pending' && (
+                              <Button 
+                                size="sm" 
+                                onClick={() => setSelectedWithdrawal(withdrawal)}
+                                className="bg-slate-900 hover:bg-slate-800"
+                              >
+                                Process
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </Card>
@@ -691,46 +844,46 @@ const UnifiedResellersManagement = () => {
 
         {/* Chat Requests Tab */}
         <TabsContent value="chat-requests" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-500" />
+          <Card className="bg-white border border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100">
+              <CardTitle className="flex items-center gap-2 text-slate-900">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
                 Buyer Support Join Requests
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               {pendingChatRequests.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
+                <div className="text-center py-12 text-slate-500">
                   <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No pending support requests</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {pendingChatRequests.map((request) => (
-                    <div key={request.id} className="border rounded-xl p-4 space-y-3">
+                    <div key={request.id} className="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge className="bg-red-500">Action Required</Badge>
-                            <span className="text-xs text-muted-foreground">
+                            <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Action Required</Badge>
+                            <span className="text-xs text-slate-500">
                               {format(new Date(request.created_at), 'MMM d, h:mm a')}
                             </span>
                           </div>
-                          <p className="font-medium">
+                          <p className="font-medium text-slate-900">
                             Buyer: {request.buyer_profile?.email || 'Unknown'}
                           </p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-slate-600">
                             Seller: {request.seller_profile?.store_name || 'Unknown'}
                           </p>
                         </div>
                       </div>
                       
-                      <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
-                        <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                      <div className="bg-amber-50 p-3 rounded-lg border border-amber-100">
+                        <p className="text-sm font-medium text-amber-800">
                           Reason: {request.reason}
                         </p>
                         {request.description && (
-                          <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+                          <p className="text-sm text-amber-700 mt-1">
                             {request.description}
                           </p>
                         )}
@@ -744,6 +897,7 @@ const UnifiedResellersManagement = () => {
                             setSelectedRequest(request);
                             fetchChatHistory(request.buyer_id, request.seller_id);
                           }}
+                          className="border-slate-200 text-slate-600 hover:bg-slate-50"
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View Chat
@@ -752,7 +906,7 @@ const UnifiedResellersManagement = () => {
                           size="sm"
                           onClick={() => handleJoinChat(request)}
                           disabled={processingRequest}
-                          className="bg-emerald-500 hover:bg-emerald-600"
+                          className="bg-slate-900 hover:bg-slate-800"
                         >
                           <UserPlus className="h-4 w-4 mr-1" />
                           Join Chat
@@ -762,6 +916,7 @@ const UnifiedResellersManagement = () => {
                           variant="outline"
                           onClick={() => handleDeclineRequest(request, 'Request declined')}
                           disabled={processingRequest}
+                          className="border-slate-200 text-slate-600 hover:bg-slate-50"
                         >
                           <X className="h-4 w-4 mr-1" />
                           Decline
@@ -776,49 +931,298 @@ const UnifiedResellersManagement = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Seller Details Dialog */}
+      <Dialog open={!!selectedSeller || detailsLoading} onOpenChange={() => setSelectedSeller(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900">Seller Details</DialogTitle>
+            <DialogDescription>
+              Complete information about this seller
+            </DialogDescription>
+          </DialogHeader>
+          
+          {detailsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            </div>
+          ) : selectedSeller && (
+            <ScrollArea className="flex-1 pr-4">
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
+                  <div className="h-16 w-16 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <Store className="h-8 w-8 text-slate-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xl font-semibold text-slate-900">{selectedSeller.profile.store_name}</h3>
+                      {selectedSeller.profile.is_verified && (
+                        <Badge className="bg-blue-100 text-blue-700">Verified</Badge>
+                      )}
+                      {!selectedSeller.profile.is_active && (
+                        <Badge className="bg-red-100 text-red-700">Suspended</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
+                      <Mail className="h-3.5 w-3.5" />
+                      {selectedSeller.email || 'No email'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                    <p className="text-lg font-bold text-slate-900">${selectedSeller.wallet?.balance?.toFixed(2) || '0.00'}</p>
+                    <p className="text-xs text-slate-500">Available Balance</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                    <p className="text-lg font-bold text-slate-900">${selectedSeller.wallet?.pending_balance?.toFixed(2) || '0.00'}</p>
+                    <p className="text-xs text-slate-500">Pending Balance</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                    <p className="text-lg font-bold text-slate-900">{selectedSeller.products.length}</p>
+                    <p className="text-xs text-slate-500">Products</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                    <p className="text-lg font-bold text-slate-900">{selectedSeller.orders.length}</p>
+                    <p className="text-xs text-slate-500">Orders</p>
+                  </div>
+                </div>
+
+                {/* Info */}
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-500">Store Description</span>
+                    <span className="text-sm text-slate-700">{selectedSeller.profile.store_description || 'No description'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-500">Joined</span>
+                    <span className="text-sm text-slate-700">{format(new Date(selectedSeller.profile.created_at), 'MMMM d, yyyy')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-500">Total Sales</span>
+                    <span className="text-sm text-slate-700">${Number(selectedSeller.profile.total_sales || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-500">Total Orders</span>
+                    <span className="text-sm text-slate-700">{selectedSeller.profile.total_orders}</span>
+                  </div>
+                </div>
+
+                {/* Products */}
+                <div>
+                  <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Products ({selectedSeller.products.length})
+                  </h4>
+                  {selectedSeller.products.length > 0 ? (
+                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="text-slate-600">Name</TableHead>
+                            <TableHead className="text-slate-600">Price</TableHead>
+                            <TableHead className="text-slate-600">Stock</TableHead>
+                            <TableHead className="text-slate-600">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {selectedSeller.products.slice(0, 5).map((product: any) => (
+                            <TableRow key={product.id}>
+                              <TableCell className="text-slate-700">{product.name}</TableCell>
+                              <TableCell className="text-slate-700">${product.price}</TableCell>
+                              <TableCell className="text-slate-700">{product.stock ?? '∞'}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className={product.is_approved 
+                                  ? 'bg-green-50 text-green-700 border-green-200' 
+                                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                                }>
+                                  {product.is_approved ? 'Approved' : 'Pending'}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500 italic">No products yet</p>
+                  )}
+                </div>
+
+                {/* Orders */}
+                <div>
+                  <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
+                    <ShoppingCart className="h-4 w-4" />
+                    Recent Orders ({selectedSeller.orders.length})
+                  </h4>
+                  {selectedSeller.orders.length > 0 ? (
+                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="text-slate-600">Date</TableHead>
+                            <TableHead className="text-slate-600">Amount</TableHead>
+                            <TableHead className="text-slate-600">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {selectedSeller.orders.slice(0, 5).map((order: any) => (
+                            <TableRow key={order.id}>
+                              <TableCell className="text-slate-700">{format(new Date(order.created_at), 'MMM d, yyyy')}</TableCell>
+                              <TableCell className="text-slate-700">${order.total_amount}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="capitalize">{order.status}</Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500 italic">No orders yet</p>
+                  )}
+                </div>
+
+                {/* Withdrawals */}
+                <div>
+                  <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
+                    <Wallet className="h-4 w-4" />
+                    Withdrawal History ({selectedSeller.withdrawals.length})
+                  </h4>
+                  {selectedSeller.withdrawals.length > 0 ? (
+                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="text-slate-600">Date</TableHead>
+                            <TableHead className="text-slate-600">Amount</TableHead>
+                            <TableHead className="text-slate-600">Method</TableHead>
+                            <TableHead className="text-slate-600">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {selectedSeller.withdrawals.map((w: any) => (
+                            <TableRow key={w.id}>
+                              <TableCell className="text-slate-700">{format(new Date(w.created_at), 'MMM d, yyyy')}</TableCell>
+                              <TableCell className="text-slate-700">${w.amount}</TableCell>
+                              <TableCell className="text-slate-700">{w.payment_method}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className={
+                                  w.status === 'approved' ? 'bg-green-50 text-green-700 border-green-200' :
+                                  w.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                                  'bg-amber-50 text-amber-700 border-amber-200'
+                                }>
+                                  {w.status}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500 italic">No withdrawals yet</p>
+                  )}
+                </div>
+
+                {/* Delete Button */}
+                <div className="pt-4 border-t border-slate-100">
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      setSelectedSeller(null);
+                      setDeletingSeller(selectedSeller.profile);
+                    }}
+                    className="w-full bg-red-500 hover:bg-red-600"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete This Seller
+                  </Button>
+                </div>
+              </div>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingSeller} onOpenChange={() => setDeletingSeller(null)}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-900">Delete Seller?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-600">
+              This will permanently delete <span className="font-semibold">{deletingSeller?.store_name}</span> and all their data including products, orders, wallet, and withdrawal history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading} className="border-slate-200">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteSeller}
+              disabled={deleteLoading}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {deleteLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Seller
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Withdrawal Processing Dialog */}
       <Dialog open={!!selectedWithdrawal} onOpenChange={() => setSelectedWithdrawal(null)}>
-        <DialogContent>
+        <DialogContent className="bg-white">
           <DialogHeader>
-            <DialogTitle>Process Withdrawal</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-slate-900">Process Withdrawal</DialogTitle>
+            <DialogDescription className="text-slate-600">
               Review and process this withdrawal request.
             </DialogDescription>
           </DialogHeader>
           
           {selectedWithdrawal && (
             <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Seller</span>
-                  <span className="font-medium">{selectedWithdrawal.seller?.store_name}</span>
+                  <span className="text-slate-500">Seller</span>
+                  <span className="font-medium text-slate-900">{selectedWithdrawal.seller?.store_name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Amount</span>
-                  <span className="font-bold text-lg">${selectedWithdrawal.amount.toFixed(2)}</span>
+                  <span className="text-slate-500">Amount</span>
+                  <span className="font-bold text-lg text-slate-900">${selectedWithdrawal.amount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Method</span>
-                  <span>{selectedWithdrawal.payment_method}</span>
+                  <span className="text-slate-500">Method</span>
+                  <span className="text-slate-700">{selectedWithdrawal.payment_method}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Account</span>
-                  <span className="text-sm">{selectedWithdrawal.account_details}</span>
+                  <span className="text-slate-500">Account</span>
+                  <span className="text-sm text-slate-700">{selectedWithdrawal.account_details}</span>
                 </div>
               </div>
               
               <div>
-                <label className="text-sm font-medium mb-2 block">Admin Notes (optional)</label>
+                <label className="text-sm font-medium mb-2 block text-slate-700">Admin Notes (optional)</label>
                 <Textarea
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                   placeholder="Add notes about this withdrawal..."
+                  className="border-slate-200"
                 />
               </div>
               
               <div className="flex gap-2">
                 <Button
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-600"
+                  className="flex-1 bg-slate-900 hover:bg-slate-800"
                   onClick={() => handleProcessWithdrawal('approved')}
                   disabled={processingWithdrawal}
                 >
@@ -842,18 +1246,18 @@ const UnifiedResellersManagement = () => {
 
       {/* Chat History Dialog */}
       <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-2xl max-h-[80vh] bg-white">
           <DialogHeader>
-            <DialogTitle>Chat History</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-slate-900">Chat History</DialogTitle>
+            <DialogDescription className="text-slate-600">
               Buyer: {selectedRequest?.buyer_profile?.email} • 
               Seller: {selectedRequest?.seller_profile?.store_name}
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="h-[400px] border rounded-lg p-4">
+          <ScrollArea className="h-[400px] border border-slate-200 rounded-lg p-4">
             {chatMessages.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-500">
                 <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No messages in this conversation</p>
               </div>
@@ -868,9 +1272,9 @@ const UnifiedResellersManagement = () => {
                     }`}
                   >
                     <div className={`max-w-[80%] rounded-xl px-4 py-2 ${
-                      msg.sender_type === 'buyer' ? 'bg-emerald-500 text-white' :
-                      msg.sender_type === 'system' ? 'bg-slate-200 dark:bg-slate-700' :
-                      'bg-muted'
+                      msg.sender_type === 'buyer' ? 'bg-slate-900 text-white' :
+                      msg.sender_type === 'system' ? 'bg-slate-200 text-slate-700' :
+                      'bg-slate-100 text-slate-900'
                     }`}>
                       {msg.sender_type !== 'system' && (
                         <p className="text-xs font-medium mb-1 opacity-70">
@@ -891,7 +1295,7 @@ const UnifiedResellersManagement = () => {
           {selectedRequest && (
             <div className="flex gap-2 pt-4">
               <Button
-                className="flex-1 bg-emerald-500 hover:bg-emerald-600"
+                className="flex-1 bg-slate-900 hover:bg-slate-800"
                 onClick={() => handleJoinChat(selectedRequest)}
                 disabled={processingRequest}
               >
@@ -901,6 +1305,7 @@ const UnifiedResellersManagement = () => {
               <Button
                 variant="outline"
                 onClick={() => setSelectedRequest(null)}
+                className="border-slate-200"
               >
                 Close
               </Button>
