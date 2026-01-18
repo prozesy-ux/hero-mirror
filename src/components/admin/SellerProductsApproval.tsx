@@ -87,6 +87,17 @@ const SellerProductsApproval = () => {
     if (error) {
       toast.error('Failed to update product status');
     } else {
+      // Create seller notification when product is approved
+      if (newStatus && product.seller_profiles?.id) {
+        await supabase.from('seller_notifications').insert({
+          seller_id: product.seller_profiles.id,
+          type: 'product_approved',
+          title: 'Product Approved!',
+          message: `Your product "${product.name}" is now live on the marketplace!`,
+          link: '/seller/products',
+          is_read: false
+        });
+      }
       toast.success(newStatus ? 'Product approved!' : 'Product unapproved');
       fetchProducts();
     }

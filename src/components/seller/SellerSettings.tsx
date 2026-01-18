@@ -134,7 +134,7 @@ const SellerSettings = () => {
   };
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-3xl mx-auto p-6 lg:p-8 space-y-6">
       {/* Profile Header */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-violet-500 to-purple-600 h-20" />

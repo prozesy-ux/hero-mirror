@@ -510,13 +510,23 @@ const AIAccountsSection = () => {
         p_amount: sellerEarning
       });
 
-      // 5. Create notification
+      // 5. Create notification for buyer
       await supabase.from('notifications').insert({
         user_id: user.id,
         type: 'purchase',
         title: 'Purchase Successful',
         message: `You purchased ${product.name} for $${product.price}`,
         link: '/dashboard/ai-accounts?tab=purchases',
+        is_read: false
+      });
+
+      // 6. Create notification for seller
+      await supabase.from('seller_notifications').insert({
+        seller_id: product.seller_id,
+        type: 'new_order',
+        title: 'New Order!',
+        message: `You have a new order for "${product.name}" - $${sellerEarning.toFixed(2)} pending`,
+        link: '/seller/orders',
         is_read: false
       });
 
@@ -636,7 +646,7 @@ const AIAccountsSection = () => {
           .eq('seller_id', order.seller_id);
       }
 
-      // Create notification for seller
+      // Create notification for seller (in notifications for generic user notifications)
       if (order.seller_profiles?.user_id) {
         await supabase.from('notifications').insert({
           user_id: order.seller_profiles.user_id,
@@ -647,6 +657,16 @@ const AIAccountsSection = () => {
           is_read: false
         });
       }
+
+      // Create seller notification (in seller_notifications table)
+      await supabase.from('seller_notifications').insert({
+        seller_id: order.seller_id,
+        type: 'order_approved',
+        title: 'Delivery Approved!',
+        message: `Buyer approved "${order.seller_products?.name}". $${Number(order.seller_earning).toFixed(2)} released to wallet!`,
+        link: '/seller/wallet',
+        is_read: false
+      });
 
       // Create system message in seller_chats
       await supabase.from('seller_chats').insert({
