@@ -16,6 +16,7 @@ interface AIAccount {
   original_price: number | null;
   tags: string[] | null;
   stock: number | null;
+  chat_allowed?: boolean | null;
 }
 
 interface DynamicCategory {
