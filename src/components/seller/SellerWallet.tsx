@@ -12,9 +12,10 @@ import {
   CheckCircle, 
   XCircle,
   Loader2,
-  TrendingUp,
   AlertCircle,
-  DollarSign
+  DollarSign,
+  History,
+  CreditCard
 } from 'lucide-react';
 
 interface PaymentMethod {
@@ -23,7 +24,11 @@ interface PaymentMethod {
   code: string;
   currency_code: string;
   exchange_rate: number;
+  icon_url: string | null;
+  is_automatic: boolean;
 }
+
+type WalletTab = 'wallet' | 'withdrawals';
 
 const SellerWallet = () => {
   const { profile, wallet, withdrawals, refreshWallet, refreshWithdrawals, loading } = useSellerContext();
@@ -33,6 +38,7 @@ const SellerWallet = () => {
   const [selectedMethod, setSelectedMethod] = useState('');
   const [accountDetails, setAccountDetails] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<WalletTab>('wallet');
 
   useEffect(() => {
     fetchPaymentMethods();
@@ -41,7 +47,7 @@ const SellerWallet = () => {
   const fetchPaymentMethods = async () => {
     const { data } = await supabase
       .from('payment_methods')
-      .select('id, name, code, currency_code, exchange_rate')
+      .select('id, name, code, currency_code, exchange_rate, icon_url, is_automatic')
       .eq('is_enabled', true)
       .order('display_order');
     if (data) setPaymentMethods(data);
@@ -116,13 +122,13 @@ const SellerWallet = () => {
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'pending':
-        return { icon: Clock, label: 'Pending', className: 'bg-amber-50 text-amber-600 border-amber-200' };
+        return { icon: Clock, label: 'Pending', className: 'bg-amber-100 text-amber-700' };
       case 'approved':
-        return { icon: CheckCircle, label: 'Approved', className: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
+        return { icon: CheckCircle, label: 'Approved', className: 'bg-violet-100 text-violet-700' };
       case 'rejected':
-        return { icon: XCircle, label: 'Rejected', className: 'bg-red-50 text-red-600 border-red-200' };
+        return { icon: XCircle, label: 'Rejected', className: 'bg-red-100 text-red-700' };
       default:
-        return { icon: Clock, label: status, className: 'bg-gray-50 text-gray-600 border-gray-200' };
+        return { icon: Clock, label: status, className: 'bg-gray-100 text-gray-700' };
     }
   };
 
@@ -131,15 +137,12 @@ const SellerWallet = () => {
     ? (parseFloat(withdrawAmount) * selectedPaymentMethod.exchange_rate).toFixed(2)
     : null;
 
-  const totalWithdrawn = withdrawals
-    .filter(w => w.status === 'approved')
-    .reduce((sum, w) => sum + Number(w.amount), 0);
-
-  const pendingAmount = withdrawals
-    .filter(w => w.status === 'pending')
-    .reduce((sum, w) => sum + Number(w.amount), 0);
-
   const hasPendingWithdrawal = withdrawals.some(w => w.status === 'pending');
+
+  const tabs = [
+    { id: 'wallet' as WalletTab, label: 'Wallet', icon: Wallet },
+    { id: 'withdrawals' as WalletTab, label: 'Withdrawals', icon: History },
+  ];
 
   if (loading) {
     return (
@@ -150,127 +153,152 @@ const SellerWallet = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Wallet</h1>
-          <p className="text-gray-500 text-sm mt-1">Manage your balance and withdrawals</p>
+    <div className="max-w-4xl mx-auto animate-fade-up">
+      {/* Tab Navigation - Mobile Optimized */}
+      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
+        <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
+          {tabs.map((tab) => {
+            const TabIcon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
+                  activeTab === tab.id
+                    ? 'bg-gray-900 text-white shadow-lg'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+                }`}
+              >
+                <TabIcon size={14} className="lg:w-4 lg:h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Balance Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Available Balance */}
-        <div className="relative bg-white rounded-2xl p-6 border border-slate-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center">
-              <Wallet className="h-6 w-6 text-emerald-600" />
+      {/* Wallet Tab */}
+      {activeTab === 'wallet' && (
+        <div className="space-y-6">
+          {/* Wallet Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600">
+                  <Wallet size={28} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-gray-500 text-sm font-medium">Wallet Balance</p>
+                  <h3 className="text-4xl font-bold text-gray-900 tracking-tight">
+                    ${(wallet?.balance || 0).toFixed(2)}
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowWithdrawDialog(true)}
+                disabled={!wallet?.balance || wallet.balance < 5 || hasPendingWithdrawal}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
+              >
+                <ArrowDownCircle size={20} />
+                Withdraw Funds
+              </button>
             </div>
           </div>
-          <p className="text-3xl font-bold text-slate-900 mb-1">${(wallet?.balance || 0).toFixed(2)}</p>
-          <p className="text-sm text-slate-500 font-medium">Available Balance</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-        </div>
 
-        {/* Pending Withdrawals */}
-        <div className="relative bg-white rounded-2xl p-6 border border-slate-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-xl bg-amber-50 flex items-center justify-center">
-              <Clock className="h-6 w-6 text-amber-600" />
+          {hasPendingWithdrawal && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+              <AlertCircle className="text-amber-600 flex-shrink-0" size={20} />
+              <div>
+                <p className="text-amber-700 font-medium">Withdrawal Pending</p>
+                <p className="text-amber-600/70 text-sm">Please wait for your current withdrawal to be processed.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Payment Methods */}
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
+            <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
+              <CreditCard className="text-gray-500" size={20} />
+              Available Payment Methods
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {paymentMethods.map((method) => (
+                <div 
+                  key={method.id}
+                  className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
+                >
+                  {method.icon_url ? (
+                    <img 
+                      src={method.icon_url} 
+                      alt={method.name} 
+                      className="h-8 w-auto mx-auto mb-2 object-contain"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 mx-auto mb-2 rounded-lg bg-gray-200 flex items-center justify-center">
+                      <CreditCard size={16} className="text-gray-500" />
+                    </div>
+                  )}
+                  <p className="text-gray-900 font-medium text-sm">{method.name}</p>
+                  <p className="text-gray-500 text-xs">{method.is_automatic ? 'Automatic' : 'Manual'}</p>
+                </div>
+              ))}
             </div>
           </div>
-          <p className="text-3xl font-bold text-slate-900 mb-1">${pendingAmount.toFixed(2)}</p>
-          <p className="text-sm text-slate-500 font-medium">Pending Withdrawal</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-amber-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-        </div>
-
-        {/* Total Withdrawn */}
-        <div className="relative bg-white rounded-2xl p-6 border border-slate-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500" />
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-          <p className="text-3xl font-bold text-slate-900 mb-1">${totalWithdrawn.toFixed(2)}</p>
-          <p className="text-sm text-slate-500 font-medium">Total Withdrawn</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-        </div>
-      </div>
-
-      {/* Withdraw Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowWithdrawDialog(true)}
-          disabled={!wallet?.balance || wallet.balance < 5 || hasPendingWithdrawal}
-          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center gap-2"
-        >
-          <ArrowDownCircle size={18} />
-          Withdraw Funds
-        </button>
-      </div>
-
-      {hasPendingWithdrawal && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
-          <AlertCircle className="text-amber-600 flex-shrink-0" size={20} />
-          <p className="text-amber-700 text-sm">
-            You have a pending withdrawal request. Please wait for it to be processed before submitting a new one.
-          </p>
         </div>
       )}
 
-      {/* Withdrawal History */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-900">Withdrawal History</h2>
-        </div>
-        
-        {withdrawals.length === 0 ? (
-          <div className="p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <ArrowDownCircle className="w-8 h-8 text-gray-400" />
-            </div>
-            <p className="text-gray-500">No withdrawals yet</p>
-            <p className="text-gray-400 text-sm mt-1">Your withdrawal history will appear here</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-50">
-            {withdrawals.map((withdrawal) => {
-              const statusConfig = getStatusConfig(withdrawal.status);
-              const StatusIcon = statusConfig.icon;
-              return (
-                <div key={withdrawal.id} className="px-6 py-4 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                        <DollarSign className="h-5 w-5 text-slate-600" />
+      {/* Withdrawals Tab */}
+      {activeTab === 'withdrawals' && (
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
+            <History className="text-gray-500" size={20} />
+            Withdrawal History
+          </h3>
+          
+          {withdrawals.length === 0 ? (
+            <p className="text-gray-500 text-center py-12">No withdrawals yet</p>
+          ) : (
+            <div className="space-y-3">
+              {withdrawals.map((withdrawal) => {
+                const statusConfig = getStatusConfig(withdrawal.status);
+                return (
+                  <div
+                    key={withdrawal.id}
+                    className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-violet-100">
+                          <DollarSign size={18} className="text-violet-600" />
+                        </div>
+                        <div>
+                          <p className="text-gray-900 font-medium">${Number(withdrawal.amount).toFixed(2)}</p>
+                          <p className="text-gray-500 text-sm">
+                            {format(new Date(withdrawal.created_at), 'MMM d, yyyy')}
+                            <span className="ml-2 text-xs uppercase text-gray-400">
+                              via {withdrawal.payment_method}
+                            </span>
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-slate-900">${Number(withdrawal.amount).toFixed(2)}</p>
-                        <p className="text-sm text-slate-500">
-                          {withdrawal.payment_method} • {format(new Date(withdrawal.created_at), 'MMM d, yyyy')}
-                        </p>
+                      <div className="text-right">
+                        <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${statusConfig.className}`}>
+                          {statusConfig.label}
+                        </span>
                       </div>
                     </div>
-                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${statusConfig.className}`}>
-                      <StatusIcon size={12} />
-                      {statusConfig.label}
-                    </div>
+                    {withdrawal.admin_notes && (
+                      <p className="mt-3 text-sm text-gray-600 bg-gray-100 p-2 rounded-lg">
+                        Note: {withdrawal.admin_notes}
+                      </p>
+                    )}
                   </div>
-                  {withdrawal.admin_notes && (
-                    <p className="mt-2 text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
-                      Note: {withdrawal.admin_notes}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Withdraw Dialog */}
       <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
@@ -298,7 +326,7 @@ const SellerWallet = () => {
                   step="0.01"
                   min="5"
                   max={wallet?.balance || 0}
-                  className="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                   required
                 />
               </div>
@@ -328,8 +356,8 @@ const SellerWallet = () => {
 
             {/* Converted Amount Display */}
             {convertedAmount && selectedPaymentMethod && (
-              <div className="p-3 bg-emerald-50 rounded-xl">
-                <p className="text-sm text-emerald-700">
+              <div className="p-3 bg-violet-50 rounded-xl">
+                <p className="text-sm text-violet-700">
                   You will receive: <span className="font-bold">{selectedPaymentMethod.currency_code} {convertedAmount}</span>
                 </p>
               </div>
@@ -345,7 +373,7 @@ const SellerWallet = () => {
                 onChange={(e) => setAccountDetails(e.target.value)}
                 placeholder="Enter your account number, wallet address, or payment details..."
                 rows={3}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 resize-none"
                 required
               />
             </div>
@@ -354,7 +382,7 @@ const SellerWallet = () => {
             <button
               type="submit"
               disabled={submitting || !withdrawAmount || !selectedMethod || !accountDetails}
-              className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <Loader2 size={18} className="animate-spin" />
