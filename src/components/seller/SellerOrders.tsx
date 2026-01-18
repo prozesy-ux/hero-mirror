@@ -19,16 +19,22 @@ import {
   XCircle,
   Search,
   Truck,
-  AlertCircle
+  AlertCircle,
+  Pencil
 } from 'lucide-react';
 
 const SellerOrders = () => {
-  const { orders, wallet, refreshOrders, refreshWallet, loading } = useSellerContext();
+  const { orders, wallet, refreshOrders, refreshWallet, loading, profile } = useSellerContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [credentials, setCredentials] = useState('');
   const [delivering, setDelivering] = useState(false);
   const [activeTab, setActiveTab] = useState('pending');
+  
+  // Edit credentials state
+  const [editingOrder, setEditingOrder] = useState<string | null>(null);
+  const [editCredentials, setEditCredentials] = useState('');
+  const [updating, setUpdating] = useState(false);
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
@@ -62,6 +68,25 @@ const SellerOrders = () => {
 
       if (orderError) throw orderError;
 
+      // Create notification for buyer
+      await supabase.from('notifications').insert({
+        user_id: order.buyer_id,
+        type: 'delivery',
+        title: 'Order Delivered!',
+        message: `Your order for ${order.product?.name || 'Product'} has been delivered. Check credentials and approve.`,
+        link: '/dashboard/ai-accounts?tab=purchases',
+        is_read: false
+      });
+
+      // Create system message in seller_chats
+      await supabase.from('seller_chats').insert({
+        buyer_id: order.buyer_id,
+        seller_id: profile?.id,
+        message: `🎁 Seller has delivered your order for "${order.product?.name || 'Product'}". Please check your credentials and approve if everything is correct.`,
+        sender_type: 'system',
+        product_id: order.product_id
+      });
+
       toast.success('Order delivered! Awaiting buyer approval.');
       setSelectedOrder(null);
       setCredentials('');
@@ -71,6 +96,62 @@ const SellerOrders = () => {
     } finally {
       setDelivering(false);
     }
+  };
+
+  const handleUpdateCredentials = async () => {
+    if (!editingOrder || !editCredentials.trim()) {
+      toast.error('Please enter the new credentials');
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const order = orders.find(o => o.id === editingOrder);
+      if (!order) throw new Error('Order not found');
+
+      // Update credentials
+      const { error: orderError } = await supabase
+        .from('seller_orders')
+        .update({
+          credentials: editCredentials.trim()
+        })
+        .eq('id', editingOrder);
+
+      if (orderError) throw orderError;
+
+      // Create notification for buyer
+      await supabase.from('notifications').insert({
+        user_id: order.buyer_id,
+        type: 'update',
+        title: 'Credentials Updated',
+        message: `Seller updated credentials for ${order.product?.name || 'Product'}`,
+        link: '/dashboard/ai-accounts?tab=purchases',
+        is_read: false
+      });
+
+      // Create system message in seller_chats
+      await supabase.from('seller_chats').insert({
+        buyer_id: order.buyer_id,
+        seller_id: profile?.id,
+        message: `🔄 Seller has updated the credentials for your order "${order.product?.name || 'Product'}". Please check your purchases tab for the new credentials.`,
+        sender_type: 'system',
+        product_id: order.product_id
+      });
+
+      toast.success('Credentials updated successfully!');
+      setEditingOrder(null);
+      setEditCredentials('');
+      refreshOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update credentials');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const openEditCredentials = (orderId: string, currentCredentials: string | null) => {
+    setEditingOrder(orderId);
+    setEditCredentials(currentCredentials || '');
   };
 
   const getStatusConfig = (status: string, buyerApproved?: boolean) => {
@@ -225,9 +306,20 @@ const SellerOrders = () => {
 
                     {order.status === 'delivered' && (
                       <div className="mt-4 pt-4 border-t border-slate-100">
-                        <div className="flex items-center gap-2 text-blue-600">
-                          <Truck className="h-4 w-4" />
-                          <p className="text-sm font-medium">Delivered - Waiting for buyer to approve</p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-blue-600">
+                            <Truck className="h-4 w-4" />
+                            <p className="text-sm font-medium">Delivered - Waiting for buyer to approve</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEditCredentials(order.id, order.credentials)}
+                            className="border-slate-200 text-slate-600 hover:bg-slate-50"
+                          >
+                            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                            Edit Credentials
+                          </Button>
                         </div>
                         <p className="text-xs text-slate-500 mt-1">
                           Balance will be released once buyer approves delivery
@@ -292,6 +384,55 @@ const SellerOrders = () => {
                   <>
                     <Send className="h-4 w-4 mr-2" />
                     Deliver
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Credentials Dialog */}
+      <Dialog open={!!editingOrder} onOpenChange={(open) => !open && setEditingOrder(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Credentials</DialogTitle>
+            <DialogDescription>
+              Update the account credentials for this order
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Enter updated account credentials (email, password, etc.)"
+              value={editCredentials}
+              onChange={(e) => setEditCredentials(e.target.value)}
+              rows={4}
+              className="border-slate-200"
+            />
+            <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
+              <p className="text-sm text-amber-600">
+                The buyer will be notified of the credential update and will see the new credentials.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setEditingOrder(null)}
+                className="flex-1 border-slate-200"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateCredentials}
+                disabled={updating || !editCredentials.trim()}
+                className="flex-1 bg-blue-500 hover:bg-blue-600"
+              >
+                {updating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Update
                   </>
                 )}
               </Button>

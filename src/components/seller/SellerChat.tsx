@@ -325,25 +325,42 @@ const SellerChat = () => {
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-3">
-                  {messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.sender_type === 'seller' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                        msg.sender_type === 'seller'
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-100 text-slate-900'
-                      }`}>
-                        <p className="text-sm">{msg.message}</p>
-                        <p className={`text-[10px] mt-1 ${
-                          msg.sender_type === 'seller' ? 'text-emerald-100' : 'text-slate-400'
+                  {messages.map((msg) => {
+                    const isSystem = msg.sender_type === 'system';
+                    
+                    if (isSystem) {
+                      return (
+                        <div key={msg.id} className="flex justify-center my-3">
+                          <div className="bg-slate-100 rounded-xl px-4 py-2 max-w-[85%] border border-slate-200">
+                            <p className="text-xs text-slate-600 text-center">{msg.message}</p>
+                            <p className="text-[10px] text-slate-400 text-center mt-1">
+                              {format(new Date(msg.created_at), 'MMM d, h:mm a')}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex ${msg.sender_type === 'seller' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                          msg.sender_type === 'seller'
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-100 text-slate-900'
                         }`}>
-                          {format(new Date(msg.created_at), 'h:mm a')}
-                        </p>
+                          <p className="text-sm">{msg.message}</p>
+                          <p className={`text-[10px] mt-1 ${
+                            msg.sender_type === 'seller' ? 'text-emerald-100' : 'text-slate-400'
+                          }`}>
+                            {format(new Date(msg.created_at), 'h:mm a')}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
