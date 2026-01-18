@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   MessageCircle, Send, Users, Search, Check, CheckCheck, 
   Trash2, AlertTriangle, Loader2, Image, Video, FileText, 
-  Download, Monitor, X, Store, User
+  Download, Monitor, X, Store, User, UserPlus, Eye, LogOut, Shield
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminDataContext } from '@/contexts/AdminDataContext';
@@ -13,6 +13,9 @@ import { playSound } from '@/lib/sounds';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ChatUser {
   user_id: string;
@@ -63,10 +66,42 @@ interface ScreenShareSession {
   ended_at: string | null;
 }
 
+interface ChatJoinRequest {
+  id: string;
+  buyer_id: string;
+  seller_id: string;
+  reason: string;
+  description: string | null;
+  status: string;
+  admin_notes: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  buyer_profile?: { email: string; full_name: string | null } | null;
+  seller_profile?: { store_name: string } | null;
+}
+
+interface ChatMessage {
+  id: string;
+  buyer_id: string;
+  seller_id: string;
+  message: string;
+  sender_type: 'buyer' | 'seller' | 'system' | 'support';
+  created_at: string;
+  admin_joined?: boolean;
+}
+
+interface ActiveChatSession {
+  request: ChatJoinRequest;
+  messages: ChatMessage[];
+}
+
+type MainTab = 'users' | 'sellers' | 'chat-requests';
+type ChatRequestTab = 'pending' | 'active';
+
 const ChatManagement = () => {
   const { supportMessages, sellerSupportMessages, profiles, sellerProfiles, isLoading, refreshTable } = useAdminDataContext();
   const { fetchData } = useAdminData();
-  const [activeTab, setActiveTab] = useState<'users' | 'sellers'>('users');
+  const [activeTab, setActiveTab] = useState<MainTab>('users');
   
   // User chat state
   const [selectedUser, setSelectedUser] = useState<ChatUser | null>(null);
@@ -86,6 +121,16 @@ const ChatManagement = () => {
   const [activeScreenShare, setActiveScreenShare] = useState<ScreenShareSession | null>(null);
   const [showScreenShareModal, setShowScreenShareModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Chat Join Requests state
+  const [chatRequests, setChatRequests] = useState<ChatJoinRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<ChatJoinRequest | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [processingRequest, setProcessingRequest] = useState(false);
+  const [chatRequestTab, setChatRequestTab] = useState<ChatRequestTab>('pending');
+  const [activeChatSession, setActiveChatSession] = useState<ActiveChatSession | null>(null);
+  const [supportMessage, setSupportMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   // Derive user chat list
   const users = useMemo(() => {
@@ -187,6 +232,11 @@ const ChatManagement = () => {
     return chatSellers;
   }, [sellerSupportMessages, sellerProfiles]);
 
+  // Fetch chat requests on mount
+  useEffect(() => {
+    fetchChatRequests();
+  }, []);
+
   // Fetch user messages
   useEffect(() => {
     if (selectedUser) {
@@ -235,10 +285,40 @@ const ChatManagement = () => {
           checkActiveScreenShare(selectedUser.user_id);
         }
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_join_requests' }, () => {
+        fetchChatRequests();
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [selectedUser, selectedSeller, refreshTable]);
+
+  // Realtime subscription for active chat session
+  useEffect(() => {
+    if (!activeChatSession) return;
+
+    const channel = supabase
+      .channel('support-chat-' + activeChatSession.request.id)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'seller_chats',
+        filter: `buyer_id=eq.${activeChatSession.request.buyer_id}`
+      }, (payload) => {
+        const newMsg = payload.new as ChatMessage;
+        if (newMsg.seller_id === activeChatSession.request.seller_id) {
+          setActiveChatSession(prev => prev ? {
+            ...prev,
+            messages: [...prev.messages, newMsg]
+          } : null);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeChatSession?.request.id]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -350,7 +430,6 @@ const ChatManagement = () => {
     } else {
       playSound('messageSent');
       
-      // Create notification for the user
       const token = localStorage.getItem('admin_session_token');
       if (token) {
         try {
@@ -398,7 +477,6 @@ const ChatManagement = () => {
     } else {
       playSound('messageSent');
       
-      // Create seller notification
       const token = localStorage.getItem('admin_session_token');
       if (token) {
         try {
@@ -532,6 +610,165 @@ const ChatManagement = () => {
     }
   };
 
+  // Chat Join Requests Functions
+  const fetchChatRequests = async () => {
+    const { data, error } = await supabase
+      .from('chat_join_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      const buyerIds = [...new Set(data.map(r => r.buyer_id))];
+      const sellerIds = [...new Set(data.map(r => r.seller_id))];
+
+      const [buyerProfiles, sellerProfilesData] = await Promise.all([
+        supabase.from('profiles').select('user_id, email, full_name').in('user_id', buyerIds),
+        supabase.from('seller_profiles').select('id, store_name').in('id', sellerIds)
+      ]);
+
+      const enrichedData = data.map(request => ({
+        ...request,
+        buyer_profile: buyerProfiles.data?.find(p => p.user_id === request.buyer_id) || null,
+        seller_profile: sellerProfilesData.data?.find(p => p.id === request.seller_id) || null
+      }));
+
+      setChatRequests(enrichedData);
+    }
+  };
+
+  const fetchChatHistory = async (buyerId: string, sellerId: string) => {
+    const { data } = await supabase
+      .from('seller_chats')
+      .select('*')
+      .eq('buyer_id', buyerId)
+      .eq('seller_id', sellerId)
+      .order('created_at', { ascending: true })
+      .limit(50);
+
+    setChatMessages((data as ChatMessage[]) || []);
+  };
+
+  const handleJoinChat = async (request: ChatJoinRequest) => {
+    setProcessingRequest(true);
+    
+    const { error } = await supabase
+      .from('chat_join_requests')
+      .update({
+        status: 'joined',
+        resolved_at: new Date().toISOString()
+      })
+      .eq('id', request.id);
+
+    if (error) {
+      toast.error('Failed to join chat');
+    } else {
+      await supabase.from('seller_chats').insert({
+        buyer_id: request.buyer_id,
+        seller_id: request.seller_id,
+        message: '🛡️ Uptoza Support has joined this conversation to help resolve your issue.',
+        sender_type: 'system',
+        admin_joined: true
+      });
+
+      toast.success('Joined chat successfully');
+      setSelectedRequest(null);
+      fetchChatRequests();
+    }
+    setProcessingRequest(false);
+  };
+
+  const handleDeclineRequest = async (request: ChatJoinRequest, notes: string) => {
+    setProcessingRequest(true);
+    
+    const { error } = await supabase
+      .from('chat_join_requests')
+      .update({
+        status: 'declined',
+        admin_notes: notes,
+        resolved_at: new Date().toISOString()
+      })
+      .eq('id', request.id);
+
+    if (error) {
+      toast.error('Failed to decline request');
+    } else {
+      toast.success('Request declined');
+      setSelectedRequest(null);
+      fetchChatRequests();
+    }
+    setProcessingRequest(false);
+  };
+
+  const openActiveChat = async (request: ChatJoinRequest) => {
+    const { data } = await supabase
+      .from('seller_chats')
+      .select('*')
+      .eq('buyer_id', request.buyer_id)
+      .eq('seller_id', request.seller_id)
+      .order('created_at', { ascending: true })
+      .limit(100);
+
+    setActiveChatSession({
+      request,
+      messages: (data as ChatMessage[]) || []
+    });
+  };
+
+  const sendSupportMessage = async () => {
+    if (!supportMessage.trim() || !activeChatSession || sendingMessage) return;
+    
+    setSendingMessage(true);
+    
+    const { error } = await supabase.from('seller_chats').insert({
+      buyer_id: activeChatSession.request.buyer_id,
+      seller_id: activeChatSession.request.seller_id,
+      message: supportMessage.trim(),
+      sender_type: 'support',
+      admin_joined: true
+    });
+
+    if (error) {
+      toast.error('Failed to send message');
+    } else {
+      setSupportMessage('');
+      const { data } = await supabase
+        .from('seller_chats')
+        .select('*')
+        .eq('buyer_id', activeChatSession.request.buyer_id)
+        .eq('seller_id', activeChatSession.request.seller_id)
+        .order('created_at', { ascending: true })
+        .limit(100);
+      
+      setActiveChatSession(prev => prev ? {
+        ...prev,
+        messages: (data as ChatMessage[]) || []
+      } : null);
+    }
+    
+    setSendingMessage(false);
+  };
+
+  const handleCloseChat = async () => {
+    if (!activeChatSession) return;
+    
+    await supabase.from('seller_chats').insert({
+      buyer_id: activeChatSession.request.buyer_id,
+      seller_id: activeChatSession.request.seller_id,
+      message: '🛡️ Uptoza Support has left the conversation. Issue resolved.',
+      sender_type: 'system',
+      admin_joined: true
+    });
+
+    await supabase
+      .from('chat_join_requests')
+      .update({ status: 'resolved' })
+      .eq('id', activeChatSession.request.id);
+
+    toast.success('Chat closed and marked as resolved');
+    setActiveChatSession(null);
+    fetchChatRequests();
+  };
+
   const renderAttachment = (att: ChatAttachment, isAdmin: boolean) => {
     const bgClass = isAdmin ? 'bg-black/10' : 'bg-white/10';
     const hoverClass = isAdmin ? 'hover:bg-black/20' : 'hover:bg-white/20';
@@ -585,6 +822,9 @@ const ChatManagement = () => {
 
   const totalUserUnread = users.reduce((sum, u) => sum + u.unread_count, 0);
   const totalSellerUnread = sellers.reduce((sum, s) => sum + s.unread_count, 0);
+
+  const pendingChatRequests = chatRequests.filter(r => r.status === 'pending');
+  const joinedChatRequests = chatRequests.filter(r => r.status === 'joined');
 
   const renderChatArea = (
     isUserChat: boolean,
@@ -764,10 +1004,296 @@ const ChatManagement = () => {
     );
   };
 
+  // Render Chat Requests Tab Content
+  const renderChatRequestsContent = () => {
+    // If active chat session is open, show full chat interface
+    if (activeChatSession) {
+      return (
+        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden" style={{ height: 'calc(100vh - 350px)' }}>
+          {/* Chat Header */}
+          <div className="p-4 border-b border-white/10 bg-white/[0.02]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <Shield className="text-blue-400" size={18} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">Support Chat</h3>
+                  <p className="text-gray-500 text-sm">
+                    Buyer: {activeChatSession.request.buyer_profile?.email || 'Unknown'} • 
+                    Seller: {activeChatSession.request.seller_profile?.store_name || 'Unknown'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveChatSession(null)}
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Back
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleCloseChat}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <LogOut className="h-4 w-4 mr-1" />
+                  Close & Resolve
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <ScrollArea className="h-[calc(100%-140px)] p-4">
+            <div className="space-y-4">
+              {activeChatSession.messages.map((msg) => {
+                const isSupportMsg = msg.sender_type === 'support';
+                const isSystemMsg = msg.sender_type === 'system';
+                const isBuyerMsg = msg.sender_type === 'buyer';
+
+                if (isSystemMsg) {
+                  return (
+                    <div key={msg.id} className="flex justify-center">
+                      <div className="bg-blue-500/10 text-blue-400 px-4 py-2 rounded-full text-sm">
+                        {msg.message}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex ${isSupportMsg ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                        isSupportMsg
+                          ? 'bg-blue-600 text-white'
+                          : isBuyerMsg
+                          ? 'bg-white/10 text-white'
+                          : 'bg-emerald-600/20 text-emerald-400'
+                      }`}
+                    >
+                      <p className="text-xs font-medium mb-1 opacity-70">
+                        {isSupportMsg ? 'Support' : isBuyerMsg ? 'Buyer' : 'Seller'}
+                      </p>
+                      <p className="whitespace-pre-wrap">{msg.message}</p>
+                      <p className="text-xs opacity-50 mt-1">
+                        {format(new Date(msg.created_at), 'h:mm a')}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+
+          {/* Input */}
+          <div className="p-4 border-t border-white/10">
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={supportMessage}
+                onChange={(e) => setSupportMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendSupportMessage()}
+                placeholder="Type support message..."
+                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              />
+              <Button
+                onClick={sendSupportMessage}
+                disabled={sendingMessage || !supportMessage.trim()}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {sendingMessage ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Show pending/active tabs
+    return (
+      <Tabs value={chatRequestTab} onValueChange={(v) => setChatRequestTab(v as ChatRequestTab)}>
+        <TabsList className="bg-white/5 border border-white/10 mb-4">
+          <TabsTrigger value="pending" className="gap-2 data-[state=active]:bg-white data-[state=active]:text-black">
+            Pending
+            {pendingChatRequests.length > 0 && (
+              <Badge className="bg-red-500 text-white ml-1">{pendingChatRequests.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="active" className="gap-2 data-[state=active]:bg-white data-[state=active]:text-black">
+            Active (Joined)
+            {joinedChatRequests.length > 0 && (
+              <Badge className="bg-blue-500 text-white ml-1">{joinedChatRequests.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending">
+          <Card className="bg-white/5 border border-white/10">
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="flex items-center gap-2 text-white">
+                <AlertTriangle className="h-5 w-5 text-amber-400" />
+                Pending Support Requests
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {pendingChatRequests.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No pending support requests</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingChatRequests.map((request) => (
+                    <div key={request.id} className="border border-white/10 rounded-xl p-4 space-y-3 bg-white/[0.02]">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className="bg-red-500/20 text-red-400 hover:bg-red-500/20">Action Required</Badge>
+                            <span className="text-xs text-gray-500">
+                              {format(new Date(request.created_at), 'MMM d, h:mm a')}
+                            </span>
+                          </div>
+                          <p className="font-medium text-white">
+                            Buyer: {request.buyer_profile?.email || 'Unknown'}
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            Seller: {request.seller_profile?.store_name || 'Unknown'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
+                        <p className="text-sm font-medium text-amber-400">
+                          Reason: {request.reason}
+                        </p>
+                        {request.description && (
+                          <p className="text-sm text-amber-300/70 mt-1">
+                            {request.description}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            fetchChatHistory(request.buyer_id, request.seller_id);
+                          }}
+                          className="border-white/20 text-white hover:bg-white/10"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View Chat
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleJoinChat(request)}
+                          disabled={processingRequest}
+                          className="bg-white text-black hover:bg-gray-100"
+                        >
+                          <UserPlus className="h-4 w-4 mr-1" />
+                          Join Chat
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeclineRequest(request, 'Request declined')}
+                          disabled={processingRequest}
+                          className="border-white/20 text-white hover:bg-white/10"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="active">
+          <Card className="bg-white/5 border border-white/10">
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="flex items-center gap-2 text-white">
+                <MessageCircle className="h-5 w-5 text-blue-400" />
+                Active Support Chats
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {joinedChatRequests.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No active support chats</p>
+                  <p className="text-sm mt-1">Join a pending request to start helping users</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {joinedChatRequests.map((request) => (
+                    <div key={request.id} className="border border-white/10 rounded-xl p-4 space-y-3 bg-white/[0.02] hover:border-blue-500/30 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className="bg-blue-500/20 text-blue-400 hover:bg-blue-500/20">Active</Badge>
+                            <span className="text-xs text-gray-500">
+                              Joined: {request.resolved_at ? format(new Date(request.resolved_at), 'MMM d, h:mm a') : 'N/A'}
+                            </span>
+                          </div>
+                          <p className="font-medium text-white">
+                            Buyer: {request.buyer_profile?.email || 'Unknown'}
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            Seller: {request.seller_profile?.store_name || 'Unknown'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+                        <p className="text-sm font-medium text-gray-300">
+                          Original Issue: {request.reason}
+                        </p>
+                        {request.description && (
+                          <p className="text-sm text-gray-400 mt-1">
+                            {request.description}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => openActiveChat(request)}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <MessageCircle className="h-4 w-4 mr-1" />
+                          Open Chat
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    );
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'users' | 'sellers')}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as MainTab)}>
           <TabsList className="bg-white/5 border border-white/10">
             <TabsTrigger value="users" className="gap-2 data-[state=active]:bg-white data-[state=active]:text-black">
               <User size={16} />
@@ -783,163 +1309,217 @@ const ChatManagement = () => {
                 <Badge className="bg-red-500 text-white text-xs ml-1">{totalSellerUnread}</Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="chat-requests" className="gap-2 data-[state=active]:bg-white data-[state=active]:text-black">
+              <Shield size={16} />
+              Chat Requests
+              {pendingChatRequests.length > 0 && (
+                <Badge className="bg-red-500 text-white text-xs ml-1 animate-pulse">{pendingChatRequests.length}</Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex" style={{ height: 'calc(100vh - 250px)' }}>
-        {/* Users/Sellers List */}
-        <div className="w-80 border-r border-white/10 flex flex-col">
-          <div className="p-4 border-b border-white/10">
-            <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Search ${activeTab}...`}
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
-              />
+      {activeTab === 'chat-requests' ? (
+        renderChatRequestsContent()
+      ) : (
+        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex" style={{ height: 'calc(100vh - 250px)' }}>
+          {/* Users/Sellers List */}
+          <div className="w-80 border-r border-white/10 flex flex-col">
+            <div className="p-4 border-b border-white/10">
+              <div className="relative">
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={`Search ${activeTab}...`}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {isLoading ? (
+                <div className="space-y-2 p-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="p-4 border-b border-white/5">
+                      <Skeleton className="h-4 w-24 bg-white/10 mb-2" />
+                      <Skeleton className="h-3 w-32 bg-white/10" />
+                    </div>
+                  ))}
+                </div>
+              ) : activeTab === 'users' ? (
+                filteredUsers.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <Users className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500">No user conversations yet</p>
+                  </div>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <button
+                      key={user.user_id}
+                      onClick={() => { setSelectedUser(user); setSelectedSeller(null); }}
+                      className={`w-full p-4 text-left transition-all border-b border-white/5 ${
+                        selectedUser?.user_id === user.user_id
+                          ? 'bg-white text-black'
+                          : 'hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-semibold truncate ${selectedUser?.user_id === user.user_id ? 'text-black' : 'text-white'}`}>
+                              {user.full_name || user.email.split('@')[0]}
+                            </span>
+                            {user.unread_count > 0 && (
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-red-500 text-white font-bold">
+                                {user.unread_count}
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-sm truncate ${selectedUser?.user_id === user.user_id ? 'text-black/60' : 'text-gray-500'}`}>
+                            {user.email}
+                          </p>
+                          <p className={`text-sm truncate mt-1 ${selectedUser?.user_id === user.user_id ? 'text-black/70' : 'text-gray-400'}`}>
+                            {user.last_message}
+                          </p>
+                        </div>
+                        <span className={`text-xs whitespace-nowrap ml-2 ${selectedUser?.user_id === user.user_id ? 'text-black/50' : 'text-gray-600'}`}>
+                          {format(new Date(user.last_message_at), 'MMM d')}
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                )
+              ) : (
+                filteredSellers.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <Store className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500">No seller conversations yet</p>
+                  </div>
+                ) : (
+                  filteredSellers.map((seller) => (
+                    <button
+                      key={seller.seller_id}
+                      onClick={() => { setSelectedSeller(seller); setSelectedUser(null); }}
+                      className={`w-full p-4 text-left transition-all border-b border-white/5 ${
+                        selectedSeller?.seller_id === seller.seller_id
+                          ? 'bg-white text-black'
+                          : 'hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Store size={14} className={selectedSeller?.seller_id === seller.seller_id ? 'text-emerald-600' : 'text-emerald-400'} />
+                            <span className={`font-semibold truncate ${selectedSeller?.seller_id === seller.seller_id ? 'text-black' : 'text-white'}`}>
+                              {seller.store_name}
+                            </span>
+                            {seller.unread_count > 0 && (
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-red-500 text-white font-bold">
+                                {seller.unread_count}
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-sm truncate mt-1 ${selectedSeller?.seller_id === seller.seller_id ? 'text-black/70' : 'text-gray-400'}`}>
+                            {seller.last_message}
+                          </p>
+                        </div>
+                        <span className={`text-xs whitespace-nowrap ml-2 ${selectedSeller?.seller_id === seller.seller_id ? 'text-black/50' : 'text-gray-600'}`}>
+                          {format(new Date(seller.last_message_at), 'MMM d')}
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                )
+              )}
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
-            {isLoading ? (
-              <div className="space-y-2 p-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="p-4 border-b border-white/5">
-                    <Skeleton className="h-4 w-24 bg-white/10 mb-2" />
-                    <Skeleton className="h-3 w-32 bg-white/10" />
-                  </div>
-                ))}
-              </div>
-            ) : activeTab === 'users' ? (
-              filteredUsers.length === 0 ? (
-                <div className="p-6 text-center">
-                  <Users className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-500">No user conversations yet</p>
-                </div>
-              ) : (
-                filteredUsers.map((user) => (
-                  <button
-                    key={user.user_id}
-                    onClick={() => { setSelectedUser(user); setSelectedSeller(null); }}
-                    className={`w-full p-4 text-left transition-all border-b border-white/5 ${
-                      selectedUser?.user_id === user.user_id
-                        ? 'bg-white text-black'
-                        : 'hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className={`font-semibold truncate ${selectedUser?.user_id === user.user_id ? 'text-black' : 'text-white'}`}>
-                            {user.full_name || user.email.split('@')[0]}
-                          </span>
-                          {user.unread_count > 0 && (
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-red-500 text-white font-bold">
-                              {user.unread_count}
-                            </span>
-                          )}
-                        </div>
-                        <p className={`text-sm truncate ${selectedUser?.user_id === user.user_id ? 'text-black/60' : 'text-gray-500'}`}>
-                          {user.email}
-                        </p>
-                        <p className={`text-sm truncate mt-1 ${selectedUser?.user_id === user.user_id ? 'text-black/70' : 'text-gray-400'}`}>
-                          {user.last_message}
-                        </p>
-                      </div>
-                      <span className={`text-xs whitespace-nowrap ml-2 ${selectedUser?.user_id === user.user_id ? 'text-black/50' : 'text-gray-600'}`}>
-                        {format(new Date(user.last_message_at), 'MMM d')}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              )
-            ) : (
-              filteredSellers.length === 0 ? (
-                <div className="p-6 text-center">
-                  <Store className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-500">No seller conversations yet</p>
-                </div>
-              ) : (
-                filteredSellers.map((seller) => (
-                  <button
-                    key={seller.seller_id}
-                    onClick={() => { setSelectedSeller(seller); setSelectedUser(null); }}
-                    className={`w-full p-4 text-left transition-all border-b border-white/5 ${
-                      selectedSeller?.seller_id === seller.seller_id
-                        ? 'bg-white text-black'
-                        : 'hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Store size={14} className={selectedSeller?.seller_id === seller.seller_id ? 'text-emerald-600' : 'text-emerald-400'} />
-                          <span className={`font-semibold truncate ${selectedSeller?.seller_id === seller.seller_id ? 'text-black' : 'text-white'}`}>
-                            {seller.store_name}
-                          </span>
-                          {seller.unread_count > 0 && (
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-red-500 text-white font-bold">
-                              {seller.unread_count}
-                            </span>
-                          )}
-                        </div>
-                        <p className={`text-sm truncate mt-1 ${selectedSeller?.seller_id === seller.seller_id ? 'text-black/70' : 'text-gray-400'}`}>
-                          {seller.last_message}
-                        </p>
-                      </div>
-                      <span className={`text-xs whitespace-nowrap ml-2 ${selectedSeller?.seller_id === seller.seller_id ? 'text-black/50' : 'text-gray-600'}`}>
-                        {format(new Date(seller.last_message_at), 'MMM d')}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              )
-            )}
+          {/* Chat Area */}
+          <div className="flex-1 flex flex-col">
+            {activeTab === 'users' 
+              ? renderChatArea(true, userMessages, userAttachments, selectedUser, sendUserMessage, handleDeleteUserMessage, handleDeleteAllUserChat)
+              : renderChatArea(false, sellerMessages, sellerAttachments, selectedSeller, sendSellerMessage, handleDeleteSellerMessage, handleDeleteAllSellerChat)
+            }
           </div>
         </div>
-
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
-          {activeTab === 'users' 
-            ? renderChatArea(true, userMessages, userAttachments, selectedUser, sendUserMessage, handleDeleteUserMessage, handleDeleteAllUserChat)
-            : renderChatArea(false, sellerMessages, sellerAttachments, selectedSeller, sendSellerMessage, handleDeleteSellerMessage, handleDeleteAllSellerChat)
-          }
-        </div>
-      </div>
+      )}
 
       {/* Screen Share Modal */}
       {showScreenShareModal && activeScreenShare && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
-              <div className="flex items-center gap-3">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-zinc-900 rounded-2xl p-6 max-w-md w-full mx-4 border border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                 <Monitor className="text-green-400" size={20} />
-                <h3 className="text-white font-semibold">
-                  {selectedUser?.full_name || selectedUser?.email} is sharing their screen
-                </h3>
-              </div>
+                Screen Share Active
+              </h3>
               <button
                 onClick={() => setShowScreenShareModal(false)}
-                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
               >
-                <X size={20} />
+                <X size={18} className="text-gray-400" />
               </button>
             </div>
-            <div className="p-8 text-center">
-              <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
-                <Monitor className="text-green-400" size={40} />
+            <div className="space-y-3">
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-sm text-gray-400">Session ID</p>
+                <p className="text-white font-mono text-sm">{activeScreenShare.id}</p>
               </div>
-              <h4 className="text-white text-lg font-medium mb-2">Screen Share Active</h4>
-              <p className="text-gray-400 mb-4">
-                The user has started sharing their screen. In a full implementation,
-                you would see their screen here via WebRTC connection.
-              </p>
-              <p className="text-gray-500 text-sm">
-                Session started: {format(new Date(activeScreenShare.created_at), 'MMM d, h:mm a')}
-              </p>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-sm text-gray-400">Peer ID</p>
+                <p className="text-white font-mono text-sm break-all">{activeScreenShare.peer_id || 'Waiting...'}</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-sm text-gray-400">Started</p>
+                <p className="text-white text-sm">{format(new Date(activeScreenShare.created_at), 'MMM d, h:mm a')}</p>
+              </div>
+            </div>
+            <p className="text-gray-500 text-sm mt-4">
+              The user is currently sharing their screen. Use the Peer ID to connect via a WebRTC viewer.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Chat History Dialog */}
+      {selectedRequest && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-zinc-900 rounded-2xl p-6 max-w-2xl w-full mx-4 border border-white/10 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Chat History</h3>
+              <button
+                onClick={() => setSelectedRequest(null)}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <X size={18} className="text-gray-400" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+              {chatMessages.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No messages in this conversation</p>
+              ) : (
+                chatMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`p-3 rounded-lg ${
+                      msg.sender_type === 'buyer'
+                        ? 'bg-white/10 ml-0 mr-12'
+                        : msg.sender_type === 'seller'
+                        ? 'bg-emerald-600/20 ml-12 mr-0'
+                        : 'bg-blue-600/20 mx-6'
+                    }`}
+                  >
+                    <p className="text-xs text-gray-400 mb-1 capitalize">{msg.sender_type}</p>
+                    <p className="text-white">{msg.message}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {format(new Date(msg.created_at), 'MMM d, h:mm a')}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

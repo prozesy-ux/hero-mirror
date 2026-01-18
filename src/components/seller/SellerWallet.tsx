@@ -181,37 +181,43 @@ const SellerWallet = () => {
 
       {/* Balance Cards */}
       <div className="grid gap-4 md:grid-cols-3 mb-8">
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="h-10 w-10 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <Wallet className="h-5 w-5 text-emerald-600" />
+        <div className="relative bg-white rounded-2xl p-6 border border-slate-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
+          <div className="flex items-start justify-between mb-4">
+            <div className="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+              <Wallet className="h-6 w-6 text-emerald-600" />
             </div>
             {(wallet?.balance || 0) >= 5 && (
-              <span className="text-xs text-emerald-600 font-medium">Ready to withdraw</span>
+              <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-full">Ready</span>
             )}
           </div>
-          <p className="text-3xl font-bold text-slate-900">${(wallet?.balance || 0).toFixed(2)}</p>
-          <p className="text-sm text-slate-500 mt-1">Available Balance</p>
+          <p className="text-3xl font-bold text-slate-900 mb-1">${(wallet?.balance || 0).toFixed(2)}</p>
+          <p className="text-sm text-slate-500 font-medium">Available Balance</p>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
         </div>
 
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center">
-              <Clock className="h-5 w-5 text-amber-600" />
+        <div className="relative bg-white rounded-2xl p-6 border border-slate-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
+          <div className="flex items-start justify-between mb-4">
+            <div className="h-12 w-12 rounded-xl bg-amber-50 flex items-center justify-center">
+              <Clock className="h-6 w-6 text-amber-600" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-slate-900">${(wallet?.pending_balance || 0).toFixed(2)}</p>
-          <p className="text-sm text-slate-500 mt-1">Pending Balance</p>
+          <p className="text-3xl font-bold text-slate-900 mb-1">${(wallet?.pending_balance || 0).toFixed(2)}</p>
+          <p className="text-sm text-slate-500 font-medium">Pending Balance</p>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-amber-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
         </div>
 
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
+        <div className="relative bg-white rounded-2xl p-6 border border-slate-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500" />
+          <div className="flex items-start justify-between mb-4">
+            <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-blue-600" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-slate-900">${totalWithdrawn.toFixed(2)}</p>
-          <p className="text-sm text-slate-500 mt-1">Total Withdrawn</p>
+          <p className="text-3xl font-bold text-slate-900 mb-1">${totalWithdrawn.toFixed(2)}</p>
+          <p className="text-sm text-slate-500 font-medium">Total Withdrawn</p>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
         </div>
       </div>
 

@@ -101,8 +101,7 @@ interface ActiveChatSession {
   messages: ChatMessage[];
 }
 
-type MainTab = 'sellers' | 'products' | 'withdrawals' | 'chat-requests';
-type ChatRequestTab = 'pending' | 'active';
+type MainTab = 'sellers' | 'products' | 'withdrawals';
 
 const UnifiedResellersManagement = () => {
   const [mainTab, setMainTab] = useState<MainTab>('sellers');
@@ -129,17 +128,6 @@ const UnifiedResellersManagement = () => {
   const [adminNotes, setAdminNotes] = useState('');
   const [processingWithdrawal, setProcessingWithdrawal] = useState(false);
 
-  // Chat Join Requests state
-  const [chatRequests, setChatRequests] = useState<ChatJoinRequest[]>([]);
-  const [selectedRequest, setSelectedRequest] = useState<ChatJoinRequest | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [processingRequest, setProcessingRequest] = useState(false);
-  const [chatRequestTab, setChatRequestTab] = useState<ChatRequestTab>('pending');
-
-  // Active Chat Session state (for joined chats)
-  const [activeChatSession, setActiveChatSession] = useState<ActiveChatSession | null>(null);
-  const [supportMessage, setSupportMessage] = useState('');
-  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     fetchAllData();
@@ -150,8 +138,7 @@ const UnifiedResellersManagement = () => {
     await Promise.all([
       fetchSellers(),
       fetchProducts(),
-      fetchWithdrawals(),
-      fetchChatRequests()
+      fetchWithdrawals()
     ]);
     setLoading(false);
   };
