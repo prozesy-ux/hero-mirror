@@ -8,6 +8,7 @@ export interface ChatSession {
   productName?: string;
   isMinimized: boolean;
   unreadCount: number;
+  type: 'seller' | 'support';
 }
 
 interface FloatingChatContextType {
