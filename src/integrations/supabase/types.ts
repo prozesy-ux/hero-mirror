@@ -355,6 +355,45 @@ export type Database = {
           },
         ]
       }
+      chat_join_requests: {
+        Row: {
+          admin_id: string | null
+          admin_notes: string | null
+          buyer_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          reason: string
+          resolved_at: string | null
+          seller_id: string
+          status: string | null
+        }
+        Insert: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          buyer_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason: string
+          resolved_at?: string | null
+          seller_id: string
+          status?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          buyer_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason?: string
+          resolved_at?: string | null
+          seller_id?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string | null
@@ -727,6 +766,7 @@ export type Database = {
       }
       seller_chats: {
         Row: {
+          admin_joined: boolean | null
           buyer_id: string
           created_at: string | null
           id: string
@@ -737,6 +777,7 @@ export type Database = {
           sender_type: string
         }
         Insert: {
+          admin_joined?: boolean | null
           buyer_id: string
           created_at?: string | null
           id?: string
@@ -747,6 +788,7 @@ export type Database = {
           sender_type?: string
         }
         Update: {
+          admin_joined?: boolean | null
           buyer_id?: string
           created_at?: string | null
           id?: string

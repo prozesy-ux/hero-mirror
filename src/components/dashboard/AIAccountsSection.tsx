@@ -1056,9 +1056,10 @@ const AIAccountsSection = () => {
                           </div>
                         )}
 
-                        {/* Category Badge */}
-                        <div className={`absolute top-3 left-3 px-3 py-1.5 ${getCategoryColorClass(getCategoryColor(account.category_id))} text-white rounded-full text-xs font-bold uppercase shadow-lg`}>
-                          {getCategoryName(account.category_id) || account.category || 'AI'}
+                        {/* Uptoza Badge - Admin Products */}
+                        <div className="absolute top-3 left-3 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                          <span className="w-2 h-2 rounded-full bg-white/80" />
+                          Uptoza
                         </div>
 
                         {/* Trending Badge */}
