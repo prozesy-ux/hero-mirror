@@ -6,7 +6,7 @@ import {
   Users, Store, CheckCircle, Search, Eye, Wallet,
   Package, Clock, XCircle, DollarSign, MessageSquare,
   AlertTriangle, UserPlus, Check, X, Trash2, ShoppingCart,
-  Calendar, Mail, FileText, Loader2
+  Calendar, Mail, FileText, Loader2, Send, LogOut, Shield
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -86,7 +86,23 @@ interface ChatJoinRequest {
   seller_profile?: { store_name: string } | null;
 }
 
+interface ChatMessage {
+  id: string;
+  buyer_id: string;
+  seller_id: string;
+  message: string;
+  sender_type: 'buyer' | 'seller' | 'system' | 'support';
+  created_at: string;
+  admin_joined?: boolean;
+}
+
+interface ActiveChatSession {
+  request: ChatJoinRequest;
+  messages: ChatMessage[];
+}
+
 type MainTab = 'sellers' | 'products' | 'withdrawals' | 'chat-requests';
+type ChatRequestTab = 'pending' | 'active';
 
 const UnifiedResellersManagement = () => {
   const [mainTab, setMainTab] = useState<MainTab>('sellers');
@@ -116,8 +132,14 @@ const UnifiedResellersManagement = () => {
   // Chat Join Requests state
   const [chatRequests, setChatRequests] = useState<ChatJoinRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<ChatJoinRequest | null>(null);
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [processingRequest, setProcessingRequest] = useState(false);
+  const [chatRequestTab, setChatRequestTab] = useState<ChatRequestTab>('pending');
+
+  // Active Chat Session state (for joined chats)
+  const [activeChatSession, setActiveChatSession] = useState<ActiveChatSession | null>(null);
+  const [supportMessage, setSupportMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     fetchAllData();
@@ -348,7 +370,7 @@ const UnifiedResellersManagement = () => {
       .order('created_at', { ascending: true })
       .limit(50);
 
-    setChatMessages(data || []);
+    setChatMessages((data as ChatMessage[]) || []);
   };
 
   const handleJoinChat = async (request: ChatJoinRequest) => {
@@ -402,6 +424,109 @@ const UnifiedResellersManagement = () => {
     setProcessingRequest(false);
   };
 
+  // Open active chat session
+  const openActiveChat = async (request: ChatJoinRequest) => {
+    const { data } = await supabase
+      .from('seller_chats')
+      .select('*')
+      .eq('buyer_id', request.buyer_id)
+      .eq('seller_id', request.seller_id)
+      .order('created_at', { ascending: true })
+      .limit(100);
+
+    setActiveChatSession({
+      request,
+      messages: (data as ChatMessage[]) || []
+    });
+  };
+
+  // Send support message
+  const sendSupportMessage = async () => {
+    if (!supportMessage.trim() || !activeChatSession || sendingMessage) return;
+    
+    setSendingMessage(true);
+    
+    const { error } = await supabase.from('seller_chats').insert({
+      buyer_id: activeChatSession.request.buyer_id,
+      seller_id: activeChatSession.request.seller_id,
+      message: supportMessage.trim(),
+      sender_type: 'support',
+      admin_joined: true
+    });
+
+    if (error) {
+      toast.error('Failed to send message');
+    } else {
+      setSupportMessage('');
+      // Refresh messages
+      const { data } = await supabase
+        .from('seller_chats')
+        .select('*')
+        .eq('buyer_id', activeChatSession.request.buyer_id)
+        .eq('seller_id', activeChatSession.request.seller_id)
+        .order('created_at', { ascending: true })
+        .limit(100);
+      
+      setActiveChatSession(prev => prev ? {
+        ...prev,
+        messages: (data as ChatMessage[]) || []
+      } : null);
+    }
+    
+    setSendingMessage(false);
+  };
+
+  // Close/Resolve chat
+  const handleCloseChat = async () => {
+    if (!activeChatSession) return;
+    
+    // Send closing message
+    await supabase.from('seller_chats').insert({
+      buyer_id: activeChatSession.request.buyer_id,
+      seller_id: activeChatSession.request.seller_id,
+      message: '🛡️ Uptoza Support has left the conversation. Issue resolved.',
+      sender_type: 'system',
+      admin_joined: true
+    });
+
+    // Update request status
+    await supabase
+      .from('chat_join_requests')
+      .update({ status: 'resolved' })
+      .eq('id', activeChatSession.request.id);
+
+    toast.success('Chat closed and marked as resolved');
+    setActiveChatSession(null);
+    fetchChatRequests();
+  };
+
+  // Realtime subscription for active chat
+  useEffect(() => {
+    if (!activeChatSession) return;
+
+    const channel = supabase
+      .channel('support-chat-' + activeChatSession.request.id)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'seller_chats',
+        filter: `buyer_id=eq.${activeChatSession.request.buyer_id}`
+      }, (payload) => {
+        const newMsg = payload.new as ChatMessage;
+        if (newMsg.seller_id === activeChatSession.request.seller_id) {
+          setActiveChatSession(prev => prev ? {
+            ...prev,
+            messages: [...prev.messages, newMsg]
+          } : null);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeChatSession?.request.id]);
+
   // Filter functions
   const filteredSellers = sellers.filter(seller => {
     const matchesSearch = seller.store_name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -432,6 +557,7 @@ const UnifiedResellersManagement = () => {
   });
 
   const pendingChatRequests = chatRequests.filter(r => r.status === 'pending');
+  const joinedChatRequests = chatRequests.filter(r => r.status === 'joined');
 
   // Stats
   const stats = {
@@ -442,7 +568,8 @@ const UnifiedResellersManagement = () => {
     pendingProducts: products.filter(p => !p.is_approved).length,
     pendingWithdrawals: withdrawals.filter(w => w.status === 'pending').length,
     pendingWithdrawalAmount: withdrawals.filter(w => w.status === 'pending').reduce((sum, w) => sum + w.amount, 0),
-    pendingChatRequests: pendingChatRequests.length
+    pendingChatRequests: pendingChatRequests.length,
+    activeChats: joinedChatRequests.length
   };
 
   if (loading) {
@@ -844,90 +971,176 @@ const UnifiedResellersManagement = () => {
 
         {/* Chat Requests Tab */}
         <TabsContent value="chat-requests" className="mt-4">
-          <Card className="bg-white border border-slate-200 shadow-sm">
-            <CardHeader className="border-b border-slate-100">
-              <CardTitle className="flex items-center gap-2 text-slate-900">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
-                Buyer Support Join Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              {pendingChatRequests.length === 0 ? (
-                <div className="text-center py-12 text-slate-500">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No pending support requests</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {pendingChatRequests.map((request) => (
-                    <div key={request.id} className="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Action Required</Badge>
-                            <span className="text-xs text-slate-500">
-                              {format(new Date(request.created_at), 'MMM d, h:mm a')}
-                            </span>
-                          </div>
-                          <p className="font-medium text-slate-900">
-                            Buyer: {request.buyer_profile?.email || 'Unknown'}
-                          </p>
-                          <p className="text-sm text-slate-600">
-                            Seller: {request.seller_profile?.store_name || 'Unknown'}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-amber-50 p-3 rounded-lg border border-amber-100">
-                        <p className="text-sm font-medium text-amber-800">
-                          Reason: {request.reason}
-                        </p>
-                        {request.description && (
-                          <p className="text-sm text-amber-700 mt-1">
-                            {request.description}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedRequest(request);
-                            fetchChatHistory(request.buyer_id, request.seller_id);
-                          }}
-                          className="border-slate-200 text-slate-600 hover:bg-slate-50"
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View Chat
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleJoinChat(request)}
-                          disabled={processingRequest}
-                          className="bg-slate-900 hover:bg-slate-800"
-                        >
-                          <UserPlus className="h-4 w-4 mr-1" />
-                          Join Chat
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeclineRequest(request, 'Request declined')}
-                          disabled={processingRequest}
-                          className="border-slate-200 text-slate-600 hover:bg-slate-50"
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Decline
-                        </Button>
-                      </div>
+          <Tabs value={chatRequestTab} onValueChange={(v) => setChatRequestTab(v as ChatRequestTab)}>
+            <TabsList className="bg-slate-100 mb-4">
+              <TabsTrigger value="pending" className="data-[state=active]:bg-white">
+                Pending Requests
+                {pendingChatRequests.length > 0 && (
+                  <Badge className="ml-2 bg-red-500 text-white">{pendingChatRequests.length}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="active" className="data-[state=active]:bg-white">
+                Active Chats
+                {joinedChatRequests.length > 0 && (
+                  <Badge className="ml-2 bg-blue-500 text-white">{joinedChatRequests.length}</Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Pending Requests Tab */}
+            <TabsContent value="pending">
+              <Card className="bg-white border border-slate-200 shadow-sm">
+                <CardHeader className="border-b border-slate-100">
+                  <CardTitle className="flex items-center gap-2 text-slate-900">
+                    <AlertTriangle className="h-5 w-5 text-amber-500" />
+                    Pending Support Join Requests
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {pendingChatRequests.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500">
+                      <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No pending support requests</p>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  ) : (
+                    <div className="space-y-4">
+                      {pendingChatRequests.map((request) => (
+                        <div key={request.id} className="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Action Required</Badge>
+                                <span className="text-xs text-slate-500">
+                                  {format(new Date(request.created_at), 'MMM d, h:mm a')}
+                                </span>
+                              </div>
+                              <p className="font-medium text-slate-900">
+                                Buyer: {request.buyer_profile?.email || 'Unknown'}
+                              </p>
+                              <p className="text-sm text-slate-600">
+                                Seller: {request.seller_profile?.store_name || 'Unknown'}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-amber-50 p-3 rounded-lg border border-amber-100">
+                            <p className="text-sm font-medium text-amber-800">
+                              Reason: {request.reason}
+                            </p>
+                            {request.description && (
+                              <p className="text-sm text-amber-700 mt-1">
+                                {request.description}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedRequest(request);
+                                fetchChatHistory(request.buyer_id, request.seller_id);
+                              }}
+                              className="border-slate-200 text-slate-600 hover:bg-slate-50"
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Chat
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleJoinChat(request)}
+                              disabled={processingRequest}
+                              className="bg-slate-900 hover:bg-slate-800"
+                            >
+                              <UserPlus className="h-4 w-4 mr-1" />
+                              Join Chat
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeclineRequest(request, 'Request declined')}
+                              disabled={processingRequest}
+                              className="border-slate-200 text-slate-600 hover:bg-slate-50"
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Decline
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Active Chats Tab */}
+            <TabsContent value="active">
+              <Card className="bg-white border border-slate-200 shadow-sm">
+                <CardHeader className="border-b border-slate-100">
+                  <CardTitle className="flex items-center gap-2 text-slate-900">
+                    <MessageSquare className="h-5 w-5 text-blue-500" />
+                    Active Support Chats
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {joinedChatRequests.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500">
+                      <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No active support chats</p>
+                      <p className="text-sm mt-1">Join a pending request to start helping users</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {joinedChatRequests.map((request) => (
+                        <div key={request.id} className="border border-slate-200 rounded-xl p-4 space-y-3 bg-white hover:border-blue-200 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Active</Badge>
+                                <span className="text-xs text-slate-500">
+                                  Joined: {request.resolved_at ? format(new Date(request.resolved_at), 'MMM d, h:mm a') : 'N/A'}
+                                </span>
+                              </div>
+                              <p className="font-medium text-slate-900">
+                                Buyer: {request.buyer_profile?.email || 'Unknown'}
+                              </p>
+                              <p className="text-sm text-slate-600">
+                                Seller: {request.seller_profile?.store_name || 'Unknown'}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <p className="text-sm font-medium text-slate-700">
+                              Original Issue: {request.reason}
+                            </p>
+                            {request.description && (
+                              <p className="text-sm text-slate-600 mt-1">
+                                {request.description}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => openActiveChat(request)}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              <MessageSquare className="h-4 w-4 mr-1" />
+                              Open Chat
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
 
@@ -1310,6 +1523,122 @@ const UnifiedResellersManagement = () => {
                 Close
               </Button>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Active Chat Session Dialog - Full Chat Interface */}
+      <Dialog open={!!activeChatSession} onOpenChange={() => setActiveChatSession(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col bg-white">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <Shield className="h-5 w-5 text-blue-500" />
+              Support Chat
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Buyer: {activeChatSession?.request.buyer_profile?.email} • 
+              Seller: {activeChatSession?.request.seller_profile?.store_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {activeChatSession && (
+            <>
+              {/* Chat Messages */}
+              <ScrollArea className="flex-1 min-h-[400px] border border-slate-200 rounded-lg p-4">
+                {activeChatSession.messages.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No messages yet. Start helping!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activeChatSession.messages.map((msg) => (
+                      <div 
+                        key={msg.id} 
+                        className={`flex ${
+                          msg.sender_type === 'buyer' ? 'justify-end' : 
+                          msg.sender_type === 'system' ? 'justify-center' : 
+                          msg.sender_type === 'support' ? 'justify-start' :
+                          'justify-start'
+                        }`}
+                      >
+                        <div className={`max-w-[80%] rounded-xl px-4 py-2 ${
+                          msg.sender_type === 'buyer' ? 'bg-slate-900 text-white' :
+                          msg.sender_type === 'system' ? 'bg-amber-100 text-amber-800 text-center' :
+                          msg.sender_type === 'support' ? 'bg-blue-600 text-white' :
+                          'bg-slate-100 text-slate-900'
+                        }`}>
+                          {msg.sender_type !== 'system' && (
+                            <p className="text-xs font-medium mb-1 opacity-70 flex items-center gap-1">
+                              {msg.sender_type === 'buyer' && 'Buyer'}
+                              {msg.sender_type === 'seller' && 'Seller'}
+                              {msg.sender_type === 'support' && (
+                                <>
+                                  <Shield className="h-3 w-3" />
+                                  Uptoza Support
+                                </>
+                              )}
+                            </p>
+                          )}
+                          <p className="text-sm">{msg.message}</p>
+                          <p className="text-[10px] opacity-70 mt-1">
+                            {format(new Date(msg.created_at), 'MMM d, h:mm a')}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+              
+              {/* Message Input */}
+              <div className="flex-shrink-0 pt-4 space-y-3">
+                <div className="flex gap-2">
+                  <Input
+                    value={supportMessage}
+                    onChange={(e) => setSupportMessage(e.target.value)}
+                    placeholder="Type your message as Uptoza Support..."
+                    className="flex-1 border-slate-200"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendSupportMessage();
+                      }
+                    }}
+                    disabled={sendingMessage}
+                  />
+                  <Button
+                    onClick={sendSupportMessage}
+                    disabled={!supportMessage.trim() || sendingMessage}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {sendingMessage ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setActiveChatSession(null)}
+                    className="flex-1 border-slate-200"
+                  >
+                    Close Window
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleCloseChat}
+                    className="flex-1"
+                  >
+                    <LogOut className="h-4 w-4 mr-1" />
+                    Leave & Resolve
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
