@@ -52,7 +52,9 @@ const FloatingSupportChatBox = ({ session }: FloatingSupportChatBoxProps) => {
   }, [messages, session.isMinimized]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
   const markMessagesAsRead = async () => {
