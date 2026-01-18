@@ -194,7 +194,7 @@ const ChatSection = () => {
       convos.push({
         id: 'support',
         type: 'support',
-        name: 'Support Team',
+        name: 'Uptoza Support',
         lastMessage: supportData?.[0]?.message || 'Start a conversation...',
         lastMessageTime: supportData?.[0]?.created_at || null,
         unreadCount: supportUnread || 0,
@@ -815,15 +815,41 @@ const ChatSection = () => {
                   <Store className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 )}
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="font-semibold">{selectedConversation.name}</h3>
                 <p className="text-xs text-muted-foreground">
                   {selectedConversation.type === 'support' 
-                    ? 'We typically reply within a few hours' 
+                    ? 'Uptoza Support Team - We typically reply within a few hours' 
                     : 'Seller chat'}
                 </p>
               </div>
-            </div>
+              
+              {/* Request Support Button for Seller Chats */}
+              {selectedConversation.type === 'seller' && selectedConversation.sellerId && (
+                <button
+                  onClick={async () => {
+                    const reason = prompt('Please describe the issue you need help with:');
+                    if (!reason) return;
+                    
+                    const { error } = await supabase.from('chat_join_requests').insert({
+                      buyer_id: user?.id,
+                      seller_id: selectedConversation.sellerId,
+                      reason: reason,
+                      description: `Requested support for chat with ${selectedConversation.name}`
+                    });
+                    
+                    if (error) {
+                      toast.error('Failed to request support');
+                    } else {
+                      toast.success('Support request sent! Our team will review and join if needed.');
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Request Support
+                </button>
+              )}
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
