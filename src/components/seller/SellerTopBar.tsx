@@ -27,7 +27,8 @@ import {
   ShoppingCart,
   MessageSquare,
   HelpCircle,
-  Store
+  Store,
+  Lightbulb
 } from 'lucide-react';
 import theLogo from '@/assets/the-logo.png';
 
@@ -46,6 +47,7 @@ const navItems = [
   { path: '/seller/products', label: 'Products', icon: Package },
   { path: '/seller/orders', label: 'Orders', icon: ShoppingCart },
   { path: '/seller/chat', label: 'Messages', icon: MessageSquare },
+  { path: '/seller/feature-requests', label: 'Requests', icon: Lightbulb },
   { path: '/seller/support', label: 'Support', icon: HelpCircle },
 ];
 
