@@ -14,13 +14,12 @@ const SellerMobileHeader = () => {
 
   useEffect(() => {
     const fetchUnread = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!profile?.id) return;
 
       const { count } = await supabase
-        .from('notifications')
+        .from('seller_notifications')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
+        .eq('seller_id', profile.id)
         .eq('is_read', false);
 
       setUnreadCount(count || 0);
@@ -30,11 +29,11 @@ const SellerMobileHeader = () => {
 
     const channel = supabase
       .channel('seller-mobile-notifications')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, fetchUnread)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_notifications' }, fetchUnread)
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [profile?.id]);
 
   return (
     <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-100 flex items-center justify-between px-4 lg:hidden z-50">
