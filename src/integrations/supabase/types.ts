@@ -248,6 +248,30 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_approval_settings: {
+        Row: {
+          auto_approve_all: boolean | null
+          auto_approve_verified_only: boolean | null
+          id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          auto_approve_all?: boolean | null
+          auto_approve_verified_only?: boolean | null
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          auto_approve_all?: boolean | null
+          auto_approve_verified_only?: boolean | null
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       buyer_withdrawals: {
         Row: {
           account_details: string
@@ -902,6 +926,53 @@ export type Database = {
           },
         ]
       }
+      seller_feature_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          description: string
+          id: string
+          priority: string | null
+          seller_id: string
+          status: string | null
+          title: string
+          updated_at: string | null
+          votes: number | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          priority?: string | null
+          seller_id: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          votes?: number | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          priority?: string | null
+          seller_id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          votes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_feature_requests_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seller_notifications: {
         Row: {
           created_at: string | null
@@ -1071,6 +1142,7 @@ export type Database = {
       }
       seller_profiles: {
         Row: {
+          auto_approve_products: boolean | null
           commission_rate: number | null
           created_at: string | null
           id: string
@@ -1085,6 +1157,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_approve_products?: boolean | null
           commission_rate?: number | null
           created_at?: string | null
           id?: string
@@ -1099,6 +1172,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_approve_products?: boolean | null
           commission_rate?: number | null
           created_at?: string | null
           id?: string
