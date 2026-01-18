@@ -9,8 +9,11 @@ import BillingSection from '@/components/dashboard/BillingSection';
 import AIAccountsSection from '@/components/dashboard/AIAccountsSection';
 import AccountDetailPage from '@/components/dashboard/AccountDetailPage';
 import ChatSection from '@/components/dashboard/ChatSection';
+import BuyerWallet from '@/components/dashboard/BuyerWallet';
+import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import { SearchProvider } from '@/contexts/SearchContext';
 import { SidebarProvider, useSidebarContext } from '@/contexts/SidebarContext';
+import { FloatingChatProvider } from '@/contexts/FloatingChatContext';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Crown, Bell } from 'lucide-react';
 
@@ -78,10 +81,14 @@ const DashboardContent = () => {
           <Route path="ai-accounts" element={<AIAccountsSection />} />
           <Route path="ai-accounts/:accountId" element={<AccountDetailPage />} />
           <Route path="billing" element={<BillingSection />} />
+          <Route path="wallet" element={<BuyerWallet />} />
           <Route path="profile" element={<ProfileSection />} />
           <Route path="chat" element={<ChatSection />} />
         </Routes>
       </div>
+      
+      {/* Floating Chat Widget */}
+      <FloatingChatWidget />
     </main>
   );
 };
@@ -113,7 +120,9 @@ const Dashboard = () => {
   return (
     <SidebarProvider>
       <SearchProvider>
-        <DashboardLayout />
+        <FloatingChatProvider>
+          <DashboardLayout />
+        </FloatingChatProvider>
       </SearchProvider>
     </SidebarProvider>
   );
