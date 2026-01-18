@@ -44,6 +44,7 @@ interface ProductFormData {
   category_id: string;
   icon_url: string;
   is_available: boolean;
+  chat_allowed: boolean;
 }
 
 const initialFormData: ProductFormData = {
@@ -53,7 +54,8 @@ const initialFormData: ProductFormData = {
   stock: '',
   category_id: '',
   icon_url: '',
-  is_available: true
+  is_available: true,
+  chat_allowed: true
 };
 
 const SellerProducts = () => {
@@ -90,7 +92,8 @@ const SellerProducts = () => {
           stock: String(product.stock),
           category_id: product.category_id || '',
           icon_url: product.icon_url || '',
-          is_available: product.is_available
+          is_available: product.is_available,
+          chat_allowed: product.chat_allowed !== false
         });
         setEditingProduct(productId);
       }
@@ -120,6 +123,7 @@ const SellerProducts = () => {
         category_id: formData.category_id || null,
         icon_url: formData.icon_url.trim() || null,
         is_available: formData.is_available,
+        chat_allowed: formData.chat_allowed,
         is_approved: false
       };
 
@@ -419,6 +423,15 @@ const SellerProducts = () => {
                 id="is_available"
                 checked={formData.is_available}
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_available: checked }))}
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <Label htmlFor="chat_allowed" className="font-normal text-slate-600">Allow buyers to chat</Label>
+              <Switch
+                id="chat_allowed"
+                checked={formData.chat_allowed}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, chat_allowed: checked }))}
               />
             </div>
 

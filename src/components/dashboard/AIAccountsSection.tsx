@@ -43,6 +43,7 @@ interface SellerProduct {
   stock: number | null;
   sold_count: number | null;
   seller_id: string;
+  chat_allowed: boolean | null;
   seller_profiles: {
     id: string;
     store_name: string;
@@ -1235,22 +1236,24 @@ const AIAccountsSection = () => {
 
                         {/* Action Buttons - 3 buttons */}
                         <div className="flex gap-2">
-                          {/* Chat Button */}
-                          <button
-                            onClick={() => {
-                              setSelectedSeller({
-                                sellerId: product.seller_id,
-                                sellerName: product.seller_profiles?.store_name || 'Seller',
-                                productId: product.id,
-                                productName: product.name
-                              });
-                              setSellerChatOpen(true);
-                            }}
-                            className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700"
-                          >
-                            <MessageCircle size={14} />
-                            Chat
-                          </button>
+                          {/* Chat Button - Only show if chat is allowed */}
+                          {product.chat_allowed !== false && (
+                            <button
+                              onClick={() => {
+                                setSelectedSeller({
+                                  sellerId: product.seller_id,
+                                  sellerName: product.seller_profiles?.store_name || 'Seller',
+                                  productId: product.id,
+                                  productName: product.name
+                                });
+                                setSellerChatOpen(true);
+                              }}
+                              className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700"
+                            >
+                              <MessageCircle size={14} />
+                              Chat
+                            </button>
+                          )}
                           {/* Full View Button */}
                           <button
                             onClick={() => {
@@ -1379,28 +1382,31 @@ const AIAccountsSection = () => {
 
                 {/* Action Buttons - Chat + Buy */}
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setShowSellerDetailsModal(false);
-                      setSelectedSeller({
-                        sellerId: selectedSellerProduct.seller_id,
-                        sellerName: selectedSellerProduct.seller_profiles?.store_name || 'Seller',
-                        productId: selectedSellerProduct.id,
-                        productName: selectedSellerProduct.name
-                      });
-                      setSellerChatOpen(true);
-                    }}
-                    className="flex-1 px-4 py-3 bg-emerald-100 text-emerald-700 rounded-xl font-semibold hover:bg-emerald-200 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <MessageCircle size={16} />
-                    Chat with {selectedSellerProduct.seller_profiles?.store_name || 'Seller'}
-                  </button>
+                  {/* Chat Button - Only show if chat is allowed */}
+                  {selectedSellerProduct.chat_allowed !== false && (
+                    <button
+                      onClick={() => {
+                        setShowSellerDetailsModal(false);
+                        setSelectedSeller({
+                          sellerId: selectedSellerProduct.seller_id,
+                          sellerName: selectedSellerProduct.seller_profiles?.store_name || 'Seller',
+                          productId: selectedSellerProduct.id,
+                          productName: selectedSellerProduct.name
+                        });
+                        setSellerChatOpen(true);
+                      }}
+                      className="flex-1 px-4 py-3 bg-emerald-100 text-emerald-700 rounded-xl font-semibold hover:bg-emerald-200 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle size={16} />
+                      Chat with {selectedSellerProduct.seller_profiles?.store_name || 'Seller'}
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setShowSellerDetailsModal(false);
                       handleSellerProductPurchase(selectedSellerProduct);
                     }}
-                    className="flex-1 px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                    className={`${selectedSellerProduct.chat_allowed !== false ? 'flex-1' : 'w-full'} px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-bold transition-colors flex items-center justify-center gap-2`}
                   >
                     Buy Now
                     <ArrowRight size={16} />
@@ -1911,16 +1917,6 @@ const AIAccountsSection = () => {
                       <p className="text-xs text-gray-500">Available</p>
                     </div>
                   )}
-                </div>
-
-                {/* Features */}
-                <div className="space-y-2 mb-6">
-                  {['Full account access', 'Instant delivery', '24/7 Support'].map((feature, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-gray-600">
-                      <Check size={14} className="text-emerald-500" />
-                      {feature}
-                    </div>
-                  ))}
                 </div>
 
                 {/* Action Buttons */}
