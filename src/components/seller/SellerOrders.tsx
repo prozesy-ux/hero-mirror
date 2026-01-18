@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, isToday, isThisWeek, isThisMonth, startOfDay, startOfWeek, startOfMonth } from 'date-fns';
 import { 
   Package, 
   Loader2, 
@@ -20,7 +21,12 @@ import {
   Search,
   Truck,
   AlertCircle,
-  Pencil
+  Pencil,
+  Download,
+  Mail,
+  Copy,
+  Calendar,
+  Filter
 } from 'lucide-react';
 
 const SellerOrders = () => {
@@ -30,20 +36,95 @@ const SellerOrders = () => {
   const [credentials, setCredentials] = useState('');
   const [delivering, setDelivering] = useState(false);
   const [activeTab, setActiveTab] = useState('pending');
+  const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>('all');
+  
+  // Bulk selection
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [bulkDelivering, setBulkDelivering] = useState(false);
   
   // Edit credentials state
   const [editingOrder, setEditingOrder] = useState<string | null>(null);
   const [editCredentials, setEditCredentials] = useState('');
   const [updating, setUpdating] = useState(false);
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
-      order.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.buyer?.email?.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredOrders = useMemo(() => {
+    return orders.filter(order => {
+      const matchesSearch = 
+        order.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.buyer?.email?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Status filter
+      const matchesStatus = activeTab === 'all' || order.status === activeTab;
+      
+      // Date filter
+      let matchesDate = true;
+      if (dateRange !== 'all') {
+        const orderDate = new Date(order.created_at);
+        if (dateRange === 'today') {
+          matchesDate = isToday(orderDate);
+        } else if (dateRange === 'week') {
+          matchesDate = isThisWeek(orderDate);
+        } else if (dateRange === 'month') {
+          matchesDate = isThisMonth(orderDate);
+        }
+      }
+      
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  }, [orders, searchQuery, activeTab, dateRange]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const pendingIds = filteredOrders.filter(o => o.status === 'pending').map(o => o.id);
+      setSelectedOrders(new Set(pendingIds));
+    } else {
+      setSelectedOrders(new Set());
+    }
+  };
+
+  const handleSelectOrder = (orderId: string, checked: boolean) => {
+    const newSet = new Set(selectedOrders);
+    if (checked) {
+      newSet.add(orderId);
+    } else {
+      newSet.delete(orderId);
+    }
+    setSelectedOrders(newSet);
+  };
+
+  const handleExportCSV = () => {
+    const ordersToExport = filteredOrders.filter(o => 
+      selectedOrders.size === 0 || selectedOrders.has(o.id)
+    );
     
-    if (activeTab === 'all') return matchesSearch;
-    return matchesSearch && order.status === activeTab;
-  });
+    const csvContent = [
+      ['Order ID', 'Product', 'Buyer Email', 'Amount', 'Earning', 'Status', 'Created At', 'Buyer Email Input'].join(','),
+      ...ordersToExport.map(order => [
+        order.id,
+        order.product?.name || 'N/A',
+        order.buyer?.email || 'N/A',
+        order.amount,
+        order.seller_earning,
+        order.status,
+        format(new Date(order.created_at), 'yyyy-MM-dd HH:mm'),
+        (order as any).buyer_email_input || ''
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orders-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success('Orders exported successfully!');
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
 
   const handleDeliver = async () => {
     if (!selectedOrder || !credentials.trim()) {
@@ -170,31 +251,36 @@ const SellerOrders = () => {
         return {
           icon: Clock,
           label: 'Pending Delivery',
-          className: 'bg-amber-50 text-amber-600 border-amber-200'
+          className: 'bg-amber-50 text-amber-600 border-amber-200',
+          accentColor: 'border-l-amber-400'
         };
       case 'delivered':
         return {
           icon: Truck,
           label: 'Awaiting Approval',
-          className: 'bg-blue-50 text-blue-600 border-blue-200'
+          className: 'bg-blue-50 text-blue-600 border-blue-200',
+          accentColor: 'border-l-blue-400'
         };
       case 'completed':
         return {
           icon: CheckCircle,
           label: buyerApproved ? 'Buyer Approved' : 'Completed',
-          className: 'bg-emerald-50 text-emerald-600 border-emerald-200'
+          className: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+          accentColor: 'border-l-emerald-400'
         };
       case 'refunded':
         return {
           icon: XCircle,
           label: 'Refunded',
-          className: 'bg-red-50 text-red-600 border-red-200'
+          className: 'bg-red-50 text-red-600 border-red-200',
+          accentColor: 'border-l-red-400'
         };
       default:
         return {
           icon: AlertCircle,
           label: status,
-          className: 'bg-slate-50 text-slate-600 border-slate-200'
+          className: 'bg-slate-50 text-slate-600 border-slate-200',
+          accentColor: 'border-l-slate-400'
         };
     }
   };
@@ -202,6 +288,7 @@ const SellerOrders = () => {
   const pendingCount = orders.filter(o => o.status === 'pending').length;
   const deliveredCount = orders.filter(o => o.status === 'delivered').length;
   const completedCount = orders.filter(o => o.status === 'completed').length;
+  const pendingSelectableCount = filteredOrders.filter(o => o.status === 'pending').length;
 
   if (loading) {
     return (
@@ -216,44 +303,128 @@ const SellerOrders = () => {
 
   return (
     <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
+      {/* Header with stats */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Orders</h1>
+          <p className="text-sm text-slate-500">Manage and deliver your customer orders</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            className="border-slate-200 text-slate-600 hover:bg-slate-50"
+          >
+            <Download className="h-4 w-4 mr-1.5" />
+            Export
+          </Button>
+        </div>
+      </div>
 
-      {/* Search */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <Input
-          placeholder="Search orders..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 bg-white border-slate-200"
-        />
+      {/* Bulk Actions Bar */}
+      {selectedOrders.size > 0 && (
+        <div className="flex items-center gap-3 bg-violet-50 border border-violet-200 rounded-xl p-3 mb-4">
+          <Badge className="bg-violet-500 text-white">
+            {selectedOrders.size} selected
+          </Badge>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setSelectedOrders(new Set())}
+            className="text-slate-600 hover:bg-slate-100"
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+
+      {/* Search & Date Filter */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search orders..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-white border-slate-200"
+          />
+        </div>
+        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1">
+          <Button
+            size="sm"
+            variant={dateRange === 'today' ? 'default' : 'ghost'}
+            onClick={() => setDateRange('today')}
+            className={dateRange === 'today' ? 'bg-slate-900 text-white' : 'text-slate-600'}
+          >
+            Today
+          </Button>
+          <Button
+            size="sm"
+            variant={dateRange === 'week' ? 'default' : 'ghost'}
+            onClick={() => setDateRange('week')}
+            className={dateRange === 'week' ? 'bg-slate-900 text-white' : 'text-slate-600'}
+          >
+            Week
+          </Button>
+          <Button
+            size="sm"
+            variant={dateRange === 'month' ? 'default' : 'ghost'}
+            onClick={() => setDateRange('month')}
+            className={dateRange === 'month' ? 'bg-slate-900 text-white' : 'text-slate-600'}
+          >
+            Month
+          </Button>
+          <Button
+            size="sm"
+            variant={dateRange === 'all' ? 'default' : 'ghost'}
+            onClick={() => setDateRange('all')}
+            className={dateRange === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600'}
+          >
+            All
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-white border border-slate-200 p-1">
-          <TabsTrigger value="pending" className="gap-2 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
-            Pending
-            {pendingCount > 0 && (
-              <Badge className="bg-amber-500 text-white text-[10px] h-5 min-w-[20px]">
-                {pendingCount}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="delivered" className="gap-2 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
-            Delivered
-            {deliveredCount > 0 && (
-              <Badge className="bg-blue-500 text-white text-[10px] h-5 min-w-[20px]">
-                {deliveredCount}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="completed" className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
-            Completed ({completedCount})
-          </TabsTrigger>
-          <TabsTrigger value="all" className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
-            All
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList className="bg-white border border-slate-200 p-1">
+            <TabsTrigger value="pending" className="gap-2 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
+              Pending
+              {pendingCount > 0 && (
+                <Badge className="bg-amber-500 text-white text-[10px] h-5 min-w-[20px]">
+                  {pendingCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="delivered" className="gap-2 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
+              Delivered
+              {deliveredCount > 0 && (
+                <Badge className="bg-blue-500 text-white text-[10px] h-5 min-w-[20px]">
+                  {deliveredCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
+              Completed ({completedCount})
+            </TabsTrigger>
+            <TabsTrigger value="all" className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
+              All
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Select All (only for pending) */}
+          {activeTab === 'pending' && pendingSelectableCount > 0 && (
+            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+              <Checkbox
+                checked={selectedOrders.size === pendingSelectableCount && pendingSelectableCount > 0}
+                onCheckedChange={handleSelectAll}
+              />
+              Select all
+            </label>
+          )}
+        </div>
 
         <TabsContent value={activeTab}>
           {filteredOrders.length === 0 ? (
@@ -269,90 +440,118 @@ const SellerOrders = () => {
               {filteredOrders.map((order) => {
                 const statusConfig = getStatusConfig(order.status, (order as any).buyer_approved);
                 const StatusIcon = statusConfig.icon;
+                const buyerEmailInput = (order as any).buyer_email_input;
 
                 return (
                   <div 
                     key={order.id} 
-                    className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 hover:shadow-md transition-shadow"
+                    className={`bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-lg hover:border-slate-200 transition-all duration-200 border-l-4 ${statusConfig.accentColor}`}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-                          {order.product?.icon_url ? (
-                            <img src={order.product.icon_url} alt="" className="h-full w-full object-cover rounded-lg" />
-                          ) : (
-                            <Package className="h-6 w-6 text-slate-400" />
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          {/* Checkbox for pending orders */}
+                          {order.status === 'pending' && (
+                            <Checkbox
+                              checked={selectedOrders.has(order.id)}
+                              onCheckedChange={(checked) => handleSelectOrder(order.id, !!checked)}
+                              className="mt-1"
+                            />
+                          )}
+                          
+                          <div className="h-14 w-14 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {order.product?.icon_url ? (
+                              <img src={order.product.icon_url} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <Package className="h-7 w-7 text-slate-400" />
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="font-semibold text-slate-900 text-lg">{order.product?.name || 'Product'}</h3>
+                            <p className="text-sm text-slate-500">{order.buyer?.email || 'Unknown buyer'}</p>
+                            <p className="text-xs text-slate-400">
+                              {format(new Date(order.created_at), 'MMM d, yyyy • h:mm a')}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          <p className="font-bold text-xl text-emerald-600">
+                            +${Number(order.seller_earning).toFixed(2)}
+                          </p>
+                          <Badge variant="outline" className={`text-[11px] font-medium ${statusConfig.className}`}>
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {statusConfig.label}
+                          </Badge>
+                          {order.status === 'pending' && (
+                            <Button
+                              size="sm"
+                              onClick={() => setSelectedOrder(order.id)}
+                              className="bg-emerald-500 hover:bg-emerald-600 mt-1"
+                            >
+                              <Send className="h-3.5 w-3.5 mr-1.5" />
+                              Deliver
+                            </Button>
                           )}
                         </div>
-                        <div className="space-y-1">
-                          <h3 className="font-semibold text-slate-900">{order.product?.name || 'Product'}</h3>
-                          <p className="text-sm text-slate-500">{order.buyer?.email || 'Unknown buyer'}</p>
-                          {/* Show buyer email input if product requires email */}
-                          {(order as any).buyer_email_input && (
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full font-medium">
-                                📧 {(order as any).buyer_email_input}
-                              </span>
+                      </div>
+
+                      {/* Buyer Email Input (for email-required products) */}
+                      {buyerEmailInput && (
+                        <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-100">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm font-medium text-blue-700">Buyer Email for Access:</span>
                             </div>
-                          )}
-                          <p className="text-xs text-slate-400">
-                            {format(new Date(order.created_at), 'MMM d, yyyy • h:mm a')}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyToClipboard(buyerEmailInput)}
+                              className="h-7 text-blue-600 hover:bg-blue-100"
+                            >
+                              <Copy className="h-3.5 w-3.5 mr-1" />
+                              Copy
+                            </Button>
+                          </div>
+                          <code className="block mt-2 text-sm bg-white px-3 py-2 rounded border border-blue-200 text-blue-900 font-mono">
+                            {buyerEmailInput}
+                          </code>
+                        </div>
+                      )}
+
+                      {order.status === 'delivered' && (
+                        <div className="mt-4 pt-4 border-t border-slate-100">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-blue-600">
+                              <Truck className="h-4 w-4" />
+                              <p className="text-sm font-medium">Delivered - Waiting for buyer to approve</p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditCredentials(order.id, order.credentials)}
+                              className="border-slate-200 text-slate-600 hover:bg-slate-50"
+                            >
+                              <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                              Edit Credentials
+                            </Button>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Balance will be released once buyer approves delivery
                           </p>
                         </div>
-                      </div>
+                      )}
 
-                      <div className="flex flex-col items-end gap-2">
-                        <p className="font-bold text-lg text-emerald-600">
-                          +${Number(order.seller_earning).toFixed(2)}
-                        </p>
-                        <Badge variant="outline" className={`text-[11px] font-medium ${statusConfig.className}`}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {statusConfig.label}
-                        </Badge>
-                        {order.status === 'pending' && (
-                          <Button
-                            size="sm"
-                            onClick={() => setSelectedOrder(order.id)}
-                            className="bg-emerald-500 hover:bg-emerald-600 mt-1"
-                          >
-                            <Send className="h-3.5 w-3.5 mr-1.5" />
-                            Deliver
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {order.status === 'delivered' && (
-                      <div className="mt-4 pt-4 border-t border-slate-100">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-blue-600">
-                            <Truck className="h-4 w-4" />
-                            <p className="text-sm font-medium">Delivered - Waiting for buyer to approve</p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEditCredentials(order.id, order.credentials)}
-                            className="border-slate-200 text-slate-600 hover:bg-slate-50"
-                          >
-                            <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                            Edit Credentials
-                          </Button>
+                      {order.status === 'completed' && order.delivered_at && (
+                        <div className="mt-4 pt-4 border-t border-slate-100">
+                          <p className="text-xs text-slate-500">
+                            Completed on {format(new Date(order.delivered_at), 'MMM d, yyyy')}
+                            {(order as any).buyer_approved && ' • Buyer approved'}
+                          </p>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Balance will be released once buyer approves delivery
-                        </p>
-                      </div>
-                    )}
-
-                    {order.status === 'completed' && order.delivered_at && (
-                      <div className="mt-4 pt-4 border-t border-slate-100">
-                        <p className="text-xs text-slate-500">
-                          Completed on {format(new Date(order.delivered_at), 'MMM d, yyyy')}
-                          {(order as any).buyer_approved && ' • Buyer approved'}
-                        </p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 );
               })}
