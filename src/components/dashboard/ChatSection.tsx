@@ -872,6 +872,22 @@ const ChatSection = () => {
                   // Seller messages
                   sellerMessages.map((msg) => {
                     const isUser = msg.sender_type === 'buyer';
+                    const isSystem = msg.sender_type === 'system';
+                    
+                    if (isSystem) {
+                      return (
+                        <div key={msg.id} className="flex justify-center my-4">
+                          <div className="bg-slate-100 dark:bg-slate-800 rounded-xl px-4 py-2.5 max-w-[85%] border border-slate-200 dark:border-slate-700">
+                            <p className="text-sm text-slate-600 dark:text-slate-300 text-center whitespace-pre-wrap">
+                              {msg.message}
+                            </p>
+                            <p className="text-[10px] text-slate-400 text-center mt-1">
+                              {msg.created_at && format(new Date(msg.created_at), 'MMM d, h:mm a')}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
                     
                     return (
                       <div key={msg.id} className={cn("flex", isUser ? "justify-end" : "justify-start")}>

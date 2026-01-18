@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { ShoppingCart, Loader2, Search, TrendingUp, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, X, MessageCircle, Send, Star, ChevronRight, ExternalLink, ArrowRight, Filter, Store } from 'lucide-react';
+import { ShoppingCart, Loader2, Search, TrendingUp, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, X, MessageCircle, Send, Star, ChevronRight, ExternalLink, ArrowRight, Filter, Store, Truck, ThumbsUp, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -66,6 +66,30 @@ interface PurchasedAccount {
   } | null;
 }
 
+interface SellerOrderPurchase {
+  id: string;
+  amount: number;
+  seller_earning: number;
+  status: string;
+  credentials: string | null;
+  buyer_approved: boolean;
+  created_at: string;
+  delivered_at: string | null;
+  product_id: string;
+  seller_id: string;
+  seller_products: {
+    name: string;
+    icon_url: string | null;
+    description: string | null;
+  } | null;
+  seller_profiles: {
+    id: string;
+    store_name: string;
+    store_logo_url: string | null;
+    user_id: string;
+  } | null;
+}
+
 interface InsufficientFundsModal {
   show: boolean;
   required: number;
@@ -120,6 +144,10 @@ const AIAccountsSection = () => {
     current: 0,
     shortfall: 0
   });
+
+  // Seller orders (purchases from marketplace sellers)
+  const [sellerOrders, setSellerOrders] = useState<SellerOrderPurchase[]>([]);
+  const [approvingOrder, setApprovingOrder] = useState<string | null>(null);
 
   // Seller products state
   const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([]);
@@ -191,16 +219,19 @@ const AIAccountsSection = () => {
   useEffect(() => {
     if (user) {
       fetchPurchases();
+      fetchSellerOrders();
       fetchWallet();
       fetchChatMessages();
       fetchUnreadCount();
       const unsubscribe = subscribeToUpdates();
       const unsubscribeWallet = subscribeToWallet();
       const unsubscribeChat = subscribeToChatMessages();
+      const unsubscribeSellerOrders = subscribeToSellerOrders();
       return () => {
         unsubscribe();
         unsubscribeWallet();
         unsubscribeChat();
+        unsubscribeSellerOrders();
       };
     }
   }, [user]);
@@ -491,6 +522,121 @@ const AIAccountsSection = () => {
       setPurchases(data as PurchasedAccount[]);
     }
     setPurchasesLoading(false);
+  };
+
+  const fetchSellerOrders = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('seller_orders')
+      .select(`
+        *,
+        seller_products (name, icon_url, description),
+        seller_profiles (id, store_name, store_logo_url, user_id)
+      `)
+      .eq('buyer_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setSellerOrders(data as SellerOrderPurchase[]);
+    }
+  };
+
+  const subscribeToSellerOrders = () => {
+    if (!user) return () => {};
+
+    const channel = supabase
+      .channel('my-seller-orders')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'seller_orders',
+          filter: `buyer_id=eq.${user.id}`
+        },
+        () => {
+          fetchSellerOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const handleApproveDelivery = async (orderId: string) => {
+    if (!user) return;
+    
+    setApprovingOrder(orderId);
+    try {
+      const order = sellerOrders.find(o => o.id === orderId);
+      if (!order) throw new Error('Order not found');
+
+      // Update order to completed with buyer_approved
+      const { error: orderError } = await supabase
+        .from('seller_orders')
+        .update({
+          status: 'completed',
+          buyer_approved: true
+        })
+        .eq('id', orderId)
+        .eq('buyer_id', user.id);
+
+      if (orderError) throw orderError;
+
+      // Release seller's pending balance to available balance
+      // Get seller wallet
+      const { data: sellerWallet, error: walletFetchError } = await supabase
+        .from('seller_wallets')
+        .select('*')
+        .eq('seller_id', order.seller_id)
+        .single();
+
+      if (!walletFetchError && sellerWallet) {
+        // Move from pending to available
+        const newBalance = Number(sellerWallet.balance) + Number(order.seller_earning);
+        const newPending = Math.max(0, Number(sellerWallet.pending_balance) - Number(order.seller_earning));
+        
+        await supabase
+          .from('seller_wallets')
+          .update({
+            balance: newBalance,
+            pending_balance: newPending
+          })
+          .eq('seller_id', order.seller_id);
+      }
+
+      // Create notification for seller
+      if (order.seller_profiles?.user_id) {
+        await supabase.from('notifications').insert({
+          user_id: order.seller_profiles.user_id,
+          type: 'approval',
+          title: 'Delivery Approved!',
+          message: `Buyer approved delivery for ${order.seller_products?.name}. $${Number(order.seller_earning).toFixed(2)} released to your wallet!`,
+          link: '/seller/orders',
+          is_read: false
+        });
+      }
+
+      // Create system message in seller_chats
+      await supabase.from('seller_chats').insert({
+        buyer_id: user.id,
+        seller_id: order.seller_id,
+        message: `✅ Buyer has approved the delivery for "${order.seller_products?.name}". Payment of $${Number(order.seller_earning).toFixed(2)} has been released to seller.`,
+        sender_type: 'system',
+        product_id: order.product_id
+      });
+
+      toast.success('Delivery approved! Thank you for your purchase.');
+      fetchSellerOrders();
+    } catch (error: any) {
+      console.error('Approval error:', error);
+      toast.error(error.message || 'Failed to approve delivery');
+    } finally {
+      setApprovingOrder(null);
+    }
   };
 
   const subscribeToUpdates = () => {
@@ -1137,7 +1283,7 @@ const AIAccountsSection = () => {
             <div className="flex items-center justify-center h-64">
               <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-gray-900 animate-spin" />
             </div>
-          ) : purchases.length === 0 ? (
+          ) : purchases.length === 0 && sellerOrders.length === 0 ? (
             <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
               <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
                 <Package className="w-10 h-10 text-gray-400" />
@@ -1153,6 +1299,193 @@ const AIAccountsSection = () => {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Seller Orders (Marketplace Purchases) */}
+              {sellerOrders.map((order) => (
+                <div
+                  key={`seller-order-${order.id}`}
+                  className="bg-white rounded-2xl p-6 border-2 border-emerald-200 shadow-md hover:shadow-lg transition-all"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center overflow-hidden">
+                        {order.seller_products?.icon_url ? (
+                          <img 
+                            src={order.seller_products.icon_url}
+                            alt={order.seller_products?.name || 'Product'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Store className="w-8 h-8 text-emerald-500" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+                            {order.seller_products?.name || 'Product'}
+                          </h3>
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
+                            Marketplace
+                          </span>
+                        </div>
+                        <p className="text-gray-500 text-sm">
+                          From: {order.seller_profiles?.store_name || 'Seller'}
+                        </p>
+                        <p className="text-gray-400 text-xs">
+                          Purchased on {new Date(order.created_at).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            year: 'numeric' 
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1.5 bg-violet-50 text-violet-600 px-3 py-1.5 rounded-full text-sm font-medium">
+                        <Wallet className="w-4 h-4" />
+                        ${Number(order.amount).toFixed(2)}
+                      </span>
+                      {order.status === 'pending' && (
+                        <span className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full text-sm font-medium">
+                          <Clock className="w-4 h-4" />
+                          Awaiting Delivery
+                        </span>
+                      )}
+                      {order.status === 'delivered' && !order.buyer_approved && (
+                        <span className="flex items-center gap-1.5 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-sm font-medium">
+                          <Truck className="w-4 h-4" />
+                          Delivered
+                        </span>
+                      )}
+                      {order.status === 'completed' && order.buyer_approved && (
+                        <span className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-sm font-medium">
+                          <CheckCircle className="w-4 h-4" />
+                          Approved
+                        </span>
+                      )}
+                      {order.status === 'completed' && !order.buyer_approved && (
+                        <span className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-sm font-medium">
+                          <CheckCircle className="w-4 h-4" />
+                          Completed
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Credentials display for delivered orders */}
+                  {order.status === 'delivered' && order.credentials && (
+                    <div className="mt-5 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-blue-700">Account Credentials</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleCredentials(`seller-${order.id}`)}
+                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                          >
+                            {showCredentials[`seller-${order.id}`] ? (
+                              <EyeOff className="w-4 h-4 text-blue-600" />
+                            ) : (
+                              <Eye className="w-4 h-4 text-blue-600" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => copyCredentials(order.credentials!)}
+                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                          >
+                            <Copy className="w-4 h-4 text-blue-600" />
+                          </button>
+                        </div>
+                      </div>
+                      <code className="text-sm text-blue-900 font-mono block bg-blue-100 p-3 rounded-lg whitespace-pre-wrap">
+                        {showCredentials[`seller-${order.id}`] 
+                          ? order.credentials 
+                          : '••••••••••••••••'}
+                      </code>
+                      
+                      {/* Approve Delivery Button */}
+                      <div className="mt-4 flex items-center gap-3">
+                        <button
+                          onClick={() => handleApproveDelivery(order.id)}
+                          disabled={approvingOrder === order.id}
+                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50"
+                        >
+                          {approvingOrder === order.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <ThumbsUp className="w-4 h-4" />
+                              Approve Delivery
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedSeller({
+                              sellerId: order.seller_id,
+                              sellerName: order.seller_profiles?.store_name || 'Seller',
+                              productId: order.product_id,
+                              productName: order.seller_products?.name
+                            });
+                            setSellerChatOpen(true);
+                          }}
+                          className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          Chat
+                        </button>
+                      </div>
+                      
+                      <p className="text-xs text-blue-600 mt-3">
+                        Please verify the credentials work before approving. This will release payment to the seller.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Completed order credentials display */}
+                  {order.status === 'completed' && order.credentials && (
+                    <div className="mt-5 p-4 bg-gray-100 rounded-xl border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-600">Account Credentials</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleCredentials(`seller-${order.id}`)}
+                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                          >
+                            {showCredentials[`seller-${order.id}`] ? (
+                              <EyeOff className="w-4 h-4 text-gray-500" />
+                            ) : (
+                              <Eye className="w-4 h-4 text-gray-500" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => copyCredentials(order.credentials!)}
+                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                          >
+                            <Copy className="w-4 h-4 text-gray-500" />
+                          </button>
+                        </div>
+                      </div>
+                      <code className="text-sm text-gray-800 font-mono block bg-gray-200 p-3 rounded-lg whitespace-pre-wrap">
+                        {showCredentials[`seller-${order.id}`] 
+                          ? order.credentials 
+                          : '••••••••••••••••'}
+                      </code>
+                    </div>
+                  )}
+
+                  {/* Pending delivery message */}
+                  {order.status === 'pending' && (
+                    <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center gap-3">
+                      <Clock className="w-5 h-5 text-amber-600" />
+                      <p className="text-sm text-amber-700">
+                        Waiting for seller to deliver your account credentials.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Admin Account Purchases */}
               {purchases.map((purchase) => (
                 <div
                   key={purchase.id}
