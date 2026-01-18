@@ -776,6 +776,7 @@ export type Database = {
       seller_orders: {
         Row: {
           amount: number
+          buyer_approved: boolean | null
           buyer_id: string
           created_at: string | null
           credentials: string | null
@@ -788,6 +789,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          buyer_approved?: boolean | null
           buyer_id: string
           created_at?: string | null
           credentials?: string | null
@@ -800,6 +802,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          buyer_approved?: boolean | null
           buyer_id?: string
           created_at?: string | null
           credentials?: string | null
@@ -935,6 +938,81 @@ export type Database = {
           total_sales?: number | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      seller_reports: {
+        Row: {
+          admin_notes: string | null
+          buyer_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          order_id: string | null
+          reason: string
+          seller_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          buyer_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          reason: string
+          seller_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          buyer_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          reason?: string
+          seller_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      seller_trust_scores: {
+        Row: {
+          buyer_approved_count: number | null
+          created_at: string | null
+          id: string
+          last_calculated: string | null
+          resolved_reports: number | null
+          seller_id: string
+          successful_orders: number | null
+          total_reports: number | null
+          trust_score: number | null
+        }
+        Insert: {
+          buyer_approved_count?: number | null
+          created_at?: string | null
+          id?: string
+          last_calculated?: string | null
+          resolved_reports?: number | null
+          seller_id: string
+          successful_orders?: number | null
+          total_reports?: number | null
+          trust_score?: number | null
+        }
+        Update: {
+          buyer_approved_count?: number | null
+          created_at?: string | null
+          id?: string
+          last_calculated?: string | null
+          resolved_reports?: number | null
+          seller_id?: string
+          successful_orders?: number | null
+          total_reports?: number | null
+          trust_score?: number | null
         }
         Relationships: []
       }
@@ -1197,6 +1275,10 @@ export type Database = {
         Args: { p_amount: number; p_seller_id: string }
         Returns: undefined
       }
+      approve_seller_delivery: {
+        Args: { p_buyer_id: string; p_order_id: string }
+        Returns: undefined
+      }
       clean_old_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
       has_role: {
@@ -1216,6 +1298,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      update_seller_trust_score: {
+        Args: { p_seller_id: string }
+        Returns: undefined
       }
       verify_admin_password: {
         Args: { p_password: string; p_username: string }

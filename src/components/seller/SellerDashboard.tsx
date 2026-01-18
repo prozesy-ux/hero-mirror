@@ -1,189 +1,255 @@
+import { useEffect, useState } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { 
-  DollarSign, 
-  Package, 
-  ShoppingCart, 
-  TrendingUp,
-  Wallet,
-  Clock
+  Wallet, 
+  Clock, 
+  TrendingUp, 
+  Package,
+  ShoppingCart,
+  ArrowUpRight,
+  ArrowDownRight,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
-const StatCard = ({ 
-  title, 
-  value, 
-  description, 
-  icon: Icon, 
-  iconColor 
-}: { 
-  title: string; 
-  value: string; 
-  description?: string;
-  icon: any; 
-  iconColor: string;
-}) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between pb-2">
-      <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-      <div className={`rounded-lg p-2 ${iconColor}`}>
-        <Icon className="h-4 w-4" />
-      </div>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
-      {description && (
-        <p className="text-xs text-muted-foreground mt-1">{description}</p>
-      )}
-    </CardContent>
-  </Card>
-);
+interface TrustScore {
+  trust_score: number;
+  total_reports: number;
+  successful_orders: number;
+  buyer_approved_count: number;
+}
 
 const SellerDashboard = () => {
   const { profile, wallet, products, orders, loading } = useSellerContext();
+  const navigate = useNavigate();
+  const [trustScore, setTrustScore] = useState<TrustScore | null>(null);
 
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
+  const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
   const completedOrders = orders.filter(o => o.status === 'completed').length;
   const totalEarnings = orders
     .filter(o => o.status === 'completed')
     .reduce((sum, o) => sum + Number(o.seller_earning), 0);
 
+  useEffect(() => {
+    const fetchTrustScore = async () => {
+      const { data } = await supabase
+        .from('seller_trust_scores')
+        .select('*')
+        .eq('seller_id', profile.id)
+        .maybeSingle();
+      if (data) setTrustScore(data);
+    };
+    if (profile.id) fetchTrustScore();
+  }, [profile.id]);
+
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="space-y-2">
+      <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
+        <div className="space-y-6">
           <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-72" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map(i => (
-            <Skeleton key={i} className="h-32" />
-          ))}
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          Welcome back, {profile.store_name}!
-        </h1>
-        <p className="text-muted-foreground">
-          Here's what's happening with your store today.
+    <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
+      {/* Welcome Banner */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-1">
+          <h1 className="text-2xl font-bold text-slate-900">
+            Welcome back
+          </h1>
+          {trustScore && (
+            <Badge 
+              variant="outline" 
+              className={`font-medium ${
+                trustScore.trust_score >= 80 
+                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                  : trustScore.trust_score >= 50 
+                  ? 'bg-amber-50 text-amber-600 border-amber-200'
+                  : 'bg-red-50 text-red-600 border-red-200'
+              }`}
+            >
+              Trust Score: {trustScore.trust_score}%
+            </Badge>
+          )}
+        </div>
+        <p className="text-slate-500 text-sm">
+          Here's what's happening with your store today
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Available Balance"
-          value={`$${wallet?.balance?.toFixed(2) || '0.00'}`}
-          description="Ready to withdraw"
-          icon={Wallet}
-          iconColor="bg-emerald-500/10 text-emerald-500"
-        />
-        <StatCard
-          title="Pending Balance"
-          value={`$${wallet?.pending_balance?.toFixed(2) || '0.00'}`}
-          description="From pending orders"
-          icon={Clock}
-          iconColor="bg-yellow-500/10 text-yellow-500"
-        />
-        <StatCard
-          title="Total Earnings"
-          value={`$${totalEarnings.toFixed(2)}`}
-          description="All time earnings"
-          icon={DollarSign}
-          iconColor="bg-blue-500/10 text-blue-500"
-        />
-        <StatCard
-          title="Total Orders"
-          value={String(orders.length)}
-          description={`${pendingOrders} pending, ${completedOrders} completed`}
-          icon={ShoppingCart}
-          iconColor="bg-purple-500/10 text-purple-500"
-        />
-      </div>
-
-      {/* Second Row */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <StatCard
-          title="Products"
-          value={String(products.length)}
-          description={`${products.filter(p => p.is_approved).length} approved`}
-          icon={Package}
-          iconColor="bg-orange-500/10 text-orange-500"
-        />
-        <StatCard
-          title="Total Sales"
-          value={`$${Number(profile.total_sales || 0).toFixed(2)}`}
-          description="Lifetime sales volume"
-          icon={TrendingUp}
-          iconColor="bg-cyan-500/10 text-cyan-500"
-        />
-        <StatCard
-          title="Commission Rate"
-          value={`${profile.commission_rate}%`}
-          description="Platform commission"
-          icon={DollarSign}
-          iconColor="bg-rose-500/10 text-rose-500"
-        />
-      </div>
-
-      {/* Recent Orders */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Orders</CardTitle>
-          <CardDescription>Your latest orders</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {orders.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              No orders yet. Start promoting your products!
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {orders.slice(0, 5).map((order) => (
-                <div
-                  key={order.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-accent/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-background flex items-center justify-center">
-                      <Package className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">
-                        {order.product?.name || 'Product'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {order.buyer?.email || 'Buyer'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-sm text-emerald-500">
-                      +${Number(order.seller_earning).toFixed(2)}
-                    </p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      order.status === 'completed' 
-                        ? 'bg-emerald-500/10 text-emerald-500'
-                        : order.status === 'pending'
-                        ? 'bg-yellow-500/10 text-yellow-500'
-                        : 'bg-red-500/10 text-red-500'
-                    }`}>
-                      {order.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
+        {/* Available Balance */}
+        <div 
+          className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/seller/wallet')}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <Wallet className="h-5 w-5 text-emerald-600" />
             </div>
+            <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+          </div>
+          <p className="text-2xl font-bold text-slate-900">${(wallet?.balance || 0).toFixed(2)}</p>
+          <p className="text-xs text-slate-500 mt-1">Available Balance</p>
+        </div>
+
+        {/* Pending Balance */}
+        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center">
+              <Clock className="h-5 w-5 text-amber-600" />
+            </div>
+            {deliveredOrders > 0 && (
+              <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-600 border-amber-200">
+                {deliveredOrders} awaiting
+              </Badge>
+            )}
+          </div>
+          <p className="text-2xl font-bold text-slate-900">${(wallet?.pending_balance || 0).toFixed(2)}</p>
+          <p className="text-xs text-slate-500 mt-1">Pending Balance</p>
+        </div>
+
+        {/* Total Earnings */}
+        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-slate-900">${totalEarnings.toFixed(2)}</p>
+          <p className="text-xs text-slate-500 mt-1">Total Earnings</p>
+        </div>
+
+        {/* Orders */}
+        <div 
+          className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/seller/orders')}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center">
+              <ShoppingCart className="h-5 w-5 text-purple-600" />
+            </div>
+            {pendingOrders > 0 && (
+              <Badge className="bg-purple-500 text-white text-[10px]">
+                {pendingOrders} new
+              </Badge>
+            )}
+          </div>
+          <p className="text-2xl font-bold text-slate-900">{orders.length}</p>
+          <p className="text-xs text-slate-500 mt-1">Total Orders</p>
+        </div>
+      </div>
+
+      {/* Quick Stats Row */}
+      <div className="grid gap-4 grid-cols-3 mb-8">
+        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center">
+            <Package className="h-6 w-6 text-slate-600" />
+          </div>
+          <div>
+            <p className="text-xl font-bold text-slate-900">{products.length}</p>
+            <p className="text-xs text-slate-500">Products</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-sm font-medium text-emerald-600">{products.filter(p => p.is_approved).length}</p>
+            <p className="text-[10px] text-slate-400">Approved</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center">
+            <CheckCircle className="h-6 w-6 text-slate-600" />
+          </div>
+          <div>
+            <p className="text-xl font-bold text-slate-900">{completedOrders}</p>
+            <p className="text-xs text-slate-500">Completed</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-sm font-medium text-slate-600">{profile.commission_rate}%</p>
+            <p className="text-[10px] text-slate-400">Commission</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center">
+            <TrendingUp className="h-6 w-6 text-slate-600" />
+          </div>
+          <div>
+            <p className="text-xl font-bold text-slate-900">${Number(profile.total_sales || 0).toFixed(0)}</p>
+            <p className="text-xs text-slate-500">Lifetime Sales</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="font-semibold text-slate-900">Recent Activity</h2>
+          <button 
+            onClick={() => navigate('/seller/orders')}
+            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+          >
+            View all
+          </button>
+        </div>
+        <div className="divide-y divide-slate-50">
+          {orders.length === 0 ? (
+            <div className="p-8 text-center">
+              <ShoppingCart className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-500 text-sm">No orders yet</p>
+              <p className="text-slate-400 text-xs mt-1">Orders will appear here</p>
+            </div>
+          ) : (
+            orders.slice(0, 5).map((order) => (
+              <div key={order.id} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                  <Package className="h-5 w-5 text-slate-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm text-slate-900 truncate">
+                    {order.product?.name || 'Product'}
+                  </p>
+                  <p className="text-xs text-slate-500 truncate">
+                    {order.buyer?.email || 'Buyer'}
+                  </p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="font-semibold text-sm text-emerald-600">
+                    +${Number(order.seller_earning).toFixed(2)}
+                  </p>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-[10px] mt-1 ${
+                      order.status === 'completed' 
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                        : order.status === 'delivered'
+                        ? 'bg-blue-50 text-blue-600 border-blue-200'
+                        : order.status === 'pending'
+                        ? 'bg-amber-50 text-amber-600 border-amber-200'
+                        : 'bg-red-50 text-red-600 border-red-200'
+                    }`}
+                  >
+                    {order.status}
+                  </Badge>
+                </div>
+              </div>
+            ))
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

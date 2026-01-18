@@ -3,7 +3,6 @@ import { useSellerContext } from '@/contexts/SellerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -14,8 +13,8 @@ import {
   Send, 
   Loader2, 
   MessageSquare,
-  User,
-  Search
+  Search,
+  User
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -51,7 +50,8 @@ const SellerChat = () => {
 
   useEffect(() => {
     fetchChatUsers();
-    subscribeToMessages();
+    const cleanup = subscribeToMessages();
+    return cleanup;
   }, [profile.id]);
 
   useEffect(() => {
@@ -71,7 +71,6 @@ const SellerChat = () => {
 
   const fetchChatUsers = async () => {
     try {
-      // Get all unique buyers who have chatted with this seller
       const { data: chats, error } = await supabase
         .from('seller_chats')
         .select('buyer_id, message, created_at, is_read, sender_type')
@@ -80,7 +79,6 @@ const SellerChat = () => {
 
       if (error) throw error;
 
-      // Group by buyer and get latest message + unread count
       const buyerMap = new Map<string, {
         last_message: string;
         last_message_time: string;
@@ -95,14 +93,12 @@ const SellerChat = () => {
             unread_count: 0
           });
         }
-        // Count unread messages from buyer
         if (!chat.is_read && chat.sender_type === 'buyer') {
           const existing = buyerMap.get(chat.buyer_id)!;
           existing.unread_count++;
         }
       });
 
-      // Fetch buyer profiles
       const buyerIds = Array.from(buyerMap.keys());
       if (buyerIds.length === 0) {
         setChatUsers([]);
@@ -126,7 +122,6 @@ const SellerChat = () => {
         };
       });
 
-      // Sort by last message time
       users.sort((a, b) => 
         new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime()
       );
@@ -147,11 +142,7 @@ const SellerChat = () => {
       .eq('buyer_id', buyerId)
       .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching messages:', error);
-      return;
-    }
-    setMessages(data || []);
+    if (!error) setMessages(data || []);
   };
 
   const markAsRead = async (buyerId: string) => {
@@ -229,183 +220,171 @@ const SellerChat = () => {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <div className="grid grid-cols-3 gap-4 h-[calc(100vh-200px)]">
-          <Skeleton className="col-span-1" />
-          <Skeleton className="col-span-2" />
+      <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
+        <Skeleton className="h-8 w-32 mb-6" />
+        <div className="grid grid-cols-3 gap-4 h-[calc(100vh-180px)]">
+          <Skeleton className="col-span-1 rounded-xl" />
+          <Skeleton className="col-span-2 rounded-xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Customer Chat</h1>
-          <p className="text-muted-foreground">Chat with your buyers</p>
+          <h1 className="text-2xl font-bold text-slate-900">Messages</h1>
+          <p className="text-sm text-slate-500">Chat with your customers</p>
         </div>
         {totalUnread > 0 && (
-          <Badge className="bg-emerald-500">
+          <Badge className="bg-emerald-500 text-white">
             {totalUnread} unread
           </Badge>
         )}
       </div>
 
       {/* Chat Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-200px)]">
         {/* Users List */}
-        <Card className="lg:col-span-1">
-          <CardContent className="p-0 h-full flex flex-col">
-            {/* Search */}
-            <div className="p-3 border-b">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search conversations..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+          <div className="p-3 border-b border-slate-100">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 border-slate-200 bg-slate-50"
+              />
             </div>
+          </div>
 
-            {/* Users */}
-            <ScrollArea className="flex-1">
-              {filteredUsers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                  <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No conversations yet</p>
-                </div>
-              ) : (
-                <div className="space-y-1 p-2">
-                  {filteredUsers.map((user) => (
-                    <button
-                      key={user.buyer_id}
-                      onClick={() => setSelectedUser(user.buyer_id)}
-                      className={`w-full p-3 rounded-lg text-left transition-colors ${
-                        selectedUser === user.buyer_id
-                          ? 'bg-emerald-500/10 border border-emerald-500/20'
-                          : 'hover:bg-accent'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback>
-                            {user.email.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium text-sm truncate">
-                              {user.full_name || user.email}
-                            </p>
-                            {user.unread_count > 0 && (
-                              <Badge className="bg-emerald-500 text-xs ml-2">
-                                {user.unread_count}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {user.last_message}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(user.last_message_time), 'MMM d, h:mm a')}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        {/* Chat Area */}
-        <Card className="lg:col-span-2">
-          <CardContent className="p-0 h-full flex flex-col">
-            {selectedUser ? (
-              <>
-                {/* Chat Header */}
-                <div className="p-4 border-b flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback>
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">
-                      {chatUsers.find(u => u.buyer_id === selectedUser)?.full_name || 
-                       chatUsers.find(u => u.buyer_id === selectedUser)?.email}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Customer</p>
-                  </div>
-                </div>
-
-                {/* Messages */}
-                <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-4">
-                    {messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${msg.sender_type === 'seller' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-[70%] rounded-lg p-3 ${
-                          msg.sender_type === 'seller'
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-accent'
-                        }`}>
-                          <p className="text-sm">{msg.message}</p>
-                          <p className={`text-xs mt-1 ${
-                            msg.sender_type === 'seller' ? 'text-emerald-100' : 'text-muted-foreground'
-                          }`}>
-                            {format(new Date(msg.created_at), 'h:mm a')}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                </ScrollArea>
-
-                {/* Input */}
-                <div className="p-4 border-t">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Type a message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      disabled={sending}
-                    />
-                    <Button
-                      onClick={sendMessage}
-                      disabled={sending || !newMessage.trim()}
-                      className="bg-emerald-500 hover:bg-emerald-600"
-                    >
-                      {sending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </>
+          <ScrollArea className="flex-1">
+            {filteredUsers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4">
+                <MessageSquare className="h-10 w-10 text-slate-300 mb-3" />
+                <p className="text-slate-500 text-sm">No conversations</p>
+              </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="font-medium text-lg mb-2">Select a conversation</h3>
-                <p className="text-muted-foreground">
-                  Choose a customer from the list to start chatting
-                </p>
+              <div className="p-2 space-y-1">
+                {filteredUsers.map((user) => (
+                  <button
+                    key={user.buyer_id}
+                    onClick={() => setSelectedUser(user.buyer_id)}
+                    className={`w-full p-3 rounded-lg text-left transition-all ${
+                      selectedUser === user.buyer_id
+                        ? 'bg-emerald-50 border border-emerald-100'
+                        : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-slate-100 text-slate-600 text-sm">
+                          {(user.full_name || user.email).charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-sm text-slate-900 truncate">
+                            {user.full_name || user.email.split('@')[0]}
+                          </p>
+                          {user.unread_count > 0 && (
+                            <Badge className="bg-emerald-500 text-white text-[10px] h-5 min-w-[20px]">
+                              {user.unread_count}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 truncate">{user.last_message}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </ScrollArea>
+        </div>
+
+        {/* Chat Area */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+          {selectedUser ? (
+            <>
+              {/* Chat Header */}
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-slate-100">
+                    <User className="h-4 w-4 text-slate-500" />
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold text-slate-900">
+                    {chatUsers.find(u => u.buyer_id === selectedUser)?.full_name || 
+                     chatUsers.find(u => u.buyer_id === selectedUser)?.email}
+                  </p>
+                  <p className="text-xs text-slate-500">Customer</p>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-3">
+                  {messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex ${msg.sender_type === 'seller' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                        msg.sender_type === 'seller'
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-100 text-slate-900'
+                      }`}>
+                        <p className="text-sm">{msg.message}</p>
+                        <p className={`text-[10px] mt-1 ${
+                          msg.sender_type === 'seller' ? 'text-emerald-100' : 'text-slate-400'
+                        }`}>
+                          {format(new Date(msg.created_at), 'h:mm a')}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+
+              {/* Input */}
+              <div className="p-4 border-t border-slate-100">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    disabled={sending}
+                    className="border-slate-200"
+                  />
+                  <Button
+                    onClick={sendMessage}
+                    disabled={sending || !newMessage.trim()}
+                    className="bg-emerald-500 hover:bg-emerald-600 px-4"
+                  >
+                    {sending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full">
+              <MessageSquare className="h-12 w-12 text-slate-300 mb-4" />
+              <h3 className="font-semibold text-slate-900 mb-2">Select a conversation</h3>
+              <p className="text-slate-500 text-sm">Choose a customer to start chatting</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

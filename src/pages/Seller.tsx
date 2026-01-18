@@ -6,16 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, Store, ArrowRight } from 'lucide-react';
-import { SellerProvider, useSellerContext } from '@/contexts/SellerContext';
+import { Loader2, Store, ArrowRight, Clock, AlertTriangle } from 'lucide-react';
+import { SellerProvider } from '@/contexts/SellerContext';
 import SellerSidebar from '@/components/seller/SellerSidebar';
 import SellerDashboard from '@/components/seller/SellerDashboard';
 import SellerProducts from '@/components/seller/SellerProducts';
 import SellerOrders from '@/components/seller/SellerOrders';
 import SellerChat from '@/components/seller/SellerChat';
 import SellerWallet from '@/components/seller/SellerWallet';
+import SellerSupport from '@/components/seller/SellerSupport';
 import SellerSettings from '@/components/seller/SellerSettings';
 
 interface SellerProfile {
@@ -51,7 +51,6 @@ const SellerRegistration = ({ onSuccess }: { onSuccess: () => void }) => {
 
     setLoading(true);
     try {
-      // Create seller profile
       const { error: profileError } = await supabase
         .from('seller_profiles')
         .insert({
@@ -62,63 +61,63 @@ const SellerRegistration = ({ onSuccess }: { onSuccess: () => void }) => {
 
       if (profileError) throw profileError;
 
-      // Add seller role
       const { error: roleError } = await supabase
         .from('user_roles')
-        .insert({
-          user_id: user.id,
-          role: 'seller'
-        });
+        .insert({ user_id: user.id, role: 'seller' });
 
       if (roleError && !roleError.message.includes('duplicate')) {
         console.error('Role error:', roleError);
       }
 
-      toast.success('Seller application submitted! Awaiting admin approval.');
+      toast.success('Application submitted!');
       onSuccess();
     } catch (error: any) {
-      console.error('Registration error:', error);
-      toast.error(error.message || 'Failed to submit application');
+      toast.error(error.message || 'Failed to submit');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Store className="h-8 w-8 text-primary" />
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+          <div className="text-center mb-8">
+            <div className="mx-auto mb-4 h-14 w-14 rounded-xl bg-emerald-50 flex items-center justify-center">
+              <Store className="h-7 w-7 text-emerald-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">Become a Seller</h1>
+            <p className="text-slate-500 text-sm mt-2">
+              Create your store and start selling
+            </p>
           </div>
-          <CardTitle className="text-2xl">Become a Seller</CardTitle>
-          <CardDescription>
-            Create your store and start selling your products
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="store_name">Store Name *</Label>
+              <Label htmlFor="store_name">Store Name</Label>
               <Input
                 id="store_name"
                 placeholder="Your Store Name"
                 value={formData.store_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, store_name: e.target.value }))}
+                className="border-slate-200"
                 required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="store_description">Store Description</Label>
+              <Label htmlFor="store_description">Description (optional)</Label>
               <Textarea
                 id="store_description"
                 placeholder="Tell buyers about your store..."
                 value={formData.store_description}
                 onChange={(e) => setFormData(prev => ({ ...prev, store_description: e.target.value }))}
-                rows={4}
+                rows={3}
+                className="border-slate-200"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+
+            <Button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -132,68 +131,65 @@ const SellerRegistration = ({ onSuccess }: { onSuccess: () => void }) => {
               )}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
 
 // Pending Approval Screen
 const PendingApproval = () => (
-  <div className="min-h-screen bg-background flex items-center justify-center p-4">
-    <Card className="w-full max-w-lg text-center">
-      <CardHeader>
-        <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-yellow-500/10 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 text-yellow-500 animate-spin" />
+  <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-center">
+        <div className="mx-auto mb-4 h-14 w-14 rounded-xl bg-amber-50 flex items-center justify-center">
+          <Clock className="h-7 w-7 text-amber-600" />
         </div>
-        <CardTitle className="text-2xl">Pending Approval</CardTitle>
-        <CardDescription>
-          Your seller application is being reviewed by our team. You'll be notified once approved.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button variant="outline" onClick={() => window.location.href = '/dashboard'}>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Pending Approval</h1>
+        <p className="text-slate-500 text-sm mb-6">
+          Your application is being reviewed. You'll be notified once approved.
+        </p>
+        <Button variant="outline" onClick={() => window.location.href = '/dashboard'} className="border-slate-200">
           Back to Dashboard
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   </div>
 );
 
 // Suspended Screen
 const SuspendedAccount = () => (
-  <div className="min-h-screen bg-background flex items-center justify-center p-4">
-    <Card className="w-full max-w-lg text-center">
-      <CardHeader>
-        <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
-          <Store className="h-8 w-8 text-destructive" />
+  <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-center">
+        <div className="mx-auto mb-4 h-14 w-14 rounded-xl bg-red-50 flex items-center justify-center">
+          <AlertTriangle className="h-7 w-7 text-red-600" />
         </div>
-        <CardTitle className="text-2xl">Account Suspended</CardTitle>
-        <CardDescription>
-          Your seller account has been suspended. Please contact support for more information.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button variant="outline" onClick={() => window.location.href = '/dashboard'}>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Account Suspended</h1>
+        <p className="text-slate-500 text-sm mb-6">
+          Your account has been suspended. Contact support for more information.
+        </p>
+        <Button variant="outline" onClick={() => window.location.href = '/dashboard'} className="border-slate-200">
           Back to Dashboard
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   </div>
 );
 
 // Main Seller Content with Routes
 const SellerContent = () => {
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-slate-50">
       <SellerSidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto lg:ml-0">
         <Routes>
           <Route path="/" element={<SellerDashboard />} />
           <Route path="/products" element={<SellerProducts />} />
           <Route path="/orders" element={<SellerOrders />} />
           <Route path="/chat" element={<SellerChat />} />
           <Route path="/wallet" element={<SellerWallet />} />
+          <Route path="/support" element={<SellerSupport />} />
           <Route path="/settings" element={<SellerSettings />} />
         </Routes>
       </main>
@@ -239,7 +235,7 @@ const Seller = () => {
         setNeedsRegistration(true);
       }
     } catch (error) {
-      console.error('Error checking seller status:', error);
+      console.error('Error:', error);
       setNeedsRegistration(true);
     } finally {
       setLoading(false);
@@ -248,28 +244,24 @@ const Seller = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
       </div>
     );
   }
 
-  // Not a seller yet - show registration
   if (needsRegistration) {
     return <SellerRegistration onSuccess={checkSellerStatus} />;
   }
 
-  // Seller exists but not verified
   if (sellerProfile && !sellerProfile.is_verified) {
     return <PendingApproval />;
   }
 
-  // Seller exists but suspended
   if (sellerProfile && !sellerProfile.is_active) {
     return <SuspendedAccount />;
   }
 
-  // Verified and active seller - show dashboard
   if (sellerProfile) {
     return (
       <SellerProvider sellerProfile={sellerProfile}>
