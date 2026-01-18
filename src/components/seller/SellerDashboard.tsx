@@ -63,31 +63,23 @@ const SellerDashboard = () => {
 
   return (
     <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
-      {/* Welcome Banner */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-2xl font-bold text-slate-900">
-            Welcome back
-          </h1>
-          {trustScore && (
-            <Badge 
-              variant="outline" 
-              className={`font-medium ${
-                trustScore.trust_score >= 80 
-                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
-                  : trustScore.trust_score >= 50 
-                  ? 'bg-amber-50 text-amber-600 border-amber-200'
-                  : 'bg-red-50 text-red-600 border-red-200'
-              }`}
-            >
-              Trust Score: {trustScore.trust_score}%
-            </Badge>
-          )}
+      {/* Trust Score Badge */}
+      {trustScore && (
+        <div className="mb-6 flex items-center gap-2">
+          <Badge 
+            variant="outline" 
+            className={`font-medium ${
+              trustScore.trust_score >= 80 
+                ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                : trustScore.trust_score >= 50 
+                ? 'bg-amber-50 text-amber-600 border-amber-200'
+                : 'bg-red-50 text-red-600 border-red-200'
+            }`}
+          >
+            Trust Score: {trustScore.trust_score}%
+          </Badge>
         </div>
-        <p className="text-slate-500 text-sm">
-          Here's what's happening with your store today
-        </p>
-      </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
