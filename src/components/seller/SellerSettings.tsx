@@ -15,9 +15,9 @@ import { Loader2, Store, Camera, CheckCircle, Clock, Shield } from 'lucide-react
 const SellerSettings = () => {
   const { profile, refreshProfile, loading } = useSellerContext();
   const [formData, setFormData] = useState({
-    store_name: profile.store_name,
-    store_description: profile.store_description || '',
-    store_logo_url: profile.store_logo_url || ''
+    store_name: profile?.store_name || '',
+    store_description: profile?.store_description || '',
+    store_logo_url: profile?.store_logo_url || ''
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -100,7 +100,7 @@ const SellerSettings = () => {
   }
 
   return (
-    <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
+    <div className="space-y-6">
       <div className="max-w-2xl">
         {/* Header */}
         <div className="mb-8">
@@ -119,7 +119,7 @@ const SellerSettings = () => {
                 <Avatar className="h-20 w-20 ring-2 ring-slate-100">
                   <AvatarImage src={formData.store_logo_url} />
                   <AvatarFallback className="bg-emerald-50 text-emerald-600 text-xl font-semibold">
-                    {profile.store_name.charAt(0).toUpperCase()}
+                    {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
                   </AvatarFallback>
                 </Avatar>
                 <label 
@@ -208,12 +208,12 @@ const SellerSettings = () => {
               <span className="text-slate-600">Status</span>
               <Badge 
                 variant="outline" 
-                className={profile.is_active 
+                className={profile?.is_active 
                   ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
                   : 'bg-red-50 text-red-600 border-red-200'
                 }
               >
-                {profile.is_active ? (
+                {profile?.is_active ? (
                   <><CheckCircle className="h-3 w-3 mr-1" />Active</>
                 ) : (
                   <>Suspended</>
@@ -225,12 +225,12 @@ const SellerSettings = () => {
               <span className="text-slate-600">Verification</span>
               <Badge 
                 variant="outline" 
-                className={profile.is_verified 
+                className={profile?.is_verified 
                   ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
                   : 'bg-amber-50 text-amber-600 border-amber-200'
                 }
               >
-                {profile.is_verified ? (
+                {profile?.is_verified ? (
                   <><Shield className="h-3 w-3 mr-1" />Verified</>
                 ) : (
                   <><Clock className="h-3 w-3 mr-1" />Pending</>
@@ -240,17 +240,17 @@ const SellerSettings = () => {
 
             <div className="flex items-center justify-between py-3 border-b border-slate-100">
               <span className="text-slate-600">Commission Rate</span>
-              <span className="font-semibold text-slate-900">{profile.commission_rate}%</span>
+              <span className="font-semibold text-slate-900">{profile?.commission_rate || 10}%</span>
             </div>
 
             <div className="flex items-center justify-between py-3 border-b border-slate-100">
               <span className="text-slate-600">Total Orders</span>
-              <span className="font-semibold text-slate-900">{profile.total_orders}</span>
+              <span className="font-semibold text-slate-900">{profile?.total_orders || 0}</span>
             </div>
 
             <div className="flex items-center justify-between py-3 border-b border-slate-100">
               <span className="text-slate-600">Total Sales</span>
-              <span className="font-semibold text-slate-900">${Number(profile.total_sales || 0).toFixed(2)}</span>
+              <span className="font-semibold text-slate-900">${Number(profile?.total_sales || 0).toFixed(2)}</span>
             </div>
 
             <div className="flex items-center justify-between py-3">
