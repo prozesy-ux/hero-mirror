@@ -197,6 +197,9 @@ const SellerChat = () => {
 
       if (error) throw error;
       setNewMessage('');
+      // FIX: Refetch messages after sending so seller sees their own message
+      await fetchMessages(selectedUser);
+      fetchChatUsers();
     } catch (error: any) {
       toast.error('Failed to send message');
     } finally {
@@ -326,14 +329,22 @@ const SellerChat = () => {
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-3">
                   {messages.map((msg) => {
+                    const isSeller = msg.sender_type === 'seller';
+                    const isSupport = msg.sender_type === 'support';
                     const isSystem = msg.sender_type === 'system';
+                    
+                    // Sender label
+                    const senderLabel = isSeller ? 'You' : 
+                                        isSupport ? '🛡️ Uptoza Support' : 
+                                        isSystem ? '' : 
+                                        'Customer';
                     
                     if (isSystem) {
                       return (
                         <div key={msg.id} className="flex justify-center my-3">
-                          <div className="bg-slate-100 rounded-xl px-4 py-2 max-w-[85%] border border-slate-200">
-                            <p className="text-xs text-slate-600 text-center">{msg.message}</p>
-                            <p className="text-[10px] text-slate-400 text-center mt-1">
+                          <div className="bg-amber-50 rounded-xl px-4 py-2 max-w-[85%] border border-amber-200">
+                            <p className="text-xs text-amber-700 text-center">{msg.message}</p>
+                            <p className="text-[10px] text-amber-500 text-center mt-1">
                               {format(new Date(msg.created_at), 'MMM d, h:mm a')}
                             </p>
                           </div>
@@ -344,19 +355,27 @@ const SellerChat = () => {
                     return (
                       <div
                         key={msg.id}
-                        className={`flex ${msg.sender_type === 'seller' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${isSeller ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                          msg.sender_type === 'seller'
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-slate-100 text-slate-900'
-                        }`}>
-                          <p className="text-sm">{msg.message}</p>
-                          <p className={`text-[10px] mt-1 ${
-                            msg.sender_type === 'seller' ? 'text-emerald-100' : 'text-slate-400'
-                          }`}>
-                            {format(new Date(msg.created_at), 'h:mm a')}
+                        <div className="max-w-[75%]">
+                          {/* Sender Label */}
+                          <p className={`text-[10px] text-slate-500 mb-1 px-2 ${isSeller ? 'text-right' : 'text-left'}`}>
+                            {senderLabel}
                           </p>
+                          <div className={`rounded-2xl px-4 py-2.5 ${
+                            isSeller
+                              ? 'bg-emerald-500 text-white'
+                              : isSupport
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 text-slate-900'
+                          }`}>
+                            <p className="text-sm">{msg.message}</p>
+                            <p className={`text-[10px] mt-1 ${
+                              isSeller ? 'text-emerald-100' : isSupport ? 'text-blue-100' : 'text-slate-400'
+                            }`}>
+                              {format(new Date(msg.created_at), 'h:mm a')}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     );
