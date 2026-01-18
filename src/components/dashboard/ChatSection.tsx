@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   MessageCircle, Send, Loader2, Image, Video, Paperclip, 
-  X, Download, FileText, StopCircle, Circle, Headphones, Store, ArrowLeft, Search
+  X, Download, FileText, StopCircle, Circle, Headphones, Store, ArrowLeft, Search, AlertTriangle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -850,6 +850,7 @@ const ChatSection = () => {
                   Request Support
                 </button>
               )}
+            </div>
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
