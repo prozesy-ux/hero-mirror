@@ -162,6 +162,10 @@ const AIAccountsSection = () => {
   // View Details Modal state
   const [selectedAccount, setSelectedAccount] = useState<AIAccount | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  
+  // Seller Product Details Modal state
+  const [selectedSellerProduct, setSelectedSellerProduct] = useState<SellerProduct | null>(null);
+  const [showSellerDetailsModal, setShowSellerDetailsModal] = useState(false);
 
   // Chat state
   const [messages, setMessages] = useState<SupportMessage[]>([]);
@@ -1228,18 +1232,13 @@ const AIAccountsSection = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => {
-                              setSelectedSeller({
-                                sellerId: product.seller_id,
-                                sellerName: product.seller_profiles?.store_name || 'Seller',
-                                productId: product.id,
-                                productName: product.name
-                              });
-                              setSellerChatOpen(true);
+                              setSelectedSellerProduct(product);
+                              setShowSellerDetailsModal(true);
                             }}
-                            className="flex-1 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700"
+                            className="flex-1 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
                           >
-                            <MessageCircle size={16} />
-                            Chat
+                            <Eye size={16} />
+                            View
                           </button>
                           <button
                             onClick={() => handleSellerProductPurchase(product)}
@@ -1276,6 +1275,119 @@ const AIAccountsSection = () => {
           productName={selectedSeller.productName}
         />
       )}
+
+      {/* Seller Product Details Modal */}
+      <Dialog open={showSellerDetailsModal} onOpenChange={setShowSellerDetailsModal}>
+        <DialogContent className="max-w-lg p-0 overflow-hidden bg-white border-gray-200">
+          {selectedSellerProduct && (
+            <>
+              {/* Product Image */}
+              <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200">
+                {selectedSellerProduct.icon_url ? (
+                  <img 
+                    src={selectedSellerProduct.icon_url} 
+                    alt={selectedSellerProduct.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="h-20 w-20 text-gray-300" />
+                  </div>
+                )}
+                {/* Seller Badge */}
+                <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                  <Store size={12} />
+                  {selectedSellerProduct.seller_profiles?.store_name || 'Seller'}
+                </div>
+                {selectedSellerProduct.seller_profiles?.is_verified && (
+                  <div className="absolute top-3 right-3 px-2 py-1 bg-blue-500 text-white rounded-full text-xs font-medium">
+                    Verified
+                  </div>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <DialogHeader className="mb-4">
+                  <DialogTitle className="text-xl font-bold text-gray-900">
+                    {selectedSellerProduct.name}
+                  </DialogTitle>
+                </DialogHeader>
+
+                {/* Rating & Sales */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />
+                    ))}
+                  </div>
+                  <span className="text-gray-600 text-sm">{selectedSellerProduct.sold_count || 0}+ sold</span>
+                </div>
+
+                {/* Tags */}
+                {selectedSellerProduct.tags && selectedSellerProduct.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {selectedSellerProduct.tags.map(tag => (
+                      <span key={tag} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Description */}
+                <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                  {selectedSellerProduct.description || 'Premium product from verified seller.'}
+                </p>
+
+                {/* Price */}
+                <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-xl">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Price</p>
+                    <p className="text-2xl font-bold text-gray-900">${selectedSellerProduct.price}</p>
+                  </div>
+                  {selectedSellerProduct.stock !== null && (
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500 mb-1">In Stock</p>
+                      <p className="text-xl font-bold text-gray-900">{selectedSellerProduct.stock}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons - Chat + Buy */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowSellerDetailsModal(false);
+                      setSelectedSeller({
+                        sellerId: selectedSellerProduct.seller_id,
+                        sellerName: selectedSellerProduct.seller_profiles?.store_name || 'Seller',
+                        productId: selectedSellerProduct.id,
+                        productName: selectedSellerProduct.name
+                      });
+                      setSellerChatOpen(true);
+                    }}
+                    className="flex-1 px-4 py-3 bg-emerald-100 text-emerald-700 rounded-xl font-semibold hover:bg-emerald-200 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle size={16} />
+                    Chat with {selectedSellerProduct.seller_profiles?.store_name || 'Seller'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowSellerDetailsModal(false);
+                      handleSellerProductPurchase(selectedSellerProduct);
+                    }}
+                    className="flex-1 px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                  >
+                    Buy Now
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* My Purchases Tab */}
       {activeTab === 'purchases' && (
@@ -1793,12 +1905,12 @@ const AIAccountsSection = () => {
                   <button
                     onClick={() => {
                       setShowDetailsModal(false);
-                      navigate(`/dashboard/ai-accounts/${selectedAccount.id}`);
+                      setActiveTab('chat');
                     }}
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-700 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-3 bg-violet-100 text-violet-700 rounded-xl font-semibold hover:bg-violet-200 transition-colors flex items-center justify-center gap-2"
                   >
-                    <ExternalLink size={16} />
-                    Full Page
+                    <MessageCircle size={16} />
+                    Chat with Uptoza
                   </button>
                   <button
                     onClick={() => {
