@@ -12,6 +12,9 @@ import DeletionRequestsManagement from '@/components/admin/DeletionRequestsManag
 import ChatManagement from '@/components/admin/ChatManagement';
 import WalletManagement from '@/components/admin/WalletManagement';
 import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
+import ResellersManagement from '@/components/admin/ResellersManagement';
+import SellerProductsApproval from '@/components/admin/SellerProductsApproval';
+import SellerWithdrawalsAdmin from '@/components/admin/SellerWithdrawalsAdmin';
 import { AdminDataProvider, useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useState, useEffect } from 'react';
 import { Loader2, Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react';
@@ -89,6 +92,10 @@ const AdminContent = () => {
           <Route path="cancellations" element={<CancellationRequestsManagement />} />
           <Route path="deletions" element={<DeletionRequestsManagement />} />
           <Route path="chats" element={<ChatManagement />} />
+          {/* Seller Management Routes */}
+          <Route path="resellers" element={<ResellersManagement />} />
+          <Route path="seller-products" element={<SellerProductsApproval />} />
+          <Route path="seller-withdrawals" element={<SellerWithdrawalsAdmin />} />
         </Routes>
       </div>
     </main>

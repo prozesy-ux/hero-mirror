@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { ShoppingCart, Loader2, Search, TrendingUp, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, X, MessageCircle, Send, Star, ChevronRight, ExternalLink, ArrowRight, Filter } from 'lucide-react';
+import { ShoppingCart, Loader2, Search, TrendingUp, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, X, MessageCircle, Send, Star, ChevronRight, ExternalLink, ArrowRight, Filter, Store } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import MarketplaceSidebar from './MarketplaceSidebar';
+import SellerChatModal from './SellerChatModal';
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -27,6 +28,27 @@ interface AIAccount {
   original_price: number | null;
   tags: string[] | null;
   stock: number | null;
+}
+
+interface SellerProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  icon_url: string | null;
+  category_id: string | null;
+  is_available: boolean;
+  is_approved: boolean;
+  tags: string[] | null;
+  stock: number | null;
+  sold_count: number | null;
+  seller_id: string;
+  seller_profiles: {
+    id: string;
+    store_name: string;
+    store_logo_url: string | null;
+    is_verified: boolean;
+  } | null;
 }
 
 interface PurchasedAccount {
@@ -99,6 +121,16 @@ const AIAccountsSection = () => {
     shortfall: 0
   });
 
+  // Seller products state
+  const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([]);
+  const [sellerChatOpen, setSellerChatOpen] = useState(false);
+  const [selectedSeller, setSelectedSeller] = useState<{
+    sellerId: string;
+    sellerName: string;
+    productId?: string;
+    productName?: string;
+  } | null>(null);
+
   // View Details Modal state
   const [selectedAccount, setSelectedAccount] = useState<AIAccount | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -113,6 +145,7 @@ const AIAccountsSection = () => {
   useEffect(() => {
     fetchAccounts();
     fetchCategories();
+    fetchSellerProducts();
     
     // Subscribe to realtime updates for categories and accounts
     const categoriesChannel = supabase
@@ -129,9 +162,17 @@ const AIAccountsSection = () => {
       })
       .subscribe();
 
+    const sellerProductsChannel = supabase
+      .channel('seller-products-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_products' }, () => {
+        fetchSellerProducts();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(categoriesChannel);
       supabase.removeChannel(accountsChannel);
+      supabase.removeChannel(sellerProductsChannel);
     };
   }, []);
 
@@ -305,6 +346,135 @@ const AIAccountsSection = () => {
       setAccounts(data);
     }
     setLoading(false);
+  };
+
+  const fetchSellerProducts = async () => {
+    const { data, error } = await supabase
+      .from('seller_products')
+      .select(`
+        *,
+        seller_profiles (id, store_name, store_logo_url, is_verified)
+      `)
+      .eq('is_available', true)
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setSellerProducts(data as SellerProduct[]);
+    }
+  };
+
+  const handleSellerProductPurchase = async (product: SellerProduct) => {
+    if (!user) {
+      toast.error('Please sign in to purchase');
+      return;
+    }
+
+    // Check wallet balance first
+    const { data: walletData, error: walletError } = await supabase
+      .from('user_wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .single();
+
+    if (walletError && walletError.code === 'PGRST116') {
+      setInsufficientFundsModal({
+        show: true,
+        required: product.price,
+        current: 0,
+        shortfall: product.price,
+        accountName: product.name
+      });
+      return;
+    }
+
+    const currentBalance = Number(walletData?.balance) || 0;
+
+    if (currentBalance < product.price) {
+      setInsufficientFundsModal({
+        show: true,
+        required: product.price,
+        current: currentBalance,
+        shortfall: product.price - currentBalance,
+        accountName: product.name
+      });
+      return;
+    }
+
+    setPurchasing(product.id);
+
+    try {
+      const commissionRate = 0.10; // 10% platform commission
+      const sellerEarning = product.price * (1 - commissionRate);
+
+      // 1. Deduct from buyer wallet
+      const newBalance = currentBalance - product.price;
+      const { error: updateError } = await supabase
+        .from('user_wallets')
+        .update({ balance: newBalance })
+        .eq('user_id', user.id);
+
+      if (updateError) throw new Error('Failed to update wallet balance');
+
+      // 2. Create wallet transaction record
+      const { error: transactionError } = await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user.id,
+          type: 'purchase',
+          amount: product.price,
+          status: 'completed',
+          description: `Seller Product: ${product.name}`
+        });
+
+      if (transactionError) {
+        await supabase.from('user_wallets').update({ balance: currentBalance }).eq('user_id', user.id);
+        throw new Error('Failed to create transaction record');
+      }
+
+      // 3. Create seller order
+      const { error: orderError } = await supabase
+        .from('seller_orders')
+        .insert({
+          seller_id: product.seller_id,
+          buyer_id: user.id,
+          product_id: product.id,
+          amount: product.price,
+          seller_earning: sellerEarning,
+          status: 'pending'
+        });
+
+      if (orderError) {
+        await supabase.from('user_wallets').update({ balance: currentBalance }).eq('user_id', user.id);
+        throw new Error('Failed to create order');
+      }
+
+      // 4. Add to seller pending balance using RPC
+      await supabase.rpc('add_seller_pending_balance', {
+        p_seller_id: product.seller_id,
+        p_amount: sellerEarning
+      });
+
+      // 5. Create notification
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'purchase',
+        title: 'Purchase Successful',
+        message: `You purchased ${product.name} for $${product.price}`,
+        link: '/dashboard/ai-accounts?tab=purchases',
+        is_read: false
+      });
+
+      toast.success('Purchase successful! The seller will deliver your account soon.');
+      fetchWallet();
+      fetchPurchases();
+      setActiveTab('purchases');
+    } catch (error: any) {
+      console.error('Purchase error:', error);
+      toast.error(error.message || 'Failed to complete purchase');
+    } finally {
+      setPurchasing(null);
+    }
   };
 
   const fetchPurchases = async () => {
@@ -848,10 +1018,116 @@ const AIAccountsSection = () => {
                     </div>
                   );
                 })}
+                
+                {/* Seller Products */}
+                {sellerProducts.filter(p => {
+                  const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+                  const matchesCategory = categoryFilter === 'all' || p.category_id === categoryFilter;
+                  const matchesTags = selectedTags.length === 0 || p.tags?.some(tag => selectedTags.includes(tag));
+                  return matchesSearch && matchesCategory && matchesTags;
+                }).map((product) => {
+                  const hasEnoughBalance = (wallet?.balance || 0) >= product.price;
+                  
+                  return (
+                    <div
+                      key={`seller-${product.id}`}
+                      className="group bg-white rounded-2xl overflow-hidden border-2 border-emerald-200 shadow-md hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                    >
+                      {/* Image */}
+                      <div className="relative aspect-[4/3] overflow-hidden">
+                        {product.icon_url ? (
+                          <img src={product.icon_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                            <Package className="h-16 w-16 text-gray-300" />
+                          </div>
+                        )}
+
+                        {/* Seller Badge */}
+                        <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                          <Store size={12} />
+                          {product.seller_profiles?.store_name || 'Seller'}
+                        </div>
+
+                        {!hasEnoughBalance && (
+                          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
+                            <Wallet size={28} className="text-white mb-2" />
+                            <span className="text-white text-sm font-semibold">Low Balance</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-5">
+                        <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">{product.name}</h3>
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description || 'Premium account from verified seller'}</p>
+                        
+                        <div className="mb-3 flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                            <Check size={12} />${product.price}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />
+                            ))}
+                          </div>
+                          <span className="text-sm text-gray-600 font-medium">{product.sold_count || 0}+ sold</span>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedSeller({
+                                sellerId: product.seller_id,
+                                sellerName: product.seller_profiles?.store_name || 'Seller',
+                                productId: product.id,
+                                productName: product.name
+                              });
+                              setSellerChatOpen(true);
+                            }}
+                            className="flex-1 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700"
+                          >
+                            <MessageCircle size={16} />
+                            Chat
+                          </button>
+                          <button
+                            onClick={() => handleSellerProductPurchase(product)}
+                            disabled={purchasing === product.id}
+                            className={`flex-1 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                              purchasing === product.id
+                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                : hasEnoughBalance
+                                ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
+                                : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
+                            }`}
+                          >
+                            {purchasing === product.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Buy'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
+      )}
+
+      {/* Seller Chat Modal */}
+      {selectedSeller && (
+        <SellerChatModal
+          open={sellerChatOpen}
+          onOpenChange={setSellerChatOpen}
+          sellerId={selectedSeller.sellerId}
+          sellerName={selectedSeller.sellerName}
+          productId={selectedSeller.productId}
+          productName={selectedSeller.productName}
+        />
       )}
 
       {/* My Purchases Tab */}
