@@ -76,7 +76,9 @@ serve(async (req) => {
       'seller_trust_scores',
       'chat_join_requests',
       'seller_feature_requests',
-      'auto_approval_settings'
+      'auto_approval_settings',
+      'screen_share_sessions',
+      'chat_attachments'
     ];
 
     if (!allowedTables.includes(table)) {
