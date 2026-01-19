@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -14,7 +14,8 @@ const SignIn = () => {
   const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp, signInWithGoogle } = useAuthContext();
+  const { user, loading: authLoading, signIn, signUp, signInWithGoogle } = useAuthContext();
+  const didAutoRedirect = useRef(false);
   const navigate = useNavigate();
 
   // Handle post-auth redirect (for store purchases)
@@ -44,6 +45,16 @@ const SignIn = () => {
     // Priority 3: Default to dashboard
     navigate("/dashboard");
   };
+
+  // Auto-redirect after OAuth returns to /signin (no form submit happens)
+  useEffect(() => {
+    if (didAutoRedirect.current) return;
+    if (authLoading) return;
+    if (!user) return;
+
+    didAutoRedirect.current = true;
+    handlePostAuthRedirect();
+  }, [user, authLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
