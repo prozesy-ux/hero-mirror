@@ -8,6 +8,7 @@ import ProfileSection from '@/components/dashboard/ProfileSection';
 import BillingSection from '@/components/dashboard/BillingSection';
 import AIAccountsSection from '@/components/dashboard/AIAccountsSection';
 import AccountDetailPage from '@/components/dashboard/AccountDetailPage';
+import ProductFullViewPage from '@/components/dashboard/ProductFullViewPage';
 import ChatSection from '@/components/dashboard/ChatSection';
 import BuyerWallet from '@/components/dashboard/BuyerWallet';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
@@ -80,6 +81,7 @@ const DashboardContent = () => {
           <Route path="tools" element={<Navigate to="/dashboard/prompts" replace />} />
           <Route path="ai-accounts" element={<AIAccountsSection />} />
           <Route path="ai-accounts/:accountId" element={<AccountDetailPage />} />
+          <Route path="ai-accounts/product/:productId" element={<ProductFullViewPage />} />
           <Route path="billing" element={<BillingSection />} />
           <Route path="wallet" element={<BuyerWallet />} />
           <Route path="profile" element={<ProfileSection />} />

@@ -182,6 +182,10 @@ const AIAccountsSection = () => {
   const [selectedSellerProduct, setSelectedSellerProduct] = useState<SellerProduct | null>(null);
   const [showSellerDetailsModal, setShowSellerDetailsModal] = useState(false);
 
+  // Quick View Modal state
+  const [quickViewProduct, setQuickViewProduct] = useState<{ type: 'account' | 'seller'; data: AIAccount | SellerProduct } | null>(null);
+  const [showQuickViewModal, setShowQuickViewModal] = useState(false);
+
   // Email-required product purchase modal
   const [emailRequiredModal, setEmailRequiredModal] = useState<{
     show: boolean;
@@ -1332,16 +1336,16 @@ const AIAccountsSection = () => {
                               Chat
                             </button>
                           )}
-                          {/* Full View Button */}
+                          {/* View Button - Opens Quick View */}
                           <button
                             onClick={() => {
-                              setSelectedAccount(account);
-                              setShowDetailsModal(true);
+                              setQuickViewProduct({ type: 'account', data: account });
+                              setShowQuickViewModal(true);
                             }}
                             className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
                           >
                             <Eye size={14} />
-                            Full View
+                            View
                           </button>
                           {/* Buy Button */}
                           <button
@@ -1450,16 +1454,16 @@ const AIAccountsSection = () => {
                               Chat
                             </button>
                           )}
-                          {/* Full View Button */}
+                          {/* View Button - Opens Quick View */}
                           <button
                             onClick={() => {
-                              setSelectedSellerProduct(product);
-                              setShowSellerDetailsModal(true);
+                              setQuickViewProduct({ type: 'seller', data: product });
+                              setShowQuickViewModal(true);
                             }}
                             className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
                           >
                             <Eye size={14} />
-                            Full View
+                            View
                           </button>
                           {/* Buy Button */}
                           <button
@@ -2133,6 +2137,128 @@ const AIAccountsSection = () => {
                   >
                     Buy Now
                     <ArrowRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick View Modal */}
+      <Dialog open={showQuickViewModal} onOpenChange={setShowQuickViewModal}>
+        <DialogContent className="max-w-sm p-0 overflow-hidden bg-white border-gray-200">
+          {quickViewProduct && (
+            <>
+              {/* Product Image */}
+              <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200">
+                {quickViewProduct.data.icon_url ? (
+                  <img 
+                    src={quickViewProduct.data.icon_url} 
+                    alt={quickViewProduct.data.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="h-16 w-16 text-gray-300" />
+                  </div>
+                )}
+                {/* Badge */}
+                {quickViewProduct.type === 'seller' ? (
+                  <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                    <Store size={12} />
+                    {(quickViewProduct.data as SellerProduct).seller_profiles?.store_name || 'Seller'}
+                  </div>
+                ) : (
+                  <div className="absolute top-3 left-3 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                    <span className="w-2 h-2 rounded-full bg-white/80" />
+                    Uptoza
+                  </div>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="p-5">
+                <h3 className="font-bold text-gray-900 text-lg mb-2">{quickViewProduct.data.name}</h3>
+                
+                {/* Price */}
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-700">
+                    <Check size={14} />
+                    ${quickViewProduct.data.price}
+                  </span>
+                </div>
+
+                {/* Action Buttons - Stacked */}
+                <div className="space-y-2">
+                  {/* Chat Button */}
+                  {quickViewProduct.data.chat_allowed !== false && (
+                    <button
+                      onClick={() => {
+                        setShowQuickViewModal(false);
+                        if (quickViewProduct.type === 'seller') {
+                          const product = quickViewProduct.data as SellerProduct;
+                          openChat({
+                            sellerId: product.seller_id,
+                            sellerName: product.seller_profiles?.store_name || 'Seller',
+                            productId: product.id,
+                            productName: product.name,
+                            type: 'seller'
+                          });
+                        } else {
+                          openChat({
+                            sellerId: 'support',
+                            sellerName: 'Uptoza Support',
+                            productId: quickViewProduct.data.id,
+                            productName: quickViewProduct.data.name,
+                            type: 'support'
+                          });
+                        }
+                      }}
+                      className={`w-full font-semibold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                        quickViewProduct.type === 'seller'
+                          ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'
+                          : 'bg-violet-100 hover:bg-violet-200 text-violet-700'
+                      }`}
+                    >
+                      <MessageCircle size={18} />
+                      {quickViewProduct.type === 'seller' ? 'Chat with Seller' : 'Chat with Uptoza'}
+                    </button>
+                  )}
+
+                  {/* Full View Button - Navigate to full page */}
+                  <button
+                    onClick={() => {
+                      setShowQuickViewModal(false);
+                      navigate(`/dashboard/ai-accounts/product/${quickViewProduct.data.id}`);
+                    }}
+                    className="w-full font-semibold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  >
+                    <Eye size={18} />
+                    Full View
+                  </button>
+
+                  {/* Buy Now Button */}
+                  <button
+                    onClick={() => {
+                      setShowQuickViewModal(false);
+                      if (quickViewProduct.type === 'seller') {
+                        handleSellerProductPurchase(quickViewProduct.data as SellerProduct);
+                      } else {
+                        handlePurchase(quickViewProduct.data as AIAccount);
+                      }
+                    }}
+                    disabled={purchasing === quickViewProduct.data.id}
+                    className="w-full font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-yellow-400 hover:bg-yellow-500 text-black"
+                  >
+                    {purchasing === quickViewProduct.data.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <ShoppingCart size={18} />
+                        Buy Now
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
