@@ -1,4 +1,4 @@
-import { Check, Star, MessageCircle, Eye, Wallet, Loader2, Package, TrendingUp, Store } from 'lucide-react';
+import { Star, MessageCircle, Eye, Wallet, Loader2, Package, TrendingUp, Store } from 'lucide-react';
 
 interface SellerProduct {
   id: string;
@@ -34,14 +34,12 @@ const StoreProductCard = ({
   onView,
   onBuy,
 }: StoreProductCardProps) => {
-  // Determine how many buttons are shown
   const showChat = product.chat_allowed !== false;
-  const buttonCount = showChat ? 3 : 2;
 
   return (
-    <div className="group bg-white rounded-2xl overflow-hidden border-2 border-emerald-200 shadow-md hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+    <div className="group bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-200 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
       {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-50">
         {product.icon_url ? (
           <img 
             src={product.icon_url} 
@@ -56,22 +54,22 @@ const StoreProductCard = ({
           />
         ) : null}
         <div 
-          className="w-full h-full flex items-center justify-center absolute inset-0"
+          className="w-full h-full flex items-center justify-center absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-50"
           style={{ display: product.icon_url ? 'none' : 'flex' }}
         >
-          <Package className="h-16 w-16 text-gray-300" />
+          <Package className="h-16 w-16 text-slate-300" />
         </div>
 
         {/* Store Badge */}
-        <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
-          <Store size={12} />
-          {storeName}
+        <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 backdrop-blur-sm text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm border border-slate-100">
+          <Store size={11} className="text-emerald-600" />
+          <span className="truncate max-w-[80px]">{storeName}</span>
         </div>
 
         {/* Hot Badge */}
         {product.sold_count && product.sold_count > 10 && (
-          <div className="absolute top-3 right-3 w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
-            <TrendingUp size={16} className="text-white" />
+          <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
+            <TrendingUp size={14} className="text-white" />
           </div>
         )}
 
@@ -86,69 +84,64 @@ const StoreProductCard = ({
 
       {/* Content */}
       <div className="p-4">
-        <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">
+        <h3 className="font-bold text-slate-900 text-base leading-tight line-clamp-2 mb-2 group-hover:text-emerald-700 transition-colors">
           {product.name}
         </h3>
-        
-        {/* Description */}
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-          {product.description || 'Premium product from verified seller'}
-        </p>
 
-        {/* Tags */}
+        {/* Tags - compact */}
         {product.tags && product.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {product.tags.slice(0, 3).map(tag => (
-              <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+          <div className="flex flex-wrap gap-1 mb-3">
+            {product.tags.slice(0, 2).map(tag => (
+              <span key={tag} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-medium">
                 {tag}
               </span>
             ))}
+            {product.tags.length > 2 && (
+              <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px] font-medium">
+                +{product.tags.length - 2}
+              </span>
+            )}
           </div>
         )}
 
-        {/* Price Badge */}
-        <div className="mb-3 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-            <Check size={12} />
-            ${product.price}
-          </span>
-        </div>
-
-        {/* Review Section */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex gap-0.5">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />
-            ))}
+        {/* Price & Rating Row */}
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-xl font-bold text-emerald-600">${product.price}</span>
+          <div className="flex items-center gap-1.5">
+            <div className="flex gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={10} className="text-amber-400 fill-amber-400" />
+              ))}
+            </div>
+            <span className="text-xs text-slate-500 font-medium">{product.sold_count || 0}</span>
           </div>
-          <span className="text-sm text-gray-600 font-medium">{product.sold_count || 0}+ sold</span>
         </div>
 
-        {/* Action Buttons - Fixed sizing */}
+        {/* Action Buttons - Clean design */}
         <div className="flex gap-2">
-          {/* Chat Button - Only show if chat is allowed */}
+          {/* Chat Button */}
           {showChat && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onChat();
               }}
-              className="flex-1 min-w-0 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700 text-sm"
+              className="flex-1 min-w-0 py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium"
             >
               <MessageCircle size={14} className="flex-shrink-0" />
-              <span className="truncate">Chat</span>
+              <span className="hidden sm:inline">Chat</span>
             </button>
           )}
-          {/* Full View Button */}
+          {/* View Button */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               onView();
             }}
-            className="flex-1 min-w-0 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm"
+            className="flex-1 min-w-0 py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium"
           >
             <Eye size={14} className="flex-shrink-0" />
-            <span className="truncate">View</span>
+            <span className="hidden sm:inline">View</span>
           </button>
           {/* Buy Button */}
           <button
@@ -157,12 +150,12 @@ const StoreProductCard = ({
               onBuy();
             }}
             disabled={purchasing}
-            className={`flex-1 min-w-0 font-bold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors text-sm ${
+            className={`flex-[1.5] min-w-0 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all text-sm ${
               purchasing
-                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
                 : isLoggedIn && !hasEnoughBalance
                 ? 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
-                : 'bg-yellow-400 hover:bg-yellow-500 text-black'
+                : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-200'
             }`}
           >
             {purchasing ? (
@@ -170,10 +163,10 @@ const StoreProductCard = ({
             ) : isLoggedIn && !hasEnoughBalance ? (
               <>
                 <Wallet className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Top Up</span>
+                <span>Top Up</span>
               </>
             ) : (
-              <span>Buy</span>
+              <span>Buy Now</span>
             )}
           </button>
         </div>
