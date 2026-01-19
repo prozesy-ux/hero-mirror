@@ -1,5 +1,25 @@
 // App version - update this with each deployment to trigger cache clear
-export const APP_VERSION = '1.0.1';
+export const APP_VERSION = '1.0.2';
+
+/**
+ * Handle critical errors by forcing a refresh
+ */
+export const handleCriticalError = (): void => {
+  console.error('[Cache] Critical error detected, forcing refresh');
+  localStorage.setItem('force_refresh', 'true');
+  window.location.reload();
+};
+
+/**
+ * Check for force refresh flag on load
+ */
+export const checkForceRefresh = (): boolean => {
+  if (localStorage.getItem('force_refresh') === 'true') {
+    localStorage.removeItem('force_refresh');
+    return true;
+  }
+  return false;
+};
 
 const VERSION_KEY = 'app_version';
 const CACHE_CLEARED_KEY = 'cache_cleared_at';
