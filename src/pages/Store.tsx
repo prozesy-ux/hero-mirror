@@ -102,40 +102,55 @@ const StoreContent = () => {
 
   // Handle return from auth with pending purchase or chat
   useEffect(() => {
-    if (user && products.length > 0 && seller) {
-      const storeReturn = localStorage.getItem('storeReturn');
-      if (storeReturn) {
-        try {
-          const data = JSON.parse(storeReturn);
-          localStorage.removeItem('storeReturn');
-          
-          const pendingProd = products.find(p => p.id === data.pendingProductId);
-          if (pendingProd) {
-            if (data.pendingAction === 'chat') {
-              // Open floating chat directly
-              openChat({
-                sellerId: seller.id,
-                sellerName: seller.store_name,
-                productId: pendingProd.id,
-                productName: pendingProd.name,
-                type: 'seller'
-              });
-              toast.success(`Welcome back! Chat with ${seller.store_name} is now open`);
-            } else {
-              // Open product modal for purchase
-              setSelectedProduct(pendingProd);
-              toast.success(`Welcome back! Continue your purchase of "${pendingProd.name}"`);
-            }
-          } else {
-            // Product not found but user returned with intent
-            toast.info(`Welcome back to ${seller.store_name}!`);
-          }
-        } catch (e) {
-          console.error('Failed to parse storeReturn', e);
-        }
-      }
+    if (!user || products.length === 0 || !seller) {
+      // Wait until we have user, products, and seller data
+      return;
     }
-  }, [user, products, seller, openChat]);
+
+    const storeReturn = localStorage.getItem('storeReturn');
+    if (!storeReturn) return;
+
+    try {
+      const data = JSON.parse(storeReturn);
+      
+      // Validate this storeReturn is for the current store
+      if (data.returnUrl && !data.returnUrl.includes(storeSlug)) {
+        // This storeReturn is for a different store, don't process it here
+        return;
+      }
+
+      const pendingProd = products.find(p => p.id === data.pendingProductId);
+      
+      if (pendingProd) {
+        // Successfully found product - NOW we can remove storeReturn
+        localStorage.removeItem('storeReturn');
+        
+        if (data.pendingAction === 'chat') {
+          // Open floating chat directly
+          openChat({
+            sellerId: seller.id,
+            sellerName: seller.store_name,
+            productId: pendingProd.id,
+            productName: pendingProd.name,
+            type: 'seller'
+          });
+          toast.success(`Welcome back! Chat with ${seller.store_name} is now open`);
+        } else {
+          // Open product modal for purchase
+          setSelectedProduct(pendingProd);
+          toast.success(`Welcome back! Continue your purchase of "${pendingProd.name}"`);
+        }
+      } else if (data.pendingProductId) {
+        // Product ID was specified but not found - product may have been removed
+        localStorage.removeItem('storeReturn');
+        toast.info(`Welcome back to ${seller.store_name}!`);
+      }
+      // If no pendingProductId, keep storeReturn in case it's needed elsewhere
+    } catch (e) {
+      console.error('Failed to parse storeReturn', e);
+      localStorage.removeItem('storeReturn');
+    }
+  }, [user, products, seller, storeSlug, openChat]);
 
   useEffect(() => {
     if (storeSlug) {
@@ -273,8 +288,10 @@ const StoreContent = () => {
 
   const handleLoginRedirect = (isSignup = false) => {
     // storeReturn is already persisted by handlePurchase/handleChat
+    // Add returnTo as backup in case storeReturn gets cleared
     setShowLoginModal(false);
-    navigate(isSignup ? '/signin?mode=signup' : '/signin');
+    const returnTo = encodeURIComponent(`/store/${storeSlug}`);
+    navigate(isSignup ? `/signin?mode=signup&returnTo=${returnTo}` : `/signin?returnTo=${returnTo}`);
   };
 
   const handleTagSelect = (tag: string) => {
