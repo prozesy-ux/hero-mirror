@@ -95,6 +95,13 @@ const formatLocalAmount = (usdAmount: number, method: PaymentMethodDB | undefine
 
 type BillingTab = 'wallet' | 'transactions' | 'plan' | 'purchases';
 
+// Extend window for Razorpay
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 const BillingSection = () => {
   const { user, isPro } = useAuthContext();
   const [searchParams] = useSearchParams();
@@ -128,6 +135,25 @@ const BillingSection = () => {
   
   // Payment methods from database
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodDB[]>([]);
+  
+  // Razorpay script loading state
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+
+  // Load Razorpay script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => setRazorpayLoaded(true);
+    script.onerror = () => console.error('Failed to load Razorpay script');
+    document.body.appendChild(script);
+    
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     fetchPaymentMethods();
@@ -311,8 +337,84 @@ const BillingSection = () => {
         if (data?.url) {
           window.open(data.url, '_blank');
         }
+      } else if (selectedGateway === 'razorpay') {
+        // Razorpay checkout flow
+        if (!razorpayLoaded) {
+          toast.error('Payment system is loading. Please try again in a moment.');
+          setProcessingTopup(false);
+          return;
+        }
+
+        // Create order on backend
+        const { data, error } = await supabase.functions.invoke('create-razorpay-order', {
+          body: { amount: topupAmount }
+        });
+        
+        if (error) throw error;
+        if (!data?.order_id) throw new Error('Failed to create order');
+
+        // Close the modal before opening Razorpay
+        setShowTopupModal(false);
+
+        // Open Razorpay checkout
+        const options = {
+          key: data.key_id,
+          amount: data.amount,
+          currency: data.currency,
+          name: 'Uptoza',
+          description: `Add $${topupAmount} to wallet`,
+          order_id: data.order_id,
+          handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+            // Verify payment on backend
+            try {
+              toast.info('Verifying payment...');
+              const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-razorpay-payment', {
+                body: {
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  amount: topupAmount
+                }
+              });
+              
+              if (verifyError) {
+                console.error('Verification error:', verifyError);
+                toast.error('Payment verification failed. Please contact support.');
+              } else if (verifyData?.success) {
+                toast.success(`$${topupAmount} added to your wallet!`);
+                fetchData();
+              }
+            } catch (verifyErr) {
+              console.error('Verification exception:', verifyErr);
+              toast.error('Payment verification failed. Please contact support if funds are missing.');
+            }
+            setProcessingTopup(false);
+          },
+          prefill: {
+            email: user.email
+          },
+          theme: {
+            color: '#7c3aed' // Violet color matching the UI
+          },
+          modal: {
+            ondismiss: () => {
+              setProcessingTopup(false);
+              toast.info('Payment cancelled');
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', (response: any) => {
+          console.error('Razorpay payment failed:', response.error);
+          toast.error(response.error?.description || 'Payment failed. Please try again.');
+          setProcessingTopup(false);
+        });
+        rzp.open();
+        return; // Don't set processingTopup to false yet - handled in callbacks
+        
       } else {
-        // Manual payment flow (bKash/UPI)
+        // Manual payment flow (bKash/UPI/etc)
         if (!transactionIdInput.trim()) {
           toast.error('Please enter your transaction ID');
           setProcessingTopup(false);
@@ -352,6 +454,7 @@ const BillingSection = () => {
         fetchData();
       }
     } catch (error: any) {
+      console.error('Topup error:', error);
       toast.error(error.message || 'Failed to process payment');
     } finally {
       setProcessingTopup(false);
