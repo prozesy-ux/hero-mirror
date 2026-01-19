@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { TrendingUp, Bot, ArrowRight, Heart, Lock, Star, Check, ImageIcon } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { TrendingUp, Bot, ArrowRight, Heart, Lock, Star, Check, ImageIcon, ShoppingCart, X, Wallet, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Import logos and assets
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -31,7 +33,17 @@ interface AIAccount {
   category: string | null;
 }
 
+interface PendingPurchase {
+  productId: string;
+  productName: string;
+  sellerId: string;
+  price: number;
+  storeSlug: string;
+  iconUrl: string | null;
+}
+
 const DashboardHome = () => {
+  const navigate = useNavigate();
   const [trendingPrompts, setTrendingPrompts] = useState<Prompt[]>([]);
   const [aiAccounts, setAiAccounts] = useState<AIAccount[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -39,6 +51,11 @@ const DashboardHome = () => {
   const [loading, setLoading] = useState(true);
   const [isPromptsPaused, setIsPromptsPaused] = useState(false);
   const [isAccountsPaused, setIsAccountsPaused] = useState(false);
+  
+  // Pending purchase state
+  const [pendingPurchase, setPendingPurchase] = useState<PendingPurchase | null>(null);
+  const [wallet, setWallet] = useState<{ balance: number } | null>(null);
+  const [purchasing, setPurchasing] = useState(false);
   
   const promptsScrollRef = useRef<HTMLDivElement>(null);
   const accountsScrollRef = useRef<HTMLDivElement>(null);
@@ -48,6 +65,37 @@ const DashboardHome = () => {
   useEffect(() => {
     fetchData();
   }, [user]);
+
+  // Fetch wallet balance
+  useEffect(() => {
+    const fetchWallet = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('user_wallets')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+      if (data) setWallet(data);
+    };
+    fetchWallet();
+  }, [user]);
+
+  // Check for pending purchase from store redirect
+  useEffect(() => {
+    const storedPurchase = localStorage.getItem('pendingPurchase');
+    if (storedPurchase) {
+      try {
+        const data = JSON.parse(storedPurchase) as PendingPurchase;
+        setPendingPurchase(data);
+        // Remove from localStorage so it doesn't show again on refresh
+        localStorage.removeItem('pendingPurchase');
+        toast.success(`Welcome! Complete your purchase of "${data.productName}"`);
+      } catch (e) {
+        console.error('Failed to parse pendingPurchase', e);
+        localStorage.removeItem('pendingPurchase');
+      }
+    }
+  }, []);
 
   // Auto-slide for Trending Prompts
   useEffect(() => {
@@ -171,6 +219,56 @@ const DashboardHome = () => {
     }
   };
 
+  // Handle completing the pending purchase
+  const handleCompletePurchase = async () => {
+    if (!pendingPurchase || !user) return;
+    
+    const currentBalance = wallet?.balance || 0;
+    
+    if (currentBalance < pendingPurchase.price) {
+      toast.error('Insufficient balance. Please top up your wallet.');
+      navigate('/dashboard/wallet');
+      return;
+    }
+
+    setPurchasing(true);
+
+    try {
+      // Create seller order
+      const { error } = await supabase.from('seller_orders').insert({
+        seller_id: pendingPurchase.sellerId,
+        buyer_id: user.id,
+        product_id: pendingPurchase.productId,
+        amount: pendingPurchase.price,
+        seller_earning: pendingPurchase.price * 0.85,
+        status: 'pending'
+      });
+
+      if (error) throw error;
+
+      // Deduct from wallet
+      await supabase
+        .from('user_wallets')
+        .update({ balance: currentBalance - pendingPurchase.price })
+        .eq('user_id', user.id);
+
+      toast.success('Purchase successful! The seller will deliver your order soon.');
+      setPendingPurchase(null);
+      
+      // Refresh wallet
+      const { data: walletData } = await supabase
+        .from('user_wallets')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+      if (walletData) setWallet(walletData);
+    } catch (error: any) {
+      toast.error(error.message || 'Purchase failed');
+    } finally {
+      setPurchasing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -181,6 +279,108 @@ const DashboardHome = () => {
 
   return (
     <div className="space-y-8 lg:space-y-10 animate-fade-up">
+      {/* Pending Purchase Modal */}
+      <Dialog open={!!pendingPurchase} onOpenChange={(open) => !open && setPendingPurchase(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-emerald-600" />
+              Complete Your Purchase
+            </DialogTitle>
+          </DialogHeader>
+          
+          {pendingPurchase && (
+            <div className="space-y-4">
+              {/* Product Info */}
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                {pendingPurchase.iconUrl ? (
+                  <img 
+                    src={pendingPurchase.iconUrl} 
+                    alt={pendingPurchase.productName}
+                    className="w-16 h-16 rounded-xl object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center">
+                    <ShoppingCart className="w-8 h-8 text-white" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900">{pendingPurchase.productName}</h3>
+                  <p className="text-sm text-gray-500">From store: {pendingPurchase.storeSlug}</p>
+                  <p className="text-lg font-bold text-emerald-600 mt-1">${pendingPurchase.price.toFixed(2)}</p>
+                </div>
+              </div>
+
+              {/* Wallet Balance */}
+              <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-600">Your Balance</span>
+                </div>
+                <span className={`font-bold ${(wallet?.balance || 0) >= pendingPurchase.price ? 'text-emerald-600' : 'text-red-500'}`}>
+                  ${(wallet?.balance || 0).toFixed(2)}
+                </span>
+              </div>
+
+              {/* Insufficient Balance Warning */}
+              {(wallet?.balance || 0) < pendingPurchase.price && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <X className="w-4 h-4 text-red-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-red-700">Insufficient Balance</p>
+                    <p className="text-xs text-red-600">
+                      You need ${(pendingPurchase.price - (wallet?.balance || 0)).toFixed(2)} more to complete this purchase.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setPendingPurchase(null)}
+                >
+                  Cancel
+                </Button>
+                
+                {(wallet?.balance || 0) >= pendingPurchase.price ? (
+                  <Button
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                    onClick={handleCompletePurchase}
+                    disabled={purchasing}
+                  >
+                    {purchasing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Buy Now
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    onClick={() => {
+                      setPendingPurchase(null);
+                      navigate('/dashboard/wallet');
+                    }}
+                  >
+                    <Wallet className="w-4 h-4 mr-2" />
+                    Top Up Wallet
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Trending Prompts Section - Horizontal Scroll */}
       <div>
         <div className="flex items-center justify-between mb-4 lg:mb-6">
