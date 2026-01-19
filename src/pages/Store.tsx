@@ -231,13 +231,17 @@ const StoreContent = () => {
 
   const handlePurchase = async (product: SellerProduct) => {
     if (!user) {
-      // Persist return data BEFORE showing modal - ensures redirect works even if user signs in via header
-      persistStoreReturn(product.id, 'buy');
-      setPendingProduct(product);
-      setPendingAction('buy');
-      // Close product modal first to avoid nested dialog issues
-      setSelectedProduct(null);
-      setShowLoginModal(true);
+      // Save pending purchase for dashboard to handle after login - NO POPUP
+      localStorage.setItem('pendingPurchase', JSON.stringify({
+        productId: product.id,
+        productName: product.name,
+        sellerId: product.seller_id,
+        price: product.price,
+        storeSlug: storeSlug,
+        iconUrl: product.icon_url
+      }));
+      // Direct navigation to sign-in page - no popup modal
+      navigate('/signin');
       return;
     }
 

@@ -20,7 +20,15 @@ const SignIn = () => {
 
   // Handle post-auth redirect (for store purchases)
   const handlePostAuthRedirect = () => {
-    // Priority 1: Check localStorage storeReturn (has full intent with product/action)
+    // Priority 1: Check for pending purchase - redirect to dashboard where they'll see the product
+    const pendingPurchase = localStorage.getItem('pendingPurchase');
+    if (pendingPurchase) {
+      // Don't remove pendingPurchase - Dashboard will handle it and show product
+      navigate('/dashboard');
+      return;
+    }
+
+    // Priority 2: Check localStorage storeReturn (for chat actions)
     const storeReturn = localStorage.getItem('storeReturn');
     if (storeReturn) {
       try {
@@ -35,14 +43,14 @@ const SignIn = () => {
       }
     }
     
-    // Priority 2: Check returnTo query parameter (backup redirect path)
+    // Priority 3: Check returnTo query parameter (backup redirect path)
     const returnTo = searchParams.get('returnTo');
     if (returnTo && returnTo.startsWith('/')) {
       navigate(returnTo);
       return;
     }
     
-    // Priority 3: Default to dashboard
+    // Priority 4: Default to dashboard
     navigate("/dashboard");
   };
 

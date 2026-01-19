@@ -45,6 +45,7 @@ export const clearLocalStorageSelectively = (): void => {
       CACHE_CLEARED_KEY,
       // User intent keys - critical for post-auth flows
       'storeReturn',
+      'pendingPurchase', // New key for buy flow
       // UI state keys - preserve user preferences  
       'sidebar-collapsed',
       'seller-sidebar-collapsed',
