@@ -25,15 +25,16 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Validate admin session
+    // Validate admin session (match admin-validate-session behavior)
     const { data: session, error: sessionError } = await adminClient
       .from('admin_sessions')
       .select('id, admin_id, expires_at, admin_credentials(username)')
       .eq('session_token', token)
-      .gt('expires_at', new Date().toISOString())
-      .maybeSingle();
+      .gte('expires_at', new Date().toISOString())
+      .single();
 
     if (sessionError || !session) {
+      console.error('Admin session validation failed:', sessionError);
       return new Response(
         JSON.stringify({ error: 'Invalid or expired admin session' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
