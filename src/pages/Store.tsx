@@ -308,13 +308,16 @@ const StoreContent = () => {
 
   const handleChat = (product: SellerProduct) => {
     if (!user) {
-      // Persist return data BEFORE showing modal - ensures redirect works even if user signs in via header
-      persistStoreReturn(product.id, 'chat');
-      setPendingProduct(product);
-      setPendingAction('chat');
-      // Close product modal first to avoid nested dialog issues
-      setSelectedProduct(null);
-      setShowLoginModal(true);
+      // Save pending chat for dashboard to handle after login - NO POPUP
+      localStorage.setItem('pendingChat', JSON.stringify({
+        productId: product.id,
+        productName: product.name,
+        sellerId: product.seller_id,
+        storeSlug: storeSlug,
+        sellerName: seller?.store_name || ''
+      }));
+      // Direct navigation to sign-in page - no popup modal
+      navigate('/signin');
       return;
     }
     

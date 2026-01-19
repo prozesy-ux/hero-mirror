@@ -18,17 +18,25 @@ const SignIn = () => {
   const didAutoRedirect = useRef(false);
   const navigate = useNavigate();
 
-  // Handle post-auth redirect (for store purchases)
+  // Handle post-auth redirect (for store purchases and chats)
   const handlePostAuthRedirect = () => {
-    // Priority 1: Check for pending purchase - redirect to dashboard where they'll see the product
+    // Priority 1: Check for pending purchase - redirect to marketplace
     const pendingPurchase = localStorage.getItem('pendingPurchase');
     if (pendingPurchase) {
-      // Don't remove pendingPurchase - Dashboard will handle it and show product
-      navigate('/dashboard');
+      // Don't remove pendingPurchase - AIAccountsSection will handle it and show product modal
+      navigate('/dashboard/ai-accounts');
       return;
     }
 
-    // Priority 2: Check localStorage storeReturn (for chat actions)
+    // Priority 2: Check for pending chat - redirect to marketplace
+    const pendingChat = localStorage.getItem('pendingChat');
+    if (pendingChat) {
+      // Don't remove pendingChat - AIAccountsSection will handle it and open chat
+      navigate('/dashboard/ai-accounts');
+      return;
+    }
+
+    // Priority 3: Check localStorage storeReturn (legacy support)
     const storeReturn = localStorage.getItem('storeReturn');
     if (storeReturn) {
       try {
@@ -43,14 +51,14 @@ const SignIn = () => {
       }
     }
     
-    // Priority 3: Check returnTo query parameter (backup redirect path)
+    // Priority 4: Check returnTo query parameter (backup redirect path)
     const returnTo = searchParams.get('returnTo');
     if (returnTo && returnTo.startsWith('/')) {
       navigate(returnTo);
       return;
     }
     
-    // Priority 4: Default to dashboard
+    // Priority 5: Default to dashboard
     navigate("/dashboard");
   };
 
