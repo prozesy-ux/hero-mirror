@@ -19,17 +19,29 @@ const SignIn = () => {
 
   // Handle post-auth redirect (for store purchases)
   const handlePostAuthRedirect = () => {
+    // Priority 1: Check localStorage storeReturn (has full intent with product/action)
     const storeReturn = localStorage.getItem('storeReturn');
     if (storeReturn) {
       try {
         const data = JSON.parse(storeReturn);
         // Don't remove yet - let the store page handle it
-        navigate(data.returnUrl);
-        return;
+        if (data.returnUrl) {
+          navigate(data.returnUrl);
+          return;
+        }
       } catch (e) {
         console.error('Failed to parse storeReturn', e);
       }
     }
+    
+    // Priority 2: Check returnTo query parameter (backup redirect path)
+    const returnTo = searchParams.get('returnTo');
+    if (returnTo && returnTo.startsWith('/')) {
+      navigate(returnTo);
+      return;
+    }
+    
+    // Priority 3: Default to dashboard
     navigate("/dashboard");
   };
 

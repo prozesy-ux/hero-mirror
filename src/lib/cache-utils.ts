@@ -43,13 +43,20 @@ export const clearLocalStorageSelectively = (): void => {
       'supabase',
       VERSION_KEY,
       CACHE_CLEARED_KEY,
+      // User intent keys - critical for post-auth flows
+      'storeReturn',
+      // UI state keys - preserve user preferences  
+      'sidebar-collapsed',
+      'seller-sidebar-collapsed',
+      'admin-sidebar-collapsed',
+      'admin_session_token',
     ];
 
     const keysToRemove: string[] = [];
     
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && !keysToPreserve.some(preserve => key.startsWith(preserve))) {
+      if (key && !keysToPreserve.some(preserve => key.startsWith(preserve) || key === preserve)) {
         keysToRemove.push(key);
       }
     }
