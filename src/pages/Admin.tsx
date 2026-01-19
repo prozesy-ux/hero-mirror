@@ -15,7 +15,7 @@ import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagem
 import UnifiedResellersManagement from '@/components/admin/UnifiedResellersManagement';
 import { AdminDataProvider, useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useState, useEffect } from 'react';
-import { Loader2, Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Lock, User, ArrowLeft, Eye, EyeOff, Download, Database } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,7 @@ const ADMIN_SESSION_KEY = 'admin_session_token';
 
 const AdminDashboard = () => {
   const { profiles, purchases, prompts, isLoading } = useAdminDataContext();
+  const [exporting, setExporting] = useState(false);
 
   const totalUsers = profiles.length;
   const proUsers = profiles.filter((p: any) => p.is_pro).length;
@@ -34,8 +35,87 @@ const AdminDashboard = () => {
     .filter((p: any) => p.payment_status === 'completed')
     .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
+  const handleExportAllData = async () => {
+    const token = localStorage.getItem(ADMIN_SESSION_KEY);
+    if (!token) {
+      toast.error('No admin session');
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-export-all-data`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ token }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Export failed');
+      }
+
+      const data = await response.json();
+      
+      // Create and download file
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `database-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Export complete! ${data.stats.totalProfiles} users, ${data.stats.totalProducts} products exported.`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(error instanceof Error ? error.message : 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Export Section */}
+      <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/30 rounded-xl p-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <Database className="h-8 w-8 text-purple-400" />
+            <div>
+              <h3 className="text-lg font-semibold text-white">Database Backup</h3>
+              <p className="text-sm text-gray-400">Export all tables as JSON file</p>
+            </div>
+          </div>
+          <Button
+            onClick={handleExportAllData}
+            disabled={exporting}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            {exporting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Export All Data
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white/5 border border-white/10 rounded-xl p-6">
           <div className="text-gray-400 text-sm">Total Prompts</div>
