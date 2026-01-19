@@ -17,7 +17,11 @@ import {
   Plus,
   Trash2,
   Star,
-  Building2
+  Building2,
+  User,
+  Hash,
+  CheckCircle2,
+  Eye
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -91,6 +95,8 @@ const SellerWallet = () => {
   const [selectedAccountForWithdraw, setSelectedAccountForWithdraw] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<WalletTab>('wallet');
+  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
+  const [justAddedAccountId, setJustAddedAccountId] = useState<string | null>(null);
   
   // Add account form state
   const [newAccountMethod, setNewAccountMethod] = useState('');
@@ -180,7 +186,7 @@ const SellerWallet = () => {
           .eq('payment_method_code', newAccountMethod);
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('seller_payment_accounts')
         .insert({
           seller_id: profile.id,
@@ -189,11 +195,19 @@ const SellerWallet = () => {
           account_number: newAccountNumber.trim(),
           bank_name: newBankName.trim() || null,
           is_primary: newAccountPrimary
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success('Payment account added successfully');
+      // Set the newly added account ID for animation
+      if (data) {
+        setJustAddedAccountId(data.id);
+        setTimeout(() => setJustAddedAccountId(null), 3000);
+      }
+
+      toast.success('Payment account added successfully!');
       setShowAddAccountModal(false);
       resetAddAccountForm();
       fetchSavedAccounts();
@@ -209,19 +223,37 @@ const SellerWallet = () => {
   };
 
   const handleDeleteAccount = async (accountId: string) => {
-    if (!confirm('Are you sure you want to delete this account?')) return;
+    if (deletingAccountId) return; // Prevent double clicks
+    
+    if (!confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeletingAccountId(accountId);
 
     try {
       const { error } = await supabase
         .from('seller_payment_accounts')
         .delete()
-        .eq('id', accountId);
+        .eq('id', accountId)
+        .eq('seller_id', profile?.id);
 
-      if (error) throw error;
-      toast.success('Account deleted');
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
+      
+      // Immediately update local state for faster UI response
+      setSavedAccounts(prev => prev.filter(a => a.id !== accountId));
+      toast.success('Account deleted successfully');
+      
+      // Also refresh from server to ensure sync
       fetchSavedAccounts();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete account');
+      console.error('Delete account error:', error);
+      toast.error(error.message || 'Failed to delete account. Please try again.');
+    } finally {
+      setDeletingAccountId(null);
     }
   };
 
@@ -441,12 +473,25 @@ const SellerWallet = () => {
           )}
 
           {hasPendingWithdrawal && (
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
-              <AlertCircle className="text-amber-600 flex-shrink-0" size={20} />
-              <div>
-                <p className="text-amber-700 font-medium">Withdrawal Pending</p>
-                <p className="text-amber-600/70 text-sm">Please wait for your current withdrawal to be processed.</p>
+            <div className="p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl flex items-center gap-4 shadow-lg shadow-amber-100">
+              <div className="p-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl shadow-md flex-shrink-0">
+                <Clock className="text-white" size={24} />
               </div>
+              <div className="flex-1">
+                <p className="text-amber-800 font-bold text-base">Withdrawal In Progress</p>
+                <p className="text-amber-700/80 text-sm">
+                  You cannot submit another withdrawal until your current request is processed.
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setActiveTab('withdrawals')}
+                className="border-amber-300 text-amber-700 hover:bg-amber-100 font-semibold flex items-center gap-1.5"
+              >
+                <Eye size={14} />
+                View Status
+              </Button>
             </div>
           )}
 
@@ -575,17 +620,29 @@ const SellerWallet = () => {
                   {/* Account Cards Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {methodAccounts.map(account => (
-                      /* Account Card - Gradient hover states */
+                      /* Account Card - Gradient hover states with success animation */
                       <div 
                         key={account.id}
-                        className={`p-4 rounded-xl border-2 transition-all duration-300 relative group ${
-                          account.is_primary
-                            ? 'bg-gradient-to-br from-violet-50 to-purple-50 border-violet-300 shadow-md shadow-violet-100'
-                            : 'bg-white border-gray-200 hover:border-violet-200 hover:bg-violet-50/30 hover:shadow-md'
+                        className={`p-4 rounded-xl border-2 transition-all duration-500 relative group ${
+                          justAddedAccountId === account.id
+                            ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-400 shadow-xl shadow-emerald-200 scale-[1.02] ring-4 ring-emerald-200'
+                            : account.is_primary
+                              ? 'bg-gradient-to-br from-violet-50 to-purple-50 border-violet-300 shadow-md shadow-violet-100'
+                              : 'bg-white border-gray-200 hover:border-violet-200 hover:bg-violet-50/30 hover:shadow-md'
                         }`}
                       >
+                        {/* Success Badge for newly added */}
+                        {justAddedAccountId === account.id && (
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
+                            <span className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-lg animate-bounce">
+                              <CheckCircle2 className="w-4 h-4" />
+                              Added Successfully!
+                            </span>
+                          </div>
+                        )}
+                        
                         {/* Primary Badge - Gradient */}
-                        {account.is_primary && (
+                        {account.is_primary && justAddedAccountId !== account.id && (
                           <div className="absolute -top-2.5 -right-2.5 z-10">
                             <span className="px-2.5 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-semibold rounded-full flex items-center gap-1 shadow-lg">
                               <Star className="w-3 h-3" />
@@ -619,10 +676,15 @@ const SellerWallet = () => {
                           )}
                           <button
                             onClick={() => handleDeleteAccount(account.id)}
-                            className="text-xs text-red-500 hover:text-white hover:bg-red-500 px-3 py-1.5 rounded-full font-medium ml-auto flex items-center gap-1 transition-all border border-red-200 hover:border-transparent"
+                            disabled={deletingAccountId === account.id}
+                            className="text-xs text-red-500 hover:text-white hover:bg-red-500 px-3 py-1.5 rounded-full font-medium ml-auto flex items-center gap-1 transition-all border border-red-200 hover:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <Trash2 size={12} />
-                            Delete
+                            {deletingAccountId === account.id ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={12} />
+                            )}
+                            {deletingAccountId === account.id ? 'Deleting...' : 'Delete'}
                           </button>
                         </div>
                       </div>
@@ -810,32 +872,49 @@ const SellerWallet = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Account Modal - Gradient design */}
+      {/* Add Account Modal - Premium Unique Design */}
       <Dialog open={showAddAccountModal} onOpenChange={setShowAddAccountModal}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-lg bg-gradient-to-br from-white via-violet-50/30 to-purple-50/50 border-0 shadow-2xl">
+          <DialogHeader className="border-b border-violet-100 pb-4">
             <DialogTitle className="flex items-center gap-3">
-              <div className="p-2.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg shadow-violet-500/25">
-                <CreditCard className="text-white" size={20} />
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl blur-lg opacity-50"></div>
+                <div className="relative p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl shadow-xl">
+                  <CreditCard className="text-white" size={24} />
+                </div>
               </div>
-              <span className="text-xl font-bold">Add Payment Account</span>
+              <div>
+                <span className="text-2xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                  Add Payment Account
+                </span>
+                <p className="text-sm text-gray-500 font-normal mt-0.5">
+                  Secure withdrawal destination
+                </p>
+              </div>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 mt-4">
-            {/* Select Payment Method */}
-            <div>
-              <Label className="text-gray-700 font-medium">Payment Method *</Label>
+          <div className="space-y-5 mt-6">
+            {/* Payment Method - Premium Select */}
+            <div className="space-y-2">
+              <Label className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">1</span>
+                Payment Method
+              </Label>
               <Select value={newAccountMethod} onValueChange={setNewAccountMethod}>
-                <SelectTrigger className="mt-1.5 focus:ring-violet-500 focus:border-violet-500">
-                  <SelectValue placeholder="Select method" />
+                <SelectTrigger className="h-14 rounded-xl border-2 border-violet-100 bg-white hover:border-violet-300 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all">
+                  <SelectValue placeholder="Select your payment method" />
                 </SelectTrigger>
                 <SelectContent>
                   {paymentMethods.map(method => (
                     <SelectItem key={method.id} value={method.code}>
-                      <div className="flex items-center gap-2">
-                        {method.icon_url && <img src={method.icon_url} className="w-5 h-5 object-contain" alt={method.name} />}
-                        {method.name}
+                      <div className="flex items-center gap-3">
+                        {method.icon_url ? (
+                          <img src={method.icon_url} className="w-6 h-6 object-contain" alt={method.name} />
+                        ) : (
+                          <CreditCard size={18} className="text-violet-500" />
+                        )}
+                        <span className="font-medium">{method.name}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -843,68 +922,93 @@ const SellerWallet = () => {
               </Select>
             </div>
 
-            {/* Account Name */}
-            <div>
-              <Label className="text-gray-700 font-medium">Account Holder Name *</Label>
-              <Input 
-                value={newAccountName}
-                onChange={(e) => setNewAccountName(e.target.value)}
-                placeholder="Enter name as shown on account"
-                className="mt-1.5 focus:ring-violet-500 focus:border-violet-500"
-              />
+            {/* Account Name - With Icon */}
+            <div className="space-y-2">
+              <Label className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">2</span>
+                Account Holder Name
+              </Label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-violet-400" size={20} />
+                <Input 
+                  value={newAccountName}
+                  onChange={(e) => setNewAccountName(e.target.value)}
+                  className="h-14 pl-12 rounded-xl border-2 border-violet-100 bg-white hover:border-violet-300 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-gray-900 font-medium placeholder:text-gray-400"
+                  placeholder="Enter name exactly as on account"
+                />
+              </div>
             </div>
 
-            {/* Account Number */}
-            <div>
-              <Label className="text-gray-700 font-medium">Account Number / Phone / Wallet Address *</Label>
-              <Input 
-                value={newAccountNumber}
-                onChange={(e) => setNewAccountNumber(e.target.value)}
-                placeholder="Enter account number or phone"
-                className="mt-1.5 focus:ring-violet-500 focus:border-violet-500"
-              />
+            {/* Account Number - With Icon */}
+            <div className="space-y-2">
+              <Label className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">3</span>
+                Account / Phone / Wallet Number
+              </Label>
+              <div className="relative">
+                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-violet-400" size={20} />
+                <Input 
+                  value={newAccountNumber}
+                  onChange={(e) => setNewAccountNumber(e.target.value)}
+                  className="h-14 pl-12 rounded-xl border-2 border-violet-100 bg-white hover:border-violet-300 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 font-mono text-lg tracking-wider"
+                  placeholder="01XXXXXXXXX"
+                />
+              </div>
             </div>
 
             {/* Bank Name (for bank transfers) */}
             {(newAccountMethod === 'bank' || newAccountMethod === 'wire') && (
-              <div>
-                <Label className="text-gray-700 font-medium">Bank Name</Label>
-                <Input 
-                  value={newBankName}
-                  onChange={(e) => setNewBankName(e.target.value)}
-                  placeholder="Enter bank name"
-                  className="mt-1.5 focus:ring-violet-500 focus:border-violet-500"
-                />
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">4</span>
+                  Bank Name
+                </Label>
+                <div className="relative">
+                  <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-violet-400" size={20} />
+                  <Input 
+                    value={newBankName}
+                    onChange={(e) => setNewBankName(e.target.value)}
+                    className="h-14 pl-12 rounded-xl border-2 border-violet-100 bg-white hover:border-violet-300 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-gray-900 font-medium placeholder:text-gray-400"
+                    placeholder="Enter your bank name"
+                  />
+                </div>
               </div>
             )}
 
-            {/* Primary checkbox with gradient */}
-            <div className="p-4 bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl border border-violet-200">
-              <div className="flex items-center gap-3">
+            {/* Premium Primary Checkbox */}
+            <div className="p-5 bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-violet-500/10 rounded-2xl border-2 border-dashed border-violet-200">
+              <div className="flex items-center gap-4">
                 <Checkbox 
                   id="primary"
                   checked={newAccountPrimary}
                   onCheckedChange={(checked) => setNewAccountPrimary(checked as boolean)}
-                  className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600"
+                  className="w-6 h-6 rounded-lg data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-violet-500 data-[state=checked]:to-purple-600 border-2 border-violet-300"
                 />
                 <div>
-                  <Label htmlFor="primary" className="text-gray-700 font-medium cursor-pointer">Set as primary account</Label>
-                  <p className="text-xs text-gray-500">This will be your default withdrawal account</p>
+                  <Label htmlFor="primary" className="text-gray-900 font-bold text-base cursor-pointer flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-500" />
+                    Set as Primary Account
+                  </Label>
+                  <p className="text-sm text-gray-500">Default account for all withdrawals</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="mt-6">
-            <Button variant="outline" onClick={() => { setShowAddAccountModal(false); resetAddAccountForm(); }} className="border-gray-300">
+          <DialogFooter className="mt-8 pt-5 border-t border-violet-100">
+            <Button 
+              variant="outline" 
+              onClick={() => { setShowAddAccountModal(false); resetAddAccountForm(); }}
+              className="h-12 px-6 rounded-xl border-2 border-gray-200 hover:bg-gray-50 font-semibold"
+            >
               Cancel
             </Button>
             <Button 
               onClick={handleAddAccount} 
               disabled={!newAccountMethod || !newAccountName.trim() || !newAccountNumber.trim() || submitting}
-              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-violet-500/25"
+              className="h-12 px-8 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-violet-600 bg-[length:200%_100%] hover:bg-[position:100%_0] transition-all duration-500 shadow-xl shadow-violet-500/30 font-bold text-base"
             >
-              {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
+              {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : <Plus className="w-5 h-5 mr-2" />}
               Add Account
             </Button>
           </DialogFooter>
