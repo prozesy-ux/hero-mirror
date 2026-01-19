@@ -179,26 +179,33 @@ export const SellerProvider = ({
     if (data) setWithdrawals(data);
   }, [profile.id]);
 
-  const refreshAll = useCallback(async () => {
+  const refreshAll = useCallback(async (retryCount = 0) => {
     setLoading(true);
     
     try {
-      // Create timeout promise
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 10000)
-      );
-
-      // Fetch all data in parallel with timeout
-      await Promise.race([
-        Promise.allSettled([
-          refreshProfile(),
-          refreshWallet(),
-          refreshProducts(),
-          refreshOrders(),
-          refreshWithdrawals()
-        ]),
-        timeoutPromise
+      // Fetch all data in parallel
+      const results = await Promise.allSettled([
+        refreshProfile(),
+        refreshWallet(),
+        refreshProducts(),
+        refreshOrders(),
+        refreshWithdrawals()
       ]);
+      
+      // Check if any critical fetches failed
+      const failures = results.filter(r => r.status === 'rejected');
+      
+      if (failures.length > 0 && retryCount < 2) {
+        console.warn(`Seller data fetch: ${failures.length} failures, retrying (attempt ${retryCount + 1})...`);
+        // Wait 1 second then retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return refreshAll(retryCount + 1);
+      }
+      
+      if (failures.length > 0) {
+        console.error('Some seller data failed to load after retries:', failures);
+        // Don't toast - partial data is okay
+      }
     } catch (error) {
       console.error('Seller data fetch error:', error);
       // Don't throw - let the UI handle partial data
@@ -211,10 +218,10 @@ export const SellerProvider = ({
     refreshAll();
   }, []);
 
-  // Real-time subscriptions
+  // Real-time subscriptions - SINGLE consolidated channel for efficiency
   useEffect(() => {
-    const ordersChannel = supabase
-      .channel('seller-orders')
+    const channel = supabase
+      .channel(`seller-realtime-${profile.id}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -224,34 +231,18 @@ export const SellerProvider = ({
         refreshOrders();
         refreshProfile();
       })
-      .subscribe();
-
-    const walletChannel = supabase
-      .channel('seller-wallet')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'seller_wallets',
         filter: `seller_id=eq.${profile.id}`
-      }, () => {
-        refreshWallet();
-      })
-      .subscribe();
-
-    const productsChannel = supabase
-      .channel('seller-products-realtime')
+      }, () => refreshWallet())
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'seller_products',
         filter: `seller_id=eq.${profile.id}`
-      }, () => {
-        refreshProducts();
-      })
-      .subscribe();
-
-    const withdrawalsChannel = supabase
-      .channel('seller-withdrawals-realtime')
+      }, () => refreshProducts())
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -264,10 +255,7 @@ export const SellerProvider = ({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(ordersChannel);
-      supabase.removeChannel(walletChannel);
-      supabase.removeChannel(productsChannel);
-      supabase.removeChannel(withdrawalsChannel);
+      supabase.removeChannel(channel);
     };
   }, [profile.id, refreshOrders, refreshProfile, refreshWallet, refreshProducts, refreshWithdrawals]);
 

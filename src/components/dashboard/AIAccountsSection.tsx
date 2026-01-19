@@ -796,71 +796,45 @@ const AIAccountsSection = () => {
     try {
       const order = sellerOrders.find(o => o.id === orderId);
       if (!order) throw new Error('Order not found');
+      if (order.status !== 'delivered') throw new Error('Order must be delivered first');
 
-      // Update order to completed with buyer_approved
-      const { error: orderError } = await supabase
-        .from('seller_orders')
-        .update({
-          status: 'completed',
-          buyer_approved: true
-        })
-        .eq('id', orderId)
-        .eq('buyer_id', user.id);
+      // Use the database function for atomic approval + wallet update (bypasses RLS issues)
+      const { error: rpcError } = await supabase.rpc('approve_seller_delivery', {
+        p_order_id: orderId,
+        p_buyer_id: user.id
+      });
 
-      if (orderError) throw orderError;
+      if (rpcError) throw rpcError;
 
-      // Release seller's pending balance to available balance
-      // Get seller wallet
-      const { data: sellerWallet, error: walletFetchError } = await supabase
-        .from('seller_wallets')
-        .select('*')
-        .eq('seller_id', order.seller_id)
-        .single();
-
-      if (!walletFetchError && sellerWallet) {
-        // Move from pending to available
-        const newBalance = Number(sellerWallet.balance) + Number(order.seller_earning);
-        const newPending = Math.max(0, Number(sellerWallet.pending_balance) - Number(order.seller_earning));
-        
-        await supabase
-          .from('seller_wallets')
-          .update({
-            balance: newBalance,
-            pending_balance: newPending
-          })
-          .eq('seller_id', order.seller_id);
-      }
-
-      // Create notification for seller (in notifications for generic user notifications)
-      if (order.seller_profiles?.user_id) {
-        await supabase.from('notifications').insert({
+      // Create notifications (these are optional, RLS allows inserts)
+      await Promise.allSettled([
+        // Notification for seller (generic)
+        order.seller_profiles?.user_id ? supabase.from('notifications').insert({
           user_id: order.seller_profiles.user_id,
           type: 'approval',
           title: 'Delivery Approved!',
-          message: `Buyer approved delivery for ${order.seller_products?.name}. $${Number(order.seller_earning).toFixed(2)} released to your wallet!`,
+          message: `Buyer approved "${order.seller_products?.name}". $${Number(order.seller_earning).toFixed(2)} released!`,
           link: '/seller/orders',
           is_read: false
-        });
-      }
-
-      // Create seller notification (in seller_notifications table)
-      await supabase.from('seller_notifications').insert({
-        seller_id: order.seller_id,
-        type: 'order_approved',
-        title: 'Delivery Approved!',
-        message: `Buyer approved "${order.seller_products?.name}". $${Number(order.seller_earning).toFixed(2)} released to wallet!`,
-        link: '/seller/wallet',
-        is_read: false
-      });
-
-      // Create system message in seller_chats
-      await supabase.from('seller_chats').insert({
-        buyer_id: user.id,
-        seller_id: order.seller_id,
-        message: `✅ Buyer has approved the delivery for "${order.seller_products?.name}". Payment of $${Number(order.seller_earning).toFixed(2)} has been released to seller.`,
-        sender_type: 'system',
-        product_id: order.product_id
-      });
+        }) : Promise.resolve(),
+        // Seller notification
+        supabase.from('seller_notifications').insert({
+          seller_id: order.seller_id,
+          type: 'order_approved',
+          title: 'Delivery Approved!',
+          message: `"${order.seller_products?.name}" approved. $${Number(order.seller_earning).toFixed(2)} in wallet!`,
+          link: '/seller/wallet',
+          is_read: false
+        }),
+        // System chat message
+        supabase.from('seller_chats').insert({
+          buyer_id: user.id,
+          seller_id: order.seller_id,
+          message: `✅ Buyer approved "${order.seller_products?.name}". $${Number(order.seller_earning).toFixed(2)} released!`,
+          sender_type: 'system',
+          product_id: order.product_id
+        })
+      ]);
 
       // Mark as approved locally to prevent re-click
       setApprovedOrders(prev => new Set(prev).add(orderId));
