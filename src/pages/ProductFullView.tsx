@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   MessageCircle,
   ShoppingCart,
-  Star,
   Users,
   Package,
   CheckCircle,
@@ -22,6 +21,7 @@ import {
 } from 'lucide-react';
 import ProductReviews from '@/components/reviews/ProductReviews';
 import StarRating from '@/components/reviews/StarRating';
+import ImageGallery from '@/components/ui/image-gallery';
 import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatContext';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 
@@ -31,6 +31,7 @@ interface Product {
   description: string | null;
   price: number;
   icon_url: string | null;
+  images: string[] | null;
   tags: string[] | null;
   sold_count: number | null;
   chat_allowed: boolean | null;
@@ -239,6 +240,7 @@ const ProductFullViewContent = () => {
 
   const hasEnoughBalance = (wallet?.balance || 0) >= product.price;
   const showChat = product.chat_allowed !== false;
+  const productImages = product.images || [];
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -280,20 +282,15 @@ const ProductFullViewContent = () => {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Product Image */}
-          <div className="aspect-square rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm">
-            {product.icon_url ? (
-              <img
-                src={product.icon_url}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-slate-50">
-                <Package className="w-24 h-24 text-slate-300" />
-              </div>
-            )}
-          </div>
+          {/* Product Image Gallery */}
+          <ImageGallery
+            images={productImages}
+            mainImage={product.icon_url}
+            alt={product.name}
+            showThumbnails={true}
+            enableZoom={true}
+            aspectRatio="square"
+          />
 
           {/* Product Info */}
           <div className="space-y-6">
@@ -327,7 +324,7 @@ const ProductFullViewContent = () => {
             {product.tags && product.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {product.tags.map(tag => (
-                  <Badge key={tag} variant="secondary" className="rounded-full">
+                  <Badge key={tag} variant="secondary" className="rounded-full bg-violet-50 text-violet-700 border-violet-200">
                     {tag}
                   </Badge>
                 ))}
@@ -376,7 +373,7 @@ const ProductFullViewContent = () => {
             </div>
 
             {/* Seller Card */}
-            <div className="p-4 bg-white rounded-xl border border-slate-200">
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3">
                 <Avatar className="w-12 h-12 border-2 border-slate-100">
                   <AvatarImage src={seller.store_logo_url || ''} />
@@ -425,7 +422,7 @@ const ProductFullViewContent = () => {
                 <Link
                   key={related.id}
                   to={`/store/${storeSlug}/product/${related.id}`}
-                  className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow"
+                  className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="aspect-square bg-slate-50">
                     {related.icon_url ? (
