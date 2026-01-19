@@ -35,18 +35,26 @@ const StoreProductCard = ({
   return (
     <div className="group bg-white rounded-2xl overflow-hidden border-2 border-emerald-200 shadow-md hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
       {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
         {product.icon_url ? (
           <img 
             src={product.icon_url} 
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={(e) => {
+              const target = e.currentTarget;
+              target.style.display = 'none';
+              const fallback = target.nextElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = 'flex';
+            }}
           />
-        ) : (
-          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-            <Package className="h-16 w-16 text-gray-300" />
-          </div>
-        )}
+        ) : null}
+        <div 
+          className="w-full h-full flex items-center justify-center absolute inset-0"
+          style={{ display: product.icon_url ? 'none' : 'flex' }}
+        >
+          <Package className="h-16 w-16 text-gray-300" />
+        </div>
 
         {/* Store Badge */}
         <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
@@ -61,9 +69,9 @@ const StoreProductCard = ({
           </div>
         )}
 
-        {/* Low Balance Overlay */}
+        {/* Low Balance Overlay - Always show when balance is insufficient */}
         {!hasEnoughBalance && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center z-10">
             <Wallet size={28} className="text-white mb-2" />
             <span className="text-white text-sm font-semibold">Low Balance</span>
           </div>
