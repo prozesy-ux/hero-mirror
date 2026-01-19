@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Seller from "./pages/Seller";
 import Admin from "./pages/Admin";
 import Store from "./pages/Store";
+import ProductFullView from "./pages/ProductFullView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignIn />} />
             <Route path="/store/:storeSlug" element={<Store />} />
+            <Route path="/store/:storeSlug/product/:productId" element={<ProductFullView />} />
             <Route path="/dashboard/*" element={
               <ProtectedRoute>
                 <Dashboard />

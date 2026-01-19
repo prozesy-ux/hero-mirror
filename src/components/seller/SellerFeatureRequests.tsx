@@ -146,14 +146,6 @@ const SellerFeatureRequests = () => {
 
   return (
     <div className="p-4 lg:p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Feature Requests</h1>
-        <p className="text-slate-500 text-sm mt-1">
-          Submit ideas and track your feature requests
-        </p>
-      </div>
-
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Submit Form */}
         <div className="lg:col-span-1">
