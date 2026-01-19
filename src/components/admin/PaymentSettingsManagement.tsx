@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { 
   CreditCard, Plus, Edit, Trash2, Save, X, Loader2, 
-  Check, QrCode, Copy
+  Check, QrCode, Copy, Eye, EyeOff, Key
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ImageUploader from './ImageUploader';
@@ -23,6 +23,8 @@ interface PaymentMethod {
   display_order: number;
   currency_code: string | null;
   exchange_rate: number | null;
+  api_key: string | null;
+  api_secret: string | null;
   created_at: string;
 }
 
@@ -52,8 +54,11 @@ const PaymentSettingsManagement = () => {
     is_enabled: true,
     display_order: 0,
     currency_code: 'USD',
-    exchange_rate: 1
+    exchange_rate: 1,
+    api_key: '',
+    api_secret: ''
   });
+  const [showApiSecret, setShowApiSecret] = useState(false);
 
   const methods = paymentMethods as PaymentMethod[];
 
@@ -71,8 +76,11 @@ const PaymentSettingsManagement = () => {
       is_enabled: true,
       display_order: methods.length,
       currency_code: 'USD',
-      exchange_rate: 1
+      exchange_rate: 1,
+      api_key: '',
+      api_secret: ''
     });
+    setShowApiSecret(false);
     setShowModal(true);
   };
 
@@ -90,8 +98,11 @@ const PaymentSettingsManagement = () => {
       is_enabled: method.is_enabled ?? true,
       display_order: method.display_order || 0,
       currency_code: method.currency_code || 'USD',
-      exchange_rate: method.exchange_rate || 1
+      exchange_rate: method.exchange_rate || 1,
+      api_key: method.api_key || '',
+      api_secret: method.api_secret || ''
     });
+    setShowApiSecret(false);
     setShowModal(true);
   };
 
@@ -103,7 +114,7 @@ const PaymentSettingsManagement = () => {
 
     setSaving(true);
 
-    const payload = {
+    const payload: Record<string, any> = {
       name: formData.name.trim(),
       code: formData.code.trim().toLowerCase(),
       icon_url: formData.icon_url || null,
@@ -117,6 +128,12 @@ const PaymentSettingsManagement = () => {
       currency_code: formData.currency_code || 'USD',
       exchange_rate: formData.exchange_rate || 1
     };
+
+    // Only include API keys if automatic payment (to avoid overwriting with empty)
+    if (formData.is_automatic) {
+      if (formData.api_key) payload.api_key = formData.api_key;
+      if (formData.api_secret) payload.api_secret = formData.api_secret;
+    }
 
     // Get admin session token
     const token = localStorage.getItem('admin_session_token');
@@ -579,7 +596,58 @@ const PaymentSettingsManagement = () => {
                 </label>
               </div>
 
-              {/* Icon URL */}
+              {/* API Keys Section (only for automatic payments) */}
+              {formData.is_automatic && (
+                <div className="col-span-2 space-y-4 p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
+                  <div className="flex items-center gap-2 text-blue-400 text-sm font-medium">
+                    <Key size={16} />
+                    API Credentials
+                  </div>
+                  
+                  {/* API Key (Public) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                      API Key (Public) {formData.code === 'razorpay' && <span className="text-gray-500">- Razorpay Key ID</span>}
+                      {formData.code === 'stripe' && <span className="text-gray-500">- Publishable Key</span>}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.api_key}
+                      onChange={(e) => setFormData(prev => ({ ...prev, api_key: e.target.value }))}
+                      placeholder={formData.code === 'razorpay' ? 'rzp_live_...' : 'pk_live_...'}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 font-mono text-sm"
+                    />
+                  </div>
+                  
+                  {/* API Secret */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                      API Secret {formData.code === 'razorpay' && <span className="text-gray-500">- Razorpay Key Secret</span>}
+                      {formData.code === 'stripe' && <span className="text-gray-500">- Secret Key</span>}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showApiSecret ? 'text' : 'password'}
+                        value={formData.api_secret}
+                        onChange={(e) => setFormData(prev => ({ ...prev, api_secret: e.target.value }))}
+                        placeholder={formData.code === 'razorpay' ? 'Enter Key Secret...' : 'sk_live_...'}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 font-mono text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowApiSecret(!showApiSecret)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                      >
+                        {showApiSecret ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    <p className="text-gray-500 text-xs mt-1">
+                      Leave empty to use environment variable secrets (fallback)
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-400 mb-2">Icon/Logo URL</label>
                 <div className="flex gap-3">

@@ -523,6 +523,8 @@ export type Database = {
         Row: {
           account_name: string | null
           account_number: string | null
+          api_key: string | null
+          api_secret: string | null
           code: string
           created_at: string | null
           currency_code: string | null
@@ -540,6 +542,8 @@ export type Database = {
         Insert: {
           account_name?: string | null
           account_number?: string | null
+          api_key?: string | null
+          api_secret?: string | null
           code: string
           created_at?: string | null
           currency_code?: string | null
@@ -557,6 +561,8 @@ export type Database = {
         Update: {
           account_name?: string | null
           account_number?: string | null
+          api_key?: string | null
+          api_secret?: string | null
           code?: string
           created_at?: string | null
           currency_code?: string | null

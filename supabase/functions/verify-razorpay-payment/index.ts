@@ -51,11 +51,19 @@ serve(async (req) => {
       throw new Error("Invalid amount");
     }
 
-    // Verify signature using HMAC SHA256
-    const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+    // Fetch API secret from payment_methods table (with env fallback)
+    const { data: paymentMethod } = await supabaseAdmin
+      .from('payment_methods')
+      .select('api_secret')
+      .eq('code', 'razorpay')
+      .single();
+
+    const keySecret = paymentMethod?.api_secret || Deno.env.get("RAZORPAY_KEY_SECRET");
     if (!keySecret) {
       throw new Error("Razorpay secret not configured");
     }
+
+    console.log("Verifying Razorpay payment for order:", razorpay_order_id);
 
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     

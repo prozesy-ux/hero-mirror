@@ -405,8 +405,25 @@ const BillingSection = () => {
         };
 
         const rzp = new window.Razorpay(options);
-        rzp.on('payment.failed', (response: any) => {
+        rzp.on('payment.failed', async (response: any) => {
           console.error('Razorpay payment failed:', response.error);
+          
+          // Record failed transaction in database
+          try {
+            await supabase.from('wallet_transactions').insert({
+              user_id: user.id,
+              type: 'topup',
+              amount: topupAmount,
+              payment_gateway: 'razorpay',
+              status: 'rejected',
+              transaction_id: response.error?.metadata?.order_id || null,
+              description: `Failed: ${response.error?.description || 'Payment failed'}`
+            });
+            fetchData(); // Refresh to show failed transaction
+          } catch (err) {
+            console.error('Failed to record rejected payment:', err);
+          }
+          
           toast.error(response.error?.description || 'Payment failed. Please try again.');
           setProcessingTopup(false);
         });
