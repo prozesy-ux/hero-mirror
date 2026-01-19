@@ -16,6 +16,22 @@ const SignIn = () => {
   const { signIn, signUp, signInWithGoogle } = useAuthContext();
   const navigate = useNavigate();
 
+  // Handle post-auth redirect (for store purchases)
+  const handlePostAuthRedirect = () => {
+    const storeReturn = localStorage.getItem('storeReturn');
+    if (storeReturn) {
+      try {
+        const data = JSON.parse(storeReturn);
+        // Don't remove yet - let the store page handle it
+        navigate(data.returnUrl);
+        return;
+      } catch (e) {
+        console.error('Failed to parse storeReturn', e);
+      }
+    }
+    navigate("/dashboard");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -38,7 +54,7 @@ const SignIn = () => {
         toast.error(error.message);
       } else {
         toast.success("Account created successfully!");
-        navigate("/dashboard");
+        handlePostAuthRedirect();
       }
     } else {
       const { error } = await signIn(email, password);
@@ -47,7 +63,7 @@ const SignIn = () => {
         toast.error(error.message);
       } else {
         toast.success("Welcome back!");
-        navigate("/dashboard");
+        handlePostAuthRedirect();
       }
     }
   };
