@@ -205,36 +205,39 @@ const AIAccountsSection = () => {
   const [pendingPurchaseData, setPendingPurchaseData] = useState<PendingPurchase | null>(null);
 
   useEffect(() => {
-    fetchAccounts();
-    fetchCategories();
-    fetchSellerProducts();
+    // Parallel fetch ALL initial data for maximum speed
+    const fetchInitialData = async () => {
+      const [accountsRes, categoriesRes, productsRes] = await Promise.allSettled([
+        supabase.from('ai_accounts').select('*').eq('is_available', true).order('created_at', { ascending: false }),
+        supabase.from('categories').select('id, name, icon, color, is_active').eq('is_active', true).order('display_order', { ascending: true }),
+        supabase.from('seller_products').select(`*, seller_profiles (id, store_name, store_logo_url, is_verified)`).eq('is_available', true).eq('is_approved', true).order('created_at', { ascending: false })
+      ]);
+
+      if (accountsRes.status === 'fulfilled' && accountsRes.value.data) {
+        setAccounts(accountsRes.value.data);
+      }
+      if (categoriesRes.status === 'fulfilled' && categoriesRes.value.data) {
+        setDynamicCategories(categoriesRes.value.data);
+      }
+      if (productsRes.status === 'fulfilled' && productsRes.value.data) {
+        setSellerProducts(productsRes.value.data as SellerProduct[]);
+      }
+      
+      setLoading(false);
+    };
+
+    fetchInitialData();
     
-    // Subscribe to realtime updates for categories and accounts
-    const categoriesChannel = supabase
-      .channel('categories-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
-        fetchCategories();
-      })
-      .subscribe();
-
-    const accountsChannel = supabase
-      .channel('accounts-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ai_accounts' }, () => {
-        fetchAccounts();
-      })
-      .subscribe();
-
-    const sellerProductsChannel = supabase
-      .channel('seller-products-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_products' }, () => {
-        fetchSellerProducts();
-      })
+    // Single combined realtime channel for all updates
+    const channel = supabase
+      .channel('marketplace-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, fetchCategories)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ai_accounts' }, fetchAccounts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_products' }, fetchSellerProducts)
       .subscribe();
 
     return () => {
-      supabase.removeChannel(categoriesChannel);
-      supabase.removeChannel(accountsChannel);
-      supabase.removeChannel(sellerProductsChannel);
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -251,23 +254,53 @@ const AIAccountsSection = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchPurchases();
-      fetchSellerOrders();
-      fetchWallet();
-      fetchChatMessages();
-      fetchUnreadCount();
-      const unsubscribe = subscribeToUpdates();
-      const unsubscribeWallet = subscribeToWallet();
-      const unsubscribeChat = subscribeToChatMessages();
-      const unsubscribeSellerOrders = subscribeToSellerOrders();
-      return () => {
-        unsubscribe();
-        unsubscribeWallet();
-        unsubscribeChat();
-        unsubscribeSellerOrders();
-      };
-    }
+    if (!user) return;
+    
+    // Parallel fetch all user-specific data
+    const fetchUserData = async () => {
+      const [purchasesRes, ordersRes, walletRes] = await Promise.allSettled([
+        supabase.from('ai_account_purchases').select('*, ai_accounts(name, category, icon_url)').eq('user_id', user.id).order('purchased_at', { ascending: false }),
+        supabase.from('seller_orders').select('*, seller_products(name, icon_url, description), seller_profiles(id, store_name, store_logo_url, user_id)').eq('buyer_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('user_wallets').select('balance').eq('user_id', user.id).maybeSingle()
+      ]);
+
+      if (purchasesRes.status === 'fulfilled' && purchasesRes.value.data) {
+        setPurchases(purchasesRes.value.data);
+      }
+      if (ordersRes.status === 'fulfilled' && ordersRes.value.data) {
+        setSellerOrders(ordersRes.value.data as SellerOrderPurchase[]);
+      }
+      if (walletRes.status === 'fulfilled') {
+        if (walletRes.value.data) {
+          setWallet(walletRes.value.data);
+        } else {
+          // Create wallet if doesn't exist
+          const { data: newWallet } = await supabase
+            .from('user_wallets')
+            .insert({ user_id: user.id, balance: 0 })
+            .select('balance')
+            .single();
+          setWallet(newWallet);
+        }
+      }
+      setPurchasesLoading(false);
+    };
+
+    fetchUserData();
+    fetchChatMessages();
+    fetchUnreadCount();
+    
+    const unsubscribe = subscribeToUpdates();
+    const unsubscribeWallet = subscribeToWallet();
+    const unsubscribeChat = subscribeToChatMessages();
+    const unsubscribeSellerOrders = subscribeToSellerOrders();
+    
+    return () => {
+      unsubscribe();
+      unsubscribeWallet();
+      unsubscribeChat();
+      unsubscribeSellerOrders();
+    };
   }, [user]);
 
   useEffect(() => {

@@ -147,19 +147,26 @@ export const SellerProvider = ({
       .eq('seller_id', profile.id)
       .order('created_at', { ascending: false });
     
-    if (data) {
-      // Fetch buyer info for each order
-      const ordersWithBuyers = await Promise.all(
-        data.map(async (order) => {
-          const { data: buyerProfile } = await supabase
-            .from('profiles')
-            .select('email, full_name')
-            .eq('user_id', order.buyer_id)
-            .single();
-          return { ...order, buyer: buyerProfile };
-        })
-      );
+    if (data && data.length > 0) {
+      // Batch fetch ALL buyer profiles in ONE query (fixes N+1 problem)
+      const buyerIds = [...new Set(data.map(o => o.buyer_id))];
+      const { data: buyerProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, email, full_name')
+        .in('user_id', buyerIds);
+      
+      // Create lookup map for O(1) access
+      const buyerMap = new Map(buyerProfiles?.map(p => [p.user_id, p]) || []);
+      
+      // Merge buyer info instantly (no await needed)
+      const ordersWithBuyers = data.map(order => ({
+        ...order,
+        buyer: buyerMap.get(order.buyer_id) || null
+      }));
+      
       setOrders(ordersWithBuyers);
+    } else {
+      setOrders(data || []);
     }
   }, [profile.id]);
 
