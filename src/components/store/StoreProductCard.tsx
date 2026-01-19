@@ -32,6 +32,10 @@ const StoreProductCard = ({
   onView,
   onBuy,
 }: StoreProductCardProps) => {
+  // Determine how many buttons are shown
+  const showChat = product.chat_allowed !== false;
+  const buttonCount = showChat ? 3 : 2;
+
   return (
     <div className="group bg-white rounded-2xl overflow-hidden border-2 border-emerald-200 shadow-md hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
       {/* Image */}
@@ -79,7 +83,7 @@ const StoreProductCard = ({
       </div>
 
       {/* Content */}
-      <div className="p-5">
+      <div className="p-4">
         <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">
           {product.name}
         </h3>
@@ -118,19 +122,19 @@ const StoreProductCard = ({
           <span className="text-sm text-gray-600 font-medium">{product.sold_count || 0}+ sold</span>
         </div>
 
-        {/* Action Buttons - 3 buttons */}
+        {/* Action Buttons - Fixed sizing */}
         <div className="flex gap-2">
           {/* Chat Button - Only show if chat is allowed */}
-          {product.chat_allowed !== false && (
+          {showChat && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onChat();
               }}
-              className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700"
+              className="flex-1 min-w-0 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700 text-sm"
             >
-              <MessageCircle size={14} />
-              Chat
+              <MessageCircle size={14} className="flex-shrink-0" />
+              <span className="truncate">Chat</span>
             </button>
           )}
           {/* Full View Button */}
@@ -139,10 +143,10 @@ const StoreProductCard = ({
               e.stopPropagation();
               onView();
             }}
-            className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
+            className="flex-1 min-w-0 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm"
           >
-            <Eye size={14} />
-            Full View
+            <Eye size={14} className="flex-shrink-0" />
+            <span className="truncate">View</span>
           </button>
           {/* Buy Button */}
           <button
@@ -151,7 +155,7 @@ const StoreProductCard = ({
               onBuy();
             }}
             disabled={purchasing}
-            className={`flex-1 font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors ${
+            className={`flex-1 min-w-0 font-bold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors text-sm ${
               purchasing
                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 : hasEnoughBalance
@@ -160,14 +164,14 @@ const StoreProductCard = ({
             }`}
           >
             {purchasing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
             ) : !hasEnoughBalance ? (
               <>
-                <Wallet className="w-4 h-4" />
-                Top Up
+                <Wallet className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Top Up</span>
               </>
             ) : (
-              'Buy'
+              <span>Buy</span>
             )}
           </button>
         </div>

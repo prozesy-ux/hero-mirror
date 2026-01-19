@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -16,20 +15,20 @@ import {
   Package,
   Star,
   Loader2,
-  ShoppingBag,
   MessageCircle,
   X,
   Users,
   Check,
-  Eye,
   Wallet,
-  TrendingUp,
+  Share2,
   Store as StoreIcon
 } from 'lucide-react';
 import { Instagram, Twitter, Youtube, Music } from 'lucide-react';
-import theLogo from '@/assets/the-logo.png';
 import StoreSidebar from '@/components/store/StoreSidebar';
 import StoreProductCard from '@/components/store/StoreProductCard';
+import ShareStoreModal from '@/components/seller/ShareStoreModal';
+import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatContext';
+import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 
 interface SellerProfile {
   id: string;
@@ -71,10 +70,12 @@ interface Category {
   color: string | null;
 }
 
-const Store = () => {
+// Inner component that uses FloatingChat context
+const StoreContent = () => {
   const { storeSlug } = useParams<{ storeSlug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
+  const { openChat } = useFloatingChat();
   
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [products, setProducts] = useState<SellerProduct[]>([]);
@@ -88,19 +89,32 @@ const Store = () => {
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingProduct, setPendingProduct] = useState<SellerProduct | null>(null);
+  const [pendingAction, setPendingAction] = useState<'buy' | 'chat'>('buy');
+  const [showShareModal, setShowShareModal] = useState(false);
 
-  // Handle return from auth with pending purchase
+  // Handle return from auth with pending purchase or chat
   useEffect(() => {
-    if (user && products.length > 0) {
+    if (user && products.length > 0 && seller) {
       const storeReturn = localStorage.getItem('storeReturn');
       if (storeReturn) {
         try {
           const data = JSON.parse(storeReturn);
           localStorage.removeItem('storeReturn');
           
-          if (data.pendingProductId && data.autoOpenPurchase) {
-            const pendingProd = products.find(p => p.id === data.pendingProductId);
-            if (pendingProd) {
+          const pendingProd = products.find(p => p.id === data.pendingProductId);
+          if (pendingProd) {
+            if (data.pendingAction === 'chat') {
+              // Open floating chat directly
+              openChat({
+                sellerId: seller.id,
+                sellerName: seller.store_name,
+                productId: pendingProd.id,
+                productName: pendingProd.name,
+                type: 'seller'
+              });
+              toast.success(`Chat with ${seller.store_name} opened`);
+            } else {
+              // Open product modal for purchase
               setSelectedProduct(pendingProd);
               toast.info(`Continue your purchase of "${pendingProd.name}"`);
             }
@@ -110,7 +124,7 @@ const Store = () => {
         }
       }
     }
-  }, [user, products]);
+  }, [user, products, seller, openChat]);
 
   useEffect(() => {
     if (storeSlug) {
@@ -181,6 +195,7 @@ const Store = () => {
   const handlePurchase = async (product: SellerProduct) => {
     if (!user) {
       setPendingProduct(product);
+      setPendingAction('buy');
       setShowLoginModal(true);
       return;
     }
@@ -222,12 +237,13 @@ const Store = () => {
     }
   };
 
-  const handleLoginRedirect = (isSignUp: boolean) => {
-    // Save return info to localStorage
+  const handleLoginRedirect = () => {
+    // Save return info to localStorage with action type
     const returnData = {
       returnUrl: `/store/${storeSlug}`,
       pendingProductId: pendingProduct?.id,
-      autoOpenPurchase: true
+      pendingAction: pendingAction,
+      autoOpenPurchase: pendingAction === 'buy'
     };
     localStorage.setItem('storeReturn', JSON.stringify(returnData));
     setShowLoginModal(false);
@@ -245,11 +261,21 @@ const Store = () => {
   const handleChat = (product: SellerProduct) => {
     if (!user) {
       setPendingProduct(product);
+      setPendingAction('chat');
       setShowLoginModal(true);
       return;
     }
-    // Navigate to dashboard with seller chat
-    navigate(`/dashboard/marketplace?chat=${seller?.id}`);
+    
+    // Open floating chat directly
+    if (seller) {
+      openChat({
+        sellerId: seller.id,
+        sellerName: seller.store_name,
+        productId: product.id,
+        productName: product.name,
+        type: 'seller'
+      });
+    }
   };
 
   // Filter products
@@ -294,19 +320,70 @@ const Store = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
-      {/* Header - Clean minimal */}
+      {/* Header - Store Info Bar */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-center">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={theLogo} alt="Logo" className="h-8 w-auto" />
-          </Link>
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          {/* Store Logo + Name */}
+          <div className="flex items-center gap-3">
+            <Avatar className="w-10 h-10 border-2 border-emerald-200">
+              <AvatarImage src={seller.store_logo_url || ''} />
+              <AvatarFallback className="bg-emerald-500 text-white text-sm font-bold">
+                {seller.store_name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-gray-900">{seller.store_name}</span>
+                {seller.is_verified && <CheckCircle className="w-4 h-4 text-emerald-500 fill-emerald-100" />}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                <span>4.9</span>
+                <span>•</span>
+                <span>{products.length} products</span>
+                <span>•</span>
+                <span>{seller.total_orders || 0} orders</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+              onClick={() => setShowShareModal(true)}
+            >
+              <Share2 className="w-4 h-4 mr-1" />
+              Share
+            </Button>
+            {user ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-xl"
+                onClick={() => navigate('/dashboard')}
+              >
+                My Dashboard
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="rounded-xl bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => navigate('/signin')}
+              >
+                Sign In
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
       {/* Store Banner */}
       <div className="relative">
         {seller.store_video_url ? (
-          <div className="relative h-64 md:h-80 overflow-hidden">
+          <div className="relative h-48 md:h-64 overflow-hidden">
             <video
               autoPlay
               muted
@@ -320,7 +397,7 @@ const Store = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
           </div>
         ) : seller.store_banner_url ? (
-          <div className="relative h-64 md:h-80">
+          <div className="relative h-48 md:h-64">
             <img 
               src={seller.store_banner_url}
               alt={seller.store_name}
@@ -329,21 +406,21 @@ const Store = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
           </div>
         ) : (
-          <div className="h-64 md:h-80 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500" />
+          <div className="h-48 md:h-64 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500" />
         )}
 
         {/* Store Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end gap-6">
-            <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-white shadow-2xl">
+        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end gap-4">
+            <Avatar className="w-20 h-20 md:w-24 md:h-24 border-4 border-white shadow-2xl">
               <AvatarImage src={seller.store_logo_url || ''} />
-              <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-3xl font-bold">
+              <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-2xl font-bold">
                 {seller.store_name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 text-white">
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl md:text-4xl font-bold">{seller.store_name}</h1>
+                <h1 className="text-xl md:text-3xl font-bold">{seller.store_name}</h1>
                 {seller.is_verified && (
                   <Badge className="bg-emerald-500 text-white border-0">
                     <CheckCircle className="w-3 h-3 mr-1" />
@@ -352,34 +429,20 @@ const Store = () => {
                 )}
               </div>
               {seller.store_tagline && (
-                <p className="text-lg text-white/90 mt-2">{seller.store_tagline}</p>
+                <p className="text-sm md:text-base text-white/90 mt-1">{seller.store_tagline}</p>
               )}
-              <div className="flex items-center gap-6 mt-4 text-sm text-white/80 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Package className="w-4 h-4" />
-                  <span>{products.length} Products</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>{seller.total_orders || 0} Orders</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span>4.9 Rating</span>
-                </div>
-              </div>
-
+              
               {/* Social Links */}
               {seller.social_links && Object.keys(seller.social_links).length > 0 && (
-                <div className="flex items-center gap-3 mt-4">
+                <div className="flex items-center gap-2 mt-3">
                   {seller.social_links.instagram && (
                     <a 
                       href={`https://instagram.com/${seller.social_links.instagram}`} 
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                      className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
                     >
-                      <Instagram className="w-4 h-4 text-white" />
+                      <Instagram className="w-3.5 h-3.5 text-white" />
                     </a>
                   )}
                   {seller.social_links.twitter && (
@@ -387,9 +450,9 @@ const Store = () => {
                       href={`https://twitter.com/${seller.social_links.twitter}`} 
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                      className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
                     >
-                      <Twitter className="w-4 h-4 text-white" />
+                      <Twitter className="w-3.5 h-3.5 text-white" />
                     </a>
                   )}
                   {seller.social_links.tiktok && (
@@ -397,9 +460,9 @@ const Store = () => {
                       href={`https://tiktok.com/@${seller.social_links.tiktok}`} 
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                      className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
                     >
-                      <Music className="w-4 h-4 text-white" />
+                      <Music className="w-3.5 h-3.5 text-white" />
                     </a>
                   )}
                   {seller.social_links.youtube && (
@@ -407,9 +470,9 @@ const Store = () => {
                       href={seller.social_links.youtube.startsWith('http') ? seller.social_links.youtube : `https://youtube.com/@${seller.social_links.youtube}`} 
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                      className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
                     >
-                      <Youtube className="w-4 h-4 text-white" />
+                      <Youtube className="w-3.5 h-3.5 text-white" />
                     </a>
                   )}
                 </div>
@@ -420,7 +483,7 @@ const Store = () => {
       </div>
 
       {/* Main Content with Sidebar */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex gap-6">
           {/* Sidebar */}
           <StoreSidebar
@@ -636,27 +699,47 @@ const Store = () => {
           <DialogHeader>
             <DialogTitle>Sign in to continue</DialogTitle>
             <DialogDescription>
-              Create an account or sign in to purchase products from this store.
+              Create an account or sign in to {pendingAction === 'chat' ? 'chat with the seller' : 'purchase products from this store'}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-4">
             <Button
               className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl"
-              onClick={() => handleLoginRedirect(false)}
+              onClick={handleLoginRedirect}
             >
               Sign In
             </Button>
             <Button
               variant="outline"
               className="w-full rounded-xl"
-              onClick={() => handleLoginRedirect(true)}
+              onClick={handleLoginRedirect}
             >
               Create Account
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Share Modal */}
+      <ShareStoreModal
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
+        storeSlug={seller.store_slug}
+        storeName={seller.store_name}
+      />
+
+      {/* Floating Chat Widget */}
+      <FloatingChatWidget />
     </div>
+  );
+};
+
+// Main Store component wrapped with FloatingChatProvider
+const Store = () => {
+  return (
+    <FloatingChatProvider>
+      <StoreContent />
+    </FloatingChatProvider>
   );
 };
 

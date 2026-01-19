@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { TrendingUp, Sparkles, Tag, ChevronRight } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Filter } from 'lucide-react';
+import { TrendingUp, Flame, Tag, ChevronRight, Sparkles, Menu } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 interface SellerProduct {
   id: string;
@@ -78,7 +76,8 @@ const SidebarContent = ({
   onTagSelect,
   onProductClick,
 }: StoreSidebarProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const trendingRef = useRef<HTMLDivElement>(null);
 
   // Get trending products (top 5 by sold_count)
   const trendingProducts = useMemo(() => {
@@ -93,7 +92,7 @@ const SidebarContent = ({
     products.forEach(product => {
       product.tags?.forEach(tag => tagSet.add(tag));
     });
-    return Array.from(tagSet).slice(0, 10);
+    return Array.from(tagSet).slice(0, 15);
   }, [products]);
 
   // Get categories that have products
@@ -102,149 +101,134 @@ const SidebarContent = ({
     return categories.filter(cat => categoryIds.has(cat.id));
   }, [products, categories]);
 
-  // Auto-scroll for trending
+  // Auto-scroll trending section
   useEffect(() => {
-    const scrollContainer = scrollRef.current;
-    if (!scrollContainer || trendingProducts.length <= 2) return;
-    
-    let scrollDirection = 1;
-    const scrollInterval = setInterval(() => {
-      if (!scrollContainer) return;
-      
-      if (scrollContainer.scrollTop >= scrollContainer.scrollHeight - scrollContainer.clientHeight) {
-        scrollDirection = -1;
-      } else if (scrollContainer.scrollTop <= 0) {
-        scrollDirection = 1;
+    if (isPaused || !trendingRef.current || trendingProducts.length <= 2) return;
+
+    const interval = setInterval(() => {
+      const container = trendingRef.current;
+      if (container) {
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        if (container.scrollTop >= maxScroll - 1) {
+          container.scrollTop = 0;
+        } else {
+          container.scrollTop += 1;
+        }
       }
-      
-      scrollContainer.scrollTop += scrollDirection * 1;
     }, 50);
 
-    return () => clearInterval(scrollInterval);
-  }, [trendingProducts.length]);
+    return () => clearInterval(interval);
+  }, [isPaused, trendingProducts.length]);
 
   const getCategoryCount = (categoryId: string) => {
     return products.filter(p => p.category_id === categoryId).length;
   };
 
   return (
-    <div className="space-y-6">
-      {/* Trending Products */}
+    <div className="h-full flex flex-col gap-4 overflow-hidden">
+      {/* Trending Section - Matching MarketplaceSidebar */}
       {trendingProducts.length > 0 && (
-        <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-md">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-gray-900">Trending Now</span>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden flex-shrink-0">
+          <div className="flex items-center gap-2 p-4 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-amber-50">
+            <Flame className="w-5 h-5 text-orange-500" />
+            <h3 className="font-bold text-gray-900 text-sm">Trending Now</h3>
           </div>
-          <div 
-            ref={scrollRef}
-            className="space-y-2.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent"
+          <div
+            ref={trendingRef}
+            className="max-h-48 overflow-y-auto scrollbar-hide"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
           >
             {trendingProducts.map((product) => (
-              <button
+              <div
                 key={product.id}
+                className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
                 onClick={() => onProductClick(product)}
-                className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors group text-left"
               >
-                <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                  {product.icon_url ? (
-                    <img src={product.icon_url} alt={product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">{product.name.charAt(0)}</span>
-                    </div>
-                  )}
-                </div>
+                {product.icon_url ? (
+                  <img
+                    src={product.icon_url}
+                    alt={product.name}
+                    className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-5 h-5 text-white" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-emerald-600 transition-colors">
-                    {product.name}
-                  </p>
-                  <p className="text-xs text-gray-500">{product.sold_count || 0}+ sold</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-orange-600 font-bold text-sm">${product.price}</span>
+                    <span className="text-xs text-gray-400">{product.sold_count || 0}+ sold</span>
+                  </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-500 transition-colors" />
-              </button>
+                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Categories */}
-      {activeCategories.length > 0 && (
-        <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-md">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-gray-900">Categories</span>
-          </div>
-          <div className="space-y-1.5">
-            {/* All Products */}
+      {/* Categories Section - Matching MarketplaceSidebar exactly */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden flex-1 min-h-0 flex flex-col">
+        <div className="flex items-center gap-2 p-3 border-b border-gray-100">
+          <Sparkles className="w-4 h-4 text-violet-500" />
+          <h3 className="font-bold text-gray-900 text-sm">Categories</h3>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {/* All Category */}
+          <button
+            onClick={() => onCategorySelect('all')}
+            className={`w-full px-3 py-2.5 text-left transition-all border-l-[3px] ${
+              selectedCategory === 'all'
+                ? 'bg-gray-100 border-l-gray-900 font-semibold'
+                : 'border-l-transparent hover:bg-gray-50'
+            }`}
+          >
+            <span className="text-sm text-gray-900">All Products</span>
+          </button>
+
+          {/* Dynamic Categories - Names Only matching MarketplaceSidebar */}
+          {activeCategories.map((category) => (
             <button
-              onClick={() => onCategorySelect('all')}
-              className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-left ${
-                selectedCategory === 'all'
-                  ? 'bg-gray-900 text-white'
-                  : 'hover:bg-gray-50 text-gray-600'
+              key={category.id}
+              onClick={() => onCategorySelect(category.id)}
+              className={`w-full px-3 py-2.5 text-left transition-all border-l-[3px] ${
+                selectedCategory === category.id
+                  ? `bg-gray-100 ${getCategoryBorderClass(category.color)} font-semibold`
+                  : 'border-l-transparent hover:bg-gray-50'
               }`}
             >
-              <span className="font-medium">All Products</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                selectedCategory === 'all' ? 'bg-white/20' : 'bg-gray-100'
-              }`}>
-                {products.length}
-              </span>
+              <span className="text-sm text-gray-900">{category.name}</span>
             </button>
-
-            {activeCategories.map(category => (
-              <button
-                key={category.id}
-                onClick={() => onCategorySelect(category.id)}
-                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-left border-l-4 ${
-                  selectedCategory === category.id
-                    ? `bg-gray-900 text-white border-l-gray-900`
-                    : `hover:bg-gray-50 text-gray-600 ${getCategoryBorderClass(category.color)}`
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${getCategoryColorClass(category.color)}`} />
-                  <span className="font-medium">{category.name}</span>
-                </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  selectedCategory === category.id ? 'bg-white/20' : 'bg-gray-100'
-                }`}>
-                  {getCategoryCount(category.id)}
-                </span>
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Popular Tags */}
+      {/* Tags Section - Matching MarketplaceSidebar */}
       {allTags.length > 0 && (
-        <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-md">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center">
-              <Tag className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-gray-900">Popular Tags</span>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden flex-shrink-0">
+          <div className="flex items-center gap-2 p-4 border-b border-gray-100">
+            <Tag className="w-5 h-5 text-blue-500" />
+            <h3 className="font-bold text-gray-900 text-sm">Popular Tags</h3>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {allTags.map(tag => (
-              <button
-                key={tag}
-                onClick={() => onTagSelect(tag)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  selectedTags.includes(tag)
-                    ? 'bg-violet-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
+          <div className="p-4">
+            <div className="flex flex-wrap gap-2">
+              {allTags.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => onTagSelect(tag)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    selectedTags.includes(tag)
+                      ? 'bg-violet-500 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -258,24 +242,26 @@ export const StoreSidebar = (props: StoreSidebarProps) => {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-72 flex-shrink-0 sticky top-24 h-fit">
+      <aside className="hidden lg:block w-72 flex-shrink-0 sticky top-0 h-[calc(100vh-200px)] overflow-hidden">
         <SidebarContent {...props} />
       </aside>
 
-      {/* Mobile Filter Button */}
+      {/* Mobile Filter Button & Sheet */}
       <div className="lg:hidden">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
-            <Button variant="outline" className="h-12 rounded-xl border-gray-200 shadow-md">
-              <Filter className="w-5 h-5 mr-2" />
+            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-lg transition-all font-medium text-sm text-gray-700">
+              <Menu size={18} />
               Filters
-            </Button>
+            </button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-80 p-4">
-            <SheetHeader className="pb-4">
-              <SheetTitle>Filters</SheetTitle>
-            </SheetHeader>
-            <SidebarContent {...props} />
+          <SheetContent side="left" className="w-80 p-4 bg-gray-50">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Filters</h2>
+            </div>
+            <div className="h-[calc(100vh-100px)] overflow-y-auto">
+              <SidebarContent {...props} />
+            </div>
           </SheetContent>
         </Sheet>
       </div>
