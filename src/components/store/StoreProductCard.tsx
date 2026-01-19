@@ -17,6 +17,7 @@ interface StoreProductCardProps {
   product: SellerProduct;
   storeName: string;
   hasEnoughBalance: boolean;
+  isLoggedIn: boolean;
   purchasing: boolean;
   onChat: () => void;
   onView: () => void;
@@ -27,6 +28,7 @@ const StoreProductCard = ({
   product,
   storeName,
   hasEnoughBalance,
+  isLoggedIn,
   purchasing,
   onChat,
   onView,
@@ -73,8 +75,8 @@ const StoreProductCard = ({
           </div>
         )}
 
-        {/* Low Balance Overlay - Always show when balance is insufficient */}
-        {!hasEnoughBalance && (
+        {/* Low Balance Overlay - Only show for logged-in users with insufficient balance */}
+        {isLoggedIn && !hasEnoughBalance && (
           <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center z-10">
             <Wallet size={28} className="text-white mb-2" />
             <span className="text-white text-sm font-semibold">Low Balance</span>
@@ -158,14 +160,14 @@ const StoreProductCard = ({
             className={`flex-1 min-w-0 font-bold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors text-sm ${
               purchasing
                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                : hasEnoughBalance
-                ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
-                : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
+                : isLoggedIn && !hasEnoughBalance
+                ? 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
+                : 'bg-yellow-400 hover:bg-yellow-500 text-black'
             }`}
           >
             {purchasing ? (
               <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-            ) : !hasEnoughBalance ? (
+            ) : isLoggedIn && !hasEnoughBalance ? (
               <>
                 <Wallet className="w-4 h-4 flex-shrink-0" />
                 <span className="truncate">Top Up</span>

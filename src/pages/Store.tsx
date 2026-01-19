@@ -120,12 +120,15 @@ const StoreContent = () => {
                 productName: pendingProd.name,
                 type: 'seller'
               });
-              toast.success(`Chat with ${seller.store_name} opened`);
+              toast.success(`Welcome back! Chat with ${seller.store_name} is now open`);
             } else {
               // Open product modal for purchase
               setSelectedProduct(pendingProd);
-              toast.info(`Continue your purchase of "${pendingProd.name}"`);
+              toast.success(`Welcome back! Continue your purchase of "${pendingProd.name}"`);
             }
+          } else {
+            // Product not found but user returned with intent
+            toast.info(`Welcome back to ${seller.store_name}!`);
           }
         } catch (e) {
           console.error('Failed to parse storeReturn', e);
@@ -625,6 +628,7 @@ const StoreContent = () => {
                     product={product}
                     storeName={seller.store_name}
                     hasEnoughBalance={hasEnoughBalance(product.price)}
+                    isLoggedIn={!!user}
                     purchasing={purchasing === product.id}
                     onChat={() => handleChat(product)}
                     onView={() => setSelectedProduct(product)}
