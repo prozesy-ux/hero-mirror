@@ -174,22 +174,29 @@ const ChatSection = () => {
     if (!user) return;
 
     try {
+      // Fetch all data in PARALLEL for instant loading
+      const [supportMsgRes, supportUnreadRes, sellerChatsRes] = await Promise.allSettled([
+        supabase.from('support_messages')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1),
+        supabase.from('support_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('sender_type', 'admin')
+          .eq('is_read', false),
+        supabase.from('seller_chats')
+          .select('seller_id, message, created_at, is_read, sender_type')
+          .eq('buyer_id', user.id)
+          .order('created_at', { ascending: false })
+      ]);
+
       const convos: Conversation[] = [];
       
-      // 1. Fetch support conversation
-      const { data: supportData } = await supabase
-        .from('support_messages')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      const { count: supportUnread } = await supabase
-        .from('support_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('sender_type', 'admin')
-        .eq('is_read', false);
+      // Process support conversation
+      const supportData = supportMsgRes.status === 'fulfilled' ? supportMsgRes.value.data : [];
+      const supportUnread = supportUnreadRes.status === 'fulfilled' ? supportUnreadRes.value.count : 0;
       
       convos.push({
         id: 'support',
@@ -200,13 +207,8 @@ const ChatSection = () => {
         unreadCount: supportUnread || 0,
       });
       
-      // 2. Fetch seller conversations
-      const { data: sellerChats } = await supabase
-        .from('seller_chats')
-        .select('seller_id, message, created_at, is_read, sender_type')
-        .eq('buyer_id', user.id)
-        .order('created_at', { ascending: false });
-      
+      // Process seller chats
+      const sellerChats = sellerChatsRes.status === 'fulfilled' ? sellerChatsRes.value.data : [];
       if (sellerChats && sellerChats.length > 0) {
         // Group by seller_id
         const sellerGroups = new Map<string, { lastMessage: string; lastTime: string; unread: number }>();
@@ -219,22 +221,20 @@ const ChatSection = () => {
               unread: 0
             });
           }
-          // Count unread from seller
           if (chat.sender_type === 'seller' && !chat.is_read) {
-            const group = sellerGroups.get(chat.seller_id)!;
-            group.unread++;
+            sellerGroups.get(chat.seller_id)!.unread++;
           }
         });
         
-        // Get seller profiles
+        // Batch fetch seller profiles in ONE query
         const sellerIds = Array.from(sellerGroups.keys());
-        const { data: sellerProfiles } = await supabase
-          .from('seller_profiles')
-          .select('id, store_name, store_logo_url')
-          .in('id', sellerIds);
-        
-        if (sellerProfiles) {
-          sellerProfiles.forEach(seller => {
+        if (sellerIds.length > 0) {
+          const { data: sellerProfiles } = await supabase
+            .from('seller_profiles')
+            .select('id, store_name, store_logo_url')
+            .in('id', sellerIds);
+          
+          sellerProfiles?.forEach(seller => {
             const group = sellerGroups.get(seller.id);
             if (group) {
               convos.push({
@@ -252,7 +252,7 @@ const ChatSection = () => {
         }
       }
       
-      // Sort by last message time (support always first if no messages)
+      // Sort by last message time
       convos.sort((a, b) => {
         if (a.type === 'support' && !a.lastMessageTime) return -1;
         if (b.type === 'support' && !b.lastMessageTime) return 1;
@@ -260,13 +260,12 @@ const ChatSection = () => {
       });
       
       setConversations(convos);
-      
-      // Auto-select first conversation
       if (!selectedConversation && convos.length > 0) {
         setSelectedConversation(convos[0]);
       }
     } catch (error) {
       console.error('Error fetching conversations:', error);
+      toast.error('Failed to load chats');
     } finally {
       setLoading(false);
     }
