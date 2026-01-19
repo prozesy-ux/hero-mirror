@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Edit, Trash2, Save, X, Eye, Image, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAdminDataContext } from '@/contexts/AdminDataContext';
+import { useAdminMutate } from '@/hooks/useAdminMutate';
 import { toast } from 'sonner';
 import RichTextEditor from './RichTextEditor';
 import ImageUploader from './ImageUploader';
@@ -27,6 +27,7 @@ interface Category {
 
 const PromptsManagement = () => {
   const { prompts, categories, isLoading, refreshTable } = useAdminDataContext();
+  const { insertData, updateData, deleteData } = useAdminMutate();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -70,18 +71,18 @@ const PromptsManagement = () => {
 
     try {
       if (editingId) {
-        const { error } = await supabase.from('prompts').update(promptData).eq('id', editingId);
-        if (error) {
-          toast.error(`Failed to update: ${error.message}`);
+        const result = await updateData('prompts', editingId, promptData);
+        if (!result.success) {
+          toast.error(`Failed to update: ${result.error}`);
         } else {
           toast.success('Prompt updated successfully!');
           refreshTable('prompts');
           resetForm();
         }
       } else {
-        const { error } = await supabase.from('prompts').insert(promptData);
-        if (error) {
-          toast.error(`Failed to create: ${error.message}`);
+        const result = await insertData('prompts', promptData);
+        if (!result.success) {
+          toast.error(`Failed to create: ${result.error}`);
         } else {
           toast.success('Prompt created successfully!');
           refreshTable('prompts');
@@ -116,9 +117,9 @@ const PromptsManagement = () => {
     setDeleting(id);
 
     try {
-      const { error } = await supabase.from('prompts').delete().eq('id', id);
-      if (error) {
-        toast.error(`Failed to delete: ${error.message}`);
+      const result = await deleteData('prompts', id);
+      if (!result.success) {
+        toast.error(`Failed to delete: ${result.error}`);
       } else {
         toast.success('Prompt deleted successfully!');
         refreshTable('prompts');
@@ -433,23 +434,28 @@ const PromptsManagement = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="px-3 py-1 bg-purple-600/30 text-purple-300 text-xs font-medium rounded-full">
+                        <span className="px-3 py-1 bg-purple-600/20 text-purple-400 text-xs font-medium rounded-full">
                           {prompt.tool}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-gray-400">
-                        {prompt.categories?.name || '-'}
+                        {prompt.categories?.name || 'Uncategorized'}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-1">
                           {prompt.is_free && (
-                            <span className="px-2 py-1 bg-green-600/30 text-green-400 text-xs rounded-full">
+                            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">
                               Free
                             </span>
                           )}
                           {prompt.is_featured && (
-                            <span className="px-2 py-1 bg-amber-500/30 text-amber-400 text-xs rounded-full">
+                            <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full">
                               Featured
+                            </span>
+                          )}
+                          {!prompt.is_free && !prompt.is_featured && (
+                            <span className="px-2 py-0.5 bg-gray-500/20 text-gray-400 text-xs rounded-full">
+                              Pro
                             </span>
                           )}
                         </div>
@@ -458,14 +464,14 @@ const PromptsManagement = () => {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => setPreviewPrompt(prompt)}
-                            className="p-2 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded-lg transition-colors"
+                            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
                             title="Preview"
                           >
                             <Eye size={18} />
                           </button>
                           <button
                             onClick={() => handleEdit(prompt)}
-                            className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-colors"
+                            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
                             title="Edit"
                           >
                             <Edit size={18} />
@@ -473,7 +479,7 @@ const PromptsManagement = () => {
                           <button
                             onClick={() => handleDelete(prompt.id)}
                             disabled={deleting === prompt.id}
-                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                             title="Delete"
                           >
                             {deleting === prompt.id ? (
@@ -488,20 +494,22 @@ const PromptsManagement = () => {
                     {expandedRows.includes(prompt.id) && (
                       <tr key={`${prompt.id}-expanded`} className="bg-gray-900/50">
                         <td colSpan={6} className="px-6 py-4">
-                          <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                              <h4 className="text-sm font-medium text-gray-400 mb-2">Description</h4>
-                              <p className="text-gray-300 text-sm">
-                                {prompt.description || 'No description'}
-                              </p>
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-medium text-gray-400 mb-2">Content Preview</h4>
-                              <div 
-                                className="text-gray-300 text-sm line-clamp-3 prose prose-invert prose-sm max-w-none"
-                                dangerouslySetInnerHTML={{ __html: prompt.content || 'No content' }}
-                              />
-                            </div>
+                          <div className="space-y-2">
+                            {prompt.description && (
+                              <div>
+                                <span className="text-gray-500 text-sm">Description:</span>
+                                <p className="text-gray-300 text-sm">{prompt.description}</p>
+                              </div>
+                            )}
+                            {prompt.content && (
+                              <div>
+                                <span className="text-gray-500 text-sm">Content Preview:</span>
+                                <div 
+                                  className="text-gray-300 text-sm line-clamp-3"
+                                  dangerouslySetInnerHTML={{ __html: prompt.content.substring(0, 300) + '...' }}
+                                />
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -512,6 +520,13 @@ const PromptsManagement = () => {
             </tbody>
           </table>
         </div>
+
+        {!isLoading && promptList.length === 0 && (
+          <div className="text-center py-12">
+            <Image size={48} className="text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400">No prompts found. Create your first prompt!</p>
+          </div>
+        )}
       </div>
     </div>
   );

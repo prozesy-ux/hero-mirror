@@ -63,6 +63,7 @@ serve(async (req) => {
       'cancellation_requests',
       'account_deletion_requests',
       'support_messages',
+      'seller_support_messages',
       'payment_methods',
       'favorites',
       'user_roles',
@@ -73,7 +74,13 @@ serve(async (req) => {
       'seller_products',
       'seller_withdrawals',
       'seller_feature_requests',
-      'auto_approval_settings'
+      'auto_approval_settings',
+      'seller_chats',
+      'seller_notifications',
+      'chat_join_requests',
+      'chat_attachments',
+      'seller_chat_attachments',
+      'screen_share_sessions'
     ];
 
     if (!allowedTables.includes(table)) {

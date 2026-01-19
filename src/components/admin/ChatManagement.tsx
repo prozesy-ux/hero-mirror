@@ -7,6 +7,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminMutate } from '@/hooks/useAdminMutate';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { playSound } from '@/lib/sounds';
@@ -101,6 +102,7 @@ type ChatRequestTab = 'pending' | 'active';
 const ChatManagement = () => {
   const { supportMessages, sellerSupportMessages, profiles, sellerProfiles, isLoading, refreshTable } = useAdminDataContext();
   const { fetchData } = useAdminData();
+  const { mutateData, insertData, updateData, deleteData, deleteWithFilters } = useAdminMutate();
   const [activeTab, setActiveTab] = useState<MainTab>('users');
   
   // User chat state
@@ -334,14 +336,13 @@ const ChatManagement = () => {
       
       const messageIds = (data as Message[]).map(m => m.id);
       if (messageIds.length > 0) {
-        const { data: attachmentData } = await supabase
-          .from('chat_attachments')
-          .select('*')
-          .in('message_id', messageIds);
+        const { data: attachmentData } = await fetchData('chat_attachments', {
+          filters: [{ column: 'message_id', operator: 'in', value: messageIds }]
+        });
         
         if (attachmentData) {
           const attachmentMap = new Map<string, ChatAttachment[]>();
-          attachmentData.forEach(att => {
+          (attachmentData as ChatAttachment[]).forEach(att => {
             const existing = attachmentMap.get(att.message_id || '') || [];
             attachmentMap.set(att.message_id || '', [...existing, att]);
           });
@@ -361,14 +362,13 @@ const ChatManagement = () => {
       
       const messageIds = (data as Message[]).map(m => m.id);
       if (messageIds.length > 0) {
-        const { data: attachmentData } = await supabase
-          .from('seller_chat_attachments')
-          .select('*')
-          .in('message_id', messageIds);
+        const { data: attachmentData } = await fetchData('seller_chat_attachments', {
+          filters: [{ column: 'message_id', operator: 'in', value: messageIds }]
+        });
         
         if (attachmentData) {
           const attachmentMap = new Map<string, ChatAttachment[]>();
-          attachmentData.forEach(att => {
+          (attachmentData as ChatAttachment[]).forEach(att => {
             const existing = attachmentMap.get(att.message_id || '') || [];
             attachmentMap.set(att.message_id || '', [...existing, att]);
           });
@@ -379,78 +379,83 @@ const ChatManagement = () => {
   };
 
   const checkActiveScreenShare = async (userId: string) => {
-    const { data } = await supabase
-      .from('screen_share_sessions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1);
+    const { data } = await fetchData<ScreenShareSession>('screen_share_sessions', {
+      filters: [
+        { column: 'user_id', value: userId },
+        { column: 'status', value: 'active' }
+      ],
+      order: { column: 'created_at', ascending: false },
+      limit: 1
+    });
     
     if (data && data.length > 0) {
-      setActiveScreenShare(data[0] as ScreenShareSession);
+      setActiveScreenShare(data[0]);
     } else {
       setActiveScreenShare(null);
     }
   };
 
   const markUserMessagesAsRead = async (userId: string) => {
-    await supabase
-      .from('support_messages')
-      .update({ is_read: true })
-      .eq('user_id', userId)
-      .eq('sender_type', 'user')
-      .eq('is_read', false);
+    // Get unread messages first
+    const { data: unreadMessages } = await fetchData<Message>('support_messages', {
+      filters: [
+        { column: 'user_id', value: userId },
+        { column: 'sender_type', value: 'user' },
+        { column: 'is_read', value: false }
+      ]
+    });
+
+    if (unreadMessages && unreadMessages.length > 0) {
+      // Update each message using admin mutate
+      for (const msg of unreadMessages) {
+        await updateData('support_messages', msg.id, { is_read: true });
+      }
+    }
   };
 
   const markSellerMessagesAsRead = async (sellerId: string) => {
-    await supabase
-      .from('seller_support_messages')
-      .update({ is_read: true })
-      .eq('seller_id', sellerId)
-      .eq('sender_type', 'seller')
-      .eq('is_read', false);
+    // Get unread messages first
+    const { data: unreadMessages } = await fetchData<Message>('seller_support_messages', {
+      filters: [
+        { column: 'seller_id', value: sellerId },
+        { column: 'sender_type', value: 'seller' },
+        { column: 'is_read', value: false }
+      ]
+    });
+
+    if (unreadMessages && unreadMessages.length > 0) {
+      // Update each message using admin mutate
+      for (const msg of unreadMessages) {
+        await updateData('seller_support_messages', msg.id, { is_read: true });
+      }
+    }
   };
 
   const sendUserMessage = async () => {
     if (!newMessage.trim() || !selectedUser) return;
 
     setSending(true);
-    const { error } = await supabase
-      .from('support_messages')
-      .insert({
-        user_id: selectedUser.user_id,
-        message: newMessage.trim(),
-        sender_type: 'admin',
-        is_read: true
-      });
+    
+    const result = await insertData('support_messages', {
+      user_id: selectedUser.user_id,
+      message: newMessage.trim(),
+      sender_type: 'admin',
+      is_read: true
+    });
 
-    if (error) {
+    if (!result.success) {
       toast.error('Failed to send message');
     } else {
       playSound('messageSent');
       
-      const token = localStorage.getItem('admin_session_token');
-      if (token) {
-        try {
-          await supabase.functions.invoke('admin-mutate-data', {
-            body: {
-              token,
-              table: 'notifications',
-              operation: 'insert',
-              data: {
-                user_id: selectedUser.user_id,
-                type: 'message',
-                title: 'New message from Support',
-                message: newMessage.trim().substring(0, 100) + (newMessage.trim().length > 100 ? '...' : ''),
-                is_read: false
-              }
-            }
-          });
-        } catch (notifError) {
-          console.error('Failed to create notification:', notifError);
-        }
-      }
+      // Create notification
+      await insertData('notifications', {
+        user_id: selectedUser.user_id,
+        type: 'message',
+        title: 'New message from Support',
+        message: newMessage.trim().substring(0, 100) + (newMessage.trim().length > 100 ? '...' : ''),
+        is_read: false
+      });
       
       setNewMessage('');
       fetchUserMessages(selectedUser.user_id);
@@ -463,41 +468,27 @@ const ChatManagement = () => {
     if (!newMessage.trim() || !selectedSeller) return;
 
     setSending(true);
-    const { error } = await supabase
-      .from('seller_support_messages')
-      .insert({
-        seller_id: selectedSeller.seller_id,
-        message: newMessage.trim(),
-        sender_type: 'admin',
-        is_read: true
-      });
+    
+    const result = await insertData('seller_support_messages', {
+      seller_id: selectedSeller.seller_id,
+      message: newMessage.trim(),
+      sender_type: 'admin',
+      is_read: true
+    });
 
-    if (error) {
+    if (!result.success) {
       toast.error('Failed to send message');
     } else {
       playSound('messageSent');
       
-      const token = localStorage.getItem('admin_session_token');
-      if (token) {
-        try {
-          await supabase.functions.invoke('admin-mutate-data', {
-            body: {
-              token,
-              table: 'seller_notifications',
-              operation: 'insert',
-              data: {
-                seller_id: selectedSeller.seller_id,
-                type: 'message',
-                title: 'New message from Support',
-                message: newMessage.trim().substring(0, 100) + (newMessage.trim().length > 100 ? '...' : ''),
-                is_read: false
-              }
-            }
-          });
-        } catch (notifError) {
-          console.error('Failed to create notification:', notifError);
-        }
-      }
+      // Create notification
+      await insertData('seller_notifications', {
+        seller_id: selectedSeller.seller_id,
+        type: 'message',
+        title: 'New message from Support',
+        message: newMessage.trim().substring(0, 100) + (newMessage.trim().length > 100 ? '...' : ''),
+        is_read: false
+      });
       
       setNewMessage('');
       fetchSellerMessages(selectedSeller.seller_id);
@@ -521,14 +512,11 @@ const ChatManagement = () => {
     
     setDeletingMessageId(messageId);
     
-    const { error } = await supabase
-      .from('support_messages')
-      .delete()
-      .eq('id', messageId);
+    const result = await deleteData('support_messages', messageId);
     
     setDeletingMessageId(null);
     
-    if (error) {
+    if (!result.success) {
       toast.error('Failed to delete message');
     } else {
       toast.success('Message deleted');
@@ -546,14 +534,11 @@ const ChatManagement = () => {
     
     setDeletingMessageId(messageId);
     
-    const { error } = await supabase
-      .from('seller_support_messages')
-      .delete()
-      .eq('id', messageId);
+    const result = await deleteData('seller_support_messages', messageId);
     
     setDeletingMessageId(null);
     
-    if (error) {
+    if (!result.success) {
       toast.error('Failed to delete message');
     } else {
       toast.success('Message deleted');
@@ -569,15 +554,14 @@ const ChatManagement = () => {
     setDeletingAllChat(true);
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     
-    const { error } = await supabase
-      .from('support_messages')
-      .delete()
-      .eq('user_id', selectedUser.user_id)
-      .lt('created_at', oneDayAgo);
+    const result = await deleteWithFilters('support_messages', [
+      { column: 'user_id', value: selectedUser.user_id },
+      { column: 'created_at', operator: 'lt', value: oneDayAgo }
+    ]);
     
     setDeletingAllChat(false);
     
-    if (error) {
+    if (!result.success) {
       toast.error('Failed to delete chat');
     } else {
       toast.success('Old messages deleted');
@@ -593,15 +577,14 @@ const ChatManagement = () => {
     setDeletingAllChat(true);
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     
-    const { error } = await supabase
-      .from('seller_support_messages')
-      .delete()
-      .eq('seller_id', selectedSeller.seller_id)
-      .lt('created_at', oneDayAgo);
+    const result = await deleteWithFilters('seller_support_messages', [
+      { column: 'seller_id', value: selectedSeller.seller_id },
+      { column: 'created_at', operator: 'lt', value: oneDayAgo }
+    ]);
     
     setDeletingAllChat(false);
     
-    if (error) {
+    if (!result.success) {
       toast.error('Failed to delete chat');
     } else {
       toast.success('Old messages deleted');
@@ -612,24 +595,23 @@ const ChatManagement = () => {
 
   // Chat Join Requests Functions
   const fetchChatRequests = async () => {
-    const { data, error } = await supabase
-      .from('chat_join_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data, error } = await fetchData<ChatJoinRequest>('chat_join_requests', {
+      order: { column: 'created_at', ascending: false }
+    });
 
     if (!error && data) {
       const buyerIds = [...new Set(data.map(r => r.buyer_id))];
       const sellerIds = [...new Set(data.map(r => r.seller_id))];
 
       const [buyerProfiles, sellerProfilesData] = await Promise.all([
-        supabase.from('profiles').select('user_id, email, full_name').in('user_id', buyerIds),
-        supabase.from('seller_profiles').select('id, store_name').in('id', sellerIds)
+        fetchData('profiles', { filters: [{ column: 'user_id', operator: 'in', value: buyerIds }] }),
+        fetchData('seller_profiles', { filters: [{ column: 'id', operator: 'in', value: sellerIds }] })
       ]);
 
       const enrichedData = data.map(request => ({
         ...request,
-        buyer_profile: buyerProfiles.data?.find(p => p.user_id === request.buyer_id) || null,
-        seller_profile: sellerProfilesData.data?.find(p => p.id === request.seller_id) || null
+        buyer_profile: (buyerProfiles.data as any[])?.find(p => p.user_id === request.buyer_id) || null,
+        seller_profile: (sellerProfilesData.data as any[])?.find(p => p.id === request.seller_id) || null
       }));
 
       setChatRequests(enrichedData);
@@ -637,32 +619,30 @@ const ChatManagement = () => {
   };
 
   const fetchChatHistory = async (buyerId: string, sellerId: string) => {
-    const { data } = await supabase
-      .from('seller_chats')
-      .select('*')
-      .eq('buyer_id', buyerId)
-      .eq('seller_id', sellerId)
-      .order('created_at', { ascending: true })
-      .limit(50);
+    const { data } = await fetchData<ChatMessage>('seller_chats', {
+      filters: [
+        { column: 'buyer_id', value: buyerId },
+        { column: 'seller_id', value: sellerId }
+      ],
+      order: { column: 'created_at', ascending: true },
+      limit: 50
+    });
 
-    setChatMessages((data as ChatMessage[]) || []);
+    setChatMessages(data || []);
   };
 
   const handleJoinChat = async (request: ChatJoinRequest) => {
     setProcessingRequest(true);
     
-    const { error } = await supabase
-      .from('chat_join_requests')
-      .update({
-        status: 'joined',
-        resolved_at: new Date().toISOString()
-      })
-      .eq('id', request.id);
+    const result = await updateData('chat_join_requests', request.id, {
+      status: 'joined',
+      resolved_at: new Date().toISOString()
+    });
 
-    if (error) {
+    if (!result.success) {
       toast.error('Failed to join chat');
     } else {
-      await supabase.from('seller_chats').insert({
+      await insertData('seller_chats', {
         buyer_id: request.buyer_id,
         seller_id: request.seller_id,
         message: '🛡️ Uptoza Support has joined this conversation to help resolve your issue.',
@@ -680,16 +660,13 @@ const ChatManagement = () => {
   const handleDeclineRequest = async (request: ChatJoinRequest, notes: string) => {
     setProcessingRequest(true);
     
-    const { error } = await supabase
-      .from('chat_join_requests')
-      .update({
-        status: 'declined',
-        admin_notes: notes,
-        resolved_at: new Date().toISOString()
-      })
-      .eq('id', request.id);
+    const result = await updateData('chat_join_requests', request.id, {
+      status: 'declined',
+      admin_notes: notes,
+      resolved_at: new Date().toISOString()
+    });
 
-    if (error) {
+    if (!result.success) {
       toast.error('Failed to decline request');
     } else {
       toast.success('Request declined');
@@ -700,17 +677,18 @@ const ChatManagement = () => {
   };
 
   const openActiveChat = async (request: ChatJoinRequest) => {
-    const { data } = await supabase
-      .from('seller_chats')
-      .select('*')
-      .eq('buyer_id', request.buyer_id)
-      .eq('seller_id', request.seller_id)
-      .order('created_at', { ascending: true })
-      .limit(100);
+    const { data } = await fetchData<ChatMessage>('seller_chats', {
+      filters: [
+        { column: 'buyer_id', value: request.buyer_id },
+        { column: 'seller_id', value: request.seller_id }
+      ],
+      order: { column: 'created_at', ascending: true },
+      limit: 100
+    });
 
     setActiveChatSession({
       request,
-      messages: (data as ChatMessage[]) || []
+      messages: data || []
     });
   };
 
@@ -719,7 +697,7 @@ const ChatManagement = () => {
     
     setSendingMessage(true);
     
-    const { error } = await supabase.from('seller_chats').insert({
+    const result = await insertData('seller_chats', {
       buyer_id: activeChatSession.request.buyer_id,
       seller_id: activeChatSession.request.seller_id,
       message: supportMessage.trim(),
@@ -727,21 +705,22 @@ const ChatManagement = () => {
       admin_joined: true
     });
 
-    if (error) {
+    if (!result.success) {
       toast.error('Failed to send message');
     } else {
       setSupportMessage('');
-      const { data } = await supabase
-        .from('seller_chats')
-        .select('*')
-        .eq('buyer_id', activeChatSession.request.buyer_id)
-        .eq('seller_id', activeChatSession.request.seller_id)
-        .order('created_at', { ascending: true })
-        .limit(100);
+      const { data } = await fetchData<ChatMessage>('seller_chats', {
+        filters: [
+          { column: 'buyer_id', value: activeChatSession.request.buyer_id },
+          { column: 'seller_id', value: activeChatSession.request.seller_id }
+        ],
+        order: { column: 'created_at', ascending: true },
+        limit: 100
+      });
       
       setActiveChatSession(prev => prev ? {
         ...prev,
-        messages: (data as ChatMessage[]) || []
+        messages: data || []
       } : null);
     }
     
@@ -751,7 +730,7 @@ const ChatManagement = () => {
   const handleCloseChat = async () => {
     if (!activeChatSession) return;
     
-    await supabase.from('seller_chats').insert({
+    await insertData('seller_chats', {
       buyer_id: activeChatSession.request.buyer_id,
       seller_id: activeChatSession.request.seller_id,
       message: '🛡️ Uptoza Support has left the conversation. Issue resolved.',
@@ -759,10 +738,7 @@ const ChatManagement = () => {
       admin_joined: true
     });
 
-    await supabase
-      .from('chat_join_requests')
-      .update({ status: 'resolved' })
-      .eq('id', activeChatSession.request.id);
+    await updateData('chat_join_requests', activeChatSession.request.id, { status: 'resolved' });
 
     toast.success('Chat closed and marked as resolved');
     setActiveChatSession(null);
@@ -1451,76 +1427,96 @@ const ChatManagement = () => {
       {showScreenShareModal && activeScreenShare && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
           <div className="bg-zinc-900 rounded-2xl p-6 max-w-md w-full mx-4 border border-white/10">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Monitor className="text-green-400" size={20} />
-                Screen Share Active
-              </h3>
-              <button
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white">Screen Share Session</h3>
+              <button 
                 onClick={() => setShowScreenShareModal(false)}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors"
               >
-                <X size={18} className="text-gray-400" />
+                <X size={20} />
               </button>
             </div>
-            <div className="space-y-3">
-              <div className="bg-white/5 rounded-lg p-3">
-                <p className="text-sm text-gray-400">Session ID</p>
-                <p className="text-white font-mono text-sm">{activeScreenShare.id}</p>
+            
+            <div className="space-y-4">
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-green-400 mb-2">
+                  <Monitor size={20} />
+                  <span className="font-medium">Active Screen Share</span>
+                </div>
+                <p className="text-gray-400 text-sm">
+                  The user is currently sharing their screen for support assistance.
+                </p>
               </div>
-              <div className="bg-white/5 rounded-lg p-3">
-                <p className="text-sm text-gray-400">Peer ID</p>
-                <p className="text-white font-mono text-sm break-all">{activeScreenShare.peer_id || 'Waiting...'}</p>
-              </div>
-              <div className="bg-white/5 rounded-lg p-3">
-                <p className="text-sm text-gray-400">Started</p>
-                <p className="text-white text-sm">{format(new Date(activeScreenShare.created_at), 'MMM d, h:mm a')}</p>
+              
+              <div className="text-gray-400 text-sm">
+                <p><strong>Session ID:</strong> {activeScreenShare.id}</p>
+                <p><strong>Started:</strong> {format(new Date(activeScreenShare.created_at), 'h:mm a')}</p>
+                {activeScreenShare.peer_id && (
+                  <p><strong>Peer ID:</strong> {activeScreenShare.peer_id}</p>
+                )}
               </div>
             </div>
-            <p className="text-gray-500 text-sm mt-4">
-              The user is currently sharing their screen. Use the Peer ID to connect via a WebRTC viewer.
-            </p>
           </div>
         </div>
       )}
 
-      {/* Chat History Dialog */}
+      {/* Chat History Modal */}
       {selectedRequest && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 rounded-2xl p-6 max-w-2xl w-full mx-4 border border-white/10 max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Chat History</h3>
-              <button
-                onClick={() => setSelectedRequest(null)}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-              >
-                <X size={18} className="text-gray-400" />
-              </button>
+          <div className="bg-zinc-900 rounded-2xl max-w-2xl w-full mx-4 border border-white/10 max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">Chat History</h3>
+                <button 
+                  onClick={() => setSelectedRequest(null)}
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-              {chatMessages.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No messages in this conversation</p>
-              ) : (
-                chatMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`p-3 rounded-lg ${
-                      msg.sender_type === 'buyer'
-                        ? 'bg-white/10 ml-0 mr-12'
-                        : msg.sender_type === 'seller'
-                        ? 'bg-emerald-600/20 ml-12 mr-0'
-                        : 'bg-blue-600/20 mx-6'
-                    }`}
-                  >
-                    <p className="text-xs text-gray-400 mb-1 capitalize">{msg.sender_type}</p>
-                    <p className="text-white">{msg.message}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {format(new Date(msg.created_at), 'MMM d, h:mm a')}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
+            
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4">
+                {chatMessages.map((msg) => {
+                  const isBuyerMsg = msg.sender_type === 'buyer';
+                  const isSystemMsg = msg.sender_type === 'system';
+
+                  if (isSystemMsg) {
+                    return (
+                      <div key={msg.id} className="flex justify-center">
+                        <div className="bg-blue-500/10 text-blue-400 px-4 py-2 rounded-full text-sm">
+                          {msg.message}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex ${isBuyerMsg ? 'justify-start' : 'justify-end'}`}
+                    >
+                      <div
+                        className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                          isBuyerMsg
+                            ? 'bg-white/10 text-white'
+                            : 'bg-emerald-600/20 text-emerald-400'
+                        }`}
+                      >
+                        <p className="text-xs font-medium mb-1 opacity-70">
+                          {isBuyerMsg ? 'Buyer' : 'Seller'}
+                        </p>
+                        <p className="whitespace-pre-wrap">{msg.message}</p>
+                        <p className="text-xs opacity-50 mt-1">
+                          {format(new Date(msg.created_at), 'h:mm a')}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
           </div>
         </div>
       )}
