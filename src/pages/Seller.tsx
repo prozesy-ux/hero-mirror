@@ -511,6 +511,26 @@ const SuspendedAccount = () => (
   </div>
 );
 
+// Deleted Account Screen
+const DeletedAccount = () => (
+  <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-center">
+        <div className="mx-auto mb-4 h-14 w-14 rounded-xl bg-gray-100 flex items-center justify-center">
+          <Store className="h-7 w-7 text-gray-500" />
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Store Deleted</h1>
+        <p className="text-slate-500 text-sm mb-6">
+          This seller account has been deleted. If you believe this is a mistake, please contact support.
+        </p>
+        <Button variant="outline" onClick={() => window.location.href = '/dashboard'} className="border-slate-200">
+          Back to Dashboard
+        </Button>
+      </div>
+    </div>
+  </div>
+);
+
 // Main Content Area with dynamic margin
 const SellerMainContent = () => {
   const { isCollapsed } = useSellerSidebarContext();
@@ -585,14 +605,19 @@ const Seller = () => {
     try {
       const { data, error } = await supabase
         .from('seller_profiles')
-        .select('*')
+        .select('*, is_deleted, deleted_at')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (error) throw error;
 
       if (data) {
-        setSellerProfile(data);
+        // Check if account is deleted
+        if (data.is_deleted) {
+          setSellerProfile({ ...data, is_deleted: true } as any);
+        } else {
+          setSellerProfile(data);
+        }
         setNeedsRegistration(false);
       } else {
         setNeedsRegistration(true);
@@ -630,6 +655,11 @@ const Seller = () => {
   // if (sellerProfile && !sellerProfile.is_verified) {
   //   return <PendingApproval />;
   // }
+
+  // Check if account is deleted
+  if (sellerProfile && (sellerProfile as any).is_deleted) {
+    return <DeletedAccount />;
+  }
 
   if (sellerProfile && !sellerProfile.is_active) {
     return <SuspendedAccount />;

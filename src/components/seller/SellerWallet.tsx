@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -13,8 +13,19 @@ import {
   AlertCircle,
   DollarSign,
   History,
-  CreditCard
+  CreditCard,
+  Plus,
+  Trash2,
+  Star,
+  Building2
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 
 interface PaymentMethod {
   id: string;
@@ -26,9 +37,24 @@ interface PaymentMethod {
   is_automatic: boolean;
   account_number: string | null;
   account_name: string | null;
+  withdrawal_enabled: boolean;
+  min_withdrawal: number;
+  max_withdrawal: number;
 }
 
-type WalletTab = 'wallet' | 'withdrawals';
+interface SavedAccount {
+  id: string;
+  seller_id: string;
+  payment_method_code: string;
+  account_name: string;
+  account_number: string;
+  bank_name: string | null;
+  is_primary: boolean;
+  is_verified: boolean;
+  created_at: string;
+}
+
+type WalletTab = 'wallet' | 'withdrawals' | 'accounts';
 
 // Currency helper functions
 const getCurrencySymbol = (code: string | null): string => {
@@ -50,21 +76,37 @@ const formatLocalAmount = (usdAmount: number, method: PaymentMethod | undefined)
   return `${symbol}${localAmount.toFixed(0)}`;
 };
 
+const maskAccountNumber = (accountNumber: string): string => {
+  if (accountNumber.length <= 4) return accountNumber;
+  return '•••• ' + accountNumber.slice(-4);
+};
+
 const SellerWallet = () => {
   const { profile, wallet, withdrawals, refreshWallet, refreshWithdrawals, loading } = useSellerContext();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState<number>(10);
-  const [selectedMethod, setSelectedMethod] = useState('');
-  const [accountDetails, setAccountDetails] = useState('');
+  const [selectedAccountForWithdraw, setSelectedAccountForWithdraw] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<WalletTab>('wallet');
+  
+  // Add account form state
+  const [newAccountMethod, setNewAccountMethod] = useState('');
+  const [newAccountName, setNewAccountName] = useState('');
+  const [newAccountNumber, setNewAccountNumber] = useState('');
+  const [newBankName, setNewBankName] = useState('');
+  const [newAccountPrimary, setNewAccountPrimary] = useState(false);
 
   const quickAmounts = [5, 10, 25, 50, 100];
 
   useEffect(() => {
     fetchPaymentMethods();
-  }, []);
+    if (profile?.id) {
+      fetchSavedAccounts();
+    }
+  }, [profile?.id]);
 
   // Real-time subscription for withdrawals
   useEffect(() => {
@@ -83,36 +125,164 @@ const SellerWallet = () => {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    const accountsChannel = supabase
+      .channel('seller-payment-accounts-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'seller_payment_accounts',
+        filter: `seller_id=eq.${profile.id}`
+      }, () => {
+        fetchSavedAccounts();
+      })
+      .subscribe();
+
+    return () => { 
+      supabase.removeChannel(channel); 
+      supabase.removeChannel(accountsChannel);
+    };
   }, [profile?.id, refreshWithdrawals, refreshWallet]);
 
   const fetchPaymentMethods = async () => {
     const { data } = await supabase
       .from('payment_methods')
-      .select('id, name, code, currency_code, exchange_rate, icon_url, is_automatic, account_number, account_name')
+      .select('id, name, code, currency_code, exchange_rate, icon_url, is_automatic, account_number, account_name, withdrawal_enabled, min_withdrawal, max_withdrawal')
       .eq('is_enabled', true)
+      .eq('withdrawal_enabled', true)
       .order('display_order');
-    if (data) setPaymentMethods(data);
+    if (data) setPaymentMethods(data as PaymentMethod[]);
+  };
+
+  const fetchSavedAccounts = async () => {
+    if (!profile?.id) return;
+    const { data } = await supabase
+      .from('seller_payment_accounts')
+      .select('*')
+      .eq('seller_id', profile.id)
+      .order('created_at', { ascending: false });
+    if (data) setSavedAccounts(data);
+  };
+
+  const handleAddAccount = async () => {
+    if (!profile?.id || !newAccountMethod || !newAccountName.trim() || !newAccountNumber.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // If setting as primary, unset other primary accounts for same method
+      if (newAccountPrimary) {
+        await supabase
+          .from('seller_payment_accounts')
+          .update({ is_primary: false })
+          .eq('seller_id', profile.id)
+          .eq('payment_method_code', newAccountMethod);
+      }
+
+      const { error } = await supabase
+        .from('seller_payment_accounts')
+        .insert({
+          seller_id: profile.id,
+          payment_method_code: newAccountMethod,
+          account_name: newAccountName.trim(),
+          account_number: newAccountNumber.trim(),
+          bank_name: newBankName.trim() || null,
+          is_primary: newAccountPrimary
+        });
+
+      if (error) throw error;
+
+      toast.success('Payment account added successfully');
+      setShowAddAccountModal(false);
+      resetAddAccountForm();
+      fetchSavedAccounts();
+    } catch (error: any) {
+      if (error.message?.includes('duplicate')) {
+        toast.error('This account already exists');
+      } else {
+        toast.error(error.message || 'Failed to add account');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteAccount = async (accountId: string) => {
+    if (!confirm('Are you sure you want to delete this account?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('seller_payment_accounts')
+        .delete()
+        .eq('id', accountId);
+
+      if (error) throw error;
+      toast.success('Account deleted');
+      fetchSavedAccounts();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete account');
+    }
+  };
+
+  const handleSetPrimary = async (accountId: string, methodCode: string) => {
+    try {
+      // Unset all primary for this method
+      await supabase
+        .from('seller_payment_accounts')
+        .update({ is_primary: false })
+        .eq('seller_id', profile?.id)
+        .eq('payment_method_code', methodCode);
+
+      // Set this one as primary
+      const { error } = await supabase
+        .from('seller_payment_accounts')
+        .update({ is_primary: true })
+        .eq('id', accountId);
+
+      if (error) throw error;
+      toast.success('Primary account updated');
+      fetchSavedAccounts();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update primary');
+    }
+  };
+
+  const resetAddAccountForm = () => {
+    setNewAccountMethod('');
+    setNewAccountName('');
+    setNewAccountNumber('');
+    setNewBankName('');
+    setNewAccountPrimary(false);
   };
 
   const handleWithdraw = async () => {
-    if (!profile || !withdrawAmount || !selectedMethod || !accountDetails.trim()) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-    
-    const amount = withdrawAmount;
-    if (isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid amount');
+    if (!profile || !withdrawAmount || !selectedAccountForWithdraw) {
+      toast.error('Please select an account');
       return;
     }
 
-    if (amount < 5) {
-      toast.error('Minimum withdrawal amount is $5');
+    const selectedAccount = savedAccounts.find(a => a.id === selectedAccountForWithdraw);
+    if (!selectedAccount) {
+      toast.error('Invalid account selected');
       return;
     }
 
-    if (amount > (wallet?.balance || 0)) {
+    const selectedMethod = paymentMethods.find(m => m.code === selectedAccount.payment_method_code);
+    const minWithdrawal = selectedMethod?.min_withdrawal || 5;
+    const maxWithdrawal = selectedMethod?.max_withdrawal || 1000;
+
+    if (withdrawAmount < minWithdrawal) {
+      toast.error(`Minimum withdrawal amount is $${minWithdrawal}`);
+      return;
+    }
+
+    if (withdrawAmount > maxWithdrawal) {
+      toast.error(`Maximum withdrawal amount is $${maxWithdrawal}`);
+      return;
+    }
+
+    if (withdrawAmount > (wallet?.balance || 0)) {
       toast.error('Insufficient balance');
       return;
     }
@@ -127,21 +297,22 @@ const SellerWallet = () => {
     setSubmitting(true);
 
     try {
-      // Create withdrawal request
+      // Create withdrawal request with account reference
       const { error: withdrawalError } = await supabase
         .from('seller_withdrawals')
         .insert({
           seller_id: profile.id,
-          amount,
-          payment_method: selectedMethod,
-          account_details: accountDetails.trim(),
+          amount: withdrawAmount,
+          payment_method: selectedAccount.payment_method_code,
+          account_details: `${selectedAccount.account_name} - ${selectedAccount.account_number}${selectedAccount.bank_name ? ` (${selectedAccount.bank_name})` : ''}`,
+          payment_account_id: selectedAccount.id,
           status: 'pending'
         });
 
       if (withdrawalError) throw withdrawalError;
 
       // Deduct from available balance
-      const newBalance = (wallet?.balance || 0) - amount;
+      const newBalance = (wallet?.balance || 0) - withdrawAmount;
       const { error: walletError } = await supabase
         .from('seller_wallets')
         .update({ balance: newBalance })
@@ -152,8 +323,7 @@ const SellerWallet = () => {
       toast.success('Withdrawal request submitted successfully');
       setShowWithdrawDialog(false);
       setWithdrawAmount(10);
-      setSelectedMethod('');
-      setAccountDetails('');
+      setSelectedAccountForWithdraw(null);
       refreshWallet();
       refreshWithdrawals();
     } catch (error: any) {
@@ -176,13 +346,15 @@ const SellerWallet = () => {
     }
   };
 
-  const selectedPaymentMethod = paymentMethods.find(m => m.code === selectedMethod);
   const hasPendingWithdrawal = withdrawals.some(w => w.status === 'pending');
 
   const tabs = [
     { id: 'wallet' as WalletTab, label: 'Wallet', icon: Wallet },
+    { id: 'accounts' as WalletTab, label: 'Accounts', icon: CreditCard },
     { id: 'withdrawals' as WalletTab, label: 'Withdrawals', icon: History },
   ];
+
+  const getMethodAccounts = (methodCode: string) => savedAccounts.filter(a => a.payment_method_code === methodCode);
 
   if (loading) {
     return (
@@ -211,6 +383,11 @@ const SellerWallet = () => {
               >
                 <TabIcon size={14} className="lg:w-4 lg:h-4" />
                 {tab.label}
+                {tab.id === 'accounts' && savedAccounts.length > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-white/20' : 'bg-gray-200'}`}>
+                    {savedAccounts.length}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -236,7 +413,7 @@ const SellerWallet = () => {
               </div>
               <button
                 onClick={() => setShowWithdrawDialog(true)}
-                disabled={!wallet?.balance || wallet.balance < 5 || hasPendingWithdrawal}
+                disabled={!wallet?.balance || wallet.balance < 5 || hasPendingWithdrawal || savedAccounts.length === 0}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
               >
                 <ArrowDownCircle size={20} />
@@ -244,6 +421,24 @@ const SellerWallet = () => {
               </button>
             </div>
           </div>
+
+          {savedAccounts.length === 0 && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+              <AlertCircle className="text-amber-600 flex-shrink-0" size={20} />
+              <div>
+                <p className="text-amber-700 font-medium">Add Payment Account First</p>
+                <p className="text-amber-600/70 text-sm">You need to add at least one payment account before withdrawing.</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setActiveTab('accounts')}
+                className="ml-auto border-amber-300 text-amber-700 hover:bg-amber-100"
+              >
+                Add Account
+              </Button>
+            </div>
+          )}
 
           {hasPendingWithdrawal && (
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
@@ -259,31 +454,143 @@ const SellerWallet = () => {
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
             <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
               <CreditCard className="text-gray-500" size={20} />
-              Available Payment Methods
+              Available Withdrawal Methods
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {paymentMethods.map((method) => (
-                <div 
-                  key={method.id}
-                  className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
-                >
-                  {method.icon_url ? (
-                    <img 
-                      src={method.icon_url} 
-                      alt={method.name} 
-                      className="h-8 w-auto mx-auto mb-2 object-contain"
-                    />
-                  ) : (
-                    <div className="h-8 w-8 mx-auto mb-2 rounded-lg bg-gray-200 flex items-center justify-center">
-                      <CreditCard size={16} className="text-gray-500" />
-                    </div>
-                  )}
-                  <p className="text-gray-900 font-medium text-sm">{method.name}</p>
-                  <p className="text-gray-500 text-xs">{method.is_automatic ? 'Automatic' : 'Manual'}</p>
-                </div>
-              ))}
-            </div>
+            {paymentMethods.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No withdrawal methods available. Contact admin.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {paymentMethods.map((method) => (
+                  <div 
+                    key={method.id}
+                    className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
+                  >
+                    {method.icon_url ? (
+                      <img 
+                        src={method.icon_url} 
+                        alt={method.name} 
+                        className="h-8 w-auto mx-auto mb-2 object-contain"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 mx-auto mb-2 rounded-lg bg-gray-200 flex items-center justify-center">
+                        <CreditCard size={16} className="text-gray-500" />
+                      </div>
+                    )}
+                    <p className="text-gray-900 font-medium text-sm">{method.name}</p>
+                    <p className="text-gray-500 text-xs">Min: ${method.min_withdrawal}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* Accounts Tab */}
+      {activeTab === 'accounts' && (
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Payment Accounts</h3>
+              <p className="text-sm text-gray-500">Add accounts for withdrawals</p>
+            </div>
+            <Button onClick={() => setShowAddAccountModal(true)} className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+              <Plus className="w-4 h-4" />
+              Add Account
+            </Button>
+          </div>
+
+          {/* Payment Method Categories */}
+          {paymentMethods.length === 0 ? (
+            <div className="bg-white rounded-2xl p-12 border border-gray-200 shadow-md text-center">
+              <CreditCard className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p className="text-gray-500">No withdrawal methods enabled by admin</p>
+            </div>
+          ) : (
+            paymentMethods.map(method => {
+              const methodAccounts = getMethodAccounts(method.code);
+              return (
+                <div key={method.id} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
+                  <div className="flex items-center gap-3 mb-4">
+                    {method.icon_url ? (
+                      <img src={method.icon_url} className="h-10 w-10 object-contain rounded-lg bg-gray-50 p-1" alt={method.name} />
+                    ) : (
+                      <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <CreditCard size={20} className="text-gray-500" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900">{method.name}</h4>
+                      <p className="text-xs text-gray-500">
+                        {methodAccounts.length} account{methodAccounts.length !== 1 ? 's' : ''} added
+                        <span className="mx-2">•</span>
+                        Min ${method.min_withdrawal} / Max ${method.max_withdrawal}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Account Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {methodAccounts.map(account => (
+                      <div 
+                        key={account.id}
+                        className="p-4 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all relative group"
+                      >
+                        {account.is_primary && (
+                          <Badge className="absolute -top-2 -right-2 bg-violet-600 text-white text-xs">
+                            <Star className="w-3 h-3 mr-0.5" />
+                            Primary
+                          </Badge>
+                        )}
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">{account.account_name}</p>
+                            <p className="text-sm text-gray-500 font-mono">{maskAccountNumber(account.account_number)}</p>
+                            {account.bank_name && (
+                              <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                                <Building2 size={12} />
+                                {account.bank_name}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
+                          {!account.is_primary && (
+                            <button
+                              onClick={() => handleSetPrimary(account.id, account.payment_method_code)}
+                              className="text-xs text-violet-600 hover:text-violet-700 font-medium"
+                            >
+                              Set Primary
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteAccount(account.id)}
+                            className="text-xs text-red-500 hover:text-red-600 font-medium ml-auto flex items-center gap-1"
+                          >
+                            <Trash2 size={12} />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Add Account Card */}
+                    <button 
+                      onClick={() => {
+                        setNewAccountMethod(method.code);
+                        setShowAddAccountModal(true);
+                      }}
+                      className="p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-all flex flex-col items-center justify-center gap-2 min-h-[120px]"
+                    >
+                      <Plus className="w-6 h-6 text-gray-400" />
+                      <span className="text-sm text-gray-500">Add Account</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       )}
 
@@ -340,156 +647,203 @@ const SellerWallet = () => {
         </div>
       )}
 
-      {/* Withdraw Modal - Matching BillingSection TopUp Modal Design */}
-      {showWithdrawDialog && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg border border-gray-200 animate-scale-in max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl">
-                <Wallet className="text-white" size={24} />
+      {/* Withdraw Modal */}
+      <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg">
+                <Wallet className="text-white" size={20} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 tracking-tight">Withdraw Funds</h3>
-            </div>
+              Withdraw Funds
+            </DialogTitle>
+          </DialogHeader>
 
+          <div className="space-y-6">
             {/* Quick Amount Buttons */}
-            <div className="mb-6">
-              <p className="text-gray-500 text-sm mb-3 font-medium">Select amount (USD)</p>
+            <div>
+              <Label className="text-gray-500 text-sm mb-3 block">Select amount (USD)</Label>
               <div className="grid grid-cols-5 gap-2">
                 {quickAmounts.map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setWithdrawAmount(amount)}
-                    className={`py-3 rounded-xl font-semibold transition-all flex flex-col items-center ${
+                    className={`py-3 rounded-xl font-semibold transition-all ${
                       withdrawAmount === amount
                         ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    <span>${amount}</span>
-                    {selectedPaymentMethod && selectedPaymentMethod.currency_code && selectedPaymentMethod.currency_code !== 'USD' && (
-                      <span className={`text-xs ${withdrawAmount === amount ? 'text-white/70' : 'text-gray-500'}`}>
-                        {formatLocalAmount(amount, selectedPaymentMethod)}
-                      </span>
-                    )}
+                    ${amount}
                   </button>
                 ))}
               </div>
-              <div className="mt-3">
-                <input
-                  type="number"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(Math.max(1, parseInt(e.target.value) || 0))}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-                  min="5"
-                />
-              </div>
+              <Input
+                type="number"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(Math.max(1, parseInt(e.target.value) || 0))}
+                className="mt-3 text-center text-xl font-bold"
+                min="5"
+              />
             </div>
 
-            {/* Payment Method Selection */}
-            <div className="mb-6">
-              <p className="text-gray-500 text-sm mb-3 font-medium">Select payment method</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {paymentMethods.map((method) => (
-                  <button
-                    key={method.id}
-                    onClick={() => setSelectedMethod(method.code)}
-                    className={`p-4 rounded-xl border-2 transition-all ${
-                      selectedMethod === method.code
-                        ? 'border-violet-500 bg-violet-50'
-                        : 'border-gray-200 bg-gray-50 hover:border-gray-300'
-                    }`}
-                  >
-                    {method.icon_url ? (
-                      <img 
-                        src={method.icon_url} 
-                        alt={method.name} 
-                        className="h-8 w-auto mx-auto mb-2 object-contain"
-                      />
-                    ) : (
-                      <div className="h-8 w-8 mx-auto mb-2 rounded-lg bg-gray-200 flex items-center justify-center">
-                        <CreditCard size={16} className="text-gray-500" />
+            {/* Select Saved Account */}
+            <div>
+              <Label className="text-gray-500 text-sm mb-3 block">Select Account</Label>
+              <div className="grid gap-3 max-h-60 overflow-y-auto">
+                {savedAccounts.map(account => {
+                  const method = paymentMethods.find(m => m.code === account.payment_method_code);
+                  return (
+                    <button
+                      key={account.id}
+                      onClick={() => setSelectedAccountForWithdraw(account.id)}
+                      className={`p-4 rounded-xl border text-left transition-all ${
+                        selectedAccountForWithdraw === account.id 
+                          ? 'border-violet-500 bg-violet-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {method?.icon_url ? (
+                            <img src={method.icon_url} className="w-8 h-8 object-contain" alt={method.name} />
+                          ) : (
+                            <CreditCard size={20} className="text-gray-400" />
+                          )}
+                          <div>
+                            <p className="font-medium text-gray-900">{account.account_name}</p>
+                            <p className="text-sm text-gray-500">
+                              {method?.name || account.payment_method_code} - {maskAccountNumber(account.account_number)}
+                            </p>
+                          </div>
+                        </div>
+                        {account.is_primary && <Badge variant="secondary">Primary</Badge>}
                       </div>
-                    )}
-                    <p className="text-gray-900 font-medium text-sm text-center">{method.name}</p>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
 
-            {/* Selected Method Info Section - Matching Buyer Modal Exactly */}
-            {selectedPaymentMethod && selectedPaymentMethod.is_automatic && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                <div className="flex items-center gap-3">
-                  {selectedPaymentMethod.icon_url ? (
-                    <img 
-                      src={selectedPaymentMethod.icon_url} 
-                      alt={selectedPaymentMethod.name} 
-                      className="h-8 w-auto object-contain"
-                    />
-                  ) : (
-                    <CreditCard size={24} className="text-gray-600" />
-                  )}
-                  <div>
-                    <p className="font-medium text-gray-900">Secure Payment via {selectedPaymentMethod.name}</p>
-                    <p className="text-xs text-gray-500">Instant processing</p>
-                  </div>
+              {savedAccounts.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <CreditCard className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>No accounts added yet</p>
+                  <Button 
+                    variant="link" 
+                    onClick={() => { setShowWithdrawDialog(false); setActiveTab('accounts'); }}
+                  >
+                    Add an account first
+                  </Button>
                 </div>
-              </div>
-            )}
-
-            {selectedPaymentMethod && !selectedPaymentMethod.is_automatic && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                <div className="mb-3">
-                  <p className="text-gray-800 font-semibold mb-1">{selectedPaymentMethod.name} Withdrawal</p>
-                  <p className="text-gray-600 text-sm">
-                    You'll receive{' '}
-                    <span className="font-bold text-violet-600 text-lg">
-                      {formatLocalAmount(withdrawAmount, selectedPaymentMethod)}
-                    </span>
-                    {selectedPaymentMethod.currency_code !== 'USD' && (
-                      <span className="text-gray-400 text-xs ml-1">(≈ ${withdrawAmount} USD)</span>
-                    )}
-                  </p>
-                </div>
-                <input
-                  type="text"
-                  value={accountDetails}
-                  onChange={(e) => setAccountDetails(e.target.value)}
-                  placeholder={`Enter your ${selectedPaymentMethod.name} account number/wallet address`}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-                />
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowWithdrawDialog(false);
-                  setWithdrawAmount(10);
-                  setSelectedMethod('');
-                  setAccountDetails('');
-                }}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl transition-all font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleWithdraw}
-                disabled={submitting || !withdrawAmount || withdrawAmount < 5 || withdrawAmount > (wallet?.balance || 0) || !selectedMethod || (!selectedPaymentMethod?.is_automatic && !accountDetails.trim())}
-                className="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
-              >
-                {submitting && <Loader2 className="animate-spin" size={18} />}
-                {selectedPaymentMethod?.is_automatic 
-                  ? `Withdraw $${withdrawAmount}` 
-                  : `Submit ${formatLocalAmount(withdrawAmount, selectedPaymentMethod)} Withdrawal`
-                }
-              </button>
+              )}
             </div>
           </div>
-        </div>
-      )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowWithdrawDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleWithdraw} 
+              disabled={!selectedAccountForWithdraw || submitting || withdrawAmount < 5 || withdrawAmount > (wallet?.balance || 0)}
+              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+            >
+              {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
+              Withdraw ${withdrawAmount}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Account Modal */}
+      <Dialog open={showAddAccountModal} onOpenChange={setShowAddAccountModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-violet-600" />
+              Add Payment Account
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Select Payment Method */}
+            <div>
+              <Label>Payment Method</Label>
+              <Select value={newAccountMethod} onValueChange={setNewAccountMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethods.map(method => (
+                    <SelectItem key={method.id} value={method.code}>
+                      <div className="flex items-center gap-2">
+                        {method.icon_url && <img src={method.icon_url} className="w-5 h-5 object-contain" alt={method.name} />}
+                        {method.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Account Name */}
+            <div>
+              <Label>Account Holder Name</Label>
+              <Input 
+                value={newAccountName}
+                onChange={(e) => setNewAccountName(e.target.value)}
+                placeholder="Enter name as shown on account"
+              />
+            </div>
+
+            {/* Account Number */}
+            <div>
+              <Label>Account Number / Phone / Wallet Address</Label>
+              <Input 
+                value={newAccountNumber}
+                onChange={(e) => setNewAccountNumber(e.target.value)}
+                placeholder="Enter account number or phone"
+              />
+            </div>
+
+            {/* Bank Name (for bank transfers) */}
+            {(newAccountMethod === 'bank' || newAccountMethod === 'wire') && (
+              <div>
+                <Label>Bank Name</Label>
+                <Input 
+                  value={newBankName}
+                  onChange={(e) => setNewBankName(e.target.value)}
+                  placeholder="Enter bank name"
+                />
+              </div>
+            )}
+
+            {/* Set as Primary */}
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id="primary"
+                checked={newAccountPrimary}
+                onCheckedChange={(checked) => setNewAccountPrimary(checked as boolean)}
+              />
+              <Label htmlFor="primary" className="font-normal cursor-pointer">Set as primary account for this method</Label>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => { setShowAddAccountModal(false); resetAddAccountForm(); }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddAccount} 
+              disabled={!newAccountMethod || !newAccountName.trim() || !newAccountNumber.trim() || submitting}
+              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+            >
+              {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
+              Add Account
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

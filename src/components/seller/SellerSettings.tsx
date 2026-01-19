@@ -300,24 +300,38 @@ const SellerSettings = () => {
   const handleDeleteStore = async () => {
     if (!profile?.id) return;
     
+    // Check wallet balance - must be under $5 to delete
+    const { data: walletData } = await supabase
+      .from('seller_wallets')
+      .select('balance, pending_balance')
+      .eq('seller_id', profile.id)
+      .single();
+    
+    const totalBalance = (walletData?.balance || 0) + (walletData?.pending_balance || 0);
+    
+    if (totalBalance >= 5) {
+      toast.error(`You have $${totalBalance.toFixed(2)} in your wallet. Please withdraw funds before deleting. Balance must be under $5.`);
+      return;
+    }
+    
     setDeleting(true);
     try {
-      // Delete all products first
-      await supabase.from('seller_products').delete().eq('seller_id', profile.id);
-      
-      // Delete the seller profile
-      const { error } = await supabase.from('seller_profiles').delete().eq('id', profile.id);
+      // Soft delete - mark as deleted instead of permanent delete
+      const { error } = await supabase
+        .from('seller_profiles')
+        .update({ 
+          is_deleted: true, 
+          deleted_at: new Date().toISOString(),
+          is_active: false,
+          deletion_reason: 'User requested deletion'
+        })
+        .eq('id', profile.id);
       
       if (error) throw error;
       
-      // Remove seller role
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from('user_roles').delete().eq('user_id', user.id).eq('role', 'seller');
-      }
-      
+      await supabase.auth.signOut();
       toast.success('Store deleted successfully');
-      navigate('/dashboard');
+      window.location.href = '/';
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete store');
     } finally {

@@ -535,9 +535,12 @@ export type Database = {
           instructions: string | null
           is_automatic: boolean | null
           is_enabled: boolean | null
+          max_withdrawal: number | null
+          min_withdrawal: number | null
           name: string
           qr_image_url: string | null
           updated_at: string | null
+          withdrawal_enabled: boolean | null
         }
         Insert: {
           account_name?: string | null
@@ -554,9 +557,12 @@ export type Database = {
           instructions?: string | null
           is_automatic?: boolean | null
           is_enabled?: boolean | null
+          max_withdrawal?: number | null
+          min_withdrawal?: number | null
           name: string
           qr_image_url?: string | null
           updated_at?: string | null
+          withdrawal_enabled?: boolean | null
         }
         Update: {
           account_name?: string | null
@@ -573,9 +579,12 @@ export type Database = {
           instructions?: string | null
           is_automatic?: boolean | null
           is_enabled?: boolean | null
+          max_withdrawal?: number | null
+          min_withdrawal?: number | null
           name?: string
           qr_image_url?: string | null
           updated_at?: string | null
+          withdrawal_enabled?: boolean | null
         }
         Relationships: []
       }
@@ -1143,6 +1152,56 @@ export type Database = {
           },
         ]
       }
+      seller_payment_accounts: {
+        Row: {
+          account_details: Json | null
+          account_name: string
+          account_number: string
+          bank_name: string | null
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          is_verified: boolean | null
+          payment_method_code: string
+          seller_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          account_details?: Json | null
+          account_name: string
+          account_number: string
+          bank_name?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          payment_method_code: string
+          seller_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          account_details?: Json | null
+          account_name?: string
+          account_number?: string
+          bank_name?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          payment_method_code?: string
+          seller_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_payment_accounts_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seller_products: {
         Row: {
           category_id: string | null
@@ -1228,8 +1287,11 @@ export type Database = {
           banner_type: string | null
           commission_rate: number | null
           created_at: string | null
+          deleted_at: string | null
+          deletion_reason: string | null
           id: string
           is_active: boolean | null
+          is_deleted: boolean | null
           is_verified: boolean | null
           show_description: boolean | null
           show_order_count: boolean | null
@@ -1255,8 +1317,11 @@ export type Database = {
           banner_type?: string | null
           commission_rate?: number | null
           created_at?: string | null
+          deleted_at?: string | null
+          deletion_reason?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           is_verified?: boolean | null
           show_description?: boolean | null
           show_order_count?: boolean | null
@@ -1282,8 +1347,11 @@ export type Database = {
           banner_type?: string | null
           commission_rate?: number | null
           created_at?: string | null
+          deleted_at?: string | null
+          deletion_reason?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           is_verified?: boolean | null
           show_description?: boolean | null
           show_order_count?: boolean | null
@@ -1457,6 +1525,7 @@ export type Database = {
           amount: number
           created_at: string | null
           id: string
+          payment_account_id: string | null
           payment_method: string
           processed_at: string | null
           seller_id: string
@@ -1468,6 +1537,7 @@ export type Database = {
           amount: number
           created_at?: string | null
           id?: string
+          payment_account_id?: string | null
           payment_method: string
           processed_at?: string | null
           seller_id: string
@@ -1479,12 +1549,20 @@ export type Database = {
           amount?: number
           created_at?: string | null
           id?: string
+          payment_account_id?: string | null
           payment_method?: string
           processed_at?: string | null
           seller_id?: string
           status?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "seller_withdrawals_payment_account_id_fkey"
+            columns: ["payment_account_id"]
+            isOneToOne: false
+            referencedRelation: "seller_payment_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "seller_withdrawals_seller_id_fkey"
             columns: ["seller_id"]
