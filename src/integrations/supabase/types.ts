@@ -1154,9 +1154,14 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_verified: boolean | null
+          social_links: Json | null
+          store_banner_url: string | null
           store_description: string | null
           store_logo_url: string | null
           store_name: string
+          store_slug: string | null
+          store_tagline: string | null
+          store_video_url: string | null
           total_orders: number | null
           total_sales: number | null
           updated_at: string | null
@@ -1169,9 +1174,14 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
+          social_links?: Json | null
+          store_banner_url?: string | null
           store_description?: string | null
           store_logo_url?: string | null
           store_name: string
+          store_slug?: string | null
+          store_tagline?: string | null
+          store_video_url?: string | null
           total_orders?: number | null
           total_sales?: number | null
           updated_at?: string | null
@@ -1184,9 +1194,14 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
+          social_links?: Json | null
+          store_banner_url?: string | null
           store_description?: string | null
           store_logo_url?: string | null
           store_name?: string
+          store_slug?: string | null
+          store_tagline?: string | null
+          store_video_url?: string | null
           total_orders?: number | null
           total_sales?: number | null
           updated_at?: string | null
