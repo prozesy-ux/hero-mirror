@@ -2190,11 +2190,9 @@ const AIAccountsSection = () => {
                 </div>
 
                 {/* Description */}
-                {quickViewProduct.data.description && (
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-4">
-                    {quickViewProduct.data.description}
-                  </p>
-                )}
+                <p className="text-sm text-gray-600 mb-4 line-clamp-4">
+                  {quickViewProduct.data.description || 'No description available'}
+                </p>
 
                 {/* Action Buttons - 1 Row */}
                 <div className="flex items-center gap-2">
