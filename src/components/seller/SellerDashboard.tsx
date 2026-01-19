@@ -242,12 +242,12 @@ const SellerDashboard = () => {
       {/* Quick Stats Row */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Completed', value: completedOrders, icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-          { label: 'Pending', value: pendingOrders, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
-          { label: 'Delivered', value: deliveredOrders, icon: TrendingUp, color: 'text-blue-500', bg: 'bg-blue-50' },
-          { label: 'Total', value: orders.length, icon: ShoppingBag, color: 'text-violet-500', bg: 'bg-violet-50' }
+          { label: 'Completed', value: completedOrders, icon: CheckCircle, color: 'text-emerald-500' },
+          { label: 'Pending', value: pendingOrders, icon: Clock, color: 'text-amber-500' },
+          { label: 'Delivered', value: deliveredOrders, icon: TrendingUp, color: 'text-blue-500' },
+          { label: 'Total', value: orders.length, icon: ShoppingBag, color: 'text-violet-500' }
         ].map((stat, index) => (
-          <div key={index} className={`${stat.bg} rounded-xl p-3 text-center border border-transparent`}>
+          <div key={index} className="bg-white rounded-xl p-3 text-center border border-slate-100 shadow-sm">
             <stat.icon className={`w-4 h-4 ${stat.color} mx-auto mb-1`} />
             <p className="seller-stat-number text-lg text-slate-900">{stat.value}</p>
             <p className="text-[10px] text-slate-600 font-medium">{stat.label}</p>
@@ -259,7 +259,7 @@ const SellerDashboard = () => {
       <div className="flex flex-wrap gap-3">
         <Button
           onClick={() => navigate('/seller/products')}
-          className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl shadow-sm shadow-emerald-200 font-semibold"
+          className="bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 rounded-xl font-semibold"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Product

@@ -27,7 +27,8 @@ import {
   ShoppingCart,
   MessageSquare,
   BarChart3,
-  Share2
+  Share2,
+  Lightbulb
 } from 'lucide-react';
 import theLogo from '@/assets/the-logo.png';
 import ShareStoreModal from './ShareStoreModal';
@@ -306,6 +307,12 @@ const SellerTopBar = () => {
               <Link to="/seller/settings" className="flex items-center gap-2 cursor-pointer">
                 <Settings className="h-4 w-4" />
                 <span>Settings</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/seller/feature-requests" className="flex items-center gap-2 cursor-pointer">
+                <Lightbulb className="h-4 w-4" />
+                <span>Feature Requests</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
