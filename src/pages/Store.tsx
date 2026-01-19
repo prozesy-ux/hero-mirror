@@ -21,7 +21,8 @@ import {
   Check,
   Wallet,
   Share2,
-  Store as StoreIcon
+  Store as StoreIcon,
+  AlertTriangle
 } from 'lucide-react';
 import { Instagram, Twitter, Youtube, Music } from 'lucide-react';
 import StoreSidebar from '@/components/store/StoreSidebar';
@@ -91,6 +92,13 @@ const StoreContent = () => {
   const [pendingProduct, setPendingProduct] = useState<SellerProduct | null>(null);
   const [pendingAction, setPendingAction] = useState<'buy' | 'chat'>('buy');
   const [showShareModal, setShowShareModal] = useState(false);
+  const [insufficientFundsModal, setInsufficientFundsModal] = useState<{
+    show: boolean;
+    required: number;
+    current: number;
+    shortfall: number;
+    productName?: string;
+  }>({ show: false, required: 0, current: 0, shortfall: 0 });
 
   // Handle return from auth with pending purchase or chat
   useEffect(() => {
@@ -200,9 +208,17 @@ const StoreContent = () => {
       return;
     }
 
-    if (!wallet || wallet.balance < product.price) {
-      toast.error('Insufficient balance. Please top up your wallet.');
-      navigate('/dashboard/marketplace');
+    const currentBalance = wallet?.balance || 0;
+
+    if (currentBalance < product.price) {
+      // Show insufficient balance modal instead of redirecting
+      setInsufficientFundsModal({
+        show: true,
+        required: product.price,
+        current: currentBalance,
+        shortfall: product.price - currentBalance,
+        productName: product.name
+      });
       return;
     }
 
@@ -727,6 +743,66 @@ const StoreContent = () => {
         storeSlug={seller.store_slug}
         storeName={seller.store_name}
       />
+
+      {/* Insufficient Funds Modal */}
+      {insufficientFundsModal.show && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+            <button
+              onClick={() => setInsufficientFundsModal({ show: false, required: 0, current: 0, shortfall: 0 })}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-amber-600" />
+              </div>
+              
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Insufficient Balance</h3>
+              
+              <p className="text-gray-600 mb-4">
+                To purchase <span className="font-semibold text-gray-900">{insufficientFundsModal.productName}</span>
+              </p>
+              
+              <div className="bg-gray-50 rounded-xl p-4 mb-6 space-y-3 text-left">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Required Amount:</span>
+                  <span className="text-gray-900 font-bold">${insufficientFundsModal.required.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Your Balance:</span>
+                  <span className="text-amber-600 font-bold">${insufficientFundsModal.current.toFixed(2)}</span>
+                </div>
+                <div className="border-t border-gray-200 pt-3 flex justify-between text-sm">
+                  <span className="text-gray-500">Amount Needed:</span>
+                  <span className="text-emerald-600 font-bold">${insufficientFundsModal.shortfall.toFixed(2)}</span>
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setInsufficientFundsModal({ show: false, required: 0, current: 0, shortfall: 0 })}
+                  className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setInsufficientFundsModal({ show: false, required: 0, current: 0, shortfall: 0 });
+                    navigate('/dashboard/billing');
+                  }}
+                  className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                >
+                  <Wallet size={18} />
+                  Top Up Wallet
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Chat Widget */}
       <FloatingChatWidget />
