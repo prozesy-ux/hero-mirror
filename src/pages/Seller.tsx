@@ -521,17 +521,19 @@ const SellerMainContent = () => {
       pt-16 pb-20 lg:pb-0
       lg:pt-16 ${isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-60'}
     `}>
-      <Routes>
-        <Route path="/" element={<SellerDashboard />} />
-        <Route path="/products" element={<SellerProducts />} />
-        <Route path="/orders" element={<SellerOrders />} />
-        <Route path="/analytics" element={<SellerAnalytics />} />
-        <Route path="/chat" element={<SellerChat />} />
-        <Route path="/wallet" element={<SellerWallet />} />
-        <Route path="/feature-requests" element={<SellerFeatureRequests />} />
-        <Route path="/support" element={<SellerSupport />} />
-        <Route path="/settings" element={<SellerSettings />} />
-      </Routes>
+      <div className="p-3 sm:p-4 lg:p-6">
+        <Routes>
+          <Route path="/" element={<SellerDashboard />} />
+          <Route path="/products" element={<SellerProducts />} />
+          <Route path="/orders" element={<SellerOrders />} />
+          <Route path="/analytics" element={<SellerAnalytics />} />
+          <Route path="/chat" element={<SellerChat />} />
+          <Route path="/wallet" element={<SellerWallet />} />
+          <Route path="/feature-requests" element={<SellerFeatureRequests />} />
+          <Route path="/support" element={<SellerSupport />} />
+          <Route path="/settings" element={<SellerSettings />} />
+        </Routes>
+      </div>
     </main>
   );
 };
