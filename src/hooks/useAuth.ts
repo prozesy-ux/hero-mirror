@@ -135,7 +135,8 @@ export const useAuth = () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`
+        // Return to the current Sign In URL so post-auth redirect logic can run
+        redirectTo: window.location.href
       }
     });
     return { data, error };
