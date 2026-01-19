@@ -402,7 +402,7 @@ const ProductFullViewPage = () => {
               )}
 
               {/* Description */}
-              <p className="text-gray-600 leading-relaxed mb-6">
+              <p className="text-gray-600 leading-relaxed mb-6 whitespace-pre-line" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 {product.description || 'Premium account with full access to all features. Get instant access to the most powerful tools available.'}
               </p>
 

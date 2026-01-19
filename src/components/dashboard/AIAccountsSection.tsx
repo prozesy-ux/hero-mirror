@@ -2190,7 +2190,7 @@ const AIAccountsSection = () => {
                 </div>
 
                 {/* Description */}
-                <p className="text-sm text-gray-600 mb-4 line-clamp-4">
+                <p className="text-sm text-gray-600 mb-4 line-clamp-4 whitespace-pre-line" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                   {quickViewProduct.data.description || 'No description available'}
                 </p>
 
