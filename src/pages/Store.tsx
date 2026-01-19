@@ -217,6 +217,8 @@ const StoreContent = () => {
       persistStoreReturn(product.id, 'buy');
       setPendingProduct(product);
       setPendingAction('buy');
+      // Close product modal first to avoid nested dialog issues
+      setSelectedProduct(null);
       setShowLoginModal(true);
       return;
     }
@@ -286,6 +288,8 @@ const StoreContent = () => {
       persistStoreReturn(product.id, 'chat');
       setPendingProduct(product);
       setPendingAction('chat');
+      // Close product modal first to avoid nested dialog issues
+      setSelectedProduct(null);
       setShowLoginModal(true);
       return;
     }
