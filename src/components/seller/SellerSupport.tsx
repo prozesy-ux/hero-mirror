@@ -427,7 +427,7 @@ const SellerSupport = () => {
   }
 
   return (
-    <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
+    <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
       {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
@@ -454,7 +454,7 @@ const SellerSupport = () => {
       />
 
       {/* Chat Card */}
-      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden h-[calc(100vh-200px)] flex flex-col">
+      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden h-[calc(100vh-140px)] flex flex-col">
         {/* Chat Header */}
         <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3 bg-gradient-to-r from-violet-50 to-purple-50">
           <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
