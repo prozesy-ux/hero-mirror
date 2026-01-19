@@ -17,6 +17,11 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_ANON_KEY") ?? ""
   );
 
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
   try {
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
@@ -27,7 +32,17 @@ serve(async (req) => {
     const { amount } = await req.json();
     if (!amount || amount < 1) throw new Error("Invalid amount");
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    // Fetch Stripe API secret from payment_methods table (with env fallback)
+    const { data: paymentMethod } = await supabaseAdmin
+      .from('payment_methods')
+      .select('api_secret')
+      .eq('code', 'stripe')
+      .single();
+
+    const stripeSecretKey = paymentMethod?.api_secret || Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeSecretKey) throw new Error("Stripe credentials not configured");
+
+    const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2025-08-27.basil",
     });
 

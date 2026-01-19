@@ -44,26 +44,26 @@ serve(async (req) => {
       throw new Error("Invalid amount. Minimum is $1");
     }
 
-    // Get Razorpay credentials
-    const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-    const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
-    
-    if (!keyId || !keySecret) {
-      throw new Error("Razorpay credentials not configured");
-    }
-
-    // Create admin client for fetching exchange rate
+    // Create admin client for fetching payment method config
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Fetch exchange rate from payment_methods table
+    // Fetch API keys and exchange rate from payment_methods table
     const { data: paymentMethod } = await supabaseAdmin
       .from('payment_methods')
-      .select('exchange_rate')
+      .select('api_key, api_secret, exchange_rate')
       .eq('code', 'razorpay')
       .single();
+
+    // Use DB keys first, fallback to environment variables
+    const keyId = paymentMethod?.api_key || Deno.env.get("RAZORPAY_KEY_ID");
+    const keySecret = paymentMethod?.api_secret || Deno.env.get("RAZORPAY_KEY_SECRET");
+    
+    if (!keyId || !keySecret) {
+      throw new Error("Razorpay credentials not configured");
+    }
 
     const exchangeRate = paymentMethod?.exchange_rate || 91;
 
