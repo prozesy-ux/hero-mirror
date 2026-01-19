@@ -78,7 +78,8 @@ serve(async (req) => {
       'seller_feature_requests',
       'auto_approval_settings',
       'screen_share_sessions',
-      'chat_attachments'
+      'chat_attachments',
+      'seller_payment_accounts'
     ];
 
     if (!allowedTables.includes(table)) {

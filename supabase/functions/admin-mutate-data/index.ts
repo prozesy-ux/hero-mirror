@@ -80,7 +80,8 @@ serve(async (req) => {
       'chat_join_requests',
       'chat_attachments',
       'seller_chat_attachments',
-      'screen_share_sessions'
+      'screen_share_sessions',
+      'seller_payment_accounts'
     ];
 
     if (!allowedTables.includes(table)) {
