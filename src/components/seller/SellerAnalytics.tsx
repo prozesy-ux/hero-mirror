@@ -25,7 +25,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Sparkles,
-  Calendar,
   Package
 } from 'lucide-react';
 import { format, subDays, startOfDay, eachDayOfInterval, isWithinInterval } from 'date-fns';
@@ -152,11 +151,7 @@ const SellerAnalytics = () => {
   return (
     <div className="p-6 lg:p-8 bg-slate-50 min-h-screen space-y-6 seller-dashboard">
       {/* Period Selector */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-slate-400" />
-          <span className="text-sm text-slate-600">Analytics Overview</span>
-        </div>
+      <div className="flex justify-end">
         <div className="flex items-center gap-1 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
           {(['7d', '30d', 'all'] as Period[]).map((p) => (
             <Button

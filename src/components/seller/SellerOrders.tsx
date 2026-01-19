@@ -303,23 +303,17 @@ const SellerOrders = () => {
 
   return (
     <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
-      {/* Header with stats */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Orders</h1>
-          <p className="text-sm text-slate-500">Manage and deliver your customer orders</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCSV}
-            className="border-slate-200 text-slate-600 hover:bg-slate-50"
-          >
-            <Download className="h-4 w-4 mr-1.5" />
-            Export
-          </Button>
-        </div>
+      {/* Export Button */}
+      <div className="flex justify-end mb-6">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportCSV}
+          className="border-slate-200 text-slate-600 hover:bg-slate-50"
+        >
+          <Download className="h-4 w-4 mr-1.5" />
+          Export
+        </Button>
       </div>
 
       {/* Bulk Actions Bar */}
