@@ -1776,6 +1776,17 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_seller_product: {
+        Args: {
+          p_amount: number
+          p_buyer_id: string
+          p_product_id: string
+          p_product_name: string
+          p_seller_earning: number
+          p_seller_id: string
+        }
+        Returns: Json
+      }
       update_seller_trust_score: {
         Args: { p_seller_id: string }
         Returns: undefined
