@@ -486,87 +486,140 @@ const SellerWallet = () => {
         </div>
       )}
 
-      {/* Accounts Tab */}
+      {/* Accounts Tab - Colorful Gradient Design */}
       {activeTab === 'accounts' && (
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Payment Accounts</h3>
-              <p className="text-sm text-gray-500">Add accounts for withdrawals</p>
+          {/* Header - Gradient style matching admin */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-md">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
+                  <CreditCard size={22} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Payment Accounts</h3>
+                  <p className="text-sm text-gray-500">Add accounts for withdrawals</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setShowAddAccountModal(true)} 
+                className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-violet-500/25"
+              >
+                <Plus className="w-4 h-4" />
+                Add Account
+              </Button>
             </div>
-            <Button onClick={() => setShowAddAccountModal(true)} className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
-              <Plus className="w-4 h-4" />
-              Add Account
-            </Button>
           </div>
 
           {/* Payment Method Categories */}
           {paymentMethods.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 border border-gray-200 shadow-md text-center">
-              <CreditCard className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-gray-500">No withdrawal methods enabled by admin</p>
+            /* Empty State - Gradient design */
+            <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-12 border border-violet-200 text-center">
+              <div className="p-4 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 w-fit mx-auto mb-4">
+                <CreditCard className="w-12 h-12 text-violet-500" />
+              </div>
+              <p className="text-gray-700 font-medium">No withdrawal methods enabled</p>
+              <p className="text-gray-500 text-sm mt-1">Contact support for assistance</p>
             </div>
           ) : (
             paymentMethods.map(method => {
               const methodAccounts = getMethodAccounts(method.code);
               return (
-                <div key={method.id} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
+                /* Payment Method Category Card - Gradient design */
+                <div 
+                  key={method.id} 
+                  className={`rounded-2xl p-6 border transition-all duration-300 ${
+                    methodAccounts.length > 0
+                      ? 'bg-gradient-to-br from-violet-50 to-purple-50 border-violet-200 shadow-lg shadow-violet-100'
+                      : 'bg-white border-gray-200 shadow-md hover:shadow-lg'
+                  }`}
+                >
+                  {/* Method Header */}
                   <div className="flex items-center gap-3 mb-4">
                     {method.icon_url ? (
-                      <img src={method.icon_url} className="h-10 w-10 object-contain rounded-lg bg-gray-50 p-1" alt={method.name} />
+                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center p-2 ${
+                        methodAccounts.length > 0 
+                          ? 'bg-gradient-to-br from-violet-100 to-purple-100' 
+                          : 'bg-gray-100'
+                      }`}>
+                        <img src={method.icon_url} className="h-full w-full object-contain" alt={method.name} />
+                      </div>
                     ) : (
-                      <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                        <CreditCard size={20} className="text-gray-500" />
+                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
+                        methodAccounts.length > 0 
+                          ? 'bg-gradient-to-br from-violet-100 to-purple-100' 
+                          : 'bg-gray-100'
+                      }`}>
+                        <CreditCard size={22} className={methodAccounts.length > 0 ? 'text-violet-600' : 'text-gray-500'} />
                       </div>
                     )}
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">{method.name}</h4>
+                      <h4 className="font-bold text-gray-900">{method.name}</h4>
                       <p className="text-xs text-gray-500">
-                        {methodAccounts.length} account{methodAccounts.length !== 1 ? 's' : ''} added
+                        <span className={methodAccounts.length > 0 ? 'text-violet-600 font-medium' : ''}>
+                          {methodAccounts.length} account{methodAccounts.length !== 1 ? 's' : ''}
+                        </span>
                         <span className="mx-2">•</span>
                         Min ${method.min_withdrawal} / Max ${method.max_withdrawal}
                       </p>
                     </div>
+                    
+                    {/* Account count badge - Gradient */}
+                    {methodAccounts.length > 0 && (
+                      <span className="px-3 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-semibold rounded-full shadow-md">
+                        {methodAccounts.length} Added
+                      </span>
+                    )}
                   </div>
 
-                  {/* Account Cards */}
+                  {/* Account Cards Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {methodAccounts.map(account => (
+                      /* Account Card - Gradient hover states */
                       <div 
                         key={account.id}
-                        className="p-4 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all relative group"
+                        className={`p-4 rounded-xl border-2 transition-all duration-300 relative group ${
+                          account.is_primary
+                            ? 'bg-gradient-to-br from-violet-50 to-purple-50 border-violet-300 shadow-md shadow-violet-100'
+                            : 'bg-white border-gray-200 hover:border-violet-200 hover:bg-violet-50/30 hover:shadow-md'
+                        }`}
                       >
+                        {/* Primary Badge - Gradient */}
                         {account.is_primary && (
-                          <Badge className="absolute -top-2 -right-2 bg-violet-600 text-white text-xs">
-                            <Star className="w-3 h-3 mr-0.5" />
-                            Primary
-                          </Badge>
+                          <div className="absolute -top-2.5 -right-2.5 z-10">
+                            <span className="px-2.5 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-semibold rounded-full flex items-center gap-1 shadow-lg">
+                              <Star className="w-3 h-3" />
+                              Primary
+                            </span>
+                          </div>
                         )}
+                        
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{account.account_name}</p>
-                            <p className="text-sm text-gray-500 font-mono">{maskAccountNumber(account.account_number)}</p>
+                            <p className="font-semibold text-gray-900 truncate">{account.account_name}</p>
+                            <p className="text-sm text-violet-600 font-mono">{maskAccountNumber(account.account_number)}</p>
                             {account.bank_name && (
-                              <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
-                                <Building2 size={12} />
+                              <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                                <Building2 size={12} className="text-violet-400" />
                                 {account.bank_name}
                               </p>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
+                        
+                        {/* Actions - Gradient style buttons */}
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-violet-100">
                           {!account.is_primary && (
                             <button
                               onClick={() => handleSetPrimary(account.id, account.payment_method_code)}
-                              className="text-xs text-violet-600 hover:text-violet-700 font-medium"
+                              className="text-xs text-violet-600 hover:text-white hover:bg-gradient-to-r hover:from-violet-500 hover:to-purple-600 px-3 py-1.5 rounded-full font-medium transition-all border border-violet-200 hover:border-transparent"
                             >
                               Set Primary
                             </button>
                           )}
                           <button
                             onClick={() => handleDeleteAccount(account.id)}
-                            className="text-xs text-red-500 hover:text-red-600 font-medium ml-auto flex items-center gap-1"
+                            className="text-xs text-red-500 hover:text-white hover:bg-red-500 px-3 py-1.5 rounded-full font-medium ml-auto flex items-center gap-1 transition-all border border-red-200 hover:border-transparent"
                           >
                             <Trash2 size={12} />
                             Delete
@@ -575,16 +628,18 @@ const SellerWallet = () => {
                       </div>
                     ))}
 
-                    {/* Add Account Card */}
+                    {/* Add Account Card - Gradient dashed border */}
                     <button 
                       onClick={() => {
                         setNewAccountMethod(method.code);
                         setShowAddAccountModal(true);
                       }}
-                      className="p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-all flex flex-col items-center justify-center gap-2 min-h-[120px]"
+                      className="p-4 rounded-xl border-2 border-dashed border-violet-200 hover:border-violet-400 bg-gradient-to-br from-violet-50/50 to-purple-50/50 hover:from-violet-100 hover:to-purple-100 transition-all duration-300 flex flex-col items-center justify-center gap-2 min-h-[140px] group"
                     >
-                      <Plus className="w-6 h-6 text-gray-400" />
-                      <span className="text-sm text-gray-500">Add Account</span>
+                      <div className="p-3 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 group-hover:from-violet-200 group-hover:to-purple-200 transition-all">
+                        <Plus className="w-6 h-6 text-violet-500 group-hover:text-violet-600" />
+                      </div>
+                      <span className="text-sm text-violet-600 font-medium">Add Account</span>
                     </button>
                   </div>
                 </div>
@@ -755,22 +810,24 @@ const SellerWallet = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Account Modal */}
+      {/* Add Account Modal - Gradient design */}
       <Dialog open={showAddAccountModal} onOpenChange={setShowAddAccountModal}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-violet-600" />
-              Add Payment Account
+            <DialogTitle className="flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg shadow-violet-500/25">
+                <CreditCard className="text-white" size={20} />
+              </div>
+              <span className="text-xl font-bold">Add Payment Account</span>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 mt-4">
             {/* Select Payment Method */}
             <div>
-              <Label>Payment Method</Label>
+              <Label className="text-gray-700 font-medium">Payment Method *</Label>
               <Select value={newAccountMethod} onValueChange={setNewAccountMethod}>
-                <SelectTrigger>
+                <SelectTrigger className="mt-1.5 focus:ring-violet-500 focus:border-violet-500">
                   <SelectValue placeholder="Select method" />
                 </SelectTrigger>
                 <SelectContent>
@@ -788,55 +845,64 @@ const SellerWallet = () => {
 
             {/* Account Name */}
             <div>
-              <Label>Account Holder Name</Label>
+              <Label className="text-gray-700 font-medium">Account Holder Name *</Label>
               <Input 
                 value={newAccountName}
                 onChange={(e) => setNewAccountName(e.target.value)}
                 placeholder="Enter name as shown on account"
+                className="mt-1.5 focus:ring-violet-500 focus:border-violet-500"
               />
             </div>
 
             {/* Account Number */}
             <div>
-              <Label>Account Number / Phone / Wallet Address</Label>
+              <Label className="text-gray-700 font-medium">Account Number / Phone / Wallet Address *</Label>
               <Input 
                 value={newAccountNumber}
                 onChange={(e) => setNewAccountNumber(e.target.value)}
                 placeholder="Enter account number or phone"
+                className="mt-1.5 focus:ring-violet-500 focus:border-violet-500"
               />
             </div>
 
             {/* Bank Name (for bank transfers) */}
             {(newAccountMethod === 'bank' || newAccountMethod === 'wire') && (
               <div>
-                <Label>Bank Name</Label>
+                <Label className="text-gray-700 font-medium">Bank Name</Label>
                 <Input 
                   value={newBankName}
                   onChange={(e) => setNewBankName(e.target.value)}
                   placeholder="Enter bank name"
+                  className="mt-1.5 focus:ring-violet-500 focus:border-violet-500"
                 />
               </div>
             )}
 
-            {/* Set as Primary */}
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id="primary"
-                checked={newAccountPrimary}
-                onCheckedChange={(checked) => setNewAccountPrimary(checked as boolean)}
-              />
-              <Label htmlFor="primary" className="font-normal cursor-pointer">Set as primary account for this method</Label>
+            {/* Primary checkbox with gradient */}
+            <div className="p-4 bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl border border-violet-200">
+              <div className="flex items-center gap-3">
+                <Checkbox 
+                  id="primary"
+                  checked={newAccountPrimary}
+                  onCheckedChange={(checked) => setNewAccountPrimary(checked as boolean)}
+                  className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600"
+                />
+                <div>
+                  <Label htmlFor="primary" className="text-gray-700 font-medium cursor-pointer">Set as primary account</Label>
+                  <p className="text-xs text-gray-500">This will be your default withdrawal account</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => { setShowAddAccountModal(false); resetAddAccountForm(); }}>
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={() => { setShowAddAccountModal(false); resetAddAccountForm(); }} className="border-gray-300">
               Cancel
             </Button>
             <Button 
               onClick={handleAddAccount} 
               disabled={!newAccountMethod || !newAccountName.trim() || !newAccountNumber.trim() || submitting}
-              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-violet-500/25"
             >
               {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
               Add Account
