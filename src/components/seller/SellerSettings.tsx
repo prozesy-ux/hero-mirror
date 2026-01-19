@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Select,
   SelectContent,
@@ -24,6 +26,17 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   Store, 
   Save, 
@@ -45,11 +58,15 @@ import {
   Globe,
   Star,
   Package,
-  Users
+  Users,
+  Trash2,
+  Video,
+  AlertTriangle
 } from 'lucide-react';
 import VideoUploader from './VideoUploader';
 
 type BannerHeight = 'small' | 'medium' | 'large';
+type BannerType = 'image' | 'video';
 
 interface DisplaySettings {
   banner_height: BannerHeight;
@@ -61,11 +78,17 @@ interface DisplaySettings {
 }
 
 const SellerSettings = () => {
-  const { profile, loading, refreshProfile } = useSellerContext();
+  const navigate = useNavigate();
+  const { profile, orders, loading, refreshProfile } = useSellerContext();
   const { isCollapsed } = useSellerSidebarContext();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [bannerUploading, setBannerUploading] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [bannerType, setBannerType] = useState<BannerType>('image');
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
   const [formData, setFormData] = useState({
     store_name: '',
     store_description: '',
@@ -89,6 +112,10 @@ const SellerSettings = () => {
     show_description: true,
     show_social_links: true
   });
+
+  // Calculate stats
+  const totalSalesCount = orders.filter(o => o.status === 'completed').length;
+  const totalOrdersCount = orders.length;
 
   useEffect(() => {
     if (profile) {
@@ -117,16 +144,15 @@ const SellerSettings = () => {
         show_description: p.show_description !== false,
         show_social_links: p.show_social_links !== false
       });
+      setBannerType(p.banner_type || 'image');
     }
   }, [profile]);
 
-  const handleSave = async () => {
-    if (!profile?.id) return;
+  // Auto-save with debounce
+  const autoSave = useCallback(async () => {
+    if (!profile?.id || !hasChanges) return;
     
-    if (!formData.store_name.trim()) {
-      toast.error('Store name is required');
-      return;
-    }
+    if (!formData.store_name.trim()) return;
     
     setSaving(true);
     const socialLinksObj: Record<string, string> = {};
@@ -146,6 +172,7 @@ const SellerSettings = () => {
         store_tagline: formData.store_tagline.trim() || null,
         social_links: Object.keys(socialLinksObj).length > 0 ? socialLinksObj : null,
         banner_height: displaySettings.banner_height,
+        banner_type: bannerType,
         show_reviews: displaySettings.show_reviews,
         show_product_count: displaySettings.show_product_count,
         show_order_count: displaySettings.show_order_count,
@@ -157,10 +184,45 @@ const SellerSettings = () => {
     if (error) {
       toast.error('Failed to save settings');
     } else {
-      toast.success('Settings saved successfully');
+      toast.success('Changes saved automatically');
+      setHasChanges(false);
       refreshProfile();
     }
     setSaving(false);
+  }, [profile?.id, formData, socialLinks, displaySettings, bannerType, hasChanges, refreshProfile]);
+
+  // Trigger auto-save after 2 seconds of no changes
+  useEffect(() => {
+    if (hasChanges) {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+      autoSaveTimerRef.current = setTimeout(() => {
+        autoSave();
+      }, 2000);
+    }
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [hasChanges, autoSave]);
+
+  // Mark changes
+  const updateFormData = (updates: Partial<typeof formData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+    setHasChanges(true);
+  };
+
+  const updateSocialLinks = (updates: Partial<typeof socialLinks>) => {
+    setSocialLinks(prev => ({ ...prev, ...updates }));
+    setHasChanges(true);
+  };
+
+  const updateDisplaySettings = (updates: Partial<DisplaySettings>) => {
+    setDisplaySettings(prev => ({ ...prev, ...updates }));
+    setHasChanges(true);
   };
 
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,9 +257,8 @@ const SellerSettings = () => {
       .from('store-media')
       .getPublicUrl(fileName);
 
-    setFormData(prev => ({ ...prev, store_banner_url: publicUrl }));
+    updateFormData({ store_banner_url: publicUrl });
     setBannerUploading(false);
-    toast.success('Banner uploaded! Click Save to apply.');
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -232,9 +293,36 @@ const SellerSettings = () => {
       .from('avatars')
       .getPublicUrl(fileName);
 
-    setFormData(prev => ({ ...prev, store_logo_url: publicUrl }));
+    updateFormData({ store_logo_url: publicUrl });
     setUploading(false);
-    toast.success('Logo uploaded! Click Save to apply.');
+  };
+
+  const handleDeleteStore = async () => {
+    if (!profile?.id) return;
+    
+    setDeleting(true);
+    try {
+      // Delete all products first
+      await supabase.from('seller_products').delete().eq('seller_id', profile.id);
+      
+      // Delete the seller profile
+      const { error } = await supabase.from('seller_profiles').delete().eq('id', profile.id);
+      
+      if (error) throw error;
+      
+      // Remove seller role
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('user_roles').delete().eq('user_id', user.id).eq('role', 'seller');
+      }
+      
+      toast.success('Store deleted successfully');
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete store');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -290,7 +378,7 @@ const SellerSettings = () => {
                 />
               </label>
             </div>
-            <div className="flex-1 pt-4 sm:pt-0 relative z-10">
+            <div className="flex-1 pt-4 sm:pt-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="seller-heading text-xl text-slate-900">{formData.store_name || 'Your Store'}</h2>
                 {profile?.is_verified ? (
@@ -303,30 +391,23 @@ const SellerSettings = () => {
                     Pending
                   </Badge>
                 )}
+                {hasChanges && (
+                  <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 animate-pulse">
+                    Unsaved
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-slate-500 mt-1">
                 Seller since {(profile as any)?.created_at ? new Date((profile as any).created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
               </p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sticky Save Button */}
-      <div className={`fixed bottom-20 lg:bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 z-50 shadow-lg transition-all duration-300 ${isCollapsed ? 'lg:left-[72px]' : 'lg:left-60'}`}>
-        <div className="max-w-3xl mx-auto flex justify-end">
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-xl shadow-sm px-6"
-          >
-            {saving ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
+            {saving && (
+              <div className="flex items-center gap-2 text-sm text-emerald-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Saving...</span>
+              </div>
             )}
-            Save Changes
-          </Button>
+          </div>
         </div>
       </div>
 
@@ -353,7 +434,7 @@ const SellerSettings = () => {
               <Input
                 id="store_name"
                 value={formData.store_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, store_name: e.target.value }))}
+                onChange={(e) => updateFormData({ store_name: e.target.value })}
                 placeholder="Enter your store name"
                 className="h-11 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20"
               />
@@ -366,7 +447,7 @@ const SellerSettings = () => {
               <Input
                 id="store_tagline"
                 value={formData.store_tagline}
-                onChange={(e) => setFormData(prev => ({ ...prev, store_tagline: e.target.value }))}
+                onChange={(e) => updateFormData({ store_tagline: e.target.value })}
                 placeholder="e.g., Premium AI accounts at unbeatable prices"
                 className="h-11 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20"
                 maxLength={100}
@@ -380,7 +461,7 @@ const SellerSettings = () => {
               <Textarea
                 id="store_description"
                 value={formData.store_description}
-                onChange={(e) => setFormData(prev => ({ ...prev, store_description: e.target.value }))}
+                onChange={(e) => updateFormData({ store_description: e.target.value })}
                 placeholder="Tell customers about your store..."
                 rows={4}
                 className="rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 resize-none"
@@ -405,7 +486,7 @@ const SellerSettings = () => {
               <div className="flex gap-3">
                 <Input
                   value={formData.store_logo_url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, store_logo_url: e.target.value }))}
+                  onChange={(e) => updateFormData({ store_logo_url: e.target.value })}
                   placeholder="https://example.com/logo.png"
                   className="h-11 rounded-xl border-slate-200"
                 />
@@ -420,49 +501,72 @@ const SellerSettings = () => {
               </div>
             </div>
 
-            {/* Banner Upload */}
-            <div className="space-y-2">
+            {/* Banner Type Selector */}
+            <div className="space-y-3">
               <Label className="text-sm font-medium text-slate-700">Store Banner</Label>
-              {formData.store_banner_url ? (
-                <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                  <img src={formData.store_banner_url} alt="Store banner" className={`w-full object-cover ${bannerHeightPx[displaySettings.banner_height]}`} />
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => setFormData(prev => ({ ...prev, store_banner_url: '' }))}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ) : (
-                <label className="block">
-                  <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-emerald-300 hover:bg-emerald-50/50 transition-colors cursor-pointer">
-                    {bannerUploading ? (
-                      <Loader2 className="w-8 h-8 text-emerald-600 mx-auto animate-spin" />
-                    ) : (
-                      <>
-                        <Image className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                        <p className="text-sm text-slate-600">Click to upload banner image</p>
-                        <p className="text-xs text-slate-400">Recommended: 1920x400px</p>
-                      </>
-                    )}
+              <Tabs value={bannerType} onValueChange={(v) => { setBannerType(v as BannerType); setHasChanges(true); }} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="image" className="flex items-center gap-2">
+                    <Image className="w-4 h-4" />
+                    Image
+                  </TabsTrigger>
+                  <TabsTrigger value="video" className="flex items-center gap-2">
+                    <Video className="w-4 h-4" />
+                    Video
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="image" className="mt-4 space-y-3">
+                  {/* Image URL Input */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-slate-500">Image URL or Upload</Label>
+                    <div className="flex gap-3">
+                      <Input
+                        value={formData.store_banner_url}
+                        onChange={(e) => updateFormData({ store_banner_url: e.target.value })}
+                        placeholder="https://example.com/banner.jpg"
+                        className="h-10 rounded-xl border-slate-200"
+                      />
+                      <label className="flex-shrink-0">
+                        <Button type="button" variant="outline" className="h-10 rounded-xl border-slate-200" disabled={bannerUploading} asChild>
+                          <span>
+                            {bannerUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                          </span>
+                        </Button>
+                        <input type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" disabled={bannerUploading} />
+                      </label>
+                    </div>
                   </div>
-                  <input type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" disabled={bannerUploading} />
-                </label>
-              )}
+                  
+                  {/* Banner Preview */}
+                  {formData.store_banner_url && (
+                    <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                      <img src={formData.store_banner_url} alt="Store banner" className={`w-full object-cover ${bannerHeightPx[displaySettings.banner_height]}`} />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => updateFormData({ store_banner_url: '' })}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="video" className="mt-4">
+                  <VideoUploader
+                    currentVideoUrl={formData.store_video_url}
+                    onVideoChange={(url) => updateFormData({ store_video_url: url })}
+                    sellerId={profile?.id || ''}
+                  />
+                </TabsContent>
+              </Tabs>
             </div>
-
-            {/* Profile Video */}
-            <VideoUploader
-              currentVideoUrl={formData.store_video_url}
-              onVideoChange={(url) => setFormData(prev => ({ ...prev, store_video_url: url }))}
-              sellerId={profile?.id || ''}
-            />
           </AccordionContent>
         </AccordionItem>
 
-        {/* Display Settings - NEW */}
+        {/* Display Settings */}
         <AccordionItem value="display-settings" className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 overflow-hidden">
           <AccordionTrigger className="py-5 hover:no-underline">
             <div className="flex items-center gap-3">
@@ -481,7 +585,7 @@ const SellerSettings = () => {
               <Label className="text-sm font-medium text-slate-700">Banner Height</Label>
               <Select
                 value={displaySettings.banner_height}
-                onValueChange={(value: BannerHeight) => setDisplaySettings(prev => ({ ...prev, banner_height: value }))}
+                onValueChange={(value: BannerHeight) => updateDisplaySettings({ banner_height: value })}
               >
                 <SelectTrigger className="h-11 rounded-xl border-slate-200">
                   <SelectValue />
@@ -492,94 +596,33 @@ const SellerSettings = () => {
                   <SelectItem value="large">Large</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-slate-400">Choose the height of your store banner</p>
             </div>
 
             {/* Toggle Switches */}
             <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between py-3 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                    <Star className="w-4 h-4 text-amber-600" />
+              {[
+                { key: 'show_reviews', label: 'Show Reviews', desc: 'Display rating stars on your store', icon: Star, color: 'amber' },
+                { key: 'show_product_count', label: 'Show Product Count', desc: 'Display total products on your store', icon: Package, color: 'blue' },
+                { key: 'show_order_count', label: 'Show Order Count', desc: 'Display total orders on your store', icon: Users, color: 'emerald' },
+                { key: 'show_description', label: 'Show Description', desc: 'Display store description on your page', icon: displaySettings.show_description ? Eye : EyeOff, color: 'slate' },
+                { key: 'show_social_links', label: 'Show Social Links', desc: 'Display your social media on store', icon: Link2, color: 'pink' },
+              ].map(({ key, label, desc, icon: Icon, color }) => (
+                <div key={key} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg bg-${color}-100 flex items-center justify-center`}>
+                      <Icon className={`w-4 h-4 text-${color}-600`} />
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-900">{label}</p>
+                      <p className="text-xs text-slate-500">{desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Show Reviews</p>
-                    <p className="text-xs text-slate-500">Display rating stars on your store</p>
-                  </div>
+                  <Switch
+                    checked={displaySettings[key as keyof DisplaySettings] as boolean}
+                    onCheckedChange={(checked) => updateDisplaySettings({ [key]: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={displaySettings.show_reviews}
-                  onCheckedChange={(checked) => setDisplaySettings(prev => ({ ...prev, show_reviews: checked }))}
-                />
-              </div>
-
-              <div className="flex items-center justify-between py-3 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Package className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Show Product Count</p>
-                    <p className="text-xs text-slate-500">Display total products on your store</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={displaySettings.show_product_count}
-                  onCheckedChange={(checked) => setDisplaySettings(prev => ({ ...prev, show_product_count: checked }))}
-                />
-              </div>
-
-              <div className="flex items-center justify-between py-3 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                    <Users className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Show Order Count</p>
-                    <p className="text-xs text-slate-500">Display total orders on your store</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={displaySettings.show_order_count}
-                  onCheckedChange={(checked) => setDisplaySettings(prev => ({ ...prev, show_order_count: checked }))}
-                />
-              </div>
-
-              <div className="flex items-center justify-between py-3 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                    {displaySettings.show_description ? (
-                      <Eye className="w-4 h-4 text-slate-600" />
-                    ) : (
-                      <EyeOff className="w-4 h-4 text-slate-400" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Show Description</p>
-                    <p className="text-xs text-slate-500">Display store description on your page</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={displaySettings.show_description}
-                  onCheckedChange={(checked) => setDisplaySettings(prev => ({ ...prev, show_description: checked }))}
-                />
-              </div>
-
-              <div className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-pink-100 flex items-center justify-center">
-                    <Link2 className="w-4 h-4 text-pink-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Show Social Links</p>
-                    <p className="text-xs text-slate-500">Display your social media on store</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={displaySettings.show_social_links}
-                  onCheckedChange={(checked) => setDisplaySettings(prev => ({ ...prev, show_social_links: checked }))}
-                />
-              </div>
+              ))}
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -598,43 +641,17 @@ const SellerSettings = () => {
             </div>
           </AccordionTrigger>
           <AccordionContent className="pb-6 space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Instagram</Label>
-              <Input
-                value={socialLinks.instagram}
-                onChange={(e) => setSocialLinks(prev => ({ ...prev, instagram: e.target.value }))}
-                placeholder="username (without @)"
-                className="h-11 rounded-xl border-slate-200"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Twitter / X</Label>
-              <Input
-                value={socialLinks.twitter}
-                onChange={(e) => setSocialLinks(prev => ({ ...prev, twitter: e.target.value }))}
-                placeholder="username (without @)"
-                className="h-11 rounded-xl border-slate-200"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">TikTok</Label>
-              <Input
-                value={socialLinks.tiktok}
-                onChange={(e) => setSocialLinks(prev => ({ ...prev, tiktok: e.target.value }))}
-                placeholder="username (without @)"
-                className="h-11 rounded-xl border-slate-200"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">YouTube</Label>
-              <Input
-                value={socialLinks.youtube}
-                onChange={(e) => setSocialLinks(prev => ({ ...prev, youtube: e.target.value }))}
-                placeholder="channel name or full URL"
-                className="h-11 rounded-xl border-slate-200"
-              />
-            </div>
-            <p className="text-xs text-slate-400">These links will appear on your public store page</p>
+            {['instagram', 'twitter', 'tiktok', 'youtube'].map((platform) => (
+              <div key={platform} className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 capitalize">{platform === 'twitter' ? 'Twitter / X' : platform}</Label>
+                <Input
+                  value={socialLinks[platform as keyof typeof socialLinks]}
+                  onChange={(e) => updateSocialLinks({ [platform]: e.target.value })}
+                  placeholder={platform === 'youtube' ? 'channel name or full URL' : 'username (without @)'}
+                  className="h-11 rounded-xl border-slate-200"
+                />
+              </div>
+            ))}
           </AccordionContent>
         </AccordionItem>
 
@@ -683,7 +700,7 @@ const SellerSettings = () => {
                   <span className="text-sm font-medium text-slate-600">Commission Rate</span>
                 </div>
                 <p className="text-lg font-semibold text-slate-900">
-                  {profile?.commission_rate || 15}%
+                  {profile?.commission_rate || 0}%
                 </p>
               </div>
 
@@ -700,10 +717,20 @@ const SellerSettings = () => {
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center gap-3 mb-2">
                   <ShoppingBag className="w-5 h-5 text-amber-500" />
+                  <span className="text-sm font-medium text-slate-600">Total Sales Count</span>
+                </div>
+                <p className="text-lg font-semibold text-slate-900">
+                  {totalSalesCount}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center gap-3 mb-2">
+                  <Package className="w-5 h-5 text-blue-500" />
                   <span className="text-sm font-medium text-slate-600">Total Orders</span>
                 </div>
                 <p className="text-lg font-semibold text-slate-900">
-                  {profile?.total_orders || 0}
+                  {totalOrdersCount}
                 </p>
               </div>
 
@@ -722,10 +749,39 @@ const SellerSettings = () => {
               </div>
             </div>
 
-            <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-100">
-              <p className="text-sm text-blue-700">
-                <span className="font-medium">Note:</span> Commission rate and verification status are managed by the platform administrators.
-              </p>
+            {/* Delete Store */}
+            <div className="mt-6 p-4 rounded-xl bg-red-50 border border-red-100">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-red-900">Danger Zone</h4>
+                  <p className="text-sm text-red-700 mt-1">
+                    Deleting your store will permanently remove all your products, orders, and data. This action cannot be undone.
+                  </p>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" className="mt-3" disabled={deleting}>
+                        {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                        Delete Store
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete your store "{formData.store_name}" and remove all associated products, orders, and data.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteStore} className="bg-red-600 hover:bg-red-700">
+                          Delete Store
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>

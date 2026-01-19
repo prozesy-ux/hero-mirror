@@ -573,6 +573,69 @@ export type Database = {
         }
         Relationships: []
       }
+      product_reviews: {
+        Row: {
+          buyer_id: string
+          content: string | null
+          created_at: string | null
+          helpful_count: number | null
+          id: string
+          is_verified_purchase: boolean | null
+          order_id: string | null
+          product_id: string
+          rating: number
+          seller_responded_at: string | null
+          seller_response: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          buyer_id: string
+          content?: string | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_verified_purchase?: boolean | null
+          order_id?: string | null
+          product_id: string
+          rating: number
+          seller_responded_at?: string | null
+          seller_response?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          content?: string | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_verified_purchase?: boolean | null
+          order_id?: string | null
+          product_id?: string
+          rating?: number
+          seller_responded_at?: string | null
+          seller_response?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "seller_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1077,6 +1140,7 @@ export type Database = {
       seller_products: {
         Row: {
           category_id: string | null
+          category_ids: string[] | null
           chat_allowed: boolean | null
           created_at: string | null
           description: string | null
@@ -1095,6 +1159,7 @@ export type Database = {
         }
         Insert: {
           category_id?: string | null
+          category_ids?: string[] | null
           chat_allowed?: boolean | null
           created_at?: string | null
           description?: string | null
@@ -1113,6 +1178,7 @@ export type Database = {
         }
         Update: {
           category_id?: string | null
+          category_ids?: string[] | null
           chat_allowed?: boolean | null
           created_at?: string | null
           description?: string | null
@@ -1150,6 +1216,7 @@ export type Database = {
         Row: {
           auto_approve_products: boolean | null
           banner_height: string | null
+          banner_type: string | null
           commission_rate: number | null
           created_at: string | null
           id: string
@@ -1176,6 +1243,7 @@ export type Database = {
         Insert: {
           auto_approve_products?: boolean | null
           banner_height?: string | null
+          banner_type?: string | null
           commission_rate?: number | null
           created_at?: string | null
           id?: string
@@ -1202,6 +1270,7 @@ export type Database = {
         Update: {
           auto_approve_products?: boolean | null
           banner_height?: string | null
+          banner_type?: string | null
           commission_rate?: number | null
           created_at?: string | null
           id?: string
