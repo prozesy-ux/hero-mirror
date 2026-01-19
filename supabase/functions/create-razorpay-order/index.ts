@@ -52,11 +52,26 @@ serve(async (req) => {
       throw new Error("Razorpay credentials not configured");
     }
 
+    // Create admin client for fetching exchange rate
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Fetch exchange rate from payment_methods table
+    const { data: paymentMethod } = await supabaseAdmin
+      .from('payment_methods')
+      .select('exchange_rate')
+      .eq('code', 'razorpay')
+      .single();
+
+    const exchangeRate = paymentMethod?.exchange_rate || 91;
+
     // Create Razorpay order using REST API
     const auth = btoa(`${keyId}:${keySecret}`);
     
-    // Convert USD to INR (approximate rate - you can adjust or make dynamic)
-    const inrAmount = Math.round(amount * 84 * 100); // Amount in paise
+    // Convert USD to INR using dynamic exchange rate
+    const inrAmount = Math.round(amount * exchangeRate * 100); // Amount in paise
     
     const orderResponse = await fetch("https://api.razorpay.com/v1/orders", {
       method: "POST",
