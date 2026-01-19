@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { 
   CreditCard, Plus, Edit, Trash2, Save, X, Loader2, 
-  Check, QrCode, Copy, Eye, EyeOff, Key
+  Check, QrCode, Copy, Eye, EyeOff, Key, ArrowDownCircle,
+  DollarSign, Wallet
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ImageUploader from './ImageUploader';
@@ -25,6 +26,9 @@ interface PaymentMethod {
   exchange_rate: number | null;
   api_key: string | null;
   api_secret: string | null;
+  withdrawal_enabled: boolean;
+  min_withdrawal: number;
+  max_withdrawal: number;
   created_at: string;
 }
 
@@ -41,6 +45,7 @@ const PaymentSettingsManagement = () => {
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [updatingWithdrawal, setUpdatingWithdrawal] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -56,7 +61,10 @@ const PaymentSettingsManagement = () => {
     currency_code: 'USD',
     exchange_rate: 1,
     api_key: '',
-    api_secret: ''
+    api_secret: '',
+    withdrawal_enabled: false,
+    min_withdrawal: 5,
+    max_withdrawal: 1000
   });
   const [showApiSecret, setShowApiSecret] = useState(false);
 
@@ -78,7 +86,10 @@ const PaymentSettingsManagement = () => {
       currency_code: 'USD',
       exchange_rate: 1,
       api_key: '',
-      api_secret: ''
+      api_secret: '',
+      withdrawal_enabled: false,
+      min_withdrawal: 5,
+      max_withdrawal: 1000
     });
     setShowApiSecret(false);
     setShowModal(true);
@@ -100,7 +111,10 @@ const PaymentSettingsManagement = () => {
       currency_code: method.currency_code || 'USD',
       exchange_rate: method.exchange_rate || 1,
       api_key: method.api_key || '',
-      api_secret: method.api_secret || ''
+      api_secret: method.api_secret || '',
+      withdrawal_enabled: method.withdrawal_enabled || false,
+      min_withdrawal: method.min_withdrawal || 5,
+      max_withdrawal: method.max_withdrawal || 1000
     });
     setShowApiSecret(false);
     setShowModal(true);
@@ -126,7 +140,10 @@ const PaymentSettingsManagement = () => {
       is_enabled: formData.is_enabled,
       display_order: formData.display_order,
       currency_code: formData.currency_code || 'USD',
-      exchange_rate: formData.exchange_rate || 1
+      exchange_rate: formData.exchange_rate || 1,
+      withdrawal_enabled: formData.withdrawal_enabled,
+      min_withdrawal: formData.min_withdrawal || 5,
+      max_withdrawal: formData.max_withdrawal || 1000
     };
 
     // Only include API keys if automatic payment (to avoid overwriting with empty)
@@ -238,6 +255,66 @@ const PaymentSettingsManagement = () => {
     }
   };
 
+  const toggleWithdrawalEnabled = async (method: PaymentMethod) => {
+    const token = localStorage.getItem('admin_session_token');
+    if (!token) {
+      toast.error('Admin session expired');
+      return;
+    }
+
+    setUpdatingWithdrawal(method.id);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-mutate-data', {
+        body: {
+          token,
+          table: 'payment_methods',
+          operation: 'update',
+          data: { withdrawal_enabled: !method.withdrawal_enabled },
+          id: method.id
+        }
+      });
+
+      if (error || data?.error) {
+        toast.error(data?.error || 'Failed to update');
+      } else {
+        toast.success(method.withdrawal_enabled ? 'Withdrawal disabled' : 'Withdrawal enabled');
+        refreshTable('payment_methods');
+      }
+    } catch (err) {
+      toast.error('Failed to update');
+      console.error(err);
+    } finally {
+      setUpdatingWithdrawal(null);
+    }
+  };
+
+  const updateWithdrawalLimit = async (methodId: string, field: 'min_withdrawal' | 'max_withdrawal', value: number) => {
+    const token = localStorage.getItem('admin_session_token');
+    if (!token) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-mutate-data', {
+        body: {
+          token,
+          table: 'payment_methods',
+          operation: 'update',
+          data: { [field]: value },
+          id: methodId
+        }
+      });
+
+      if (error || data?.error) {
+        toast.error('Failed to update limit');
+      } else {
+        refreshTable('payment_methods');
+      }
+    } catch (err) {
+      toast.error('Failed to update limit');
+      console.error(err);
+    }
+  };
+
   return (
     <div>
       {/* Header */}
@@ -252,7 +329,7 @@ const PaymentSettingsManagement = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-gray-400 text-sm">Total Methods</div>
           <div className="text-2xl font-bold text-white">
@@ -269,6 +346,12 @@ const PaymentSettingsManagement = () => {
           <div className="text-gray-400 text-sm">Automatic</div>
           <div className="text-2xl font-bold text-blue-400">
             {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : methods.filter(m => m.is_automatic).length}
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-violet-500/20 to-purple-600/20 border border-violet-500/30 rounded-xl p-4">
+          <div className="text-violet-300 text-sm">Withdrawal Enabled</div>
+          <div className="text-2xl font-bold text-violet-400">
+            {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : methods.filter(m => m.withdrawal_enabled).length}
           </div>
         </div>
       </div>
@@ -440,6 +523,154 @@ const PaymentSettingsManagement = () => {
         {!isLoading && methods.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             No payment methods configured
+          </div>
+        )}
+      </div>
+
+      {/* Withdrawal Settings Section */}
+      <div className="mt-10">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
+            <ArrowDownCircle size={22} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-white">Seller Withdrawal Settings</h3>
+            <p className="text-gray-400 text-sm">Configure which payment methods sellers can use for withdrawals</p>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <Skeleton className="w-12 h-12 rounded-xl bg-white/10" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-24 bg-white/10" />
+                    <Skeleton className="h-3 w-16 bg-white/10" />
+                  </div>
+                </div>
+                <Skeleton className="h-20 w-full rounded-lg bg-white/10" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {methods.map((method) => (
+              <div 
+                key={method.id} 
+                className={`relative rounded-2xl p-5 border transition-all duration-300 ${
+                  method.withdrawal_enabled 
+                    ? 'bg-gradient-to-br from-violet-500/10 to-purple-600/10 border-violet-500/30 shadow-lg shadow-violet-500/10' 
+                    : 'bg-white/5 border-white/10 hover:border-white/20'
+                }`}
+              >
+                {/* Enabled Badge */}
+                {method.withdrawal_enabled && (
+                  <div className="absolute -top-2 -right-2 z-10">
+                    <span className="px-2.5 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-semibold rounded-full flex items-center gap-1 shadow-lg">
+                      <Check size={12} />
+                      Enabled
+                    </span>
+                  </div>
+                )}
+
+                {/* Method Header with Icon */}
+                <div className="flex items-center gap-3 mb-4">
+                  {method.icon_url ? (
+                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center p-2 ${
+                      method.withdrawal_enabled 
+                        ? 'bg-gradient-to-br from-violet-500/20 to-purple-600/20' 
+                        : 'bg-white/10'
+                    }`}>
+                      <img src={method.icon_url} alt={method.name} className="h-full w-full object-contain" />
+                    </div>
+                  ) : (
+                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
+                      method.withdrawal_enabled 
+                        ? 'bg-gradient-to-br from-violet-500/20 to-purple-600/20' 
+                        : 'bg-white/10'
+                    }`}>
+                      <Wallet size={22} className={method.withdrawal_enabled ? 'text-violet-400' : 'text-gray-400'} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-white truncate">{method.name}</h4>
+                    <p className="text-xs text-gray-400 uppercase">{method.code}</p>
+                  </div>
+                  
+                  {/* Enable Toggle */}
+                  <button
+                    onClick={() => toggleWithdrawalEnabled(method)}
+                    disabled={updatingWithdrawal === method.id}
+                    className={`relative w-14 h-7 rounded-full transition-all duration-300 ${
+                      method.withdrawal_enabled 
+                        ? 'bg-gradient-to-r from-violet-500 to-purple-600' 
+                        : 'bg-white/20 hover:bg-white/30'
+                    } ${updatingWithdrawal === method.id ? 'opacity-50' : ''}`}
+                  >
+                    {updatingWithdrawal === method.id ? (
+                      <Loader2 size={14} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin text-white" />
+                    ) : (
+                      <span className={`block w-5 h-5 rounded-full bg-white shadow-lg transform transition-transform duration-300 ${
+                        method.withdrawal_enabled ? 'translate-x-8' : 'translate-x-1'
+                      }`} />
+                    )}
+                  </button>
+                </div>
+
+                {/* Min/Max Settings (visible when enabled) */}
+                {method.withdrawal_enabled && (
+                  <div className="space-y-3 pt-4 border-t border-violet-500/20">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm flex items-center gap-1.5">
+                        <DollarSign size={14} className="text-violet-400" />
+                        Minimum
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-violet-400 font-medium">$</span>
+                        <input
+                          type="number"
+                          value={method.min_withdrawal || 5}
+                          onChange={(e) => updateWithdrawalLimit(method.id, 'min_withdrawal', Number(e.target.value))}
+                          className="w-20 bg-white/10 border border-violet-500/30 rounded-lg px-3 py-1.5 text-white text-right text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm flex items-center gap-1.5">
+                        <DollarSign size={14} className="text-violet-400" />
+                        Maximum
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-violet-400 font-medium">$</span>
+                        <input
+                          type="number"
+                          value={method.max_withdrawal || 1000}
+                          onChange={(e) => updateWithdrawalLimit(method.id, 'max_withdrawal', Number(e.target.value))}
+                          className="w-20 bg-white/10 border border-violet-500/30 rounded-lg px-3 py-1.5 text-white text-right text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Disabled state hint */}
+                {!method.withdrawal_enabled && (
+                  <div className="mt-4 pt-4 border-t border-white/10 text-center">
+                    <p className="text-gray-500 text-xs">Click toggle to enable withdrawals</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!isLoading && methods.length === 0 && (
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center">
+            <Wallet size={48} className="mx-auto mb-4 text-gray-600" />
+            <p className="text-gray-400">No payment methods available for withdrawal configuration</p>
+            <p className="text-gray-500 text-sm mt-1">Add payment methods first to configure withdrawals</p>
           </div>
         )}
       </div>
@@ -647,6 +878,58 @@ const PaymentSettingsManagement = () => {
                   </div>
                 </div>
               )}
+
+              {/* Withdrawal Settings Section in Modal */}
+              <div className="col-span-2 space-y-4 p-4 bg-gradient-to-br from-violet-500/5 to-purple-600/5 border border-violet-500/20 rounded-xl">
+                <div className="flex items-center gap-2 text-violet-400 text-sm font-medium">
+                  <ArrowDownCircle size={16} />
+                  Seller Withdrawal Settings
+                </div>
+                
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, withdrawal_enabled: !prev.withdrawal_enabled }))}
+                    className={`w-12 h-6 rounded-full transition-all duration-300 ${
+                      formData.withdrawal_enabled ? 'bg-gradient-to-r from-violet-500 to-purple-600' : 'bg-white/20'
+                    }`}
+                  >
+                    <span className={`block w-5 h-5 rounded-full bg-white shadow transform transition-transform duration-300 ${
+                      formData.withdrawal_enabled ? 'translate-x-6' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                  <span className="text-gray-400 text-sm">Enable for Seller Withdrawals</span>
+                </label>
+                
+                {formData.withdrawal_enabled && (
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2 flex items-center gap-1.5">
+                        <DollarSign size={14} className="text-violet-400" />
+                        Min Withdrawal
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.min_withdrawal}
+                        onChange={(e) => setFormData(prev => ({ ...prev, min_withdrawal: Number(e.target.value) }))}
+                        className="w-full bg-white/5 border border-violet-500/30 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2 flex items-center gap-1.5">
+                        <DollarSign size={14} className="text-violet-400" />
+                        Max Withdrawal
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.max_withdrawal}
+                        onChange={(e) => setFormData(prev => ({ ...prev, max_withdrawal: Number(e.target.value) }))}
+                        className="w-full bg-white/5 border border-violet-500/30 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-400 mb-2">Icon/Logo URL</label>
