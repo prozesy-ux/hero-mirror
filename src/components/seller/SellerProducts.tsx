@@ -26,7 +26,8 @@ import {
   TrendingUp,
   Link2,
   X,
-  Copy
+  Copy,
+  Images
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -35,6 +36,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import MultiImageUploader from './MultiImageUploader';
 
 interface Category {
   id: string;
@@ -49,6 +51,7 @@ interface ProductFormData {
   category_ids: string[];
   tags: string[];
   icon_url: string;
+  images: string[];
   is_available: boolean;
   chat_allowed: boolean;
   requires_email: boolean;
@@ -62,6 +65,7 @@ const initialFormData: ProductFormData = {
   category_ids: [],
   tags: [],
   icon_url: '',
+  images: [],
   is_available: true,
   chat_allowed: true,
   requires_email: false
@@ -105,6 +109,7 @@ const SellerProducts = () => {
           category_ids: (product as any).category_ids || (product.category_id ? [product.category_id] : []),
           tags: (product as any).tags || [],
           icon_url: product.icon_url || '',
+          images: (product as any).images || [],
           is_available: product.is_available,
           chat_allowed: product.chat_allowed !== false,
           requires_email: (product as any).requires_email || false
@@ -128,6 +133,9 @@ const SellerProducts = () => {
 
     setSubmitting(true);
     try {
+      // Set primary image from images array if not manually set
+      const primaryImage = formData.images.length > 0 ? formData.images[0] : formData.icon_url.trim() || null;
+      
       const productData = {
         seller_id: profile.id,
         name: formData.name.trim(),
@@ -137,7 +145,8 @@ const SellerProducts = () => {
         category_id: formData.category_ids[0] || null,
         category_ids: formData.category_ids,
         tags: formData.tags,
-        icon_url: formData.icon_url.trim() || null,
+        icon_url: primaryImage,
+        images: formData.images,
         is_available: formData.is_available,
         chat_allowed: formData.chat_allowed,
         requires_email: formData.requires_email
@@ -320,7 +329,7 @@ const SellerProducts = () => {
         </div>
         <Button 
           onClick={() => handleOpenDialog()} 
-          className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-sm shadow-emerald-200 rounded-xl"
+          className="bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 rounded-xl"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Product
@@ -615,17 +624,12 @@ const SellerProducts = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="icon_url">Image URL</Label>
-              <Input
-                id="icon_url"
-                type="url"
-                value={formData.icon_url}
-                onChange={(e) => setFormData(prev => ({ ...prev, icon_url: e.target.value }))}
-                placeholder="https://example.com/image.jpg"
-                className="border-slate-200 rounded-xl"
-              />
-            </div>
+            {/* Multi-Image Uploader */}
+            <MultiImageUploader
+              images={formData.images}
+              onChange={(images) => setFormData(prev => ({ ...prev, images }))}
+              maxImages={5}
+            />
 
             <div className="flex items-center justify-between py-2">
               <Label htmlFor="is_available" className="font-normal text-slate-600">Available for sale</Label>

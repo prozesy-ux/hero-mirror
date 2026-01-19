@@ -8,16 +8,14 @@ import {
   MessageCircle, 
   ShoppingCart, 
   ExternalLink, 
-  Star, 
   Users, 
   Package,
   CheckCircle,
-  Loader2,
-  ChevronLeft,
-  ChevronRight
+  Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import StarRating from '@/components/reviews/StarRating';
+import ImageGallery from '@/components/ui/image-gallery';
 
 interface SellerProduct {
   id: string;
@@ -25,6 +23,7 @@ interface SellerProduct {
   description: string | null;
   price: number;
   icon_url: string | null;
+  images?: string[] | null;
   tags: string[] | null;
   sold_count: number | null;
   chat_allowed: boolean | null;
@@ -101,23 +100,21 @@ const ProductDetailModal = ({
 
   const hasEnoughBalance = balance >= product.price;
   const showChat = product.chat_allowed !== false;
+  const productImages = product.images || [];
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl p-0 overflow-hidden rounded-2xl">
-        {/* Image Section */}
-        <div className="relative aspect-video bg-slate-100">
-          {product.icon_url ? (
-            <img
-              src={product.icon_url}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-50">
-              <Package className="w-20 h-20 text-slate-300" />
-            </div>
-          )}
+      <DialogContent className="max-w-2xl p-0 overflow-hidden rounded-2xl max-h-[90vh] overflow-y-auto">
+        {/* Image Gallery Section */}
+        <div className="relative">
+          <ImageGallery
+            images={productImages}
+            mainImage={product.icon_url}
+            alt={product.name}
+            showThumbnails={productImages.length > 0}
+            enableZoom={true}
+            aspectRatio="video"
+          />
           
           {/* View Full Button */}
           {onViewFull && (
@@ -125,7 +122,7 @@ const ProductDetailModal = ({
               variant="secondary"
               size="sm"
               onClick={onViewFull}
-              className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white shadow-sm rounded-lg"
+              className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white shadow-sm rounded-lg z-10"
             >
               <ExternalLink className="w-4 h-4 mr-1.5" />
               Full View

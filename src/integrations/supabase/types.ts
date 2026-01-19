@@ -1146,6 +1146,7 @@ export type Database = {
           description: string | null
           icon_url: string | null
           id: string
+          images: string[] | null
           is_approved: boolean | null
           is_available: boolean | null
           name: string
@@ -1165,6 +1166,7 @@ export type Database = {
           description?: string | null
           icon_url?: string | null
           id?: string
+          images?: string[] | null
           is_approved?: boolean | null
           is_available?: boolean | null
           name: string
@@ -1184,6 +1186,7 @@ export type Database = {
           description?: string | null
           icon_url?: string | null
           id?: string
+          images?: string[] | null
           is_approved?: boolean | null
           is_available?: boolean | null
           name?: string
