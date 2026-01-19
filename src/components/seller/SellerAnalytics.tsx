@@ -120,37 +120,37 @@ const SellerAnalytics = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 seller-dashboard">
+      <div className="p-6 lg:p-8 bg-slate-50 min-h-screen space-y-6 seller-dashboard">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
         </div>
         <Skeleton className="h-72 rounded-2xl" />
       </div>
     );
   }
 
-  const StatCard = ({ title, value, change, icon: Icon, iconBg }: any) => (
-    <div className="seller-stat-card hover:shadow-lg hover:border-slate-200 hover:scale-[1.02] transition-all duration-300">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center shadow-sm`}>
-          <Icon className="w-5 h-5 text-white" />
+  const StatCard = ({ title, value, change, icon: Icon, gradient }: any) => (
+    <div className={`relative rounded-2xl p-5 overflow-hidden ${gradient}`}>
+      <div className="flex items-start justify-between relative z-10">
+        <div>
+          <p className="text-white/80 text-xs font-medium uppercase tracking-wide">{title}</p>
+          <p className="text-2xl lg:text-3xl font-bold text-white mt-1">{value}</p>
+          {change !== undefined && (
+            <div className="flex items-center gap-1 mt-2">
+              {change >= 0 ? <ArrowUpRight className="h-3.5 w-3.5 text-white/90" /> : <ArrowDownRight className="h-3.5 w-3.5 text-white/90" />}
+              <span className="text-xs font-semibold text-white/90">{Math.abs(change).toFixed(1)}%</span>
+            </div>
+          )}
         </div>
-        {change !== undefined && (
-          <span className={`text-[10px] font-semibold px-2 py-1 rounded-full flex items-center gap-0.5 ${
-            change >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
-          }`}>
-            {change >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-            {Math.abs(change).toFixed(1)}%
-          </span>
-        )}
+        <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
+          <Icon className="h-6 w-6 text-white" />
+        </div>
       </div>
-      <p className="seller-label text-slate-500 mb-1">{title}</p>
-      <p className="seller-stat-number text-2xl text-slate-900">{value}</p>
     </div>
   );
 
   return (
-    <div className="space-y-6 seller-dashboard">
+    <div className="p-6 lg:p-8 bg-slate-50 min-h-screen space-y-6 seller-dashboard">
       {/* Period Selector */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -174,10 +174,10 @@ const SellerAnalytics = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="REVENUE" value={`$${analyticsData.totalRevenue.toFixed(2)}`} change={analyticsData.revenueChange} icon={DollarSign} iconBg="bg-emerald-500" />
-        <StatCard title="ORDERS" value={analyticsData.totalOrders} change={analyticsData.ordersChange} icon={ShoppingCart} iconBg="bg-blue-500" />
-        <StatCard title="AVG ORDER" value={`$${analyticsData.avgOrderValue.toFixed(2)}`} icon={Target} iconBg="bg-violet-500" />
-        <StatCard title="SUCCESS RATE" value={`${analyticsData.conversionRate.toFixed(0)}%`} icon={TrendingUp} iconBg="bg-amber-500" />
+        <StatCard title="Revenue" value={`$${analyticsData.totalRevenue.toFixed(2)}`} change={analyticsData.revenueChange} icon={DollarSign} gradient="bg-gradient-to-br from-emerald-500 to-teal-600" />
+        <StatCard title="Orders" value={analyticsData.totalOrders} change={analyticsData.ordersChange} icon={ShoppingCart} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" />
+        <StatCard title="Avg Order" value={`$${analyticsData.avgOrderValue.toFixed(2)}`} icon={Target} gradient="bg-gradient-to-br from-violet-500 to-purple-600" />
+        <StatCard title="Success Rate" value={`${analyticsData.conversionRate.toFixed(0)}%`} icon={TrendingUp} gradient="bg-gradient-to-br from-amber-500 to-orange-600" />
       </div>
 
       {/* Insights Banner */}
