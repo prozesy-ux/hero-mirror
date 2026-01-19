@@ -49,6 +49,12 @@ const SellerSettings = () => {
     store_tagline: '',
     store_slug: ''
   });
+  const [socialLinks, setSocialLinks] = useState({
+    instagram: '',
+    twitter: '',
+    tiktok: '',
+    youtube: ''
+  });
 
   useEffect(() => {
     if (profile) {
@@ -60,6 +66,13 @@ const SellerSettings = () => {
         store_video_url: (profile as any).store_video_url || '',
         store_tagline: (profile as any).store_tagline || '',
         store_slug: (profile as any).store_slug || ''
+      });
+      const links = (profile as any).social_links || {};
+      setSocialLinks({
+        instagram: links.instagram || '',
+        twitter: links.twitter || '',
+        tiktok: links.tiktok || '',
+        youtube: links.youtube || ''
       });
     }
   }, [profile]);
@@ -73,6 +86,13 @@ const SellerSettings = () => {
     }
     
     setSaving(true);
+    // Build social links object, filtering empty values
+    const socialLinksObj: Record<string, string> = {};
+    if (socialLinks.instagram.trim()) socialLinksObj.instagram = socialLinks.instagram.trim();
+    if (socialLinks.twitter.trim()) socialLinksObj.twitter = socialLinks.twitter.trim();
+    if (socialLinks.tiktok.trim()) socialLinksObj.tiktok = socialLinks.tiktok.trim();
+    if (socialLinks.youtube.trim()) socialLinksObj.youtube = socialLinks.youtube.trim();
+
     const { error } = await supabase
       .from('seller_profiles')
       .update({
@@ -81,7 +101,8 @@ const SellerSettings = () => {
         store_logo_url: formData.store_logo_url.trim() || null,
         store_banner_url: formData.store_banner_url.trim() || null,
         store_video_url: formData.store_video_url.trim() || null,
-        store_tagline: formData.store_tagline.trim() || null
+        store_tagline: formData.store_tagline.trim() || null,
+        social_links: Object.keys(socialLinksObj).length > 0 ? socialLinksObj : null
       })
       .eq('id', profile.id);
 
@@ -408,6 +429,60 @@ const SellerSettings = () => {
               onVideoChange={(url) => setFormData(prev => ({ ...prev, store_video_url: url }))}
               sellerId={profile?.id || ''}
             />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Social Media Links */}
+        <AccordionItem value="social-links" className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 overflow-hidden">
+          <AccordionTrigger className="py-5 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center">
+                <Link2 className="w-5 h-5 text-pink-600" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-slate-900">Social Media Links</p>
+                <p className="text-sm text-slate-500">Add your social profiles to display on your store</p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pb-6 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Instagram</Label>
+              <Input
+                value={socialLinks.instagram}
+                onChange={(e) => setSocialLinks(prev => ({ ...prev, instagram: e.target.value }))}
+                placeholder="username (without @)"
+                className="h-11 rounded-xl border-slate-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Twitter / X</Label>
+              <Input
+                value={socialLinks.twitter}
+                onChange={(e) => setSocialLinks(prev => ({ ...prev, twitter: e.target.value }))}
+                placeholder="username (without @)"
+                className="h-11 rounded-xl border-slate-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">TikTok</Label>
+              <Input
+                value={socialLinks.tiktok}
+                onChange={(e) => setSocialLinks(prev => ({ ...prev, tiktok: e.target.value }))}
+                placeholder="username (without @)"
+                className="h-11 rounded-xl border-slate-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">YouTube</Label>
+              <Input
+                value={socialLinks.youtube}
+                onChange={(e) => setSocialLinks(prev => ({ ...prev, youtube: e.target.value }))}
+                placeholder="channel name or full URL"
+                className="h-11 rounded-xl border-slate-200"
+              />
+            </div>
+            <p className="text-xs text-slate-400">These links will appear on your public store page</p>
           </AccordionContent>
         </AccordionItem>
 

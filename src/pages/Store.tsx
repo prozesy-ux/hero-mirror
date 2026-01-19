@@ -15,18 +15,21 @@ import {
   CheckCircle,
   Package,
   Star,
-  ArrowLeft,
   Loader2,
-  Play,
-  ExternalLink,
   ShoppingBag,
   MessageCircle,
-  Filter,
   X,
-  ChevronRight,
-  Users
+  Users,
+  Check,
+  Eye,
+  Wallet,
+  TrendingUp,
+  Store as StoreIcon
 } from 'lucide-react';
+import { Instagram, Twitter, Youtube, Music } from 'lucide-react';
 import theLogo from '@/assets/the-logo.png';
+import StoreSidebar from '@/components/store/StoreSidebar';
+import StoreProductCard from '@/components/store/StoreProductCard';
 
 interface SellerProfile {
   id: string;
@@ -42,7 +45,7 @@ interface SellerProfile {
   is_active: boolean;
   total_sales: number;
   total_orders: number;
-  social_links: Record<string, string>;
+  social_links: Record<string, string> | null;
 }
 
 interface SellerProduct {
@@ -79,11 +82,35 @@ const Store = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<SellerProduct | null>(null);
-  const [purchasing, setPurchasing] = useState(false);
+  const [purchasing, setPurchasing] = useState<string | null>(null);
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingProduct, setPendingProduct] = useState<SellerProduct | null>(null);
+
+  // Handle return from auth with pending purchase
+  useEffect(() => {
+    if (user && products.length > 0) {
+      const storeReturn = localStorage.getItem('storeReturn');
+      if (storeReturn) {
+        try {
+          const data = JSON.parse(storeReturn);
+          localStorage.removeItem('storeReturn');
+          
+          if (data.pendingProductId && data.autoOpenPurchase) {
+            const pendingProd = products.find(p => p.id === data.pendingProductId);
+            if (pendingProd) {
+              setSelectedProduct(pendingProd);
+              toast.info(`Continue your purchase of "${pendingProd.name}"`);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to parse storeReturn', e);
+        }
+      }
+    }
+  }, [user, products]);
 
   useEffect(() => {
     if (storeSlug) {
@@ -106,12 +133,10 @@ const Store = () => {
       .select('*')
       .eq('store_slug', storeSlug)
       .eq('is_active', true)
-      .eq('is_verified', true)
       .single();
 
     if (sellerError || !sellerData) {
-      toast.error('Store not found');
-      navigate('/');
+      setLoading(false);
       return;
     }
 
@@ -166,7 +191,7 @@ const Store = () => {
       return;
     }
 
-    setPurchasing(true);
+    setPurchasing(product.id);
 
     try {
       // Create seller order
@@ -193,17 +218,38 @@ const Store = () => {
     } catch (error: any) {
       toast.error(error.message || 'Purchase failed');
     } finally {
-      setPurchasing(false);
+      setPurchasing(null);
     }
   };
 
   const handleLoginRedirect = (isSignUp: boolean) => {
-    const returnUrl = `/store/${storeSlug}`;
-    localStorage.setItem('returnAfterAuth', returnUrl);
-    if (pendingProduct) {
-      localStorage.setItem('pendingProductId', pendingProduct.id);
+    // Save return info to localStorage
+    const returnData = {
+      returnUrl: `/store/${storeSlug}`,
+      pendingProductId: pendingProduct?.id,
+      autoOpenPurchase: true
+    };
+    localStorage.setItem('storeReturn', JSON.stringify(returnData));
+    setShowLoginModal(false);
+    navigate('/signin');
+  };
+
+  const handleTagSelect = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const handleChat = (product: SellerProduct) => {
+    if (!user) {
+      setPendingProduct(product);
+      setShowLoginModal(true);
+      return;
     }
-    navigate(isSignUp ? '/signup' : '/signin');
+    // Navigate to dashboard with seller chat
+    navigate(`/dashboard/marketplace?chat=${seller?.id}`);
   };
 
   // Filter products
@@ -211,23 +257,12 @@ const Store = () => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || product.category_id === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesTags = selectedTags.length === 0 || product.tags?.some(tag => selectedTags.includes(tag));
+    return matchesSearch && matchesCategory && matchesTags;
   });
 
-  // Get unique categories from products
-  const productCategories = categories.filter(cat => 
-    products.some(p => p.category_id === cat.id)
-  );
-
-  const getCategoryColor = (color: string | null) => {
-    const colorMap: Record<string, string> = {
-      violet: 'bg-violet-100 text-violet-700',
-      emerald: 'bg-emerald-100 text-emerald-700',
-      blue: 'bg-blue-100 text-blue-700',
-      rose: 'bg-rose-100 text-rose-700',
-      amber: 'bg-amber-100 text-amber-700',
-    };
-    return colorMap[color || 'violet'] || 'bg-gray-100 text-gray-700';
+  const hasEnoughBalance = (price: number) => {
+    return (wallet?.balance || 0) >= price;
   };
 
   if (loading) {
@@ -258,8 +293,8 @@ const Store = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50">
-      {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
+      {/* Header - Clean minimal */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
@@ -269,23 +304,18 @@ const Store = () => {
             {user ? (
               <Button 
                 onClick={() => navigate('/dashboard/marketplace')}
-                className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl"
               >
                 <ShoppingBag className="w-4 h-4 mr-2" />
                 My Dashboard
               </Button>
             ) : (
-              <>
-                <Button variant="ghost" onClick={() => navigate('/signin')}>
-                  Sign In
-                </Button>
-                <Button 
-                  onClick={() => navigate('/signup')}
-                  className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
-                >
-                  Get Started
-                </Button>
-              </>
+              <Button 
+                onClick={() => navigate('/signin')}
+                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl"
+              >
+                Sign In
+              </Button>
             )}
           </div>
         </div>
@@ -305,17 +335,19 @@ const Store = () => {
             >
               <source src={seller.store_video_url} type="video/mp4" />
             </video>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
           </div>
         ) : seller.store_banner_url ? (
-          <div 
-            className="h-64 md:h-80 bg-cover bg-center"
-            style={{ backgroundImage: `url(${seller.store_banner_url})` }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="relative h-64 md:h-80">
+            <img 
+              src={seller.store_banner_url}
+              alt={seller.store_name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
           </div>
         ) : (
-          <div className="h-64 md:h-80 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600" />
+          <div className="h-64 md:h-80 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500" />
         )}
 
         {/* Store Info Overlay */}
@@ -323,7 +355,7 @@ const Store = () => {
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end gap-6">
             <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-white shadow-2xl">
               <AvatarImage src={seller.store_logo_url || ''} />
-              <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-3xl font-bold">
+              <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-3xl font-bold">
                 {seller.store_name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -340,7 +372,7 @@ const Store = () => {
               {seller.store_tagline && (
                 <p className="text-lg text-white/90 mt-2">{seller.store_tagline}</p>
               )}
-              <div className="flex items-center gap-6 mt-4 text-sm text-white/80">
+              <div className="flex items-center gap-6 mt-4 text-sm text-white/80 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4" />
                   <span>{products.length} Products</span>
@@ -354,119 +386,182 @@ const Store = () => {
                   <span>4.9 Rating</span>
                 </div>
               </div>
+
+              {/* Social Links */}
+              {seller.social_links && Object.keys(seller.social_links).length > 0 && (
+                <div className="flex items-center gap-3 mt-4">
+                  {seller.social_links.instagram && (
+                    <a 
+                      href={`https://instagram.com/${seller.social_links.instagram}`} 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                    >
+                      <Instagram className="w-4 h-4 text-white" />
+                    </a>
+                  )}
+                  {seller.social_links.twitter && (
+                    <a 
+                      href={`https://twitter.com/${seller.social_links.twitter}`} 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                    >
+                      <Twitter className="w-4 h-4 text-white" />
+                    </a>
+                  )}
+                  {seller.social_links.tiktok && (
+                    <a 
+                      href={`https://tiktok.com/@${seller.social_links.tiktok}`} 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                    >
+                      <Music className="w-4 h-4 text-white" />
+                    </a>
+                  )}
+                  {seller.social_links.youtube && (
+                    <a 
+                      href={seller.social_links.youtube.startsWith('http') ? seller.social_links.youtube : `https://youtube.com/@${seller.social_links.youtube}`} 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                    >
+                      <Youtube className="w-4 h-4 text-white" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content with Sidebar */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Search and Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <Input
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-12 rounded-xl border-slate-200 focus:border-violet-500 focus:ring-violet-500/20"
-            />
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-            <Button
-              variant={selectedCategory === 'all' ? 'default' : 'outline'}
-              onClick={() => setSelectedCategory('all')}
-              className={`rounded-xl whitespace-nowrap ${
-                selectedCategory === 'all' 
-                  ? 'bg-violet-600 hover:bg-violet-700' 
-                  : 'hover:bg-violet-50'
-              }`}
-            >
-              All Products
-            </Button>
-            {productCategories.map(cat => (
-              <Button
-                key={cat.id}
-                variant={selectedCategory === cat.id ? 'default' : 'outline'}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`rounded-xl whitespace-nowrap ${
-                  selectedCategory === cat.id 
-                    ? 'bg-violet-600 hover:bg-violet-700' 
-                    : 'hover:bg-violet-50'
-                }`}
-              >
-                {cat.name}
-              </Button>
-            ))}
+        <div className="flex gap-6">
+          {/* Sidebar */}
+          <StoreSidebar
+            products={products}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            selectedTags={selectedTags}
+            onCategorySelect={setSelectedCategory}
+            onTagSelect={handleTagSelect}
+            onProductClick={(product) => setSelectedProduct(product)}
+          />
+
+          {/* Main Content */}
+          <div className="flex-1 min-w-0">
+            {/* Search Bar */}
+            <div className="flex gap-3 mb-6">
+              {/* Mobile Filter */}
+              <div className="lg:hidden">
+                <StoreSidebar
+                  products={products}
+                  categories={categories}
+                  selectedCategory={selectedCategory}
+                  selectedTags={selectedTags}
+                  onCategorySelect={setSelectedCategory}
+                  onTagSelect={handleTagSelect}
+                  onProductClick={(product) => setSelectedProduct(product)}
+                />
+              </div>
+
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
+                  <Search size={18} className="text-gray-500" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search products, tags..."
+                  className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-all font-medium shadow-md"
+                />
+                {(searchQuery || selectedTags.length > 0 || selectedCategory !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedTags([]);
+                      setSelectedCategory('all');
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X size={18} className="text-gray-400" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Active Filters Pills */}
+            {(selectedTags.length > 0 || selectedCategory !== 'all') && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {selectedCategory !== 'all' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full text-xs font-medium">
+                    {categories.find(c => c.id === selectedCategory)?.name || 'Category'}
+                    <button onClick={() => setSelectedCategory('all')} className="hover:bg-white/20 rounded-full p-0.5">
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {selectedTags.map(tag => (
+                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-medium">
+                    {tag}
+                    <button onClick={() => handleTagSelect(tag)} className="hover:bg-white/20 rounded-full p-0.5">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Store Description */}
+            {seller.store_description && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 shadow-md">
+                <h3 className="font-bold text-gray-900 mb-2">About this store</h3>
+                <p className="text-gray-600">{seller.store_description}</p>
+              </div>
+            )}
+
+            {/* Products Grid */}
+            {filteredProducts.length === 0 ? (
+              <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
+                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+                  <Package className="w-10 h-10 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">No Products Found</h3>
+                <p className="text-gray-500 mb-4">Try adjusting your search or filters</p>
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedTags([]);
+                    setSelectedCategory('all');
+                  }}
+                  className="text-emerald-600 font-medium hover:underline"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
+                {filteredProducts.map(product => (
+                  <StoreProductCard
+                    key={product.id}
+                    product={product}
+                    storeName={seller.store_name}
+                    hasEnoughBalance={hasEnoughBalance(product.price)}
+                    purchasing={purchasing === product.id}
+                    onChat={() => handleChat(product)}
+                    onView={() => setSelectedProduct(product)}
+                    onBuy={() => handlePurchase(product)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Store Description */}
-        {seller.store_description && (
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 mb-8">
-            <h3 className="font-semibold text-slate-900 mb-2">About this store</h3>
-            <p className="text-slate-600">{seller.store_description}</p>
-          </div>
-        )}
-
-        {/* Products Grid */}
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-16">
-            <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">No products found</h3>
-            <p className="text-slate-600">Try adjusting your search or filters.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map(product => (
-              <div
-                key={product.id}
-                className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
-                onClick={() => setSelectedProduct(product)}
-              >
-                {/* Product Image */}
-                <div className="relative aspect-square bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden">
-                  {product.icon_url ? (
-                    <img
-                      src={product.icon_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="w-16 h-16 text-slate-300" />
-                    </div>
-                  )}
-                  {product.sold_count && product.sold_count > 10 && (
-                    <Badge className="absolute top-3 left-3 bg-orange-500 text-white border-0">
-                      🔥 Hot
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Product Info */}
-                <div className="p-5">
-                  <h3 className="font-semibold text-slate-900 mb-1 line-clamp-1">{product.name}</h3>
-                  <p className="text-sm text-slate-500 mb-3 line-clamp-2">
-                    {product.description || 'Premium digital product'}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-bold text-violet-600">${product.price}</span>
-                      <span className="text-xs text-slate-400">• {product.sold_count || 0} sold</span>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 rounded-xl"
-                    >
-                      Buy
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </main>
 
       {/* Product Details Modal */}
@@ -488,74 +583,90 @@ const Store = () => {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-              <span className="text-slate-600">Price</span>
-              <span className="text-2xl font-bold text-violet-600">${selectedProduct?.price}</span>
-            </div>
-
-            {selectedProduct?.tags && selectedProduct.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {selectedProduct.tags.map(tag => (
-                  <Badge key={tag} variant="secondary" className="rounded-full">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Users className="w-4 h-4" />
-              <span>{selectedProduct?.sold_count || 0} people bought this</span>
-            </div>
-
-            <Button
-              className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 rounded-xl text-lg font-semibold"
-              onClick={() => selectedProduct && handlePurchase(selectedProduct)}
-              disabled={purchasing}
-            >
-              {purchasing ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Buy Now for ${selectedProduct?.price}
-                </>
+          {selectedProduct && (
+            <div className="space-y-4">
+              {/* Tags */}
+              {selectedProduct.tags && selectedProduct.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedProduct.tags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="rounded-full">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
               )}
-            </Button>
 
-            {!user && (
-              <p className="text-center text-sm text-slate-500">
-                You'll need to sign in to complete your purchase
-              </p>
-            )}
-          </div>
+              {/* Stats */}
+              <div className="flex items-center gap-4 text-sm text-slate-600">
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <span>5.0</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  <span>{selectedProduct.sold_count || 0} sold</span>
+                </div>
+              </div>
+
+              {/* Price */}
+              <div className="flex items-center justify-between py-4 border-t border-slate-100">
+                <span className="text-2xl font-bold text-emerald-600">${selectedProduct.price}</span>
+                {user && wallet && (
+                  <span className="text-sm text-slate-500">
+                    Balance: ${wallet.balance.toFixed(2)}
+                  </span>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                {selectedProduct.chat_allowed !== false && (
+                  <Button
+                    variant="outline"
+                    className="flex-1 rounded-xl"
+                    onClick={() => handleChat(selectedProduct)}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Chat
+                  </Button>
+                )}
+                <Button
+                  className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl"
+                  onClick={() => handlePurchase(selectedProduct)}
+                  disabled={purchasing === selectedProduct.id}
+                >
+                  {purchasing === selectedProduct.id ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                  )}
+                  Buy Now
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Login Required Modal */}
+      {/* Login Modal */}
       <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Sign in to purchase</DialogTitle>
+            <DialogTitle>Sign in to continue</DialogTitle>
             <DialogDescription>
-              Create an account or sign in to complete your purchase of "{pendingProduct?.name}".
+              Create an account or sign in to purchase products from this store.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4 pt-4">
+          <div className="space-y-3 pt-4">
             <Button
-              className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 rounded-xl"
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl"
               onClick={() => handleLoginRedirect(false)}
             >
               Sign In
             </Button>
             <Button
               variant="outline"
-              className="w-full h-12 rounded-xl"
+              className="w-full rounded-xl"
               onClick={() => handleLoginRedirect(true)}
             >
               Create Account
