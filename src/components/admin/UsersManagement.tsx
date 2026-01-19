@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminMutate } from '@/hooks/useAdminMutate';
 import { 
   Crown, User as UserIcon, Trash2, Search, Loader2, ToggleLeft, ToggleRight,
   X, Wallet, History, ShoppingBag, Package, MessageCircle, Edit, Eye,
@@ -63,6 +64,7 @@ type DetailTab = 'profile' | 'wallet' | 'transactions' | 'purchases' | 'orders' 
 const UsersManagement = () => {
   const { profiles, isLoading, refreshTable } = useAdminDataContext();
   const { fetchData } = useAdminData();
+  const { updateData, deleteData, insertData, deleteWithFilters } = useAdminMutate();
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -166,10 +168,13 @@ const UsersManagement = () => {
     setDeletingId(userId);
     
     try {
-      await supabase.from('user_roles').delete().eq('user_id', userIdAuth);
-      const { error } = await supabase.from('profiles').delete().eq('id', userId);
+      // Delete user roles using admin edge function
+      await deleteWithFilters('user_roles', [{ column: 'user_id', value: userIdAuth }]);
       
-      if (error) {
+      // Delete profile using admin edge function
+      const result = await deleteData('profiles', userId);
+      
+      if (!result.success) {
         toast.error('Failed to delete user');
       } else {
         toast.success('User deleted successfully');
@@ -186,12 +191,9 @@ const UsersManagement = () => {
   const handleTogglePro = async (userId: string, currentStatus: boolean) => {
     setTogglingId(userId);
     
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_pro: !currentStatus })
-      .eq('id', userId);
+    const result = await updateData('profiles', userId, { is_pro: !currentStatus });
     
-    if (error) {
+    if (!result.success) {
       toast.error('Failed to update user status');
     } else {
       toast.success(`User ${!currentStatus ? 'upgraded to Pro' : 'downgraded to Free'}`);
@@ -209,28 +211,22 @@ const UsersManagement = () => {
     
     setSavingBalance(true);
 
-    const { data: existingWallet } = await supabase
-      .from('user_wallets')
-      .select('id')
-      .eq('user_id', selectedUser.user_id)
-      .maybeSingle();
+    // Check if wallet exists
+    const { data: existingWallet } = await fetchData('user_wallets', {
+      filters: [{ column: 'user_id', value: selectedUser.user_id }]
+    });
 
-    let error;
-    if (existingWallet) {
-      ({ error } = await supabase
-        .from('user_wallets')
-        .update({ balance: newBalance })
-        .eq('user_id', selectedUser.user_id));
+    let result;
+    if (existingWallet && existingWallet.length > 0) {
+      result = await updateData('user_wallets', existingWallet[0].id, { balance: newBalance });
     } else {
-      ({ error } = await supabase
-        .from('user_wallets')
-        .insert({ user_id: selectedUser.user_id, balance: newBalance }));
+      result = await insertData('user_wallets', { user_id: selectedUser.user_id, balance: newBalance });
     }
 
     setSavingBalance(false);
     setShowBalanceModal(false);
 
-    if (error) {
+    if (!result.success) {
       toast.error('Failed to update balance');
     } else {
       toast.success('Balance updated successfully');
@@ -440,7 +436,9 @@ const UsersManagement = () => {
                   )}
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-xl font-bold text-white">{selectedUser.full_name || 'No name'}</h3>
+                      <h2 className="text-xl font-bold text-white">
+                        {selectedUser.full_name || 'No name'}
+                      </h2>
                       {selectedUser.is_pro && (
                         <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full">
                           <Crown size={10} /> Pro
@@ -451,96 +449,80 @@ const UsersManagement = () => {
                     {selectedUser.username && (
                       <p className="text-gray-500 text-sm">@{selectedUser.username}</p>
                     )}
-                    <p className="text-gray-500 text-xs mt-1">
-                      Joined {new Date(selectedUser.created_at).toLocaleDateString()}
-                    </p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => setSelectedUser(null)}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
                 >
-                  <X size={24} />
+                  <X size={20} />
                 </button>
               </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 p-2 border-b border-white/10 overflow-x-auto">
-              {detailTabs.map((tab) => {
-                const TabIcon = tab.icon;
-                return (
+            <div className="border-b border-white/10">
+              <div className="flex overflow-x-auto">
+                {detailTabs.map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setDetailTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                    className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-all whitespace-nowrap ${
                       detailTab === tab.id
-                        ? 'bg-white text-black'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        ? 'text-white border-b-2 border-white'
+                        : 'text-gray-500 hover:text-gray-300'
                     }`}
                   >
-                    <TabIcon size={16} />
+                    <tab.icon size={16} />
                     {tab.label}
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
 
             {/* Tab Content */}
             <div className="p-6">
               {loadingDetail ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-white/50" />
+                <div className="space-y-4">
+                  <Skeleton className="h-20 w-full bg-white/10" />
+                  <Skeleton className="h-20 w-full bg-white/10" />
                 </div>
               ) : (
                 <>
                   {/* Profile Tab */}
                   {detailTab === 'profile' && (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white/5 rounded-xl p-4">
-                          <p className="text-gray-500 text-xs mb-1">Full Name</p>
-                          <p className="text-white">{selectedUser.full_name || '-'}</p>
+                          <p className="text-gray-400 text-sm">User ID</p>
+                          <p className="text-white font-mono text-sm truncate">{selectedUser.user_id}</p>
                         </div>
                         <div className="bg-white/5 rounded-xl p-4">
-                          <p className="text-gray-500 text-xs mb-1">Username</p>
-                          <p className="text-white">{selectedUser.username || '-'}</p>
-                        </div>
-                        <div className="bg-white/5 rounded-xl p-4">
-                          <p className="text-gray-500 text-xs mb-1">Email</p>
-                          <p className="text-white">{selectedUser.email}</p>
-                        </div>
-                        <div className="bg-white/5 rounded-xl p-4">
-                          <p className="text-gray-500 text-xs mb-1">Plan</p>
-                          <p className={selectedUser.is_pro ? 'text-amber-400' : 'text-gray-400'}>
-                            {selectedUser.is_pro ? 'Pro' : 'Free'}
-                          </p>
+                          <p className="text-gray-400 text-sm">Joined</p>
+                          <p className="text-white">{new Date(selectedUser.created_at).toLocaleDateString()}</p>
                         </div>
                       </div>
-
                       <div className="flex gap-3">
                         <button
                           onClick={() => handleTogglePro(selectedUser.id, selectedUser.is_pro)}
                           disabled={togglingId === selectedUser.id}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                             selectedUser.is_pro
-                              ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                              : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                              ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                              : 'bg-purple-600 text-white hover:bg-purple-700'
                           }`}
                         >
                           {togglingId === selectedUser.id ? (
                             <Loader2 size={16} className="animate-spin" />
-                          ) : selectedUser.is_pro ? (
-                            <ToggleLeft size={16} />
                           ) : (
-                            <ToggleRight size={16} />
+                            <Crown size={16} />
                           )}
                           {selectedUser.is_pro ? 'Downgrade to Free' : 'Upgrade to Pro'}
                         </button>
                         <button
                           onClick={() => handleDeleteUser(selectedUser.id, selectedUser.user_id)}
                           disabled={deletingId === selectedUser.id}
-                          className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors"
+                          className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-all"
                         >
                           {deletingId === selectedUser.id ? (
                             <Loader2 size={16} className="animate-spin" />
@@ -555,27 +537,25 @@ const UsersManagement = () => {
 
                   {/* Wallet Tab */}
                   {detailTab === 'wallet' && (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div className="grid grid-cols-3 gap-4">
                         <div className="bg-white/5 rounded-xl p-4">
-                          <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                            <Wallet size={12} />
-                            Balance
+                          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+                            <Wallet size={14} />
+                            Current Balance
                           </div>
-                          <p className="text-2xl font-bold text-green-400">
-                            ${userWallet?.balance?.toFixed(2) || '0.00'}
-                          </p>
+                          <p className="text-2xl font-bold text-white">${userWallet?.balance?.toFixed(2) || '0.00'}</p>
                         </div>
                         <div className="bg-white/5 rounded-xl p-4">
-                          <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                            <ArrowUpRight size={12} />
+                          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+                            <ArrowUpRight size={14} className="text-green-400" />
                             Total Top-ups
                           </div>
-                          <p className="text-2xl font-bold text-purple-400">${totalTopups.toFixed(2)}</p>
+                          <p className="text-2xl font-bold text-green-400">${totalTopups.toFixed(2)}</p>
                         </div>
                         <div className="bg-white/5 rounded-xl p-4">
-                          <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                            <ArrowDownRight size={12} />
+                          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+                            <ArrowDownRight size={14} className="text-red-400" />
                             Total Spent
                           </div>
                           <p className="text-2xl font-bold text-red-400">${totalSpent.toFixed(2)}</p>
@@ -586,7 +566,7 @@ const UsersManagement = () => {
                           setNewBalance(userWallet?.balance || 0);
                           setShowBalanceModal(true);
                         }}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 rounded-lg transition-all"
                       >
                         <Edit size={16} />
                         Edit Balance
@@ -596,38 +576,30 @@ const UsersManagement = () => {
 
                   {/* Transactions Tab */}
                   {detailTab === 'transactions' && (
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                    <div className="space-y-4">
                       {userTransactions.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">No transactions</p>
+                        <p className="text-gray-500 text-center py-8">No transactions found</p>
                       ) : (
-                        userTransactions.map((tx) => (
-                          <div key={tx.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                        userTransactions.map(tx => (
+                          <div key={tx.id} className="bg-white/5 rounded-xl p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className={`p-2 rounded-lg ${tx.type === 'topup' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
                                 {tx.type === 'topup' ? (
-                                  <ArrowUpRight size={16} className="text-green-400" />
+                                  <ArrowUpRight className="text-green-400" size={18} />
                                 ) : (
-                                  <ArrowDownRight size={16} className="text-red-400" />
+                                  <ArrowDownRight className="text-red-400" size={18} />
                                 )}
                               </div>
                               <div>
-                                <p className="text-white text-sm font-medium capitalize">{tx.type}</p>
-                                <p className="text-gray-500 text-xs">
-                                  {new Date(tx.created_at).toLocaleString()}
-                                </p>
+                                <p className="text-white font-medium capitalize">{tx.type}</p>
+                                <p className="text-gray-500 text-sm">{tx.description || tx.payment_gateway || '-'}</p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className={`font-bold ${tx.type === 'topup' ? 'text-green-400' : 'text-red-400'}`}>
+                              <p className={`font-semibold ${tx.type === 'topup' ? 'text-green-400' : 'text-red-400'}`}>
                                 {tx.type === 'topup' ? '+' : '-'}${tx.amount.toFixed(2)}
                               </p>
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                tx.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                                tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-red-500/20 text-red-400'
-                              }`}>
-                                {tx.status}
-                              </span>
+                              <p className="text-gray-500 text-sm">{new Date(tx.created_at).toLocaleDateString()}</p>
                             </div>
                           </div>
                         ))
@@ -637,24 +609,29 @@ const UsersManagement = () => {
 
                   {/* Purchases Tab */}
                   {detailTab === 'purchases' && (
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                    <div className="space-y-4">
                       {userPurchases.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">No purchases</p>
+                        <p className="text-gray-500 text-center py-8">No purchases found</p>
                       ) : (
-                        userPurchases.map((p) => (
-                          <div key={p.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                            <div>
-                              <p className="text-white text-sm font-medium">Pro Plan Purchase</p>
-                              <p className="text-gray-500 text-xs">
-                                {new Date(p.purchased_at).toLocaleString()}
-                              </p>
+                        userPurchases.map(purchase => (
+                          <div key={purchase.id} className="bg-white/5 rounded-xl p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-purple-500/20">
+                                <ShoppingBag className="text-purple-400" size={18} />
+                              </div>
+                              <div>
+                                <p className="text-white font-medium">Bundle Purchase</p>
+                                <p className="text-gray-500 text-sm">{new Date(purchase.purchased_at).toLocaleDateString()}</p>
+                              </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-white">${p.amount}</p>
+                              <p className="font-semibold text-white">${purchase.amount.toFixed(2)}</p>
                               <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                p.payment_status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                                purchase.payment_status === 'completed' 
+                                  ? 'bg-green-500/20 text-green-400' 
+                                  : 'bg-yellow-500/20 text-yellow-400'
                               }`}>
-                                {p.payment_status}
+                                {purchase.payment_status}
                               </span>
                             </div>
                           </div>
@@ -665,30 +642,37 @@ const UsersManagement = () => {
 
                   {/* AI Orders Tab */}
                   {detailTab === 'orders' && (
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                    <div className="space-y-4">
                       {userOrders.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">No AI account orders</p>
+                        <p className="text-gray-500 text-center py-8">No AI account orders found</p>
                       ) : (
-                        userOrders.map((o) => (
-                          <div key={o.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                            <div>
-                              <p className="text-white text-sm font-medium">{o.ai_accounts?.name || 'AI Account'}</p>
-                              <p className="text-gray-500 text-xs">
-                                {new Date(o.purchased_at).toLocaleString()}
-                              </p>
+                        userOrders.map(order => (
+                          <div key={order.id} className="bg-white/5 rounded-xl p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-blue-500/20">
+                                <Package className="text-blue-400" size={18} />
+                              </div>
+                              <div>
+                                <p className="text-white font-medium">{order.ai_accounts?.name || 'Unknown Account'}</p>
+                                <p className="text-gray-500 text-sm">{new Date(order.purchased_at).toLocaleDateString()}</p>
+                              </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-white">${o.amount}</p>
+                              <p className="font-semibold text-white">${order.amount.toFixed(2)}</p>
                               <div className="flex gap-1">
                                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  o.payment_status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                                  order.payment_status === 'completed' 
+                                    ? 'bg-green-500/20 text-green-400' 
+                                    : 'bg-yellow-500/20 text-yellow-400'
                                 }`}>
-                                  {o.payment_status}
+                                  {order.payment_status}
                                 </span>
                                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  o.delivery_status === 'delivered' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'
+                                  order.delivery_status === 'delivered' 
+                                    ? 'bg-blue-500/20 text-blue-400' 
+                                    : 'bg-orange-500/20 text-orange-400'
                                 }`}>
-                                  {o.delivery_status}
+                                  {order.delivery_status}
                                 </span>
                               </div>
                             </div>
@@ -700,22 +684,22 @@ const UsersManagement = () => {
 
                   {/* Chat Tab */}
                   {detailTab === 'chat' && (
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                    <div className="space-y-4">
                       {userMessages.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">No messages</p>
+                        <p className="text-gray-500 text-center py-8">No support messages found</p>
                       ) : (
-                        userMessages.map((m) => (
+                        userMessages.map(msg => (
                           <div 
-                            key={m.id} 
-                            className={`p-3 rounded-xl max-w-[80%] ${
-                              m.sender_type === 'admin' 
-                                ? 'bg-purple-500/20 ml-auto' 
-                                : 'bg-white/5'
+                            key={msg.id} 
+                            className={`rounded-xl p-4 ${
+                              msg.sender_type === 'admin' 
+                                ? 'bg-white text-black ml-8' 
+                                : 'bg-white/10 text-white mr-8'
                             }`}
                           >
-                            <p className="text-white text-sm">{m.message}</p>
-                            <p className="text-gray-500 text-xs mt-1">
-                              {m.sender_type === 'admin' ? 'Admin' : 'User'} • {new Date(m.created_at).toLocaleString()}
+                            <p className="text-sm">{msg.message}</p>
+                            <p className={`text-xs mt-1 ${msg.sender_type === 'admin' ? 'text-gray-500' : 'text-gray-400'}`}>
+                              {msg.sender_type === 'admin' ? 'Support' : 'User'} • {new Date(msg.created_at).toLocaleString()}
                             </p>
                           </div>
                         ))
@@ -732,32 +716,35 @@ const UsersManagement = () => {
       {/* Edit Balance Modal */}
       {showBalanceModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80">
-          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Edit Wallet Balance</h3>
+          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-white mb-4">Edit Wallet Balance</h3>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-400">New Balance ($)</label>
+                <label className="block text-sm text-gray-400 mb-2">New Balance ($)</label>
                 <input
                   type="number"
+                  step="0.01"
                   value={newBalance}
                   onChange={(e) => setNewBalance(parseFloat(e.target.value) || 0)}
-                  step="0.01"
-                  min="0"
-                  className="w-full mt-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
               <div className="flex gap-3">
                 <button
                   onClick={handleUpdateBalance}
                   disabled={savingBalance}
-                  className="flex-1 flex items-center justify-center gap-2 bg-white text-black py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-all disabled:opacity-50"
                 >
-                  {savingBalance ? <Loader2 size={16} className="animate-spin" /> : <DollarSign size={16} />}
-                  Save
+                  {savingBalance ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <DollarSign size={18} />
+                  )}
+                  Update Balance
                 </button>
                 <button
                   onClick={() => setShowBalanceModal(false)}
-                  className="px-6 py-3 bg-white/5 text-white rounded-xl hover:bg-white/10 transition-colors"
+                  className="px-4 py-3 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white rounded-xl transition-all"
                 >
                   Cancel
                 </button>

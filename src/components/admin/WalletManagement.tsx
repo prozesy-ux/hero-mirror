@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminDataContext } from '@/contexts/AdminDataContext';
+import { useAdminMutate } from '@/hooks/useAdminMutate';
+import { useAdminData } from '@/hooks/useAdminData';
 import { toast } from 'sonner';
 import { Wallet, Search, DollarSign, ArrowUpRight, RefreshCcw, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -16,8 +18,11 @@ import {
 
 const WalletManagement = () => {
   const { wallets, transactions, profiles, isLoading, refreshTable } = useAdminDataContext();
+  const { mutateData } = useAdminMutate();
+  const { fetchData } = useAdminData();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'wallets' | 'transactions' | 'pending'>('wallets');
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
     const channel = supabase
@@ -52,38 +57,56 @@ const WalletManagement = () => {
       return;
     }
 
-    const { error } = await supabase
-      .from('wallet_transactions')
-      .update({ status })
-      .eq('id', id);
+    setProcessingId(id);
 
-    if (error) {
+    // Update transaction status using admin edge function
+    const result = await mutateData('wallet_transactions', 'update', { status }, id);
+
+    if (!result.success) {
       toast.error('Failed to update transaction');
+      setProcessingId(null);
       return;
     }
 
     if (status === 'completed' && tx.type === 'topup') {
-      const { data: wallet } = await supabase
-        .from('user_wallets')
-        .select('balance')
-        .eq('user_id', tx.user_id)
-        .maybeSingle();
-
-      const currentBalance = wallet?.balance || 0;
+      // Fetch current wallet balance using admin fetch
+      const walletResult = await fetchData('user_wallets', { 
+        filters: [{ column: 'user_id', value: tx.user_id }] 
+      });
+      
+      const currentBalance = walletResult.data?.[0]?.balance || 0;
       const newBalance = currentBalance + tx.amount;
 
-      const { error: walletError } = await supabase
-        .from('user_wallets')
-        .upsert({
-          user_id: tx.user_id,
-          balance: newBalance,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
+      // Check if wallet exists
+      if (walletResult.data && walletResult.data.length > 0) {
+        // Update existing wallet
+        const walletUpdateResult = await mutateData(
+          'user_wallets', 
+          'update', 
+          { balance: newBalance, updated_at: new Date().toISOString() },
+          walletResult.data[0].id
+        );
 
-      if (walletError) {
-        toast.error('Transaction approved but failed to credit wallet');
-        refreshTable('wallet_transactions');
-        return;
+        if (!walletUpdateResult.success) {
+          toast.error('Transaction approved but failed to credit wallet');
+          refreshTable('wallet_transactions');
+          setProcessingId(null);
+          return;
+        }
+      } else {
+        // Insert new wallet
+        const walletInsertResult = await mutateData(
+          'user_wallets',
+          'insert',
+          { user_id: tx.user_id, balance: newBalance }
+        );
+
+        if (!walletInsertResult.success) {
+          toast.error('Transaction approved but failed to create wallet');
+          refreshTable('wallet_transactions');
+          setProcessingId(null);
+          return;
+        }
       }
 
       toast.success(`Transaction approved! $${tx.amount} credited to wallet.`);
@@ -91,6 +114,7 @@ const WalletManagement = () => {
       toast.success(`Transaction marked as ${status}`);
     }
     
+    setProcessingId(null);
     refreshTable('user_wallets');
     refreshTable('wallet_transactions');
   };
@@ -334,13 +358,15 @@ const WalletManagement = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => updateTransactionStatus(tx.id, 'completed')}
-                            className="text-green-400 hover:text-green-300 text-sm"
+                            disabled={processingId === tx.id}
+                            className="text-green-400 hover:text-green-300 text-sm disabled:opacity-50"
                           >
-                            Approve
+                            {processingId === tx.id ? 'Processing...' : 'Approve'}
                           </button>
                           <button
                             onClick={() => updateTransactionStatus(tx.id, 'failed')}
-                            className="text-red-400 hover:text-red-300 text-sm"
+                            disabled={processingId === tx.id}
+                            className="text-red-400 hover:text-red-300 text-sm disabled:opacity-50"
                           >
                             Reject
                           </button>
@@ -400,13 +426,15 @@ const WalletManagement = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => updateTransactionStatus(tx.id, 'completed')}
-                          className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+                          disabled={processingId === tx.id}
+                          className="px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
                         >
-                          Approve
+                          {processingId === tx.id ? 'Processing...' : 'Approve'}
                         </button>
                         <button
                           onClick={() => updateTransactionStatus(tx.id, 'failed')}
-                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+                          disabled={processingId === tx.id}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
                         >
                           Reject
                         </button>
