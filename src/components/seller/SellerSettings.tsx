@@ -351,19 +351,36 @@ const SellerSettings = () => {
 
   return (
     <div className="max-w-3xl mx-auto p-6 lg:p-8 pb-24 space-y-6 seller-dashboard">
-      {/* Profile Header */}
+      {/* Profile Header - Banner First Design */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative">
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 h-20" />
-        <div className="px-6 pb-6">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-10">
-            <div className="relative z-10">
-              <Avatar className="w-20 h-20 border-4 border-white shadow-lg">
+        {/* Dynamic Banner */}
+        <div className="relative">
+          {formData.store_banner_url ? (
+            <div className="relative">
+              <img 
+                src={formData.store_banner_url} 
+                alt="Store banner"
+                className="w-full h-32 object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 h-32" />
+          )}
+        </div>
+        
+        {/* Content Area */}
+        <div className="px-6 pb-6 pt-4">
+          <div className="flex items-start gap-4">
+            {/* Logo with upload */}
+            <div className="relative -mt-14 z-20 flex-shrink-0">
+              <Avatar className="w-20 h-20 border-4 border-white shadow-lg ring-2 ring-slate-100">
                 <AvatarImage src={formData.store_logo_url} />
                 <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-xl font-bold">
                   {getInitials(formData.store_name || 'Store')}
                 </AvatarFallback>
               </Avatar>
-              <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full border border-slate-200 shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors">
+              <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full border border-slate-200 shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors z-30">
                 {uploading ? (
                   <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
                 ) : (
@@ -378,31 +395,42 @@ const SellerSettings = () => {
                 />
               </label>
             </div>
-            <div className="flex-1 pt-4 sm:pt-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="seller-heading text-xl text-slate-900">{formData.store_name || 'Your Store'}</h2>
+            
+            {/* Store Info - Separate rows */}
+            <div className="flex-1 min-w-0 pt-1">
+              {/* Store Name */}
+              <h2 className="seller-heading text-2xl font-bold text-slate-900 truncate leading-tight">
+                {formData.store_name || 'Your Store'}
+              </h2>
+              
+              {/* Badges - Separate row */}
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 {profile?.is_verified ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 border-0">
+                  <Badge className="bg-emerald-100 text-emerald-700 border-0 text-xs px-2 py-0.5">
                     <CheckCircle className="w-3 h-3 mr-1" />
                     Verified
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
-                    Pending
+                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 text-xs px-2 py-0.5">
+                    Pending Verification
                   </Badge>
                 )}
                 {hasChanges && (
-                  <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 animate-pulse">
-                    Unsaved
+                  <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 animate-pulse text-xs px-2 py-0.5">
+                    Unsaved Changes
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-slate-500 mt-1">
+              
+              {/* Seller since */}
+              <p className="text-sm text-slate-500 mt-2">
                 Seller since {(profile as any)?.created_at ? new Date((profile as any).created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
               </p>
             </div>
+            
+            {/* Saving indicator */}
             {saving && (
-              <div className="flex items-center gap-2 text-sm text-emerald-600">
+              <div className="flex items-center gap-2 text-sm text-emerald-600 flex-shrink-0">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Saving...</span>
               </div>
