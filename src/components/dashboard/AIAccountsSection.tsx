@@ -169,6 +169,7 @@ const AIAccountsSection = () => {
   // Seller orders (purchases from marketplace sellers)
   const [sellerOrders, setSellerOrders] = useState<SellerOrderPurchase[]>([]);
   const [approvingOrder, setApprovingOrder] = useState<string | null>(null);
+  const [approvedOrders, setApprovedOrders] = useState<Set<string>>(new Set());
 
   // Seller products state
   const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([]);
@@ -752,9 +753,13 @@ const AIAccountsSection = () => {
   };
 
   const handleApproveDelivery = async (orderId: string) => {
-    if (!user) return;
+    // Prevent double approval
+    if (!user || approvingOrder === orderId || approvedOrders.has(orderId)) {
+      return;
+    }
     
     setApprovingOrder(orderId);
+    
     try {
       const order = sellerOrders.find(o => o.id === orderId);
       if (!order) throw new Error('Order not found');
@@ -824,6 +829,9 @@ const AIAccountsSection = () => {
         product_id: order.product_id
       });
 
+      // Mark as approved locally to prevent re-click
+      setApprovedOrders(prev => new Set(prev).add(orderId));
+      
       toast.success('Delivery approved! Thank you for your purchase.');
       fetchSellerOrders();
     } catch (error: any) {

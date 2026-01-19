@@ -175,14 +175,14 @@ const SellerTopBar = () => {
                 <item.icon className="h-4 w-4" />
                 <span>{item.label}</span>
                 {item.label === 'Orders' && pendingOrders > 0 && (
-                  <Badge className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs">
+                  <span className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">
                     {pendingOrders}
-                  </Badge>
+                  </span>
                 )}
                 {item.label === 'Messages' && unreadChats > 0 && (
-                  <Badge className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs">
+                  <span className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">
                     {unreadChats}
-                  </Badge>
+                  </span>
                 )}
               </Link>
             );

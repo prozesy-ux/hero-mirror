@@ -174,14 +174,30 @@ export const SellerProvider = ({
 
   const refreshAll = useCallback(async () => {
     setLoading(true);
-    await Promise.all([
-      refreshProfile(),
-      refreshWallet(),
-      refreshProducts(),
-      refreshOrders(),
-      refreshWithdrawals()
-    ]);
-    setLoading(false);
+    
+    try {
+      // Create timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+
+      // Fetch all data in parallel with timeout
+      await Promise.race([
+        Promise.allSettled([
+          refreshProfile(),
+          refreshWallet(),
+          refreshProducts(),
+          refreshOrders(),
+          refreshWithdrawals()
+        ]),
+        timeoutPromise
+      ]);
+    } catch (error) {
+      console.error('Seller data fetch error:', error);
+      // Don't throw - let the UI handle partial data
+    } finally {
+      setLoading(false);
+    }
   }, [refreshProfile, refreshWallet, refreshProducts, refreshOrders, refreshWithdrawals]);
 
   useEffect(() => {
