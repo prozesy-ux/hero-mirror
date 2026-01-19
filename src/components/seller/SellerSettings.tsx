@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
+import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,7 @@ interface DisplaySettings {
 
 const SellerSettings = () => {
   const { profile, loading, refreshProfile } = useSellerContext();
+  const { isCollapsed } = useSellerSidebarContext();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [bannerUploading, setBannerUploading] = useState(false);
@@ -260,13 +262,13 @@ const SellerSettings = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6 lg:p-8 space-y-6 seller-dashboard">
+    <div className="max-w-3xl mx-auto p-6 lg:p-8 pb-24 space-y-6 seller-dashboard">
       {/* Profile Header */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative z-10">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative">
         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 h-20" />
         <div className="px-6 pb-6">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-10">
-            <div className="relative z-20">
+            <div className="relative z-10">
               <Avatar className="w-20 h-20 border-4 border-white shadow-lg">
                 <AvatarImage src={formData.store_logo_url} />
                 <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-xl font-bold">
@@ -288,7 +290,7 @@ const SellerSettings = () => {
                 />
               </label>
             </div>
-            <div className="flex-1 pt-4 sm:pt-0 relative z-20">
+            <div className="flex-1 pt-4 sm:pt-0 relative z-10">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="seller-heading text-xl text-slate-900">{formData.store_name || 'Your Store'}</h2>
                 {profile?.is_verified ? (
@@ -306,19 +308,25 @@ const SellerSettings = () => {
                 Seller since {(profile as any)?.created_at ? new Date((profile as any).created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
               </p>
             </div>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-xl shadow-sm relative z-20"
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Save Changes
-            </Button>
           </div>
+        </div>
+      </div>
+
+      {/* Sticky Save Button */}
+      <div className={`fixed bottom-20 lg:bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 z-50 shadow-lg transition-all duration-300 ${isCollapsed ? 'lg:left-[72px]' : 'lg:left-60'}`}>
+        <div className="max-w-3xl mx-auto flex justify-end">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-xl shadow-sm px-6"
+          >
+            {saving ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            Save Changes
+          </Button>
         </div>
       </div>
 
