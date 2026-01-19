@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,24 +7,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Loader2, Store, ArrowRight, AlertTriangle, Mail, Lock, User, Clock, Eye, EyeOff, Package, FileText } from 'lucide-react';
+import { Loader2, Store, ArrowRight, AlertTriangle, Mail, Lock, User, Clock, Eye, EyeOff, Package, FileText, WifiOff } from 'lucide-react';
 import { SellerProvider } from '@/contexts/SellerContext';
 import { SellerSidebarProvider, useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import SellerSidebar from '@/components/seller/SellerSidebar';
 import SellerTopBar from '@/components/seller/SellerTopBar';
 import SellerMobileHeader from '@/components/seller/SellerMobileHeader';
 import SellerMobileNavigation from '@/components/seller/SellerMobileNavigation';
-import SellerDashboard from '@/components/seller/SellerDashboard';
-import SellerProducts from '@/components/seller/SellerProducts';
-import SellerOrders from '@/components/seller/SellerOrders';
-import SellerChat from '@/components/seller/SellerChat';
-import SellerWallet from '@/components/seller/SellerWallet';
-import SellerSupport from '@/components/seller/SellerSupport';
-import SellerSettings from '@/components/seller/SellerSettings';
-import SellerFeatureRequests from '@/components/seller/SellerFeatureRequests';
-import SellerAnalytics from '@/components/seller/SellerAnalytics';
+import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
+import { useConnectivityRecovery } from '@/hooks/useReliableFetch';
 import signinBackground from '@/assets/signin-background.webp';
 import promptheroIcon from '@/assets/prompthero-icon.png';
+
+// Lazy load seller sections for performance
+const SellerDashboard = lazy(() => import('@/components/seller/SellerDashboard'));
+const SellerProducts = lazy(() => import('@/components/seller/SellerProducts'));
+const SellerOrders = lazy(() => import('@/components/seller/SellerOrders'));
+const SellerChat = lazy(() => import('@/components/seller/SellerChat'));
+const SellerWallet = lazy(() => import('@/components/seller/SellerWallet'));
+const SellerSupport = lazy(() => import('@/components/seller/SellerSupport'));
+const SellerSettings = lazy(() => import('@/components/seller/SellerSettings'));
+const SellerFeatureRequests = lazy(() => import('@/components/seller/SellerFeatureRequests'));
+const SellerAnalytics = lazy(() => import('@/components/seller/SellerAnalytics'));
+
+// Loading fallback
+const SectionLoader = () => (
+  <div className="flex items-center justify-center min-h-[300px]">
+    <div className="flex flex-col items-center gap-3">
+      <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+      <p className="text-sm text-gray-500">Loading...</p>
+    </div>
+  </div>
+);
 
 interface SellerProfile {
   id: string;
@@ -535,24 +549,78 @@ const DeletedAccount = () => (
 const SellerMainContent = () => {
   const { isCollapsed } = useSellerSidebarContext();
   
+  // Connectivity recovery
+  const handleReconnect = useCallback(() => {
+    toast.success('Back online! Refreshing data...');
+    window.location.reload();
+  }, []);
+  
+  const isOnline = useConnectivityRecovery(handleReconnect);
+  
   return (
     <main className={`
       min-h-screen bg-slate-50 transition-all duration-300
       pt-16 pb-20 lg:pb-0
       lg:pt-16 ${isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-60'}
     `}>
+      {/* Offline indicator */}
+      {!isOnline && (
+        <div className="fixed top-16 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-2 text-center text-sm flex items-center justify-center gap-2">
+          <WifiOff size={16} />
+          You're offline. Some features may not work.
+        </div>
+      )}
+      
       <div className="p-3 sm:p-4 lg:p-6">
-        <Routes>
-          <Route path="/" element={<SellerDashboard />} />
-          <Route path="/products" element={<SellerProducts />} />
-          <Route path="/orders" element={<SellerOrders />} />
-          <Route path="/analytics" element={<SellerAnalytics />} />
-          <Route path="/chat" element={<SellerChat />} />
-          <Route path="/wallet" element={<SellerWallet />} />
-          <Route path="/feature-requests" element={<SellerFeatureRequests />} />
-          <Route path="/support" element={<SellerSupport />} />
-          <Route path="/settings" element={<SellerSettings />} />
-        </Routes>
+        <Suspense fallback={<SectionLoader />}>
+          <Routes>
+            <Route path="/" element={
+              <SectionErrorBoundary onRetry={() => window.location.reload()}>
+                <SellerDashboard />
+              </SectionErrorBoundary>
+            } />
+            <Route path="/products" element={
+              <SectionErrorBoundary onRetry={() => window.location.reload()}>
+                <SellerProducts />
+              </SectionErrorBoundary>
+            } />
+            <Route path="/orders" element={
+              <SectionErrorBoundary onRetry={() => window.location.reload()}>
+                <SellerOrders />
+              </SectionErrorBoundary>
+            } />
+            <Route path="/analytics" element={
+              <SectionErrorBoundary onRetry={() => window.location.reload()}>
+                <SellerAnalytics />
+              </SectionErrorBoundary>
+            } />
+            <Route path="/chat" element={
+              <SectionErrorBoundary onRetry={() => window.location.reload()}>
+                <SellerChat />
+              </SectionErrorBoundary>
+            } />
+            <Route path="/wallet" element={
+              <SectionErrorBoundary onRetry={() => window.location.reload()}>
+                <SellerWallet />
+              </SectionErrorBoundary>
+            } />
+            <Route path="/feature-requests" element={
+              <SectionErrorBoundary onRetry={() => window.location.reload()}>
+                <SellerFeatureRequests />
+              </SectionErrorBoundary>
+            } />
+            <Route path="/support" element={
+              <SectionErrorBoundary onRetry={() => window.location.reload()}>
+                <SellerSupport />
+              </SectionErrorBoundary>
+            } />
+            <Route path="/settings" element={
+              <SectionErrorBoundary onRetry={() => window.location.reload()}>
+                <SellerSettings />
+              </SectionErrorBoundary>
+            } />
+          </Routes>
+        </Suspense>
       </div>
     </main>
   );
