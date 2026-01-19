@@ -131,38 +131,33 @@ const PromptsGrid = () => {
   const fetchData = async () => {
     setLoading(true);
     
-    const { data: promptsData, error: promptsError } = await supabase
-      .from('prompts')
-      .select(`
-        *,
-        categories (
-          name,
-          icon
-        )
-      `)
-      .order('created_at', { ascending: false });
+    // Fetch ALL data in parallel for maximum speed
+    const [promptsRes, categoriesRes, favoritesRes] = await Promise.allSettled([
+      supabase
+        .from('prompts')
+        .select(`*, categories (name, icon)`)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('categories')
+        .select('*')
+        .order('name'),
+      user 
+        ? supabase.from('favorites').select('prompt_id').eq('user_id', user.id)
+        : Promise.resolve({ data: [] })
+    ]);
 
-    if (promptsError) {
-      console.error('Error fetching prompts:', promptsError);
-      toast.error('Failed to load prompts');
-    } else {
-      setPrompts(promptsData || []);
+    // Set data from successful responses immediately
+    if (promptsRes.status === 'fulfilled' && promptsRes.value.data) {
+      setPrompts(promptsRes.value.data);
     }
-
-    const { data: categoriesData } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name');
     
-    setCategories(categoriesData || []);
-
-    if (user) {
-      const { data: favoritesData } = await supabase
-        .from('favorites')
-        .select('prompt_id')
-        .eq('user_id', user.id);
-      
-      setFavorites(favoritesData?.map(f => f.prompt_id) || []);
+    if (categoriesRes.status === 'fulfilled' && categoriesRes.value.data) {
+      setCategories(categoriesRes.value.data);
+    }
+    
+    if (favoritesRes.status === 'fulfilled') {
+      const favData = (favoritesRes.value as any).data;
+      setFavorites(favData?.map((f: any) => f.prompt_id) || []);
     }
 
     setLoading(false);
@@ -387,10 +382,31 @@ const PromptsGrid = () => {
     );
   };
 
+  // Skeleton loading - shows layout immediately
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
+      <div className="space-y-6 animate-pulse">
+        {/* Tab skeleton */}
+        <div className="bg-white rounded-2xl p-2 border border-gray-200">
+          <div className="flex gap-2">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-10 w-24 bg-gray-200 rounded-xl" />
+            ))}
+          </div>
+        </div>
+        {/* Grid skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+            <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-200">
+              <div className="aspect-[4/3] bg-gray-200" />
+              <div className="p-4 space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-3/4" />
+                <div className="h-3 bg-gray-200 rounded w-full" />
+                <div className="h-8 bg-gray-200 rounded-xl" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

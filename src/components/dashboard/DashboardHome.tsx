@@ -37,7 +37,8 @@ const DashboardHome = () => {
   const [aiAccounts, setAiAccounts] = useState<AIAccount[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [accountFavorites, setAccountFavorites] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [promptsLoading, setPromptsLoading] = useState(true);
+  const [accountsLoading, setAccountsLoading] = useState(true);
   const [isPromptsPaused, setIsPromptsPaused] = useState(false);
   const [isAccountsPaused, setIsAccountsPaused] = useState(false);
   
@@ -47,7 +48,45 @@ const DashboardHome = () => {
   const { user, isPro, profile } = useAuthContext();
 
   useEffect(() => {
-    fetchData();
+    // Fetch prompts and accounts in parallel - independent loading
+    const fetchPrompts = async () => {
+      const { data } = await supabase
+        .from('prompts')
+        .select('id, title, image_url, tool, is_free, is_featured, description')
+        .eq('is_featured', true)
+        .limit(8);
+      setTrendingPrompts(data || []);
+      setPromptsLoading(false);
+    };
+
+    const fetchAccounts = async () => {
+      const { data } = await supabase
+        .from('ai_accounts')
+        .select('id, name, description, price, icon_url, category')
+        .eq('is_available', true)
+        .limit(8);
+      setAiAccounts(data || []);
+      setAccountsLoading(false);
+    };
+
+    // Fire both simultaneously - no waiting
+    fetchPrompts();
+    fetchAccounts();
+  }, []);
+
+  // Fetch user favorites separately (doesn't block main content)
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchFavorites = async () => {
+      const { data } = await supabase
+        .from('favorites')
+        .select('prompt_id')
+        .eq('user_id', user.id);
+      setFavorites(data?.map(f => f.prompt_id) || []);
+    };
+    
+    fetchFavorites();
   }, [user]);
 
   // Auto-slide for Trending Prompts
@@ -89,40 +128,6 @@ const DashboardHome = () => {
     
     return () => clearInterval(interval);
   }, [isAccountsPaused, aiAccounts]);
-
-  const fetchData = async () => {
-    setLoading(true);
-    
-    // Fetch trending/featured prompts (limit to 8 for scrollable)
-    const { data: promptsData } = await supabase
-      .from('prompts')
-      .select('id, title, image_url, tool, is_free, is_featured, description')
-      .eq('is_featured', true)
-      .limit(8);
-    
-    setTrendingPrompts(promptsData || []);
-
-    // Fetch AI accounts (limit to 8 for scrollable)
-    const { data: accountsData } = await supabase
-      .from('ai_accounts')
-      .select('id, name, description, price, icon_url, category')
-      .eq('is_available', true)
-      .limit(8);
-    
-    setAiAccounts(accountsData || []);
-
-    // Fetch user favorites
-    if (user) {
-      const { data: favoritesData } = await supabase
-        .from('favorites')
-        .select('prompt_id')
-        .eq('user_id', user.id);
-      
-      setFavorites(favoritesData?.map(f => f.prompt_id) || []);
-    }
-
-    setLoading(false);
-  };
 
   const toggleFavorite = async (promptId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -172,13 +177,18 @@ const DashboardHome = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
+  // Skeleton component for cards
+  const CardSkeleton = () => (
+    <div className="flex-shrink-0 w-[240px] lg:w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 animate-pulse">
+      <div className="aspect-[4/3] bg-gray-200" />
+      <div className="p-5 space-y-3">
+        <div className="h-4 bg-gray-200 rounded w-3/4" />
+        <div className="h-3 bg-gray-200 rounded w-full" />
+        <div className="h-3 bg-gray-200 rounded w-1/2" />
+        <div className="h-10 bg-gray-200 rounded-xl" />
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="space-y-8 lg:space-y-10 animate-fade-up">
@@ -200,7 +210,11 @@ const DashboardHome = () => {
           </Link>
         </div>
 
-        {trendingPrompts.length > 0 ? (
+        {promptsLoading ? (
+          <div className="flex gap-3 lg:gap-5 overflow-hidden -mx-4 px-4 lg:mx-0 lg:px-0">
+            {[1, 2, 3, 4].map(i => <CardSkeleton key={i} />)}
+          </div>
+        ) : trendingPrompts.length > 0 ? (
           <div 
             ref={promptsScrollRef}
             onMouseEnter={() => setIsPromptsPaused(true)}
@@ -337,7 +351,11 @@ const DashboardHome = () => {
           </Link>
         </div>
 
-        {aiAccounts.length > 0 ? (
+        {accountsLoading ? (
+          <div className="flex gap-3 lg:gap-5 overflow-hidden -mx-4 px-4 lg:mx-0 lg:px-0">
+            {[1, 2, 3, 4].map(i => <CardSkeleton key={i} />)}
+          </div>
+        ) : aiAccounts.length > 0 ? (
           <div 
             ref={accountsScrollRef}
             onMouseEnter={() => setIsAccountsPaused(true)}
