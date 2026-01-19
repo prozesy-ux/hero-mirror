@@ -15,7 +15,9 @@ import {
   Plus,
   ArrowRight,
   ShieldCheck,
-  Activity
+  Activity,
+  BarChart3,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -84,10 +86,10 @@ const SellerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 seller-dashboard">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-2xl" />
+            <Skeleton key={i} className="h-36 rounded-2xl" />
           ))}
         </div>
         <Skeleton className="h-64 rounded-2xl" />
@@ -96,6 +98,13 @@ const SellerDashboard = () => {
   }
 
   const getTrustScoreColor = (score: number) => {
+    if (score >= 90) return 'text-emerald-500';
+    if (score >= 70) return 'text-blue-500';
+    if (score >= 50) return 'text-amber-500';
+    return 'text-red-500';
+  };
+
+  const getTrustScoreBg = (score: number) => {
     if (score >= 90) return 'from-emerald-500 to-teal-500';
     if (score >= 70) return 'from-blue-500 to-indigo-500';
     if (score >= 50) return 'from-amber-500 to-orange-500';
@@ -104,111 +113,153 @@ const SellerDashboard = () => {
 
   const stats = [
     {
-      label: 'Available Balance',
+      label: 'BALANCE',
       value: `$${(wallet?.balance || 0).toFixed(2)}`,
+      change: '+12.5%',
+      changePositive: true,
       icon: Wallet,
-      gradient: 'from-emerald-500 to-teal-500',
-      bgGradient: 'from-emerald-50 to-teal-50',
+      iconBg: 'bg-emerald-500',
       onClick: () => navigate('/seller/wallet')
     },
     {
-      label: 'Pending Balance',
+      label: 'PENDING',
       value: `$${(wallet?.pending_balance || 0).toFixed(2)}`,
+      change: 'Processing',
+      changePositive: null,
       icon: Clock,
-      gradient: 'from-amber-500 to-orange-500',
-      bgGradient: 'from-amber-50 to-orange-50',
+      iconBg: 'bg-amber-500',
       onClick: () => navigate('/seller/wallet')
     },
     {
-      label: 'Total Earnings',
+      label: 'EARNINGS',
       value: `$${totalEarnings.toFixed(2)}`,
+      change: `${orders.length} orders`,
+      changePositive: null,
       icon: DollarSign,
-      gradient: 'from-violet-500 to-purple-500',
-      bgGradient: 'from-violet-50 to-purple-50',
+      iconBg: 'bg-violet-500',
       onClick: () => navigate('/seller/orders')
     },
     {
-      label: 'Total Orders',
-      value: orders.length.toString(),
-      icon: ShoppingBag,
-      gradient: 'from-blue-500 to-indigo-500',
-      bgGradient: 'from-blue-50 to-indigo-50',
-      onClick: () => navigate('/seller/orders')
+      label: 'PRODUCTS',
+      value: products.length.toString(),
+      change: `${products.filter(p => p.is_approved).length} live`,
+      changePositive: null,
+      icon: Package,
+      iconBg: 'bg-blue-500',
+      onClick: () => navigate('/seller/products')
     }
   ];
 
-  const quickStats = [
-    { label: 'Products', value: products.length, icon: Package, color: 'text-violet-600' },
-    { label: 'Completed', value: completedOrders, icon: CheckCircle, color: 'text-emerald-600' },
-    { label: 'Pending', value: pendingOrders, icon: Clock, color: 'text-amber-600' },
-    { label: 'Delivered', value: deliveredOrders, icon: TrendingUp, color: 'text-blue-600' }
-  ];
-
   return (
-    <div className="space-y-6">
-      {/* Trust Score Header */}
+    <div className="space-y-6 seller-dashboard">
+      {/* Trust Score Header - Premium Design */}
       {trustScore && (
-        <div className="flex items-center justify-between bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${getTrustScoreColor(trustScore.trust_score)} flex items-center justify-center`}>
-              <ShieldCheck className="w-7 h-7 text-white" />
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className={`h-1 bg-gradient-to-r ${getTrustScoreBg(trustScore.trust_score)}`} />
+          <div className="p-5 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Circular Progress Ring */}
+              <div className="relative w-16 h-16">
+                <svg className="w-16 h-16 transform -rotate-90">
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="28"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                    className="text-slate-100"
+                  />
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="28"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                    strokeDasharray={`${2 * Math.PI * 28}`}
+                    strokeDashoffset={`${2 * Math.PI * 28 * (1 - trustScore.trust_score / 100)}`}
+                    strokeLinecap="round"
+                    className={getTrustScoreColor(trustScore.trust_score)}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <ShieldCheck className={`w-6 h-6 ${getTrustScoreColor(trustScore.trust_score)}`} />
+                </div>
+              </div>
+              <div>
+                <p className="seller-label text-slate-500 mb-0.5">TRUST SCORE</p>
+                <p className="seller-stat-number text-3xl text-slate-900">{trustScore.trust_score}%</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-slate-500 font-medium">Trust Score</p>
-              <p className="text-2xl font-bold tracking-tight text-slate-900">{trustScore.trust_score}%</p>
-            </div>
-          </div>
-          <div className="hidden sm:flex items-center gap-6 text-sm">
-            <div className="text-center">
-              <p className="font-semibold text-slate-900">{trustScore.successful_orders}</p>
-              <p className="text-slate-500">Orders</p>
-            </div>
-            <div className="text-center">
-              <p className="font-semibold text-slate-900">{trustScore.buyer_approved_count}</p>
-              <p className="text-slate-500">Approved</p>
-            </div>
-            <div className="text-center">
-              <p className="font-semibold text-slate-900">{trustScore.total_reports}</p>
-              <p className="text-slate-500">Reports</p>
+            <div className="hidden sm:flex items-center gap-8">
+              <div className="text-center">
+                <p className="seller-stat-number text-xl text-slate-900">{trustScore.successful_orders}</p>
+                <p className="seller-label text-slate-500">ORDERS</p>
+              </div>
+              <div className="text-center">
+                <p className="seller-stat-number text-xl text-slate-900">{trustScore.buyer_approved_count}</p>
+                <p className="seller-label text-slate-500">APPROVED</p>
+              </div>
+              <div className="text-center">
+                <p className="seller-stat-number text-xl text-slate-900">{trustScore.total_reports}</p>
+                <p className="seller-label text-slate-500">REPORTS</p>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Main Stats Grid */}
+      {/* Main Stats Grid - Premium Fiverr-style Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <button
             key={index}
             onClick={stat.onClick}
-            className={`group relative bg-gradient-to-br ${stat.bgGradient} rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 text-left`}
+            className="group seller-stat-card text-left hover:shadow-lg hover:border-slate-200 hover:scale-[1.02] transition-all duration-300"
           >
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center mb-3`}>
-              <stat.icon className="w-5 h-5 text-white" />
+            <div className="flex items-start justify-between mb-4">
+              <div className={`w-11 h-11 rounded-xl ${stat.iconBg} flex items-center justify-center shadow-sm`}>
+                <stat.icon className="w-5 h-5 text-white" />
+              </div>
+              {stat.changePositive !== null && (
+                <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${
+                  stat.changePositive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-600'
+                }`}>
+                  {stat.change}
+                </span>
+              )}
             </div>
-            <p className="text-sm text-slate-500 font-medium mb-1">{stat.label}</p>
-            <p className="text-2xl font-bold tracking-tight text-slate-900">{stat.value}</p>
-            <ArrowRight className="absolute bottom-5 right-5 w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" />
+            <p className="seller-label text-slate-500 mb-1">{stat.label}</p>
+            <p className="seller-stat-number text-2xl text-slate-900 group-hover:text-slate-700 transition-colors">{stat.value}</p>
+            {stat.changePositive === null && stat.change && (
+              <p className="text-xs text-slate-500 mt-1">{stat.change}</p>
+            )}
           </button>
         ))}
       </div>
 
       {/* Quick Stats Row */}
       <div className="grid grid-cols-4 gap-3">
-        {quickStats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm text-center">
-            <stat.icon className={`w-5 h-5 ${stat.color} mx-auto mb-2`} />
-            <p className="text-xl font-bold tracking-tight text-slate-900">{stat.value}</p>
-            <p className="text-xs text-slate-500">{stat.label}</p>
+        {[
+          { label: 'Completed', value: completedOrders, icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+          { label: 'Pending', value: pendingOrders, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
+          { label: 'Delivered', value: deliveredOrders, icon: TrendingUp, color: 'text-blue-500', bg: 'bg-blue-50' },
+          { label: 'Total', value: orders.length, icon: ShoppingBag, color: 'text-violet-500', bg: 'bg-violet-50' }
+        ].map((stat, index) => (
+          <div key={index} className={`${stat.bg} rounded-xl p-3 text-center border border-transparent`}>
+            <stat.icon className={`w-4 h-4 ${stat.color} mx-auto mb-1`} />
+            <p className="seller-stat-number text-lg text-slate-900">{stat.value}</p>
+            <p className="text-[10px] text-slate-600 font-medium">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Clean Buttons */}
       <div className="flex flex-wrap gap-3">
         <Button
           onClick={() => navigate('/seller/products')}
-          className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl"
+          className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl shadow-sm shadow-emerald-200 font-semibold"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Product
@@ -216,50 +267,77 @@ const SellerDashboard = () => {
         <Button
           variant="outline"
           onClick={() => navigate('/seller/orders')}
-          className="rounded-xl border-slate-200"
+          className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
         >
-          View All Orders
-          <ArrowRight className="w-4 h-4 ml-2" />
+          <ShoppingBag className="w-4 h-4 mr-2" />
+          View Orders
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => navigate('/seller/analytics')}
+          className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
+        >
+          <BarChart3 className="w-4 h-4 mr-2" />
+          Analytics
         </Button>
         <Button
           variant="outline"
           onClick={() => navigate('/seller/wallet')}
-          className="rounded-xl border-slate-200"
+          className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
         >
-          Withdraw Funds
-          <Wallet className="w-4 h-4 ml-2" />
+          <Wallet className="w-4 h-4 mr-2" />
+          Withdraw
         </Button>
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Activity - Timeline Style */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-violet-600" />
-            <h3 className="font-semibold text-slate-900">Recent Activity</h3>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
+              <Activity className="w-4 h-4 text-violet-600" />
+            </div>
+            <div>
+              <h3 className="seller-heading text-slate-900">Recent Activity</h3>
+              <p className="text-xs text-slate-500">Your latest orders</p>
+            </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/seller/orders')}
-            className="text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+            className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 font-medium rounded-lg"
           >
             View All
+            <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
         
         {recentOrders.length === 0 ? (
-          <div className="p-8 text-center">
-            <ShoppingBag className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-            <p className="text-slate-500 font-medium">No orders yet</p>
-            <p className="text-sm text-slate-400 mt-1">Your recent orders will appear here</p>
+          <div className="p-10 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <ShoppingBag className="w-6 h-6 text-slate-400" />
+            </div>
+            <p className="font-semibold text-slate-900 mb-1">No orders yet</p>
+            <p className="text-sm text-slate-500">Your recent orders will appear here</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-50">
-            {recentOrders.map((order) => (
-              <div key={order.id} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors">
+            {recentOrders.map((order, index) => (
+              <div key={order.id} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors group">
+                {/* Timeline Indicator */}
+                <div className="relative flex flex-col items-center">
+                  <div className={`w-3 h-3 rounded-full ${
+                    order.status === 'completed' ? 'bg-emerald-500' :
+                    order.status === 'delivered' ? 'bg-blue-500' : 'bg-amber-500'
+                  }`} />
+                  {index < recentOrders.length - 1 && (
+                    <div className="w-px h-full bg-slate-200 absolute top-4" />
+                  )}
+                </div>
+
                 {/* Product Image */}
-                <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-100">
                   {order.product?.icon_url ? (
                     <img 
                       src={order.product.icon_url} 
@@ -275,7 +353,7 @@ const SellerDashboard = () => {
 
                 {/* Order Details */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900 truncate">
+                  <p className="font-semibold text-slate-900 truncate group-hover:text-violet-700 transition-colors">
                     {order.product?.name || 'Unknown Product'}
                   </p>
                   <p className="text-sm text-slate-500">
@@ -285,10 +363,10 @@ const SellerDashboard = () => {
 
                 {/* Status & Amount */}
                 <div className="text-right flex-shrink-0">
-                  <p className="font-semibold text-slate-900">${(Number(order.seller_earning) || 0).toFixed(2)}</p>
+                  <p className="seller-stat-number text-lg text-slate-900">${(Number(order.seller_earning) || 0).toFixed(2)}</p>
                   <Badge
                     variant="outline"
-                    className={`text-xs ${
+                    className={`text-[10px] font-semibold ${
                       order.status === 'completed'
                         ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                         : order.status === 'delivered'
@@ -296,7 +374,7 @@ const SellerDashboard = () => {
                         : 'border-amber-200 bg-amber-50 text-amber-700'
                     }`}
                   >
-                    {order.status}
+                    {order.status.toUpperCase()}
                   </Badge>
                 </div>
               </div>

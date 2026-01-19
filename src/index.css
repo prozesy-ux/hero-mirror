@@ -3,6 +3,9 @@
 @import "@fontsource/dm-sans/600.css";
 @import "@fontsource/dm-sans/700.css";
 
+/* Plus Jakarta Sans for Seller Dashboard */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -225,6 +228,31 @@
     text-transform: uppercase;
   }
 
+  /* Seller Dashboard Typography - Plus Jakarta Sans */
+  .seller-dashboard {
+    font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
+  }
+
+  .seller-heading {
+    font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .seller-stat-number {
+    font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .seller-label {
+    font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.65rem;
+  }
+
   /* Premium Glass Card */
   .glass-card {
     @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl;
@@ -355,6 +383,33 @@
   
   .tool-badge-default {
     @apply bg-gray-100 text-gray-700 border-gray-200;
+  }
+
+  /* Seller Dashboard Card */
+  .seller-card {
+    @apply bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300;
+  }
+
+  .seller-card-interactive {
+    @apply seller-card hover:scale-[1.02] cursor-pointer;
+  }
+
+  /* Seller Stat Card */
+  .seller-stat-card {
+    @apply bg-white rounded-2xl p-5 border border-slate-100 shadow-sm transition-all duration-300;
+  }
+
+  .seller-stat-card:hover {
+    @apply shadow-md border-slate-200;
+  }
+
+  /* Trust Score Ring */
+  .trust-score-ring {
+    background: conic-gradient(
+      from 0deg,
+      currentColor var(--progress, 0%),
+      rgba(0, 0, 0, 0.1) var(--progress, 0%)
+    );
   }
 
   /* Safe area for mobile bottom navigation */

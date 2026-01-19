@@ -1149,11 +1149,17 @@ export type Database = {
       seller_profiles: {
         Row: {
           auto_approve_products: boolean | null
+          banner_height: string | null
           commission_rate: number | null
           created_at: string | null
           id: string
           is_active: boolean | null
           is_verified: boolean | null
+          show_description: boolean | null
+          show_order_count: boolean | null
+          show_product_count: boolean | null
+          show_reviews: boolean | null
+          show_social_links: boolean | null
           social_links: Json | null
           store_banner_url: string | null
           store_description: string | null
@@ -1169,11 +1175,17 @@ export type Database = {
         }
         Insert: {
           auto_approve_products?: boolean | null
+          banner_height?: string | null
           commission_rate?: number | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
+          show_description?: boolean | null
+          show_order_count?: boolean | null
+          show_product_count?: boolean | null
+          show_reviews?: boolean | null
+          show_social_links?: boolean | null
           social_links?: Json | null
           store_banner_url?: string | null
           store_description?: string | null
@@ -1189,11 +1201,17 @@ export type Database = {
         }
         Update: {
           auto_approve_products?: boolean | null
+          banner_height?: string | null
           commission_rate?: number | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
+          show_description?: boolean | null
+          show_order_count?: boolean | null
+          show_product_count?: boolean | null
+          show_reviews?: boolean | null
+          show_social_links?: boolean | null
           social_links?: Json | null
           store_banner_url?: string | null
           store_description?: string | null

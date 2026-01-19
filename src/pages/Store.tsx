@@ -46,6 +46,13 @@ interface SellerProfile {
   total_sales: number;
   total_orders: number;
   social_links: Record<string, string> | null;
+  // Display settings
+  banner_height?: 'small' | 'medium' | 'large';
+  show_reviews?: boolean;
+  show_product_count?: boolean;
+  show_order_count?: boolean;
+  show_description?: boolean;
+  show_social_links?: boolean;
 }
 
 interface SellerProduct {
@@ -70,6 +77,13 @@ interface Category {
   icon: string | null;
   color: string | null;
 }
+
+// Banner height mapping
+const bannerHeightClasses: Record<string, string> = {
+  small: 'h-32 md:h-40',
+  medium: 'h-48 md:h-64',
+  large: 'h-64 md:h-80'
+};
 
 // Inner component that uses FloatingChat context
 const StoreContent = () => {
@@ -103,7 +117,6 @@ const StoreContent = () => {
   // Handle return from auth with pending purchase or chat
   useEffect(() => {
     if (!user || products.length === 0 || !seller) {
-      // Wait until we have user, products, and seller data
       return;
     }
 
@@ -113,20 +126,16 @@ const StoreContent = () => {
     try {
       const data = JSON.parse(storeReturn);
       
-      // Validate this storeReturn is for the current store
       if (data.returnUrl && !data.returnUrl.includes(storeSlug)) {
-        // This storeReturn is for a different store, don't process it here
         return;
       }
 
       const pendingProd = products.find(p => p.id === data.pendingProductId);
       
       if (pendingProd) {
-        // Successfully found product - NOW we can remove storeReturn
         localStorage.removeItem('storeReturn');
         
         if (data.pendingAction === 'chat') {
-          // Open floating chat directly
           openChat({
             sellerId: seller.id,
             sellerName: seller.store_name,
@@ -136,16 +145,13 @@ const StoreContent = () => {
           });
           toast.success(`Welcome back! Chat with ${seller.store_name} is now open`);
         } else {
-          // Open product modal for purchase
           setSelectedProduct(pendingProd);
           toast.success(`Welcome back! Continue your purchase of "${pendingProd.name}"`);
         }
       } else if (data.pendingProductId) {
-        // Product ID was specified but not found - product may have been removed
         localStorage.removeItem('storeReturn');
         toast.info(`Welcome back to ${seller.store_name}!`);
       }
-      // If no pendingProductId, keep storeReturn in case it's needed elsewhere
     } catch (e) {
       console.error('Failed to parse storeReturn', e);
       localStorage.removeItem('storeReturn');
@@ -167,7 +173,6 @@ const StoreContent = () => {
   const fetchStoreData = async () => {
     setLoading(true);
     
-    // Fetch seller profile by slug
     const { data: sellerData, error: sellerError } = await supabase
       .from('seller_profiles')
       .select('*')
@@ -182,7 +187,6 @@ const StoreContent = () => {
 
     setSeller(sellerData as SellerProfile);
 
-    // Fetch seller products
     const { data: productsData } = await supabase
       .from('seller_products')
       .select('*')
@@ -195,7 +199,6 @@ const StoreContent = () => {
       setProducts(productsData);
     }
 
-    // Fetch categories
     const { data: categoriesData } = await supabase
       .from('categories')
       .select('*')
@@ -218,7 +221,6 @@ const StoreContent = () => {
     if (data) setWallet(data);
   };
 
-  // Helper to persist store return data for post-auth redirect
   const persistStoreReturn = (productId: string, action: 'buy' | 'chat') => {
     const returnData = {
       returnUrl: `/store/${storeSlug}`,
@@ -231,7 +233,6 @@ const StoreContent = () => {
 
   const handlePurchase = async (product: SellerProduct) => {
     if (!user) {
-      // Save pending purchase for dashboard to handle after login - NO POPUP
       localStorage.setItem('pendingPurchase', JSON.stringify({
         productId: product.id,
         productName: product.name,
@@ -240,7 +241,6 @@ const StoreContent = () => {
         storeSlug: storeSlug,
         iconUrl: product.icon_url
       }));
-      // Direct navigation to sign-in page - no popup modal
       navigate('/signin');
       return;
     }
@@ -248,7 +248,6 @@ const StoreContent = () => {
     const currentBalance = wallet?.balance || 0;
 
     if (currentBalance < product.price) {
-      // Show insufficient balance modal instead of redirecting
       setInsufficientFundsModal({
         show: true,
         required: product.price,
@@ -262,7 +261,6 @@ const StoreContent = () => {
     setPurchasing(product.id);
 
     try {
-      // Create seller order
       const { error } = await supabase.from('seller_orders').insert({
         seller_id: product.seller_id,
         buyer_id: user.id,
@@ -274,10 +272,9 @@ const StoreContent = () => {
 
       if (error) throw error;
 
-      // Deduct from wallet
       await supabase
         .from('user_wallets')
-        .update({ balance: wallet.balance - product.price })
+        .update({ balance: wallet!.balance - product.price })
         .eq('user_id', user.id);
 
       toast.success('Purchase successful! The seller will deliver your order soon.');
@@ -291,8 +288,6 @@ const StoreContent = () => {
   };
 
   const handleLoginRedirect = (isSignup = false) => {
-    // storeReturn is already persisted by handlePurchase/handleChat
-    // Add returnTo as backup in case storeReturn gets cleared
     setShowLoginModal(false);
     const returnTo = encodeURIComponent(`/store/${storeSlug}`);
     navigate(isSignup ? `/signin?mode=signup&returnTo=${returnTo}` : `/signin?returnTo=${returnTo}`);
@@ -308,7 +303,6 @@ const StoreContent = () => {
 
   const handleChat = (product: SellerProduct) => {
     if (!user) {
-      // Save pending chat for dashboard to handle after login - NO POPUP
       localStorage.setItem('pendingChat', JSON.stringify({
         productId: product.id,
         productName: product.name,
@@ -316,12 +310,10 @@ const StoreContent = () => {
         storeSlug: storeSlug,
         sellerName: seller?.store_name || ''
       }));
-      // Direct navigation to sign-in page - no popup modal
       navigate('/signin');
       return;
     }
     
-    // Open floating chat directly
     if (seller) {
       openChat({
         sellerId: seller.id,
@@ -333,7 +325,6 @@ const StoreContent = () => {
     }
   };
 
-  // Filter products
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -346,9 +337,19 @@ const StoreContent = () => {
     return (wallet?.balance || 0) >= price;
   };
 
+  // Get banner height class
+  const bannerHeight = bannerHeightClasses[seller?.banner_height || 'medium'];
+
+  // Check display settings
+  const showReviews = seller?.show_reviews !== false;
+  const showProductCount = seller?.show_product_count !== false;
+  const showOrderCount = seller?.show_order_count !== false;
+  const showDescription = seller?.show_description !== false;
+  const showSocialLinks = seller?.show_social_links !== false;
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <Skeleton className="h-64 w-full rounded-3xl mb-8" />
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -392,12 +393,24 @@ const StoreContent = () => {
                 {seller.is_verified && <CheckCircle className="w-4 h-4 text-emerald-500 fill-emerald-100" />}
               </div>
               <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                <span>4.9</span>
-                <span>•</span>
-                <span>{products.length} products</span>
-                <span>•</span>
-                <span>{seller.total_orders || 0} orders</span>
+                {showReviews && (
+                  <>
+                    <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                    <span>4.9</span>
+                    <span>•</span>
+                  </>
+                )}
+                {showProductCount && (
+                  <>
+                    <span>{products.length} products</span>
+                  </>
+                )}
+                {showOrderCount && (
+                  <>
+                    <span>•</span>
+                    <span>{seller.total_orders || 0} orders</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -415,12 +428,11 @@ const StoreContent = () => {
             </Button>
             {user ? (
               <Button
-                variant="ghost"
                 size="sm"
-                className="rounded-xl"
+                className="rounded-xl bg-emerald-600 hover:bg-emerald-700"
                 onClick={() => navigate('/dashboard')}
               >
-                My Dashboard
+                Dashboard
               </Button>
             ) : (
               <Button
@@ -435,10 +447,10 @@ const StoreContent = () => {
         </div>
       </header>
 
-      {/* Store Banner */}
+      {/* Store Banner - Dynamic Height */}
       <div className="relative">
         {seller.store_video_url ? (
-          <div className="relative h-48 md:h-64 overflow-hidden">
+          <div className={`relative ${bannerHeight} overflow-hidden`}>
             <video
               autoPlay
               muted
@@ -452,7 +464,7 @@ const StoreContent = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
           </div>
         ) : seller.store_banner_url ? (
-          <div className="relative h-48 md:h-64">
+          <div className={`relative ${bannerHeight}`}>
             <img 
               src={seller.store_banner_url}
               alt={seller.store_name}
@@ -461,7 +473,7 @@ const StoreContent = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
           </div>
         ) : (
-          <div className="h-48 md:h-64 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500" />
+          <div className={`${bannerHeight} bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500`} />
         )}
 
         {/* Store Info Overlay */}
@@ -487,8 +499,30 @@ const StoreContent = () => {
                 <p className="text-sm md:text-base text-white/90 mt-1">{seller.store_tagline}</p>
               )}
               
+              {/* Stats Row in Banner */}
+              <div className="flex items-center gap-4 mt-3 flex-wrap">
+                {showReviews && (
+                  <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    <span className="text-sm font-semibold">4.9</span>
+                  </div>
+                )}
+                {showProductCount && (
+                  <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    <Package className="w-4 h-4" />
+                    <span className="text-sm font-semibold">{products.length} products</span>
+                  </div>
+                )}
+                {showOrderCount && (
+                  <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    <Users className="w-4 h-4" />
+                    <span className="text-sm font-semibold">{seller.total_orders || 0} orders</span>
+                  </div>
+                )}
+              </div>
+              
               {/* Social Links */}
-              {seller.social_links && Object.keys(seller.social_links).length > 0 && (
+              {showSocialLinks && seller.social_links && Object.keys(seller.social_links).length > 0 && (
                 <div className="flex items-center gap-2 mt-3">
                   {seller.social_links.instagram && (
                     <a 
@@ -617,11 +651,21 @@ const StoreContent = () => {
               </div>
             )}
 
-            {/* Store Description */}
-            {seller.store_description && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 shadow-md">
-                <h3 className="font-bold text-gray-900 mb-2">About this store</h3>
-                <p className="text-gray-600">{seller.store_description}</p>
+            {/* Store Description - with checkmarks */}
+            {showDescription && seller.store_description && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 shadow-sm">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-emerald-500" />
+                  About this store
+                </h3>
+                <div className="space-y-2">
+                  {seller.store_description.split('\n').filter(Boolean).map((line, i) => (
+                    <p key={i} className="text-gray-600 flex items-start gap-2">
+                      <Check className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <span>{line}</span>
+                    </p>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -700,7 +744,7 @@ const StoreContent = () => {
               {/* Stats */}
               <div className="flex items-center gap-4 text-sm text-slate-600">
                 <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                   <span>5.0</span>
                 </div>
                 <div className="flex items-center gap-1">
