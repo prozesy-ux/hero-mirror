@@ -262,11 +262,11 @@ const SellerSettings = () => {
   return (
     <div className="max-w-3xl mx-auto p-6 lg:p-8 space-y-6 seller-dashboard">
       {/* Profile Header */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative z-10">
         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 h-20" />
         <div className="px-6 pb-6">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-10">
-            <div className="relative">
+            <div className="relative z-20">
               <Avatar className="w-20 h-20 border-4 border-white shadow-lg">
                 <AvatarImage src={formData.store_logo_url} />
                 <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-xl font-bold">
@@ -288,7 +288,7 @@ const SellerSettings = () => {
                 />
               </label>
             </div>
-            <div className="flex-1 pt-4 sm:pt-0">
+            <div className="flex-1 pt-4 sm:pt-0 relative z-20">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="seller-heading text-xl text-slate-900">{formData.store_name || 'Your Store'}</h2>
                 {profile?.is_verified ? (
@@ -309,7 +309,7 @@ const SellerSettings = () => {
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-xl shadow-sm"
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-xl shadow-sm relative z-20"
             >
               {saving ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
