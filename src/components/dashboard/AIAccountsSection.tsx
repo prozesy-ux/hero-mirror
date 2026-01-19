@@ -118,6 +118,24 @@ interface DynamicCategory {
   is_active: boolean;
 }
 
+// Pending purchase/chat interfaces for post-auth flows
+interface PendingPurchase {
+  productId: string;
+  productName: string;
+  sellerId: string;
+  price: number;
+  storeSlug: string;
+  iconUrl: string | null;
+}
+
+interface PendingChat {
+  productId: string;
+  productName: string;
+  sellerId: string;
+  storeSlug: string;
+  sellerName: string;
+}
+
 // Generate stable random purchase count per account
 const getPurchaseCount = (accountId: string) => {
   const hash = accountId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -177,6 +195,9 @@ const AIAccountsSection = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Pending purchase state (for post-auth flow from store)
+  const [pendingPurchaseData, setPendingPurchaseData] = useState<PendingPurchase | null>(null);
 
   useEffect(() => {
     fetchAccounts();
@@ -247,6 +268,57 @@ const AIAccountsSection = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Handle pending purchase or chat from store redirect
+  useEffect(() => {
+    if (!user) return;
+    
+    // Handle pending purchase
+    const storedPurchase = localStorage.getItem('pendingPurchase');
+    if (storedPurchase) {
+      try {
+        const data = JSON.parse(storedPurchase) as PendingPurchase;
+        localStorage.removeItem('pendingPurchase');
+        
+        // Try to find the product in sellerProducts to open full modal
+        const product = sellerProducts.find(p => p.id === data.productId);
+        if (product) {
+          setSelectedSellerProduct(product);
+          setShowSellerDetailsModal(true);
+          toast.success(`Welcome! Complete your purchase of "${data.productName}"`);
+        } else {
+          // Product not in current list - show custom pending purchase modal
+          setPendingPurchaseData(data);
+          toast.success(`Welcome! Complete your purchase of "${data.productName}"`);
+        }
+      } catch (e) {
+        console.error('Failed to parse pendingPurchase', e);
+        localStorage.removeItem('pendingPurchase');
+      }
+    }
+
+    // Handle pending chat
+    const storedChat = localStorage.getItem('pendingChat');
+    if (storedChat) {
+      try {
+        const data = JSON.parse(storedChat) as PendingChat;
+        localStorage.removeItem('pendingChat');
+        
+        // Open floating chat directly
+        openChat({
+          sellerId: data.sellerId,
+          sellerName: data.sellerName,
+          productId: data.productId,
+          productName: data.productName,
+          type: 'seller'
+        });
+        toast.success(`Chat opened with ${data.sellerName} about "${data.productName}"`);
+      } catch (e) {
+        console.error('Failed to parse pendingChat', e);
+        localStorage.removeItem('pendingChat');
+      }
+    }
+  }, [user, sellerProducts, openChat]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -541,6 +613,77 @@ const AIAccountsSection = () => {
     } catch (error: any) {
       console.error('Purchase error:', error);
       toast.error(error.message || 'Failed to complete purchase');
+    } finally {
+      setPurchasing(null);
+    }
+  };
+
+  // Handle pending purchase from store redirect
+  const handlePendingPurchase = async (data: PendingPurchase) => {
+    if (!user) return;
+    
+    const currentBalance = wallet?.balance || 0;
+    if (currentBalance < data.price) {
+      toast.error('Insufficient balance. Please top up your wallet.');
+      setPendingPurchaseData(null);
+      navigate('/dashboard/billing');
+      return;
+    }
+
+    setPurchasing(data.productId);
+
+    try {
+      const commissionRate = 0.10;
+      const sellerEarning = data.price * (1 - commissionRate);
+
+      // 1. Deduct from buyer wallet
+      const newBalance = currentBalance - data.price;
+      const { error: updateError } = await supabase
+        .from('user_wallets')
+        .update({ balance: newBalance })
+        .eq('user_id', user.id);
+
+      if (updateError) throw new Error('Failed to update wallet balance');
+
+      // 2. Create wallet transaction record
+      await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user.id,
+          type: 'purchase',
+          amount: data.price,
+          status: 'completed',
+          description: `Seller Product: ${data.productName}`
+        });
+
+      // 3. Create seller order
+      const { error: orderError } = await supabase
+        .from('seller_orders')
+        .insert({
+          seller_id: data.sellerId,
+          buyer_id: user.id,
+          product_id: data.productId,
+          amount: data.price,
+          seller_earning: sellerEarning,
+          status: 'pending'
+        });
+
+      if (orderError) throw new Error('Failed to create order');
+
+      // 4. Add to seller pending balance
+      await supabase.rpc('add_seller_pending_balance', {
+        p_seller_id: data.sellerId,
+        p_amount: sellerEarning
+      });
+
+      toast.success('Purchase successful! The seller will deliver your order soon.');
+      setPendingPurchaseData(null);
+      fetchWallet();
+      fetchSellerOrders();
+      setActiveTab('purchases');
+    } catch (error: any) {
+      console.error('Pending purchase error:', error);
+      toast.error(error.message || 'Purchase failed');
     } finally {
       setPurchasing(null);
     }
@@ -2120,6 +2263,108 @@ const AIAccountsSection = () => {
                     'Confirm Purchase'
                   )}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Purchase Modal - for products from external stores */}
+      {pendingPurchaseData && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
+            {/* Product Image */}
+            <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200">
+              {pendingPurchaseData.iconUrl ? (
+                <img 
+                  src={pendingPurchaseData.iconUrl} 
+                  alt={pendingPurchaseData.productName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Package className="h-20 w-20 text-gray-300" />
+                </div>
+              )}
+              <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold">
+                From {pendingPurchaseData.storeSlug}
+              </div>
+              <button
+                onClick={() => setPendingPurchaseData(null)}
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                {pendingPurchaseData.productName}
+              </h3>
+
+              {/* Price & Wallet */}
+              <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-xl">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Price</p>
+                  <p className="text-2xl font-bold text-gray-900">${pendingPurchaseData.price.toFixed(2)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 mb-1">Your Balance</p>
+                  <p className={`text-xl font-bold ${(wallet?.balance || 0) >= pendingPurchaseData.price ? 'text-emerald-600' : 'text-red-500'}`}>
+                    ${(wallet?.balance || 0).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Insufficient Balance Warning */}
+              {(wallet?.balance || 0) < pendingPurchaseData.price && (
+                <div className="flex items-start gap-2 p-3 mb-4 bg-red-50 border border-red-200 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-red-700">Insufficient Balance</p>
+                    <p className="text-xs text-red-600">
+                      You need ${(pendingPurchaseData.price - (wallet?.balance || 0)).toFixed(2)} more to complete this purchase.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setPendingPurchaseData(null)}
+                  className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                {(wallet?.balance || 0) < pendingPurchaseData.price ? (
+                  <button
+                    onClick={() => {
+                      setPendingPurchaseData(null);
+                      navigate('/dashboard/billing');
+                    }}
+                    className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                  >
+                    <Wallet size={18} />
+                    Top Up Wallet
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handlePendingPurchase(pendingPurchaseData)}
+                    disabled={purchasing === pendingPurchaseData.productId}
+                    className="flex-1 px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {purchasing === pendingPurchaseData.productId ? (
+                      <Loader2 className="animate-spin" size={18} />
+                    ) : (
+                      <>
+                        Buy Now
+                        <ArrowRight size={16} />
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
