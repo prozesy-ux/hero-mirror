@@ -679,6 +679,7 @@ const UnifiedResellersManagement: React.FC = () => {
                   <TableRow>
                     <TableHead>Store</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Commission</TableHead>
                     <TableHead>Sales</TableHead>
                     <TableHead>Orders</TableHead>
                     <TableHead>Auto-Approve</TableHead>
@@ -711,6 +712,34 @@ const UnifiedResellersManagement: React.FC = () => {
                           {!seller.is_active && (
                             <Badge variant="destructive">Suspended</Badge>
                           )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={seller.commission_rate}
+                            onChange={(e) => {
+                              const newRate = Math.min(100, Math.max(0, Number(e.target.value)));
+                              setSellers(prev => prev.map(s => 
+                                s.id === seller.id ? { ...s, commission_rate: newRate } : s
+                              ));
+                            }}
+                            onBlur={async (e) => {
+                              const newRate = Math.min(100, Math.max(0, Number(e.target.value)));
+                              const result = await mutateData('seller_profiles', 'update', { commission_rate: newRate }, seller.id);
+                              if (result.success) {
+                                toast.success(`Commission updated to ${newRate}%`);
+                              } else {
+                                toast.error('Failed to update commission');
+                                fetchAllData();
+                              }
+                            }}
+                            className="w-16 h-8 text-center text-sm"
+                          />
+                          <span className="text-muted-foreground text-sm">%</span>
                         </div>
                       </TableCell>
                       <TableCell>${Number(seller.total_sales).toFixed(2)}</TableCell>

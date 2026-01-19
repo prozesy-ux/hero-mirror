@@ -36,18 +36,21 @@ interface SellerProfile {
   store_name: string;
   store_logo_url: string | null;
   is_verified: boolean;
-  total_orders: number;
+  total_orders?: number;
 }
 
 interface ProductDetailModalProps {
   product: SellerProduct | null;
   seller: SellerProfile | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onChat: () => void;
-  onBuy: () => void;
+  isOpen?: boolean;
+  open?: boolean;
+  onClose?: () => void;
+  onOpenChange?: (open: boolean) => void;
+  onChat?: () => void;
+  onBuy?: () => void;
   onViewFull?: () => void;
   purchasing?: boolean;
+  walletBalance?: number;
   userBalance?: number;
   isLoggedIn?: boolean;
 }
@@ -55,15 +58,21 @@ interface ProductDetailModalProps {
 const ProductDetailModal = ({
   product,
   seller,
+  isOpen,
   open,
+  onClose,
   onOpenChange,
   onChat,
   onBuy,
   onViewFull,
   purchasing = false,
+  walletBalance,
   userBalance = 0,
   isLoggedIn = false
 }: ProductDetailModalProps) => {
+  const isDialogOpen = isOpen ?? open ?? false;
+  const handleOpenChange = onOpenChange ?? ((open: boolean) => { if (!open && onClose) onClose(); });
+  const balance = walletBalance ?? userBalance;
   const [averageRating, setAverageRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
 
@@ -90,11 +99,11 @@ const ProductDetailModal = ({
 
   if (!product || !seller) return null;
 
-  const hasEnoughBalance = userBalance >= product.price;
+  const hasEnoughBalance = balance >= product.price;
   const showChat = product.chat_allowed !== false;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl p-0 overflow-hidden rounded-2xl">
         {/* Image Section */}
         <div className="relative aspect-video bg-slate-100">
@@ -189,7 +198,7 @@ const ProductDetailModal = ({
             </div>
             {isLoggedIn && (
               <div className="flex items-center gap-2 text-sm text-slate-500">
-                <span>Your Balance: ${userBalance.toFixed(2)}</span>
+                <span>Your Balance: ${balance.toFixed(2)}</span>
               </div>
             )}
           </div>

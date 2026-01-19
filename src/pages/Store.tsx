@@ -27,6 +27,7 @@ import {
 import { Instagram, Twitter, Youtube, Music } from 'lucide-react';
 import StoreSidebar from '@/components/store/StoreSidebar';
 import StoreProductCard from '@/components/store/StoreProductCard';
+import ProductDetailModal from '@/components/store/ProductDetailModal';
 import ShareStoreModal from '@/components/seller/ShareStoreModal';
 import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatContext';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
@@ -639,88 +640,26 @@ const StoreContent = () => {
       </main>
 
       {/* Product Details Modal */}
-      <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              {selectedProduct?.icon_url && (
-                <img 
-                  src={selectedProduct.icon_url} 
-                  alt={selectedProduct.name}
-                  className="w-12 h-12 rounded-xl object-cover"
-                />
-              )}
-              {selectedProduct?.name}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedProduct?.description || 'Premium digital product from this store.'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedProduct && (
-            <div className="space-y-4">
-              {/* Tags */}
-              {selectedProduct.tags && selectedProduct.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedProduct.tags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="rounded-full">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {/* Stats */}
-              <div className="flex items-center gap-4 text-sm text-slate-600">
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span>5.0</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Users className="w-4 h-4" />
-                  <span>{selectedProduct.sold_count || 0} sold</span>
-                </div>
-              </div>
-
-              {/* Price */}
-              <div className="flex items-center justify-between py-4 border-t border-slate-100">
-                <span className="text-2xl font-bold text-emerald-600">${selectedProduct.price}</span>
-                {user && wallet && (
-                  <span className="text-sm text-slate-500">
-                    Balance: ${wallet.balance.toFixed(2)}
-                  </span>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                {selectedProduct.chat_allowed !== false && (
-                  <Button
-                    variant="outline"
-                    className="flex-1 rounded-xl"
-                    onClick={() => handleChat(selectedProduct)}
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Chat
-                  </Button>
-                )}
-                <Button
-                  className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl"
-                  onClick={() => handlePurchase(selectedProduct)}
-                  disabled={purchasing === selectedProduct.id}
-                >
-                  {purchasing === selectedProduct.id ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                  )}
-                  Buy Now
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ProductDetailModal
+        product={selectedProduct}
+        seller={seller ? {
+          id: seller.id,
+          store_name: seller.store_name,
+          store_logo_url: seller.store_logo_url,
+          is_verified: seller.is_verified
+        } : null}
+        isOpen={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onChat={selectedProduct ? () => handleChat(selectedProduct) : undefined}
+        onBuy={selectedProduct ? () => handlePurchase(selectedProduct) : undefined}
+        onViewFull={selectedProduct ? () => {
+          setSelectedProduct(null);
+          navigate(`/store/${storeSlug}/product/${selectedProduct.id}`);
+        } : undefined}
+        isLoggedIn={!!user}
+        walletBalance={wallet?.balance}
+        purchasing={!!purchasing}
+      />
 
       {/* Login Modal */}
       <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
