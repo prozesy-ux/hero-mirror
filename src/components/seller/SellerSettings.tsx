@@ -28,17 +28,26 @@ import {
   DollarSign,
   Calendar,
   Settings,
-  Image
+  Image,
+  Link2,
+  Video,
+  Globe
 } from 'lucide-react';
+import VideoUploader from './VideoUploader';
 
 const SellerSettings = () => {
   const { profile, loading, refreshProfile } = useSellerContext();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [bannerUploading, setBannerUploading] = useState(false);
   const [formData, setFormData] = useState({
     store_name: '',
     store_description: '',
-    store_logo_url: ''
+    store_logo_url: '',
+    store_banner_url: '',
+    store_video_url: '',
+    store_tagline: '',
+    store_slug: ''
   });
 
   useEffect(() => {
@@ -46,7 +55,11 @@ const SellerSettings = () => {
       setFormData({
         store_name: profile.store_name || '',
         store_description: profile.store_description || '',
-        store_logo_url: profile.store_logo_url || ''
+        store_logo_url: profile.store_logo_url || '',
+        store_banner_url: (profile as any).store_banner_url || '',
+        store_video_url: (profile as any).store_video_url || '',
+        store_tagline: (profile as any).store_tagline || '',
+        store_slug: (profile as any).store_slug || ''
       });
     }
   }, [profile]);
@@ -65,7 +78,10 @@ const SellerSettings = () => {
       .update({
         store_name: formData.store_name.trim(),
         store_description: formData.store_description.trim() || null,
-        store_logo_url: formData.store_logo_url.trim() || null
+        store_logo_url: formData.store_logo_url.trim() || null,
+        store_banner_url: formData.store_banner_url.trim() || null,
+        store_video_url: formData.store_video_url.trim() || null,
+        store_tagline: formData.store_tagline.trim() || null
       })
       .eq('id', profile.id);
 
@@ -76,6 +92,43 @@ const SellerSettings = () => {
       refreshProfile();
     }
     setSaving(false);
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile?.id) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setBannerUploading(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `store-banners/${profile.id}-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('store-media')
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) {
+      toast.error('Failed to upload banner');
+      setBannerUploading(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('store-media')
+      .getPublicUrl(fileName);
+
+    setFormData(prev => ({ ...prev, store_banner_url: publicUrl }));
+    setBannerUploading(false);
+    toast.success('Banner uploaded! Click Save to apply.');
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,6 +328,86 @@ const SellerSettings = () => {
                 </label>
               </div>
             </div>
+
+            {/* Store URL */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                Store URL
+              </Label>
+              <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="text-sm text-slate-500">{window.location.origin}/store/</span>
+                <span className="text-sm font-medium text-violet-700">{formData.store_slug || 'your-store'}</span>
+              </div>
+              <p className="text-xs text-slate-400">Your store URL is auto-generated from your store name</p>
+            </div>
+
+            {/* Store Tagline */}
+            <div className="space-y-2">
+              <Label htmlFor="store_tagline" className="text-sm font-medium text-slate-700">
+                Store Tagline
+              </Label>
+              <Input
+                id="store_tagline"
+                value={formData.store_tagline}
+                onChange={(e) => setFormData(prev => ({ ...prev, store_tagline: e.target.value }))}
+                placeholder="e.g., Premium AI accounts at unbeatable prices"
+                className="h-11 rounded-xl border-slate-200 focus:border-violet-500 focus:ring-violet-500/20"
+                maxLength={100}
+              />
+              <p className="text-xs text-slate-400">A catchy phrase that appears on your store page</p>
+            </div>
+
+            {/* Store Banner */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Store Banner</Label>
+              {formData.store_banner_url && (
+                <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                  <img 
+                    src={formData.store_banner_url} 
+                    alt="Store banner" 
+                    className="w-full h-32 object-cover"
+                  />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => setFormData(prev => ({ ...prev, store_banner_url: '' }))}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              )}
+              {!formData.store_banner_url && (
+                <label className="block">
+                  <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-violet-300 hover:bg-violet-50/50 transition-colors cursor-pointer">
+                    {bannerUploading ? (
+                      <Loader2 className="w-8 h-8 text-violet-600 mx-auto animate-spin" />
+                    ) : (
+                      <>
+                        <Image className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                        <p className="text-sm text-slate-600">Click to upload banner image</p>
+                        <p className="text-xs text-slate-400">Recommended: 1920x400px</p>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerUpload}
+                    className="hidden"
+                    disabled={bannerUploading}
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* Profile Video */}
+            <VideoUploader
+              currentVideoUrl={formData.store_video_url}
+              onVideoChange={(url) => setFormData(prev => ({ ...prev, store_video_url: url }))}
+              sellerId={profile?.id || ''}
+            />
           </AccordionContent>
         </AccordionItem>
 

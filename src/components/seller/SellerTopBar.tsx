@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import { useSellerContext } from '@/contexts/SellerContext';
@@ -27,10 +27,11 @@ import {
   ShoppingCart,
   MessageSquare,
   HelpCircle,
-  Store,
-  Lightbulb
+  Lightbulb,
+  Share2
 } from 'lucide-react';
 import theLogo from '@/assets/the-logo.png';
+import ShareStoreModal from './ShareStoreModal';
 
 interface Notification {
   id: string;
@@ -59,6 +60,7 @@ const SellerTopBar = () => {
   const [searchFocused, setSearchFocused] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadChats, setUnreadChats] = useState(0);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
 
@@ -189,8 +191,18 @@ const SellerTopBar = () => {
         </nav>
       </div>
 
-      {/* Right Section - Wallet, Notifications, Profile */}
+      {/* Right Section - Share, Wallet, Notifications, Profile */}
       <div className="flex items-center gap-4">
+        {/* Share Store Button */}
+        <Button
+          variant="outline"
+          onClick={() => setShowShareModal(true)}
+          className="gap-2 rounded-xl border-violet-200 text-violet-700 hover:bg-violet-50 hover:text-violet-800"
+        >
+          <Share2 className="h-4 w-4" />
+          <span className="hidden xl:inline">Share Store</span>
+        </Button>
+
         {/* Wallet Balance */}
         <Link 
           to="/seller/wallet"
@@ -309,6 +321,14 @@ const SellerTopBar = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Share Store Modal */}
+      <ShareStoreModal
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
+        storeSlug={(profile as any)?.store_slug || null}
+        storeName={profile?.store_name || 'My Store'}
+      />
     </header>
   );
 };

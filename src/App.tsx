@@ -11,6 +11,7 @@ import SignIn from "./pages/SignIn";
 import Dashboard from "./pages/Dashboard";
 import Seller from "./pages/Seller";
 import Admin from "./pages/Admin";
+import Store from "./pages/Store";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignIn />} />
+            <Route path="/store/:storeSlug" element={<Store />} />
             <Route path="/dashboard/*" element={
               <ProtectedRoute>
                 <Dashboard />
