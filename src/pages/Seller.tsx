@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Loader2, Store, ArrowRight, AlertTriangle, Mail, Lock, User, Clock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Store, ArrowRight, AlertTriangle, Mail, Lock, User, Clock, Eye, EyeOff, Package, FileText } from 'lucide-react';
 import { SellerProvider } from '@/contexts/SellerContext';
 import { SellerSidebarProvider, useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import SellerSidebar from '@/components/seller/SellerSidebar';
@@ -86,7 +86,13 @@ const SellerAuthForm = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   const handleGoogleAuth = async () => {
-    const { error } = await signInWithGoogle();
+    // Override to redirect back to /seller instead of /dashboard
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/seller`
+      }
+    });
     if (error) {
       toast.error(error.message);
     }
@@ -338,58 +344,127 @@ const SellerRegistration = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-          <div className="text-center mb-8">
-            <div className="mx-auto mb-4 h-14 w-14 rounded-xl bg-emerald-50 flex items-center justify-center">
-              <Store className="h-7 w-7 text-emerald-600" />
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900">Become a Seller</h1>
-            <p className="text-slate-500 text-sm mt-2">
-              Create your store and start selling
+    <div className="flex min-h-dvh flex-col lg:flex-row">
+      {/* Left Side - Background Image */}
+      <div className="relative hidden h-full min-h-dvh overflow-hidden lg:block lg:w-2/3">
+        <img
+          src={signinBackground}
+          alt="Background"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 z-10 bg-gradient-to-br from-black/60 via-black/60 to-gray-900/60" />
+        <div
+          className="absolute inset-0 z-10"
+          style={{
+            backgroundImage: "radial-gradient(rgba(0, 0, 0, 0.15) 1px, transparent 0)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-12 text-center">
+          <div className="space-y-3">
+            <h1 className="text-4xl font-light tracking-tight text-white drop-shadow-lg">
+              Create Your Store
+            </h1>
+            <p className="text-xl font-medium text-white/90 drop-shadow-md">
+              You're one step away from selling
             </p>
           </div>
+        </div>
+      </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="store_name">Store Name</Label>
-              <Input
-                id="store_name"
-                placeholder="Your Store Name"
-                value={formData.store_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, store_name: e.target.value }))}
-                className="border-slate-200"
-                required
-              />
+      {/* Right Side - Store Form */}
+      <div className="flex min-h-dvh w-full flex-col items-center bg-black text-white lg:w-1/3 lg:justify-center lg:p-8">
+        {/* Mobile Background */}
+        <div className="relative w-full overflow-hidden lg:hidden" style={{ minHeight: "180px" }}>
+          <img
+            src={signinBackground}
+            alt="Background"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black" />
+          <div className="relative z-10 flex h-full flex-col items-center justify-center p-8">
+            <h1 className="text-2xl font-light text-white">Create Your Store</h1>
+          </div>
+        </div>
+
+        {/* Form Container */}
+        <div className="flex w-full max-w-sm flex-col items-center px-6 py-8 lg:px-0">
+          {/* Icon */}
+          <div className="mb-6 flex justify-center">
+            <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 to-purple-800 p-4 shadow-xl shadow-purple-900/30">
+              <Package className="h-10 w-10 text-white" />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="store_description">Description (optional)</Label>
-              <Textarea
-                id="store_description"
-                placeholder="Tell buyers about your store..."
-                value={formData.store_description}
-                onChange={(e) => setFormData(prev => ({ ...prev, store_description: e.target.value }))}
-                rows={3}
-                className="border-slate-200"
-              />
-            </div>
+          {/* Header Text */}
+          <div className="mb-6 text-center">
+            <h2 className="text-xl font-semibold text-white">Almost there!</h2>
+            <p className="mt-1 text-sm text-gray-400">Set up your store details</p>
+          </div>
 
-            <Button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  Submit Application
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </form>
+          {/* Form Card */}
+          <div className="w-full rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Store Name */}
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white">
+                  Store Name
+                </label>
+                <div className="relative">
+                  <Store className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                  <input
+                    type="text"
+                    value={formData.store_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, store_name: e.target.value }))}
+                    placeholder="Your Store Name"
+                    className="w-full rounded-lg border border-gray-700 bg-black/50 py-3 pl-10 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Store Description */}
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white">
+                  Description <span className="text-gray-500">(optional)</span>
+                </label>
+                <div className="relative">
+                  <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                  <textarea
+                    value={formData.store_description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, store_description: e.target.value }))}
+                    placeholder="Tell buyers about your store..."
+                    rows={3}
+                    className="w-full rounded-lg border border-gray-700 bg-black/50 py-3 pl-10 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Creating Store...
+                  </>
+                ) : (
+                  <>
+                    Create Store
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Info Note */}
+            <p className="mt-4 text-center text-xs text-gray-500">
+              Your store will be activated immediately after creation
+            </p>
+          </div>
         </div>
       </div>
     </div>
