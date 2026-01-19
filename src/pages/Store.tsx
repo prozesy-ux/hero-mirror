@@ -200,8 +200,21 @@ const StoreContent = () => {
     if (data) setWallet(data);
   };
 
+  // Helper to persist store return data for post-auth redirect
+  const persistStoreReturn = (productId: string, action: 'buy' | 'chat') => {
+    const returnData = {
+      returnUrl: `/store/${storeSlug}`,
+      pendingProductId: productId,
+      pendingAction: action,
+      autoOpenPurchase: action === 'buy'
+    };
+    localStorage.setItem('storeReturn', JSON.stringify(returnData));
+  };
+
   const handlePurchase = async (product: SellerProduct) => {
     if (!user) {
+      // Persist return data BEFORE showing modal - ensures redirect works even if user signs in via header
+      persistStoreReturn(product.id, 'buy');
       setPendingProduct(product);
       setPendingAction('buy');
       setShowLoginModal(true);
@@ -253,17 +266,10 @@ const StoreContent = () => {
     }
   };
 
-  const handleLoginRedirect = () => {
-    // Save return info to localStorage with action type
-    const returnData = {
-      returnUrl: `/store/${storeSlug}`,
-      pendingProductId: pendingProduct?.id,
-      pendingAction: pendingAction,
-      autoOpenPurchase: pendingAction === 'buy'
-    };
-    localStorage.setItem('storeReturn', JSON.stringify(returnData));
+  const handleLoginRedirect = (isSignup = false) => {
+    // storeReturn is already persisted by handlePurchase/handleChat
     setShowLoginModal(false);
-    navigate('/signin');
+    navigate(isSignup ? '/signin?mode=signup' : '/signin');
   };
 
   const handleTagSelect = (tag: string) => {
@@ -276,6 +282,8 @@ const StoreContent = () => {
 
   const handleChat = (product: SellerProduct) => {
     if (!user) {
+      // Persist return data BEFORE showing modal - ensures redirect works even if user signs in via header
+      persistStoreReturn(product.id, 'chat');
       setPendingProduct(product);
       setPendingAction('chat');
       setShowLoginModal(true);
@@ -721,14 +729,14 @@ const StoreContent = () => {
           <div className="space-y-3 pt-4">
             <Button
               className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl"
-              onClick={handleLoginRedirect}
+              onClick={() => handleLoginRedirect(false)}
             >
               Sign In
             </Button>
             <Button
               variant="outline"
               className="w-full rounded-xl"
-              onClick={handleLoginRedirect}
+              onClick={() => handleLoginRedirect(true)}
             >
               Create Account
             </Button>
