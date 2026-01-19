@@ -296,28 +296,10 @@ const Store = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
       {/* Header - Clean minimal */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-center">
           <Link to="/" className="flex items-center gap-2">
             <img src={theLogo} alt="Logo" className="h-8 w-auto" />
           </Link>
-          <div className="flex items-center gap-4">
-            {user ? (
-              <Button 
-                onClick={() => navigate('/dashboard/marketplace')}
-                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl"
-              >
-                <ShoppingBag className="w-4 h-4 mr-2" />
-                My Dashboard
-              </Button>
-            ) : (
-              <Button 
-                onClick={() => navigate('/signin')}
-                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl"
-              >
-                Sign In
-              </Button>
-            )}
-          </div>
         </div>
       </header>
 
