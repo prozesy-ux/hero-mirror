@@ -2182,15 +2182,22 @@ const AIAccountsSection = () => {
                 <h3 className="font-bold text-gray-900 text-lg mb-2">{quickViewProduct.data.name}</h3>
                 
                 {/* Price */}
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-3">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-700">
                     <Check size={14} />
                     ${quickViewProduct.data.price}
                   </span>
                 </div>
 
-                {/* Action Buttons - Stacked */}
-                <div className="space-y-2">
+                {/* Description */}
+                {quickViewProduct.data.description && (
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-4">
+                    {quickViewProduct.data.description}
+                  </p>
+                )}
+
+                {/* Action Buttons - 1 Row */}
+                <div className="flex items-center gap-2">
                   {/* Chat Button */}
                   {quickViewProduct.data.chat_allowed !== false && (
                     <button
@@ -2215,27 +2222,27 @@ const AIAccountsSection = () => {
                           });
                         }
                       }}
-                      className={`w-full font-semibold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                      className={`flex-1 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-sm ${
                         quickViewProduct.type === 'seller'
                           ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'
                           : 'bg-violet-100 hover:bg-violet-200 text-violet-700'
                       }`}
                     >
-                      <MessageCircle size={18} />
-                      {quickViewProduct.type === 'seller' ? 'Chat with Seller' : 'Chat with Uptoza'}
+                      <MessageCircle size={16} />
+                      Chat
                     </button>
                   )}
 
-                  {/* Full View Button - Navigate to full page */}
+                  {/* Full View Button */}
                   <button
                     onClick={() => {
                       setShowQuickViewModal(false);
                       navigate(`/dashboard/ai-accounts/product/${quickViewProduct.data.id}`);
                     }}
-                    className="w-full font-semibold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    className="flex-1 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm"
                   >
-                    <Eye size={18} />
-                    Full View
+                    <Eye size={16} />
+                    View
                   </button>
 
                   {/* Buy Now Button */}
@@ -2249,14 +2256,14 @@ const AIAccountsSection = () => {
                       }
                     }}
                     disabled={purchasing === quickViewProduct.data.id}
-                    className="w-full font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors bg-yellow-400 hover:bg-yellow-500 text-black"
+                    className="flex-1 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-yellow-400 hover:bg-yellow-500 text-black text-sm"
                   >
                     {purchasing === quickViewProduct.data.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        <ShoppingCart size={18} />
-                        Buy Now
+                        <ShoppingCart size={16} />
+                        Buy
                       </>
                     )}
                   </button>
