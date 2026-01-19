@@ -28,8 +28,8 @@ serve(async (req) => {
     // Validate admin session
     const { data: session, error: sessionError } = await adminClient
       .from('admin_sessions')
-      .select('*')
-      .eq('token', token)
+      .select('id, admin_id, expires_at, admin_credentials(username)')
+      .eq('session_token', token)
       .gt('expires_at', new Date().toISOString())
       .maybeSingle();
 
@@ -40,7 +40,9 @@ serve(async (req) => {
       );
     }
 
-    console.log('Admin export started by:', session.username);
+    const username = (session.admin_credentials as any)?.username || 'Admin';
+
+    console.log('Admin export started by:', username);
 
     // Fetch all tables in parallel batches
     const [
@@ -150,7 +152,7 @@ serve(async (req) => {
     const exportData = {
       exportedAt: new Date().toISOString(),
       exportType: 'full_database_backup',
-      exportedBy: session.username,
+      exportedBy: username,
       
       users: {
         profiles: profilesRes.data || [],
