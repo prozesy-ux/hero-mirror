@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { fetchWithRecovery } from '@/lib/backend-recovery';
 
 // Types
 interface SupportMessage {
@@ -174,22 +175,20 @@ const ChatSection = () => {
     if (!user) return;
 
     try {
-      // Fetch all data in PARALLEL for instant loading
+      // Fetch all data in PARALLEL for instant loading with timeout protection
       const [supportMsgRes, supportUnreadRes, sellerChatsRes] = await Promise.allSettled([
-        supabase.from('support_messages')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1),
-        supabase.from('support_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .eq('sender_type', 'admin')
-          .eq('is_read', false),
-        supabase.from('seller_chats')
-          .select('seller_id, message, created_at, is_read, sender_type')
-          .eq('buyer_id', user.id)
-          .order('created_at', { ascending: false })
+        fetchWithRecovery(
+          async () => await supabase.from('support_messages').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
+          { timeout: 10000, context: 'Support messages' }
+        ),
+        fetchWithRecovery(
+          async () => await supabase.from('support_messages').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('sender_type', 'admin').eq('is_read', false),
+          { timeout: 10000, context: 'Unread count' }
+        ),
+        fetchWithRecovery(
+          async () => await supabase.from('seller_chats').select('seller_id, message, created_at, is_read, sender_type').eq('buyer_id', user.id).order('created_at', { ascending: false }),
+          { timeout: 10000, context: 'Seller chats' }
+        )
       ]);
 
       const convos: Conversation[] = [];

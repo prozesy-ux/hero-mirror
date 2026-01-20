@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import MarketplaceSidebar from './MarketplaceSidebar';
 import { useFloatingChat } from '@/contexts/FloatingChatContext';
+import { fetchWithRecovery } from '@/lib/backend-recovery';
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -205,22 +206,36 @@ const AIAccountsSection = () => {
   const [pendingPurchaseData, setPendingPurchaseData] = useState<PendingPurchase | null>(null);
 
   useEffect(() => {
-    // Parallel fetch ALL initial data for maximum speed
+    // Parallel fetch ALL initial data for maximum speed with timeout protection
     const fetchInitialData = async () => {
-      const [accountsRes, categoriesRes, productsRes] = await Promise.allSettled([
-        supabase.from('ai_accounts').select('*').eq('is_available', true).order('created_at', { ascending: false }),
-        supabase.from('categories').select('id, name, icon, color, is_active').eq('is_active', true).order('display_order', { ascending: true }),
-        supabase.from('seller_products').select(`*, seller_profiles (id, store_name, store_logo_url, is_verified)`).eq('is_available', true).eq('is_approved', true).order('created_at', { ascending: false })
-      ]);
+      try {
+        const [accountsRes, categoriesRes, productsRes] = await Promise.allSettled([
+          fetchWithRecovery(
+            async () => await supabase.from('ai_accounts').select('*').eq('is_available', true).order('created_at', { ascending: false }),
+            { timeout: 10000, context: 'AI Accounts' }
+          ),
+          fetchWithRecovery(
+            async () => await supabase.from('categories').select('id, name, icon, color, is_active').eq('is_active', true).order('display_order', { ascending: true }),
+            { timeout: 10000, context: 'Categories' }
+          ),
+          fetchWithRecovery(
+            async () => await supabase.from('seller_products').select(`*, seller_profiles (id, store_name, store_logo_url, is_verified)`).eq('is_available', true).eq('is_approved', true).order('created_at', { ascending: false }),
+            { timeout: 10000, context: 'Seller Products' }
+          )
+        ]);
 
-      if (accountsRes.status === 'fulfilled' && accountsRes.value.data) {
-        setAccounts(accountsRes.value.data);
-      }
-      if (categoriesRes.status === 'fulfilled' && categoriesRes.value.data) {
-        setDynamicCategories(categoriesRes.value.data);
-      }
-      if (productsRes.status === 'fulfilled' && productsRes.value.data) {
-        setSellerProducts(productsRes.value.data as SellerProduct[]);
+        if (accountsRes.status === 'fulfilled' && (accountsRes.value as any)?.data) {
+          setAccounts((accountsRes.value as any).data);
+        }
+        if (categoriesRes.status === 'fulfilled' && (categoriesRes.value as any)?.data) {
+          setDynamicCategories((categoriesRes.value as any).data);
+        }
+        if (productsRes.status === 'fulfilled' && (productsRes.value as any)?.data) {
+          setSellerProducts((productsRes.value as any).data as SellerProduct[]);
+        }
+      } catch (error) {
+        console.error('AIAccountsSection fetchInitialData error:', error);
+        toast.error('Some marketplace data failed to load');
       }
       
       setLoading(false);

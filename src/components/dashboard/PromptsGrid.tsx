@@ -6,6 +6,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useSearchContext } from '@/contexts/SearchContext';
 import { toast } from 'sonner';
 import { PromptsSidebar } from './PromptsSidebar';
+import { fetchWithRecovery } from '@/lib/backend-recovery';
 interface Prompt {
   id: string;
   title: string;
@@ -131,33 +132,41 @@ const PromptsGrid = () => {
   const fetchData = async () => {
     setLoading(true);
     
-    // Fetch ALL data in parallel for maximum speed
-    const [promptsRes, categoriesRes, favoritesRes] = await Promise.allSettled([
-      supabase
-        .from('prompts')
-        .select(`*, categories (name, icon)`)
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('categories')
-        .select('*')
-        .order('name'),
-      user 
-        ? supabase.from('favorites').select('prompt_id').eq('user_id', user.id)
-        : Promise.resolve({ data: [] })
-    ]);
+    try {
+      // Fetch ALL data in parallel with timeout protection
+      const [promptsRes, categoriesRes, favoritesRes] = await Promise.allSettled([
+        fetchWithRecovery(
+          async () => await supabase.from('prompts').select(`*, categories (name, icon)`).order('created_at', { ascending: false }),
+          { timeout: 10000, context: 'Prompts' }
+        ),
+        fetchWithRecovery(
+          async () => await supabase.from('categories').select('*').order('name'),
+          { timeout: 10000, context: 'Categories' }
+        ),
+        user 
+          ? fetchWithRecovery(
+              async () => await supabase.from('favorites').select('prompt_id').eq('user_id', user.id),
+              { timeout: 10000, context: 'Favorites' }
+            )
+          : Promise.resolve({ data: [] })
+      ]);
 
-    // Set data from successful responses immediately
-    if (promptsRes.status === 'fulfilled' && promptsRes.value.data) {
-      setPrompts(promptsRes.value.data);
-    }
-    
-    if (categoriesRes.status === 'fulfilled' && categoriesRes.value.data) {
-      setCategories(categoriesRes.value.data);
-    }
-    
-    if (favoritesRes.status === 'fulfilled') {
-      const favData = (favoritesRes.value as any).data;
-      setFavorites(favData?.map((f: any) => f.prompt_id) || []);
+      // Set data from successful responses immediately
+      if (promptsRes.status === 'fulfilled' && (promptsRes.value as any)?.data) {
+        setPrompts((promptsRes.value as any).data);
+      }
+      
+      if (categoriesRes.status === 'fulfilled' && (categoriesRes.value as any)?.data) {
+        setCategories((categoriesRes.value as any).data);
+      }
+      
+      if (favoritesRes.status === 'fulfilled') {
+        const favData = (favoritesRes.value as any)?.data;
+        setFavorites(favData?.map((f: any) => f.prompt_id) || []);
+      }
+    } catch (error) {
+      console.error('PromptsGrid fetchData error:', error);
+      toast.error('Some prompts failed to load');
     }
 
     setLoading(false);
