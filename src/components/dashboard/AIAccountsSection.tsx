@@ -759,39 +759,13 @@ const AIAccountsSection = () => {
       const order = sellerOrders.find(o => o.id === orderId);
       if (!order) throw new Error('Order not found');
 
-      // Update order to completed with buyer_approved
-      const { error: orderError } = await supabase
-        .from('seller_orders')
-        .update({
-          status: 'completed',
-          buyer_approved: true
-        })
-        .eq('id', orderId)
-        .eq('buyer_id', user.id);
+      // Use server-side RPC for atomic approval + fund release (bypasses RLS)
+      const { error: rpcError } = await supabase.rpc('approve_seller_delivery', {
+        p_order_id: orderId,
+        p_buyer_id: user.id
+      });
 
-      if (orderError) throw orderError;
-
-      // Release seller's pending balance to available balance
-      // Get seller wallet
-      const { data: sellerWallet, error: walletFetchError } = await supabase
-        .from('seller_wallets')
-        .select('*')
-        .eq('seller_id', order.seller_id)
-        .single();
-
-      if (!walletFetchError && sellerWallet) {
-        // Move from pending to available
-        const newBalance = Number(sellerWallet.balance) + Number(order.seller_earning);
-        const newPending = Math.max(0, Number(sellerWallet.pending_balance) - Number(order.seller_earning));
-        
-        await supabase
-          .from('seller_wallets')
-          .update({
-            balance: newBalance,
-            pending_balance: newPending
-          })
-          .eq('seller_id', order.seller_id);
-      }
+      if (rpcError) throw rpcError;
 
       // Create notification for seller (in notifications for generic user notifications)
       if (order.seller_profiles?.user_id) {
