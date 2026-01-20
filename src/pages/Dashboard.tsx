@@ -132,48 +132,72 @@ const DashboardContent = () => {
         <Suspense fallback={<SectionLoader />}>
           <Routes>
             <Route index element={<Navigate to="/dashboard/prompts" replace />} />
-            <Route path="prompts" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <PromptsGrid />
-              </SectionErrorBoundary>
-            } />
+            <Route
+              path="prompts"
+              element={
+                <SectionErrorBoundary sectionName="Prompts">
+                  <PromptsGrid />
+                </SectionErrorBoundary>
+              }
+            />
             <Route path="favorites" element={<Navigate to="/dashboard/prompts" replace />} />
             <Route path="tools" element={<Navigate to="/dashboard/prompts" replace />} />
-            <Route path="ai-accounts" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <AIAccountsSection />
-              </SectionErrorBoundary>
-            } />
-            <Route path="ai-accounts/:accountId" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <AccountDetailPage />
-              </SectionErrorBoundary>
-            } />
-            <Route path="ai-accounts/product/:productId" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <ProductFullViewPage />
-              </SectionErrorBoundary>
-            } />
-            <Route path="billing" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <BillingSection />
-              </SectionErrorBoundary>
-            } />
-            <Route path="wallet" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <BuyerWallet />
-              </SectionErrorBoundary>
-            } />
-            <Route path="profile" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <ProfileSection />
-              </SectionErrorBoundary>
-            } />
-            <Route path="chat" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <ChatSection />
-              </SectionErrorBoundary>
-            } />
+            <Route
+              path="ai-accounts"
+              element={
+                <SectionErrorBoundary sectionName="Marketplace">
+                  <AIAccountsSection />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="ai-accounts/:accountId"
+              element={
+                <SectionErrorBoundary sectionName="Account">
+                  <AccountDetailPage />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="ai-accounts/product/:productId"
+              element={
+                <SectionErrorBoundary sectionName="Product">
+                  <ProductFullViewPage />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="billing"
+              element={
+                <SectionErrorBoundary sectionName="Billing">
+                  <BillingSection />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="wallet"
+              element={
+                <SectionErrorBoundary sectionName="Wallet">
+                  <BuyerWallet />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="profile"
+              element={
+                <SectionErrorBoundary sectionName="Profile">
+                  <ProfileSection />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="chat"
+              element={
+                <SectionErrorBoundary sectionName="Chat">
+                  <ChatSection />
+                </SectionErrorBoundary>
+              }
+            />
           </Routes>
         </Suspense>
       </div>

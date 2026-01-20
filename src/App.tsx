@@ -10,6 +10,8 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { healthMonitor } from "@/lib/health-monitor";
 import RecoveryBanner from "@/components/system/RecoveryBanner";
+import DiagnosticsBadge from "@/components/system/DiagnosticsBadge";
+import { recoverBackend } from "@/lib/backend-recovery";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import Dashboard from "./pages/Dashboard";
@@ -20,9 +22,16 @@ import ProductFullView from "./pages/ProductFullView";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
-  // Start health monitor on app mount
+  // Start health monitor + perform page-load recovery for protected areas
   useEffect(() => {
     healthMonitor.start();
+
+    const path = window.location.pathname;
+    if (path.startsWith('/dashboard') || path.startsWith('/seller')) {
+      // Fire-and-forget: ensures refreshSession hydration is attempted on hard reload.
+      recoverBackend('page_load');
+    }
+
     return () => healthMonitor.stop();
   }, []);
 
@@ -32,6 +41,7 @@ const App = () => {
         <TooltipProvider>
           <AuthProvider>
             <RecoveryBanner />
+            <DiagnosticsBadge />
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -41,11 +51,14 @@ const App = () => {
                 <Route path="/signup" element={<SignIn />} />
                 <Route path="/store/:storeSlug" element={<Store />} />
                 <Route path="/store/:storeSlug/product/:productId" element={<ProductFullView />} />
-                <Route path="/dashboard/*" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
+                <Route
+                  path="/dashboard/*"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="/seller/*" element={<Seller />} />
                 <Route path="/admin/*" element={<Admin />} />
                 <Route path="*" element={<NotFound />} />
@@ -59,3 +72,4 @@ const App = () => {
 };
 
 export default App;
+
