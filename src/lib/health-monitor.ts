@@ -1,6 +1,8 @@
 /**
  * Backend Health Monitor - Tracks connection status and enables diagnostics
+ * Enhanced with auth event logging for debugging session issues
  */
+import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface HealthState {
@@ -11,6 +13,9 @@ interface HealthState {
   lastErrorCode: number | null;
   isRecovering: boolean;
   authStatus: 'unknown' | 'valid' | 'expired' | 'none';
+  lastAuthEvent: string | null;
+  lastAuthEventTime: number | null;
+  sessionExpiresAt: number | null;
 }
 
 interface HealthLog {
@@ -20,7 +25,7 @@ interface HealthLog {
   data?: Record<string, unknown>;
 }
 
-const MAX_LOGS = 50;
+const MAX_LOGS = 100;
 const PING_INTERVAL = 30000; // 30 seconds
 const STORAGE_KEY = 'lovable_health_logs';
 
@@ -32,7 +37,10 @@ class HealthMonitor {
     lastError: null,
     lastErrorCode: null,
     isRecovering: false,
-    authStatus: 'unknown'
+    authStatus: 'unknown',
+    lastAuthEvent: null,
+    lastAuthEventTime: null,
+    sessionExpiresAt: null,
   };
 
   private logs: HealthLog[] = [];
@@ -62,7 +70,10 @@ class HealthMonitor {
     }
   }
 
-  private log(type: HealthLog['type'], message: string, data?: Record<string, unknown>) {
+  /**
+   * Public log method - can be called from anywhere to log events
+   */
+  log(type: HealthLog['type'], message: string, data?: Record<string, unknown>) {
     const entry: HealthLog = {
       timestamp: Date.now(),
       type,
@@ -88,6 +99,31 @@ class HealthMonitor {
     this.listeners.forEach(listener => listener({ ...this.state }));
   }
 
+  /**
+   * Record an auth event - called by useAuth on every onAuthStateChange
+   */
+  recordAuthEvent(event: string, session: { user?: { id: string }; expires_at?: number } | null) {
+    this.state.lastAuthEvent = event;
+    this.state.lastAuthEventTime = Date.now();
+    this.state.sessionExpiresAt = session?.expires_at ? session.expires_at * 1000 : null;
+    
+    if (session) {
+      this.state.authStatus = 'valid';
+    } else if (event === 'SIGNED_OUT') {
+      this.state.authStatus = 'none';
+    } else if (event === 'TOKEN_REFRESHED' && !session) {
+      this.state.authStatus = 'expired';
+    }
+    
+    this.log('auth', `Auth event: ${event}`, {
+      hasSession: !!session,
+      userId: session?.user?.id,
+      expiresAt: session?.expires_at,
+    });
+    
+    this.notifyListeners();
+  }
+
   async ping(): Promise<boolean> {
     try {
       // Quick auth check first
@@ -100,6 +136,7 @@ class HealthMonitor {
         this.state.authStatus = 'none';
       } else {
         this.state.authStatus = 'valid';
+        this.state.sessionExpiresAt = session.expires_at ? session.expires_at * 1000 : null;
       }
 
       // Only do DB ping if we have a session
@@ -191,6 +228,19 @@ class HealthMonitor {
     this.logs = [];
     this.saveLogs();
   }
+  
+  /**
+   * Check if auth storage keys exist (for diagnostics)
+   */
+  hasAuthStorageKeys(): boolean {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb-')) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
 
 // Singleton instance
@@ -206,5 +256,3 @@ export function useHealthState() {
   
   return state;
 }
-
-import React from 'react';
