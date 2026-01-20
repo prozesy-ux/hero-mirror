@@ -1,6 +1,6 @@
 /**
  * Backend Recovery Engine - Self-heals connection issues
- * CRITICAL: Never wipes auth tokens during page_load hydration
+ * SIMPLIFIED: Only signs out on definitive auth failures (401/403), never during page load
  */
 import { supabase } from '@/integrations/supabase/client';
 import { healthMonitor } from './health-monitor';
@@ -19,7 +19,7 @@ export type RecoveryReason =
 
 export interface RecoveryResult {
   success: boolean;
-  action: 'recovered' | 'signed_out' | 'waiting_online' | 'failed' | 'hydration_pending';
+  action: 'recovered' | 'signed_out' | 'waiting_online' | 'failed' | 'skipped';
   message: string;
 }
 
@@ -39,74 +39,21 @@ export function isCurrentlyRecovering(): boolean {
   return isRecovering;
 }
 
-function isProtectedPath(pathname: string): boolean {
-  return pathname.startsWith('/dashboard') || pathname.startsWith('/seller');
-}
-
-// Grace period constants for page_load recovery
-const PAGE_LOAD_GRACE_MS = 3000;
-const PAGE_LOAD_POLL_INTERVAL = 300;
-
 /**
- * Attempts to get session with grace period for hydration
- * Returns session if found, null if genuinely no session after waiting
- */
-async function getSessionWithGrace(): Promise<{ session: any; wasHydrationDelay: boolean }> {
-  const startTime = Date.now();
-  
-  // First attempt
-  let { data: { session } } = await supabase.auth.getSession();
-  
-  if (session) {
-    return { session, wasHydrationDelay: false };
-  }
-  
-  // Try refreshSession
-  healthMonitor.log('recovery', 'No initial session, attempting refresh');
-  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-  
-  if (refreshError) {
-    healthMonitor.log('recovery', 'refreshSession error', { error: refreshError.message });
-    
-    // Check for definitive invalid token errors
-    if (refreshError.message?.includes('invalid') || 
-        refreshError.message?.includes('expired') ||
-        refreshError.message?.includes('Invalid Refresh Token')) {
-      return { session: null, wasHydrationDelay: false };
-    }
-  }
-  
-  if (refreshData?.session) {
-    healthMonitor.log('recovery', 'Session restored via refresh');
-    return { session: refreshData.session, wasHydrationDelay: true };
-  }
-  
-  // Grace period polling
-  while (Date.now() - startTime < PAGE_LOAD_GRACE_MS) {
-    await new Promise(resolve => setTimeout(resolve, PAGE_LOAD_POLL_INTERVAL));
-    
-    const { data: { session: polledSession } } = await supabase.auth.getSession();
-    
-    if (polledSession) {
-      healthMonitor.log('recovery', 'Session found during grace polling', {
-        elapsedMs: Date.now() - startTime
-      });
-      return { session: polledSession, wasHydrationDelay: true };
-    }
-  }
-  
-  return { session: null, wasHydrationDelay: false };
-}
-
-/**
- * Central recovery function - call this instead of doing manual cache clears.
- * CRITICAL: For page_load reason, we NEVER call forceSignOut to prevent token deletion during hydration races.
+ * Simplified recovery function - only invalidates caches and checks connectivity.
+ * NEVER signs out automatically except for definitive 401/403 from API.
  */
 export async function recoverBackend(reason: RecoveryReason): Promise<RecoveryResult> {
   // Prevent concurrent recovery attempts
   if (isRecovering) {
     healthMonitor.log('recovery', 'Already recovering, skipping duplicate call');
     return { success: false, action: 'failed', message: 'Recovery already in progress' };
+  }
+
+  // Skip recovery for page_load - let Supabase handle session hydration naturally
+  if (reason === 'page_load') {
+    healthMonitor.log('recovery', 'Skipping recovery for page_load - trusting Supabase hydration');
+    return { success: true, action: 'skipped', message: 'Page load - using normal hydration' };
   }
 
   isRecovering = true;
@@ -126,63 +73,56 @@ export async function recoverBackend(reason: RecoveryReason): Promise<RecoveryRe
       };
     }
 
-    // Step 2: Session handling with grace period
-    const { session: finalSession, wasHydrationDelay } = await getSessionWithGrace();
+    // Step 2: Check current session
+    const { data: { session } } = await supabase.auth.getSession();
     
-    // CRITICAL: For page_load reason, NEVER sign out even if no session
-    // This prevents the race condition where tokens exist but aren't hydrated yet
-    if (reason === 'page_load') {
-      if (!finalSession && isProtectedPath(window.location.pathname)) {
-        healthMonitor.log('recovery', 'No session on protected route during page_load - NOT signing out (hydration pending)');
-        // Don't sign out - let the SessionHydrator handle this
-        return {
-          success: false,
-          action: 'hydration_pending',
-          message: 'Session hydration pending - authentication may complete shortly',
-        };
-      }
+    // Step 3: If no session, try to refresh
+    if (!session) {
+      healthMonitor.log('recovery', 'No session found, attempting refresh');
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
       
-      if (finalSession) {
-        healthMonitor.log('recovery', 'Session confirmed during page_load', {
-          userId: finalSession.user?.id,
-          wasHydrationDelay
-        });
-      }
-    } else {
-      // For other reasons (timeout, auth_error, manual, etc.)
-      // Only sign out if we have strong evidence of invalid auth
-      if (!finalSession && isProtectedPath(window.location.pathname)) {
-        // Check if we should sign out - only for explicit auth errors or manual trigger
-        if (reason === 'auth_error' || reason === 'manual') {
-          healthMonitor.log('recovery', `No session on protected route (reason: ${reason}) - signing out`);
-          await forceSignOut();
+      if (refreshError) {
+        healthMonitor.log('recovery', 'Refresh failed', { error: refreshError.message });
+        
+        // Only sign out if the error is definitive (invalid/expired token)
+        const isDefinitiveAuthFailure = 
+          refreshError.message?.includes('invalid') ||
+          refreshError.message?.includes('Invalid Refresh Token') ||
+          refreshError.message?.includes('Refresh Token Not Found');
+        
+        if (isDefinitiveAuthFailure && reason === 'auth_error') {
+          healthMonitor.log('recovery', 'Definitive auth failure - signing out');
+          await signOutCleanly();
           return {
             success: true,
             action: 'signed_out',
             message: 'Session expired. Please sign in again.',
           };
-        } else {
-          // For timeout/network errors, don't sign out - might be temporary
-          healthMonitor.log('recovery', `No session but reason (${reason}) is not definitive - not signing out`);
         }
+      }
+      
+      if (refreshData?.session) {
+        healthMonitor.log('recovery', 'Session restored via refresh');
       }
     }
 
-    // Step 3: Invalidate all React Query caches to force re-fetch
+    // Step 4: Invalidate React Query caches to force re-fetch
     healthMonitor.log('recovery', 'Invalidating query caches');
     await queryClient.invalidateQueries();
 
-    // Step 4: Verify we can reach the backend (only if we have a session)
-    if (finalSession) {
+    // Step 5: Ping backend if we have a session
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    
+    if (currentSession) {
       const pingSuccess = await healthMonitor.ping();
 
       if (!pingSuccess) {
         const healthState = healthMonitor.getState();
 
-        // Check if it's an auth issue (401/403 after we had a session)
+        // Only sign out for definitive 401/403 errors
         if (healthState.lastErrorCode === 401 || healthState.lastErrorCode === 403) {
           healthMonitor.log('recovery', 'Auth error on ping (401/403) - signing out');
-          await forceSignOut();
+          await signOutCleanly();
           return {
             success: true,
             action: 'signed_out',
@@ -222,11 +162,11 @@ export async function recoverBackend(reason: RecoveryReason): Promise<RecoveryRe
 }
 
 /**
- * Force sign out - clean state and redirect to login
- * IMPORTANT: This clears auth tokens - only call when we're sure auth is invalid
+ * Clean sign out - let Supabase handle its own storage cleanup
+ * DO NOT manually delete sb-* keys - let supabase.auth.signOut() handle it
  */
-export async function forceSignOut(): Promise<void> {
-  healthMonitor.log('auth', 'Force sign out initiated');
+export async function signOutCleanly(): Promise<void> {
+  healthMonitor.log('auth', 'Clean sign out initiated');
 
   try {
     await supabase.auth.signOut();
@@ -238,40 +178,15 @@ export async function forceSignOut(): Promise<void> {
 
   // Clear query cache
   queryClient.clear();
-
-  // Clear any stale session data
-  try {
-    // Preserve essential keys
-    const preserveKeys = ['storeReturn', 'pendingPurchase', 'pendingChat', 'sidebar-collapsed'];
-    const preserved: Record<string, string> = {};
-
-    preserveKeys.forEach((key) => {
-      const value = localStorage.getItem(key);
-      if (value) preserved[key] = value;
-    });
-
-    // Clear session-related storage
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
-        keysToRemove.push(key);
-      }
-    }
-    keysToRemove.forEach((key) => localStorage.removeItem(key));
-
-    // Restore preserved keys
-    Object.entries(preserved).forEach(([key, value]) => {
-      localStorage.setItem(key, value);
-    });
-    
-    healthMonitor.log('auth', 'Auth storage cleared', { keysRemoved: keysToRemove.length });
-  } catch (error) {
-    healthMonitor.log('error', 'Storage cleanup error', { 
-      error: error instanceof Error ? error.message : 'Unknown' 
-    });
-  }
+  
+  healthMonitor.log('auth', 'Sign out complete');
 }
+
+/**
+ * Legacy alias for signOutCleanly
+ * @deprecated Use signOutCleanly instead
+ */
+export const forceSignOut = signOutCleanly;
 
 /**
  * Utility: Wrap a promise with a timeout
@@ -284,8 +199,8 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, timeoutMessage =
 }
 
 /**
- * Utility: Fetch with timeout + optional auth guard + auto-recovery
- * Now respects SessionHydrator - waits for hydration before checking auth
+ * Utility: Fetch with timeout + optional auth check
+ * Simplified - no aggressive recovery during fetch
  */
 export async function fetchWithRecovery<T>(
   fetchFn: () => Promise<T>,
@@ -303,13 +218,7 @@ export async function fetchWithRecovery<T>(
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      // Give a brief moment for session to hydrate (common after full page refresh)
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const { data: { session: retrySession } } = await supabase.auth.getSession();
-      if (!retrySession) {
-        throw new Error('No session');
-      }
+      throw new Error('No session');
     }
   };
 
@@ -321,18 +230,18 @@ export async function fetchWithRecovery<T>(
     healthMonitor.log('error', `FetchWithRecovery ${context} failed`, { error: err.message });
 
     if (retryOnce) {
-      // Use 'retry' reason instead of 'page_load' to allow proper recovery
-      const recoveryReason: RecoveryReason = err.message === 'No session' ? 'auth_error' : 'timeout';
-      const result = await recoverBackend(recoveryReason);
-
-      if (result.success && result.action === 'recovered') {
-        healthMonitor.log('recovery', `Retrying ${context} after recovery`);
+      // Simple retry - just invalidate caches and try again
+      healthMonitor.log('recovery', `Retrying ${context} after cache invalidation`);
+      await queryClient.invalidateQueries();
+      
+      try {
         await assertAuth();
         return await withTimeout(fetchFn(), timeout, `${context} timeout (retry)`);
-      }
-
-      if (result.action === 'signed_out') {
-        throw new Error('Session expired');
+      } catch (retryError) {
+        healthMonitor.log('error', `Retry failed for ${context}`, { 
+          error: retryError instanceof Error ? retryError.message : 'Unknown' 
+        });
+        throw retryError;
       }
     }
 

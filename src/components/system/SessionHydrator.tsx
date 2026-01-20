@@ -2,7 +2,6 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { healthMonitor } from '@/lib/health-monitor';
-import { recoverBackend } from '@/lib/backend-recovery';
 
 type HydrationStatus = 'hydrating' | 'ready' | 'no_session';
 
@@ -19,16 +18,16 @@ interface SessionHydrationContextValue extends SessionHydrationState {
 
 const SessionHydrationContext = createContext<SessionHydrationContextValue | null>(null);
 
-const HYDRATION_GRACE_MS = 3000; // Wait up to 3 seconds for session
-const HYDRATION_POLL_INTERVAL = 300; // Poll every 300ms
+// Simplified hydration - trust Supabase's built-in session management
+const MAX_HYDRATION_WAIT_MS = 2000;
 
 function isProtectedPath(pathname: string): boolean {
   return pathname.startsWith('/dashboard') || pathname.startsWith('/seller');
 }
 
 /**
- * Global session hydration gate - ensures auth is ready before rendering protected routes.
- * Prevents blank pages/infinite loaders by guaranteeing that auth state is settled before any data queries run.
+ * Simplified Session Hydrator - trusts Supabase's detectSessionInUrl and autoRefreshToken.
+ * No aggressive recovery during page load - let the auth system work naturally.
  */
 export function SessionHydrator({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<SessionHydrationState>({
@@ -42,122 +41,21 @@ export function SessionHydrator({ children }: { children: React.ReactNode }) {
   const initRef = useRef(false);
   const mountedRef = useRef(true);
 
-  // Keep ref in sync so waitForHydration never uses stale state (prevents hangs).
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
-
-  const hydrateSession = useCallback(async (): Promise<Session | null> => {
-    const startTime = Date.now();
-
-    healthMonitor.log('auth', 'Session hydration started');
-
-    // Step 1: Try to get existing session
-    let { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error) {
-      healthMonitor.log('error', 'getSession error during hydration', { error: error.message });
-    }
-
-    if (session) {
-      healthMonitor.log('auth', 'Session found immediately', {
-        userId: session.user.id,
-        expiresAt: session.expires_at,
-      });
-      return session;
-    }
-
-    // Step 2: No session yet - try refreshSession (may restore from stored refresh token)
-    healthMonitor.log('auth', 'No session found, attempting refreshSession');
-
-    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-
-    if (refreshError) {
-      // Don't treat this as fatal - might just be no stored tokens
-      healthMonitor.log('auth', 'refreshSession returned error (may be expected)', {
-        error: refreshError.message,
-      });
-    }
-
-    if (refreshData?.session) {
-      healthMonitor.log('auth', 'Session restored via refreshSession', {
-        userId: refreshData.session.user.id,
-        expiresAt: refreshData.session.expires_at,
-      });
-      return refreshData.session;
-    }
-
-    // Step 3: Grace period polling - handles race where tokens exist but aren't hydrated yet
-    healthMonitor.log('auth', 'Entering grace period polling');
-
-    while (Date.now() - startTime < HYDRATION_GRACE_MS) {
-      await new Promise((resolve) => setTimeout(resolve, HYDRATION_POLL_INTERVAL));
-
-      if (!mountedRef.current) return null;
-
-      const { data: { session: polledSession } } = await supabase.auth.getSession();
-
-      if (polledSession) {
-        healthMonitor.log('auth', 'Session found during grace polling', {
-          userId: polledSession.user.id,
-          elapsedMs: Date.now() - startTime,
-        });
-        return polledSession;
-      }
-    }
-
-    // Step 4: Grace period expired - no session available
-    healthMonitor.log('auth', 'Hydration complete - no session found', {
-      elapsedMs: Date.now() - startTime,
-    });
-
-    return null;
-  }, []);
 
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
     mountedRef.current = true;
 
-    const runHydration = async () => {
-      try {
-        const session = await hydrateSession();
+    const startTime = Date.now();
+    let hydrationComplete = false;
 
-        if (!mountedRef.current) return;
+    healthMonitor.log('auth', 'Session hydration started (simplified)');
 
-        const nextState: SessionHydrationState = {
-          hydrated: true,
-          session,
-          status: session ? 'ready' : 'no_session',
-          error: null,
-        };
-
-        setState(nextState);
-
-        // If we are on a protected route with no session, attempt a safe recovery once.
-        // (This does NOT wipe tokens on page_load.)
-        if (!session && isProtectedPath(window.location.pathname)) {
-          healthMonitor.log('recovery', 'No session on protected route after hydration - attempting page_load recovery');
-          await recoverBackend('page_load');
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Hydration failed';
-        healthMonitor.log('error', 'Session hydration failed', { error: errorMessage });
-
-        if (!mountedRef.current) return;
-
-        setState({
-          hydrated: true,
-          session: null,
-          status: 'no_session',
-          error: errorMessage,
-        });
-      }
-    };
-
-    runHydration();
-
-    // Keep state in sync after hydration
+    // Set up auth state listener FIRST (per Supabase best practices)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mountedRef.current) return;
 
@@ -167,21 +65,129 @@ export function SessionHydrator({ children }: { children: React.ReactNode }) {
         expiresAt: session?.expires_at,
       });
 
-      setState((prev) => {
-        if (!prev.hydrated) return prev;
-        return {
+      // If we get INITIAL_SESSION or SIGNED_IN, that completes hydration
+      if (!hydrationComplete && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        hydrationComplete = true;
+        healthMonitor.log('auth', 'Hydration completed via auth event', { event, elapsedMs: Date.now() - startTime });
+        
+        setState({
+          hydrated: true,
+          session,
+          status: session ? 'ready' : 'no_session',
+          error: null,
+        });
+        return;
+      }
+
+      // After initial hydration, just keep state in sync
+      if (hydrationComplete) {
+        setState((prev) => ({
           ...prev,
           session,
           status: session ? 'ready' : 'no_session',
-        };
-      });
+        }));
+      }
     });
+
+    // Fallback: Call getSession() to trigger hydration if no auth event fires
+    const hydrateViaGetSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          healthMonitor.log('error', 'getSession error', { error: error.message });
+        }
+
+        // If we already completed hydration via onAuthStateChange, skip
+        if (hydrationComplete || !mountedRef.current) return;
+
+        // If no session, try refreshSession once (handles stored refresh tokens)
+        if (!session) {
+          healthMonitor.log('auth', 'No session from getSession, trying refreshSession');
+          const { data: refreshData } = await supabase.auth.refreshSession();
+          
+          if (refreshData?.session && mountedRef.current && !hydrationComplete) {
+            hydrationComplete = true;
+            healthMonitor.log('auth', 'Session restored via refreshSession');
+            setState({
+              hydrated: true,
+              session: refreshData.session,
+              status: 'ready',
+              error: null,
+            });
+            return;
+          }
+        }
+
+        // Give a brief window for OAuth tokens to be processed from URL
+        if (!session && !hydrationComplete) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          if (hydrationComplete || !mountedRef.current) return;
+          
+          // Final check
+          const { data: { session: finalSession } } = await supabase.auth.getSession();
+          
+          if (!hydrationComplete && mountedRef.current) {
+            hydrationComplete = true;
+            healthMonitor.log('auth', 'Hydration complete (fallback path)', { 
+              hasSession: !!finalSession,
+              elapsedMs: Date.now() - startTime 
+            });
+            setState({
+              hydrated: true,
+              session: finalSession,
+              status: finalSession ? 'ready' : 'no_session',
+              error: null,
+            });
+          }
+        } else if (session && !hydrationComplete && mountedRef.current) {
+          hydrationComplete = true;
+          healthMonitor.log('auth', 'Session found via getSession');
+          setState({
+            hydrated: true,
+            session,
+            status: 'ready',
+            error: null,
+          });
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Hydration failed';
+        healthMonitor.log('error', 'Hydration error', { error: errorMessage });
+
+        if (!hydrationComplete && mountedRef.current) {
+          hydrationComplete = true;
+          setState({
+            hydrated: true,
+            session: null,
+            status: 'no_session',
+            error: errorMessage,
+          });
+        }
+      }
+    };
+
+    hydrateViaGetSession();
+
+    // Safety timeout - ensure we always complete hydration
+    const timeout = setTimeout(() => {
+      if (!hydrationComplete && mountedRef.current) {
+        hydrationComplete = true;
+        healthMonitor.log('auth', 'Hydration timeout - completing with current state');
+        setState((prev) => ({
+          ...prev,
+          hydrated: true,
+          status: prev.session ? 'ready' : 'no_session',
+        }));
+      }
+    }, MAX_HYDRATION_WAIT_MS);
 
     return () => {
       mountedRef.current = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
-  }, [hydrateSession]);
+  }, []);
 
   const waitForHydration = useCallback(async (): Promise<Session | null> => {
     if (stateRef.current.hydrated) return stateRef.current.session;
@@ -203,7 +209,7 @@ export function SessionHydrator({ children }: { children: React.ReactNode }) {
     waitForHydration,
   };
 
-  // Hydration UI
+  // Loading UI during hydration
   if (!state.hydrated) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
@@ -213,7 +219,7 @@ export function SessionHydrator({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If user is on a protected route and there is no session, show a safe UI instead of blank.
+  // Protected route with no session - show sign in prompt
   if (state.status === 'no_session' && isProtectedPath(window.location.pathname)) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3 p-6 text-center">
@@ -253,4 +259,3 @@ export function useIsSessionReady(): boolean {
   const context = useContext(SessionHydrationContext);
   return context?.status === 'ready';
 }
-

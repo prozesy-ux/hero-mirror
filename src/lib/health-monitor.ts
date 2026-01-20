@@ -241,6 +241,35 @@ class HealthMonitor {
     }
     return false;
   }
+  
+  /**
+   * Count auth storage keys (for diagnostics)
+   */
+  countAuthStorageKeys(): number {
+    let count = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb-')) {
+        count++;
+      }
+    }
+    return count;
+  }
+  
+  /**
+   * Test if localStorage is accessible (some browsers block it)
+   */
+  testLocalStorageAccess(): boolean {
+    try {
+      const testKey = '__lovable_storage_test__';
+      localStorage.setItem(testKey, 'test');
+      const result = localStorage.getItem(testKey) === 'test';
+      localStorage.removeItem(testKey);
+      return result;
+    } catch {
+      return false;
+    }
+  }
 }
 
 // Singleton instance
