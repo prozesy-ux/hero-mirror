@@ -5,12 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { healthMonitor } from './health-monitor';
 import { queryClient } from './query-client';
 
-export type RecoveryReason = 
+export type RecoveryReason =
   | 'timeout'
   | 'auth_error'
   | 'network_error'
   | 'reconnect'
   | 'loading_timeout'
+  | 'page_load'
   | 'seller_profile_missing'
   | 'manual';
 
@@ -24,7 +25,7 @@ let isRecovering = false;
 let recoveryListeners: Set<(recovering: boolean) => void> = new Set();
 
 function notifyRecoveryListeners(recovering: boolean) {
-  recoveryListeners.forEach(listener => listener(recovering));
+  recoveryListeners.forEach((listener) => listener(recovering));
 }
 
 export function subscribeToRecovery(listener: (recovering: boolean) => void): () => void {
@@ -36,8 +37,13 @@ export function isCurrentlyRecovering(): boolean {
   return isRecovering;
 }
 
+function isProtectedPath(pathname: string): boolean {
+  return pathname.startsWith('/dashboard') || pathname.startsWith('/seller');
+}
+
 /**
- * Central recovery function - call this instead of doing manual cache clears
+ * Central recovery function - call this instead of doing manual cache clears.
+ * Updated to handle full page reload hydration issues by attempting refreshSession even when getSession() is null.
  */
 export async function recoverBackend(reason: RecoveryReason): Promise<RecoveryResult> {
   // Prevent concurrent recovery attempts
@@ -49,62 +55,59 @@ export async function recoverBackend(reason: RecoveryReason): Promise<RecoveryRe
   isRecovering = true;
   notifyRecoveryListeners(true);
   healthMonitor.setRecovering(true);
-  
+
   console.log(`[Recovery] Starting recovery (reason: ${reason})`);
 
   try {
     // Step 1: Check if we're online
     if (!navigator.onLine) {
       console.log('[Recovery] Offline - waiting for connection');
-      return { 
-        success: false, 
-        action: 'waiting_online', 
-        message: 'Waiting for internet connection' 
+      return {
+        success: false,
+        action: 'waiting_online',
+        message: 'Waiting for internet connection',
       };
     }
 
-    // Step 2: Try to get current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError) {
-      console.warn('[Recovery] Session error:', sessionError.message);
+    // Step 2: Attempt to hydrate/refresh session (important on full page reload)
+    const { data: { session: initialSession }, error: initialSessionError } = await supabase.auth.getSession();
+
+    if (initialSessionError) {
+      console.warn('[Recovery] Session getSession error:', initialSessionError.message);
     }
 
-    // Step 3: If we have a session, try to refresh it
-    if (session) {
-      console.log('[Recovery] Attempting session refresh');
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-      
-      if (refreshError) {
-        console.warn('[Recovery] Session refresh failed:', refreshError.message);
-        
-        // If refresh fails with auth error, sign out cleanly
-        if (refreshError.message.includes('expired') || 
-            refreshError.message.includes('invalid') ||
-            refreshError.message.includes('not authenticated')) {
-          console.log('[Recovery] Session invalid - signing out');
-          await forceSignOut();
-          return {
-            success: true,
-            action: 'signed_out',
-            message: 'Session expired. Please sign in again.'
-          };
-        }
-      } else if (refreshData.session) {
-        console.log('[Recovery] Session refreshed successfully');
-      }
+    // Always attempt refreshSession: if a refresh token exists in storage, this will restore the session
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+
+    if (refreshError) {
+      console.warn('[Recovery] Session refresh failed:', refreshError.message);
+    } else if (refreshData.session) {
+      console.log('[Recovery] Session refreshed successfully');
     }
 
-    // Step 4: Invalidate all React Query caches to force re-fetch
+    const { data: { session: finalSession } } = await supabase.auth.getSession();
+
+    // If we're on a protected route and STILL don't have a session, sign out cleanly.
+    if (!finalSession && isProtectedPath(window.location.pathname)) {
+      console.log('[Recovery] No session on protected route - signing out');
+      await forceSignOut();
+      return {
+        success: true,
+        action: 'signed_out',
+        message: 'Session expired. Please sign in again.',
+      };
+    }
+
+    // Step 3: Invalidate all React Query caches to force re-fetch
     console.log('[Recovery] Invalidating query caches');
     await queryClient.invalidateQueries();
 
-    // Step 5: Verify we can reach the backend
+    // Step 4: Verify we can reach the backend
     const pingSuccess = await healthMonitor.ping();
-    
+
     if (!pingSuccess) {
       const healthState = healthMonitor.getState();
-      
+
       // Check if it's an auth issue
       if (healthState.lastErrorCode === 401 || healthState.lastErrorCode === 403) {
         console.log('[Recovery] Auth error on ping - signing out');
@@ -112,15 +115,15 @@ export async function recoverBackend(reason: RecoveryReason): Promise<RecoveryRe
         return {
           success: true,
           action: 'signed_out',
-          message: 'Authentication failed. Please sign in again.'
+          message: 'Authentication failed. Please sign in again.',
         };
       }
-      
+
       // Other errors - report failure but don't sign out
       return {
         success: false,
         action: 'failed',
-        message: `Backend unreachable: ${healthState.lastError || 'Unknown error'}`
+        message: `Backend unreachable: ${healthState.lastError || 'Unknown error'}`,
       };
     }
 
@@ -128,15 +131,14 @@ export async function recoverBackend(reason: RecoveryReason): Promise<RecoveryRe
     return {
       success: true,
       action: 'recovered',
-      message: 'Connection restored'
+      message: 'Connection restored',
     };
-
   } catch (error) {
     console.error('[Recovery] Unexpected error:', error);
     return {
       success: false,
       action: 'failed',
-      message: error instanceof Error ? error.message : 'Unknown error during recovery'
+      message: error instanceof Error ? error.message : 'Unknown error during recovery',
     };
   } finally {
     isRecovering = false;
@@ -150,27 +152,27 @@ export async function recoverBackend(reason: RecoveryReason): Promise<RecoveryRe
  */
 export async function forceSignOut(): Promise<void> {
   console.log('[Recovery] Forcing sign out');
-  
+
   try {
     await supabase.auth.signOut();
   } catch (error) {
     console.warn('[Recovery] Sign out error (continuing anyway):', error);
   }
-  
+
   // Clear query cache
   queryClient.clear();
-  
+
   // Clear any stale session data
   try {
     // Preserve essential keys
     const preserveKeys = ['storeReturn', 'pendingPurchase', 'pendingChat', 'sidebar-collapsed'];
     const preserved: Record<string, string> = {};
-    
-    preserveKeys.forEach(key => {
+
+    preserveKeys.forEach((key) => {
       const value = localStorage.getItem(key);
       if (value) preserved[key] = value;
     });
-    
+
     // Clear session-related storage
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -179,8 +181,8 @@ export async function forceSignOut(): Promise<void> {
         keysToRemove.push(key);
       }
     }
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
     // Restore preserved keys
     Object.entries(preserved).forEach(([key, value]) => {
       localStorage.setItem(key, value);
@@ -196,14 +198,12 @@ export async function forceSignOut(): Promise<void> {
 export function withTimeout<T>(promise: Promise<T>, ms: number, timeoutMessage = 'Request timeout'): Promise<T> {
   return Promise.race([
     promise,
-    new Promise<T>((_, reject) => 
-      setTimeout(() => reject(new Error(timeoutMessage)), ms)
-    )
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(timeoutMessage)), ms)),
   ]);
 }
 
 /**
- * Utility: Fetch with timeout and auto-recovery
+ * Utility: Fetch with timeout + optional auth guard + auto-recovery
  */
 export async function fetchWithRecovery<T>(
   fetchFn: () => Promise<T>,
@@ -211,31 +211,44 @@ export async function fetchWithRecovery<T>(
     timeout?: number;
     retryOnce?: boolean;
     context?: string;
+    requireAuth?: boolean;
   } = {}
 ): Promise<T> {
-  const { timeout = 10000, retryOnce = true, context = 'fetch' } = options;
-  
+  const { timeout = 10000, retryOnce = true, context = 'fetch', requireAuth = true } = options;
+
+  const assertAuth = async () => {
+    if (!requireAuth) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      // Try to hydrate quickly (common after full page refresh)
+      await supabase.auth.refreshSession();
+      const { data: { session: hydrated } } = await supabase.auth.getSession();
+      if (!hydrated) throw new Error('No session');
+    }
+  };
+
   try {
+    await assertAuth();
     return await withTimeout(fetchFn(), timeout, `${context} timeout`);
   } catch (error) {
     const err = error as Error;
     console.warn(`[FetchWithRecovery] ${context} failed:`, err.message);
-    
+
     if (retryOnce) {
-      // Attempt recovery
-      const result = await recoverBackend('timeout');
-      
+      const result = await recoverBackend(err.message === 'No session' ? 'page_load' : 'timeout');
+
       if (result.success && result.action === 'recovered') {
-        // Retry once after recovery
         console.log(`[FetchWithRecovery] Retrying ${context} after recovery`);
+        await assertAuth();
         return await withTimeout(fetchFn(), timeout, `${context} timeout (retry)`);
       }
-      
+
       if (result.action === 'signed_out') {
         throw new Error('Session expired');
       }
     }
-    
+
     throw error;
   }
 }

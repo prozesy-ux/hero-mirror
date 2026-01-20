@@ -550,15 +550,15 @@ const DeletedAccount = () => (
 // Main Content Area with dynamic margin
 const SellerMainContent = () => {
   const { isCollapsed } = useSellerSidebarContext();
-  
-  // Connectivity recovery
-  const handleReconnect = useCallback(() => {
-    toast.success('Back online! Refreshing data...');
-    window.location.reload();
+
+  // Connectivity recovery - use recoverBackend instead of hard reload
+  const handleReconnect = useCallback(async () => {
+    toast.success('Back online! Reconnecting...');
+    await recoverBackend('reconnect');
   }, []);
-  
+
   const isOnline = useConnectivityRecovery(handleReconnect);
-  
+
   return (
     <main className={`
       min-h-screen bg-slate-50 transition-all duration-300
@@ -572,55 +572,82 @@ const SellerMainContent = () => {
           You're offline. Some features may not work.
         </div>
       )}
-      
+
       <div className="p-3 sm:p-4 lg:p-6">
         <Suspense fallback={<SectionLoader />}>
           <Routes>
-            <Route path="/" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <SellerDashboard />
-              </SectionErrorBoundary>
-            } />
-            <Route path="/products" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <SellerProducts />
-              </SectionErrorBoundary>
-            } />
-            <Route path="/orders" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <SellerOrders />
-              </SectionErrorBoundary>
-            } />
-            <Route path="/analytics" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <SellerAnalytics />
-              </SectionErrorBoundary>
-            } />
-            <Route path="/chat" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <SellerChat />
-              </SectionErrorBoundary>
-            } />
-            <Route path="/wallet" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <SellerWallet />
-              </SectionErrorBoundary>
-            } />
-            <Route path="/feature-requests" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <SellerFeatureRequests />
-              </SectionErrorBoundary>
-            } />
-            <Route path="/support" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <SellerSupport />
-              </SectionErrorBoundary>
-            } />
-            <Route path="/settings" element={
-              <SectionErrorBoundary onRetry={() => window.location.reload()}>
-                <SellerSettings />
-              </SectionErrorBoundary>
-            } />
+            <Route
+              path="/"
+              element={
+                <SectionErrorBoundary sectionName="Seller Dashboard">
+                  <SellerDashboard />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="/products"
+              element={
+                <SectionErrorBoundary sectionName="Products">
+                  <SellerProducts />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                <SectionErrorBoundary sectionName="Orders">
+                  <SellerOrders />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <SectionErrorBoundary sectionName="Analytics">
+                  <SellerAnalytics />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="/chat"
+              element={
+                <SectionErrorBoundary sectionName="Chat">
+                  <SellerChat />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="/wallet"
+              element={
+                <SectionErrorBoundary sectionName="Wallet">
+                  <SellerWallet />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="/feature-requests"
+              element={
+                <SectionErrorBoundary sectionName="Feature Requests">
+                  <SellerFeatureRequests />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="/support"
+              element={
+                <SectionErrorBoundary sectionName="Support">
+                  <SellerSupport />
+                </SectionErrorBoundary>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <SectionErrorBoundary sectionName="Settings">
+                  <SellerSettings />
+                </SectionErrorBoundary>
+              }
+            />
           </Routes>
         </Suspense>
       </div>
