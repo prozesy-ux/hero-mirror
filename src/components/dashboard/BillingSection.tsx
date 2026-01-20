@@ -175,10 +175,10 @@ const BillingSection = () => {
   }, [user, searchParams]);
 
   const fetchPaymentMethods = async () => {
+    // Use secure view that excludes api_key and api_secret
     const { data } = await supabase
-      .from('payment_methods')
+      .from('payment_methods_public')
       .select('*')
-      .eq('is_enabled', true)
       .order('display_order', { ascending: true });
     
     if (data) {

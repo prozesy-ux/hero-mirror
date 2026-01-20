@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-forwarded-for, x-real-ip',
 }
 
 Deno.serve(async (req) => {
@@ -12,6 +12,39 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Get client IP for rate limiting
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
+      || req.headers.get('x-real-ip') 
+      || req.headers.get('cf-connecting-ip')
+      || 'unknown';
+
+    // Create Supabase client with service role key
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Check rate limit
+    const { data: rateLimitCheck, error: rateLimitError } = await supabase.rpc('check_admin_rate_limit', {
+      p_ip_address: clientIp
+    });
+
+    if (rateLimitError) {
+      console.error('Rate limit check error:', rateLimitError);
+      // Continue anyway to not block login if rate limit check fails
+    } else if (rateLimitCheck?.blocked) {
+      const blockedUntil = new Date(rateLimitCheck.blocked_until);
+      const waitMinutes = Math.ceil((blockedUntil.getTime() - Date.now()) / 60000);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Too many failed attempts. Please try again in ${waitMinutes} minute(s).`,
+          blocked: true,
+          blocked_until: rateLimitCheck.blocked_until
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const { username, password } = await req.json()
 
     if (!username || !password) {
@@ -20,11 +53,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    // Create Supabase client with service role key
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Verify credentials using pgcrypto
     const { data: admin, error } = await supabase
@@ -52,6 +80,9 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Login successful - reset rate limit
+    await supabase.rpc('reset_admin_rate_limit', { p_ip_address: clientIp });
 
     // Generate session token
     const sessionToken = crypto.randomUUID()

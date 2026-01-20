@@ -65,6 +65,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_rate_limits: {
+        Row: {
+          attempt_count: number | null
+          blocked_until: string | null
+          created_at: string | null
+          first_attempt_at: string | null
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          first_attempt_at?: string | null
+          id?: string
+          ip_address: string
+        }
+        Update: {
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          first_attempt_at?: string | null
+          id?: string
+          ip_address?: string
+        }
+        Relationships: []
+      }
       admin_sessions: {
         Row: {
           admin_id: string | null
@@ -1745,7 +1772,66 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      payment_methods_public: {
+        Row: {
+          account_name: string | null
+          account_number: string | null
+          code: string | null
+          created_at: string | null
+          currency_code: string | null
+          display_order: number | null
+          exchange_rate: number | null
+          icon_url: string | null
+          id: string | null
+          instructions: string | null
+          is_automatic: boolean | null
+          is_enabled: boolean | null
+          max_withdrawal: number | null
+          min_withdrawal: number | null
+          name: string | null
+          qr_image_url: string | null
+          withdrawal_enabled: boolean | null
+        }
+        Insert: {
+          account_name?: string | null
+          account_number?: string | null
+          code?: string | null
+          created_at?: string | null
+          currency_code?: string | null
+          display_order?: number | null
+          exchange_rate?: number | null
+          icon_url?: string | null
+          id?: string | null
+          instructions?: string | null
+          is_automatic?: boolean | null
+          is_enabled?: boolean | null
+          max_withdrawal?: number | null
+          min_withdrawal?: number | null
+          name?: string | null
+          qr_image_url?: string | null
+          withdrawal_enabled?: boolean | null
+        }
+        Update: {
+          account_name?: string | null
+          account_number?: string | null
+          code?: string | null
+          created_at?: string | null
+          currency_code?: string | null
+          display_order?: number | null
+          exchange_rate?: number | null
+          icon_url?: string | null
+          id?: string | null
+          instructions?: string | null
+          is_automatic?: boolean | null
+          is_enabled?: boolean | null
+          max_withdrawal?: number | null
+          min_withdrawal?: number | null
+          name?: string | null
+          qr_image_url?: string | null
+          withdrawal_enabled?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_seller_pending_balance: {
@@ -1756,6 +1842,7 @@ export type Database = {
         Args: { p_buyer_id: string; p_order_id: string }
         Returns: undefined
       }
+      check_admin_rate_limit: { Args: { p_ip_address: string }; Returns: Json }
       clean_old_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
       has_role: {
@@ -1786,6 +1873,10 @@ export type Database = {
           p_seller_id: string
         }
         Returns: Json
+      }
+      reset_admin_rate_limit: {
+        Args: { p_ip_address: string }
+        Returns: undefined
       }
       update_seller_trust_score: {
         Args: { p_seller_id: string }
