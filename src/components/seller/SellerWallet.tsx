@@ -17,11 +17,7 @@ import {
   Plus,
   Trash2,
   Star,
-  Building2,
-  User,
-  Hash,
-  CheckCircle2,
-  Eye
+  Building2
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -95,8 +91,6 @@ const SellerWallet = () => {
   const [selectedAccountForWithdraw, setSelectedAccountForWithdraw] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<WalletTab>('wallet');
-  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
-  const [justAddedAccountId, setJustAddedAccountId] = useState<string | null>(null);
   
   // Add account form state
   const [newAccountMethod, setNewAccountMethod] = useState('');
@@ -186,7 +180,7 @@ const SellerWallet = () => {
           .eq('payment_method_code', newAccountMethod);
       }
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('seller_payment_accounts')
         .insert({
           seller_id: profile.id,
@@ -195,19 +189,11 @@ const SellerWallet = () => {
           account_number: newAccountNumber.trim(),
           bank_name: newBankName.trim() || null,
           is_primary: newAccountPrimary
-        })
-        .select()
-        .single();
+        });
 
       if (error) throw error;
 
-      // Set the newly added account ID for animation
-      if (data) {
-        setJustAddedAccountId(data.id);
-        setTimeout(() => setJustAddedAccountId(null), 3000);
-      }
-
-      toast.success('Payment account added successfully!');
+      toast.success('Payment account added successfully');
       setShowAddAccountModal(false);
       resetAddAccountForm();
       fetchSavedAccounts();
@@ -223,37 +209,19 @@ const SellerWallet = () => {
   };
 
   const handleDeleteAccount = async (accountId: string) => {
-    if (deletingAccountId) return; // Prevent double clicks
-    
-    if (!confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
-      return;
-    }
-
-    setDeletingAccountId(accountId);
+    if (!confirm('Are you sure you want to delete this account?')) return;
 
     try {
       const { error } = await supabase
         .from('seller_payment_accounts')
         .delete()
-        .eq('id', accountId)
-        .eq('seller_id', profile?.id);
+        .eq('id', accountId);
 
-      if (error) {
-        console.error('Delete error:', error);
-        throw error;
-      }
-      
-      // Immediately update local state for faster UI response
-      setSavedAccounts(prev => prev.filter(a => a.id !== accountId));
-      toast.success('Account deleted successfully');
-      
-      // Also refresh from server to ensure sync
+      if (error) throw error;
+      toast.success('Account deleted');
       fetchSavedAccounts();
     } catch (error: any) {
-      console.error('Delete account error:', error);
-      toast.error(error.message || 'Failed to delete account. Please try again.');
-    } finally {
-      setDeletingAccountId(null);
+      toast.error(error.message || 'Failed to delete account');
     }
   };
 
@@ -473,25 +441,12 @@ const SellerWallet = () => {
           )}
 
           {hasPendingWithdrawal && (
-            <div className="p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl flex items-center gap-4 shadow-lg shadow-amber-100">
-              <div className="p-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl shadow-md flex-shrink-0">
-                <Clock className="text-white" size={24} />
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+              <AlertCircle className="text-amber-600 flex-shrink-0" size={20} />
+              <div>
+                <p className="text-amber-700 font-medium">Withdrawal Pending</p>
+                <p className="text-amber-600/70 text-sm">Please wait for your current withdrawal to be processed.</p>
               </div>
-              <div className="flex-1">
-                <p className="text-amber-800 font-bold text-base">Withdrawal In Progress</p>
-                <p className="text-amber-700/80 text-sm">
-                  You cannot submit another withdrawal until your current request is processed.
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setActiveTab('withdrawals')}
-                className="border-amber-300 text-amber-700 hover:bg-amber-100 font-semibold flex items-center gap-1.5"
-              >
-                <Eye size={14} />
-                View Status
-              </Button>
             </div>
           )}
 
@@ -531,177 +486,105 @@ const SellerWallet = () => {
         </div>
       )}
 
-      {/* Accounts Tab - Colorful Gradient Design */}
+      {/* Accounts Tab */}
       {activeTab === 'accounts' && (
         <div className="space-y-6">
-          {/* Header - Gradient style matching admin */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-md">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
-                  <CreditCard size={22} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Payment Accounts</h3>
-                  <p className="text-sm text-gray-500">Add accounts for withdrawals</p>
-                </div>
-              </div>
-              <Button 
-                onClick={() => setShowAddAccountModal(true)} 
-                className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-violet-500/25"
-              >
-                <Plus className="w-4 h-4" />
-                Add Account
-              </Button>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Payment Accounts</h3>
+              <p className="text-sm text-gray-500">Add accounts for withdrawals</p>
             </div>
+            <Button onClick={() => setShowAddAccountModal(true)} className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700">
+              <Plus className="w-4 h-4" />
+              Add Account
+            </Button>
           </div>
 
           {/* Payment Method Categories */}
           {paymentMethods.length === 0 ? (
-            /* Empty State - Gradient design */
-            <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-12 border border-violet-200 text-center">
-              <div className="p-4 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 w-fit mx-auto mb-4">
-                <CreditCard className="w-12 h-12 text-violet-500" />
-              </div>
-              <p className="text-gray-700 font-medium">No withdrawal methods enabled</p>
-              <p className="text-gray-500 text-sm mt-1">Contact support for assistance</p>
+            <div className="bg-white rounded-2xl p-12 border border-gray-200 shadow-md text-center">
+              <CreditCard className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p className="text-gray-500">No withdrawal methods enabled by admin</p>
             </div>
           ) : (
             paymentMethods.map(method => {
               const methodAccounts = getMethodAccounts(method.code);
               return (
-                /* Payment Method Category Card - Gradient design */
-                <div 
-                  key={method.id} 
-                  className={`rounded-2xl p-6 border transition-all duration-300 ${
-                    methodAccounts.length > 0
-                      ? 'bg-gradient-to-br from-violet-50 to-purple-50 border-violet-200 shadow-lg shadow-violet-100'
-                      : 'bg-white border-gray-200 shadow-md hover:shadow-lg'
-                  }`}
-                >
-                  {/* Method Header */}
+                <div key={method.id} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
                   <div className="flex items-center gap-3 mb-4">
                     {method.icon_url ? (
-                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center p-2 ${
-                        methodAccounts.length > 0 
-                          ? 'bg-gradient-to-br from-violet-100 to-purple-100' 
-                          : 'bg-gray-100'
-                      }`}>
-                        <img src={method.icon_url} className="h-full w-full object-contain" alt={method.name} />
-                      </div>
+                      <img src={method.icon_url} className="h-10 w-10 object-contain rounded-lg bg-gray-50 p-1" alt={method.name} />
                     ) : (
-                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
-                        methodAccounts.length > 0 
-                          ? 'bg-gradient-to-br from-violet-100 to-purple-100' 
-                          : 'bg-gray-100'
-                      }`}>
-                        <CreditCard size={22} className={methodAccounts.length > 0 ? 'text-violet-600' : 'text-gray-500'} />
+                      <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <CreditCard size={20} className="text-gray-500" />
                       </div>
                     )}
                     <div className="flex-1">
-                      <h4 className="font-bold text-gray-900">{method.name}</h4>
+                      <h4 className="font-semibold text-gray-900">{method.name}</h4>
                       <p className="text-xs text-gray-500">
-                        <span className={methodAccounts.length > 0 ? 'text-violet-600 font-medium' : ''}>
-                          {methodAccounts.length} account{methodAccounts.length !== 1 ? 's' : ''}
-                        </span>
+                        {methodAccounts.length} account{methodAccounts.length !== 1 ? 's' : ''} added
                         <span className="mx-2">•</span>
                         Min ${method.min_withdrawal} / Max ${method.max_withdrawal}
                       </p>
                     </div>
-                    
-                    {/* Account count badge - Gradient */}
-                    {methodAccounts.length > 0 && (
-                      <span className="px-3 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-semibold rounded-full shadow-md">
-                        {methodAccounts.length} Added
-                      </span>
-                    )}
                   </div>
 
-                  {/* Account Cards Grid */}
+                  {/* Account Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {methodAccounts.map(account => (
-                      /* Account Card - Gradient hover states with success animation */
                       <div 
                         key={account.id}
-                        className={`p-4 rounded-xl border-2 transition-all duration-500 relative group ${
-                          justAddedAccountId === account.id
-                            ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-400 shadow-xl shadow-emerald-200 scale-[1.02] ring-4 ring-emerald-200'
-                            : account.is_primary
-                              ? 'bg-gradient-to-br from-violet-50 to-purple-50 border-violet-300 shadow-md shadow-violet-100'
-                              : 'bg-white border-gray-200 hover:border-violet-200 hover:bg-violet-50/30 hover:shadow-md'
-                        }`}
+                        className="p-4 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all relative group"
                       >
-                        {/* Success Badge for newly added */}
-                        {justAddedAccountId === account.id && (
-                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-                            <span className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-lg animate-bounce">
-                              <CheckCircle2 className="w-4 h-4" />
-                              Added Successfully!
-                            </span>
-                          </div>
+                        {account.is_primary && (
+                          <Badge className="absolute -top-2 -right-2 bg-violet-600 text-white text-xs">
+                            <Star className="w-3 h-3 mr-0.5" />
+                            Primary
+                          </Badge>
                         )}
-                        
-                        {/* Primary Badge - Gradient */}
-                        {account.is_primary && justAddedAccountId !== account.id && (
-                          <div className="absolute -top-2.5 -right-2.5 z-10">
-                            <span className="px-2.5 py-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-semibold rounded-full flex items-center gap-1 shadow-lg">
-                              <Star className="w-3 h-3" />
-                              Primary
-                            </span>
-                          </div>
-                        )}
-                        
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-900 truncate">{account.account_name}</p>
-                            <p className="text-sm text-violet-600 font-mono">{maskAccountNumber(account.account_number)}</p>
+                            <p className="font-medium text-gray-900 truncate">{account.account_name}</p>
+                            <p className="text-sm text-gray-500 font-mono">{maskAccountNumber(account.account_number)}</p>
                             {account.bank_name && (
-                              <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                                <Building2 size={12} className="text-violet-400" />
+                              <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                                <Building2 size={12} />
                                 {account.bank_name}
                               </p>
                             )}
                           </div>
                         </div>
-                        
-                        {/* Actions - Gradient style buttons */}
-                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-violet-100">
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
                           {!account.is_primary && (
                             <button
                               onClick={() => handleSetPrimary(account.id, account.payment_method_code)}
-                              className="text-xs text-violet-600 hover:text-white hover:bg-gradient-to-r hover:from-violet-500 hover:to-purple-600 px-3 py-1.5 rounded-full font-medium transition-all border border-violet-200 hover:border-transparent"
+                              className="text-xs text-violet-600 hover:text-violet-700 font-medium"
                             >
                               Set Primary
                             </button>
                           )}
                           <button
                             onClick={() => handleDeleteAccount(account.id)}
-                            disabled={deletingAccountId === account.id}
-                            className="text-xs text-red-500 hover:text-white hover:bg-red-500 px-3 py-1.5 rounded-full font-medium ml-auto flex items-center gap-1 transition-all border border-red-200 hover:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-xs text-red-500 hover:text-red-600 font-medium ml-auto flex items-center gap-1"
                           >
-                            {deletingAccountId === account.id ? (
-                              <Loader2 size={12} className="animate-spin" />
-                            ) : (
-                              <Trash2 size={12} />
-                            )}
-                            {deletingAccountId === account.id ? 'Deleting...' : 'Delete'}
+                            <Trash2 size={12} />
+                            Delete
                           </button>
                         </div>
                       </div>
                     ))}
 
-                    {/* Add Account Card - Gradient dashed border */}
+                    {/* Add Account Card */}
                     <button 
                       onClick={() => {
                         setNewAccountMethod(method.code);
                         setShowAddAccountModal(true);
                       }}
-                      className="p-4 rounded-xl border-2 border-dashed border-violet-200 hover:border-violet-400 bg-gradient-to-br from-violet-50/50 to-purple-50/50 hover:from-violet-100 hover:to-purple-100 transition-all duration-300 flex flex-col items-center justify-center gap-2 min-h-[140px] group"
+                      className="p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-all flex flex-col items-center justify-center gap-2 min-h-[120px]"
                     >
-                      <div className="p-3 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 group-hover:from-violet-200 group-hover:to-purple-200 transition-all">
-                        <Plus className="w-6 h-6 text-violet-500 group-hover:text-violet-600" />
-                      </div>
-                      <span className="text-sm text-violet-600 font-medium">Add Account</span>
+                      <Plus className="w-6 h-6 text-gray-400" />
+                      <span className="text-sm text-gray-500">Add Account</span>
                     </button>
                   </div>
                 </div>
@@ -872,49 +755,30 @@ const SellerWallet = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Account Modal - Premium Unique Design */}
+      {/* Add Account Modal */}
       <Dialog open={showAddAccountModal} onOpenChange={setShowAddAccountModal}>
-        <DialogContent className="max-w-lg bg-gradient-to-br from-white via-violet-50/30 to-purple-50/50 border-0 shadow-2xl">
-          <DialogHeader className="border-b border-violet-100 pb-4">
-            <DialogTitle className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl blur-lg opacity-50"></div>
-                <div className="relative p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl shadow-xl">
-                  <CreditCard className="text-white" size={24} />
-                </div>
-              </div>
-              <div>
-                <span className="text-2xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                  Add Payment Account
-                </span>
-                <p className="text-sm text-gray-500 font-normal mt-0.5">
-                  Secure withdrawal destination
-                </p>
-              </div>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-violet-600" />
+              Add Payment Account
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-5 mt-6">
-            {/* Payment Method - Premium Select */}
-            <div className="space-y-2">
-              <Label className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">1</span>
-                Payment Method
-              </Label>
+          <div className="space-y-4">
+            {/* Select Payment Method */}
+            <div>
+              <Label>Payment Method</Label>
               <Select value={newAccountMethod} onValueChange={setNewAccountMethod}>
-                <SelectTrigger className="h-14 rounded-xl border-2 border-violet-100 bg-white hover:border-violet-300 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 transition-all">
-                  <SelectValue placeholder="Select your payment method" />
+                <SelectTrigger>
+                  <SelectValue placeholder="Select method" />
                 </SelectTrigger>
                 <SelectContent>
                   {paymentMethods.map(method => (
                     <SelectItem key={method.id} value={method.code}>
-                      <div className="flex items-center gap-3">
-                        {method.icon_url ? (
-                          <img src={method.icon_url} className="w-6 h-6 object-contain" alt={method.name} />
-                        ) : (
-                          <CreditCard size={18} className="text-violet-500" />
-                        )}
-                        <span className="font-medium">{method.name}</span>
+                      <div className="flex items-center gap-2">
+                        {method.icon_url && <img src={method.icon_url} className="w-5 h-5 object-contain" alt={method.name} />}
+                        {method.name}
                       </div>
                     </SelectItem>
                   ))}
@@ -922,93 +786,59 @@ const SellerWallet = () => {
               </Select>
             </div>
 
-            {/* Account Name - With Icon */}
-            <div className="space-y-2">
-              <Label className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">2</span>
-                Account Holder Name
-              </Label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-violet-400" size={20} />
-                <Input 
-                  value={newAccountName}
-                  onChange={(e) => setNewAccountName(e.target.value)}
-                  className="h-14 pl-12 rounded-xl border-2 border-violet-100 bg-white hover:border-violet-300 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-gray-900 font-medium placeholder:text-gray-400"
-                  placeholder="Enter name exactly as on account"
-                />
-              </div>
+            {/* Account Name */}
+            <div>
+              <Label>Account Holder Name</Label>
+              <Input 
+                value={newAccountName}
+                onChange={(e) => setNewAccountName(e.target.value)}
+                placeholder="Enter name as shown on account"
+              />
             </div>
 
-            {/* Account Number - With Icon */}
-            <div className="space-y-2">
-              <Label className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">3</span>
-                Account / Phone / Wallet Number
-              </Label>
-              <div className="relative">
-                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-violet-400" size={20} />
-                <Input 
-                  value={newAccountNumber}
-                  onChange={(e) => setNewAccountNumber(e.target.value)}
-                  className="h-14 pl-12 rounded-xl border-2 border-violet-100 bg-white hover:border-violet-300 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 font-mono text-lg tracking-wider"
-                  placeholder="01XXXXXXXXX"
-                />
-              </div>
+            {/* Account Number */}
+            <div>
+              <Label>Account Number / Phone / Wallet Address</Label>
+              <Input 
+                value={newAccountNumber}
+                onChange={(e) => setNewAccountNumber(e.target.value)}
+                placeholder="Enter account number or phone"
+              />
             </div>
 
             {/* Bank Name (for bank transfers) */}
             {(newAccountMethod === 'bank' || newAccountMethod === 'wire') && (
-              <div className="space-y-2">
-                <Label className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">4</span>
-                  Bank Name
-                </Label>
-                <div className="relative">
-                  <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-violet-400" size={20} />
-                  <Input 
-                    value={newBankName}
-                    onChange={(e) => setNewBankName(e.target.value)}
-                    className="h-14 pl-12 rounded-xl border-2 border-violet-100 bg-white hover:border-violet-300 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-gray-900 font-medium placeholder:text-gray-400"
-                    placeholder="Enter your bank name"
-                  />
-                </div>
+              <div>
+                <Label>Bank Name</Label>
+                <Input 
+                  value={newBankName}
+                  onChange={(e) => setNewBankName(e.target.value)}
+                  placeholder="Enter bank name"
+                />
               </div>
             )}
 
-            {/* Premium Primary Checkbox */}
-            <div className="p-5 bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-violet-500/10 rounded-2xl border-2 border-dashed border-violet-200">
-              <div className="flex items-center gap-4">
-                <Checkbox 
-                  id="primary"
-                  checked={newAccountPrimary}
-                  onCheckedChange={(checked) => setNewAccountPrimary(checked as boolean)}
-                  className="w-6 h-6 rounded-lg data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-violet-500 data-[state=checked]:to-purple-600 border-2 border-violet-300"
-                />
-                <div>
-                  <Label htmlFor="primary" className="text-gray-900 font-bold text-base cursor-pointer flex items-center gap-2">
-                    <Star className="w-4 h-4 text-amber-500" />
-                    Set as Primary Account
-                  </Label>
-                  <p className="text-sm text-gray-500">Default account for all withdrawals</p>
-                </div>
-              </div>
+            {/* Set as Primary */}
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id="primary"
+                checked={newAccountPrimary}
+                onCheckedChange={(checked) => setNewAccountPrimary(checked as boolean)}
+              />
+              <Label htmlFor="primary" className="font-normal cursor-pointer">Set as primary account for this method</Label>
             </div>
           </div>
 
-          <DialogFooter className="mt-8 pt-5 border-t border-violet-100">
-            <Button 
-              variant="outline" 
-              onClick={() => { setShowAddAccountModal(false); resetAddAccountForm(); }}
-              className="h-12 px-6 rounded-xl border-2 border-gray-200 hover:bg-gray-50 font-semibold"
-            >
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => { setShowAddAccountModal(false); resetAddAccountForm(); }}>
               Cancel
             </Button>
             <Button 
               onClick={handleAddAccount} 
               disabled={!newAccountMethod || !newAccountName.trim() || !newAccountNumber.trim() || submitting}
-              className="h-12 px-8 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-violet-600 bg-[length:200%_100%] hover:bg-[position:100%_0] transition-all duration-500 shadow-xl shadow-violet-500/30 font-bold text-base"
+              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
             >
-              {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : <Plus className="w-5 h-5 mr-2" />}
+              {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
               Add Account
             </Button>
           </DialogFooter>

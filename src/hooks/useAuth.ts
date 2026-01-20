@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -19,10 +19,6 @@ export const useAuth = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  
-  // Prevent double initialization (React StrictMode / HMR)
-  const initRef = useRef(false);
-  const mountedRef = useRef(true);
 
   const checkAdminRole = async (userId: string) => {
     try {
@@ -51,38 +47,27 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
-    // Prevent double initialization
-    if (initRef.current) return;
-    initRef.current = true;
-    mountedRef.current = true;
-
-    // Set up auth state listener FIRST - this is the source of truth
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[Auth] Event:', event, session?.user?.email);
-        
-        // Guard against unmounted updates
-        if (!mountedRef.current) return;
-        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Parallel fetch for better performance
-          const [adminStatus, profileResult] = await Promise.all([
-            checkAdminRole(session.user.id),
-            supabase
+          // Check admin role
+          const adminStatus = await checkAdminRole(session.user.id);
+          setIsAdmin(adminStatus);
+          
+          // Fetch profile using setTimeout to avoid race condition
+          setTimeout(async () => {
+            const { data: profileData } = await supabase
               .from('profiles')
               .select('*')
               .eq('user_id', session.user.id)
-              .maybeSingle()
-          ]);
-          
-          // Guard again after async
-          if (!mountedRef.current) return;
-          
-          setIsAdmin(adminStatus);
-          setProfile(profileResult.data);
+              .maybeSingle();
+            
+            setProfile(profileData);
+          }, 0);
         } else {
           setProfile(null);
           setIsAdmin(false);
@@ -92,19 +77,31 @@ export const useAuth = () => {
       }
     );
 
-    // THEN check for existing session (handles page refresh)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mountedRef.current) return;
-      // Only set loading false if no session - listener handles active session case
-      if (!session) {
+    // THEN check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        // Check admin role
+        const adminStatus = await checkAdminRole(session.user.id);
+        setIsAdmin(adminStatus);
+        
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            setProfile(data);
+            setLoading(false);
+          });
+      } else {
         setLoading(false);
       }
     });
 
-    return () => {
-      mountedRef.current = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {

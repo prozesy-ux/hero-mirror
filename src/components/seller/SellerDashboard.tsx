@@ -5,21 +5,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Wallet01Icon,
-  TimeQuarterPassIcon,
-  MoneyBag02Icon,
-  Package03Icon,
-  ShoppingBag01Icon,
-  CheckmarkCircle02Icon,
-  PlusSignCircleIcon,
-  ArrowRight02Icon,
-  Activity01Icon,
-  AnalyticsUpIcon,
-  ArrowUp01Icon,
-  DeliveryTruck01Icon,
-  UserShield01Icon
-} from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react';
+  Wallet, 
+  Clock, 
+  DollarSign, 
+  Package,
+  ShoppingBag,
+  CheckCircle,
+  TrendingUp,
+  Plus,
+  ArrowRight,
+  ShieldCheck,
+  Activity,
+  BarChart3,
+  Eye
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
@@ -90,7 +89,7 @@ const SellerDashboard = () => {
       <div className="space-y-6 seller-dashboard">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl" />
+            <Skeleton key={i} className="h-36 rounded-2xl" />
           ))}
         </div>
         <Skeleton className="h-64 rounded-2xl" />
@@ -114,44 +113,41 @@ const SellerDashboard = () => {
 
   const stats = [
     {
-      label: 'Balance',
+      label: 'BALANCE',
       value: `$${(wallet?.balance || 0).toFixed(2)}`,
       change: '+12.5%',
-      icon: Wallet01Icon,
-      gradient: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+      changePositive: true,
+      icon: Wallet,
+      iconBg: 'bg-emerald-500',
       onClick: () => navigate('/seller/wallet')
     },
     {
-      label: 'Pending',
+      label: 'PENDING',
       value: `$${(wallet?.pending_balance || 0).toFixed(2)}`,
       change: 'Processing',
-      icon: TimeQuarterPassIcon,
-      gradient: 'bg-gradient-to-br from-amber-500 to-orange-600',
+      changePositive: null,
+      icon: Clock,
+      iconBg: 'bg-amber-500',
       onClick: () => navigate('/seller/wallet')
     },
     {
-      label: 'Earnings',
+      label: 'EARNINGS',
       value: `$${totalEarnings.toFixed(2)}`,
       change: `${orders.length} orders`,
-      icon: MoneyBag02Icon,
-      gradient: 'bg-gradient-to-br from-violet-500 to-purple-600',
+      changePositive: null,
+      icon: DollarSign,
+      iconBg: 'bg-violet-500',
       onClick: () => navigate('/seller/orders')
     },
     {
-      label: 'Products',
+      label: 'PRODUCTS',
       value: products.length.toString(),
       change: `${products.filter(p => p.is_approved).length} live`,
-      icon: Package03Icon,
-      gradient: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+      changePositive: null,
+      icon: Package,
+      iconBg: 'bg-blue-500',
       onClick: () => navigate('/seller/products')
     }
-  ];
-
-  const quickStats = [
-    { label: 'Completed', value: completedOrders, icon: CheckmarkCircle02Icon, bgGradient: 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200', iconBg: 'bg-emerald-500' },
-    { label: 'Pending', value: pendingOrders, icon: TimeQuarterPassIcon, bgGradient: 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200', iconBg: 'bg-amber-500' },
-    { label: 'Delivered', value: deliveredOrders, icon: DeliveryTruck01Icon, bgGradient: 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200', iconBg: 'bg-blue-500' },
-    { label: 'Total', value: orders.length, icon: ShoppingBag01Icon, bgGradient: 'bg-gradient-to-br from-violet-50 to-purple-50 border-violet-200', iconBg: 'bg-violet-500' }
   ];
 
   return (
@@ -188,7 +184,7 @@ const SellerDashboard = () => {
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <HugeiconsIcon icon={UserShield01Icon} className={`w-6 h-6 ${getTrustScoreColor(trustScore.trust_score)}`} />
+                  <ShieldCheck className={`w-6 h-6 ${getTrustScoreColor(trustScore.trust_score)}`} />
                 </div>
               </div>
               <div>
@@ -214,51 +210,58 @@ const SellerDashboard = () => {
         </div>
       )}
 
-      {/* Main Stats Grid - Premium Gradient Cards (like Analytics) */}
+      {/* Main Stats Grid - Premium Fiverr-style Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <button
             key={index}
             onClick={stat.onClick}
-            className={`group relative rounded-2xl p-5 overflow-hidden text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${stat.gradient}`}
+            className="group seller-stat-card text-left hover:shadow-lg hover:border-slate-200 hover:scale-[1.02] transition-all duration-300"
           >
-            <div className="flex items-start justify-between relative z-10">
-              <div>
-                <p className="text-white/80 text-xs font-medium uppercase tracking-wide">{stat.label}</p>
-                <p className="text-2xl lg:text-3xl font-bold text-white mt-1">{stat.value}</p>
-                <div className="flex items-center gap-1 mt-2">
-                  <HugeiconsIcon icon={ArrowUp01Icon} className="h-3.5 w-3.5 text-white/90" />
-                  <span className="text-xs font-semibold text-white/90">{stat.change}</span>
-                </div>
+            <div className="flex items-start justify-between mb-4">
+              <div className={`w-11 h-11 rounded-xl ${stat.iconBg} flex items-center justify-center shadow-sm`}>
+                <stat.icon className="w-5 h-5 text-white" />
               </div>
-              <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
-                <HugeiconsIcon icon={stat.icon} className="h-6 w-6 text-white" />
-              </div>
+              {stat.changePositive !== null && (
+                <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${
+                  stat.changePositive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-600'
+                }`}>
+                  {stat.change}
+                </span>
+              )}
             </div>
+            <p className="seller-label text-slate-500 mb-1">{stat.label}</p>
+            <p className="seller-stat-number text-2xl text-slate-900 group-hover:text-slate-700 transition-colors">{stat.value}</p>
+            {stat.changePositive === null && stat.change && (
+              <p className="text-xs text-slate-500 mt-1">{stat.change}</p>
+            )}
           </button>
         ))}
       </div>
 
-      {/* Quick Stats Row - Subtle Gradient Backgrounds */}
+      {/* Quick Stats Row */}
       <div className="grid grid-cols-4 gap-3">
-        {quickStats.map((stat, index) => (
-          <div key={index} className={`rounded-xl p-3 text-center border ${stat.bgGradient} shadow-sm`}>
-            <div className={`w-8 h-8 mx-auto mb-1 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
-              <HugeiconsIcon icon={stat.icon} className="h-4 w-4 text-white" />
-            </div>
+        {[
+          { label: 'Completed', value: completedOrders, icon: CheckCircle, color: 'text-emerald-500' },
+          { label: 'Pending', value: pendingOrders, icon: Clock, color: 'text-amber-500' },
+          { label: 'Delivered', value: deliveredOrders, icon: TrendingUp, color: 'text-blue-500' },
+          { label: 'Total', value: orders.length, icon: ShoppingBag, color: 'text-violet-500' }
+        ].map((stat, index) => (
+          <div key={index} className="bg-white rounded-xl p-3 text-center border border-slate-100 shadow-sm">
+            <stat.icon className={`w-4 h-4 ${stat.color} mx-auto mb-1`} />
             <p className="seller-stat-number text-lg text-slate-900">{stat.value}</p>
             <p className="text-[10px] text-slate-600 font-medium">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Quick Actions - Premium Gradient Buttons */}
+      {/* Quick Actions - Clean Buttons */}
       <div className="flex flex-wrap gap-3">
         <Button
           onClick={() => navigate('/seller/products')}
-          className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg shadow-violet-500/25"
+          className="bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 rounded-xl font-semibold"
         >
-          <HugeiconsIcon icon={PlusSignCircleIcon} className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4 mr-2" />
           Add Product
         </Button>
         <Button
@@ -266,7 +269,7 @@ const SellerDashboard = () => {
           onClick={() => navigate('/seller/orders')}
           className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
         >
-          <HugeiconsIcon icon={ShoppingBag01Icon} className="w-4 h-4 mr-2" />
+          <ShoppingBag className="w-4 h-4 mr-2" />
           View Orders
         </Button>
         <Button
@@ -274,7 +277,7 @@ const SellerDashboard = () => {
           onClick={() => navigate('/seller/analytics')}
           className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
         >
-          <HugeiconsIcon icon={AnalyticsUpIcon} className="w-4 h-4 mr-2" />
+          <BarChart3 className="w-4 h-4 mr-2" />
           Analytics
         </Button>
         <Button
@@ -282,7 +285,7 @@ const SellerDashboard = () => {
           onClick={() => navigate('/seller/wallet')}
           className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
         >
-          <HugeiconsIcon icon={Wallet01Icon} className="w-4 h-4 mr-2" />
+          <Wallet className="w-4 h-4 mr-2" />
           Withdraw
         </Button>
       </div>
@@ -291,8 +294,8 @@ const SellerDashboard = () => {
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
-              <HugeiconsIcon icon={Activity01Icon} className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
+              <Activity className="w-4 h-4 text-violet-600" />
             </div>
             <div>
               <h3 className="seller-heading text-slate-900">Recent Activity</h3>
@@ -306,14 +309,14 @@ const SellerDashboard = () => {
             className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 font-medium rounded-lg"
           >
             View All
-            <HugeiconsIcon icon={ArrowRight02Icon} className="w-4 h-4 ml-1" />
+            <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
         
         {recentOrders.length === 0 ? (
           <div className="p-10 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center mx-auto mb-4">
-              <HugeiconsIcon icon={ShoppingBag01Icon} className="w-6 h-6 text-slate-400" />
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <ShoppingBag className="w-6 h-6 text-slate-400" />
             </div>
             <p className="font-semibold text-slate-900 mb-1">No orders yet</p>
             <p className="text-sm text-slate-500">Your recent orders will appear here</p>
@@ -343,7 +346,7 @@ const SellerDashboard = () => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <HugeiconsIcon icon={Package03Icon} className="w-5 h-5 text-slate-400" />
+                      <Package className="w-5 h-5 text-slate-400" />
                     </div>
                   )}
                 </div>
