@@ -978,6 +978,13 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "seller_chat_attachments_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       seller_chats: {
@@ -1029,6 +1036,13 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "seller_chats_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       seller_feature_requests: {
@@ -1076,6 +1090,13 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "seller_feature_requests_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       seller_notifications: {
@@ -1115,6 +1136,13 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_notifications_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1177,6 +1205,13 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "seller_orders_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       seller_payment_accounts: {
@@ -1225,6 +1260,13 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_payment_accounts_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1303,6 +1345,13 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_products_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1472,6 +1521,13 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "seller_support_messages_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       seller_trust_scores: {
@@ -1543,6 +1599,13 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "seller_wallets_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: true
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       seller_withdrawals: {
@@ -1595,6 +1658,13 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_withdrawals_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1829,6 +1899,51 @@ export type Database = {
           name?: string | null
           qr_image_url?: string | null
           withdrawal_enabled?: boolean | null
+        }
+        Relationships: []
+      }
+      seller_profiles_public: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_verified: boolean | null
+          social_links: Json | null
+          store_banner_url: string | null
+          store_description: string | null
+          store_logo_url: string | null
+          store_name: string | null
+          store_slug: string | null
+          store_tagline: string | null
+          total_orders: number | null
+          total_sales: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          social_links?: Json | null
+          store_banner_url?: string | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_name?: string | null
+          store_slug?: string | null
+          store_tagline?: string | null
+          total_orders?: number | null
+          total_sales?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          social_links?: Json | null
+          store_banner_url?: string | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_name?: string | null
+          store_slug?: string | null
+          store_tagline?: string | null
+          total_orders?: number | null
+          total_sales?: number | null
         }
         Relationships: []
       }
