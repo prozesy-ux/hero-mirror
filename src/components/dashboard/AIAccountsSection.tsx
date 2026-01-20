@@ -8,7 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import MarketplaceSidebar from './MarketplaceSidebar';
 import { useFloatingChat } from '@/contexts/FloatingChatContext';
-import { fetchWithRecovery } from '@/lib/backend-recovery';
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -170,7 +169,6 @@ const AIAccountsSection = () => {
   // Seller orders (purchases from marketplace sellers)
   const [sellerOrders, setSellerOrders] = useState<SellerOrderPurchase[]>([]);
   const [approvingOrder, setApprovingOrder] = useState<string | null>(null);
-  const [approvedOrders, setApprovedOrders] = useState<Set<string>>(new Set());
 
   // Seller products state
   const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([]);
@@ -206,53 +204,36 @@ const AIAccountsSection = () => {
   const [pendingPurchaseData, setPendingPurchaseData] = useState<PendingPurchase | null>(null);
 
   useEffect(() => {
-    // Parallel fetch ALL initial data for maximum speed with timeout protection
-    const fetchInitialData = async () => {
-      try {
-        const [accountsRes, categoriesRes, productsRes] = await Promise.allSettled([
-          fetchWithRecovery(
-            async () => await supabase.from('ai_accounts').select('*').eq('is_available', true).order('created_at', { ascending: false }),
-            { timeout: 10000, context: 'AI Accounts' }
-          ),
-          fetchWithRecovery(
-            async () => await supabase.from('categories').select('id, name, icon, color, is_active').eq('is_active', true).order('display_order', { ascending: true }),
-            { timeout: 10000, context: 'Categories' }
-          ),
-          fetchWithRecovery(
-            async () => await supabase.from('seller_products').select(`*, seller_profiles (id, store_name, store_logo_url, is_verified)`).eq('is_available', true).eq('is_approved', true).order('created_at', { ascending: false }),
-            { timeout: 10000, context: 'Seller Products' }
-          )
-        ]);
-
-        if (accountsRes.status === 'fulfilled' && (accountsRes.value as any)?.data) {
-          setAccounts((accountsRes.value as any).data);
-        }
-        if (categoriesRes.status === 'fulfilled' && (categoriesRes.value as any)?.data) {
-          setDynamicCategories((categoriesRes.value as any).data);
-        }
-        if (productsRes.status === 'fulfilled' && (productsRes.value as any)?.data) {
-          setSellerProducts((productsRes.value as any).data as SellerProduct[]);
-        }
-      } catch (error) {
-        console.error('AIAccountsSection fetchInitialData error:', error);
-        toast.error('Some marketplace data failed to load');
-      }
-      
-      setLoading(false);
-    };
-
-    fetchInitialData();
+    fetchAccounts();
+    fetchCategories();
+    fetchSellerProducts();
     
-    // Single combined realtime channel for all updates
-    const channel = supabase
-      .channel('marketplace-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, fetchCategories)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ai_accounts' }, fetchAccounts)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_products' }, fetchSellerProducts)
+    // Subscribe to realtime updates for categories and accounts
+    const categoriesChannel = supabase
+      .channel('categories-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        fetchCategories();
+      })
+      .subscribe();
+
+    const accountsChannel = supabase
+      .channel('accounts-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ai_accounts' }, () => {
+        fetchAccounts();
+      })
+      .subscribe();
+
+    const sellerProductsChannel = supabase
+      .channel('seller-products-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_products' }, () => {
+        fetchSellerProducts();
+      })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(categoriesChannel);
+      supabase.removeChannel(accountsChannel);
+      supabase.removeChannel(sellerProductsChannel);
     };
   }, []);
 
@@ -269,53 +250,23 @@ const AIAccountsSection = () => {
   };
 
   useEffect(() => {
-    if (!user) return;
-    
-    // Parallel fetch all user-specific data
-    const fetchUserData = async () => {
-      const [purchasesRes, ordersRes, walletRes] = await Promise.allSettled([
-        supabase.from('ai_account_purchases').select('*, ai_accounts(name, category, icon_url)').eq('user_id', user.id).order('purchased_at', { ascending: false }),
-        supabase.from('seller_orders').select('*, seller_products(name, icon_url, description), seller_profiles(id, store_name, store_logo_url, user_id)').eq('buyer_id', user.id).order('created_at', { ascending: false }),
-        supabase.from('user_wallets').select('balance').eq('user_id', user.id).maybeSingle()
-      ]);
-
-      if (purchasesRes.status === 'fulfilled' && purchasesRes.value.data) {
-        setPurchases(purchasesRes.value.data);
-      }
-      if (ordersRes.status === 'fulfilled' && ordersRes.value.data) {
-        setSellerOrders(ordersRes.value.data as SellerOrderPurchase[]);
-      }
-      if (walletRes.status === 'fulfilled') {
-        if (walletRes.value.data) {
-          setWallet(walletRes.value.data);
-        } else {
-          // Create wallet if doesn't exist
-          const { data: newWallet } = await supabase
-            .from('user_wallets')
-            .insert({ user_id: user.id, balance: 0 })
-            .select('balance')
-            .single();
-          setWallet(newWallet);
-        }
-      }
-      setPurchasesLoading(false);
-    };
-
-    fetchUserData();
-    fetchChatMessages();
-    fetchUnreadCount();
-    
-    const unsubscribe = subscribeToUpdates();
-    const unsubscribeWallet = subscribeToWallet();
-    const unsubscribeChat = subscribeToChatMessages();
-    const unsubscribeSellerOrders = subscribeToSellerOrders();
-    
-    return () => {
-      unsubscribe();
-      unsubscribeWallet();
-      unsubscribeChat();
-      unsubscribeSellerOrders();
-    };
+    if (user) {
+      fetchPurchases();
+      fetchSellerOrders();
+      fetchWallet();
+      fetchChatMessages();
+      fetchUnreadCount();
+      const unsubscribe = subscribeToUpdates();
+      const unsubscribeWallet = subscribeToWallet();
+      const unsubscribeChat = subscribeToChatMessages();
+      const unsubscribeSellerOrders = subscribeToSellerOrders();
+      return () => {
+        unsubscribe();
+        unsubscribeWallet();
+        unsubscribeChat();
+        unsubscribeSellerOrders();
+      };
+    }
   }, [user]);
 
   useEffect(() => {
@@ -582,51 +533,78 @@ const AIAccountsSection = () => {
       const sellerEarning = product.price * (1 - commissionRate);
 
       // 1. Deduct from buyer wallet
-      // Use atomic purchase function to prevent race conditions
-      const { data: purchaseResult, error: purchaseError } = await supabase.rpc('purchase_seller_product', {
-        p_buyer_id: user.id,
-        p_seller_id: product.seller_id,
-        p_product_id: product.id,
-        p_amount: product.price,
-        p_seller_earning: sellerEarning,
-        p_product_name: product.name
-      });
+      const newBalance = currentBalance - product.price;
+      const { error: updateError } = await supabase
+        .from('user_wallets')
+        .update({ balance: newBalance })
+        .eq('user_id', user.id);
 
-      if (purchaseError) throw purchaseError;
-      
-      const result = purchaseResult as { success: boolean; error?: string; order_id?: string; new_balance?: number };
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Purchase failed');
-      }
+      if (updateError) throw new Error('Failed to update wallet balance');
 
-      // If email required, update order with buyer email
-      if (product.requires_email && buyerEmailInput && result.order_id) {
-        await supabase
-          .from('seller_orders')
-          .update({ buyer_email_input: buyerEmailInput })
-          .eq('id', result.order_id);
-      }
-
-      // Create notifications (optional - don't block on failure)
-      Promise.allSettled([
-        supabase.from('notifications').insert({
+      // 2. Create wallet transaction record
+      const { error: transactionError } = await supabase
+        .from('wallet_transactions')
+        .insert({
           user_id: user.id,
           type: 'purchase',
-          title: 'Purchase Successful',
-          message: `You purchased ${product.name} for $${product.price}`,
-          link: '/dashboard/ai-accounts?tab=purchases',
-          is_read: false
-        }),
-        supabase.from('seller_notifications').insert({
-          seller_id: product.seller_id,
-          type: 'new_order',
-          title: 'New Order!',
-          message: `You have a new order for "${product.name}" - $${sellerEarning.toFixed(2)} pending`,
-          link: '/seller/orders',
-          is_read: false
-        })
-      ]);
+          amount: product.price,
+          status: 'completed',
+          description: `Seller Product: ${product.name}`
+        });
+
+      if (transactionError) {
+        await supabase.from('user_wallets').update({ balance: currentBalance }).eq('user_id', user.id);
+        throw new Error('Failed to create transaction record');
+      }
+
+      // 3. Create seller order with buyer email if required
+      const orderData: any = {
+        seller_id: product.seller_id,
+        buyer_id: user.id,
+        product_id: product.id,
+        amount: product.price,
+        seller_earning: sellerEarning,
+        status: 'pending'
+      };
+      
+      if (product.requires_email && buyerEmailInput) {
+        orderData.buyer_email_input = buyerEmailInput;
+      }
+
+      const { error: orderError } = await supabase
+        .from('seller_orders')
+        .insert(orderData);
+
+      if (orderError) {
+        await supabase.from('user_wallets').update({ balance: currentBalance }).eq('user_id', user.id);
+        throw new Error('Failed to create order');
+      }
+
+      // 4. Add to seller pending balance using RPC
+      await supabase.rpc('add_seller_pending_balance', {
+        p_seller_id: product.seller_id,
+        p_amount: sellerEarning
+      });
+
+      // 5. Create notification for buyer
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'purchase',
+        title: 'Purchase Successful',
+        message: `You purchased ${product.name} for $${product.price}`,
+        link: '/dashboard/ai-accounts?tab=purchases',
+        is_read: false
+      });
+
+      // 6. Create notification for seller
+      await supabase.from('seller_notifications').insert({
+        seller_id: product.seller_id,
+        type: 'new_order',
+        title: 'New Order!',
+        message: `You have a new order for "${product.name}" - $${sellerEarning.toFixed(2)} pending`,
+        link: '/seller/orders',
+        is_read: false
+      });
 
       // Close email modal if open
       setEmailRequiredModal({ show: false, product: null, email: '' });
@@ -662,23 +640,45 @@ const AIAccountsSection = () => {
       const commissionRate = 0.10;
       const sellerEarning = data.price * (1 - commissionRate);
 
-      // Use atomic purchase function
-      const { data: purchaseResult, error: purchaseError } = await supabase.rpc('purchase_seller_product', {
-        p_buyer_id: user.id,
-        p_seller_id: data.sellerId,
-        p_product_id: data.productId,
-        p_amount: data.price,
-        p_seller_earning: sellerEarning,
-        p_product_name: data.productName
-      });
+      // 1. Deduct from buyer wallet
+      const newBalance = currentBalance - data.price;
+      const { error: updateError } = await supabase
+        .from('user_wallets')
+        .update({ balance: newBalance })
+        .eq('user_id', user.id);
 
-      if (purchaseError) throw purchaseError;
-      
-      const result = purchaseResult as { success: boolean; error?: string; order_id?: string };
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Purchase failed');
-      }
+      if (updateError) throw new Error('Failed to update wallet balance');
+
+      // 2. Create wallet transaction record
+      await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user.id,
+          type: 'purchase',
+          amount: data.price,
+          status: 'completed',
+          description: `Seller Product: ${data.productName}`
+        });
+
+      // 3. Create seller order
+      const { error: orderError } = await supabase
+        .from('seller_orders')
+        .insert({
+          seller_id: data.sellerId,
+          buyer_id: user.id,
+          product_id: data.productId,
+          amount: data.price,
+          seller_earning: sellerEarning,
+          status: 'pending'
+        });
+
+      if (orderError) throw new Error('Failed to create order');
+
+      // 4. Add to seller pending balance
+      await supabase.rpc('add_seller_pending_balance', {
+        p_seller_id: data.sellerId,
+        p_amount: sellerEarning
+      });
 
       toast.success('Purchase successful! The seller will deliver your order soon.');
       setPendingPurchaseData(null);
@@ -752,59 +752,78 @@ const AIAccountsSection = () => {
   };
 
   const handleApproveDelivery = async (orderId: string) => {
-    // Prevent double approval
-    if (!user || approvingOrder === orderId || approvedOrders.has(orderId)) {
-      return;
-    }
+    if (!user) return;
     
     setApprovingOrder(orderId);
-    
     try {
       const order = sellerOrders.find(o => o.id === orderId);
       if (!order) throw new Error('Order not found');
-      if (order.status !== 'delivered') throw new Error('Order must be delivered first');
 
-      // Use the database function for atomic approval + wallet update (bypasses RLS issues)
-      const { error: rpcError } = await supabase.rpc('approve_seller_delivery', {
-        p_order_id: orderId,
-        p_buyer_id: user.id
-      });
+      // Update order to completed with buyer_approved
+      const { error: orderError } = await supabase
+        .from('seller_orders')
+        .update({
+          status: 'completed',
+          buyer_approved: true
+        })
+        .eq('id', orderId)
+        .eq('buyer_id', user.id);
 
-      if (rpcError) throw rpcError;
+      if (orderError) throw orderError;
 
-      // Create notifications (these are optional, RLS allows inserts)
-      await Promise.allSettled([
-        // Notification for seller (generic)
-        order.seller_profiles?.user_id ? supabase.from('notifications').insert({
+      // Release seller's pending balance to available balance
+      // Get seller wallet
+      const { data: sellerWallet, error: walletFetchError } = await supabase
+        .from('seller_wallets')
+        .select('*')
+        .eq('seller_id', order.seller_id)
+        .single();
+
+      if (!walletFetchError && sellerWallet) {
+        // Move from pending to available
+        const newBalance = Number(sellerWallet.balance) + Number(order.seller_earning);
+        const newPending = Math.max(0, Number(sellerWallet.pending_balance) - Number(order.seller_earning));
+        
+        await supabase
+          .from('seller_wallets')
+          .update({
+            balance: newBalance,
+            pending_balance: newPending
+          })
+          .eq('seller_id', order.seller_id);
+      }
+
+      // Create notification for seller (in notifications for generic user notifications)
+      if (order.seller_profiles?.user_id) {
+        await supabase.from('notifications').insert({
           user_id: order.seller_profiles.user_id,
           type: 'approval',
           title: 'Delivery Approved!',
-          message: `Buyer approved "${order.seller_products?.name}". $${Number(order.seller_earning).toFixed(2)} released!`,
+          message: `Buyer approved delivery for ${order.seller_products?.name}. $${Number(order.seller_earning).toFixed(2)} released to your wallet!`,
           link: '/seller/orders',
           is_read: false
-        }) : Promise.resolve(),
-        // Seller notification
-        supabase.from('seller_notifications').insert({
-          seller_id: order.seller_id,
-          type: 'order_approved',
-          title: 'Delivery Approved!',
-          message: `"${order.seller_products?.name}" approved. $${Number(order.seller_earning).toFixed(2)} in wallet!`,
-          link: '/seller/wallet',
-          is_read: false
-        }),
-        // System chat message
-        supabase.from('seller_chats').insert({
-          buyer_id: user.id,
-          seller_id: order.seller_id,
-          message: `✅ Buyer approved "${order.seller_products?.name}". $${Number(order.seller_earning).toFixed(2)} released!`,
-          sender_type: 'system',
-          product_id: order.product_id
-        })
-      ]);
+        });
+      }
 
-      // Mark as approved locally to prevent re-click
-      setApprovedOrders(prev => new Set(prev).add(orderId));
-      
+      // Create seller notification (in seller_notifications table)
+      await supabase.from('seller_notifications').insert({
+        seller_id: order.seller_id,
+        type: 'order_approved',
+        title: 'Delivery Approved!',
+        message: `Buyer approved "${order.seller_products?.name}". $${Number(order.seller_earning).toFixed(2)} released to wallet!`,
+        link: '/seller/wallet',
+        is_read: false
+      });
+
+      // Create system message in seller_chats
+      await supabase.from('seller_chats').insert({
+        buyer_id: user.id,
+        seller_id: order.seller_id,
+        message: `✅ Buyer has approved the delivery for "${order.seller_products?.name}". Payment of $${Number(order.seller_earning).toFixed(2)} has been released to seller.`,
+        sender_type: 'system',
+        product_id: order.product_id
+      });
+
       toast.success('Delivery approved! Thank you for your purchase.');
       fetchSellerOrders();
     } catch (error: any) {
@@ -882,31 +901,66 @@ const AIAccountsSection = () => {
     setPurchasing(account.id);
 
     try {
-      // Use atomic purchase function to prevent race conditions
-      const { data: purchaseResult, error: purchaseError } = await supabase.rpc('purchase_ai_account', {
-        p_user_id: user.id,
-        p_account_id: account.id,
-        p_amount: account.price,
-        p_account_name: account.name
-      });
+      // 1. Deduct from wallet
+      const newBalance = currentBalance - account.price;
+      const { error: updateError } = await supabase
+        .from('user_wallets')
+        .update({ balance: newBalance })
+        .eq('user_id', user.id);
 
-      if (purchaseError) throw purchaseError;
-      
-      const result = purchaseResult as { success: boolean; error?: string; purchase_id?: string; new_balance?: number };
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Purchase failed');
+      if (updateError) {
+        throw new Error('Failed to update wallet balance');
       }
 
-      // Create notification (optional - don't block on failure)
-      supabase.from('notifications').insert({
+      // 2. Create wallet transaction record
+      const { error: transactionError } = await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user.id,
+          type: 'purchase',
+          amount: account.price,
+          status: 'completed',
+          description: `AI Account: ${account.name}`
+        });
+
+      if (transactionError) {
+        // Rollback wallet balance
+        await supabase
+          .from('user_wallets')
+          .update({ balance: currentBalance })
+          .eq('user_id', user.id);
+        throw new Error('Failed to create transaction record');
+      }
+
+      // 3. Create AI account purchase record
+      const { error: purchaseError } = await supabase
+        .from('ai_account_purchases')
+        .insert({
+          user_id: user.id,
+          ai_account_id: account.id,
+          amount: account.price,
+          payment_status: 'completed',
+          delivery_status: 'pending'
+        });
+
+      if (purchaseError) {
+        // Rollback wallet
+        await supabase
+          .from('user_wallets')
+          .update({ balance: currentBalance })
+          .eq('user_id', user.id);
+        throw new Error('Failed to create purchase record');
+      }
+
+      // Create notification for the purchase
+      await supabase.from('notifications').insert({
         user_id: user.id,
         type: 'purchase',
         title: 'Purchase Successful',
         message: `You purchased ${account.name} for $${account.price}`,
         link: '/dashboard/ai-accounts?tab=purchases',
         is_read: false
-      }).then(() => {});
+      });
 
       toast.success('Purchase successful! Account credentials will be delivered soon.');
       fetchWallet();

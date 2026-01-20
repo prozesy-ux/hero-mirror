@@ -1,40 +1,22 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
-import { Suspense, lazy, useCallback, useState, useEffect } from 'react';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import MobileNavigation from '@/components/dashboard/MobileNavigation';
+import DashboardHome from '@/components/dashboard/DashboardHome';
+import PromptsGrid from '@/components/dashboard/PromptsGrid';
+import ProfileSection from '@/components/dashboard/ProfileSection';
+import BillingSection from '@/components/dashboard/BillingSection';
+import AIAccountsSection from '@/components/dashboard/AIAccountsSection';
+import AccountDetailPage from '@/components/dashboard/AccountDetailPage';
+import ProductFullViewPage from '@/components/dashboard/ProductFullViewPage';
+import ChatSection from '@/components/dashboard/ChatSection';
+import BuyerWallet from '@/components/dashboard/BuyerWallet';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import { SearchProvider } from '@/contexts/SearchContext';
 import { SidebarProvider, useSidebarContext } from '@/contexts/SidebarContext';
 import { FloatingChatProvider } from '@/contexts/FloatingChatContext';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
-import { useConnectivityRecovery } from '@/hooks/useReliableFetch';
-import { useLoadingWatchdog } from '@/hooks/useLoadingWatchdog';
-import { recoverBackend } from '@/lib/backend-recovery';
-import { Crown, Bell, Loader2, WifiOff } from 'lucide-react';
-import { toast } from 'sonner';
-
-// Lazy load dashboard sections for better performance
-const DashboardHome = lazy(() => import('@/components/dashboard/DashboardHome'));
-const PromptsGrid = lazy(() => import('@/components/dashboard/PromptsGrid'));
-const ProfileSection = lazy(() => import('@/components/dashboard/ProfileSection'));
-const BillingSection = lazy(() => import('@/components/dashboard/BillingSection'));
-const AIAccountsSection = lazy(() => import('@/components/dashboard/AIAccountsSection'));
-const AccountDetailPage = lazy(() => import('@/components/dashboard/AccountDetailPage'));
-const ProductFullViewPage = lazy(() => import('@/components/dashboard/ProductFullViewPage'));
-const ChatSection = lazy(() => import('@/components/dashboard/ChatSection'));
-const BuyerWallet = lazy(() => import('@/components/dashboard/BuyerWallet'));
-
-// Loading fallback component
-const SectionLoader = () => (
-  <div className="flex items-center justify-center min-h-[300px]">
-    <div className="flex flex-col items-center gap-3">
-      <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
-      <p className="text-sm text-gray-500">Loading...</p>
-    </div>
-  </div>
-);
+import { Crown, Bell } from 'lucide-react';
 
 // Mobile Header Component with Profile Avatar
 const MobileHeader = () => {
@@ -86,120 +68,25 @@ const MobileHeader = () => {
 
 const DashboardContent = () => {
   const { isCollapsed } = useSidebarContext();
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  
-  // Track initial load completion
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialLoad(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-  
-  // Connectivity recovery - use recoverBackend instead of hard reload
-  const handleReconnect = useCallback(async () => {
-    toast.success('Back online! Reconnecting...');
-    const result = await recoverBackend('reconnect');
-    if (result.success) {
-      toast.success('Connection restored!');
-    }
-  }, []);
-  
-  const isOnline = useConnectivityRecovery(handleReconnect);
-  
-  // Loading watchdog - triggers recovery if initial load takes too long
-  useLoadingWatchdog(isInitialLoad, {
-    timeout: 15000,
-    reason: 'loading_timeout',
-    onRecoveryComplete: () => {
-      setIsInitialLoad(false);
-    }
-  });
 
   return (
     <main className={`pb-24 lg:pb-0 pt-16 lg:pt-16 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white transition-all duration-300 ${
       isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-60'
     }`}>
-      {/* Offline indicator */}
-      {!isOnline && (
-        <div className="fixed top-16 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-2 text-center text-sm flex items-center justify-center gap-2">
-          <WifiOff size={16} />
-          You're offline. Some features may not work.
-        </div>
-      )}
-      
       <div className="relative p-3 sm:p-4 lg:p-8">
-        <Suspense fallback={<SectionLoader />}>
-          <Routes>
-            <Route index element={<Navigate to="/dashboard/prompts" replace />} />
-            <Route
-              path="prompts"
-              element={
-                <SectionErrorBoundary sectionName="Prompts">
-                  <PromptsGrid />
-                </SectionErrorBoundary>
-              }
-            />
-            <Route path="favorites" element={<Navigate to="/dashboard/prompts" replace />} />
-            <Route path="tools" element={<Navigate to="/dashboard/prompts" replace />} />
-            <Route
-              path="ai-accounts"
-              element={
-                <SectionErrorBoundary sectionName="Marketplace">
-                  <AIAccountsSection />
-                </SectionErrorBoundary>
-              }
-            />
-            <Route
-              path="ai-accounts/:accountId"
-              element={
-                <SectionErrorBoundary sectionName="Account">
-                  <AccountDetailPage />
-                </SectionErrorBoundary>
-              }
-            />
-            <Route
-              path="ai-accounts/product/:productId"
-              element={
-                <SectionErrorBoundary sectionName="Product">
-                  <ProductFullViewPage />
-                </SectionErrorBoundary>
-              }
-            />
-            <Route
-              path="billing"
-              element={
-                <SectionErrorBoundary sectionName="Billing">
-                  <BillingSection />
-                </SectionErrorBoundary>
-              }
-            />
-            <Route
-              path="wallet"
-              element={
-                <SectionErrorBoundary sectionName="Wallet">
-                  <BuyerWallet />
-                </SectionErrorBoundary>
-              }
-            />
-            <Route
-              path="profile"
-              element={
-                <SectionErrorBoundary sectionName="Profile">
-                  <ProfileSection />
-                </SectionErrorBoundary>
-              }
-            />
-            <Route
-              path="chat"
-              element={
-                <SectionErrorBoundary sectionName="Chat">
-                  <ChatSection />
-                </SectionErrorBoundary>
-              }
-            />
-          </Routes>
-        </Suspense>
+        <Routes>
+          <Route index element={<Navigate to="/dashboard/prompts" replace />} />
+          <Route path="prompts" element={<PromptsGrid />} />
+          <Route path="favorites" element={<Navigate to="/dashboard/prompts" replace />} />
+          <Route path="tools" element={<Navigate to="/dashboard/prompts" replace />} />
+          <Route path="ai-accounts" element={<AIAccountsSection />} />
+          <Route path="ai-accounts/:accountId" element={<AccountDetailPage />} />
+          <Route path="ai-accounts/product/:productId" element={<ProductFullViewPage />} />
+          <Route path="billing" element={<BillingSection />} />
+          <Route path="wallet" element={<BuyerWallet />} />
+          <Route path="profile" element={<ProfileSection />} />
+          <Route path="chat" element={<ChatSection />} />
+        </Routes>
       </div>
       
       {/* Floating Chat Widget */}

@@ -77,44 +77,31 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const refreshAll = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true }));
 
-    // BATCH 1: Critical data first (show UI faster)
-    const [profilesRes, purchasesRes, accountOrdersRes] = await Promise.all([
+    const [
+      profilesRes,
+      purchasesRes,
+      promptsRes,
+      categoriesRes,
+      aiAccountsRes,
+      accountOrdersRes,
+      walletsRes,
+      transactionsRes,
+      supportMessagesRes,
+      sellerSupportMessagesRes,
+      paymentMethodsRes,
+      refundRequestsRes,
+      cancellationRequestsRes,
+      deletionRequestsRes,
+      sellerProfilesRes,
+    ] = await Promise.all([
       fetchData('profiles'),
       fetchData('purchases', { order: { column: 'purchased_at', ascending: false } }),
-      fetchData('ai_account_purchases', { order: { column: 'purchased_at', ascending: false } }),
-    ]);
-
-    // Update state immediately with critical data
-    setState(prev => ({
-      ...prev,
-      profiles: profilesRes.data || [],
-      purchases: purchasesRes.data || [],
-      accountOrders: accountOrdersRes.data || [],
-    }));
-
-    // BATCH 2: Secondary data
-    const [promptsRes, categoriesRes, aiAccountsRes, walletsRes, transactionsRes] = await Promise.all([
       fetchData('prompts'),
       fetchData('categories'),
       fetchData('ai_accounts'),
+      fetchData('ai_account_purchases', { order: { column: 'purchased_at', ascending: false } }),
       fetchData('user_wallets'),
       fetchData('wallet_transactions', { order: { column: 'created_at', ascending: false } }),
-    ]);
-
-    setState(prev => ({
-      ...prev,
-      prompts: promptsRes.data || [],
-      categories: categoriesRes.data || [],
-      aiAccounts: aiAccountsRes.data || [],
-      wallets: walletsRes.data || [],
-      transactions: transactionsRes.data || [],
-    }));
-
-    // BATCH 3: Lower priority data
-    const [
-      supportMessagesRes, sellerSupportMessagesRes, paymentMethodsRes,
-      refundRequestsRes, cancellationRequestsRes, deletionRequestsRes, sellerProfilesRes
-    ] = await Promise.all([
       fetchData('support_messages', { order: { column: 'created_at', ascending: false } }),
       fetchData('seller_support_messages', { order: { column: 'created_at', ascending: false } }),
       fetchData('payment_methods', { order: { column: 'display_order', ascending: true } }),

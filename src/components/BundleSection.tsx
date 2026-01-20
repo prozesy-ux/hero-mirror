@@ -167,10 +167,10 @@ const BundleSection = () => {
 
         {/* Never Need Prompts Again */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center rounded-full border mb-4 bg-primary/20 text-primary border-primary/30 px-2.5 py-0.5 text-xs font-semibold">
+          <Badge className="mb-4 bg-primary/20 text-primary border-primary/30">
             <Sparkles className="w-4 h-4 mr-2" />
             THE GIFT THAT KEEPS GIVING
-          </div>
+          </Badge>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
             Never Need Prompts Again
           </h2>
@@ -195,10 +195,10 @@ const BundleSection = () => {
 
         {/* Everything Bundle Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center rounded-full border mb-4 bg-accent/20 text-accent border-accent/30 text-lg px-4 py-2 font-semibold">
+          <Badge className="mb-4 bg-accent/20 text-accent border-accent/30 text-lg px-4 py-2">
             <Gift className="w-5 h-5 mr-2" />
             Or Get it all ($279 Value)
-          </div>
+          </Badge>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             THE EVERYTHING BUNDLE
           </h2>

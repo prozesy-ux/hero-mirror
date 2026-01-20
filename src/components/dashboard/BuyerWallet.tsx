@@ -93,10 +93,10 @@ const BuyerWallet = () => {
   };
 
   const fetchPaymentMethods = async () => {
-    // Use secure view that excludes api_key and api_secret
     const { data } = await supabase
-      .from('payment_methods_public')
+      .from('payment_methods')
       .select('*')
+      .eq('is_enabled', true)
       .order('name');
 
     if (data) {

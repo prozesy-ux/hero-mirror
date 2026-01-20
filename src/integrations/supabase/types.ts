@@ -65,33 +65,6 @@ export type Database = {
         }
         Relationships: []
       }
-      admin_rate_limits: {
-        Row: {
-          attempt_count: number | null
-          blocked_until: string | null
-          created_at: string | null
-          first_attempt_at: string | null
-          id: string
-          ip_address: string
-        }
-        Insert: {
-          attempt_count?: number | null
-          blocked_until?: string | null
-          created_at?: string | null
-          first_attempt_at?: string | null
-          id?: string
-          ip_address: string
-        }
-        Update: {
-          attempt_count?: number | null
-          blocked_until?: string | null
-          created_at?: string | null
-          first_attempt_at?: string | null
-          id?: string
-          ip_address?: string
-        }
-        Relationships: []
-      }
       admin_sessions: {
         Row: {
           admin_id: string | null
@@ -978,13 +951,6 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "seller_chat_attachments_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "seller_profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       seller_chats: {
@@ -1036,13 +1002,6 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "seller_chats_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "seller_profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       seller_feature_requests: {
@@ -1090,13 +1049,6 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "seller_feature_requests_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "seller_profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       seller_notifications: {
@@ -1136,13 +1088,6 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "seller_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "seller_notifications_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "seller_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1205,13 +1150,6 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "seller_orders_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "seller_profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       seller_payment_accounts: {
@@ -1260,13 +1198,6 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "seller_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "seller_payment_accounts_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "seller_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1345,13 +1276,6 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "seller_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "seller_products_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "seller_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1521,13 +1445,6 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "seller_support_messages_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "seller_profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       seller_trust_scores: {
@@ -1599,13 +1516,6 @@ export type Database = {
             referencedRelation: "seller_profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "seller_wallets_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: true
-            referencedRelation: "seller_profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       seller_withdrawals: {
@@ -1658,13 +1568,6 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "seller_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "seller_withdrawals_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "seller_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1842,111 +1745,7 @@ export type Database = {
       }
     }
     Views: {
-      payment_methods_public: {
-        Row: {
-          account_name: string | null
-          account_number: string | null
-          code: string | null
-          created_at: string | null
-          currency_code: string | null
-          display_order: number | null
-          exchange_rate: number | null
-          icon_url: string | null
-          id: string | null
-          instructions: string | null
-          is_automatic: boolean | null
-          is_enabled: boolean | null
-          max_withdrawal: number | null
-          min_withdrawal: number | null
-          name: string | null
-          qr_image_url: string | null
-          withdrawal_enabled: boolean | null
-        }
-        Insert: {
-          account_name?: string | null
-          account_number?: string | null
-          code?: string | null
-          created_at?: string | null
-          currency_code?: string | null
-          display_order?: number | null
-          exchange_rate?: number | null
-          icon_url?: string | null
-          id?: string | null
-          instructions?: string | null
-          is_automatic?: boolean | null
-          is_enabled?: boolean | null
-          max_withdrawal?: number | null
-          min_withdrawal?: number | null
-          name?: string | null
-          qr_image_url?: string | null
-          withdrawal_enabled?: boolean | null
-        }
-        Update: {
-          account_name?: string | null
-          account_number?: string | null
-          code?: string | null
-          created_at?: string | null
-          currency_code?: string | null
-          display_order?: number | null
-          exchange_rate?: number | null
-          icon_url?: string | null
-          id?: string | null
-          instructions?: string | null
-          is_automatic?: boolean | null
-          is_enabled?: boolean | null
-          max_withdrawal?: number | null
-          min_withdrawal?: number | null
-          name?: string | null
-          qr_image_url?: string | null
-          withdrawal_enabled?: boolean | null
-        }
-        Relationships: []
-      }
-      seller_profiles_public: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          is_verified: boolean | null
-          social_links: Json | null
-          store_banner_url: string | null
-          store_description: string | null
-          store_logo_url: string | null
-          store_name: string | null
-          store_slug: string | null
-          store_tagline: string | null
-          total_orders: number | null
-          total_sales: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string | null
-          is_verified?: boolean | null
-          social_links?: Json | null
-          store_banner_url?: string | null
-          store_description?: string | null
-          store_logo_url?: string | null
-          store_name?: string | null
-          store_slug?: string | null
-          store_tagline?: string | null
-          total_orders?: number | null
-          total_sales?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string | null
-          is_verified?: boolean | null
-          social_links?: Json | null
-          store_banner_url?: string | null
-          store_description?: string | null
-          store_logo_url?: string | null
-          store_name?: string | null
-          store_slug?: string | null
-          store_tagline?: string | null
-          total_orders?: number | null
-          total_sales?: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       add_seller_pending_balance: {
@@ -1957,7 +1756,6 @@ export type Database = {
         Args: { p_buyer_id: string; p_order_id: string }
         Returns: undefined
       }
-      check_admin_rate_limit: { Args: { p_ip_address: string }; Returns: Json }
       clean_old_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
       has_role: {
@@ -1977,21 +1775,6 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
-      }
-      purchase_seller_product: {
-        Args: {
-          p_amount: number
-          p_buyer_id: string
-          p_product_id: string
-          p_product_name: string
-          p_seller_earning: number
-          p_seller_id: string
-        }
-        Returns: Json
-      }
-      reset_admin_rate_limit: {
-        Args: { p_ip_address: string }
-        Returns: undefined
       }
       update_seller_trust_score: {
         Args: { p_seller_id: string }

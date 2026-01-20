@@ -150,10 +150,10 @@ const SellerWallet = () => {
   }, [profile?.id, refreshWithdrawals, refreshWallet]);
 
   const fetchPaymentMethods = async () => {
-    // Use secure view that excludes api_key and api_secret
     const { data } = await supabase
-      .from('payment_methods_public')
+      .from('payment_methods')
       .select('id, name, code, currency_code, exchange_rate, icon_url, is_automatic, account_number, account_name, withdrawal_enabled, min_withdrawal, max_withdrawal')
+      .eq('is_enabled', true)
       .eq('withdrawal_enabled', true)
       .order('display_order');
     if (data) setPaymentMethods(data as PaymentMethod[]);

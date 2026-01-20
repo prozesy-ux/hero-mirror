@@ -97,8 +97,6 @@ const StoreContent = () => {
   const [products, setProducts] = useState<SellerProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -173,65 +171,45 @@ const StoreContent = () => {
     }
   }, [user]);
 
-  const fetchStoreData = async (retry = 0) => {
+  const fetchStoreData = async () => {
     setLoading(true);
-    setError(null);
     
-    try {
-      const { data: sellerData, error: sellerError } = await supabase
-        .from('seller_profiles')
-        .select('*')
-        .eq('store_slug', storeSlug)
-        .eq('is_active', true)
-        .single();
+    const { data: sellerData, error: sellerError } = await supabase
+      .from('seller_profiles')
+      .select('*')
+      .eq('store_slug', storeSlug)
+      .eq('is_active', true)
+      .single();
 
-      if (sellerError) {
-        // Handle "not found" differently from network errors
-        if (sellerError.code === 'PGRST116') {
-          setSeller(null);
-          setLoading(false);
-          return;
-        }
-        throw sellerError;
-      }
-
-      setSeller(sellerData as SellerProfile);
-
-      // Fetch products and categories in parallel
-      const [productsRes, categoriesRes] = await Promise.allSettled([
-        supabase.from('seller_products')
-          .select('*')
-          .eq('seller_id', sellerData.id)
-          .eq('is_available', true)
-          .eq('is_approved', true)
-          .order('sold_count', { ascending: false }),
-        supabase.from('categories')
-          .select('*')
-          .eq('is_active', true)
-      ]);
-
-      if (productsRes.status === 'fulfilled' && productsRes.value.data) {
-        setProducts(productsRes.value.data);
-      }
-      
-      if (categoriesRes.status === 'fulfilled' && categoriesRes.value.data) {
-        setCategories(categoriesRes.value.data);
-      }
-
+    if (sellerError || !sellerData) {
       setLoading(false);
-    } catch (err: any) {
-      console.error('Store fetch error:', err);
-      
-      // Retry up to 3 times for network errors
-      if (retry < 3 && (err.message?.includes('network') || err.message?.includes('fetch'))) {
-        setRetryCount(retry + 1);
-        setTimeout(() => fetchStoreData(retry + 1), 1000 * (retry + 1));
-        return;
-      }
-      
-      setError('Failed to load store. Please refresh the page.');
-      setLoading(false);
+      return;
     }
+
+    setSeller(sellerData as SellerProfile);
+
+    const { data: productsData } = await supabase
+      .from('seller_products')
+      .select('*')
+      .eq('seller_id', sellerData.id)
+      .eq('is_available', true)
+      .eq('is_approved', true)
+      .order('sold_count', { ascending: false });
+
+    if (productsData) {
+      setProducts(productsData);
+    }
+
+    const { data: categoriesData } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('is_active', true);
+
+    if (categoriesData) {
+      setCategories(categoriesData);
+    }
+
+    setLoading(false);
   };
 
   const fetchWallet = async () => {
@@ -255,9 +233,6 @@ const StoreContent = () => {
   };
 
   const handlePurchase = async (product: SellerProduct) => {
-    // Prevent double-click
-    if (purchasing) return;
-    
     if (!user) {
       localStorage.setItem('pendingPurchase', JSON.stringify({
         productId: product.id,
@@ -287,26 +262,26 @@ const StoreContent = () => {
     setPurchasing(product.id);
 
     try {
-      // Use atomic database function for purchase (prevents double payments)
-      const { data, error } = await supabase.rpc('purchase_seller_product' as any, {
-        p_buyer_id: user.id,
-        p_product_id: product.id,
-        p_seller_id: product.seller_id,
-        p_amount: product.price,
-        p_seller_earning: product.price * 0.90 // 10% commission
+      const { error } = await supabase.from('seller_orders').insert({
+        seller_id: product.seller_id,
+        buyer_id: user.id,
+        product_id: product.id,
+        amount: product.price,
+        seller_earning: product.price * 0.85,
+        status: 'pending'
       });
 
       if (error) throw error;
-      
-      // Handle response from atomic function
-      const result = data as { success: boolean; error?: string; order_id?: string };
-      if (!result?.success) throw new Error(result?.error || 'Purchase failed');
+
+      await supabase
+        .from('user_wallets')
+        .update({ balance: wallet!.balance - product.price })
+        .eq('user_id', user.id);
 
       toast.success('Purchase successful! The seller will deliver your order soon.');
       setSelectedProduct(null);
       fetchWallet();
     } catch (error: any) {
-      console.error('Purchase error:', error);
       toast.error(error.message || 'Purchase failed');
     } finally {
       setPurchasing(null);
@@ -383,23 +358,6 @@ const StoreContent = () => {
               <Skeleton key={i} className="h-72 rounded-2xl" />
             ))}
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state with retry
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
-        <div className="text-center p-8 max-w-md">
-          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-slate-900 mb-2">Connection Error</h1>
-          <p className="text-slate-600 mb-4">{error}</p>
-          {retryCount > 0 && (
-            <p className="text-sm text-slate-500 mb-4">Attempted {retryCount} retries</p>
-          )}
-          <Button onClick={() => fetchStoreData(0)}>Try Again</Button>
         </div>
       </div>
     );

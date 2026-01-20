@@ -74,7 +74,6 @@ const ProfileSection = () => {
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [isEditingName, setIsEditingName] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Password states
@@ -103,7 +102,6 @@ const ProfileSection = () => {
   // Sync profile data
   useEffect(() => {
     setFullName(profile?.full_name || '');
-    setAvatarUrl(profile?.avatar_url || '');
   }, [profile]);
 
   // Fetch preferences and sessions on mount
@@ -304,17 +302,15 @@ const ProfileSection = () => {
         .from('avatars')
         .getPublicUrl(fileName);
 
-      const newUrl = `${publicUrl}?t=${Date.now()}`;
-
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: newUrl })
+        .update({ avatar_url: `${publicUrl}?t=${Date.now()}` })
         .eq('user_id', user.id);
 
       if (updateError) throw updateError;
 
-      setAvatarUrl(newUrl);
       toast.success('Avatar updated successfully');
+      window.location.reload();
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error(error?.message || 'Failed to upload avatar');
@@ -482,7 +478,7 @@ const ProfileSection = () => {
           {/* Avatar with change button */}
           <div className="relative group">
             <Avatar className="h-16 w-16 border-2 border-gray-100">
-              <AvatarImage src={avatarUrl || profile?.avatar_url || ''} alt={profile?.full_name || 'User'} />
+              <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || 'User'} />
               <AvatarFallback className="bg-gray-900 text-white text-base font-semibold">
                 {getInitials(profile?.full_name)}
               </AvatarFallback>

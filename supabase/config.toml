@@ -26,6 +26,3 @@ verify_jwt = false
 
 [functions.verify-razorpay-payment]
 verify_jwt = false
-
-[functions.admin-export-all-data]
-verify_jwt = false

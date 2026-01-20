@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { withTimeout } from '@/lib/backend-recovery';
 
 interface SellerProfile {
   id: string;
@@ -112,46 +111,34 @@ export const SellerProvider = ({
 
   const refreshProfile = useCallback(async () => {
     if (!user) return;
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('seller_profiles')
       .select('*')
       .eq('user_id', user.id)
-      .maybeSingle();
-    if (error) {
-      console.error('[SellerContext] Profile fetch error:', error);
-      throw error;
-    }
+      .single();
     if (data) setProfile(data);
   }, [user]);
 
   const refreshWallet = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('seller_wallets')
       .select('*')
       .eq('seller_id', profile.id)
-      .maybeSingle();
-    if (error) {
-      console.error('[SellerContext] Wallet fetch error:', error);
-      throw error;
-    }
+      .single();
     if (data) setWallet(data);
   }, [profile.id]);
 
   const refreshProducts = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('seller_products')
       .select('*')
       .eq('seller_id', profile.id)
       .order('created_at', { ascending: false });
-    if (error) {
-      console.error('[SellerContext] Products fetch error:', error);
-      throw error;
-    }
     if (data) setProducts(data);
   }, [profile.id]);
 
   const refreshOrders = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('seller_orders')
       .select(`
         *,
@@ -160,91 +147,51 @@ export const SellerProvider = ({
       .eq('seller_id', profile.id)
       .order('created_at', { ascending: false });
     
-    if (error) {
-      console.error('[SellerContext] Orders fetch error:', error);
-      throw error;
-    }
-    
-    if (data && data.length > 0) {
-      // Batch fetch ALL buyer profiles in ONE query (fixes N+1 problem)
-      const buyerIds = [...new Set(data.map(o => o.buyer_id))];
-      const { data: buyerProfiles } = await supabase
-        .from('profiles')
-        .select('user_id, email, full_name')
-        .in('user_id', buyerIds);
-      
-      // Create lookup map for O(1) access
-      const buyerMap = new Map(buyerProfiles?.map(p => [p.user_id, p]) || []);
-      
-      // Merge buyer info instantly (no await needed)
-      const ordersWithBuyers = data.map(order => ({
-        ...order,
-        buyer: buyerMap.get(order.buyer_id) || null
-      }));
-      
+    if (data) {
+      // Fetch buyer info for each order
+      const ordersWithBuyers = await Promise.all(
+        data.map(async (order) => {
+          const { data: buyerProfile } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('user_id', order.buyer_id)
+            .single();
+          return { ...order, buyer: buyerProfile };
+        })
+      );
       setOrders(ordersWithBuyers);
-    } else {
-      setOrders(data || []);
     }
   }, [profile.id]);
 
   const refreshWithdrawals = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('seller_withdrawals')
       .select('*')
       .eq('seller_id', profile.id)
       .order('created_at', { ascending: false });
-    if (error) {
-      console.error('[SellerContext] Withdrawals fetch error:', error);
-      throw error;
-    }
     if (data) setWithdrawals(data);
   }, [profile.id]);
 
-  const refreshAll = useCallback(async (retryCount = 0) => {
+  const refreshAll = useCallback(async () => {
     setLoading(true);
-    const FETCH_TIMEOUT = 10000; // 10 second timeout per fetch
-    
-    try {
-      // Fetch all data in parallel with timeouts
-      const results = await Promise.allSettled([
-        withTimeout(refreshProfile(), FETCH_TIMEOUT, 'Profile fetch timeout'),
-        withTimeout(refreshWallet(), FETCH_TIMEOUT, 'Wallet fetch timeout'),
-        withTimeout(refreshProducts(), FETCH_TIMEOUT, 'Products fetch timeout'),
-        withTimeout(refreshOrders(), FETCH_TIMEOUT, 'Orders fetch timeout'),
-        withTimeout(refreshWithdrawals(), FETCH_TIMEOUT, 'Withdrawals fetch timeout')
-      ]);
-      
-      // Check if any critical fetches failed
-      const failures = results.filter(r => r.status === 'rejected');
-      
-      if (failures.length > 0 && retryCount < 2) {
-        console.warn(`[SellerContext] ${failures.length} failures, retrying (attempt ${retryCount + 1})...`, 
-          failures.map(f => (f as PromiseRejectedResult).reason?.message || 'Unknown error'));
-        // Wait 1 second then retry
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return refreshAll(retryCount + 1);
-      }
-      
-      if (failures.length > 0) {
-        console.error('[SellerContext] Some data failed to load after retries:', 
-          failures.map(f => (f as PromiseRejectedResult).reason?.message || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('[SellerContext] Unexpected error:', error);
-    } finally {
-      setLoading(false);
-    }
+    await Promise.all([
+      refreshProfile(),
+      refreshWallet(),
+      refreshProducts(),
+      refreshOrders(),
+      refreshWithdrawals()
+    ]);
+    setLoading(false);
   }, [refreshProfile, refreshWallet, refreshProducts, refreshOrders, refreshWithdrawals]);
 
   useEffect(() => {
     refreshAll();
   }, []);
 
-  // Real-time subscriptions - SINGLE consolidated channel for efficiency
+  // Real-time subscriptions
   useEffect(() => {
-    const channel = supabase
-      .channel(`seller-realtime-${profile.id}`)
+    const ordersChannel = supabase
+      .channel('seller-orders')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -254,18 +201,34 @@ export const SellerProvider = ({
         refreshOrders();
         refreshProfile();
       })
+      .subscribe();
+
+    const walletChannel = supabase
+      .channel('seller-wallet')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'seller_wallets',
         filter: `seller_id=eq.${profile.id}`
-      }, () => refreshWallet())
+      }, () => {
+        refreshWallet();
+      })
+      .subscribe();
+
+    const productsChannel = supabase
+      .channel('seller-products-realtime')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'seller_products',
         filter: `seller_id=eq.${profile.id}`
-      }, () => refreshProducts())
+      }, () => {
+        refreshProducts();
+      })
+      .subscribe();
+
+    const withdrawalsChannel = supabase
+      .channel('seller-withdrawals-realtime')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -278,7 +241,10 @@ export const SellerProvider = ({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(walletChannel);
+      supabase.removeChannel(productsChannel);
+      supabase.removeChannel(withdrawalsChannel);
     };
   }, [profile.id, refreshOrders, refreshProfile, refreshWallet, refreshProducts, refreshWithdrawals]);
 

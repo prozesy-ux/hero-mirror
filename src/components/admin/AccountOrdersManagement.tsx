@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { Loader2, Package, CheckCircle, Clock, Send, Eye, Edit, Trash2, X, Save, Search, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminDataContext } from '@/contexts/AdminDataContext';
-import { useAdminMutate } from '@/hooks/useAdminMutate';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -29,7 +28,6 @@ type PaymentFilter = 'all' | 'completed' | 'pending';
 
 const AccountOrdersManagement = () => {
   const { accountOrders, profiles, isLoading, refreshTable } = useAdminDataContext();
-  const { updateData, deleteData, mutating } = useAdminMutate();
   const [delivering, setDelivering] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<Record<string, string>>({});
   const [editingOrder, setEditingOrder] = useState<AccountOrder | null>(null);
@@ -94,17 +92,19 @@ const AccountOrdersManagement = () => {
 
     setDelivering(orderId);
 
-    // Use edge function instead of direct Supabase call (bypasses RLS)
-    const result = await updateData('ai_account_purchases', orderId, {
-      account_credentials: creds,
-      delivery_status: 'delivered',
-      delivered_at: new Date().toISOString()
-    });
+    const { error } = await supabase
+      .from('ai_account_purchases')
+      .update({
+        account_credentials: creds,
+        delivery_status: 'delivered',
+        delivered_at: new Date().toISOString()
+      })
+      .eq('id', orderId);
 
     setDelivering(null);
 
-    if (!result.success) {
-      toast.error(result.error || 'Failed to deliver credentials');
+    if (error) {
+      toast.error('Failed to deliver credentials');
     } else {
       toast.success('Credentials delivered successfully');
       setCredentials(prev => ({ ...prev, [orderId]: '' }));
@@ -127,19 +127,21 @@ const AccountOrdersManagement = () => {
     
     setSaving(true);
     
-    // Use edge function instead of direct Supabase call (bypasses RLS)
-    const result = await updateData('ai_account_purchases', editingOrder.id, {
-      payment_status: editFormData.payment_status,
-      delivery_status: editFormData.delivery_status,
-      account_credentials: editFormData.account_credentials || null,
-      amount: editFormData.amount,
-      delivered_at: editFormData.delivery_status === 'delivered' ? new Date().toISOString() : null
-    });
+    const { error } = await supabase
+      .from('ai_account_purchases')
+      .update({
+        payment_status: editFormData.payment_status,
+        delivery_status: editFormData.delivery_status,
+        account_credentials: editFormData.account_credentials || null,
+        amount: editFormData.amount,
+        delivered_at: editFormData.delivery_status === 'delivered' ? new Date().toISOString() : null
+      })
+      .eq('id', editingOrder.id);
 
     setSaving(false);
 
-    if (!result.success) {
-      toast.error(result.error || 'Failed to update order');
+    if (error) {
+      toast.error('Failed to update order');
     } else {
       toast.success('Order updated successfully');
       setEditingOrder(null);
@@ -152,13 +154,15 @@ const AccountOrdersManagement = () => {
     
     setDeletingId(orderId);
     
-    // Use edge function instead of direct Supabase call (bypasses RLS)
-    const result = await deleteData('ai_account_purchases', orderId);
+    const { error } = await supabase
+      .from('ai_account_purchases')
+      .delete()
+      .eq('id', orderId);
     
     setDeletingId(null);
     
-    if (!result.success) {
-      toast.error(result.error || 'Failed to delete order');
+    if (error) {
+      toast.error('Failed to delete order');
     } else {
       toast.success('Order deleted successfully');
       refreshTable('ai_account_purchases');

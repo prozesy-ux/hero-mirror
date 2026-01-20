@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { healthMonitor } from '@/lib/health-monitor';
 
 interface Profile {
   id: string;
@@ -20,10 +19,8 @@ export const useAuth = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const initRef = useRef(false); // Prevent double initialization
-  const mountedRef = useRef(true);
 
-  const checkAdminRole = useCallback(async (userId: string) => {
+  const checkAdminRole = async (userId: string) => {
     try {
       // Check cache first to avoid repeated RPC calls
       const cacheKey = `admin_${userId}`;
@@ -47,85 +44,30 @@ export const useAuth = () => {
       console.error('Error in checkAdminRole:', err);
       return false;
     }
-  }, []);
-
-  const loadUserData = useCallback(async (userId: string) => {
-    if (!mountedRef.current) return;
-    
-    try {
-      // Parallel fetch for better performance
-      const [adminResult, profileResult] = await Promise.allSettled([
-        checkAdminRole(userId),
-        supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle()
-      ]);
-
-      if (!mountedRef.current) return;
-
-      if (adminResult.status === 'fulfilled') {
-        setIsAdmin(adminResult.value);
-      }
-      
-      if (profileResult.status === 'fulfilled' && profileResult.value.data) {
-        setProfile(profileResult.value.data);
-      }
-    } catch (error) {
-      console.error('Failed to load user data:', error);
-    }
-  }, [checkAdminRole]);
+  };
 
   useEffect(() => {
-    // Prevent double initialization in StrictMode
-    if (initRef.current) return;
-    initRef.current = true;
-    mountedRef.current = true;
-
-    const initializeAuth = async () => {
-      try {
-        // Get initial session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mountedRef.current) return;
-        
-        if (session?.user) {
-          setSession(session);
-          setUser(session.user);
-          // Log initial session to health monitor
-          healthMonitor.recordAuthEvent('INITIAL_SESSION', session);
-          await loadUserData(session.user.id);
-        } else {
-          healthMonitor.recordAuthEvent('NO_INITIAL_SESSION', null);
-        }
-      } catch (error) {
-        console.error('Auth init error:', error);
-        healthMonitor.log('error', 'Auth init error', { 
-          error: error instanceof Error ? error.message : 'Unknown' 
-        });
-      } finally {
-        if (mountedRef.current) setLoading(false);
-      }
-    };
-
-    // Set up auth state listener FIRST (before getSession)
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mountedRef.current) return;
-        
-        // Log every auth event to health monitor for debugging
-        healthMonitor.recordAuthEvent(event, session);
-        
-        // Warn if signed out unexpectedly on protected route
-        if (event === 'SIGNED_OUT') {
-          const path = window.location.pathname;
-          if (path.startsWith('/dashboard') || path.startsWith('/seller')) {
-            healthMonitor.log('auth', 'WARNING: SIGNED_OUT on protected route', { path });
-          }
-        }
-        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          await loadUserData(session.user.id);
+          // Check admin role
+          const adminStatus = await checkAdminRole(session.user.id);
+          setIsAdmin(adminStatus);
+          
+          // Fetch profile using setTimeout to avoid race condition
+          setTimeout(async () => {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('user_id', session.user.id)
+              .maybeSingle();
+            
+            setProfile(profileData);
+          }, 0);
         } else {
           setProfile(null);
           setIsAdmin(false);
@@ -135,13 +77,32 @@ export const useAuth = () => {
       }
     );
 
-    initializeAuth();
+    // THEN check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        // Check admin role
+        const adminStatus = await checkAdminRole(session.user.id);
+        setIsAdmin(adminStatus);
+        
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            setProfile(data);
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
+      }
+    });
 
-    return () => {
-      mountedRef.current = false;
-      subscription.unsubscribe();
-    };
-  }, [loadUserData]);
+    return () => subscription.unsubscribe();
+  }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     const { data, error } = await supabase.auth.signUp({

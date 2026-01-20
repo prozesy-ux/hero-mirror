@@ -1,19 +1,5 @@
 // App version - update this with each deployment to trigger cache clear
-export const APP_VERSION = '1.0.2';
-
-import { recoverBackend } from '@/lib/backend-recovery';
-
-/**
- * Handle critical errors by triggering a soft recovery (no hard reload).
- */
-export const handleCriticalError = async (): Promise<void> => {
-  console.error('[Cache] Critical error detected, starting recovery');
-  try {
-    await recoverBackend('manual');
-  } catch {
-    // ignore
-  }
-};
+export const APP_VERSION = '1.0.1';
 
 const VERSION_KEY = 'app_version';
 const CACHE_CLEARED_KEY = 'cache_cleared_at';
@@ -25,7 +11,9 @@ export const clearBrowserCaches = async (): Promise<void> => {
   try {
     if ('caches' in window) {
       const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+      await Promise.all(
+        cacheNames.map(cacheName => caches.delete(cacheName))
+      );
       console.log('[Cache] Browser caches cleared:', cacheNames.length);
     }
   } catch (error) {
@@ -51,15 +39,15 @@ export const clearSessionStorage = (): void => {
 export const clearLocalStorageSelectively = (): void => {
   try {
     const keysToPreserve = [
-      'sb-', // Auth tokens
+      'sb-', // Supabase auth tokens
       'supabase',
       VERSION_KEY,
       CACHE_CLEARED_KEY,
-      // User intent keys
+      // User intent keys - critical for post-auth flows
       'storeReturn',
-      'pendingPurchase',
-      'pendingChat',
-      // UI state keys
+      'pendingPurchase', // Key for buy flow from store
+      'pendingChat', // Key for chat flow from store
+      // UI state keys - preserve user preferences  
       'sidebar-collapsed',
       'seller-sidebar-collapsed',
       'admin-sidebar-collapsed',
@@ -67,15 +55,15 @@ export const clearLocalStorageSelectively = (): void => {
     ];
 
     const keysToRemove: string[] = [];
-
+    
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && !keysToPreserve.some((preserve) => key.startsWith(preserve) || key === preserve)) {
+      if (key && !keysToPreserve.some(preserve => key.startsWith(preserve) || key === preserve)) {
         keysToRemove.push(key);
       }
     }
 
-    keysToRemove.forEach((key) => localStorage.removeItem(key));
+    keysToRemove.forEach(key => localStorage.removeItem(key));
     console.log('[Cache] Cleared localStorage keys:', keysToRemove.length);
   } catch (error) {
     console.warn('[Cache] Failed to clear localStorage:', error);
@@ -90,7 +78,7 @@ export const hasVersionChanged = (): boolean => {
     const storedVersion = localStorage.getItem(VERSION_KEY);
     return storedVersion !== APP_VERSION;
   } catch {
-    return true;
+    return true; // If we can't read, assume version changed
   }
 };
 
@@ -117,29 +105,30 @@ export const performCacheReset = async (): Promise<boolean> => {
   }
 
   console.log('[Cache] Version changed, clearing caches...');
-
+  
+  // Clear all caches
   await clearBrowserCaches();
   clearSessionStorage();
   clearLocalStorageSelectively();
-
+  
+  // Update version after clearing
   updateStoredVersion();
-
+  
   console.log('[Cache] Cache reset complete');
   return true;
 };
 
 /**
- * Force clear all caches (manual trigger) - soft recovery only (no page reload).
+ * Force clear all caches (for manual trigger)
  */
 export const forceClearAllCaches = async (): Promise<void> => {
   console.log('[Cache] Force clearing all caches...');
-
+  
   await clearBrowserCaches();
   clearSessionStorage();
   clearLocalStorageSelectively();
   updateStoredVersion();
-
-  // Soft recovery to refetch everything
-  await recoverBackend('manual');
+  
+  // Reload the page to get fresh assets
+  window.location.reload();
 };
-

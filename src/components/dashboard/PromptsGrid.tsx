@@ -6,7 +6,6 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useSearchContext } from '@/contexts/SearchContext';
 import { toast } from 'sonner';
 import { PromptsSidebar } from './PromptsSidebar';
-import { fetchWithRecovery } from '@/lib/backend-recovery';
 interface Prompt {
   id: string;
   title: string;
@@ -132,41 +131,38 @@ const PromptsGrid = () => {
   const fetchData = async () => {
     setLoading(true);
     
-    try {
-      // Fetch ALL data in parallel with timeout protection
-      const [promptsRes, categoriesRes, favoritesRes] = await Promise.allSettled([
-        fetchWithRecovery(
-          async () => await supabase.from('prompts').select(`*, categories (name, icon)`).order('created_at', { ascending: false }),
-          { timeout: 10000, context: 'Prompts' }
-        ),
-        fetchWithRecovery(
-          async () => await supabase.from('categories').select('*').order('name'),
-          { timeout: 10000, context: 'Categories' }
-        ),
-        user 
-          ? fetchWithRecovery(
-              async () => await supabase.from('favorites').select('prompt_id').eq('user_id', user.id),
-              { timeout: 10000, context: 'Favorites' }
-            )
-          : Promise.resolve({ data: [] })
-      ]);
+    const { data: promptsData, error: promptsError } = await supabase
+      .from('prompts')
+      .select(`
+        *,
+        categories (
+          name,
+          icon
+        )
+      `)
+      .order('created_at', { ascending: false });
 
-      // Set data from successful responses immediately
-      if (promptsRes.status === 'fulfilled' && (promptsRes.value as any)?.data) {
-        setPrompts((promptsRes.value as any).data);
-      }
+    if (promptsError) {
+      console.error('Error fetching prompts:', promptsError);
+      toast.error('Failed to load prompts');
+    } else {
+      setPrompts(promptsData || []);
+    }
+
+    const { data: categoriesData } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name');
+    
+    setCategories(categoriesData || []);
+
+    if (user) {
+      const { data: favoritesData } = await supabase
+        .from('favorites')
+        .select('prompt_id')
+        .eq('user_id', user.id);
       
-      if (categoriesRes.status === 'fulfilled' && (categoriesRes.value as any)?.data) {
-        setCategories((categoriesRes.value as any).data);
-      }
-      
-      if (favoritesRes.status === 'fulfilled') {
-        const favData = (favoritesRes.value as any)?.data;
-        setFavorites(favData?.map((f: any) => f.prompt_id) || []);
-      }
-    } catch (error) {
-      console.error('PromptsGrid fetchData error:', error);
-      toast.error('Some prompts failed to load');
+      setFavorites(favoritesData?.map(f => f.prompt_id) || []);
     }
 
     setLoading(false);
@@ -391,31 +387,10 @@ const PromptsGrid = () => {
     );
   };
 
-  // Skeleton loading - shows layout immediately
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        {/* Tab skeleton */}
-        <div className="bg-white rounded-2xl p-2 border border-gray-200">
-          <div className="flex gap-2">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-10 w-24 bg-gray-200 rounded-xl" />
-            ))}
-          </div>
-        </div>
-        {/* Grid skeleton */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-            <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-200">
-              <div className="aspect-[4/3] bg-gray-200" />
-              <div className="p-4 space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
-                <div className="h-3 bg-gray-200 rounded w-full" />
-                <div className="h-8 bg-gray-200 rounded-xl" />
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="w-10 h-10 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
       </div>
     );
   }
