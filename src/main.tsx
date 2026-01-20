@@ -8,28 +8,14 @@ import { AppLoader } from "./components/ui/app-loader";
 const rootElement = document.getElementById("root")!;
 const root = createRoot(rootElement);
 
-// Show initial loader
+// Render app IMMEDIATELY - no blocking loader
 root.render(
   <React.StrictMode>
-    <AppLoader message="Initializing..." />
+    <App />
   </React.StrictMode>
 );
 
-// Initialize app with cache check
-const initializeApp = async () => {
-  try {
-    // Perform cache reset if version changed
-    await performCacheReset();
-  } catch (error) {
-    console.error('[App] Cache reset failed:', error);
-  }
-  
-  // Render the main app
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-};
-
-initializeApp();
+// Cache check runs in background AFTER render - doesn't block anything
+performCacheReset().catch(error => {
+  console.error('[App] Cache reset failed:', error);
+});
