@@ -11,7 +11,7 @@ import { queryClient } from "@/lib/query-client";
 import { healthMonitor } from "@/lib/health-monitor";
 import RecoveryBanner from "@/components/system/RecoveryBanner";
 import DiagnosticsBadge from "@/components/system/DiagnosticsBadge";
-import { recoverBackend } from "@/lib/backend-recovery";
+import { SessionHydrator } from "@/components/system/SessionHydrator";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import Dashboard from "./pages/Dashboard";
@@ -22,16 +22,10 @@ import ProductFullView from "./pages/ProductFullView";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
-  // Start health monitor + perform page-load recovery for protected areas
+  // Start health monitor only - NO automatic recoverBackend on page load
+  // Session hydration is now handled by SessionHydrator component
   useEffect(() => {
     healthMonitor.start();
-
-    const path = window.location.pathname;
-    if (path.startsWith('/dashboard') || path.startsWith('/seller')) {
-      // Fire-and-forget: ensures refreshSession hydration is attempted on hard reload.
-      recoverBackend('page_load');
-    }
-
     return () => healthMonitor.stop();
   }, []);
 
@@ -39,32 +33,35 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <AuthProvider>
-            <RecoveryBanner />
-            <DiagnosticsBadge />
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/signup" element={<SignIn />} />
-                <Route path="/store/:storeSlug" element={<Store />} />
-                <Route path="/store/:storeSlug/product/:productId" element={<ProductFullView />} />
-                <Route
-                  path="/dashboard/*"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/seller/*" element={<Seller />} />
-                <Route path="/admin/*" element={<Admin />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </AuthProvider>
+          {/* SessionHydrator ensures auth is ready before rendering any routes */}
+          <SessionHydrator>
+            <AuthProvider>
+              <RecoveryBanner />
+              <DiagnosticsBadge />
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/signin" element={<SignIn />} />
+                  <Route path="/signup" element={<SignIn />} />
+                  <Route path="/store/:storeSlug" element={<Store />} />
+                  <Route path="/store/:storeSlug/product/:productId" element={<ProductFullView />} />
+                  <Route
+                    path="/dashboard/*"
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/seller/*" element={<Seller />} />
+                  <Route path="/admin/*" element={<Admin />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </AuthProvider>
+          </SessionHydrator>
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
