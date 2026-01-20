@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button';
 import { 
   AreaChart, 
   Area, 
-  BarChart, 
-  Bar, 
   PieChart, 
   Pie, 
   Cell,
@@ -19,12 +17,7 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, 
-  DollarSign, 
-  ShoppingCart, 
-  Target,
-  ArrowUpRight,
-  ArrowDownRight,
-  Sparkles,
+  TrendingDown,
   Package
 } from 'lucide-react';
 import { format, subDays, startOfDay, eachDayOfInterval, isWithinInterval } from 'date-fns';
@@ -78,9 +71,9 @@ const SellerAnalytics = () => {
     const ordersChange = prevOrderCount > 0 ? ((totalOrders - prevOrderCount) / prevOrderCount) * 100 : (totalOrders > 0 ? 100 : 0);
 
     const statusBreakdown = [
-      { name: 'Completed', value: periodOrders.filter(o => o.status === 'completed').length, color: '#10b981' },
-      { name: 'Delivered', value: periodOrders.filter(o => o.status === 'delivered').length, color: '#3b82f6' },
-      { name: 'Pending', value: periodOrders.filter(o => o.status === 'pending').length, color: '#f59e0b' },
+      { name: 'Completed', value: periodOrders.filter(o => o.status === 'completed').length, color: '#23a094' },
+      { name: 'Delivered', value: periodOrders.filter(o => o.status === 'delivered').length, color: '#000000' },
+      { name: 'Pending', value: periodOrders.filter(o => o.status === 'pending').length, color: '#ff90e8' },
       { name: 'Refunded', value: periodOrders.filter(o => o.status === 'refunded').length, color: '#ef4444' }
     ].filter(s => s.value > 0);
 
@@ -99,9 +92,6 @@ const SellerAnalytics = () => {
     const successfulOrders = periodOrders.filter(o => o.status === 'delivered' || o.status === 'completed').length;
     const conversionRate = totalOrders > 0 ? (successfulOrders / totalOrders) * 100 : 0;
 
-    // Find best day
-    const bestDay = dailyData.reduce((best, day) => day.revenue > best.revenue ? day : best, { date: 'N/A', revenue: 0 });
-
     return {
       dailyData,
       totalRevenue,
@@ -111,168 +101,161 @@ const SellerAnalytics = () => {
       statusBreakdown,
       topProducts,
       conversionRate,
-      avgOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
-      bestDay: bestDay.date,
-      bestDayRevenue: bestDay.revenue
+      avgOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
     };
   }, [orders, periodDays]);
 
   if (loading) {
     return (
-      <div className="p-6 lg:p-8 bg-slate-50 min-h-screen space-y-6 seller-dashboard">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+      <div className="p-6 space-y-6 seller-dashboard">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 rounded-lg" />)}
         </div>
-        <Skeleton className="h-72 rounded-2xl" />
+        <Skeleton className="h-72 rounded-lg" />
       </div>
     );
   }
 
-  const StatCard = ({ title, value, change, icon: Icon, gradient }: any) => (
-    <div className={`relative rounded-2xl p-5 overflow-hidden ${gradient}`}>
-      <div className="flex items-start justify-between relative z-10">
-        <div>
-          <p className="text-white/80 text-xs font-medium uppercase tracking-wide">{title}</p>
-          <p className="text-2xl lg:text-3xl font-bold text-white mt-1">{value}</p>
-          {change !== undefined && (
-            <div className="flex items-center gap-1 mt-2">
-              {change >= 0 ? <ArrowUpRight className="h-3.5 w-3.5 text-white/90" /> : <ArrowDownRight className="h-3.5 w-3.5 text-white/90" />}
-              <span className="text-xs font-semibold text-white/90">{Math.abs(change).toFixed(1)}%</span>
-            </div>
-          )}
-        </div>
-        <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
-          <Icon className="h-6 w-6 text-white" />
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="p-6 lg:p-8 bg-slate-50 min-h-screen space-y-6 seller-dashboard">
+    <div className="p-6 max-w-5xl seller-dashboard">
       {/* Period Selector */}
-      <div className="flex justify-end">
-        <div className="flex items-center gap-1 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
+      <div className="flex justify-end mb-6">
+        <div className="flex items-center gap-1 bg-white border border-black/10 rounded-lg p-1">
           {(['7d', '30d', 'all'] as Period[]).map((p) => (
-            <Button
+            <button
               key={p}
-              size="sm"
-              variant={period === p ? 'default' : 'ghost'}
               onClick={() => setPeriod(p)}
-              className={`rounded-lg text-xs ${period === p ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                period === p 
+                  ? 'bg-black text-white' 
+                  : 'text-black/60 hover:text-black'
+              }`}
             >
-              {p === '7d' ? '7 Days' : p === '30d' ? '30 Days' : 'All'}
-            </Button>
+              {p === '7d' ? '7 Days' : p === '30d' ? '30 Days' : 'All Time'}
+            </button>
           ))}
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Revenue" value={`$${analyticsData.totalRevenue.toFixed(2)}`} change={analyticsData.revenueChange} icon={DollarSign} gradient="bg-gradient-to-br from-emerald-500 to-teal-600" />
-        <StatCard title="Orders" value={analyticsData.totalOrders} change={analyticsData.ordersChange} icon={ShoppingCart} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" />
-        <StatCard title="Avg Order" value={`$${analyticsData.avgOrderValue.toFixed(2)}`} icon={Target} gradient="bg-gradient-to-br from-violet-500 to-purple-600" />
-        <StatCard title="Success Rate" value={`${analyticsData.conversionRate.toFixed(0)}%`} icon={TrendingUp} gradient="bg-gradient-to-br from-amber-500 to-orange-600" />
-      </div>
-
-      {/* Insights Banner */}
-      {analyticsData.totalOrders > 0 && (
-        <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-100 rounded-2xl p-4 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
-            <Sparkles className="h-5 w-5 text-violet-600" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-900">Best performing day: <span className="text-violet-600">{analyticsData.bestDay}</span></p>
-            <p className="text-xs text-slate-500">Generated ${analyticsData.bestDayRevenue.toFixed(2)} in revenue</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white border border-black/10 rounded-lg p-4">
+          <p className="text-sm text-black/50 mb-1">Revenue</p>
+          <p className="text-2xl font-semibold text-black">${analyticsData.totalRevenue.toFixed(2)}</p>
+          <div className="flex items-center gap-1 mt-1">
+            {analyticsData.revenueChange >= 0 ? (
+              <TrendingUp size={14} className="text-[#23a094]" />
+            ) : (
+              <TrendingDown size={14} className="text-red-500" />
+            )}
+            <span className={`text-xs font-medium ${analyticsData.revenueChange >= 0 ? 'text-[#23a094]' : 'text-red-500'}`}>
+              {Math.abs(analyticsData.revenueChange).toFixed(1)}%
+            </span>
           </div>
         </div>
-      )}
+        <div className="bg-white border border-black/10 rounded-lg p-4">
+          <p className="text-sm text-black/50 mb-1">Orders</p>
+          <p className="text-2xl font-semibold text-black">{analyticsData.totalOrders}</p>
+          <div className="flex items-center gap-1 mt-1">
+            {analyticsData.ordersChange >= 0 ? (
+              <TrendingUp size={14} className="text-[#23a094]" />
+            ) : (
+              <TrendingDown size={14} className="text-red-500" />
+            )}
+            <span className={`text-xs font-medium ${analyticsData.ordersChange >= 0 ? 'text-[#23a094]' : 'text-red-500'}`}>
+              {Math.abs(analyticsData.ordersChange).toFixed(1)}%
+            </span>
+          </div>
+        </div>
+        <div className="bg-white border border-black/10 rounded-lg p-4">
+          <p className="text-sm text-black/50 mb-1">Avg Order</p>
+          <p className="text-2xl font-semibold text-black">${analyticsData.avgOrderValue.toFixed(2)}</p>
+        </div>
+        <div className="bg-white border border-black/10 rounded-lg p-4">
+          <p className="text-sm text-black/50 mb-1">Success Rate</p>
+          <p className="text-2xl font-semibold text-black">{analyticsData.conversionRate.toFixed(0)}%</p>
+        </div>
+      </div>
 
-      {/* Charts */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      {/* Charts Row */}
+      <div className="grid lg:grid-cols-3 gap-4 mb-6">
         {/* Revenue Chart */}
-        <Card className="lg:col-span-2 border-0 shadow-md bg-white rounded-2xl">
-          <CardContent className="p-5">
-            <h3 className="text-base font-semibold text-slate-900 mb-4">Revenue Trend</h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={analyticsData.dailyData}>
-                  <defs>
-                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
-                  <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                  <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fill="url(#revenueGrad)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-2 bg-white border border-black/10 rounded-lg p-5">
+          <h3 className="text-sm font-semibold text-black mb-4">Revenue Trend</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={analyticsData.dailyData}>
+                <defs>
+                  <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ff90e8" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#ff90e8" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#666' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#666' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e5e5e5', boxShadow: 'none' }} />
+                <Area type="monotone" dataKey="revenue" stroke="#ff90e8" strokeWidth={2} fill="url(#revenueGrad)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
         {/* Status Breakdown */}
-        <Card className="border-0 shadow-md bg-white rounded-2xl">
-          <CardContent className="p-5">
-            <h3 className="text-base font-semibold text-slate-900 mb-4">Order Status</h3>
-            {analyticsData.statusBreakdown.length > 0 ? (
-              <>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={analyticsData.statusBreakdown} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={4} dataKey="value" strokeWidth={0}>
-                        {analyticsData.statusBreakdown.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex flex-wrap justify-center gap-3 mt-2">
-                  {analyticsData.statusBreakdown.map((item) => (
-                    <div key={item.name} className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-xs text-slate-600">{item.name}</span>
-                      <span className="text-xs font-semibold text-slate-900">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">No data yet</div>
-            )}
-          </CardContent>
-        </Card>
+        <div className="bg-white border border-black/10 rounded-lg p-5">
+          <h3 className="text-sm font-semibold text-black mb-4">Order Status</h3>
+          {analyticsData.statusBreakdown.length > 0 ? (
+            <>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={analyticsData.statusBreakdown} cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={4} dataKey="value" strokeWidth={0}>
+                      {analyticsData.statusBreakdown.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex flex-wrap justify-center gap-3 mt-2">
+                {analyticsData.statusBreakdown.map((item) => (
+                  <div key={item.name} className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-xs text-black/60">{item.name}</span>
+                    <span className="text-xs font-semibold text-black">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="h-40 flex items-center justify-center text-black/40 text-sm">No data yet</div>
+          )}
+        </div>
       </div>
 
       {/* Top Products */}
-      <Card className="border-0 shadow-md bg-white rounded-2xl">
-        <CardContent className="p-5">
-          <h3 className="text-base font-semibold text-slate-900 mb-4">Top Products</h3>
-          {analyticsData.topProducts.length > 0 ? (
-            <div className="space-y-3">
-              {analyticsData.topProducts.map((product, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-semibold text-slate-600">
-                    {i + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">{product.name}</p>
-                    <p className="text-xs text-slate-500">{product.sold} sold</p>
-                  </div>
-                  <span className="text-sm font-semibold text-emerald-600">${product.revenue.toFixed(2)}</span>
+      <div className="bg-white border border-black/10 rounded-lg p-5">
+        <h3 className="text-sm font-semibold text-black mb-4">Top Products</h3>
+        {analyticsData.topProducts.length > 0 ? (
+          <div className="space-y-3">
+            {analyticsData.topProducts.map((product, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded bg-black/5 flex items-center justify-center text-xs font-semibold text-black/60">
+                  {i + 1}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="py-8 text-center">
-              <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">No sales data yet</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-black truncate">{product.name}</p>
+                  <p className="text-xs text-black/50">{product.sold} sold</p>
+                </div>
+                <span className="text-sm font-semibold text-black">${product.revenue.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-8 text-center">
+            <Package className="w-10 h-10 text-black/20 mx-auto mb-2" />
+            <p className="text-sm text-black/40">No sales data yet</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
