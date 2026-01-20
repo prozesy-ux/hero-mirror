@@ -537,11 +537,11 @@ const SellerMainContent = () => {
   
   return (
     <main className={`
-      min-h-screen bg-[#f4f4f0] transition-all duration-300
-      pt-14 pb-20 lg:pb-0
-      lg:pt-14 ${isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-60'}
+      min-h-screen bg-slate-50 transition-all duration-300
+      pt-16 pb-20 lg:pb-0
+      lg:pt-16 ${isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-60'}
     `}>
-      <div className="p-4 sm:p-6">
+      <div className="p-3 sm:p-4 lg:p-6">
         <Routes>
           <Route path="/" element={<SellerDashboard />} />
           <Route path="/products" element={<SellerProducts />} />
@@ -562,7 +562,7 @@ const SellerMainContent = () => {
 const SellerContent = () => {
   return (
     <SellerSidebarProvider>
-      <div className="min-h-screen bg-[#f4f4f0]">
+      <div className="min-h-screen bg-slate-50">
         {/* Mobile Header - Only visible on mobile */}
         <SellerMobileHeader />
         

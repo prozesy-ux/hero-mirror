@@ -1,179 +1,86 @@
-import { Link, useLocation } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
-import { useSellerContext } from '@/contexts/SellerContext';
-import { 
-  Home, 
-  Package, 
-  CreditCard, 
-  Mail, 
-  DollarSign, 
-  BarChart2, 
-  Wallet, 
-  Settings, 
-  HelpCircle,
-  ChevronLeft,
-  ChevronRight,
-  Lightbulb,
-  MessageSquare
-} from 'lucide-react';
+import metaLogo from '@/assets/meta-logo.png';
+import googleAdsLogo from '@/assets/google-ads-logo.png';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
-const menuItems = [
-  { path: '/seller', label: 'Home', icon: Home, exact: true },
-  { path: '/seller/products', label: 'Products', icon: Package },
-  { path: '/seller/orders', label: 'Sales', icon: DollarSign },
-  { path: '/seller/chat', label: 'Inbox', icon: Mail },
-  { path: '/seller/analytics', label: 'Analytics', icon: BarChart2 },
-  { path: '/seller/wallet', label: 'Payouts', icon: Wallet },
-  { path: '/seller/settings', label: 'Settings', icon: Settings },
-];
-
-const bottomItems = [
-  { path: '/seller/feature-requests', label: 'Feature Requests', icon: Lightbulb },
-  { path: '/seller/support', label: 'Help', icon: HelpCircle },
-];
 
 const SellerSidebar = () => {
   const { isCollapsed, toggleSidebar } = useSellerSidebarContext();
-  const { profile } = useSellerContext();
-  const location = useLocation();
-
-  const isActive = (path: string, exact?: boolean) => {
-    if (exact) return location.pathname === path;
-    return location.pathname.startsWith(path);
-  };
 
   return (
     <TooltipProvider>
       <aside 
-        className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-50 bg-black text-white transition-all duration-300 ${
+        className={`hidden lg:flex flex-col fixed left-0 top-16 bottom-0 z-40 bg-white border-r border-gray-200 transition-all duration-300 ${
           isCollapsed ? 'w-[72px]' : 'w-60'
         }`}
       >
-        {/* Logo/Profile Section */}
-        <div className={`flex items-center gap-3 p-4 border-b border-white/10 ${isCollapsed ? 'justify-center' : ''}`}>
-          <Avatar className="h-10 w-10 border-2 border-white/20">
-            <AvatarImage src={profile?.store_logo_url || ''} />
-            <AvatarFallback className="bg-[#ff90e8] text-black font-bold">
-              {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
-            </AvatarFallback>
-          </Avatar>
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">{profile?.store_name || 'My Store'}</p>
-              <p className="text-xs text-white/60">Seller</p>
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Ads Agency Card - Same as User Dashboard */}
+        {!isCollapsed ? (
+          <div className="p-3">
+            <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+              {/* Logos Row */}
+              <div className="flex items-center justify-center gap-4 mb-3">
+                <div className="w-10 h-10 bg-white rounded-lg border border-gray-100 flex items-center justify-center p-1.5 shadow-sm">
+                  <img src={metaLogo} alt="Meta" className="w-full h-full object-contain" />
+                </div>
+                <div className="w-10 h-10 bg-white rounded-lg border border-gray-100 flex items-center justify-center p-1.5 shadow-sm">
+                  <img src={googleAdsLogo} alt="Google Ads" className="w-full h-full object-contain" />
+                </div>
+              </div>
+              
+              {/* Content */}
+              <div className="text-center">
+                <h3 className="text-sm font-bold text-gray-900 mb-1">Ads Agency</h3>
+                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                  Get professional ad campaigns managed by experts
+                </p>
+                <button className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md">
+                  Learn More
+                  <ExternalLink size={12} />
+                </button>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <div className="p-3">
+                <div className="w-full aspect-square bg-white border-2 border-gray-200 rounded-xl flex items-center justify-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="flex flex-col gap-1">
+                    <img src={metaLogo} alt="Meta" className="w-6 h-6 object-contain mx-auto" />
+                    <img src={googleAdsLogo} alt="Google" className="w-6 h-6 object-contain mx-auto" />
+                  </div>
+                </div>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="bg-gray-900 text-white border-0">
+              <p>Ads Agency</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
 
-        {/* Main Navigation */}
-        <nav className="flex-1 py-4 px-2 space-y-1">
-          {menuItems.map((item) => {
-            const active = isActive(item.path, item.exact);
-            const ItemIcon = item.icon;
-            
-            if (isCollapsed) {
-              return (
-                <Tooltip key={item.path} delayDuration={0}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to={item.path}
-                      className={`flex items-center justify-center w-full h-10 rounded-lg transition-all ${
-                        active 
-                          ? 'bg-[#ff90e8] text-black' 
-                          : 'text-white/80 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      <ItemIcon size={20} />
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-black text-white border-white/20">
-                    <p>{item.label}</p>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            }
-
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  active 
-                    ? 'bg-[#ff90e8] text-black' 
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <ItemIcon size={20} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Bottom Section */}
-        <div className="border-t border-white/10 py-4 px-2 space-y-1">
-          {bottomItems.map((item) => {
-            const active = isActive(item.path);
-            const ItemIcon = item.icon;
-            
-            if (isCollapsed) {
-              return (
-                <Tooltip key={item.path} delayDuration={0}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to={item.path}
-                      className={`flex items-center justify-center w-full h-10 rounded-lg transition-all ${
-                        active 
-                          ? 'bg-[#ff90e8] text-black' 
-                          : 'text-white/60 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      <ItemIcon size={20} />
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-black text-white border-white/20">
-                    <p>{item.label}</p>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            }
-
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  active 
-                    ? 'bg-[#ff90e8] text-black' 
-                    : 'text-white/60 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <ItemIcon size={20} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-
-          {/* Collapse Toggle */}
+        {/* Collapse Toggle */}
+        <div className="p-3 border-t border-gray-100">
           <button
             onClick={toggleSidebar}
-            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-all ${
+            className={`flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors ${
               isCollapsed ? 'justify-center' : ''
             }`}
           >
             {isCollapsed ? (
-              <ChevronRight size={20} />
+              <ChevronRight size={18} />
             ) : (
               <>
-                <ChevronLeft size={20} />
-                <span>Collapse</span>
+                <ChevronLeft size={18} />
+                <span className="text-sm">Collapse</span>
               </>
             )}
           </button>
