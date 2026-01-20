@@ -8,10 +8,13 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// IMPORTANT: Auth config requires detectSessionInUrl for OAuth to work reliably
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: true,  // CRITICAL: Detect OAuth tokens from URL
+    flowType: 'pkce',          // Secure OAuth flow
   }
 });
