@@ -174,42 +174,48 @@ const StoreContent = () => {
   const fetchStoreData = async () => {
     setLoading(true);
     
-    const { data: sellerData, error: sellerError } = await supabase
-      .from('seller_profiles')
-      .select('*')
-      .eq('store_slug', storeSlug)
-      .eq('is_active', true)
-      .single();
+    try {
+      // Fetch seller first (required for products query)
+      const { data: sellerData, error: sellerError } = await supabase
+        .from('seller_profiles')
+        .select('*')
+        .eq('store_slug', storeSlug)
+        .eq('is_active', true)
+        .maybeSingle();
 
-    if (sellerError || !sellerData) {
+      if (sellerError || !sellerData) {
+        setLoading(false);
+        return;
+      }
+
+      setSeller(sellerData as SellerProfile);
+
+      // Fetch products AND categories in PARALLEL for faster loading
+      const [productsResult, categoriesResult] = await Promise.all([
+        supabase
+          .from('seller_products')
+          .select('*')
+          .eq('seller_id', sellerData.id)
+          .eq('is_available', true)
+          .eq('is_approved', true)
+          .order('sold_count', { ascending: false }),
+        supabase
+          .from('categories')
+          .select('*')
+          .eq('is_active', true)
+      ]);
+
+      if (productsResult.data) {
+        setProducts(productsResult.data);
+      }
+      if (categoriesResult.data) {
+        setCategories(categoriesResult.data);
+      }
+    } catch (error) {
+      console.error('[Store] Fetch error:', error);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setSeller(sellerData as SellerProfile);
-
-    const { data: productsData } = await supabase
-      .from('seller_products')
-      .select('*')
-      .eq('seller_id', sellerData.id)
-      .eq('is_available', true)
-      .eq('is_approved', true)
-      .order('sold_count', { ascending: false });
-
-    if (productsData) {
-      setProducts(productsData);
-    }
-
-    const { data: categoriesData } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('is_active', true);
-
-    if (categoriesData) {
-      setCategories(categoriesData);
-    }
-
-    setLoading(false);
   };
 
   const fetchWallet = async () => {

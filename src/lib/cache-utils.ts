@@ -76,9 +76,14 @@ export const clearLocalStorageSelectively = (): void => {
 export const hasVersionChanged = (): boolean => {
   try {
     const storedVersion = localStorage.getItem(VERSION_KEY);
+    // First-time visitor: no stored version = no cache to clear
+    if (!storedVersion) {
+      updateStoredVersion(); // Just store current version for next time
+      return false; // Skip cache clearing - nothing to clear
+    }
     return storedVersion !== APP_VERSION;
   } catch {
-    return true; // If we can't read, assume version changed
+    return false; // If storage fails, skip cache operations
   }
 };
 
