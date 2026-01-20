@@ -9,6 +9,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { playSound } from '@/lib/sounds';
+import { fetchWithRecovery } from '@/lib/backend-recovery';
 
 // Import AI product logos
 
@@ -231,50 +232,51 @@ const BillingSection = () => {
   };
 
   const fetchData = async () => {
-    const { data: purchasesData } = await supabase
-      .from('purchases')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('purchased_at', { ascending: false });
-    
-    setPurchases(purchasesData || []);
+    try {
+      // Wrap all critical fetches with timeout and recovery
+      const [purchasesResult, refundsResult, cancellationResult, walletResult, txResult] = await Promise.allSettled([
+        fetchWithRecovery(
+          async () => await supabase.from('purchases').select('*').eq('user_id', user?.id).order('purchased_at', { ascending: false }),
+          { timeout: 10000, context: 'Purchases' }
+        ),
+        fetchWithRecovery(
+          async () => await supabase.from('refund_requests').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
+          { timeout: 10000, context: 'Refund requests' }
+        ),
+        fetchWithRecovery(
+          async () => await supabase.from('cancellation_requests').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+          { timeout: 10000, context: 'Cancellation request' }
+        ),
+        fetchWithRecovery(
+          async () => await supabase.from('user_wallets').select('balance').eq('user_id', user?.id).maybeSingle(),
+          { timeout: 10000, context: 'Wallet' }
+        ),
+        fetchWithRecovery(
+          async () => await supabase.from('wallet_transactions').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(10),
+          { timeout: 10000, context: 'Transactions' }
+        )
+      ]);
 
-    const { data: refundsData } = await supabase
-      .from('refund_requests')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
-    
-    setRefundRequests(refundsData || []);
-
-    const { data: cancellationData } = await supabase
-      .from('cancellation_requests')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-    
-    setCancellationRequest(cancellationData);
-
-    // Fetch wallet
-    const { data: walletData } = await supabase
-      .from('user_wallets')
-      .select('balance')
-      .eq('user_id', user?.id)
-      .single();
-    
-    setWallet(walletData || { balance: 0 });
-
-    // Fetch transactions
-    const { data: txData } = await supabase
-      .from('wallet_transactions')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    
-    setTransactions(txData || []);
+      // Process results from settled promises
+      if (purchasesResult.status === 'fulfilled' && (purchasesResult.value as any)?.data) {
+        setPurchases((purchasesResult.value as any).data);
+      }
+      if (refundsResult.status === 'fulfilled' && (refundsResult.value as any)?.data) {
+        setRefundRequests((refundsResult.value as any).data);
+      }
+      if (cancellationResult.status === 'fulfilled') {
+        setCancellationRequest((cancellationResult.value as any)?.data);
+      }
+      if (walletResult.status === 'fulfilled') {
+        setWallet((walletResult.value as any)?.data || { balance: 0 });
+      }
+      if (txResult.status === 'fulfilled' && (txResult.value as any)?.data) {
+        setTransactions((txResult.value as any).data);
+      }
+    } catch (error) {
+      console.error('BillingSection fetchData error:', error);
+      toast.error('Some billing data failed to load');
+    }
   };
 
   // Track previous wallet balance for sound notification

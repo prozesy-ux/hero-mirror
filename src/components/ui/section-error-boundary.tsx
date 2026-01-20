@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { recoverBackend } from '@/lib/backend-recovery';
 
 interface Props {
   children: React.ReactNode;
@@ -41,7 +42,9 @@ export class SectionErrorBoundary extends React.Component<Props, State> {
             {this.state.error?.message || 'An unexpected error occurred'}
           </p>
           <button
-            onClick={() => {
+            onClick={async () => {
+              // Use smart recovery instead of hard reload
+              await recoverBackend('manual');
               this.setState({ hasError: false, error: undefined });
               this.props.onRetry?.();
             }}

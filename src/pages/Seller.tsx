@@ -16,6 +16,8 @@ import SellerMobileHeader from '@/components/seller/SellerMobileHeader';
 import SellerMobileNavigation from '@/components/seller/SellerMobileNavigation';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { useConnectivityRecovery } from '@/hooks/useReliableFetch';
+import { useLoadingWatchdog } from '@/hooks/useLoadingWatchdog';
+import { recoverBackend } from '@/lib/backend-recovery';
 import signinBackground from '@/assets/signin-background.webp';
 import promptheroIcon from '@/assets/prompthero-icon.png';
 
@@ -657,6 +659,13 @@ const Seller = () => {
   const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsRegistration, setNeedsRegistration] = useState(false);
+
+  // Loading watchdog - triggers recovery if loading takes >15 seconds
+  useLoadingWatchdog(loading && !!user, {
+    timeout: 15000,
+    reason: 'loading_timeout',
+    onRecoveryComplete: () => checkSellerStatus()
+  });
 
   useEffect(() => {
     // Don't redirect - we show auth form inline
