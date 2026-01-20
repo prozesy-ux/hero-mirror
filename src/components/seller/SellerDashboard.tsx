@@ -17,7 +17,7 @@ import {
   ShieldCheck,
   Activity,
   BarChart3,
-  Eye
+  ArrowUpRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -111,41 +111,38 @@ const SellerDashboard = () => {
     return 'from-red-500 to-rose-500';
   };
 
+  // Premium gradient stats matching Analytics design
   const stats = [
     {
       label: 'BALANCE',
       value: `$${(wallet?.balance || 0).toFixed(2)}`,
-      change: '+12.5%',
-      changePositive: true,
+      change: 'Available',
       icon: Wallet,
-      iconBg: 'bg-emerald-500',
+      gradient: 'bg-gradient-to-br from-emerald-500 to-teal-600',
       onClick: () => navigate('/seller/wallet')
     },
     {
       label: 'PENDING',
       value: `$${(wallet?.pending_balance || 0).toFixed(2)}`,
       change: 'Processing',
-      changePositive: null,
       icon: Clock,
-      iconBg: 'bg-amber-500',
+      gradient: 'bg-gradient-to-br from-amber-500 to-orange-600',
       onClick: () => navigate('/seller/wallet')
     },
     {
       label: 'EARNINGS',
       value: `$${totalEarnings.toFixed(2)}`,
       change: `${orders.length} orders`,
-      changePositive: null,
       icon: DollarSign,
-      iconBg: 'bg-violet-500',
+      gradient: 'bg-gradient-to-br from-violet-500 to-purple-600',
       onClick: () => navigate('/seller/orders')
     },
     {
       label: 'PRODUCTS',
       value: products.length.toString(),
       change: `${products.filter(p => p.is_approved).length} live`,
-      changePositive: null,
       icon: Package,
-      iconBg: 'bg-blue-500',
+      gradient: 'bg-gradient-to-br from-blue-500 to-indigo-600',
       onClick: () => navigate('/seller/products')
     }
   ];
@@ -210,31 +207,29 @@ const SellerDashboard = () => {
         </div>
       )}
 
-      {/* Main Stats Grid - Premium Fiverr-style Cards */}
+      {/* Main Stats Grid - Premium Gradient Cards like Analytics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <button
             key={index}
             onClick={stat.onClick}
-            className="group seller-stat-card text-left hover:shadow-lg hover:border-slate-200 hover:scale-[1.02] transition-all duration-300"
+            className={`relative rounded-2xl p-5 overflow-hidden text-left transition-all hover:scale-[1.02] hover:shadow-xl ${stat.gradient}`}
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className={`w-11 h-11 rounded-xl ${stat.iconBg} flex items-center justify-center shadow-sm`}>
-                <stat.icon className="w-5 h-5 text-white" />
+            <div className="flex items-start justify-between relative z-10">
+              <div>
+                <p className="text-white/80 text-xs font-medium uppercase tracking-wide">{stat.label}</p>
+                <p className="text-2xl lg:text-3xl font-bold text-white mt-1">{stat.value}</p>
+                {stat.change && (
+                  <div className="flex items-center gap-1 mt-2">
+                    <ArrowUpRight className="h-3.5 w-3.5 text-white/90" />
+                    <span className="text-xs font-semibold text-white/90">{stat.change}</span>
+                  </div>
+                )}
               </div>
-              {stat.changePositive !== null && (
-                <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${
-                  stat.changePositive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-600'
-                }`}>
-                  {stat.change}
-                </span>
-              )}
+              <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
+                <stat.icon className="h-6 w-6 text-white" />
+              </div>
             </div>
-            <p className="seller-label text-slate-500 mb-1">{stat.label}</p>
-            <p className="seller-stat-number text-2xl text-slate-900 group-hover:text-slate-700 transition-colors">{stat.value}</p>
-            {stat.changePositive === null && stat.change && (
-              <p className="text-xs text-slate-500 mt-1">{stat.change}</p>
-            )}
           </button>
         ))}
       </div>
