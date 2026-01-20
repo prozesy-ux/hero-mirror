@@ -33,8 +33,8 @@ const App = () => (
       <AuthProvider>
         <Toaster />
         <Sonner />
-        <DiagnosticsBadge />
         <BrowserRouter>
+          <DiagnosticsBadge />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/signin" element={<SignIn />} />

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { testLocalStorageAccess, countSupabaseKeys, getLastRefreshTime } from '@/lib/session-utils';
 
-const DiagnosticsBadge = () => {
+const DiagnosticsBadge = forwardRef<HTMLDivElement>((_, ref) => {
   const { session, loading } = useAuthContext();
   const [diagnostics, setDiagnostics] = useState({
     storageOk: true,
@@ -30,13 +30,15 @@ const DiagnosticsBadge = () => {
   if (import.meta.env.PROD) return null;
   
   return (
-    <div className="fixed bottom-2 left-2 z-50 bg-black/80 text-white text-[10px] p-2 rounded font-mono space-y-0.5 select-none pointer-events-none">
+    <div ref={ref} className="fixed bottom-2 left-2 z-50 bg-black/80 text-white text-[10px] p-2 rounded font-mono space-y-0.5 select-none pointer-events-none">
       <div>Auth: {loading ? '⏳' : session ? '✅' : '❌'}</div>
       <div>Storage: {diagnostics.storageOk ? '✅' : '❌'}</div>
       <div>SB Keys: {diagnostics.sbKeyCount}</div>
       {diagnostics.lastRefresh && <div>Expires: {diagnostics.lastRefresh}</div>}
     </div>
   );
-};
+});
+
+DiagnosticsBadge.displayName = 'DiagnosticsBadge';
 
 export default DiagnosticsBadge;

@@ -22,6 +22,7 @@ export const useAuth = () => {
   
   // Prevent double initialization (React StrictMode / HMR)
   const initRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const checkAdminRole = async (userId: string) => {
     try {
@@ -53,11 +54,15 @@ export const useAuth = () => {
     // Prevent double initialization
     if (initRef.current) return;
     initRef.current = true;
+    mountedRef.current = true;
 
     // Set up auth state listener FIRST - this is the source of truth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('[Auth] Event:', event, session?.user?.email);
+        
+        // Guard against unmounted updates
+        if (!mountedRef.current) return;
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -73,6 +78,9 @@ export const useAuth = () => {
               .maybeSingle()
           ]);
           
+          // Guard again after async
+          if (!mountedRef.current) return;
+          
           setIsAdmin(adminStatus);
           setProfile(profileResult.data);
         } else {
@@ -86,13 +94,17 @@ export const useAuth = () => {
 
     // THEN check for existing session (handles page refresh)
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mountedRef.current) return;
       // Only set loading false if no session - listener handles active session case
       if (!session) {
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mountedRef.current = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
