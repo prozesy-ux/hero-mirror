@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
+import { toast } from 'sonner';
 
 interface SellerProfile {
   id: string;
@@ -84,6 +86,7 @@ interface SellerContextType {
   orders: SellerOrder[];
   withdrawals: SellerWithdrawal[];
   loading: boolean;
+  error: string | null;
   refreshProfile: () => Promise<void>;
   refreshWallet: () => Promise<void>;
   refreshProducts: () => Promise<void>;
@@ -108,88 +111,78 @@ export const SellerProvider = ({
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [withdrawals, setWithdrawals] = useState<SellerWithdrawal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const refreshProfile = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('seller_profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-    if (data) setProfile(data);
-  }, [user]);
-
-  const refreshWallet = useCallback(async () => {
-    const { data } = await supabase
-      .from('seller_wallets')
-      .select('*')
-      .eq('seller_id', profile.id)
-      .single();
-    if (data) setWallet(data);
-  }, [profile.id]);
-
-  const refreshProducts = useCallback(async () => {
-    const { data } = await supabase
-      .from('seller_products')
-      .select('*')
-      .eq('seller_id', profile.id)
-      .order('created_at', { ascending: false });
-    if (data) setProducts(data);
-  }, [profile.id]);
-
-  const refreshOrders = useCallback(async () => {
-    const { data } = await supabase
-      .from('seller_orders')
-      .select(`
-        *,
-        product:seller_products(name, icon_url)
-      `)
-      .eq('seller_id', profile.id)
-      .order('created_at', { ascending: false });
-    
-    if (data) {
-      // Fetch buyer info for each order
-      const ordersWithBuyers = await Promise.all(
-        data.map(async (order) => {
-          const { data: buyerProfile } = await supabase
-            .from('profiles')
-            .select('email, full_name')
-            .eq('user_id', order.buyer_id)
-            .single();
-          return { ...order, buyer: buyerProfile };
-        })
-      );
-      setOrders(ordersWithBuyers);
-    }
-  }, [profile.id]);
-
-  const refreshWithdrawals = useCallback(async () => {
-    const { data } = await supabase
-      .from('seller_withdrawals')
-      .select('*')
-      .eq('seller_id', profile.id)
-      .order('created_at', { ascending: false });
-    if (data) setWithdrawals(data);
-  }, [profile.id]);
-
+  // Fetch all data from BFF API (server-side validated)
   const refreshAll = useCallback(async () => {
     setLoading(true);
-    await Promise.all([
-      refreshProfile(),
-      refreshWallet(),
-      refreshProducts(),
-      refreshOrders(),
-      refreshWithdrawals()
-    ]);
-    setLoading(false);
-  }, [refreshProfile, refreshWallet, refreshProducts, refreshOrders, refreshWithdrawals]);
+    setError(null);
 
-  useEffect(() => {
-    refreshAll();
+    try {
+      const result = await bffApi.getSellerDashboard();
+
+      if (result.isUnauthorized) {
+        console.log('[SellerContext] Unauthorized - redirecting to signin');
+        handleUnauthorized();
+        return;
+      }
+
+      if (result.error || !result.data) {
+        console.error('[SellerContext] BFF fetch failed:', result.error);
+        setError(result.error || 'Failed to load seller data');
+        toast.error('Failed to load dashboard data');
+        return;
+      }
+
+      const { profile: newProfile, wallet: newWallet, products: newProducts, orders: newOrders, withdrawals: newWithdrawals } = result.data;
+
+      if (newProfile) setProfile(newProfile);
+      setWallet(newWallet);
+      setProducts(newProducts || []);
+      setOrders(newOrders || []);
+      setWithdrawals(newWithdrawals || []);
+
+      console.log('[SellerContext] Data loaded from BFF at:', result.data._meta?.fetchedAt);
+    } catch (err) {
+      console.error('[SellerContext] Unexpected error:', err);
+      setError('Unexpected error loading data');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Real-time subscriptions
+  // Individual refresh functions (still use BFF but could be optimized later)
+  const refreshProfile = useCallback(async () => {
+    await refreshAll();
+  }, [refreshAll]);
+
+  const refreshWallet = useCallback(async () => {
+    // For wallet specifically, we can do a quick direct fetch while realtime handles updates
+    // But BFF ensures consistency on page load
+    await refreshAll();
+  }, [refreshAll]);
+
+  const refreshProducts = useCallback(async () => {
+    await refreshAll();
+  }, [refreshAll]);
+
+  const refreshOrders = useCallback(async () => {
+    await refreshAll();
+  }, [refreshAll]);
+
+  const refreshWithdrawals = useCallback(async () => {
+    await refreshAll();
+  }, [refreshAll]);
+
+  // Initial data load from BFF
   useEffect(() => {
+    refreshAll();
+  }, [refreshAll]);
+
+  // Real-time subscriptions (keep for instant updates, BFF for reliability)
+  useEffect(() => {
+    if (!profile.id) return;
+
     const ordersChannel = supabase
       .channel('seller-orders')
       .on('postgres_changes', {
@@ -198,8 +191,8 @@ export const SellerProvider = ({
         table: 'seller_orders',
         filter: `seller_id=eq.${profile.id}`
       }, () => {
-        refreshOrders();
-        refreshProfile();
+        console.log('[SellerContext] Realtime: orders changed');
+        refreshAll();
       })
       .subscribe();
 
@@ -211,7 +204,8 @@ export const SellerProvider = ({
         table: 'seller_wallets',
         filter: `seller_id=eq.${profile.id}`
       }, () => {
-        refreshWallet();
+        console.log('[SellerContext] Realtime: wallet changed');
+        refreshAll();
       })
       .subscribe();
 
@@ -223,7 +217,8 @@ export const SellerProvider = ({
         table: 'seller_products',
         filter: `seller_id=eq.${profile.id}`
       }, () => {
-        refreshProducts();
+        console.log('[SellerContext] Realtime: products changed');
+        refreshAll();
       })
       .subscribe();
 
@@ -235,8 +230,8 @@ export const SellerProvider = ({
         table: 'seller_withdrawals',
         filter: `seller_id=eq.${profile.id}`
       }, () => {
-        refreshWithdrawals();
-        refreshWallet();
+        console.log('[SellerContext] Realtime: withdrawals changed');
+        refreshAll();
       })
       .subscribe();
 
@@ -246,7 +241,7 @@ export const SellerProvider = ({
       supabase.removeChannel(productsChannel);
       supabase.removeChannel(withdrawalsChannel);
     };
-  }, [profile.id, refreshOrders, refreshProfile, refreshWallet, refreshProducts, refreshWithdrawals]);
+  }, [profile.id, refreshAll]);
 
   return (
     <SellerContext.Provider value={{
@@ -256,6 +251,7 @@ export const SellerProvider = ({
       orders,
       withdrawals,
       loading,
+      error,
       refreshProfile,
       refreshWallet,
       refreshProducts,

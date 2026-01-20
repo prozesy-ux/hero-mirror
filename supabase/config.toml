@@ -26,3 +26,13 @@ verify_jwt = false
 
 [functions.verify-razorpay-payment]
 verify_jwt = false
+
+# BFF (Backend-for-Frontend) API endpoints - server-side session validation
+[functions.bff-seller-dashboard]
+verify_jwt = false
+
+[functions.bff-buyer-wallet]
+verify_jwt = false
+
+[functions.bff-buyer-dashboard]
+verify_jwt = false
