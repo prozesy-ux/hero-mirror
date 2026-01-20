@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
 import { toast } from 'sonner';
 import { 
   Wallet, 
@@ -34,6 +35,8 @@ interface PaymentMethod {
   code: string;
   currency_code: string;
   exchange_rate: number;
+  min_withdrawal?: number;
+  max_withdrawal?: number;
 }
 
 const BuyerWallet = () => {
@@ -42,6 +45,7 @@ const BuyerWallet = () => {
   const [withdrawals, setWithdrawals] = useState<BuyerWithdrawal[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   
@@ -50,62 +54,52 @@ const BuyerWallet = () => {
   const [selectedMethod, setSelectedMethod] = useState('');
   const [accountDetails, setAccountDetails] = useState('');
 
-  useEffect(() => {
-    if (user) {
-      fetchData();
-      fetchPaymentMethods();
-      const unsubscribe = subscribeToUpdates();
-      return () => unsubscribe();
+  // Fetch all data from BFF API (server-side validated)
+  const fetchData = useCallback(async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await bffApi.getBuyerWallet();
+
+      if (result.isUnauthorized) {
+        console.log('[BuyerWallet] Unauthorized - redirecting to signin');
+        handleUnauthorized();
+        return;
+      }
+
+      if (result.error || !result.data) {
+        console.error('[BuyerWallet] BFF fetch failed:', result.error);
+        setError(result.error || 'Failed to load wallet data');
+        return;
+      }
+
+      const { wallet: walletData, withdrawals: withdrawalsData, paymentMethods: methodsData } = result.data;
+
+      setWallet(walletData);
+      setWithdrawals(withdrawalsData || []);
+      setPaymentMethods(methodsData || []);
+
+      console.log('[BuyerWallet] Data loaded from BFF at:', result.data._meta?.fetchedAt);
+    } catch (err) {
+      console.error('[BuyerWallet] Unexpected error:', err);
+      setError('Unexpected error loading wallet');
+    } finally {
+      setLoading(false);
     }
   }, [user]);
 
-  const fetchData = async () => {
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user, fetchData]);
+
+  // Real-time subscriptions for instant updates
+  useEffect(() => {
     if (!user) return;
-    setLoading(true);
-
-    // Fetch wallet
-    const { data: walletData, error: walletError } = await supabase
-      .from('user_wallets')
-      .select('balance')
-      .eq('user_id', user.id)
-      .single();
-
-    if (walletError && walletError.code === 'PGRST116') {
-      // Create wallet if not exists
-      await supabase.from('user_wallets').insert({ user_id: user.id, balance: 0 });
-      setWallet({ balance: 0 });
-    } else if (walletData) {
-      setWallet(walletData);
-    }
-
-    // Fetch withdrawals
-    const { data: withdrawalsData } = await supabase
-      .from('buyer_withdrawals')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (withdrawalsData) {
-      setWithdrawals(withdrawalsData);
-    }
-
-    setLoading(false);
-  };
-
-  const fetchPaymentMethods = async () => {
-    const { data } = await supabase
-      .from('payment_methods')
-      .select('*')
-      .eq('is_enabled', true)
-      .order('name');
-
-    if (data) {
-      setPaymentMethods(data);
-    }
-  };
-
-  const subscribeToUpdates = () => {
-    if (!user) return () => {};
 
     const channel = supabase
       .channel('buyer-wallet-updates')
@@ -114,19 +108,25 @@ const BuyerWallet = () => {
         schema: 'public',
         table: 'user_wallets',
         filter: `user_id=eq.${user.id}`
-      }, () => fetchData())
+      }, () => {
+        console.log('[BuyerWallet] Realtime: wallet changed');
+        fetchData();
+      })
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'buyer_withdrawals',
         filter: `user_id=eq.${user.id}`
-      }, () => fetchData())
+      }, () => {
+        console.log('[BuyerWallet] Realtime: withdrawals changed');
+        fetchData();
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  };
+  }, [user, fetchData]);
 
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,20 +152,23 @@ const BuyerWallet = () => {
 
     setSubmitting(true);
 
-    // Create withdrawal request
-    const { error: withdrawError } = await supabase
-      .from('buyer_withdrawals')
-      .insert({
-        user_id: user.id,
-        amount,
-        payment_method: selectedMethod,
-        account_details: accountDetails.trim()
-      });
+    try {
+      // Create withdrawal request
+      const { error: withdrawError } = await supabase
+        .from('buyer_withdrawals')
+        .insert({
+          user_id: user.id,
+          amount,
+          payment_method: selectedMethod,
+          account_details: accountDetails.trim()
+        });
 
-    if (withdrawError) {
-      toast.error('Failed to submit withdrawal request');
-      console.error(withdrawError);
-    } else {
+      if (withdrawError) {
+        toast.error('Failed to submit withdrawal request');
+        console.error(withdrawError);
+        return;
+      }
+
       // Deduct from wallet
       const newBalance = (wallet?.balance || 0) - amount;
       await supabase
@@ -179,9 +182,12 @@ const BuyerWallet = () => {
       setSelectedMethod('');
       setAccountDetails('');
       fetchData();
+    } catch (err) {
+      toast.error('Unexpected error submitting withdrawal');
+      console.error(err);
+    } finally {
+      setSubmitting(false);
     }
-
-    setSubmitting(false);
   };
 
   const getStatusConfig = (status: string) => {
@@ -217,7 +223,22 @@ const BuyerWallet = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <AlertCircle className="w-12 h-12 text-destructive" />
+        <p className="text-muted-foreground">{error}</p>
+        <button 
+          onClick={fetchData}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -227,49 +248,49 @@ const BuyerWallet = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Wallet</h1>
-          <p className="text-gray-500 text-sm mt-1">Manage your balance and withdrawals</p>
+          <h1 className="text-2xl font-bold text-foreground">My Wallet</h1>
+          <p className="text-muted-foreground text-sm mt-1">Manage your balance and withdrawals</p>
         </div>
       </div>
 
       {/* Balance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Available Balance */}
-        <div className="relative bg-white rounded-2xl p-6 border border-slate-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
+        <div className="relative bg-card rounded-2xl p-6 border border-border shadow-sm overflow-hidden group hover:shadow-md transition-all">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
           <div className="flex items-start justify-between mb-4">
             <div className="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center">
               <Wallet className="h-6 w-6 text-emerald-600" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-slate-900 mb-1">${(wallet?.balance || 0).toFixed(2)}</p>
-          <p className="text-sm text-slate-500 font-medium">Available Balance</p>
+          <p className="text-3xl font-bold text-foreground mb-1">${(wallet?.balance || 0).toFixed(2)}</p>
+          <p className="text-sm text-muted-foreground font-medium">Available Balance</p>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
         </div>
 
         {/* Pending Withdrawals */}
-        <div className="relative bg-white rounded-2xl p-6 border border-slate-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
+        <div className="relative bg-card rounded-2xl p-6 border border-border shadow-sm overflow-hidden group hover:shadow-md transition-all">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
           <div className="flex items-start justify-between mb-4">
             <div className="h-12 w-12 rounded-xl bg-amber-50 flex items-center justify-center">
               <Clock className="h-6 w-6 text-amber-600" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-slate-900 mb-1">${pendingAmount.toFixed(2)}</p>
-          <p className="text-sm text-slate-500 font-medium">Pending Withdrawal</p>
+          <p className="text-3xl font-bold text-foreground mb-1">${pendingAmount.toFixed(2)}</p>
+          <p className="text-sm text-muted-foreground font-medium">Pending Withdrawal</p>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-amber-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
         </div>
 
         {/* Total Withdrawn */}
-        <div className="relative bg-white rounded-2xl p-6 border border-slate-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
+        <div className="relative bg-card rounded-2xl p-6 border border-border shadow-sm overflow-hidden group hover:shadow-md transition-all">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500" />
           <div className="flex items-start justify-between mb-4">
             <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center">
               <TrendingUp className="h-6 w-6 text-blue-600" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-slate-900 mb-1">${totalWithdrawn.toFixed(2)}</p>
-          <p className="text-sm text-slate-500 font-medium">Total Withdrawn</p>
+          <p className="text-3xl font-bold text-foreground mb-1">${totalWithdrawn.toFixed(2)}</p>
+          <p className="text-sm text-muted-foreground font-medium">Total Withdrawn</p>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
         </div>
       </div>
@@ -279,7 +300,7 @@ const BuyerWallet = () => {
         <button
           onClick={() => setShowWithdrawDialog(true)}
           disabled={!wallet?.balance || wallet.balance <= 0 || hasPendingWithdrawal}
-          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center gap-2"
+          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-muted disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center gap-2"
         >
           <ArrowDownCircle size={18} />
           Withdraw Funds
@@ -296,34 +317,34 @@ const BuyerWallet = () => {
       )}
 
       {/* Withdrawal History */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-900">Withdrawal History</h2>
+      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-border">
+          <h2 className="font-semibold text-foreground">Withdrawal History</h2>
         </div>
         
         {withdrawals.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <ArrowDownCircle className="w-8 h-8 text-gray-400" />
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <ArrowDownCircle className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-gray-500">No withdrawals yet</p>
-            <p className="text-gray-400 text-sm mt-1">Your withdrawal history will appear here</p>
+            <p className="text-muted-foreground">No withdrawals yet</p>
+            <p className="text-muted-foreground/70 text-sm mt-1">Your withdrawal history will appear here</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-border">
             {withdrawals.map((withdrawal) => {
               const statusConfig = getStatusConfig(withdrawal.status);
               const StatusIcon = statusConfig.icon;
               return (
-                <div key={withdrawal.id} className="px-6 py-4 hover:bg-slate-50 transition-colors">
+                <div key={withdrawal.id} className="px-6 py-4 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                        <DollarSign className="h-5 w-5 text-slate-600" />
+                      <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                        <DollarSign className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-900">${Number(withdrawal.amount).toFixed(2)}</p>
-                        <p className="text-sm text-slate-500">
+                        <p className="font-semibold text-foreground">${Number(withdrawal.amount).toFixed(2)}</p>
+                        <p className="text-sm text-muted-foreground">
                           {withdrawal.payment_method} • {format(new Date(withdrawal.created_at), 'MMM d, yyyy')}
                         </p>
                       </div>
@@ -334,7 +355,7 @@ const BuyerWallet = () => {
                     </div>
                   </div>
                   {withdrawal.admin_notes && (
-                    <p className="mt-2 text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
+                    <p className="mt-2 text-sm text-muted-foreground bg-muted p-2 rounded-lg">
                       Note: {withdrawal.admin_notes}
                     </p>
                   )}
@@ -347,7 +368,7 @@ const BuyerWallet = () => {
 
       {/* Withdraw Dialog */}
       <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
-        <DialogContent className="bg-white max-w-md">
+        <DialogContent className="bg-card max-w-md">
           <DialogHeader>
             <DialogTitle>Withdraw Funds</DialogTitle>
             <DialogDescription>
@@ -358,11 +379,11 @@ const BuyerWallet = () => {
           <form onSubmit={handleWithdraw} className="space-y-4 mt-4">
             {/* Amount */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-foreground mb-1.5">
                 Amount (USD)
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                 <input
                   type="number"
                   value={withdrawAmount}
@@ -371,18 +392,18 @@ const BuyerWallet = () => {
                   step="0.01"
                   min="1"
                   max={wallet?.balance || 0}
-                  className="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full pl-8 pr-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-background"
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Available: ${(wallet?.balance || 0).toFixed(2)}
               </p>
             </div>
 
             {/* Payment Method */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-foreground mb-1.5">
                 Payment Method
               </label>
               <Select value={selectedMethod} onValueChange={setSelectedMethod}>
@@ -410,7 +431,7 @@ const BuyerWallet = () => {
 
             {/* Account Details */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-foreground mb-1.5">
                 Account Details
               </label>
               <textarea
@@ -418,7 +439,7 @@ const BuyerWallet = () => {
                 onChange={(e) => setAccountDetails(e.target.value)}
                 placeholder="Enter your account number, wallet address, or payment details..."
                 rows={3}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none"
+                className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none bg-background"
                 required
               />
             </div>
@@ -427,7 +448,7 @@ const BuyerWallet = () => {
             <button
               type="submit"
               disabled={submitting || !withdrawAmount || !selectedMethod || !accountDetails}
-              className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-muted text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <Loader2 size={18} className="animate-spin" />
