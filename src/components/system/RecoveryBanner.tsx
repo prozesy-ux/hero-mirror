@@ -55,8 +55,8 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({ onRecoveryComple
 
   const handleRetry = async () => {
     setStatusMessage('Reconnecting...');
-    const result = await recoverBackend('manual');
-    
+    const result = await recoverBackend('retry');
+
     if (result.success) {
       if (result.action === 'recovered') {
         setStatusMessage('Connected!');

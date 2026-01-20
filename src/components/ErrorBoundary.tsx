@@ -1,5 +1,6 @@
 import React, { Component, ReactNode, ErrorInfo } from 'react';
 import { forceClearAllCaches } from '@/lib/cache-utils';
+import { recoverBackend } from '@/lib/backend-recovery';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
 
@@ -26,49 +27,46 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     console.error('[ErrorBoundary] Caught error:', error, errorInfo);
   }
 
-  handleReset = (): void => {
+  handleReset = async (): Promise<void> => {
+    // Soft recovery (no hard reload)
+    await recoverBackend('manual');
     this.setState({ hasError: false, error: null });
   };
 
-  handleForceRefresh = (): void => {
-    forceClearAllCaches();
+  handleForceRefresh = async (): Promise<void> => {
+    // Clear caches but do not hard reload; then recover.
+    await forceClearAllCaches();
+    this.setState({ hasError: false, error: null });
   };
 
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
           <div className="max-w-md w-full text-center space-y-6">
-            <div className="mx-auto w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
+            <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+              <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
-            
+
             <div className="space-y-2">
-              <h2 className="text-xl font-bold text-slate-900">Something went wrong</h2>
-              <p className="text-slate-600 text-sm">
+              <h2 className="text-xl font-bold text-foreground">Something went wrong</h2>
+              <p className="text-muted-foreground text-sm">
                 {this.state.error?.message || 'An unexpected error occurred'}
               </p>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button 
-                onClick={this.handleReset}
-                variant="outline"
-                className="gap-2"
-              >
+              <Button onClick={this.handleReset} variant="outline" className="gap-2">
                 Try Again
               </Button>
-              <Button 
-                onClick={this.handleForceRefresh}
-                className="gap-2 bg-violet-600 hover:bg-violet-700"
-              >
+              <Button onClick={this.handleForceRefresh} className="gap-2">
                 <RefreshCcw className="w-4 h-4" />
-                Clear Cache & Reload
+                Clear Cache
               </Button>
             </div>
-            
-            <p className="text-xs text-slate-500">
-              If this problem persists, try clearing your browser cache or contact support.
+
+            <p className="text-xs text-muted-foreground">
+              If this problem persists, sign out and sign in again.
             </p>
           </div>
         </div>
