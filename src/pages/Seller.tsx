@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Loader2, Store, ArrowRight, AlertTriangle, Mail, Lock, User, Clock, Eye, EyeOff, Package, FileText, WifiOff } from 'lucide-react';
+import { Loader2, Store, ArrowRight, AlertTriangle, Mail, Lock, User, Clock, Eye, EyeOff, Package, FileText, WifiOff, RefreshCw, LogOut } from 'lucide-react';
 import { SellerProvider } from '@/contexts/SellerContext';
 import { SellerSidebarProvider, useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import SellerSidebar from '@/components/seller/SellerSidebar';
@@ -741,7 +741,45 @@ const Seller = () => {
     );
   }
 
-  return null;
+  // NEVER return null - show recovery UI instead
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="text-center max-w-md">
+        <div className="mx-auto w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+          <AlertTriangle className="h-8 w-8 text-amber-600" />
+        </div>
+        <h2 className="text-xl font-semibold text-slate-900 mb-2">
+          Unable to load seller profile
+        </h2>
+        <p className="text-slate-600 mb-6">
+          There was a problem loading your seller account. This might be a temporary issue.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button 
+            onClick={() => {
+              setLoading(true);
+              checkSellerStatus();
+            }}
+            className="gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Try Again
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = '/signin';
+            }}
+            className="gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Seller;

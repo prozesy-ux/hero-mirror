@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
-import { Suspense, lazy, useCallback } from 'react';
+import { Suspense, lazy, useCallback, useState, useEffect } from 'react';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import MobileNavigation from '@/components/dashboard/MobileNavigation';
@@ -10,6 +10,8 @@ import { FloatingChatProvider } from '@/contexts/FloatingChatContext';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { SectionErrorBoundary } from '@/components/ui/section-error-boundary';
 import { useConnectivityRecovery } from '@/hooks/useReliableFetch';
+import { useLoadingWatchdog } from '@/hooks/useLoadingWatchdog';
+import { recoverBackend } from '@/lib/backend-recovery';
 import { Crown, Bell, Loader2, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -84,14 +86,35 @@ const MobileHeader = () => {
 
 const DashboardContent = () => {
   const { isCollapsed } = useSidebarContext();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
-  // Connectivity recovery - refresh on reconnect
-  const handleReconnect = useCallback(() => {
-    toast.success('Back online! Refreshing data...');
-    window.location.reload();
+  // Track initial load completion
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Connectivity recovery - use recoverBackend instead of hard reload
+  const handleReconnect = useCallback(async () => {
+    toast.success('Back online! Reconnecting...');
+    const result = await recoverBackend('reconnect');
+    if (result.success) {
+      toast.success('Connection restored!');
+    }
   }, []);
   
   const isOnline = useConnectivityRecovery(handleReconnect);
+  
+  // Loading watchdog - triggers recovery if initial load takes too long
+  useLoadingWatchdog(isInitialLoad, {
+    timeout: 15000,
+    reason: 'loading_timeout',
+    onRecoveryComplete: () => {
+      setIsInitialLoad(false);
+    }
+  });
 
   return (
     <main className={`pb-24 lg:pb-0 pt-16 lg:pt-16 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white transition-all duration-300 ${
