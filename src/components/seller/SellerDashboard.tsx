@@ -123,7 +123,7 @@ const SellerDashboard = () => {
     },
     {
       label: 'PENDING',
-      value: `$${(wallet?.pending_balance || 0).toFixed(2)}`,
+      value: `$${Math.max(0, wallet?.pending_balance || 0).toFixed(2)}`,
       change: 'Processing',
       icon: Clock,
       gradient: 'bg-gradient-to-br from-amber-500 to-orange-600',
