@@ -549,8 +549,7 @@ const BillingSection = () => {
       toast.error('Failed to activate Pro status');
     } else {
       toast.success('Welcome to Pro! All prompts are now unlocked!');
-      fetchData();
-      window.location.reload();
+      await fetchData();
     }
   };
 
