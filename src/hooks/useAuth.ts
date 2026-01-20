@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -19,6 +19,9 @@ export const useAuth = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Prevent double initialization (React StrictMode / HMR)
+  const initRef = useRef(false);
 
   const checkAdminRole = async (userId: string) => {
     try {
@@ -47,27 +50,31 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Prevent double initialization
+    if (initRef.current) return;
+    initRef.current = true;
+
+    // Set up auth state listener FIRST - this is the source of truth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[Auth] Event:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Check admin role
-          const adminStatus = await checkAdminRole(session.user.id);
-          setIsAdmin(adminStatus);
-          
-          // Fetch profile using setTimeout to avoid race condition
-          setTimeout(async () => {
-            const { data: profileData } = await supabase
+          // Parallel fetch for better performance
+          const [adminStatus, profileResult] = await Promise.all([
+            checkAdminRole(session.user.id),
+            supabase
               .from('profiles')
               .select('*')
               .eq('user_id', session.user.id)
-              .maybeSingle();
-            
-            setProfile(profileData);
-          }, 0);
+              .maybeSingle()
+          ]);
+          
+          setIsAdmin(adminStatus);
+          setProfile(profileResult.data);
         } else {
           setProfile(null);
           setIsAdmin(false);
@@ -77,26 +84,10 @@ export const useAuth = () => {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        // Check admin role
-        const adminStatus = await checkAdminRole(session.user.id);
-        setIsAdmin(adminStatus);
-        
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            setProfile(data);
-            setLoading(false);
-          });
-      } else {
+    // THEN check for existing session (handles page refresh)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      // Only set loading false if no session - listener handles active session case
+      if (!session) {
         setLoading(false);
       }
     });
