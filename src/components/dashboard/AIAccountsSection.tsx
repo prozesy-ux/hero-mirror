@@ -1248,19 +1248,19 @@ const AIAccountsSection = () => {
                       </div>
 
                       {/* Content */}
-                      <div className="p-5">
-                        <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">
+                      <div className="p-3 sm:p-4 lg:p-5">
+                        <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight line-clamp-2 mb-1.5 sm:mb-2">
                           {account.name}
                         </h3>
                         
-                        {/* Description */}
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {/* Description - shorter on mobile */}
+                        <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">
                           {account.description || 'Premium account with full access'}
                         </p>
 
-                        {/* Tags */}
+                        {/* Tags - hidden on mobile */}
                         {account.tags && account.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mb-3">
+                          <div className="hidden sm:flex flex-wrap gap-1.5 mb-3">
                             {account.tags.slice(0, 3).map(tag => (
                               <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
                                 {tag}
@@ -1270,29 +1270,29 @@ const AIAccountsSection = () => {
                         )}
 
                         {/* Price Badge */}
-                        <div className="mb-3 flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                            <Check size={12} />
+                        <div className="mb-2 sm:mb-3 flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-100 text-emerald-700">
+                            <Check size={10} className="sm:w-3 sm:h-3" />
                             ${account.price}
                           </span>
                           {account.original_price && account.original_price > account.price && (
-                            <span className="text-xs text-gray-400 line-through">${account.original_price}</span>
+                            <span className="text-[10px] sm:text-xs text-gray-400 line-through">${account.original_price}</span>
                           )}
                         </div>
 
-                        {/* Review Section */}
-                        <div className="flex items-center gap-2 mb-4">
+                        {/* Review Section - compact on mobile */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                           <div className="flex gap-0.5">
                             {[...Array(5)].map((_, i) => (
-                              <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />
+                              <Star key={i} size={10} className="sm:w-3 sm:h-3 text-yellow-400 fill-yellow-400" />
                             ))}
                           </div>
-                          <span className="text-sm text-gray-600 font-medium">{getPurchaseCount(account.id)}+ sold</span>
+                          <span className="text-[10px] sm:text-sm text-gray-600 font-medium">{getPurchaseCount(account.id)}+ sold</span>
                         </div>
 
-                        {/* Action Buttons - 3 buttons */}
-                        <div className="flex gap-2">
-                          {/* Chat Button - Only show if chat is allowed */}
+                        {/* Action Buttons - Icon only on mobile, icon+text on larger */}
+                        <div className="flex gap-1.5 sm:gap-2">
+                          {/* Chat Button */}
                           {account.chat_allowed !== false && (
                             <button
                               onClick={() => {
@@ -1304,28 +1304,28 @@ const AIAccountsSection = () => {
                                   type: 'support'
                                 });
                               }}
-                              className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700"
+                              className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700 min-h-[44px]"
                             >
-                              <MessageCircle size={14} />
-                              Chat
+                              <MessageCircle size={16} className="sm:w-4 sm:h-4" />
+                              <span className="hidden sm:inline text-sm">Chat</span>
                             </button>
                           )}
-                          {/* View Button - Opens Quick View */}
+                          {/* View Button */}
                           <button
                             onClick={() => {
                               setQuickViewProduct({ type: 'account', data: account });
                               setShowQuickViewModal(true);
                             }}
-                            className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
+                            className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]"
                           >
-                            <Eye size={14} />
-                            View
+                            <Eye size={16} className="sm:w-4 sm:h-4" />
+                            <span className="hidden sm:inline text-sm">View</span>
                           </button>
                           {/* Buy Button */}
                           <button
                             onClick={() => handlePurchase(account)}
                             disabled={purchasing === account.id}
-                            className={`flex-1 font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors ${
+                            className={`flex-1 font-bold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 transition-colors min-h-[44px] ${
                               purchasing === account.id
                                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                 : hasEnoughBalance
@@ -1338,10 +1338,10 @@ const AIAccountsSection = () => {
                             ) : !hasEnoughBalance ? (
                               <>
                                 <Wallet className="w-4 h-4" />
-                                Top Up
+                                <span className="hidden sm:inline text-sm">Top Up</span>
                               </>
                             ) : (
-                              'Buy'
+                              <span className="text-sm">Buy</span>
                             )}
                           </button>
                         </div>
@@ -1389,28 +1389,28 @@ const AIAccountsSection = () => {
                       </div>
 
                       {/* Content */}
-                      <div className="p-5">
-                        <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">{product.name}</h3>
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description || 'Premium account from verified seller'}</p>
+                      <div className="p-3 sm:p-4 lg:p-5">
+                        <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight line-clamp-2 mb-1.5 sm:mb-2">{product.name}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">{product.description || 'Premium account from verified seller'}</p>
                         
-                        <div className="mb-3 flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                            <Check size={12} />${product.price}
+                        <div className="mb-2 sm:mb-3 flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-100 text-emerald-700">
+                            <Check size={10} className="sm:w-3 sm:h-3" />${product.price}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 mb-4">
+                        <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                           <div className="flex gap-0.5">
                             {[...Array(5)].map((_, i) => (
-                              <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />
+                              <Star key={i} size={10} className="sm:w-3 sm:h-3 text-yellow-400 fill-yellow-400" />
                             ))}
                           </div>
-                          <span className="text-sm text-gray-600 font-medium">{product.sold_count || 0}+ sold</span>
+                          <span className="text-[10px] sm:text-sm text-gray-600 font-medium">{product.sold_count || 0}+ sold</span>
                         </div>
 
-                        {/* Action Buttons - 3 buttons */}
-                        <div className="flex gap-2">
-                          {/* Chat Button - Only show if chat is allowed */}
+                        {/* Action Buttons - Icon only on mobile */}
+                        <div className="flex gap-1.5 sm:gap-2">
+                          {/* Chat Button */}
                           {product.chat_allowed !== false && (
                             <button
                               onClick={() => {
@@ -1422,28 +1422,28 @@ const AIAccountsSection = () => {
                                   type: 'seller'
                                 });
                               }}
-                              className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700"
+                              className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700 min-h-[44px]"
                             >
-                              <MessageCircle size={14} />
-                              Chat
+                              <MessageCircle size={16} className="sm:w-4 sm:h-4" />
+                              <span className="hidden sm:inline text-sm">Chat</span>
                             </button>
                           )}
-                          {/* View Button - Opens Quick View */}
+                          {/* View Button */}
                           <button
                             onClick={() => {
                               setQuickViewProduct({ type: 'seller', data: product });
                               setShowQuickViewModal(true);
                             }}
-                            className="flex-1 font-semibold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
+                            className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]"
                           >
-                            <Eye size={14} />
-                            View
+                            <Eye size={16} className="sm:w-4 sm:h-4" />
+                            <span className="hidden sm:inline text-sm">View</span>
                           </button>
                           {/* Buy Button */}
                           <button
                             onClick={() => handleSellerProductPurchase(product)}
                             disabled={purchasing === product.id}
-                            className={`flex-1 font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors ${
+                            className={`flex-1 font-bold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 transition-colors min-h-[44px] ${
                               purchasing === product.id
                                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                 : hasEnoughBalance
@@ -1451,7 +1451,16 @@ const AIAccountsSection = () => {
                                 : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
                             }`}
                           >
-                            {purchasing === product.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Buy'}
+                            {purchasing === product.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : !hasEnoughBalance ? (
+                              <>
+                                <Wallet className="w-4 h-4" />
+                                <span className="hidden sm:inline text-sm">Top Up</span>
+                              </>
+                            ) : (
+                              <span className="text-sm">Buy</span>
+                            )}
                           </button>
                         </div>
                       </div>
