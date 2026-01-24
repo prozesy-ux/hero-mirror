@@ -45,19 +45,3 @@ verify_jwt = false
 
 [functions.broadcast-push]
 verify_jwt = false
-
-# New BFF endpoints for full server-side data handling
-[functions.bff-prompts-data]
-verify_jwt = false
-
-[functions.bff-marketplace]
-verify_jwt = false
-
-[functions.bff-billing-data]
-verify_jwt = false
-
-[functions.bff-chat-data]
-verify_jwt = false
-
-[functions.bff-store-public]
-verify_jwt = false
