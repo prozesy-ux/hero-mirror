@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -61,7 +62,9 @@ import {
   Users,
   Trash2,
   Video,
-  AlertTriangle
+  AlertTriangle,
+  Bell,
+  BellRing
 } from 'lucide-react';
 import VideoUploader from './VideoUploader';
 
@@ -81,6 +84,7 @@ const SellerSettings = () => {
   const navigate = useNavigate();
   const { profile, orders, loading, refreshProfile } = useSellerContext();
   const { isCollapsed } = useSellerSidebarContext();
+  const { permission, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe, isSupported } = usePushNotifications();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [bannerUploading, setBannerUploading] = useState(false);
@@ -668,6 +672,76 @@ const SellerSettings = () => {
             </div>
           </AccordionContent>
         </AccordionItem>
+
+        {/* Notifications Settings */}
+        {isSupported && (
+          <AccordionItem value="notifications" className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 overflow-hidden">
+            <AccordionTrigger className="py-5 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-violet-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-slate-900">Notifications</p>
+                  <p className="text-sm text-slate-500">Manage push notification preferences</p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 space-y-4">
+              <div className="flex items-center justify-between py-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <BellRing className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-900">Push Notifications</p>
+                    <p className="text-xs text-slate-500">
+                      {permission === 'denied' 
+                        ? 'Blocked in browser settings' 
+                        : 'Get notified about new orders, messages & payments'}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={isSubscribed}
+                  onCheckedChange={isSubscribed ? unsubscribe : subscribe}
+                  disabled={pushLoading || permission === 'denied'}
+                />
+              </div>
+
+              {permission === 'denied' && (
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                  <p className="text-sm text-amber-700 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Push notifications are blocked. Enable them in your browser settings.
+                  </p>
+                </div>
+              )}
+
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-sm font-medium text-slate-700 mb-2">When enabled, you'll receive alerts for:</p>
+                <ul className="text-sm text-slate-600 space-y-1">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    New orders from buyers
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    New chat messages
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    Funds released to wallet
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    New product reviews
+                  </li>
+                </ul>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
 
         {/* Social Media Links */}
         <AccordionItem value="social-links" className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 overflow-hidden">
