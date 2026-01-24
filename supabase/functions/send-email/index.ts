@@ -34,7 +34,7 @@ serve(async (req: Request): Promise<Response> => {
   try {
     const workerUrl = Deno.env.get("CLOUDFLARE_EMAIL_WORKER_URL");
     const emailSecret = Deno.env.get("CLOUDFLARE_EMAIL_SECRET");
-    const fromAddress = Deno.env.get("EMAIL_FROM_ADDRESS") || "noreply@gpzes.com";
+    const fromAddress = Deno.env.get("EMAIL_FROM_ADDRESS") || "noreply@uptoza.com";
 
     if (!workerUrl || !emailSecret) {
       throw new Error("Email configuration missing: CLOUDFLARE_EMAIL_WORKER_URL or CLOUDFLARE_EMAIL_SECRET");
