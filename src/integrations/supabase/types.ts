@@ -532,6 +532,51 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          opened_at: string | null
+          recipient_email: string
+          resend_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          template_id: string
+          user_id: string | null
+        }
+        Insert: {
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          opened_at?: string | null
+          recipient_email: string
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          template_id: string
+          user_id?: string | null
+        }
+        Update: {
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          opened_at?: string | null
+          recipient_email?: string
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          template_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string | null
@@ -1897,10 +1942,13 @@ export type Database = {
           id: string
           login_alerts: boolean | null
           marketing_emails: boolean | null
+          order_emails: boolean | null
+          product_emails: boolean | null
           security_alerts: boolean | null
           security_emails: boolean | null
           updated_at: string | null
           user_id: string
+          wallet_emails: boolean | null
         }
         Insert: {
           created_at?: string | null
@@ -1908,10 +1956,13 @@ export type Database = {
           id?: string
           login_alerts?: boolean | null
           marketing_emails?: boolean | null
+          order_emails?: boolean | null
+          product_emails?: boolean | null
           security_alerts?: boolean | null
           security_emails?: boolean | null
           updated_at?: string | null
           user_id: string
+          wallet_emails?: boolean | null
         }
         Update: {
           created_at?: string | null
@@ -1919,10 +1970,13 @@ export type Database = {
           id?: string
           login_alerts?: boolean | null
           marketing_emails?: boolean | null
+          order_emails?: boolean | null
+          product_emails?: boolean | null
           security_alerts?: boolean | null
           security_emails?: boolean | null
           updated_at?: string | null
           user_id?: string
+          wallet_emails?: boolean | null
         }
         Relationships: []
       }
