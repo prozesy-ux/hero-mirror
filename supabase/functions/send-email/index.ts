@@ -108,6 +108,8 @@ serve(async (req: Request): Promise<Response> => {
     logId = logEntry?.id;
 
     // Call Cloudflare Worker
+    console.log(`Calling worker: ${workerUrl} with from: ${fromAddress}`);
+    
     const response = await fetch(workerUrl, {
       method: "POST",
       headers: {
@@ -124,41 +126,67 @@ serve(async (req: Request): Promise<Response> => {
       }),
     });
 
-    let result;
+    // Always get raw response text first
+    const rawResponseText = await response.text();
+    console.log(`Worker response status: ${response.status}, body: ${rawResponseText.substring(0, 500)}`);
+
+    // Try to parse as JSON
+    let result: any = {};
+    let parseError = false;
     try {
-      result = await response.json();
+      result = JSON.parse(rawResponseText);
     } catch {
-      result = { error: `HTTP ${response.status}: ${response.statusText}` };
+      parseError = true;
+      result = { raw: rawResponseText };
     }
 
     if (!response.ok) {
-      const errorMsg = result.error || `HTTP ${response.status}`;
+      const errorMsg = result.error || result.raw || `HTTP ${response.status}`;
       console.error("Cloudflare Worker error:", errorMsg);
       
-      // Update log as failed
+      // Update log as failed with full details
       if (logId) {
         await supabaseAdmin.from('email_logs')
-          .update({ status: 'failed', error_message: errorMsg })
+          .update({ 
+            status: 'failed', 
+            error_message: `HTTP ${response.status}: ${errorMsg}`,
+            metadata: { worker_status: response.status, raw_response: rawResponseText.substring(0, 1000) }
+          })
           .eq('id', logId);
       }
       
       throw new Error(errorMsg);
     }
 
-    // Update log as sent
+    // Check if worker actually confirmed sending
+    const hasMessageId = result.id || result.messageId || result.message_id;
+    const workerConfirmed = hasMessageId || result.success === true || result.accepted === true;
+    
+    // Update log with appropriate status
     if (logId) {
       await supabaseAdmin.from('email_logs')
         .update({ 
-          status: 'sent',
-          resend_id: result.id || null,
+          status: workerConfirmed ? 'sent' : 'sent_unverified',
+          resend_id: hasMessageId || null,
+          metadata: { 
+            worker_status: response.status, 
+            worker_confirmed: workerConfirmed,
+            parse_error: parseError,
+            raw_response: rawResponseText.substring(0, 500)
+          }
         })
         .eq('id', logId);
     }
 
-    console.log(`Email sent successfully to ${to} - Template: ${template_id}`);
+    console.log(`Email ${workerConfirmed ? 'sent' : 'sent (unverified)'} to ${to} - Template: ${template_id}`);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Email sent successfully", log_id: logId }),
+      JSON.stringify({ 
+        success: true, 
+        message: workerConfirmed ? "Email sent successfully" : "Email sent (unverified)", 
+        log_id: logId,
+        verified: workerConfirmed
+      }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
 
