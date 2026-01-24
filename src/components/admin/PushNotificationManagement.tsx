@@ -15,7 +15,13 @@ import {
   Globe,
   Zap,
   TrendingUp,
-  Activity
+  Activity,
+  FileText,
+  Package,
+  Wallet,
+  MessageCircle,
+  Shield,
+  Gift
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +29,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -50,6 +57,32 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const ADMIN_SESSION_KEY = 'admin_session_token';
+
+// Push notification templates
+const pushTemplates = [
+  { id: 'order_placed', name: 'Order Placed', icon: Package, category: 'order', title: 'Order Confirmed! 🎉', message: 'Your order has been placed successfully.', link: '/dashboard/purchases' },
+  { id: 'order_delivered', name: 'Order Delivered', icon: Package, category: 'order', title: 'Order Delivered ✅', message: 'Your order has been delivered. Check your dashboard!', link: '/dashboard/purchases' },
+  { id: 'seller_new_order', name: 'New Order (Seller)', icon: Package, category: 'order', title: 'New Order Received!', message: 'You have a new order. Please deliver within 24 hours.', link: '/seller/orders' },
+  { id: 'wallet_credited', name: 'Wallet Credited', icon: Wallet, category: 'wallet', title: 'Wallet Credited 💰', message: 'Funds have been added to your wallet.', link: '/dashboard/wallet' },
+  { id: 'payment_received', name: 'Payment Released', icon: Wallet, category: 'wallet', title: 'Payment Released! 🎉', message: 'Your payment has been credited to your wallet.', link: '/seller/wallet' },
+  { id: 'new_message', name: 'New Message', icon: MessageCircle, category: 'chat', title: 'New Message', message: 'You have a new message.', link: '/dashboard/chat' },
+  { id: 'support_reply', name: 'Support Reply', icon: MessageCircle, category: 'chat', title: 'Support Team Replied', message: 'Your support request has been answered.', link: '/dashboard/chat' },
+  { id: 'security_alert', name: 'Security Alert', icon: Shield, category: 'security', title: 'Security Alert 🔒', message: 'New login detected on your account.', link: '/dashboard/profile' },
+  { id: 'flash_sale', name: 'Flash Sale', icon: Zap, category: 'promo', title: 'Flash Sale: 50% Off! ⚡', message: 'Limited time offer on all products.', link: '/dashboard' },
+  { id: 'pro_upgrade', name: 'Pro Upgrade', icon: Crown, category: 'promo', title: 'Welcome to Pro! 👑', message: 'You now have unlimited access to all premium content.', link: '/dashboard' },
+  { id: 'new_product', name: 'New Product', icon: Gift, category: 'promo', title: 'New Product Available!', message: 'Check out what\'s new in our store.', link: '/dashboard' },
+];
+
+const getCategoryBadge = (category: string) => {
+  const colors: Record<string, string> = {
+    order: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    wallet: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    chat: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
+    security: 'bg-red-500/20 text-red-400 border-red-500/30',
+    promo: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  };
+  return colors[category] || 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+};
 
 interface Stats {
   totalSubscriptions: number;
@@ -261,7 +294,7 @@ const PushNotificationManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 p-4 lg:p-6">
+    <div className="min-h-screen bg-slate-950">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {/* Users Card - Emerald */}
@@ -372,117 +405,157 @@ const PushNotificationManagement = () => {
 
         {/* Compose Tab */}
         <TabsContent value="compose">
-          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-6">
-            <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Templates Panel */}
+            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl">
+              <div className="p-4 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-slate-400" />
+                  <span className="text-sm font-medium text-white">Templates</span>
+                </div>
+              </div>
+              <ScrollArea className="h-[400px]">
+                <div className="p-2 space-y-1">
+                  {pushTemplates.map((tpl) => {
+                    const Icon = tpl.icon;
+                    return (
+                      <button
+                        key={tpl.id}
+                        onClick={() => {
+                          setTitle(tpl.title);
+                          setMessage(tpl.message);
+                          setLink(tpl.link);
+                        }}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-800 transition-colors text-left group"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-slate-800 group-hover:bg-slate-700 flex items-center justify-center">
+                          <Icon className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white truncate">{tpl.name}</p>
+                          <Badge className={`border text-[10px] px-1.5 py-0 ${getCategoryBadge(tpl.category)}`}>
+                            {tpl.category}
+                          </Badge>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Compose Panel */}
+            <div className="lg:col-span-2 bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-5">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="title" className="text-slate-300 text-sm">Title *</Label>
+                  <Input
+                    id="title"
+                    placeholder="Notification title..."
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    maxLength={50}
+                    className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 focus:ring-violet-500/20"
+                  />
+                  <p className={`text-xs ${title.length > 40 ? 'text-amber-400' : 'text-slate-500'}`}>
+                    {title.length}/50
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="link" className="text-slate-300 text-sm">Link</Label>
+                  <Input
+                    id="link"
+                    placeholder="/dashboard"
+                    value={link}
+                    onChange={(e) => setLink(e.target.value)}
+                    className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 focus:ring-violet-500/20"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-slate-300">Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="Notification title..."
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  maxLength={50}
-                  className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 focus:ring-violet-500/20"
+                <Label htmlFor="message" className="text-slate-300 text-sm">Message *</Label>
+                <Textarea
+                  id="message"
+                  placeholder="Write your notification message..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={3}
+                  maxLength={200}
+                  className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 focus:ring-violet-500/20 resize-none"
                 />
-                <p className={`text-xs ${title.length > 40 ? 'text-amber-400' : 'text-slate-500'}`}>
-                  {title.length}/50 characters
+                <p className={`text-xs ${message.length > 180 ? 'text-amber-400' : 'text-slate-500'}`}>
+                  {message.length}/200
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="link" className="text-slate-300">Link (optional)</Label>
-                <Input
-                  id="link"
-                  placeholder="/dashboard or https://..."
-                  value={link}
-                  onChange={(e) => setLink(e.target.value)}
-                  className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 focus:ring-violet-500/20"
-                />
+                <Label className="text-slate-300 text-sm">Audience</Label>
+                <Select value={targetAudience} onValueChange={setTargetAudience}>
+                  <SelectTrigger className="w-full sm:w-48 bg-slate-900 border-slate-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-700">
+                    <SelectItem value="all" className="text-white hover:bg-slate-800 focus:bg-slate-800">
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-blue-400" />
+                        All Users
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="pro_users" className="text-white hover:bg-slate-800 focus:bg-slate-800">
+                      <div className="flex items-center gap-2">
+                        <Crown className="h-4 w-4 text-amber-400" />
+                        Pro Users
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="sellers" className="text-white hover:bg-slate-800 focus:bg-slate-800">
+                      <div className="flex items-center gap-2">
+                        <Store className="h-4 w-4 text-violet-400" />
+                        Sellers
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="message" className="text-slate-300">Message *</Label>
-              <Textarea
-                id="message"
-                placeholder="Write your notification message..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                rows={3}
-                maxLength={200}
-                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 focus:ring-violet-500/20 resize-none"
-              />
-              <p className={`text-xs ${message.length > 180 ? 'text-amber-400' : 'text-slate-500'}`}>
-                {message.length}/200 characters
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-slate-300">Target Audience</Label>
-              <Select value={targetAudience} onValueChange={setTargetAudience}>
-                <SelectTrigger className="w-full lg:w-64 bg-slate-900 border-slate-700 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-700">
-                  <SelectItem value="all" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-blue-400" />
-                      All Users
+              {/* Preview */}
+              <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+                <p className="text-[10px] text-slate-500 mb-3 uppercase tracking-widest font-medium">Preview</p>
+                <div className="bg-slate-900 rounded-xl p-4 max-w-xs border border-slate-700">
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-violet-600 flex items-center justify-center flex-shrink-0">
+                      <Bell className="h-5 w-5 text-white" />
                     </div>
-                  </SelectItem>
-                  <SelectItem value="pro_users" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                    <div className="flex items-center gap-2">
-                      <Crown className="h-4 w-4 text-amber-400" />
-                      Pro Users Only
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-white truncate">
+                        {title || 'Notification Title'}
+                      </p>
+                      <p className="text-xs text-slate-400 line-clamp-2 mt-0.5">
+                        {message || 'Message preview...'}
+                      </p>
                     </div>
-                  </SelectItem>
-                  <SelectItem value="sellers" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                    <div className="flex items-center gap-2">
-                      <Store className="h-4 w-4 text-violet-400" />
-                      Sellers Only
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Dark Preview */}
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-              <p className="text-xs text-slate-500 mb-3 uppercase tracking-wider">Preview</p>
-              <div className="bg-slate-900 rounded-xl p-4 max-w-sm border border-slate-700">
-                <div className="flex items-start gap-3">
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                    <Bell className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white truncate">
-                      {title || 'Notification Title'}
-                    </p>
-                    <p className="text-sm text-slate-400 line-clamp-2 mt-0.5">
-                      {message || 'Your notification message will appear here...'}
-                    </p>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <Button 
-              onClick={handleSendBroadcast} 
-              disabled={sending || !title.trim() || !message.trim()}
-              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white border-0"
-            >
-              {sending ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Notification
-                </>
-              )}
-            </Button>
+              <Button 
+                onClick={handleSendBroadcast} 
+                disabled={sending || !title.trim() || !message.trim()}
+                className="bg-violet-600 hover:bg-violet-700 text-white"
+              >
+                {sending ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Notification
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </TabsContent>
 
