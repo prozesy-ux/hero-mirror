@@ -7,6 +7,7 @@ interface SendEmailOptions {
   templateId: EmailTemplateId;
   to: string;
   variables: Record<string, string>;
+  userId?: string;
 }
 
 /**
@@ -144,7 +145,7 @@ export function getSampleVariables(templateId: string): Record<string, string> {
 /**
  * Sends an email using the configured email provider
  */
-export async function sendEmail({ templateId, to, variables }: SendEmailOptions): Promise<{ success: boolean; error?: string }> {
+export async function sendEmail({ templateId, to, variables, userId }: SendEmailOptions): Promise<{ success: boolean; error?: string; skipped?: boolean }> {
   try {
     const template = emailTemplates.find(t => t.id === templateId);
     if (!template) {
@@ -167,6 +168,8 @@ export async function sendEmail({ templateId, to, variables }: SendEmailOptions)
         to,
         subject,
         html,
+        category: template.category,
+        user_id: userId,
         variables: allVariables,
       },
     });
@@ -174,6 +177,11 @@ export async function sendEmail({ templateId, to, variables }: SendEmailOptions)
     if (error) {
       console.error('Email send error:', error);
       return { success: false, error: error.message };
+    }
+
+    // Check if email was skipped due to settings
+    if (data?.skipped) {
+      return { success: true, skipped: true, error: data.reason };
     }
 
     return { success: true };

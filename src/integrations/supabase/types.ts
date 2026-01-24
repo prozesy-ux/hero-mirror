@@ -577,6 +577,39 @@ export type Database = {
         }
         Relationships: []
       }
+      email_settings: {
+        Row: {
+          email_enabled: boolean
+          id: string
+          marketing_emails_enabled: boolean
+          order_emails_enabled: boolean
+          security_emails_enabled: boolean
+          updated_at: string | null
+          updated_by: string | null
+          wallet_emails_enabled: boolean
+        }
+        Insert: {
+          email_enabled?: boolean
+          id?: string
+          marketing_emails_enabled?: boolean
+          order_emails_enabled?: boolean
+          security_emails_enabled?: boolean
+          updated_at?: string | null
+          updated_by?: string | null
+          wallet_emails_enabled?: boolean
+        }
+        Update: {
+          email_enabled?: boolean
+          id?: string
+          marketing_emails_enabled?: boolean
+          order_emails_enabled?: boolean
+          security_emails_enabled?: boolean
+          updated_at?: string | null
+          updated_by?: string | null
+          wallet_emails_enabled?: boolean
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string | null

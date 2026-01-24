@@ -79,7 +79,9 @@ serve(async (req) => {
       'auto_approval_settings',
       'screen_share_sessions',
       'chat_attachments',
-      'seller_payment_accounts'
+      'seller_payment_accounts',
+      'email_logs',
+      'email_settings'
     ];
 
     if (!allowedTables.includes(table)) {
