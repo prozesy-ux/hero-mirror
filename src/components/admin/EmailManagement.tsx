@@ -4,8 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminMutate } from '@/hooks/useAdminMutate';
 import { 
   Mail, 
   Send, 
@@ -28,7 +30,12 @@ import {
   WifiOff,
   AlertTriangle,
   Play,
-  Zap
+  Zap,
+  Power,
+  ShoppingCart,
+  Wallet,
+  Megaphone,
+  Shield
 } from 'lucide-react';
 import {
   emailTemplates,
@@ -68,10 +75,28 @@ interface HealthStatus {
     from_address: string | null;
   };
   worker_reachable: boolean;
+  settings?: {
+    email_enabled: boolean;
+    order_emails_enabled: boolean;
+    wallet_emails_enabled: boolean;
+    marketing_emails_enabled: boolean;
+    security_emails_enabled: boolean;
+  };
   error?: string;
 }
 
+interface EmailSettings {
+  email_enabled: boolean;
+  order_emails_enabled: boolean;
+  wallet_emails_enabled: boolean;
+  marketing_emails_enabled: boolean;
+  security_emails_enabled: boolean;
+}
+
 const EmailManagement: React.FC = () => {
+  const { fetchData } = useAdminData();
+  const { updateData } = useAdminMutate();
+  
   const [activeTab, setActiveTab] = useState('templates');
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate>(emailTemplates[0]);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
@@ -98,6 +123,16 @@ const EmailManagement: React.FC = () => {
   const [isBulkTesting, setIsBulkTesting] = useState(false);
   const [bulkTestResults, setBulkTestResults] = useState<Array<{ templateId: string; success: boolean; error?: string }>>([]);
 
+  // Email settings (toggles)
+  const [emailSettings, setEmailSettings] = useState<EmailSettings>({
+    email_enabled: true,
+    order_emails_enabled: true,
+    wallet_emails_enabled: true,
+    marketing_emails_enabled: true,
+    security_emails_enabled: true,
+  });
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+
   // Load data on mount
   useEffect(() => {
     loadData();
@@ -106,16 +141,15 @@ const EmailManagement: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Fetch email logs from database
-      const { data: logsData, error } = await supabase
-        .from('email_logs')
-        .select('*')
-        .order('sent_at', { ascending: false })
-        .limit(100);
+      // Fetch email logs via admin API
+      const { data: logsData, error } = await fetchData<EmailLog>('email_logs', {
+        order: { column: 'sent_at', ascending: false },
+        limit: 100,
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(error);
 
-      const fetchedLogs = (logsData || []) as EmailLog[];
+      const fetchedLogs = logsData || [];
       setLogs(fetchedLogs);
 
       // Calculate stats
@@ -126,10 +160,46 @@ const EmailManagement: React.FC = () => {
         failed: fetchedLogs.filter(l => l.status === 'failed').length,
       };
       setStats(statsCalc);
+
+      // Fetch email settings
+      const { data: settingsData } = await fetchData<EmailSettings & { id: string }>('email_settings', {
+        filters: [{ column: 'id', value: 'global' }],
+        limit: 1,
+      });
+
+      if (settingsData && settingsData.length > 0) {
+        const settings = settingsData[0];
+        setEmailSettings({
+          email_enabled: settings.email_enabled,
+          order_emails_enabled: settings.order_emails_enabled,
+          wallet_emails_enabled: settings.wallet_emails_enabled,
+          marketing_emails_enabled: settings.marketing_emails_enabled,
+          security_emails_enabled: settings.security_emails_enabled,
+        });
+      }
     } catch (error) {
       console.error('Error loading email data:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleToggleSetting = async (key: keyof EmailSettings, value: boolean) => {
+    setIsUpdatingSettings(true);
+    try {
+      const result = await updateData('email_settings', 'global', { [key]: value });
+      
+      if (result.success) {
+        setEmailSettings(prev => ({ ...prev, [key]: value }));
+        toast.success(`${key.replace(/_/g, ' ').replace('enabled', '')} ${value ? 'enabled' : 'disabled'}`);
+      } else {
+        toast.error(result.error || 'Failed to update setting');
+      }
+    } catch (error) {
+      console.error('Failed to update setting:', error);
+      toast.error('Failed to update setting');
+    } finally {
+      setIsUpdatingSettings(false);
     }
   };
 
@@ -752,7 +822,114 @@ const EmailManagement: React.FC = () => {
 
         {/* Settings Tab */}
         <TabsContent value="settings">
-          <div className="max-w-2xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Email Toggles */}
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                  <Power className="h-5 w-5 text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="text-white font-medium">Email Toggles</h3>
+                  <p className="text-slate-500 text-sm">Enable or disable email sending by category</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Master Toggle */}
+                <div className={`p-4 rounded-lg border ${
+                  emailSettings.email_enabled 
+                    ? 'bg-emerald-500/10 border-emerald-500/30' 
+                    : 'bg-red-500/10 border-red-500/30'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Power className={`h-5 w-5 ${emailSettings.email_enabled ? 'text-emerald-400' : 'text-red-400'}`} />
+                      <div>
+                        <p className="text-white font-medium">Master Email Toggle</p>
+                        <p className="text-slate-500 text-xs">Enable/disable all email sending</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={emailSettings.email_enabled}
+                      onCheckedChange={(checked) => handleToggleSetting('email_enabled', checked)}
+                      disabled={isUpdatingSettings}
+                    />
+                  </div>
+                </div>
+
+                {/* Category Toggles */}
+                <div className="p-4 rounded-lg border bg-slate-800/50 border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Shield className="h-5 w-5 text-blue-400" />
+                      <div>
+                        <p className="text-white text-sm font-medium">Security Emails</p>
+                        <p className="text-slate-500 text-xs">Password reset, verification, alerts</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={emailSettings.security_emails_enabled}
+                      onCheckedChange={(checked) => handleToggleSetting('security_emails_enabled', checked)}
+                      disabled={isUpdatingSettings || !emailSettings.email_enabled}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg border bg-slate-800/50 border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ShoppingCart className="h-5 w-5 text-amber-400" />
+                      <div>
+                        <p className="text-white text-sm font-medium">Order Emails</p>
+                        <p className="text-slate-500 text-xs">Order confirmations, delivery updates</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={emailSettings.order_emails_enabled}
+                      onCheckedChange={(checked) => handleToggleSetting('order_emails_enabled', checked)}
+                      disabled={isUpdatingSettings || !emailSettings.email_enabled}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg border bg-slate-800/50 border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Wallet className="h-5 w-5 text-emerald-400" />
+                      <div>
+                        <p className="text-white text-sm font-medium">Wallet Emails</p>
+                        <p className="text-slate-500 text-xs">Top-up, refund, withdrawal notifications</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={emailSettings.wallet_emails_enabled}
+                      onCheckedChange={(checked) => handleToggleSetting('wallet_emails_enabled', checked)}
+                      disabled={isUpdatingSettings || !emailSettings.email_enabled}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg border bg-slate-800/50 border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Megaphone className="h-5 w-5 text-purple-400" />
+                      <div>
+                        <p className="text-white text-sm font-medium">Marketing Emails</p>
+                        <p className="text-slate-500 text-xs">Welcome, offers, promotions</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={emailSettings.marketing_emails_enabled}
+                      onCheckedChange={(checked) => handleToggleSetting('marketing_emails_enabled', checked)}
+                      disabled={isUpdatingSettings || !emailSettings.email_enabled}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Configuration Status */}
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
@@ -760,7 +937,7 @@ const EmailManagement: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-white font-medium">Email Configuration</h3>
-                  <p className="text-slate-500 text-sm">Cloudflare Worker email settings and health check</p>
+                  <p className="text-slate-500 text-sm">Cloudflare Worker connection status</p>
                 </div>
               </div>
 
@@ -768,7 +945,7 @@ const EmailManagement: React.FC = () => {
               <Button
                 onClick={handleHealthCheck}
                 disabled={isCheckingHealth}
-                className="mb-6 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
+                className="mb-6 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 w-full"
               >
                 {isCheckingHealth ? (
                   <>
@@ -784,109 +961,95 @@ const EmailManagement: React.FC = () => {
               </Button>
 
               {/* Configuration Status */}
-              <div className="space-y-4">
-                <div className={`p-4 rounded-lg border ${
+              <div className="space-y-3">
+                <div className={`p-3 rounded-lg border ${
                   healthStatus?.config.worker_url 
                     ? 'bg-emerald-500/10 border-emerald-500/30' 
                     : 'bg-slate-800/50 border-slate-700'
                 }`}>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       {healthStatus?.config.worker_url ? (
-                        <CheckCircle className="h-5 w-5 text-emerald-400" />
+                        <CheckCircle className="h-4 w-4 text-emerald-400" />
                       ) : (
-                        <Clock className="h-5 w-5 text-slate-500" />
+                        <Clock className="h-4 w-4 text-slate-500" />
                       )}
-                      <div>
-                        <p className="text-white text-sm font-medium">Cloudflare Worker URL</p>
-                        <p className="text-slate-500 text-xs">CLOUDFLARE_EMAIL_WORKER_URL</p>
-                      </div>
+                      <span className="text-white text-sm">Worker URL</span>
                     </div>
                     <Badge className={healthStatus?.config.worker_url 
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                      : 'bg-slate-700 text-slate-400 border-slate-600'
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs' 
+                      : 'bg-slate-700 text-slate-400 border-slate-600 text-xs'
                     }>
-                      {healthStatus?.config.worker_url ? 'Configured' : 'Unknown'}
+                      {healthStatus?.config.worker_url ? '✓' : '?'}
                     </Badge>
                   </div>
                 </div>
 
-                <div className={`p-4 rounded-lg border ${
+                <div className={`p-3 rounded-lg border ${
                   healthStatus?.config.email_secret 
                     ? 'bg-emerald-500/10 border-emerald-500/30' 
                     : 'bg-slate-800/50 border-slate-700'
                 }`}>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       {healthStatus?.config.email_secret ? (
-                        <CheckCircle className="h-5 w-5 text-emerald-400" />
+                        <CheckCircle className="h-4 w-4 text-emerald-400" />
                       ) : (
-                        <Clock className="h-5 w-5 text-slate-500" />
+                        <Clock className="h-4 w-4 text-slate-500" />
                       )}
-                      <div>
-                        <p className="text-white text-sm font-medium">Email Secret</p>
-                        <p className="text-slate-500 text-xs">CLOUDFLARE_EMAIL_SECRET</p>
-                      </div>
+                      <span className="text-white text-sm">Email Secret</span>
                     </div>
                     <Badge className={healthStatus?.config.email_secret 
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                      : 'bg-slate-700 text-slate-400 border-slate-600'
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs' 
+                      : 'bg-slate-700 text-slate-400 border-slate-600 text-xs'
                     }>
-                      {healthStatus?.config.email_secret ? 'Configured' : 'Unknown'}
+                      {healthStatus?.config.email_secret ? '✓' : '?'}
                     </Badge>
                   </div>
                 </div>
 
-                <div className={`p-4 rounded-lg border ${
+                <div className={`p-3 rounded-lg border ${
                   healthStatus?.config.from_address 
                     ? 'bg-emerald-500/10 border-emerald-500/30' 
                     : 'bg-slate-800/50 border-slate-700'
                 }`}>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       {healthStatus?.config.from_address ? (
-                        <CheckCircle className="h-5 w-5 text-emerald-400" />
+                        <CheckCircle className="h-4 w-4 text-emerald-400" />
                       ) : (
-                        <Clock className="h-5 w-5 text-slate-500" />
+                        <Clock className="h-4 w-4 text-slate-500" />
                       )}
-                      <div>
-                        <p className="text-white text-sm font-medium">From Address</p>
-                        <p className="text-slate-500 text-xs">
-                          {healthStatus?.config.from_address || 'EMAIL_FROM_ADDRESS'}
-                        </p>
-                      </div>
+                      <span className="text-white text-sm">From Address</span>
                     </div>
                     <Badge className={healthStatus?.config.from_address 
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                      : 'bg-slate-700 text-slate-400 border-slate-600'
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs' 
+                      : 'bg-slate-700 text-slate-400 border-slate-600 text-xs'
                     }>
-                      {healthStatus?.config.from_address ? 'Configured' : 'Unknown'}
+                      {healthStatus?.config.from_address ? '✓' : '?'}
                     </Badge>
                   </div>
                 </div>
 
-                <div className={`p-4 rounded-lg border ${
+                <div className={`p-3 rounded-lg border ${
                   healthStatus?.worker_reachable 
                     ? 'bg-emerald-500/10 border-emerald-500/30' 
                     : 'bg-slate-800/50 border-slate-700'
                 }`}>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       {healthStatus?.worker_reachable ? (
-                        <Wifi className="h-5 w-5 text-emerald-400" />
+                        <Wifi className="h-4 w-4 text-emerald-400" />
                       ) : (
-                        <WifiOff className="h-5 w-5 text-slate-500" />
+                        <WifiOff className="h-4 w-4 text-slate-500" />
                       )}
-                      <div>
-                        <p className="text-white text-sm font-medium">Worker Connectivity</p>
-                        <p className="text-slate-500 text-xs">Can reach Cloudflare Worker</p>
-                      </div>
+                      <span className="text-white text-sm">Connectivity</span>
                     </div>
                     <Badge className={healthStatus?.worker_reachable 
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                      : 'bg-slate-700 text-slate-400 border-slate-600'
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs' 
+                      : 'bg-slate-700 text-slate-400 border-slate-600 text-xs'
                     }>
-                      {healthStatus?.worker_reachable ? 'Connected' : 'Unknown'}
+                      {healthStatus?.worker_reachable ? '✓' : '?'}
                     </Badge>
                   </div>
                 </div>
@@ -894,23 +1057,23 @@ const EmailManagement: React.FC = () => {
 
               {/* Overall Status */}
               {healthStatus && (
-                <div className={`mt-6 p-4 rounded-lg border ${
+                <div className={`mt-4 p-3 rounded-lg border ${
                   healthStatus.healthy 
                     ? 'bg-emerald-500/10 border-emerald-500/30' 
                     : 'bg-red-500/10 border-red-500/30'
                 }`}>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {healthStatus.healthy ? (
-                      <CheckCircle className="h-6 w-6 text-emerald-400" />
+                      <CheckCircle className="h-5 w-5 text-emerald-400" />
                     ) : (
-                      <AlertTriangle className="h-6 w-6 text-red-400" />
+                      <AlertTriangle className="h-5 w-5 text-red-400" />
                     )}
                     <div>
-                      <p className={`font-medium ${healthStatus.healthy ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {healthStatus.healthy ? 'Email System Healthy' : 'Configuration Issues Detected'}
+                      <p className={`text-sm font-medium ${healthStatus.healthy ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {healthStatus.healthy ? 'System Healthy' : 'Issues Detected'}
                       </p>
                       {healthStatus.error && (
-                        <p className="text-red-400/70 text-sm mt-1">{healthStatus.error}</p>
+                        <p className="text-red-400/70 text-xs mt-0.5">{healthStatus.error}</p>
                       )}
                     </div>
                   </div>

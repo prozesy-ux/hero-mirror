@@ -81,7 +81,9 @@ serve(async (req) => {
       'chat_attachments',
       'seller_chat_attachments',
       'screen_share_sessions',
-      'seller_payment_accounts'
+      'seller_payment_accounts',
+      'email_logs',
+      'email_settings'
     ];
 
     if (!allowedTables.includes(table)) {

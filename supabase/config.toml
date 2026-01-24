@@ -45,3 +45,9 @@ verify_jwt = false
 
 [functions.broadcast-push]
 verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.email-health]
+verify_jwt = false

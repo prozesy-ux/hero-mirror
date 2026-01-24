@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,13 @@ interface HealthCheckResponse {
     from_address: string | null;
   };
   worker_reachable: boolean;
+  settings?: {
+    email_enabled: boolean;
+    order_emails_enabled: boolean;
+    wallet_emails_enabled: boolean;
+    marketing_emails_enabled: boolean;
+    security_emails_enabled: boolean;
+  };
   error?: string;
 }
 
@@ -37,59 +45,84 @@ serve(async (req: Request): Promise<Response> => {
       worker_reachable: false,
     };
 
-    // Check if all required config is present
+    // Check required configuration
     if (!workerUrl || !emailSecret) {
-      response.error = "Missing required configuration";
-      return new Response(
-        JSON.stringify(response),
-        { 
-          status: 200, 
-          headers: { "Content-Type": "application/json", ...corsHeaders } 
-        }
-      );
+      response.error = "Missing required configuration: CLOUDFLARE_EMAIL_WORKER_URL or CLOUDFLARE_EMAIL_SECRET";
+      return new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    // Try to ping the worker with a health check (GET request)
+    // Try to reach the Cloudflare Worker
     try {
-      const pingResponse = await fetch(workerUrl, {
+      const healthCheck = await fetch(workerUrl, {
         method: "GET",
         headers: {
           "X-Email-Secret": emailSecret,
         },
       });
       
-      // Even if it returns an error status, if we got a response, the worker is reachable
+      // Consider it reachable if we get any response (even 4xx/5xx means the worker is running)
       response.worker_reachable = true;
       
-      // Consider it healthy if config is complete and worker is reachable
-      response.healthy = true;
-    } catch (fetchError) {
-      console.error("Worker ping failed:", fetchError);
+      // Only mark as unhealthy if we can't connect at all
+      if (healthCheck.status >= 500) {
+        response.error = `Worker returned status ${healthCheck.status}`;
+      }
+    } catch (fetchError: any) {
       response.worker_reachable = false;
-      response.error = "Could not reach Cloudflare Worker";
+      response.error = `Cannot reach Cloudflare Worker: ${fetchError.message}`;
     }
 
-    return new Response(
-      JSON.stringify(response),
-      { 
-        status: 200, 
-        headers: { "Content-Type": "application/json", ...corsHeaders } 
+    // Fetch email settings from database
+    try {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false } }
+      );
+
+      const { data: settings } = await supabaseAdmin
+        .from('email_settings')
+        .select('*')
+        .eq('id', 'global')
+        .single();
+
+      if (settings) {
+        response.settings = {
+          email_enabled: settings.email_enabled,
+          order_emails_enabled: settings.order_emails_enabled,
+          wallet_emails_enabled: settings.wallet_emails_enabled,
+          marketing_emails_enabled: settings.marketing_emails_enabled,
+          security_emails_enabled: settings.security_emails_enabled,
+        };
       }
-    );
+    } catch (dbError) {
+      console.error("Failed to fetch email settings:", dbError);
+    }
+
+    // Overall health check
+    response.healthy = response.config.worker_url && 
+                       response.config.email_secret && 
+                       response.worker_reachable &&
+                       !response.error;
+
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
 
   } catch (error: any) {
     console.error("Health check error:", error);
     return new Response(
-      JSON.stringify({ 
-        healthy: false, 
-        error: error.message,
+      JSON.stringify({
+        healthy: false,
         config: { worker_url: false, email_secret: false, from_address: null },
-        worker_reachable: false 
+        worker_reachable: false,
+        error: error.message,
       }),
-      { 
-        status: 500, 
-        headers: { "Content-Type": "application/json", ...corsHeaders } 
-      }
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 });
