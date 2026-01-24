@@ -23,13 +23,13 @@ const wrapTemplate = (
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ProMPThero</title>
+  <title>Uptoza</title>
 </head>
 <body style="margin: 0; padding: 40px 20px; background: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <div style="max-width: 600px; margin: 0 auto;">
     <!-- Premium Header with Gradient -->
     <div style="background: ${headerGradient}; border-radius: 16px 16px 0 0; padding: 32px; text-align: center;">
-      <h1 style="color: white; font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">ProMPThero</h1>
+      <h1 style="color: white; font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">Uptoza</h1>
     </div>
     
     <!-- Content Card -->
@@ -39,7 +39,7 @@ const wrapTemplate = (
     
     <!-- Footer -->
     <div style="background: #0f0f0f; padding: 24px; border-radius: 0 0 16px 16px; border: 1px solid #27272a; border-top: 0; text-align: center;">
-      <p style="color: #52525b; font-size: 12px; margin: 0 0 8px 0;">© 2024 ProMPThero. All rights reserved.</p>
+      <p style="color: #52525b; font-size: 12px; margin: 0 0 8px 0;">© ${new Date().getFullYear()} Uptoza. All rights reserved.</p>
       <p style="color: #52525b; font-size: 11px; margin: 0;">
         <a href="{{site_url}}/unsubscribe" style="color: #6366f1; text-decoration: none;">Unsubscribe</a> • 
         <a href="{{site_url}}/privacy" style="color: #6366f1; text-decoration: none;">Privacy Policy</a>
@@ -90,7 +90,7 @@ const passwordResetTemplate: EmailTemplate = {
   name: 'Password Reset',
   description: 'Sent when user requests password reset',
   category: 'security',
-  subject: 'Reset Your Password - ProMPThero',
+  subject: 'Reset Your Password - Uptoza',
   variables: ['{{.ConfirmationURL}}', '{{.Email}}'],
   icon: '🔐',
   buttonColor: 'violet',
@@ -120,7 +120,7 @@ const emailConfirmationTemplate: EmailTemplate = {
   name: 'Email Confirmation',
   description: 'Sent to verify new email addresses',
   category: 'security',
-  subject: 'Confirm Your Email - ProMPThero',
+  subject: 'Confirm Your Email - Uptoza',
   variables: ['{{.ConfirmationURL}}', '{{.Email}}'],
   icon: '✉️',
   buttonColor: 'emerald',
@@ -128,7 +128,7 @@ const emailConfirmationTemplate: EmailTemplate = {
     ${iconCircle('✉️', 'rgba(16, 185, 129, 0.2)')}
     <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">Verify Your Email</h2>
     <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 8px 0;">
-      Welcome to ProMPThero! Please confirm your email address to get started.
+      Welcome to Uptoza! Please confirm your email address to get started.
     </p>
     ${ctaButton('Confirm Email', '{{.ConfirmationURL}}', 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 'rgba(16, 185, 129, 0.4)')}
     ${infoBox(`
@@ -144,7 +144,7 @@ const magicLinkTemplate: EmailTemplate = {
   name: 'Magic Link',
   description: 'Passwordless login link',
   category: 'security',
-  subject: 'Your Magic Login Link - ProMPThero',
+  subject: 'Your Magic Login Link - Uptoza',
   variables: ['{{.ConfirmationURL}}', '{{.Email}}'],
   icon: '🔗',
   buttonColor: 'violet',
@@ -168,7 +168,7 @@ const securityAlertTemplate: EmailTemplate = {
   name: 'Security Alert',
   description: 'Password change or security event notification',
   category: 'security',
-  subject: '🔒 Security Alert - ProMPThero',
+  subject: '🔒 Security Alert - Uptoza',
   variables: ['{{.Email}}', '{{event_type}}', '{{event_time}}', '{{ip_address}}'],
   icon: '🛡️',
   buttonColor: 'red',
@@ -195,7 +195,7 @@ const newLoginDetectedTemplate: EmailTemplate = {
   name: 'New Login Detected',
   description: 'Sent when user logs in from new device/location',
   category: 'security',
-  subject: '📍 New Login to Your Account - ProMPThero',
+  subject: '📍 New Login to Your Account - Uptoza',
   variables: ['{{.Email}}', '{{device}}', '{{location}}', '{{login_time}}', '{{ip_address}}'],
   icon: '📍',
   buttonColor: 'amber',
@@ -231,7 +231,7 @@ const orderPlacedTemplate: EmailTemplate = {
   name: 'Order Placed',
   description: 'Confirmation when order is placed',
   category: 'order',
-  subject: '📦 Order Confirmed #{{order_id}} - ProMPThero',
+  subject: '📦 Order Confirmed #{{order_id}} - Uptoza',
   variables: ['{{order_id}}', '{{product_name}}', '{{amount}}', '{{order_date}}'],
   icon: '📦',
   buttonColor: 'blue',
@@ -261,7 +261,7 @@ const orderDeliveredTemplate: EmailTemplate = {
   name: 'Order Delivered',
   description: 'Sent when order is delivered',
   category: 'order',
-  subject: '✅ Order Delivered #{{order_id}} - ProMPThero',
+  subject: '✅ Order Delivered #{{order_id}} - Uptoza',
   variables: ['{{order_id}}', '{{product_name}}'],
   icon: '✅',
   buttonColor: 'emerald',
@@ -288,7 +288,7 @@ const orderApprovedTemplate: EmailTemplate = {
   name: 'Order Approved',
   description: 'Sent to seller when order is approved',
   category: 'order',
-  subject: '⭐ Your Order Was Approved! - ProMPThero',
+  subject: '⭐ Your Order Was Approved! - Uptoza',
   variables: ['{{order_id}}', '{{product_name}}', '{{buyer_name}}', '{{amount}}'],
   icon: '⭐',
   buttonColor: 'amber',
@@ -313,7 +313,7 @@ const sellerNewOrderTemplate: EmailTemplate = {
   name: 'Seller New Order',
   description: 'Notifies seller of new order',
   category: 'order',
-  subject: '🛒 New Order Received! - ProMPThero',
+  subject: '🛒 New Order Received! - Uptoza',
   variables: ['{{order_id}}', '{{product_name}}', '{{buyer_name}}', '{{amount}}'],
   icon: '🛒',
   buttonColor: 'violet',
@@ -347,7 +347,7 @@ const walletTopupTemplate: EmailTemplate = {
   name: 'Wallet Top-up',
   description: 'Confirmation of wallet credit',
   category: 'wallet',
-  subject: '💰 Wallet Credited - ProMPThero',
+  subject: '💰 Wallet Credited - Uptoza',
   variables: ['{{amount}}', '{{new_balance}}', '{{payment_method}}', '{{transaction_id}}'],
   icon: '💰',
   buttonColor: 'emerald',
@@ -371,7 +371,7 @@ const lowBalanceAlertTemplate: EmailTemplate = {
   name: 'Low Balance Alert',
   description: 'Warning when wallet balance is low',
   category: 'wallet',
-  subject: '⚠️ Low Wallet Balance - ProMPThero',
+  subject: '⚠️ Low Wallet Balance - Uptoza',
   variables: ['{{current_balance}}', '{{threshold}}'],
   icon: '⚠️',
   buttonColor: 'amber',
@@ -394,7 +394,7 @@ const refundProcessedTemplate: EmailTemplate = {
   name: 'Refund Processed',
   description: 'Confirmation of refund',
   category: 'wallet',
-  subject: '💸 Refund Processed - ProMPThero',
+  subject: '💸 Refund Processed - Uptoza',
   variables: ['{{amount}}', '{{order_id}}', '{{reason}}', '{{new_balance}}'],
   icon: '💸',
   buttonColor: 'blue',
@@ -419,7 +419,7 @@ const withdrawalCompleteTemplate: EmailTemplate = {
   name: 'Withdrawal Complete',
   description: 'Confirmation of withdrawal',
   category: 'wallet',
-  subject: '🏦 Withdrawal Complete - ProMPThero',
+  subject: '🏦 Withdrawal Complete - Uptoza',
   variables: ['{{amount}}', '{{bank_name}}', '{{account_last4}}', '{{transaction_id}}'],
   icon: '🏦',
   buttonColor: 'violet',
@@ -453,7 +453,7 @@ const welcomeEmailTemplate: EmailTemplate = {
   name: 'Welcome Email',
   description: 'Sent after successful registration',
   category: 'marketing',
-  subject: '🎉 Welcome to ProMPThero! - Let\'s Get Started',
+  subject: '🎉 Welcome to Uptoza! - Let\'s Get Started',
   variables: ['{{user_name}}'],
   icon: '🎉',
   buttonColor: 'violet',
@@ -498,7 +498,7 @@ const proUpgradeTemplate: EmailTemplate = {
   name: 'Pro Plan Upgrade',
   description: 'Welcome to Pro membership',
   category: 'marketing',
-  subject: '👑 Welcome to Pro! - ProMPThero',
+  subject: '👑 Welcome to Pro! - Uptoza',
   variables: ['{{user_name}}', '{{plan_name}}', '{{expiry_date}}'],
   icon: '👑',
   buttonColor: 'amber',
