@@ -11,7 +11,7 @@ async function validateAdminSession(supabase: any, token: string) {
   const { data, error } = await supabase
     .from("admin_sessions")
     .select("*")
-    .eq("token", token)
+    .eq("session_token", token)
     .gt("expires_at", new Date().toISOString())
     .single();
 
@@ -338,42 +338,24 @@ Deno.serve(async (req) => {
       }
 
       case "send-test": {
-        // Get admin's user_id from admin_sessions
-        const { data: sessionData } = await supabase
-          .from("admin_sessions")
-          .select("admin_id")
-          .eq("session_token", token)
-          .single();
-
-        if (!sessionData?.admin_id) {
-          return new Response(
-            JSON.stringify({ error: "Admin not found" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        // Get admin credentials to find associated email
-        const { data: adminCreds } = await supabase
-          .from("admin_credentials")
-          .select("username")
-          .eq("id", sessionData.admin_id)
-          .single();
-
-        // Find user profile matching admin username (email)
-        const { data: profile } = await supabase
-          .from("profiles")
+        // Get any active subscription to test with
+        const { data: subscription } = await supabase
+          .from("push_subscriptions")
           .select("user_id")
-          .eq("email", adminCreds?.username)
+          .eq("is_active", true)
+          .limit(1)
           .single();
 
-        if (!profile?.user_id) {
+        if (!subscription?.user_id) {
           return new Response(
-            JSON.stringify({ error: "No push subscription found for admin account. Make sure you've enabled notifications on a user account with matching email." }),
+            JSON.stringify({ 
+              error: "No active push subscriptions found. Enable notifications on at least one account first." 
+            }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
-        // Send test push
+        // Send test push to first subscribed user
         const response = await fetch(`${supabaseUrl}/functions/v1/send-push`, {
           method: "POST",
           headers: {
@@ -381,9 +363,9 @@ Deno.serve(async (req) => {
             Authorization: `Bearer ${serviceRoleKey}`,
           },
           body: JSON.stringify({
-            user_id: profile.user_id,
+            user_id: subscription.user_id,
             title: "🔔 Test Notification",
-            message: "If you see this, push notifications are working correctly!",
+            message: "Push notifications are working correctly!",
             link: "/dashboard",
             type: "test",
           }),
@@ -393,9 +375,12 @@ Deno.serve(async (req) => {
 
         return new Response(
           JSON.stringify({ 
-            success: true, 
+            success: result.sent > 0,
             sent: result.sent || 0,
-            message: result.sent > 0 ? "Test notification sent!" : "No active subscriptions found"
+            failed: result.failed || 0,
+            message: result.sent > 0 
+              ? "Test notification sent successfully!" 
+              : (result.error || "Failed to send notification")
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
