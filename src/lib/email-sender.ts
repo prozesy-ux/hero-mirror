@@ -197,11 +197,10 @@ export async function sendEmail({ templateId, to, variables, userId }: SendEmail
 export async function checkEmailHealth(): Promise<{
   healthy: boolean;
   config: {
-    worker_url: boolean;
-    email_secret: boolean;
+    resend_api_key: boolean;
     from_address: string | null;
   };
-  worker_reachable: boolean;
+  api_reachable: boolean;
   error?: string;
 }> {
   try {
@@ -210,8 +209,8 @@ export async function checkEmailHealth(): Promise<{
     if (error) {
       return {
         healthy: false,
-        config: { worker_url: false, email_secret: false, from_address: null },
-        worker_reachable: false,
+        config: { resend_api_key: false, from_address: null },
+        api_reachable: false,
         error: error.message,
       };
     }
@@ -220,8 +219,8 @@ export async function checkEmailHealth(): Promise<{
   } catch (error: any) {
     return {
       healthy: false,
-      config: { worker_url: false, email_secret: false, from_address: null },
-      worker_reachable: false,
+      config: { resend_api_key: false, from_address: null },
+      api_reachable: false,
       error: error.message,
     };
   }
