@@ -116,7 +116,9 @@ serve(async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         to,
+        toName: '',
         from: fromAddress,
+        fromName: 'Uptoza',
         subject,
         html,
       }),
