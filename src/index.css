@@ -425,4 +425,135 @@
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  /* ==========================================
+     MOBILE NAVIGATION ANIMATION SYSTEM
+     ========================================== */
+  
+  /* Bottom nav floating effect */
+  .mobile-nav-floating {
+    box-shadow: 
+      0 -8px 32px rgba(0, 0, 0, 0.08),
+      0 -2px 8px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* Nav icon pop animation */
+  @keyframes nav-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1.05); }
+  }
+  
+  .nav-item-pop {
+    animation: nav-pop 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  /* Nav glow effects */
+  .nav-glow-violet {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.2);
+  }
+  
+  .nav-glow-emerald {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(16, 185, 129, 0.2);
+  }
+
+  /* Active indicator animation */
+  @keyframes indicator-expand {
+    0% { transform: scaleX(0); opacity: 0; }
+    100% { transform: scaleX(1); opacity: 1; }
+  }
+  
+  .nav-indicator-animate {
+    animation: indicator-expand 0.3s ease-out forwards;
+  }
+
+  /* Badge pulse animation */
+  @keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  
+  .badge-pulse {
+    animation: badge-pulse 2s ease-in-out infinite;
+  }
+
+  /* Mobile tap feedback */
+  .tap-feedback {
+    transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+  }
+  
+  .tap-feedback:active {
+    transform: scale(0.92);
+    opacity: 0.8;
+  }
+
+  /* Smooth gradient backgrounds for nav items */
+  .nav-bg-violet-active {
+    background: linear-gradient(135deg, 
+      hsl(262, 83%, 58%) 0%, 
+      hsl(280, 80%, 55%) 100%);
+  }
+  
+  .nav-bg-emerald-active {
+    background: linear-gradient(135deg, 
+      hsl(160, 84%, 39%) 0%, 
+      hsl(172, 80%, 42%) 100%);
+  }
+
+  /* Icon fill transition for active states */
+  .nav-icon-fill {
+    transition: all 0.25s ease-out;
+  }
+  
+  .nav-icon-fill.active {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  }
+
+  /* Mobile card touch optimization */
+  .mobile-card-touch {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Mobile sticky header with blur */
+  .mobile-sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    background: rgba(255, 255, 255, 0.85);
+  }
+
+  /* Mobile search bar premium style */
+  .mobile-search-bar {
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  /* Horizontal scroll snap for mobile categories */
+  .mobile-scroll-snap {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .mobile-scroll-snap > * {
+    scroll-snap-align: start;
+  }
+
+  /* Premium bottom sheet style for mobile modals */
+  .mobile-bottom-sheet {
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Mobile action button minimum touch target */
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
