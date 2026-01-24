@@ -120,6 +120,9 @@ serve(async (req: Request): Promise<Response> => {
       // Some workers are implemented to check a different header name.
       // Sending both keeps compatibility without changing your Worker code.
       "EMAIL_SECRET": emailSecret,
+      // Common pattern: workers validate Authorization bearer tokens.
+      // (We keep X-Email-Secret too for backward compatibility.)
+      "Authorization": `Bearer ${emailSecret}`,
     };
     
     const response = await fetch(workerUrl, {
@@ -158,19 +161,35 @@ serve(async (req: Request): Promise<Response> => {
     if (!response.ok) {
       const errorMsg = result.error || result.raw || `HTTP ${response.status}`;
       console.error("Cloudflare Worker error:", errorMsg);
-      
+
       // Update log as failed with full details
       if (logId) {
-        await supabaseAdmin.from('email_logs')
-          .update({ 
-            status: 'failed', 
+        await supabaseAdmin
+          .from('email_logs')
+          .update({
+            status: 'failed',
             error_message: `HTTP ${response.status}: ${errorMsg}`,
-            metadata: { worker_status: response.status, raw_response: rawResponseText.substring(0, 1000) }
+            metadata: {
+              worker_status: response.status,
+              raw_response: rawResponseText.substring(0, 1000),
+            },
           })
           .eq('id', logId);
       }
-      
-      throw new Error(errorMsg);
+
+      // IMPORTANT: returning 500 here causes the admin UI to treat it as a runtime crash.
+      // For expected upstream failures (like 401/403), return a normal JSON response.
+      const isAuthError = response.status === 401 || response.status === 403;
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: errorMsg,
+          worker_status: response.status,
+          auth_error: isAuthError,
+          log_id: logId,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     // Check if worker actually confirmed sending
