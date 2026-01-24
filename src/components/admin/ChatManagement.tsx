@@ -1267,55 +1267,39 @@ const ChatManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div>
       <div className="flex items-center justify-between mb-6">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as MainTab)}>
-          <TabsList className="bg-slate-900/50 border border-slate-800 p-1 rounded-xl">
-            <TabsTrigger value="users" className="gap-2 data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4">
+          <TabsList className="bg-white/5 border border-white/10">
+            <TabsTrigger value="users" className="gap-2 data-[state=active]:bg-white data-[state=active]:text-black">
               <User size={16} />
-              Users
+              User Support
               {totalUserUnread > 0 && (
                 <Badge className="bg-red-500 text-white text-xs ml-1">{totalUserUnread}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="sellers" className="gap-2 data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4">
+            <TabsTrigger value="sellers" className="gap-2 data-[state=active]:bg-white data-[state=active]:text-black">
               <Store size={16} />
-              Sellers
+              Seller Support
               {totalSellerUnread > 0 && (
                 <Badge className="bg-red-500 text-white text-xs ml-1">{totalSellerUnread}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="chat-requests" className="gap-2 data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4">
+            <TabsTrigger value="chat-requests" className="gap-2 data-[state=active]:bg-white data-[state=active]:text-black">
               <Shield size={16} />
-              Requests
+              Chat Requests
               {pendingChatRequests.length > 0 && (
                 <Badge className="bg-red-500 text-white text-xs ml-1 animate-pulse">{pendingChatRequests.length}</Badge>
               )}
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        
-        <Button
-          onClick={() => {
-            refreshTable('support_messages');
-            refreshTable('seller_support_messages');
-            fetchChatRequests();
-            toast.success('Data refreshed');
-          }}
-          variant="outline"
-          size="sm"
-          disabled={isLoading}
-          className="bg-slate-900/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-        >
-          <MessageCircle className={`h-4 w-4 mr-2`} />
-          Refresh
-        </Button>
       </div>
 
       {activeTab === 'chat-requests' ? (
         renderChatRequestsContent()
       ) : (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden flex" style={{ height: 'calc(100vh - 250px)' }}>
+        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex" style={{ height: 'calc(100vh - 250px)' }}>
           {/* Users/Sellers List */}
           <div className="w-80 border-r border-white/10 flex flex-col">
             <div className="p-4 border-b border-white/10">
