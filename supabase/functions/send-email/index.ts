@@ -32,12 +32,11 @@ serve(async (req: Request): Promise<Response> => {
   let logId: string | null = null;
 
   try {
-    const workerUrl = Deno.env.get("CLOUDFLARE_EMAIL_WORKER_URL");
-    const emailSecret = Deno.env.get("CLOUDFLARE_EMAIL_SECRET");
-    const fromAddress = Deno.env.get("EMAIL_FROM_ADDRESS") || "noreply@uptoza.com";
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const fromAddress = Deno.env.get("EMAIL_FROM_ADDRESS") || "onboarding@resend.dev";
 
-    if (!workerUrl || !emailSecret) {
-      throw new Error("Email configuration missing: CLOUDFLARE_EMAIL_WORKER_URL or CLOUDFLARE_EMAIL_SECRET");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY is not configured. Please add it in Lovable Cloud secrets.");
     }
 
     const { template_id, to, subject, html, category, user_id }: EmailRequest = await req.json();
@@ -55,7 +54,6 @@ serve(async (req: Request): Promise<Response> => {
 
     // Check if emails are enabled
     if (settings && !settings.email_enabled) {
-      // Log as skipped
       await supabaseAdmin.from('email_logs').insert({
         user_id: user_id || null,
         template_id,
@@ -107,122 +105,73 @@ serve(async (req: Request): Promise<Response> => {
 
     logId = logEntry?.id;
 
-    // Call Cloudflare Worker
-    console.log(`Calling worker: ${workerUrl} with from: ${fromAddress}, secret length: ${emailSecret.length}`);
+    // Send email via Resend API directly
+    console.log(`Sending email via Resend to: ${to}, from: ${fromAddress}`);
     
-    // Cloudflare Access Service Token headers (for Zero Trust bypass)
-    const cfAccessClientId = Deno.env.get("CF_ACCESS_CLIENT_ID");
-    const cfAccessClientSecret = Deno.env.get("CF_ACCESS_CLIENT_SECRET");
-    
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "X-Email-Secret": emailSecret,
-    };
-    
-    // Add Cloudflare Access headers if configured (required when Worker is behind Access)
-    if (cfAccessClientId && cfAccessClientSecret) {
-      headers["CF-Access-Client-Id"] = cfAccessClientId;
-      headers["CF-Access-Client-Secret"] = cfAccessClientSecret;
-      console.log("Using Cloudflare Access service token for authentication");
-    } else {
-      console.log("No Cloudflare Access credentials configured");
-    }
-    
-    const response = await fetch(workerUrl, {
+    const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers,
-      // Avoid automatically following redirects so we can diagnose the true origin.
-      redirect: "manual",
+      headers: {
+        "Authorization": `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        to,
-        toName: '',
         from: fromAddress,
-        fromName: 'Uptoza',
+        to: [to],
         subject,
         html,
       }),
     });
 
-    console.log(
-      `Worker response headers: server=${response.headers.get("server")}; cf-ray=${response.headers.get("cf-ray")}; location=${response.headers.get("location")}`
-    );
+    const resendData = await resendResponse.json();
 
-    // Always get raw response text first
-    const rawResponseText = await response.text();
-    console.log(`Worker response status: ${response.status}, body: ${rawResponseText.substring(0, 500)}`);
+    if (!resendResponse.ok) {
+      console.error("Resend API error:", resendData);
 
-    // Try to parse as JSON
-    let result: any = {};
-    let parseError = false;
-    try {
-      result = JSON.parse(rawResponseText);
-    } catch {
-      parseError = true;
-      result = { raw: rawResponseText };
-    }
-
-    if (!response.ok) {
-      const errorMsg = result.error || result.raw || `HTTP ${response.status}`;
-      console.error("Cloudflare Worker error:", errorMsg);
-
-      // Update log as failed with full details
+      // Update log as failed
       if (logId) {
         await supabaseAdmin
           .from('email_logs')
           .update({
             status: 'failed',
-            error_message: `HTTP ${response.status}: ${errorMsg}`,
-            metadata: {
-              worker_status: response.status,
-              raw_response: rawResponseText.substring(0, 1000),
-            },
+            error_message: resendData.message || resendData.error || JSON.stringify(resendData),
           })
           .eq('id', logId);
       }
 
-      // IMPORTANT: returning 500 here causes the admin UI to treat it as a runtime crash.
-      // For expected upstream failures (like 401/403), return a normal JSON response.
-      const isAuthError = response.status === 401 || response.status === 403;
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: errorMsg,
-          worker_status: response.status,
-          auth_error: isAuthError,
-          log_id: logId,
+        JSON.stringify({ 
+          success: false, 
+          error: resendData.message || resendData.error || "Failed to send email",
+          log_id: logId 
         }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Check if worker actually confirmed sending
-    const hasMessageId = result.id || result.messageId || result.message_id;
-    const workerConfirmed = hasMessageId || result.success === true || result.accepted === true;
-    
-    // Update log with appropriate status
+    console.log("Email sent successfully via Resend:", resendData);
+
+    // Update log with success
     if (logId) {
       await supabaseAdmin.from('email_logs')
         .update({ 
-          status: workerConfirmed ? 'sent' : 'sent_unverified',
-          resend_id: hasMessageId || null,
+          status: 'sent',
+          resend_id: resendData.id || null,
           metadata: { 
-            worker_status: response.status, 
-            worker_confirmed: workerConfirmed,
-            parse_error: parseError,
-            raw_response: rawResponseText.substring(0, 500)
+            provider: 'resend',
+            resend_response: resendData 
           }
         })
         .eq('id', logId);
     }
 
-    console.log(`Email ${workerConfirmed ? 'sent' : 'sent (unverified)'} to ${to} - Template: ${template_id}`);
+    console.log(`Email sent to ${to} - Template: ${template_id} - Resend ID: ${resendData.id}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: workerConfirmed ? "Email sent successfully" : "Email sent (unverified)", 
+        message: "Email sent successfully", 
         log_id: logId,
-        verified: workerConfirmed
+        resend_id: resendData.id
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );

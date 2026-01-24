@@ -9,11 +9,10 @@ const corsHeaders = {
 interface HealthCheckResponse {
   healthy: boolean;
   config: {
-    worker_url: boolean;
-    email_secret: boolean;
+    resend_api_key: boolean;
     from_address: string | null;
   };
-  worker_reachable: boolean;
+  api_reachable: boolean;
   settings?: {
     email_enabled: boolean;
     order_emails_enabled: boolean;
@@ -31,48 +30,49 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const workerUrl = Deno.env.get("CLOUDFLARE_EMAIL_WORKER_URL");
-    const emailSecret = Deno.env.get("CLOUDFLARE_EMAIL_SECRET");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const fromAddress = Deno.env.get("EMAIL_FROM_ADDRESS");
 
     const response: HealthCheckResponse = {
       healthy: false,
       config: {
-        worker_url: !!workerUrl,
-        email_secret: !!emailSecret,
-        from_address: fromAddress || null,
+        resend_api_key: !!resendApiKey,
+        from_address: fromAddress || "onboarding@resend.dev (default)",
       },
-      worker_reachable: false,
+      api_reachable: false,
     };
 
     // Check required configuration
-    if (!workerUrl || !emailSecret) {
-      response.error = "Missing required configuration: CLOUDFLARE_EMAIL_WORKER_URL or CLOUDFLARE_EMAIL_SECRET";
+    if (!resendApiKey) {
+      response.error = "Missing RESEND_API_KEY secret. Please add it in Lovable Cloud.";
       return new Response(JSON.stringify(response), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    // Try to reach the Cloudflare Worker
+    // Try to reach Resend API (just check auth, don't send anything)
     try {
-      const healthCheck = await fetch(workerUrl, {
+      const healthCheck = await fetch("https://api.resend.com/domains", {
         method: "GET",
         headers: {
-          "X-Email-Secret": emailSecret,
+          "Authorization": `Bearer ${resendApiKey}`,
         },
       });
       
-      // Consider it reachable if we get any response (even 4xx/5xx means the worker is running)
-      response.worker_reachable = true;
-      
-      // Only mark as unhealthy if we can't connect at all
-      if (healthCheck.status >= 500) {
-        response.error = `Worker returned status ${healthCheck.status}`;
+      // 200 = valid key, 401 = invalid key
+      if (healthCheck.status === 200) {
+        response.api_reachable = true;
+      } else if (healthCheck.status === 401) {
+        response.api_reachable = false;
+        response.error = "Invalid RESEND_API_KEY. Please check your API key.";
+      } else {
+        response.api_reachable = true; // API is reachable but might have other issues
+        response.error = `Resend API returned status ${healthCheck.status}`;
       }
     } catch (fetchError: any) {
-      response.worker_reachable = false;
-      response.error = `Cannot reach Cloudflare Worker: ${fetchError.message}`;
+      response.api_reachable = false;
+      response.error = `Cannot reach Resend API: ${fetchError.message}`;
     }
 
     // Fetch email settings from database
@@ -103,9 +103,8 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // Overall health check
-    response.healthy = response.config.worker_url && 
-                       response.config.email_secret && 
-                       response.worker_reachable &&
+    response.healthy = response.config.resend_api_key && 
+                       response.api_reachable &&
                        !response.error;
 
     return new Response(JSON.stringify(response), {
@@ -118,8 +117,8 @@ serve(async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({
         healthy: false,
-        config: { worker_url: false, email_secret: false, from_address: null },
-        worker_reachable: false,
+        config: { resend_api_key: false, from_address: null },
+        api_reachable: false,
         error: error.message,
       }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }

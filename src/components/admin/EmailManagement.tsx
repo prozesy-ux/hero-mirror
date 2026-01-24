@@ -70,11 +70,10 @@ interface EmailStats {
 interface HealthStatus {
   healthy: boolean;
   config: {
-    worker_url: boolean;
-    email_secret: boolean;
+    resend_api_key: boolean;
     from_address: string | null;
   };
-  worker_reachable: boolean;
+  api_reachable: boolean;
   settings?: {
     email_enabled: boolean;
     order_emails_enabled: boolean;
@@ -956,47 +955,24 @@ const EmailManagement: React.FC = () => {
               {/* Configuration Status */}
               <div className="space-y-3">
                 <div className={`p-3 rounded-lg border ${
-                  healthStatus?.config.worker_url 
+                  healthStatus?.config.resend_api_key 
                     ? 'bg-emerald-500/10 border-emerald-500/30' 
                     : 'bg-slate-800/50 border-slate-700'
                 }`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {healthStatus?.config.worker_url ? (
+                      {healthStatus?.config.resend_api_key ? (
                         <CheckCircle className="h-4 w-4 text-emerald-400" />
                       ) : (
                         <Clock className="h-4 w-4 text-slate-500" />
                       )}
-                      <span className="text-white text-sm">Worker URL</span>
+                      <span className="text-white text-sm">Resend API Key</span>
                     </div>
-                    <Badge className={healthStatus?.config.worker_url 
+                    <Badge className={healthStatus?.config.resend_api_key 
                       ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs' 
                       : 'bg-slate-700 text-slate-400 border-slate-600 text-xs'
                     }>
-                      {healthStatus?.config.worker_url ? '✓' : '?'}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className={`p-3 rounded-lg border ${
-                  healthStatus?.config.email_secret 
-                    ? 'bg-emerald-500/10 border-emerald-500/30' 
-                    : 'bg-slate-800/50 border-slate-700'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {healthStatus?.config.email_secret ? (
-                        <CheckCircle className="h-4 w-4 text-emerald-400" />
-                      ) : (
-                        <Clock className="h-4 w-4 text-slate-500" />
-                      )}
-                      <span className="text-white text-sm">Email Secret</span>
-                    </div>
-                    <Badge className={healthStatus?.config.email_secret 
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs' 
-                      : 'bg-slate-700 text-slate-400 border-slate-600 text-xs'
-                    }>
-                      {healthStatus?.config.email_secret ? '✓' : '?'}
+                      {healthStatus?.config.resend_api_key ? '✓' : '?'}
                     </Badge>
                   </div>
                 </div>
@@ -1019,30 +995,30 @@ const EmailManagement: React.FC = () => {
                       ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs' 
                       : 'bg-slate-700 text-slate-400 border-slate-600 text-xs'
                     }>
-                      {healthStatus?.config.from_address ? '✓' : '?'}
+                      {healthStatus?.config.from_address || 'default'}
                     </Badge>
                   </div>
                 </div>
 
                 <div className={`p-3 rounded-lg border ${
-                  healthStatus?.worker_reachable 
+                  healthStatus?.api_reachable 
                     ? 'bg-emerald-500/10 border-emerald-500/30' 
                     : 'bg-slate-800/50 border-slate-700'
                 }`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {healthStatus?.worker_reachable ? (
+                      {healthStatus?.api_reachable ? (
                         <Wifi className="h-4 w-4 text-emerald-400" />
                       ) : (
                         <WifiOff className="h-4 w-4 text-slate-500" />
                       )}
-                      <span className="text-white text-sm">Connectivity</span>
+                      <span className="text-white text-sm">Resend API</span>
                     </div>
-                    <Badge className={healthStatus?.worker_reachable 
+                    <Badge className={healthStatus?.api_reachable 
                       ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs' 
                       : 'bg-slate-700 text-slate-400 border-slate-600 text-xs'
                     }>
-                      {healthStatus?.worker_reachable ? '✓' : '?'}
+                      {healthStatus?.api_reachable ? 'Connected' : 'Not Connected'}
                     </Badge>
                   </div>
                 </div>
