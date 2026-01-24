@@ -1978,6 +1978,10 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_pro_plan: {
+        Args: { p_amount?: number; p_user_id: string }
+        Returns: Json
+      }
       purchase_seller_product: {
         Args: {
           p_amount: number
