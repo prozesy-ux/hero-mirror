@@ -337,6 +337,70 @@ Deno.serve(async (req) => {
         );
       }
 
+      case "send-test": {
+        // Get admin's user_id from admin_sessions
+        const { data: sessionData } = await supabase
+          .from("admin_sessions")
+          .select("admin_id")
+          .eq("session_token", token)
+          .single();
+
+        if (!sessionData?.admin_id) {
+          return new Response(
+            JSON.stringify({ error: "Admin not found" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Get admin credentials to find associated email
+        const { data: adminCreds } = await supabase
+          .from("admin_credentials")
+          .select("username")
+          .eq("id", sessionData.admin_id)
+          .single();
+
+        // Find user profile matching admin username (email)
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("email", adminCreds?.username)
+          .single();
+
+        if (!profile?.user_id) {
+          return new Response(
+            JSON.stringify({ error: "No push subscription found for admin account. Make sure you've enabled notifications on a user account with matching email." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Send test push
+        const response = await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceRoleKey}`,
+          },
+          body: JSON.stringify({
+            user_id: profile.user_id,
+            title: "🔔 Test Notification",
+            message: "If you see this, push notifications are working correctly!",
+            link: "/dashboard",
+            type: "test",
+          }),
+        });
+
+        const result = await response.json();
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            sent: result.sent || 0,
+            message: result.sent > 0 ? "Test notification sent!" : "No active subscriptions found"
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       default:
         return new Response(
           JSON.stringify({ error: "Unknown action" }),
