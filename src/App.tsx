@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Seller from "./pages/Seller";
 import Admin from "./pages/Admin";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignIn />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/store/:storeSlug" element={<Store />} />
             <Route path="/store/:storeSlug/product/:productId" element={<ProductFullView />} />
             <Route path="/dashboard/*" element={

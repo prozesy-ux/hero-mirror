@@ -561,6 +561,36 @@ export type Database = {
           },
         ]
       }
+      login_history: {
+        Row: {
+          device_info: string | null
+          id: string
+          ip_address: string | null
+          location: string | null
+          logged_in_at: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          device_info?: string | null
+          id?: string
+          ip_address?: string | null
+          location?: string | null
+          logged_in_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          device_info?: string | null
+          id?: string
+          ip_address?: string | null
+          location?: string | null
+          logged_in_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -1865,8 +1895,10 @@ export type Database = {
           created_at: string | null
           email_notifications: boolean | null
           id: string
+          login_alerts: boolean | null
           marketing_emails: boolean | null
           security_alerts: boolean | null
+          security_emails: boolean | null
           updated_at: string | null
           user_id: string
         }
@@ -1874,8 +1906,10 @@ export type Database = {
           created_at?: string | null
           email_notifications?: boolean | null
           id?: string
+          login_alerts?: boolean | null
           marketing_emails?: boolean | null
           security_alerts?: boolean | null
+          security_emails?: boolean | null
           updated_at?: string | null
           user_id: string
         }
@@ -1883,8 +1917,10 @@ export type Database = {
           created_at?: string | null
           email_notifications?: boolean | null
           id?: string
+          login_alerts?: boolean | null
           marketing_emails?: boolean | null
           security_alerts?: boolean | null
+          security_emails?: boolean | null
           updated_at?: string | null
           user_id?: string
         }
