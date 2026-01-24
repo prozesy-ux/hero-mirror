@@ -367,19 +367,6 @@ const EmailManagement: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* Action Bar */}
-      <div className="flex items-center justify-end mb-6">
-        <Button
-          onClick={loadData}
-          disabled={isLoading}
-          variant="outline"
-          size="sm"
-          className="bg-slate-900/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -448,24 +435,37 @@ const EmailManagement: React.FC = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-slate-900/50 border border-slate-800 p-1">
-          <TabsTrigger value="templates" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400">
-            <FileText className="h-4 w-4 mr-2" />
-            Templates
-          </TabsTrigger>
-          <TabsTrigger value="logs" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400">
-            <History className="h-4 w-4 mr-2" />
-            Logs
-          </TabsTrigger>
-          <TabsTrigger value="test" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400">
-            <TestTube className="h-4 w-4 mr-2" />
-            Test
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList className="bg-slate-900/50 border border-slate-800 p-1 rounded-xl">
+            <TabsTrigger value="templates" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4">
+              <FileText className="h-4 w-4 mr-2" />
+              Templates
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4">
+              <History className="h-4 w-4 mr-2" />
+              Logs
+            </TabsTrigger>
+            <TabsTrigger value="test" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4">
+              <TestTube className="h-4 w-4 mr-2" />
+              Test
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
+
+          <Button
+            onClick={loadData}
+            disabled={isLoading}
+            variant="outline"
+            size="sm"
+            className="bg-slate-900/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
 
         {/* Templates Tab */}
         <TabsContent value="templates" className="space-y-6">
