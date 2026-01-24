@@ -4,9 +4,11 @@ import { useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useAdminMutate } from '@/hooks/useAdminMutate';
 import { useAdminData } from '@/hooks/useAdminData';
 import { toast } from 'sonner';
-import { Wallet, Search, DollarSign, ArrowUpRight, RefreshCcw, User } from 'lucide-react';
+import { Wallet, Search, DollarSign, ArrowUpRight, RefreshCw, User, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -59,7 +61,6 @@ const WalletManagement = () => {
 
     setProcessingId(id);
 
-    // Update transaction status using admin edge function
     const result = await mutateData('wallet_transactions', 'update', { status }, id);
 
     if (!result.success) {
@@ -69,7 +70,6 @@ const WalletManagement = () => {
     }
 
     if (status === 'completed' && tx.type === 'topup') {
-      // Fetch current wallet balance using admin fetch
       const walletResult = await fetchData('user_wallets', { 
         filters: [{ column: 'user_id', value: tx.user_id }] 
       });
@@ -77,9 +77,7 @@ const WalletManagement = () => {
       const currentBalance = walletResult.data?.[0]?.balance || 0;
       const newBalance = currentBalance + tx.amount;
 
-      // Check if wallet exists
       if (walletResult.data && walletResult.data.length > 0) {
-        // Update existing wallet
         const walletUpdateResult = await mutateData(
           'user_wallets', 
           'update', 
@@ -94,7 +92,6 @@ const WalletManagement = () => {
           return;
         }
       } else {
-        // Insert new wallet
         const walletInsertResult = await mutateData(
           'user_wallets',
           'insert',
@@ -141,312 +138,336 @@ const WalletManagement = () => {
     .reduce((sum: number, t: any) => sum + parseFloat(String(t.amount)), 0);
   const pendingAmount = pendingTransactions.reduce((sum: number, t: any) => sum + parseFloat(String(t.amount)), 0);
 
+  const handleRefresh = () => {
+    refreshTable('user_wallets');
+    refreshTable('wallet_transactions');
+    toast.success('Refreshed wallet data');
+  };
+
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-green-500/20 rounded-lg">
-              <DollarSign className="text-green-400" size={20} />
-            </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/20 rounded-2xl p-5">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total Balance</p>
-              <p className="text-2xl font-bold text-white">
-                {isLoading ? <Skeleton className="h-8 w-20 bg-white/10" /> : `$${totalBalance.toFixed(2)}`}
+              <p className="text-sm text-slate-400 font-medium">Total Balance</p>
+              <p className="text-3xl font-bold text-white mt-1">
+                {isLoading ? <Skeleton className="h-9 w-20 bg-white/10" /> : `$${totalBalance.toFixed(2)}`}
               </p>
+            </div>
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
+              <DollarSign className="h-7 w-7 text-emerald-400" />
             </div>
           </div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-purple-500/20 rounded-lg">
-              <ArrowUpRight className="text-purple-400" size={20} />
-            </div>
+
+        <div className="bg-gradient-to-br from-violet-500/20 to-violet-600/10 border border-violet-500/20 rounded-2xl p-5">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total Top-ups</p>
-              <p className="text-2xl font-bold text-white">
-                {isLoading ? <Skeleton className="h-8 w-20 bg-white/10" /> : `$${totalTopups.toFixed(2)}`}
+              <p className="text-sm text-slate-400 font-medium">Total Top-ups</p>
+              <p className="text-3xl font-bold text-white mt-1">
+                {isLoading ? <Skeleton className="h-9 w-20 bg-white/10" /> : `$${totalTopups.toFixed(2)}`}
               </p>
+            </div>
+            <div className="w-14 h-14 rounded-2xl bg-violet-500/20 flex items-center justify-center">
+              <ArrowUpRight className="h-7 w-7 text-violet-400" />
             </div>
           </div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-yellow-500/20 rounded-lg">
-              <RefreshCcw className="text-yellow-400" size={20} />
-            </div>
+
+        <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/20 rounded-2xl p-5">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Pending Payments</p>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-sm text-slate-400 font-medium">Pending Payments</p>
+              <p className="text-2xl font-bold text-white mt-1">
                 {isLoading ? <Skeleton className="h-8 w-24 bg-white/10" /> : `${pendingTransactions.length} ($${pendingAmount.toFixed(2)})`}
               </p>
             </div>
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center">
+              <Clock className="h-7 w-7 text-amber-400" />
+            </div>
           </div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-500/20 rounded-lg">
-              <User className="text-blue-400" size={20} />
-            </div>
+
+        <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 rounded-2xl p-5">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Active Wallets</p>
-              <p className="text-2xl font-bold text-white">
-                {isLoading ? <Skeleton className="h-8 w-12 bg-white/10" /> : wallets.length}
+              <p className="text-sm text-slate-400 font-medium">Active Wallets</p>
+              <p className="text-3xl font-bold text-white mt-1">
+                {isLoading ? <Skeleton className="h-9 w-12 bg-white/10" /> : wallets.length}
               </p>
             </div>
+            <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center">
+              <Wallet className="h-7 w-7 text-blue-400" />
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Search & Refresh */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <Input
+            placeholder="Search by email or gateway..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-11 bg-slate-900/50 border-slate-800 text-white placeholder:text-slate-500 focus:border-violet-500 rounded-xl h-11"
+          />
+        </div>
+        <Button
+          onClick={handleRefresh}
+          variant="outline"
+          disabled={isLoading}
+          className="bg-slate-900/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white rounded-xl h-11"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-white/10 pb-2">
-        <button
-          onClick={() => setActiveTab('wallets')}
-          className={`px-4 py-2 rounded-lg transition-all ${
-            activeTab === 'wallets' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          Wallets
-        </button>
-        <button
-          onClick={() => setActiveTab('transactions')}
-          className={`px-4 py-2 rounded-lg transition-all ${
-            activeTab === 'transactions' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          All Transactions
-        </button>
-        <button
-          onClick={() => setActiveTab('pending')}
-          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-            activeTab === 'pending' ? 'bg-yellow-600 text-white' : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          Pending Payments
-          {pendingTransactions.length > 0 && (
-            <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">
-              {pendingTransactions.length}
-            </span>
-          )}
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+        <TabsList className="bg-slate-900/50 border border-slate-800 p-1.5 rounded-xl w-full sm:w-auto">
+          <TabsTrigger 
+            value="wallets" 
+            className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4 py-2"
+          >
+            <Wallet className="h-4 w-4 mr-2" />
+            Wallets
+          </TabsTrigger>
+          <TabsTrigger 
+            value="transactions" 
+            className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4 py-2"
+          >
+            All Transactions
+          </TabsTrigger>
+          <TabsTrigger 
+            value="pending" 
+            className="data-[state=active]:bg-amber-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4 py-2"
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            Pending
+            {pendingTransactions.length > 0 && (
+              <span className="ml-2 px-1.5 py-0.5 text-xs bg-amber-500 text-white rounded-md">
+                {pendingTransactions.length}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <Input
-          placeholder="Search by email or gateway..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-white/5 border-white/10"
-        />
-      </div>
-
-      {/* Wallets Table */}
-      {activeTab === 'wallets' && (
-        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/10">
-                <TableHead className="text-gray-400">User</TableHead>
-                <TableHead className="text-gray-400">Balance</TableHead>
-                <TableHead className="text-gray-400">Created</TableHead>
-                <TableHead className="text-gray-400">Updated</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i} className="border-white/10">
-                    <TableCell><Skeleton className="h-4 w-40 bg-white/10" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20 bg-white/10" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24 bg-white/10" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24 bg-white/10" /></TableCell>
-                  </TableRow>
-                ))
-              ) : filteredWallets.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-gray-400 py-8">
-                    No wallets found
-                  </TableCell>
+        {/* Wallets Table */}
+        <TabsContent value="wallets" className="mt-6">
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-800 hover:bg-transparent">
+                  <TableHead className="text-slate-400">User</TableHead>
+                  <TableHead className="text-slate-400">Balance</TableHead>
+                  <TableHead className="text-slate-400">Created</TableHead>
+                  <TableHead className="text-slate-400">Updated</TableHead>
                 </TableRow>
-              ) : (
-                filteredWallets.map((wallet: any) => (
-                  <TableRow key={wallet.id} className="border-white/10">
-                    <TableCell className="text-white">{wallet.user_email}</TableCell>
-                    <TableCell className="text-green-400 font-semibold">
-                      ${parseFloat(String(wallet.balance)).toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-gray-400">
-                      {new Date(wallet.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-gray-400">
-                      {new Date(wallet.updated_at).toLocaleDateString()}
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="border-slate-800">
+                      <TableCell><Skeleton className="h-4 w-40 bg-slate-700" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20 bg-slate-700" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24 bg-slate-700" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24 bg-slate-700" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredWallets.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-slate-400 py-12">
+                      No wallets found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                ) : (
+                  filteredWallets.map((wallet: any) => (
+                    <TableRow key={wallet.id} className="border-slate-800 hover:bg-slate-800/30">
+                      <TableCell className="text-white">{wallet.user_email}</TableCell>
+                      <TableCell className="text-emerald-400 font-semibold">
+                        ${parseFloat(String(wallet.balance)).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-slate-400">
+                        {new Date(wallet.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-slate-400">
+                        {new Date(wallet.updated_at).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
 
-      {/* Transactions Table */}
-      {activeTab === 'transactions' && (
-        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/10">
-                <TableHead className="text-gray-400">User</TableHead>
-                <TableHead className="text-gray-400">Type</TableHead>
-                <TableHead className="text-gray-400">Amount</TableHead>
-                <TableHead className="text-gray-400">Gateway</TableHead>
-                <TableHead className="text-gray-400">Transaction ID</TableHead>
-                <TableHead className="text-gray-400">Status</TableHead>
-                <TableHead className="text-gray-400">Date</TableHead>
-                <TableHead className="text-gray-400">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i} className="border-white/10">
-                    {Array.from({ length: 8 }).map((_, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-16 bg-white/10" /></TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : filteredTransactions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-gray-400 py-8">
-                    No transactions found
-                  </TableCell>
+        {/* Transactions Table */}
+        <TabsContent value="transactions" className="mt-6">
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-800 hover:bg-transparent">
+                  <TableHead className="text-slate-400">User</TableHead>
+                  <TableHead className="text-slate-400">Type</TableHead>
+                  <TableHead className="text-slate-400">Amount</TableHead>
+                  <TableHead className="text-slate-400">Gateway</TableHead>
+                  <TableHead className="text-slate-400">Transaction ID</TableHead>
+                  <TableHead className="text-slate-400">Status</TableHead>
+                  <TableHead className="text-slate-400">Date</TableHead>
+                  <TableHead className="text-slate-400">Actions</TableHead>
                 </TableRow>
-              ) : (
-                filteredTransactions.map((tx: any) => (
-                  <TableRow key={tx.id} className="border-white/10">
-                    <TableCell className="text-white">{tx.user_email}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        tx.type === 'topup' ? 'bg-green-500/20 text-green-400' :
-                        tx.type === 'purchase' ? 'bg-red-500/20 text-red-400' :
-                        'bg-blue-500/20 text-blue-400'
-                      }`}>
-                        {tx.type}
-                      </span>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="border-slate-800">
+                      {Array.from({ length: 8 }).map((_, j) => (
+                        <TableCell key={j}><Skeleton className="h-4 w-16 bg-slate-700" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : filteredTransactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-slate-400 py-12">
+                      No transactions found
                     </TableCell>
-                    <TableCell className={tx.type === 'topup' ? 'text-green-400' : 'text-red-400'}>
-                      {tx.type === 'topup' ? '+' : '-'}${parseFloat(String(tx.amount)).toFixed(2)}
+                  </TableRow>
+                ) : (
+                  filteredTransactions.map((tx: any) => (
+                    <TableRow key={tx.id} className="border-slate-800 hover:bg-slate-800/30">
+                      <TableCell className="text-white">{tx.user_email}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          tx.type === 'topup' ? 'bg-emerald-500/20 text-emerald-400' :
+                          tx.type === 'purchase' ? 'bg-red-500/20 text-red-400' :
+                          'bg-blue-500/20 text-blue-400'
+                        }`}>
+                          {tx.type}
+                        </span>
+                      </TableCell>
+                      <TableCell className={tx.type === 'topup' ? 'text-emerald-400' : 'text-red-400'}>
+                        {tx.type === 'topup' ? '+' : '-'}${parseFloat(String(tx.amount)).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-slate-400 uppercase">{tx.payment_gateway || '-'}</TableCell>
+                      <TableCell className="text-slate-300 font-mono text-xs">{tx.transaction_id || '-'}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                          tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' :
+                          tx.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
+                          'bg-red-500/20 text-red-400'
+                        }`}>
+                          {tx.status === 'completed' && <CheckCircle className="w-3 h-3" />}
+                          {tx.status === 'pending' && <Clock className="w-3 h-3" />}
+                          {tx.status === 'failed' && <XCircle className="w-3 h-3" />}
+                          {tx.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-slate-400">
+                        {new Date(tx.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {tx.status === 'pending' && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => updateTransactionStatus(tx.id, 'completed')}
+                              disabled={processingId === tx.id}
+                              className="text-emerald-400 hover:text-emerald-300 text-sm disabled:opacity-50"
+                            >
+                              {processingId === tx.id ? 'Processing...' : 'Approve'}
+                            </button>
+                            <button
+                              onClick={() => updateTransactionStatus(tx.id, 'failed')}
+                              disabled={processingId === tx.id}
+                              className="text-red-400 hover:text-red-300 text-sm disabled:opacity-50"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* Pending Payments Table */}
+        <TabsContent value="pending" className="mt-6">
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-800 hover:bg-transparent">
+                  <TableHead className="text-slate-400">User</TableHead>
+                  <TableHead className="text-slate-400">Amount</TableHead>
+                  <TableHead className="text-slate-400">Gateway</TableHead>
+                  <TableHead className="text-slate-400">Transaction ID</TableHead>
+                  <TableHead className="text-slate-400">Date</TableHead>
+                  <TableHead className="text-slate-400">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <TableRow key={i} className="border-slate-800">
+                      {Array.from({ length: 6 }).map((_, j) => (
+                        <TableCell key={j}><Skeleton className="h-4 w-16 bg-slate-700" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : filteredPendingTransactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-slate-400 py-12">
+                      No pending payments
                     </TableCell>
-                    <TableCell className="text-gray-400 uppercase">{tx.payment_gateway || '-'}</TableCell>
-                    <TableCell className="text-gray-300 font-mono text-xs">{tx.transaction_id || '-'}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        tx.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                        tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-red-500/20 text-red-400'
-                      }`}>
-                        {tx.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-gray-400">
-                      {new Date(tx.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      {tx.status === 'pending' && (
+                  </TableRow>
+                ) : (
+                  filteredPendingTransactions.map((tx: any) => (
+                    <TableRow key={tx.id} className="border-slate-800 hover:bg-slate-800/30">
+                      <TableCell className="text-white">{tx.user_email}</TableCell>
+                      <TableCell className="text-emerald-400 font-semibold">
+                        ${parseFloat(String(tx.amount)).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-slate-400 uppercase">{tx.payment_gateway || '-'}</TableCell>
+                      <TableCell className="text-slate-300 font-mono text-xs">{tx.transaction_id || '-'}</TableCell>
+                      <TableCell className="text-slate-400">
+                        {new Date(tx.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex gap-2">
-                          <button
+                          <Button
                             onClick={() => updateTransactionStatus(tx.id, 'completed')}
                             disabled={processingId === tx.id}
-                            className="text-green-400 hover:text-green-300 text-sm disabled:opacity-50"
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
                           >
                             {processingId === tx.id ? 'Processing...' : 'Approve'}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => updateTransactionStatus(tx.id, 'failed')}
                             disabled={processingId === tx.id}
-                            className="text-red-400 hover:text-red-300 text-sm disabled:opacity-50"
+                            size="sm"
+                            variant="outline"
+                            className="border-red-500/50 text-red-400 hover:bg-red-500/10 rounded-lg"
                           >
                             Reject
-                          </button>
+                          </Button>
                         </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      {/* Pending Payments Table */}
-      {activeTab === 'pending' && (
-        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/10">
-                <TableHead className="text-gray-400">User</TableHead>
-                <TableHead className="text-gray-400">Amount</TableHead>
-                <TableHead className="text-gray-400">Gateway</TableHead>
-                <TableHead className="text-gray-400">Transaction ID</TableHead>
-                <TableHead className="text-gray-400">Date</TableHead>
-                <TableHead className="text-gray-400">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <TableRow key={i} className="border-white/10">
-                    {Array.from({ length: 6 }).map((_, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-16 bg-white/10" /></TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : filteredPendingTransactions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-400 py-8">
-                    No pending payments
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredPendingTransactions.map((tx: any) => (
-                  <TableRow key={tx.id} className="border-white/10">
-                    <TableCell className="text-white">{tx.user_email}</TableCell>
-                    <TableCell className="text-green-400 font-semibold">
-                      +${parseFloat(String(tx.amount)).toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-gray-400 uppercase">{tx.payment_gateway}</TableCell>
-                    <TableCell className="text-yellow-400 font-mono text-sm">{tx.transaction_id || 'Not provided'}</TableCell>
-                    <TableCell className="text-gray-400">
-                      {new Date(tx.created_at).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => updateTransactionStatus(tx.id, 'completed')}
-                          disabled={processingId === tx.id}
-                          className="px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
-                        >
-                          {processingId === tx.id ? 'Processing...' : 'Approve'}
-                        </button>
-                        <button
-                          onClick={() => updateTransactionStatus(tx.id, 'failed')}
-                          disabled={processingId === tx.id}
-                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

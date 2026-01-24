@@ -6,9 +6,7 @@ import UsersManagement from '@/components/admin/UsersManagement';
 import PurchasesManagement from '@/components/admin/PurchasesManagement';
 import AIAccountsManagement from '@/components/admin/AIAccountsManagement';
 import AccountOrdersManagement from '@/components/admin/AccountOrdersManagement';
-import RefundRequestsManagement from '@/components/admin/RefundRequestsManagement';
-import CancellationRequestsManagement from '@/components/admin/CancellationRequestsManagement';
-import DeletionRequestsManagement from '@/components/admin/DeletionRequestsManagement';
+import UserRequestsManagement from '@/components/admin/UserRequestsManagement';
 import ChatManagement from '@/components/admin/ChatManagement';
 import WalletManagement from '@/components/admin/WalletManagement';
 import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
@@ -17,7 +15,7 @@ import PushNotificationManagement from '@/components/admin/PushNotificationManag
 import EmailManagement from '@/components/admin/EmailManagement';
 import { AdminDataProvider, useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useState, useEffect } from 'react';
-import { Loader2, Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Lock, User, ArrowLeft, Eye, EyeOff, FileText, Users as UsersIcon, Crown, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,30 +35,59 @@ const AdminDashboard = () => {
     .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
   return (
-    <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-          <div className="text-gray-400 text-sm">Total Prompts</div>
-          <div className="text-3xl font-bold text-white mt-1">
-            {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : prompts.length}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="bg-gradient-to-br from-violet-500/20 to-violet-600/10 border border-violet-500/20 rounded-2xl p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-400 font-medium">Total Prompts</p>
+            <p className="text-3xl font-bold text-white mt-1">
+              {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : prompts.length}
+            </p>
+          </div>
+          <div className="w-14 h-14 rounded-2xl bg-violet-500/20 flex items-center justify-center">
+            <FileText className="h-7 w-7 text-violet-400" />
           </div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-          <div className="text-gray-400 text-sm">Total Users</div>
-          <div className="text-3xl font-bold text-white mt-1">
-            {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : totalUsers}
+      </div>
+
+      <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 rounded-2xl p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-400 font-medium">Total Users</p>
+            <p className="text-3xl font-bold text-white mt-1">
+              {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : totalUsers}
+            </p>
+          </div>
+          <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center">
+            <UsersIcon className="h-7 w-7 text-blue-400" />
           </div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-          <div className="text-gray-400 text-sm">Pro Users</div>
-          <div className="text-3xl font-bold text-amber-400 mt-1">
-            {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : proUsers}
+      </div>
+
+      <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/20 rounded-2xl p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-400 font-medium">Pro Users</p>
+            <p className="text-3xl font-bold text-white mt-1">
+              {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : proUsers}
+            </p>
+          </div>
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center">
+            <Crown className="h-7 w-7 text-amber-400" />
           </div>
         </div>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-          <div className="text-gray-400 text-sm">Revenue</div>
-          <div className="text-3xl font-bold text-green-400 mt-1">
-            {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : `$${revenue.toFixed(2)}`}
+      </div>
+
+      <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/20 rounded-2xl p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-400 font-medium">Revenue</p>
+            <p className="text-3xl font-bold text-white mt-1">
+              {isLoading ? <Skeleton className="h-9 w-16 bg-white/10" /> : `$${revenue.toFixed(2)}`}
+            </p>
+          </div>
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
+            <DollarSign className="h-7 w-7 text-emerald-400" />
           </div>
         </div>
       </div>
@@ -88,13 +115,10 @@ const AdminContent = () => {
           <Route path="payment-settings" element={<PaymentSettingsManagement />} />
           <Route path="ai-accounts" element={<AIAccountsManagement />} />
           <Route path="account-orders" element={<AccountOrdersManagement />} />
-          <Route path="refunds" element={<RefundRequestsManagement />} />
-          <Route path="cancellations" element={<CancellationRequestsManagement />} />
-          <Route path="deletions" element={<DeletionRequestsManagement />} />
+          <Route path="user-requests" element={<UserRequestsManagement />} />
           <Route path="chats" element={<ChatManagement />} />
           <Route path="push-notifications" element={<PushNotificationManagement />} />
           <Route path="email-templates" element={<EmailManagement />} />
-          {/* Unified Resellers Management - includes sellers, products, withdrawals, chat requests */}
           <Route path="resellers" element={<UnifiedResellersManagement />} />
           <Route path="seller-products" element={<UnifiedResellersManagement />} />
           <Route path="seller-withdrawals" element={<UnifiedResellersManagement />} />
