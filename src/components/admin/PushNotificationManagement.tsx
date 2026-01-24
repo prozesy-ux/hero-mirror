@@ -5,19 +5,18 @@ import {
   Send, 
   Users, 
   MousePointerClick, 
-  TrendingUp, 
   Smartphone,
-  Clock,
   CheckCircle2,
   XCircle,
   Trash2,
   RefreshCw,
-  ChevronDown,
   Crown,
   Store,
-  Globe
+  Globe,
+  Zap,
+  TrendingUp,
+  Activity
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -104,6 +103,7 @@ const PushNotificationManagement = () => {
   const [logs, setLogs] = useState<PushLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [testSending, setTestSending] = useState(false);
   
   // Broadcast form
   const [title, setTitle] = useState('');
@@ -192,6 +192,22 @@ const PushNotificationManagement = () => {
     }
   };
 
+  const handleSendTest = async () => {
+    setTestSending(true);
+    try {
+      const result = await fetchData('send-test');
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      toast.success('Test notification sent to your devices');
+    } catch (error) {
+      console.error('Test error:', error);
+      toast.error('Failed to send test notification');
+    } finally {
+      setTestSending(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteId) return;
 
@@ -221,16 +237,16 @@ const PushNotificationManagement = () => {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      sent: 'bg-emerald-100 text-emerald-700',
-      clicked: 'bg-blue-100 text-blue-700',
-      failed: 'bg-red-100 text-red-700',
-      pending: 'bg-amber-100 text-amber-700',
-      completed: 'bg-emerald-100 text-emerald-700',
-      sending: 'bg-blue-100 text-blue-700',
-      draft: 'bg-gray-100 text-gray-700',
+      sent: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      clicked: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+      failed: 'bg-red-500/20 text-red-400 border-red-500/30',
+      pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+      completed: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      sending: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+      draft: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
     };
     return (
-      <Badge className={styles[status] || 'bg-gray-100 text-gray-700'}>
+      <Badge className={`border ${styles[status] || 'bg-slate-500/20 text-slate-400 border-slate-500/30'}`}>
         {status}
       </Badge>
     );
@@ -238,446 +254,513 @@ const PushNotificationManagement = () => {
 
   const getAudienceIcon = (audience: string) => {
     switch (audience) {
-      case 'pro_users': return <Crown className="h-4 w-4 text-amber-500" />;
-      case 'sellers': return <Store className="h-4 w-4 text-violet-500" />;
-      default: return <Globe className="h-4 w-4 text-blue-500" />;
+      case 'pro_users': return <Crown className="h-4 w-4 text-amber-400" />;
+      case 'sellers': return <Store className="h-4 w-4 text-violet-400" />;
+      default: return <Globe className="h-4 w-4 text-blue-400" />;
     }
   };
 
   return (
-    <div className="space-y-6 p-4 lg:p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Push Notifications</h1>
-          <p className="text-gray-500 text-sm">Send and manage browser push notifications</p>
-        </div>
-        <Button onClick={loadAll} variant="outline" size="sm" disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
-
+    <div className="min-h-screen bg-slate-950 p-4 lg:p-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Subscribed Users</p>
-                <p className="text-2xl font-bold text-gray-900">{stats?.totalUsers || 0}</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
-                <Users className="h-6 w-6 text-violet-600" />
-              </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* Users Card - Emerald */}
+        <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/20 rounded-2xl p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-400 font-medium">Subscribed Users</p>
+              <p className="text-3xl font-bold text-white mt-1">{stats?.totalUsers || 0}</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
+              <Users className="h-7 w-7 text-emerald-400" />
+            </div>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Active Devices</p>
-                <p className="text-2xl font-bold text-gray-900">{stats?.totalSubscriptions || 0}</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                <Smartphone className="h-6 w-6 text-blue-600" />
-              </div>
+        {/* Devices Card - Violet */}
+        <div className="bg-gradient-to-br from-violet-500/20 to-violet-600/10 border border-violet-500/20 rounded-2xl p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-400 font-medium">Active Devices</p>
+              <p className="text-3xl font-bold text-white mt-1">{stats?.totalSubscriptions || 0}</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="w-14 h-14 rounded-2xl bg-violet-500/20 flex items-center justify-center">
+              <Smartphone className="h-7 w-7 text-violet-400" />
+            </div>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Total Sent</p>
-                <p className="text-2xl font-bold text-gray-900">{stats?.totalSent || 0}</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                <Send className="h-6 w-6 text-emerald-600" />
-              </div>
+        {/* Sent Card - Blue */}
+        <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 rounded-2xl p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-400 font-medium">Total Sent</p>
+              <p className="text-3xl font-bold text-white mt-1">{stats?.totalSent || 0}</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center">
+              <Send className="h-7 w-7 text-blue-400" />
+            </div>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Click Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{stats?.ctr || '0'}%</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                <MousePointerClick className="h-6 w-6 text-amber-600" />
-              </div>
+        {/* CTR Card - Amber */}
+        <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/20 rounded-2xl p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-400 font-medium">Click Rate</p>
+              <p className="text-3xl font-bold text-white mt-1">{stats?.ctr || '0'}%</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center">
+              <MousePointerClick className="h-7 w-7 text-amber-400" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <Tabs defaultValue="compose" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
-          <TabsTrigger value="compose">Compose</TabsTrigger>
-          <TabsTrigger value="broadcasts">Broadcasts</TabsTrigger>
-          <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-          <TabsTrigger value="logs">Logs</TabsTrigger>
-        </TabsList>
+      {/* Tabs */}
+      <Tabs defaultValue="compose" className="space-y-6">
+        <div className="flex items-center justify-between">
+          <TabsList className="bg-slate-900/50 border border-slate-800 p-1 rounded-xl">
+            <TabsTrigger 
+              value="compose" 
+              className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4"
+            >
+              <Bell className="h-4 w-4 mr-2" />
+              Compose
+            </TabsTrigger>
+            <TabsTrigger 
+              value="broadcasts"
+              className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4"
+            >
+              <Activity className="h-4 w-4 mr-2" />
+              Broadcasts
+            </TabsTrigger>
+            <TabsTrigger 
+              value="subscriptions"
+              className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4"
+            >
+              <Smartphone className="h-4 w-4 mr-2" />
+              Subscriptions
+            </TabsTrigger>
+            <TabsTrigger 
+              value="logs"
+              className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4"
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Logs
+            </TabsTrigger>
+            <TabsTrigger 
+              value="test"
+              className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-slate-400 rounded-lg px-4"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Test
+            </TabsTrigger>
+          </TabsList>
+
+          <Button 
+            onClick={loadAll} 
+            variant="outline" 
+            size="sm" 
+            disabled={loading}
+            className="bg-slate-900/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
 
         {/* Compose Tab */}
         <TabsContent value="compose">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Send Broadcast Notification
-              </CardTitle>
-              <CardDescription>
-                Send a notification to all or selected users
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title *</Label>
-                  <Input
-                    id="title"
-                    placeholder="Notification title..."
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    maxLength={50}
-                  />
-                  <p className="text-xs text-gray-400">{title.length}/50 characters</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="link">Link (optional)</Label>
-                  <Input
-                    id="link"
-                    placeholder="/dashboard or https://..."
-                    value={link}
-                    onChange={(e) => setLink(e.target.value)}
-                  />
-                </div>
-              </div>
-
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="message">Message *</Label>
-                <Textarea
-                  id="message"
-                  placeholder="Write your notification message..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={3}
-                  maxLength={200}
+                <Label htmlFor="title" className="text-slate-300">Title *</Label>
+                <Input
+                  id="title"
+                  placeholder="Notification title..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  maxLength={50}
+                  className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 focus:ring-violet-500/20"
                 />
-                <p className="text-xs text-gray-400">{message.length}/200 characters</p>
+                <p className={`text-xs ${title.length > 40 ? 'text-amber-400' : 'text-slate-500'}`}>
+                  {title.length}/50 characters
+                </p>
               </div>
 
               <div className="space-y-2">
-                <Label>Target Audience</Label>
-                <Select value={targetAudience} onValueChange={setTargetAudience}>
-                  <SelectTrigger className="w-full lg:w-64">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-blue-500" />
-                        All Users
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="pro_users">
-                      <div className="flex items-center gap-2">
-                        <Crown className="h-4 w-4 text-amber-500" />
-                        Pro Users Only
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="sellers">
-                      <div className="flex items-center gap-2">
-                        <Store className="h-4 w-4 text-violet-500" />
-                        Sellers Only
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="link" className="text-slate-300">Link (optional)</Label>
+                <Input
+                  id="link"
+                  placeholder="/dashboard or https://..."
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                  className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 focus:ring-violet-500/20"
+                />
               </div>
+            </div>
 
-              {/* Preview */}
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <p className="text-sm text-gray-500 mb-2">Preview:</p>
-                <div className="bg-white rounded-lg shadow-sm border p-3 max-w-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                      <Bell className="h-5 w-5 text-white" />
+            <div className="space-y-2">
+              <Label htmlFor="message" className="text-slate-300">Message *</Label>
+              <Textarea
+                id="message"
+                placeholder="Write your notification message..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={3}
+                maxLength={200}
+                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 focus:ring-violet-500/20 resize-none"
+              />
+              <p className={`text-xs ${message.length > 180 ? 'text-amber-400' : 'text-slate-500'}`}>
+                {message.length}/200 characters
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-slate-300">Target Audience</Label>
+              <Select value={targetAudience} onValueChange={setTargetAudience}>
+                <SelectTrigger className="w-full lg:w-64 bg-slate-900 border-slate-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-700">
+                  <SelectItem value="all" className="text-white hover:bg-slate-800 focus:bg-slate-800">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-blue-400" />
+                      All Users
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">
-                        {title || 'Notification Title'}
-                      </p>
-                      <p className="text-sm text-gray-600 line-clamp-2">
-                        {message || 'Your notification message will appear here...'}
-                      </p>
+                  </SelectItem>
+                  <SelectItem value="pro_users" className="text-white hover:bg-slate-800 focus:bg-slate-800">
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-4 w-4 text-amber-400" />
+                      Pro Users Only
                     </div>
+                  </SelectItem>
+                  <SelectItem value="sellers" className="text-white hover:bg-slate-800 focus:bg-slate-800">
+                    <div className="flex items-center gap-2">
+                      <Store className="h-4 w-4 text-violet-400" />
+                      Sellers Only
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Dark Preview */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+              <p className="text-xs text-slate-500 mb-3 uppercase tracking-wider">Preview</p>
+              <div className="bg-slate-900 rounded-xl p-4 max-w-sm border border-slate-700">
+                <div className="flex items-start gap-3">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                    <Bell className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-white truncate">
+                      {title || 'Notification Title'}
+                    </p>
+                    <p className="text-sm text-slate-400 line-clamp-2 mt-0.5">
+                      {message || 'Your notification message will appear here...'}
+                    </p>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <Button 
-                onClick={handleSendBroadcast} 
-                disabled={sending || !title.trim() || !message.trim()}
-                className="w-full lg:w-auto"
-              >
-                {sending ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Send Notification
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+            <Button 
+              onClick={handleSendBroadcast} 
+              disabled={sending || !title.trim() || !message.trim()}
+              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white border-0"
+            >
+              {sending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Notification
+                </>
+              )}
+            </Button>
+          </div>
         </TabsContent>
 
         {/* Broadcasts Tab */}
         <TabsContent value="broadcasts">
-          <Card>
-            <CardHeader>
-              <CardTitle>Broadcast History</CardTitle>
-              <CardDescription>All sent broadcast notifications</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Audience</TableHead>
-                      <TableHead>Sent</TableHead>
-                      <TableHead>Clicked</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead></TableHead>
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/50">
+                  <TableHead className="text-slate-400 font-medium">Title</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Audience</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Sent</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Clicked</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Status</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Date</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {broadcasts.length === 0 ? (
+                  <TableRow className="border-slate-800 hover:bg-transparent">
+                    <TableCell colSpan={7}>
+                      <div className="text-center py-16">
+                        <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                          <Bell className="h-10 w-10 text-slate-600" />
+                        </div>
+                        <p className="text-slate-500 text-lg">No broadcasts sent yet</p>
+                        <p className="text-slate-600 text-sm mt-1">Compose your first notification above</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  broadcasts.map((broadcast) => (
+                    <TableRow key={broadcast.id} className="border-slate-800 hover:bg-slate-800/30">
+                      <TableCell>
+                        <div className="max-w-xs">
+                          <p className="font-medium text-white truncate">{broadcast.title}</p>
+                          <p className="text-sm text-slate-500 truncate">{broadcast.message}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {getAudienceIcon(broadcast.target_audience)}
+                          <span className="text-sm text-slate-300 capitalize">
+                            {broadcast.target_audience.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-slate-300">{broadcast.total_sent}</TableCell>
+                      <TableCell className="text-slate-300">{broadcast.total_clicked}</TableCell>
+                      <TableCell>{getStatusBadge(broadcast.status)}</TableCell>
+                      <TableCell className="text-sm text-slate-500">
+                        {formatDate(broadcast.sent_at || broadcast.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setDeleteId(broadcast.id);
+                            setDeleteType('broadcast');
+                          }}
+                          className="text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {broadcasts.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                          No broadcasts sent yet
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      broadcasts.map((broadcast) => (
-                        <TableRow key={broadcast.id}>
-                          <TableCell>
-                            <div className="max-w-xs">
-                              <p className="font-medium truncate">{broadcast.title}</p>
-                              <p className="text-sm text-gray-500 truncate">{broadcast.message}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1.5">
-                              {getAudienceIcon(broadcast.target_audience)}
-                              <span className="text-sm capitalize">
-                                {broadcast.target_audience.replace('_', ' ')}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{broadcast.total_sent}</TableCell>
-                          <TableCell>{broadcast.total_clicked}</TableCell>
-                          <TableCell>{getStatusBadge(broadcast.status)}</TableCell>
-                          <TableCell className="text-sm text-gray-500">
-                            {formatDate(broadcast.sent_at || broadcast.created_at)}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setDeleteId(broadcast.id);
-                                setDeleteType('broadcast');
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-500" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
 
         {/* Subscriptions Tab */}
         <TabsContent value="subscriptions">
-          <Card>
-            <CardHeader>
-              <CardTitle>Device Subscriptions</CardTitle>
-              <CardDescription>Users who have enabled push notifications</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User ID</TableHead>
-                      <TableHead>Device</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Last Used</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead></TableHead>
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/50">
+                  <TableHead className="text-slate-400 font-medium">User ID</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Device</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Status</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Last Used</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Created</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {subscriptions.length === 0 ? (
+                  <TableRow className="border-slate-800 hover:bg-transparent">
+                    <TableCell colSpan={6}>
+                      <div className="text-center py-16">
+                        <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                          <Smartphone className="h-10 w-10 text-slate-600" />
+                        </div>
+                        <p className="text-slate-500 text-lg">No subscriptions yet</p>
+                        <p className="text-slate-600 text-sm mt-1">Users will appear here when they enable notifications</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  subscriptions.map((sub) => (
+                    <TableRow key={sub.id} className="border-slate-800 hover:bg-slate-800/30">
+                      <TableCell>
+                        <code className="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded-md font-mono">
+                          {sub.user_id.slice(0, 8)}...
+                        </code>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="h-4 w-4 text-slate-500" />
+                          <span className="text-sm text-slate-300">{sub.device_name || 'Unknown'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {sub.is_active ? (
+                          <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Active
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-slate-500/20 text-slate-400 border border-slate-500/30">
+                            Inactive
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-500">
+                        {formatDate(sub.last_used_at)}
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-500">
+                        {formatDate(sub.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        {sub.is_active && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setDeleteId(sub.id);
+                              setDeleteType('subscription');
+                            }}
+                            className="text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subscriptions.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                          No subscriptions yet
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      subscriptions.map((sub) => (
-                        <TableRow key={sub.id}>
-                          <TableCell>
-                            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-                              {sub.user_id.slice(0, 8)}...
-                            </code>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Smartphone className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm">{sub.device_name || 'Unknown'}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {sub.is_active ? (
-                              <Badge className="bg-emerald-100 text-emerald-700">Active</Badge>
-                            ) : (
-                              <Badge className="bg-gray-100 text-gray-500">Inactive</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm text-gray-500">
-                            {formatDate(sub.last_used_at)}
-                          </TableCell>
-                          <TableCell className="text-sm text-gray-500">
-                            {formatDate(sub.created_at)}
-                          </TableCell>
-                          <TableCell>
-                            {sub.is_active && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setDeleteId(sub.id);
-                                  setDeleteType('subscription');
-                                }}
-                              >
-                                <XCircle className="h-4 w-4 text-gray-400 hover:text-red-500" />
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
 
         {/* Logs Tab */}
         <TabsContent value="logs">
-          <Card>
-            <CardHeader>
-              <CardTitle>Delivery Logs</CardTitle>
-              <CardDescription>Recent notification delivery attempts</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Sent</TableHead>
-                      <TableHead>Clicked</TableHead>
-                      <TableHead>Error</TableHead>
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/50">
+                  <TableHead className="text-slate-400 font-medium">Title</TableHead>
+                  <TableHead className="text-slate-400 font-medium">User</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Status</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Sent</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Clicked</TableHead>
+                  <TableHead className="text-slate-400 font-medium">Error</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs.length === 0 ? (
+                  <TableRow className="border-slate-800 hover:bg-transparent">
+                    <TableCell colSpan={6}>
+                      <div className="text-center py-16">
+                        <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                          <TrendingUp className="h-10 w-10 text-slate-600" />
+                        </div>
+                        <p className="text-slate-500 text-lg">No logs yet</p>
+                        <p className="text-slate-600 text-sm mt-1">Delivery logs will appear here</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  logs.map((log) => (
+                    <TableRow key={log.id} className="border-slate-800 hover:bg-slate-800/30">
+                      <TableCell>
+                        <div className="max-w-xs">
+                          <p className="font-medium text-white truncate">{log.title || '-'}</p>
+                          <p className="text-sm text-slate-500 truncate">{log.message}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <code className="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded-md font-mono">
+                          {log.user_id?.slice(0, 8)}...
+                        </code>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(log.status)}</TableCell>
+                      <TableCell className="text-sm text-slate-500">
+                        {formatDate(log.sent_at)}
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-500">
+                        {log.clicked_at ? formatDate(log.clicked_at) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {log.error_message && (
+                          <span className="text-xs text-red-400 truncate max-w-xs block bg-red-500/10 px-2 py-1 rounded">
+                            {log.error_message}
+                          </span>
+                        )}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {logs.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                          No logs yet
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      logs.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell>
-                            <div className="max-w-xs">
-                              <p className="font-medium truncate">{log.title || '-'}</p>
-                              <p className="text-sm text-gray-500 truncate">{log.message}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-                              {log.user_id?.slice(0, 8)}...
-                            </code>
-                          </TableCell>
-                          <TableCell>{getStatusBadge(log.status)}</TableCell>
-                          <TableCell className="text-sm text-gray-500">
-                            {formatDate(log.sent_at)}
-                          </TableCell>
-                          <TableCell className="text-sm text-gray-500">
-                            {log.clicked_at ? formatDate(log.clicked_at) : '-'}
-                          </TableCell>
-                          <TableCell>
-                            {log.error_message && (
-                              <span className="text-xs text-red-500 truncate max-w-xs block">
-                                {log.error_message}
-                              </span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* Test Tab */}
+        <TabsContent value="test">
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
+            <div className="max-w-md mx-auto text-center py-8">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-violet-500/20 to-purple-600/20 flex items-center justify-center mx-auto mb-6">
+                <Zap className="h-12 w-12 text-violet-400" />
               </div>
-            </CardContent>
-          </Card>
+              <h3 className="text-xl font-bold text-white mb-2">Test Push Notification</h3>
+              <p className="text-slate-400 mb-6">
+                Send a test notification to verify the push system is working correctly.
+                The notification will be sent to all your subscribed devices.
+              </p>
+              <Button
+                onClick={handleSendTest}
+                disabled={testSending}
+                className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white border-0"
+              >
+                {testSending ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Sending Test...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Send Test Notification
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-slate-600 mt-4">
+                Make sure you have enabled notifications in your browser first.
+              </p>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
-      {/* Delete Dialog */}
+      {/* Delete Dialog - Dark Theme */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-slate-900 border-slate-700">
           <AlertDialogHeader>
-            <AlertDialogTitle>
+            <AlertDialogTitle className="text-white">
               {deleteType === 'broadcast' ? 'Delete Broadcast?' : 'Deactivate Subscription?'}
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-slate-400">
               {deleteType === 'broadcast'
                 ? 'This will permanently delete this broadcast from history.'
                 : 'This will deactivate the subscription. The user will need to re-subscribe to receive notifications.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogCancel className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              className="bg-red-600 hover:bg-red-700 text-white border-0"
+            >
               {deleteType === 'broadcast' ? 'Delete' : 'Deactivate'}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -197,6 +197,24 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     }
   }, [isSupported, requestPermission]);
 
+  // Auto-subscribe if permission already granted
+  useEffect(() => {
+    const autoSubscribe = async () => {
+      if (!isSupported || isLoading || isSubscribed) return;
+      
+      // Only auto-subscribe if permission is already granted and user is not subscribed
+      if (Notification.permission === 'granted') {
+        console.log('[Push] Auto-subscribing - permission already granted');
+        await subscribe();
+      }
+    };
+
+    // Small delay to ensure subscription check completes first
+    const timer = setTimeout(autoSubscribe, 1500);
+    return () => clearTimeout(timer);
+  }, [isSupported, isSubscribed, isLoading, subscribe]);
+
+
   const unsubscribe = useCallback(async (): Promise<boolean> => {
     setIsLoading(true);
 
