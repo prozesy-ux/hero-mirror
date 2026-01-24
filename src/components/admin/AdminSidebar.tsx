@@ -131,16 +131,13 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       { icon: <Users size={22} />, label: 'Users', to: '/admin/users' },
       { icon: <CreditCard size={22} />, label: 'Purchases', to: '/admin/purchases' },
       { icon: <Wallet size={22} />, label: 'Wallets', to: '/admin/wallets' },
-      { icon: <CreditCard size={22} />, label: 'Payment Settings', to: '/admin/payment-settings' },
+      { icon: <Banknote size={22} />, label: 'Payment Settings', to: '/admin/payment-settings' },
       { icon: <Bot size={22} />, label: 'AI Accounts', to: '/admin/ai-accounts' },
       { icon: <Package size={22} />, label: 'Account Orders', to: '/admin/account-orders' },
-      { icon: <RefreshCcw size={22} />, label: 'Refund Requests', to: '/admin/refunds' },
-      { icon: <XCircle size={22} />, label: 'Cancellations', to: '/admin/cancellations' },
-      { icon: <Trash2 size={22} />, label: 'Deletions', to: '/admin/deletions' },
+      { icon: <ShoppingBag size={22} />, label: 'User Requests', to: '/admin/user-requests' },
       { icon: <MessageCircle size={22} />, label: 'Support Chats', to: '/admin/chats' },
       { icon: <Bell size={22} />, label: 'Push Notifications', to: '/admin/push-notifications' },
-      { icon: <Mail size={22} />, label: 'Email Templates', to: '/admin/email-templates' },
-      // Seller Management Section (includes products & withdrawals)
+      { icon: <Mail size={22} />, label: 'Email', to: '/admin/email-templates' },
       { icon: <Store size={22} />, label: 'Resellers', to: '/admin/resellers' },
     ];
 
