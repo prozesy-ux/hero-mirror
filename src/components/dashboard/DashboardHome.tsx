@@ -4,6 +4,7 @@ import { TrendingUp, Bot, ArrowRight, Heart, Lock, Star, Check, ImageIcon } from
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
 
 // Import logos and assets
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -40,6 +41,7 @@ const DashboardHome = () => {
   const [loading, setLoading] = useState(true);
   const [isPromptsPaused, setIsPromptsPaused] = useState(false);
   const [isAccountsPaused, setIsAccountsPaused] = useState(false);
+  const [serverIsPro, setServerIsPro] = useState(false);
   
   const promptsScrollRef = useRef<HTMLDivElement>(null);
   const accountsScrollRef = useRef<HTMLDivElement>(null);
@@ -93,32 +95,35 @@ const DashboardHome = () => {
   const fetchData = async () => {
     setLoading(true);
     
-    // Fetch trending/featured prompts (limit to 8 for scrollable)
-    const { data: promptsData } = await supabase
-      .from('prompts')
-      .select('id, title, image_url, tool, is_free, is_featured, description')
-      .eq('is_featured', true)
-      .limit(8);
+    // Fetch from BFF - all data in one request
+    const { data, error, isUnauthorized } = await bffApi.getPromptsData();
     
-    setTrendingPrompts(promptsData || []);
-
-    // Fetch AI accounts (limit to 8 for scrollable)
-    const { data: accountsData } = await supabase
-      .from('ai_accounts')
-      .select('id, name, description, price, icon_url, category')
-      .eq('is_available', true)
-      .limit(8);
+    if (isUnauthorized) {
+      handleUnauthorized();
+      return;
+    }
     
-    setAiAccounts(accountsData || []);
-
-    // Fetch user favorites
-    if (user) {
-      const { data: favoritesData } = await supabase
-        .from('favorites')
-        .select('prompt_id')
-        .eq('user_id', user.id);
-      
-      setFavorites(favoritesData?.map(f => f.prompt_id) || []);
+    if (error || !data) {
+      console.error('[DashboardHome] BFF error:', error);
+      toast.error('Failed to load data');
+      setLoading(false);
+      return;
+    }
+    
+    // Set featured prompts (limit to 8)
+    const featured = data.featuredPrompts?.slice(0, 8) || [];
+    setTrendingPrompts(featured);
+    
+    // Set favorites
+    setFavorites(data.favorites || []);
+    
+    // Set isPro from server
+    setServerIsPro(data.isPro || false);
+    
+    // Fetch AI accounts from marketplace BFF
+    const { data: marketData } = await bffApi.getMarketplace();
+    if (marketData) {
+      setAiAccounts((marketData.aiAccounts || []).slice(0, 8));
     }
 
     setLoading(false);
@@ -161,7 +166,7 @@ const DashboardHome = () => {
     }
   };
 
-  const canAccessPrompt = (prompt: Prompt) => prompt.is_free || isPro;
+  const canAccessPrompt = (prompt: Prompt) => prompt.is_free || isPro || serverIsPro;
 
   const getProductImage = (category: string | null) => {
     switch (category) {

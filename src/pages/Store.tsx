@@ -31,6 +31,7 @@ import ProductDetailModal from '@/components/store/ProductDetailModal';
 import ShareStoreModal from '@/components/seller/ShareStoreModal';
 import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatContext';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
+import { bffApi } from '@/lib/api-fetch';
 
 interface SellerProfile {
   id: string;
@@ -172,45 +173,27 @@ const StoreContent = () => {
   }, [user]);
 
   const fetchStoreData = async () => {
+    if (!storeSlug) return;
     setLoading(true);
     
     try {
-      // Fetch seller first (required for products query)
-      const { data: sellerData, error: sellerError } = await supabase
-        .from('seller_profiles')
-        .select('*')
-        .eq('store_slug', storeSlug)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (sellerError || !sellerData) {
+      // Use public BFF - no auth required, all data in one request
+      const { data, error } = await bffApi.getPublicStore(storeSlug);
+      
+      if (error || !data) {
+        console.error('[Store] BFF error:', error);
+        setLoading(false);
+        return;
+      }
+      
+      if (!data.seller) {
         setLoading(false);
         return;
       }
 
-      setSeller(sellerData as SellerProfile);
-
-      // Fetch products AND categories in PARALLEL for faster loading
-      const [productsResult, categoriesResult] = await Promise.all([
-        supabase
-          .from('seller_products')
-          .select('*')
-          .eq('seller_id', sellerData.id)
-          .eq('is_available', true)
-          .eq('is_approved', true)
-          .order('sold_count', { ascending: false }),
-        supabase
-          .from('categories')
-          .select('*')
-          .eq('is_active', true)
-      ]);
-
-      if (productsResult.data) {
-        setProducts(productsResult.data);
-      }
-      if (categoriesResult.data) {
-        setCategories(categoriesResult.data);
-      }
+      setSeller(data.seller as SellerProfile);
+      setProducts(data.products || []);
+      setCategories(data.categories || []);
     } catch (error) {
       console.error('[Store] Fetch error:', error);
     } finally {
