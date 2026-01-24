@@ -58,6 +58,9 @@ interface UserPreferences {
   security_alerts: boolean;
   security_emails?: boolean;
   login_alerts?: boolean;
+  order_emails?: boolean;
+  wallet_emails?: boolean;
+  product_emails?: boolean;
 }
 
 interface UserSession {
@@ -967,7 +970,7 @@ const ProfileSection = () => {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between py-3">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
                     <div className="flex items-center gap-3">
                       <Globe className="h-4 w-4 text-gray-400" />
                       <div>
@@ -979,6 +982,54 @@ const ProfileSection = () => {
                       checked={preferences?.login_alerts ?? true}
                       onCheckedChange={(checked) => updatePreference('login_alerts' as keyof UserPreferences, checked)}
                       disabled={updatingPreference === 'login_alerts'}
+                    />
+                  </div>
+
+                  {/* Order Emails */}
+                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <Bell className="h-4 w-4 text-blue-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Order Updates</p>
+                        <p className="text-xs text-gray-500">Order confirmations, delivery status</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={preferences?.order_emails ?? true}
+                      onCheckedChange={(checked) => updatePreference('order_emails' as keyof UserPreferences, checked)}
+                      disabled={updatingPreference === 'order_emails'}
+                    />
+                  </div>
+
+                  {/* Wallet Emails */}
+                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <Bell className="h-4 w-4 text-emerald-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Wallet Notifications</p>
+                        <p className="text-xs text-gray-500">Top-ups, refunds, low balance alerts</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={preferences?.wallet_emails ?? true}
+                      onCheckedChange={(checked) => updatePreference('wallet_emails' as keyof UserPreferences, checked)}
+                      disabled={updatingPreference === 'wallet_emails'}
+                    />
+                  </div>
+
+                  {/* Product Emails */}
+                  <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-3">
+                      <Bell className="h-4 w-4 text-amber-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Product Updates</p>
+                        <p className="text-xs text-gray-500">New products, price changes</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={preferences?.product_emails ?? false}
+                      onCheckedChange={(checked) => updatePreference('product_emails' as keyof UserPreferences, checked)}
+                      disabled={updatingPreference === 'product_emails'}
                     />
                   </div>
                 </div>

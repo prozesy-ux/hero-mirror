@@ -14,7 +14,7 @@ import WalletManagement from '@/components/admin/WalletManagement';
 import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagement';
 import UnifiedResellersManagement from '@/components/admin/UnifiedResellersManagement';
 import PushNotificationManagement from '@/components/admin/PushNotificationManagement';
-import EmailTemplatesSection from '@/components/admin/EmailTemplatesSection';
+import EmailManagement from '@/components/admin/EmailManagement';
 import { AdminDataProvider, useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useState, useEffect } from 'react';
 import { Loader2, Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react';
@@ -93,7 +93,7 @@ const AdminContent = () => {
           <Route path="deletions" element={<DeletionRequestsManagement />} />
           <Route path="chats" element={<ChatManagement />} />
           <Route path="push-notifications" element={<PushNotificationManagement />} />
-          <Route path="email-templates" element={<EmailTemplatesSection />} />
+          <Route path="email-templates" element={<EmailManagement />} />
           {/* Unified Resellers Management - includes sellers, products, withdrawals, chat requests */}
           <Route path="resellers" element={<UnifiedResellersManagement />} />
           <Route path="seller-products" element={<UnifiedResellersManagement />} />
