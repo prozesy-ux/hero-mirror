@@ -36,3 +36,12 @@ verify_jwt = false
 
 [functions.bff-buyer-dashboard]
 verify_jwt = false
+
+[functions.manage-push]
+verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false
+
+[functions.broadcast-push]
+verify_jwt = false

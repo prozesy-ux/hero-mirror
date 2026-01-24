@@ -21,7 +21,8 @@ import {
   Trash2,
   Store,
   ShoppingBag,
-  Banknote
+  Banknote,
+  Bell
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -136,6 +137,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       { icon: <XCircle size={22} />, label: 'Cancellations', to: '/admin/cancellations' },
       { icon: <Trash2 size={22} />, label: 'Deletions', to: '/admin/deletions' },
       { icon: <MessageCircle size={22} />, label: 'Support Chats', to: '/admin/chats' },
+      { icon: <Bell size={22} />, label: 'Push Notifications', to: '/admin/push-notifications' },
       // Seller Management Section (includes products & withdrawals)
       { icon: <Store size={22} />, label: 'Resellers', to: '/admin/resellers' },
     ];

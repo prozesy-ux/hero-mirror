@@ -299,6 +299,54 @@ export type Database = {
         }
         Relationships: []
       }
+      broadcast_notifications: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          link: string | null
+          message: string
+          scheduled_at: string | null
+          sent_at: string | null
+          status: string | null
+          target_audience: string | null
+          title: string
+          total_clicked: number | null
+          total_failed: number | null
+          total_sent: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          link?: string | null
+          message: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          target_audience?: string | null
+          title: string
+          total_clicked?: number | null
+          total_failed?: number | null
+          total_sent?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          link?: string | null
+          message?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          target_audience?: string | null
+          title?: string
+          total_clicked?: number | null
+          total_failed?: number | null
+          total_sent?: number | null
+        }
+        Relationships: []
+      }
       buyer_withdrawals: {
         Row: {
           account_details: string
@@ -790,6 +838,122 @@ export type Database = {
           payment_intent_id?: string | null
           payment_status?: string | null
           purchased_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_config: {
+        Row: {
+          created_at: string | null
+          id: string
+          private_key: string
+          public_key: string
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          private_key: string
+          public_key: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          private_key?: string
+          public_key?: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      push_logs: {
+        Row: {
+          clicked_at: string | null
+          error_message: string | null
+          id: string
+          link: string | null
+          message: string | null
+          notification_type: string | null
+          sent_at: string | null
+          status: string | null
+          subscription_id: string | null
+          title: string | null
+          user_id: string | null
+        }
+        Insert: {
+          clicked_at?: string | null
+          error_message?: string | null
+          id?: string
+          link?: string | null
+          message?: string | null
+          notification_type?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subscription_id?: string | null
+          title?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          clicked_at?: string | null
+          error_message?: string | null
+          id?: string
+          link?: string | null
+          message?: string | null
+          notification_type?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subscription_id?: string | null
+          title?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_logs_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "push_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string | null
+          device_name: string | null
+          endpoint: string
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string | null
+          device_name?: string | null
+          endpoint: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string | null
+          device_name?: string | null
+          endpoint?: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          p256dh?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
