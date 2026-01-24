@@ -44,6 +44,104 @@ export function getRenderedHtml(templateId: EmailTemplateId, variables: Record<s
 }
 
 /**
+ * Gets sample variables for testing a template
+ */
+export function getSampleVariables(templateId: string): Record<string, string> {
+  const sampleData: Record<string, Record<string, string>> = {
+    // Security templates
+    password_reset: {
+      '{{.ConfirmationURL}}': 'https://uptoza.com/reset?token=sample123',
+      '{{.Email}}': 'user@example.com',
+    },
+    email_confirmation: {
+      '{{.ConfirmationURL}}': 'https://uptoza.com/confirm?token=sample123',
+      '{{.Email}}': 'user@example.com',
+    },
+    magic_link: {
+      '{{.ConfirmationURL}}': 'https://uptoza.com/magic?token=sample123',
+      '{{.Email}}': 'user@example.com',
+    },
+    security_alert: {
+      '{{.Email}}': 'user@example.com',
+      event_type: 'Password Changed',
+      event_time: new Date().toLocaleString(),
+      ip_address: '192.168.1.1',
+    },
+    new_login_detected: {
+      '{{.Email}}': 'user@example.com',
+      device: 'Chrome on Windows',
+      location: 'Mumbai, India',
+      login_time: new Date().toLocaleString(),
+      ip_address: '192.168.1.1',
+    },
+    
+    // Order templates
+    order_placed: {
+      order_id: 'ORD-TEST-001',
+      product_name: 'Premium ChatGPT Prompt Pack',
+      amount: '299',
+      order_date: new Date().toLocaleDateString(),
+    },
+    order_delivered: {
+      order_id: 'ORD-TEST-001',
+      product_name: 'Premium ChatGPT Prompt Pack',
+    },
+    order_approved: {
+      order_id: 'ORD-TEST-001',
+      product_name: 'Premium ChatGPT Prompt Pack',
+      buyer_name: 'John Doe',
+      amount: '250',
+    },
+    seller_new_order: {
+      order_id: 'ORD-TEST-001',
+      product_name: 'Premium ChatGPT Prompt Pack',
+      buyer_name: 'John Doe',
+      amount: '299',
+    },
+    
+    // Wallet templates
+    wallet_topup: {
+      amount: '500',
+      new_balance: '1,500',
+      payment_method: 'Razorpay',
+      transaction_id: 'TXN-TEST-001',
+    },
+    low_balance_alert: {
+      current_balance: '50',
+      threshold: '100',
+    },
+    refund_processed: {
+      amount: '299',
+      order_id: 'ORD-TEST-001',
+      reason: 'Product not as described',
+      new_balance: '799',
+    },
+    withdrawal_success: {
+      amount: '1,000',
+      payment_method: 'Bank Transfer',
+      account_details: '****1234',
+      transaction_id: 'WTH-TEST-001',
+    },
+    
+    // Marketing templates
+    welcome_email: {
+      user_name: 'John',
+    },
+    pro_upgrade: {
+      user_name: 'John',
+    },
+    special_offer: {
+      user_name: 'John',
+      discount: '50',
+      offer_code: 'SAVE50',
+      expiry_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+    },
+  };
+
+  return sampleData[templateId] || {};
+}
+
+/**
  * Sends an email using the configured email provider
  */
 export async function sendEmail({ templateId, to, variables }: SendEmailOptions): Promise<{ success: boolean; error?: string }> {
@@ -82,6 +180,42 @@ export async function sendEmail({ templateId, to, variables }: SendEmailOptions)
   } catch (error: any) {
     console.error('Email send error:', error);
     return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Checks the health of the email configuration
+ */
+export async function checkEmailHealth(): Promise<{
+  healthy: boolean;
+  config: {
+    worker_url: boolean;
+    email_secret: boolean;
+    from_address: string | null;
+  };
+  worker_reachable: boolean;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabase.functions.invoke('email-health');
+    
+    if (error) {
+      return {
+        healthy: false,
+        config: { worker_url: false, email_secret: false, from_address: null },
+        worker_reachable: false,
+        error: error.message,
+      };
+    }
+    
+    return data;
+  } catch (error: any) {
+    return {
+      healthy: false,
+      config: { worker_url: false, email_secret: false, from_address: null },
+      worker_reachable: false,
+      error: error.message,
+    };
   }
 }
 
