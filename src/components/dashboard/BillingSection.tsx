@@ -904,7 +904,32 @@ const BillingSection = () => {
                     <span className="text-gray-400 line-through text-lg font-medium">$499</span>
                     <span className="text-4xl font-bold text-gray-900 tracking-tight">$19</span>
                   </div>
-                  <p className="text-gray-500 text-sm mb-6">one-time payment</p>
+                  <p className="text-gray-500 text-sm mb-4">one-time payment</p>
+                  
+                  {/* Wallet Balance Indicator */}
+                  <div className={`flex items-center justify-between p-3 rounded-xl mb-4 ${
+                    (wallet?.balance || 0) >= 19 
+                      ? 'bg-emerald-50 border border-emerald-200' 
+                      : 'bg-amber-50 border border-amber-200'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <Wallet size={16} className={(wallet?.balance || 0) >= 19 ? 'text-emerald-600' : 'text-amber-600'} />
+                      <span className="text-sm font-medium text-gray-700">Your Balance</span>
+                    </div>
+                    <span className={`font-bold ${
+                      (wallet?.balance || 0) >= 19 ? 'text-emerald-600' : 'text-amber-600'
+                    }`}>
+                      ${(wallet?.balance || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  {/* Low Balance Warning */}
+                  {(wallet?.balance || 0) < 19 && (
+                    <p className="text-amber-600 text-xs mb-3 flex items-center gap-1">
+                      <AlertTriangle size={12} />
+                      Add ${(19 - (wallet?.balance || 0)).toFixed(2)} more to upgrade
+                    </p>
+                  )}
                   
                   <button
                     onClick={handleUpgrade}
