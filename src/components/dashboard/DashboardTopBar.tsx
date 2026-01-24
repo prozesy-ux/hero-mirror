@@ -2,14 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, FileText, Bot, CreditCard, MessageCircle, 
-  Crown, LogOut, User, ChevronDown, Wallet, X, Check, ExternalLink
+  Crown, LogOut, User, ChevronDown, Wallet, X, Check, ExternalLink, BellRing
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useSearchContext } from '@/contexts/SearchContext';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { playSound } from '@/lib/sounds';
 import theLogo from '@/assets/the-logo.png';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,12 +40,36 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
   const navigate = useNavigate();
   const { profile, signOut, user } = useAuthContext();
   const { searchQuery, setSearchQuery } = useSearchContext();
+  const { permission, isSubscribed, isLoading: pushLoading, subscribe, isSupported } = usePushNotifications();
   const [unreadCount, setUnreadCount] = useState(0);
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [pushBannerDismissed, setPushBannerDismissed] = useState(true);
   const prevUnreadCountRef = useRef<number>(0);
+
+  // Check if push banner was dismissed
+  useEffect(() => {
+    const dismissed = localStorage.getItem('push_banner_dismissed');
+    if (!dismissed) {
+      setPushBannerDismissed(false);
+    } else {
+      const dismissedTime = parseInt(dismissed);
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      setPushBannerDismissed(Date.now() - dismissedTime < sevenDays);
+    }
+  }, []);
+
+  const dismissPushBanner = () => {
+    localStorage.setItem('push_banner_dismissed', Date.now().toString());
+    setPushBannerDismissed(true);
+  };
+
+  const handleEnablePush = async () => {
+    await subscribe();
+    setPushBannerDismissed(true);
+  };
 
   // Play sound when unread count increases
   useEffect(() => {
@@ -506,6 +532,49 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Push Notification Permission Banner */}
+      {isSupported && permission === 'default' && !pushBannerDismissed && !isSubscribed && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-gradient-to-br from-violet-600 to-purple-700 rounded-2xl shadow-2xl p-5 text-white">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <BellRing className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg">Stay Updated!</h3>
+                <p className="text-sm text-white/80 mt-1">
+                  Get instant alerts for orders, messages & wallet updates.
+                </p>
+                <div className="flex items-center gap-3 mt-4">
+                  <Button
+                    size="sm"
+                    onClick={handleEnablePush}
+                    disabled={pushLoading}
+                    className="bg-white text-violet-700 hover:bg-white/90 font-semibold"
+                  >
+                    {pushLoading ? 'Enabling...' : 'Enable'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={dismissPushBanner}
+                    className="text-white/70 hover:text-white hover:bg-white/10"
+                  >
+                    Not now
+                  </Button>
+                </div>
+              </div>
+              <button
+                onClick={dismissPushBanner}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

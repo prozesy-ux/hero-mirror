@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +46,8 @@ import {
   Loader2,
   AlertTriangle,
   CheckCircle,
-  Globe
+  Globe,
+  BellRing
 } from 'lucide-react';
 
 interface UserPreferences {
@@ -70,6 +72,7 @@ interface UserSession {
 
 const ProfileSection = () => {
   const { profile, user, signOut } = useAuthContext();
+  const { permission, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe, isSupported } = usePushNotifications();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -98,6 +101,15 @@ const ProfileSection = () => {
   const [isSigningOutAll, setIsSigningOutAll] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Push notification toggle handler
+  const handlePushToggle = async () => {
+    if (isSubscribed) {
+      await unsubscribe();
+    } else {
+      await subscribe();
+    }
+  };
 
   // Sync profile data
   useEffect(() => {
@@ -862,6 +874,37 @@ const ProfileSection = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {/* Push Notifications Toggle */}
+                  {isSupported && (
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <BellRing className="h-4 w-4 text-violet-500" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Push Notifications</p>
+                          <p className="text-xs text-gray-500">
+                            {permission === 'denied' 
+                              ? 'Blocked in browser settings' 
+                              : 'Receive instant alerts even when not on the site'}
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={isSubscribed}
+                        onCheckedChange={handlePushToggle}
+                        disabled={pushLoading || permission === 'denied'}
+                      />
+                    </div>
+                  )}
+
+                  {permission === 'denied' && (
+                    <div className="ml-7 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                      <p className="text-xs text-amber-700 flex items-center gap-2">
+                        <AlertTriangle className="h-3 w-3" />
+                        Push notifications are blocked. Enable them in your browser settings.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between py-3 border-b border-gray-100">
                     <div className="flex items-center gap-3">
                       <Mail className="h-4 w-4 text-gray-400" />
