@@ -366,22 +366,15 @@ const EmailManagement: React.FC = () => {
   const categories = ['all', 'security', 'order', 'wallet', 'marketing'];
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
-            <Mail className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Email Templates</h1>
-            <p className="text-slate-400 text-sm">Manage and test email templates via Cloudflare Worker</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-slate-950">
+      {/* Action Bar */}
+      <div className="flex items-center justify-end mb-6">
         <Button
           onClick={loadData}
           disabled={isLoading}
-          className="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
+          variant="outline"
+          size="sm"
+          className="bg-slate-900/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh

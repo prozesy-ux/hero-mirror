@@ -1,5 +1,5 @@
-// Premium Email Templates Library - Fiverr/Google Style Design
-// Uses dark SaaS aesthetic with gradient accents
+// Premium Email Templates Library - Google/Cloudflare/Fiverr Style
+// Clean white/black professional design - NO AI-looking gradients
 
 export interface EmailTemplate {
   id: string;
@@ -13,11 +13,8 @@ export interface EmailTemplate {
   html: string;
 }
 
-// Base template wrapper with premium dark design
-const wrapTemplate = (
-  content: string,
-  headerGradient: string = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
-): string => `
+// Professional base template - clean white design
+const wrapTemplate = (content: string): string => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -25,24 +22,27 @@ const wrapTemplate = (
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Uptoza</title>
 </head>
-<body style="margin: 0; padding: 40px 20px; background: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <div style="max-width: 600px; margin: 0 auto;">
-    <!-- Premium Header with Gradient -->
-    <div style="background: ${headerGradient}; border-radius: 16px 16px 0 0; padding: 32px; text-align: center;">
-      <h1 style="color: white; font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">Uptoza</h1>
+<body style="margin: 0; padding: 40px 20px; background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <div style="max-width: 560px; margin: 0 auto;">
+    <!-- Header -->
+    <div style="text-align: center; padding: 32px 0;">
+      <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #1a1a1a; letter-spacing: -0.5px;">uptoza</h1>
     </div>
     
     <!-- Content Card -->
-    <div style="background: linear-gradient(135deg, #18181b 0%, #1f1f23 100%); padding: 40px; border-left: 1px solid #27272a; border-right: 1px solid #27272a;">
+    <div style="background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
       ${content}
     </div>
     
     <!-- Footer -->
-    <div style="background: #0f0f0f; padding: 24px; border-radius: 0 0 16px 16px; border: 1px solid #27272a; border-top: 0; text-align: center;">
-      <p style="color: #52525b; font-size: 12px; margin: 0 0 8px 0;">© ${new Date().getFullYear()} Uptoza. All rights reserved.</p>
-      <p style="color: #52525b; font-size: 11px; margin: 0;">
-        <a href="{{site_url}}/unsubscribe" style="color: #6366f1; text-decoration: none;">Unsubscribe</a> • 
-        <a href="{{site_url}}/privacy" style="color: #6366f1; text-decoration: none;">Privacy Policy</a>
+    <div style="text-align: center; padding: 32px 20px;">
+      <p style="margin: 0 0 8px 0; font-size: 12px; color: #6b7280;">
+        © ${new Date().getFullYear()} Uptoza. All rights reserved.
+      </p>
+      <p style="margin: 0; font-size: 11px; color: #9ca3af;">
+        <a href="{{site_url}}/unsubscribe" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a>
+        <span style="margin: 0 8px;">·</span>
+        <a href="{{site_url}}/privacy" style="color: #6b7280; text-decoration: underline;">Privacy Policy</a>
       </p>
     </div>
   </div>
@@ -50,35 +50,33 @@ const wrapTemplate = (
 </html>
 `;
 
-// Icon circle component
-const iconCircle = (emoji: string, bgColor: string = 'rgba(99, 102, 241, 0.2)'): string => `
-  <div style="width: 80px; height: 80px; margin: 0 auto 24px; background: ${bgColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-    <span style="font-size: 40px; line-height: 1;">${emoji}</span>
-  </div>
+// Simple CTA Button
+const ctaButton = (text: string, url: string, color: string = '#6366f1'): string => `
+<div style="text-align: center; padding: 8px 0;">
+  <a href="${url}" style="display: inline-block; background-color: ${color}; color: #ffffff; padding: 14px 32px; border-radius: 6px; font-weight: 500; font-size: 14px; text-decoration: none;">${text}</a>
+</div>
 `;
 
-// CTA Button component
-const ctaButton = (text: string, url: string, gradient: string = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', shadowColor: string = 'rgba(99, 102, 241, 0.4)'): string => `
-  <div style="text-align: center; margin: 32px 0;">
-    <a href="${url}" style="display: inline-block; background: ${gradient}; color: white; padding: 16px 48px; border-radius: 12px; font-weight: 600; font-size: 16px; text-decoration: none; box-shadow: 0 8px 24px ${shadowColor};">
-      ${text}
-    </a>
+// OTP Code Box - Premium style
+const otpBox = (codeVar: string): string => `
+<div style="text-align: center; padding: 24px 0;">
+  <div style="display: inline-block; background: #f3f4f6; border: 2px dashed #d1d5db; border-radius: 8px; padding: 20px 40px;">
+    <span style="font-family: 'SF Mono', 'Fira Code', monospace; font-size: 32px; font-weight: 600; color: #1a1a1a; letter-spacing: 6px;">${codeVar}</span>
   </div>
+  <p style="margin: 12px 0 0 0; font-size: 12px; color: #6b7280;">Copy this code to complete verification</p>
+</div>
 `;
 
-// Info box component
-const infoBox = (content: string): string => `
-  <div style="background: #27272a; border-radius: 12px; padding: 16px; margin-top: 24px;">
-    ${content}
-  </div>
-`;
-
-// Detail row component
-const detailRow = (label: string, value: string): string => `
-  <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #3f3f46;">
-    <span style="color: #a1a1aa; font-size: 14px;">${label}</span>
-    <span style="color: white; font-size: 14px; font-weight: 500;">${value}</span>
-  </div>
+// Info row
+const infoRow = (label: string, value: string): string => `
+<tr>
+  <td style="padding: 12px 0; border-bottom: 1px solid #f3f4f6;">
+    <span style="font-size: 13px; color: #6b7280;">${label}</span>
+  </td>
+  <td style="padding: 12px 0; border-bottom: 1px solid #f3f4f6; text-align: right;">
+    <span style="font-size: 13px; color: #1a1a1a; font-weight: 500;">${value}</span>
+  </td>
+</tr>
 `;
 
 // ============================================
@@ -90,28 +88,26 @@ const passwordResetTemplate: EmailTemplate = {
   name: 'Password Reset',
   description: 'Sent when user requests password reset',
   category: 'security',
-  subject: 'Reset Your Password - Uptoza',
+  subject: 'Reset your password',
   variables: ['{{.ConfirmationURL}}', '{{.Email}}'],
-  icon: '🔐',
+  icon: 'key',
   buttonColor: 'violet',
   html: wrapTemplate(`
-    ${iconCircle('🔐', 'rgba(99, 102, 241, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">Reset Your Password</h2>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 8px 0;">
-      We received a request to reset the password for your account.
-    </p>
-    <p style="color: #71717a; text-align: center; font-size: 14px; margin: 0;">
-      Click the button below to create a new password.
-    </p>
-    ${ctaButton('Reset Password', '{{.ConfirmationURL}}')}
-    ${infoBox(`
-      <p style="color: #71717a; font-size: 14px; margin: 0; text-align: center;">
-        ⏱️ This link expires in <strong style="color: white;">1 hour</strong>
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #f3f4f6; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Reset your password</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        We received a request to reset the password for your account. Click the button below to create a new password.
       </p>
-    `)}
-    <p style="color: #52525b; font-size: 12px; text-align: center; margin-top: 24px;">
-      If you didn't request this, you can safely ignore this email.
-    </p>
+      ${ctaButton('Reset Password', '{{.ConfirmationURL}}')}
+      <p style="margin: 24px 0 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
+        This link expires in 1 hour. If you didn't request this, ignore this email.
+      </p>
+    </div>
   `)
 };
 
@@ -120,23 +116,24 @@ const emailConfirmationTemplate: EmailTemplate = {
   name: 'Email Confirmation',
   description: 'Sent to verify new email addresses',
   category: 'security',
-  subject: 'Confirm Your Email - Uptoza',
+  subject: 'Confirm your email address',
   variables: ['{{.ConfirmationURL}}', '{{.Email}}'],
-  icon: '✉️',
+  icon: 'mail',
   buttonColor: 'emerald',
   html: wrapTemplate(`
-    ${iconCircle('✉️', 'rgba(16, 185, 129, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">Verify Your Email</h2>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 8px 0;">
-      Welcome to Uptoza! Please confirm your email address to get started.
-    </p>
-    ${ctaButton('Confirm Email', '{{.ConfirmationURL}}', 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 'rgba(16, 185, 129, 0.4)')}
-    ${infoBox(`
-      <p style="color: #71717a; font-size: 14px; margin: 0; text-align: center;">
-        🎉 You're just one click away from accessing <strong style="color: white;">10,000+ premium prompts</strong>
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #ecfdf5; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Confirm your email</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        Welcome to Uptoza! Please confirm your email address to get started with your account.
       </p>
-    `)}
-  `, 'linear-gradient(135deg, #10b981 0%, #059669 100%)')
+      ${ctaButton('Confirm Email', '{{.ConfirmationURL}}', '#10b981')}
+    </div>
+  `)
 };
 
 const magicLinkTemplate: EmailTemplate = {
@@ -144,22 +141,26 @@ const magicLinkTemplate: EmailTemplate = {
   name: 'Magic Link',
   description: 'Passwordless login link',
   category: 'security',
-  subject: 'Your Magic Login Link - Uptoza',
+  subject: 'Your sign-in link',
   variables: ['{{.ConfirmationURL}}', '{{.Email}}'],
-  icon: '🔗',
+  icon: 'link',
   buttonColor: 'violet',
   html: wrapTemplate(`
-    ${iconCircle('🔗', 'rgba(99, 102, 241, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">Your Magic Login Link</h2>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0;">
-      Click the button below to sign in instantly. No password needed!
-    </p>
-    ${ctaButton('Sign In Now', '{{.ConfirmationURL}}')}
-    ${infoBox(`
-      <p style="color: #71717a; font-size: 14px; margin: 0; text-align: center;">
-        🔒 This link expires in <strong style="color: white;">15 minutes</strong> and can only be used once.
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #f3f4f6; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Sign in to Uptoza</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        Click the button below to sign in. No password needed.
       </p>
-    `)}
+      ${ctaButton('Sign In', '{{.ConfirmationURL}}')}
+      <p style="margin: 24px 0 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
+        This link expires in 15 minutes and can only be used once.
+      </p>
+    </div>
   `)
 };
 
@@ -168,26 +169,34 @@ const securityAlertTemplate: EmailTemplate = {
   name: 'Security Alert',
   description: 'Password change or security event notification',
   category: 'security',
-  subject: '🔒 Security Alert - Uptoza',
+  subject: 'Security alert for your account',
   variables: ['{{.Email}}', '{{event_type}}', '{{event_time}}', '{{ip_address}}'],
-  icon: '🛡️',
+  icon: 'shield',
   buttonColor: 'red',
   html: wrapTemplate(`
-    ${iconCircle('🛡️', 'rgba(239, 68, 68, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">Security Alert</h2>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 24px 0;">
-      We detected a security event on your account.
-    </p>
-    <div style="background: #27272a; border-radius: 12px; padding: 20px; border-left: 4px solid #ef4444;">
-      ${detailRow('Event', '{{event_type}}')}
-      ${detailRow('Time', '{{event_time}}')}
-      ${detailRow('IP Address', '{{ip_address}}')}
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #fef2f2; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Security Alert</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        We detected a security event on your account.
+      </p>
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          ${infoRow('Event', '{{event_type}}')}
+          ${infoRow('Time', '{{event_time}}')}
+          ${infoRow('IP Address', '{{ip_address}}')}
+        </table>
+      </div>
+      ${ctaButton('Review Account', '{{site_url}}/dashboard/profile', '#ef4444')}
+      <p style="margin: 24px 0 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
+        If this wasn't you, change your password immediately.
+      </p>
     </div>
-    ${ctaButton('Review Account', '{{site_url}}/dashboard/profile', 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 'rgba(239, 68, 68, 0.4)')}
-    <p style="color: #71717a; font-size: 13px; text-align: center; margin-top: 24px;">
-      If this wasn't you, please change your password immediately.
-    </p>
-  `, 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)')
+  `)
 };
 
 const newLoginDetectedTemplate: EmailTemplate = {
@@ -195,31 +204,62 @@ const newLoginDetectedTemplate: EmailTemplate = {
   name: 'New Login Detected',
   description: 'Sent when user logs in from new device/location',
   category: 'security',
-  subject: '📍 New Login to Your Account - Uptoza',
+  subject: 'New login to your account',
   variables: ['{{.Email}}', '{{device}}', '{{location}}', '{{login_time}}', '{{ip_address}}'],
-  icon: '📍',
+  icon: 'globe',
   buttonColor: 'amber',
   html: wrapTemplate(`
-    ${iconCircle('📍', 'rgba(245, 158, 11, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">New Login Detected</h2>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 24px 0;">
-      Your account was accessed from a new device or location.
-    </p>
-    <div style="background: #27272a; border-radius: 12px; padding: 20px;">
-      ${detailRow('Device', '{{device}}')}
-      ${detailRow('Location', '{{location}}')}
-      ${detailRow('Time', '{{login_time}}')}
-      ${detailRow('IP Address', '{{ip_address}}')}
-    </div>
-    ${infoBox(`
-      <p style="color: #71717a; font-size: 14px; margin: 0; text-align: center;">
-        ✅ If this was you, no action is needed.
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #fffbeb; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">New login detected</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        Your account was accessed from a new device or location.
       </p>
-    `)}
-    <p style="color: #f59e0b; font-size: 13px; text-align: center; margin-top: 24px;">
-      ⚠️ If this wasn't you, <a href="{{site_url}}/dashboard/profile" style="color: #f59e0b; text-decoration: underline;">secure your account</a> immediately.
-    </p>
-  `, 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)')
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          ${infoRow('Device', '{{device}}')}
+          ${infoRow('Location', '{{location}}')}
+          ${infoRow('Time', '{{login_time}}')}
+          ${infoRow('IP Address', '{{ip_address}}')}
+        </table>
+      </div>
+      <p style="margin: 0; font-size: 13px; color: #6b7280; text-align: center;">
+        If this was you, no action is needed. If not, <a href="{{site_url}}/dashboard/profile" style="color: #f59e0b; text-decoration: underline;">secure your account</a>.
+      </p>
+    </div>
+  `)
+};
+
+const otpVerificationTemplate: EmailTemplate = {
+  id: 'otp_verification',
+  name: 'OTP Verification',
+  description: 'One-time password for verification',
+  category: 'security',
+  subject: 'Your verification code',
+  variables: ['{{otp_code}}', '{{.Email}}'],
+  icon: 'lock',
+  buttonColor: 'violet',
+  html: wrapTemplate(`
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #f3f4f6; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Your verification code</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        Enter this code to verify your identity.
+      </p>
+      ${otpBox('{{otp_code}}')}
+      <p style="margin: 24px 0 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
+        This code expires in 10 minutes. Don't share it with anyone.
+      </p>
+    </div>
+  `)
 };
 
 // ============================================
@@ -231,29 +271,33 @@ const orderPlacedTemplate: EmailTemplate = {
   name: 'Order Placed',
   description: 'Confirmation when order is placed',
   category: 'order',
-  subject: '📦 Order Confirmed #{{order_id}} - Uptoza',
+  subject: 'Order confirmed #{{order_id}}',
   variables: ['{{order_id}}', '{{product_name}}', '{{amount}}', '{{order_date}}'],
-  icon: '📦',
+  icon: 'package',
   buttonColor: 'blue',
   html: wrapTemplate(`
-    ${iconCircle('📦', 'rgba(59, 130, 246, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 8px 0;">Order Confirmed!</h2>
-    <p style="color: #3b82f6; text-align: center; font-size: 14px; font-weight: 600; margin: 0 0 24px 0;">
-      Order #{{order_id}}
-    </p>
-    <div style="background: #27272a; border-radius: 12px; padding: 20px;">
-      ${detailRow('Product', '{{product_name}}')}
-      ${detailRow('Amount', '₹{{amount}}')}
-      ${detailRow('Date', '{{order_date}}')}
-      ${detailRow('Status', '<span style="color: #10b981;">Pending Delivery</span>')}
-    </div>
-    ${ctaButton('View Order Details', '{{site_url}}/dashboard/purchases', 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', 'rgba(59, 130, 246, 0.4)')}
-    ${infoBox(`
-      <p style="color: #71717a; font-size: 14px; margin: 0; text-align: center;">
-        📧 You'll receive your product within <strong style="color: white;">24 hours</strong>
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #eff6ff; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Order Confirmed</h2>
+      <p style="margin: 0 0 24px 0; font-size: 13px; color: #6b7280; text-align: center;">Order #{{order_id}}</p>
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          ${infoRow('Product', '{{product_name}}')}
+          ${infoRow('Amount', '₹{{amount}}')}
+          ${infoRow('Date', '{{order_date}}')}
+          ${infoRow('Status', '<span style="color: #f59e0b;">Pending Delivery</span>')}
+        </table>
+      </div>
+      ${ctaButton('View Order', '{{site_url}}/dashboard/purchases', '#3b82f6')}
+      <p style="margin: 24px 0 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
+        You'll receive your product within 24 hours.
       </p>
-    `)}
-  `, 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)')
+    </div>
+  `)
 };
 
 const orderDeliveredTemplate: EmailTemplate = {
@@ -261,51 +305,27 @@ const orderDeliveredTemplate: EmailTemplate = {
   name: 'Order Delivered',
   description: 'Sent when order is delivered',
   category: 'order',
-  subject: '✅ Order Delivered #{{order_id}} - Uptoza',
+  subject: 'Order delivered #{{order_id}}',
   variables: ['{{order_id}}', '{{product_name}}'],
-  icon: '✅',
+  icon: 'check',
   buttonColor: 'emerald',
   html: wrapTemplate(`
-    ${iconCircle('✅', 'rgba(16, 185, 129, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 8px 0;">Order Delivered!</h2>
-    <p style="color: #10b981; text-align: center; font-size: 14px; font-weight: 600; margin: 0 0 24px 0;">
-      Order #{{order_id}}
-    </p>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 24px 0;">
-      Your order for <strong style="color: white;">{{product_name}}</strong> has been delivered successfully!
-    </p>
-    ${ctaButton('Access Your Product', '{{site_url}}/dashboard/purchases', 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 'rgba(16, 185, 129, 0.4)')}
-    ${infoBox(`
-      <p style="color: #71717a; font-size: 14px; margin: 0; text-align: center;">
-        ⭐ Love it? <a href="{{site_url}}/review/{{order_id}}" style="color: #10b981; text-decoration: underline;">Leave a review</a>
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #ecfdf5; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Order Delivered</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        Your order for <strong>{{product_name}}</strong> has been delivered.
       </p>
-    `)}
-  `, 'linear-gradient(135deg, #10b981 0%, #059669 100%)')
-};
-
-const orderApprovedTemplate: EmailTemplate = {
-  id: 'order_approved',
-  name: 'Order Approved',
-  description: 'Sent to seller when order is approved',
-  category: 'order',
-  subject: '⭐ Your Order Was Approved! - Uptoza',
-  variables: ['{{order_id}}', '{{product_name}}', '{{buyer_name}}', '{{amount}}'],
-  icon: '⭐',
-  buttonColor: 'amber',
-  html: wrapTemplate(`
-    ${iconCircle('⭐', 'rgba(245, 158, 11, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">Order Approved!</h2>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 24px 0;">
-      Great news! Your product delivery has been approved by the buyer.
-    </p>
-    <div style="background: #27272a; border-radius: 12px; padding: 20px;">
-      ${detailRow('Order', '#{{order_id}}')}
-      ${detailRow('Product', '{{product_name}}')}
-      ${detailRow('Buyer', '{{buyer_name}}')}
-      ${detailRow('Earnings', '<span style="color: #10b981;">+₹{{amount}}</span>')}
+      ${ctaButton('Access Product', '{{site_url}}/dashboard/purchases', '#10b981')}
+      <p style="margin: 24px 0 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
+        Enjoy your purchase! <a href="{{site_url}}/review/{{order_id}}" style="color: #6b7280; text-decoration: underline;">Leave a review</a>
+      </p>
     </div>
-    ${ctaButton('View Earnings', '{{site_url}}/seller/wallet', 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 'rgba(245, 158, 11, 0.4)')}
-  `, 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)')
+  `)
 };
 
 const sellerNewOrderTemplate: EmailTemplate = {
@@ -313,28 +333,65 @@ const sellerNewOrderTemplate: EmailTemplate = {
   name: 'Seller New Order',
   description: 'Notifies seller of new order',
   category: 'order',
-  subject: '🛒 New Order Received! - Uptoza',
+  subject: 'New order received #{{order_id}}',
   variables: ['{{order_id}}', '{{product_name}}', '{{buyer_name}}', '{{amount}}'],
-  icon: '🛒',
+  icon: 'shopping-cart',
   buttonColor: 'violet',
   html: wrapTemplate(`
-    ${iconCircle('🛒', 'rgba(99, 102, 241, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">New Order Received!</h2>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 24px 0;">
-      You've received a new order. Please deliver within 24 hours.
-    </p>
-    <div style="background: #27272a; border-radius: 12px; padding: 20px;">
-      ${detailRow('Order', '#{{order_id}}')}
-      ${detailRow('Product', '{{product_name}}')}
-      ${detailRow('Buyer', '{{buyer_name}}')}
-      ${detailRow('Amount', '₹{{amount}}')}
-    </div>
-    ${ctaButton('Deliver Order', '{{site_url}}/seller/orders', 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', 'rgba(99, 102, 241, 0.4)')}
-    ${infoBox(`
-      <p style="color: #f59e0b; font-size: 14px; margin: 0; text-align: center;">
-        ⏱️ Deliver within <strong style="color: white;">24 hours</strong> to maintain your seller rating
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #f3f4f6; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">New Order Received</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        You have a new order. Please deliver within 24 hours.
       </p>
-    `)}
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          ${infoRow('Order', '#{{order_id}}')}
+          ${infoRow('Product', '{{product_name}}')}
+          ${infoRow('Buyer', '{{buyer_name}}')}
+          ${infoRow('Amount', '₹{{amount}}')}
+        </table>
+      </div>
+      ${ctaButton('Deliver Order', '{{site_url}}/seller/orders')}
+      <div style="background: #fffbeb; border-radius: 6px; padding: 12px 16px; margin-top: 24px; text-align: center;">
+        <p style="margin: 0; font-size: 12px; color: #92400e;">
+          Deliver within 24 hours to maintain your seller rating
+        </p>
+      </div>
+    </div>
+  `)
+};
+
+const orderApprovedTemplate: EmailTemplate = {
+  id: 'order_approved',
+  name: 'Order Approved',
+  description: 'Sent to seller when order is approved',
+  category: 'order',
+  subject: 'Order approved - Payment released',
+  variables: ['{{order_id}}', '{{product_name}}', '{{buyer_name}}', '{{amount}}'],
+  icon: 'check-circle',
+  buttonColor: 'emerald',
+  html: wrapTemplate(`
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #ecfdf5; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Payment Released</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        The buyer approved your delivery. Your earnings have been credited.
+      </p>
+      <div style="background: #ecfdf5; border-radius: 8px; padding: 24px; margin-bottom: 24px; text-align: center;">
+        <p style="margin: 0 0 4px 0; font-size: 13px; color: #059669;">Earnings Credited</p>
+        <p style="margin: 0; font-size: 28px; font-weight: 600; color: #10b981;">+₹{{amount}}</p>
+      </div>
+      ${ctaButton('View Wallet', '{{site_url}}/seller/wallet', '#10b981')}
+    </div>
   `)
 };
 
@@ -347,23 +404,32 @@ const walletTopupTemplate: EmailTemplate = {
   name: 'Wallet Top-up',
   description: 'Confirmation of wallet credit',
   category: 'wallet',
-  subject: '💰 Wallet Credited - Uptoza',
+  subject: 'Wallet credited - ₹{{amount}}',
   variables: ['{{amount}}', '{{new_balance}}', '{{payment_method}}', '{{transaction_id}}'],
-  icon: '💰',
+  icon: 'wallet',
   buttonColor: 'emerald',
   html: wrapTemplate(`
-    ${iconCircle('💰', 'rgba(16, 185, 129, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">Wallet Credited!</h2>
-    <p style="color: #10b981; text-align: center; font-size: 32px; font-weight: 700; margin: 0 0 24px 0;">
-      +₹{{amount}}
-    </p>
-    <div style="background: #27272a; border-radius: 12px; padding: 20px;">
-      ${detailRow('New Balance', '₹{{new_balance}}')}
-      ${detailRow('Payment Method', '{{payment_method}}')}
-      ${detailRow('Transaction ID', '{{transaction_id}}')}
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #ecfdf5; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Wallet Credited</h2>
+      <div style="background: #ecfdf5; border-radius: 8px; padding: 24px; margin-bottom: 24px; text-align: center;">
+        <p style="margin: 0 0 4px 0; font-size: 13px; color: #059669;">Amount Added</p>
+        <p style="margin: 0; font-size: 32px; font-weight: 600; color: #10b981;">+₹{{amount}}</p>
+      </div>
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          ${infoRow('New Balance', '₹{{new_balance}}')}
+          ${infoRow('Payment Method', '{{payment_method}}')}
+          ${infoRow('Transaction ID', '{{transaction_id}}')}
+        </table>
+      </div>
+      ${ctaButton('View Wallet', '{{site_url}}/dashboard/wallet', '#10b981')}
     </div>
-    ${ctaButton('View Wallet', '{{site_url}}/dashboard/wallet', 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 'rgba(16, 185, 129, 0.4)')}
-  `, 'linear-gradient(135deg, #10b981 0%, #059669 100%)')
+  `)
 };
 
 const lowBalanceAlertTemplate: EmailTemplate = {
@@ -371,22 +437,28 @@ const lowBalanceAlertTemplate: EmailTemplate = {
   name: 'Low Balance Alert',
   description: 'Warning when wallet balance is low',
   category: 'wallet',
-  subject: '⚠️ Low Wallet Balance - Uptoza',
+  subject: 'Low wallet balance',
   variables: ['{{current_balance}}', '{{threshold}}'],
-  icon: '⚠️',
+  icon: 'alert-triangle',
   buttonColor: 'amber',
   html: wrapTemplate(`
-    ${iconCircle('⚠️', 'rgba(245, 158, 11, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">Low Balance Alert</h2>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 24px 0;">
-      Your wallet balance is running low.
-    </p>
-    <div style="background: linear-gradient(135deg, #27272a 0%, #1f1f23 100%); border-radius: 16px; padding: 24px; text-align: center; border: 1px solid #f59e0b30;">
-      <p style="color: #71717a; font-size: 14px; margin: 0 0 8px 0;">Current Balance</p>
-      <p style="color: #f59e0b; font-size: 36px; font-weight: 700; margin: 0;">₹{{current_balance}}</p>
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #fffbeb; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Low Balance Alert</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        Your wallet balance is running low.
+      </p>
+      <div style="background: #fffbeb; border-radius: 8px; padding: 24px; margin-bottom: 24px; text-align: center;">
+        <p style="margin: 0 0 4px 0; font-size: 13px; color: #92400e;">Current Balance</p>
+        <p style="margin: 0; font-size: 32px; font-weight: 600; color: #f59e0b;">₹{{current_balance}}</p>
+      </div>
+      ${ctaButton('Top Up Now', '{{site_url}}/dashboard/wallet', '#f59e0b')}
     </div>
-    ${ctaButton('Top Up Now', '{{site_url}}/dashboard/wallet', 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 'rgba(245, 158, 11, 0.4)')}
-  `, 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)')
+  `)
 };
 
 const refundProcessedTemplate: EmailTemplate = {
@@ -394,53 +466,31 @@ const refundProcessedTemplate: EmailTemplate = {
   name: 'Refund Processed',
   description: 'Confirmation of refund',
   category: 'wallet',
-  subject: '💸 Refund Processed - Uptoza',
+  subject: 'Refund processed - ₹{{amount}}',
   variables: ['{{amount}}', '{{order_id}}', '{{reason}}', '{{new_balance}}'],
-  icon: '💸',
-  buttonColor: 'blue',
+  icon: 'refresh',
+  buttonColor: 'emerald',
   html: wrapTemplate(`
-    ${iconCircle('💸', 'rgba(59, 130, 246, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">Refund Processed</h2>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 24px 0;">
-      Your refund has been processed and credited to your wallet.
-    </p>
-    <div style="background: #27272a; border-radius: 12px; padding: 20px;">
-      ${detailRow('Refund Amount', '<span style="color: #10b981;">+₹{{amount}}</span>')}
-      ${detailRow('Order ID', '#{{order_id}}')}
-      ${detailRow('Reason', '{{reason}}')}
-      ${detailRow('New Balance', '₹{{new_balance}}')}
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #ecfdf5; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Refund Processed</h2>
+      <div style="background: #ecfdf5; border-radius: 8px; padding: 24px; margin-bottom: 24px; text-align: center;">
+        <p style="margin: 0 0 4px 0; font-size: 13px; color: #059669;">Amount Refunded</p>
+        <p style="margin: 0; font-size: 32px; font-weight: 600; color: #10b981;">+₹{{amount}}</p>
+      </div>
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          ${infoRow('Order', '#{{order_id}}')}
+          ${infoRow('Reason', '{{reason}}')}
+          ${infoRow('New Balance', '₹{{new_balance}}')}
+        </table>
+      </div>
+      ${ctaButton('View Wallet', '{{site_url}}/dashboard/wallet', '#10b981')}
     </div>
-    ${ctaButton('View Wallet', '{{site_url}}/dashboard/wallet', 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', 'rgba(59, 130, 246, 0.4)')}
-  `, 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)')
-};
-
-const withdrawalCompleteTemplate: EmailTemplate = {
-  id: 'withdrawal_complete',
-  name: 'Withdrawal Complete',
-  description: 'Confirmation of withdrawal',
-  category: 'wallet',
-  subject: '🏦 Withdrawal Complete - Uptoza',
-  variables: ['{{amount}}', '{{bank_name}}', '{{account_last4}}', '{{transaction_id}}'],
-  icon: '🏦',
-  buttonColor: 'violet',
-  html: wrapTemplate(`
-    ${iconCircle('🏦', 'rgba(99, 102, 241, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 16px 0;">Withdrawal Complete</h2>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 24px 0;">
-      Your withdrawal has been processed successfully.
-    </p>
-    <div style="background: #27272a; border-radius: 12px; padding: 20px;">
-      ${detailRow('Amount', '₹{{amount}}')}
-      ${detailRow('Bank', '{{bank_name}}')}
-      ${detailRow('Account', '****{{account_last4}}')}
-      ${detailRow('Transaction ID', '{{transaction_id}}')}
-    </div>
-    ${ctaButton('View Transaction History', '{{site_url}}/seller/wallet', 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', 'rgba(99, 102, 241, 0.4)')}
-    ${infoBox(`
-      <p style="color: #71717a; font-size: 14px; margin: 0; text-align: center;">
-        💳 Funds will reflect in your account within <strong style="color: white;">2-3 business days</strong>
-      </p>
-    `)}
   `)
 };
 
@@ -451,85 +501,67 @@ const withdrawalCompleteTemplate: EmailTemplate = {
 const welcomeEmailTemplate: EmailTemplate = {
   id: 'welcome_email',
   name: 'Welcome Email',
-  description: 'Sent after successful registration',
+  description: 'Sent to new users after signup',
   category: 'marketing',
-  subject: '🎉 Welcome to Uptoza! - Let\'s Get Started',
+  subject: 'Welcome to Uptoza',
   variables: ['{{user_name}}'],
-  icon: '🎉',
+  icon: 'sparkles',
   buttonColor: 'violet',
   html: wrapTemplate(`
-    ${iconCircle('🎉', 'rgba(99, 102, 241, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 8px 0;">Welcome, {{user_name}}!</h2>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 24px 0;">
-      You now have access to the world's largest collection of AI prompts.
-    </p>
-    
-    <!-- Feature highlights -->
-    <div style="background: #27272a; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-      <div style="display: flex; align-items: center; margin-bottom: 12px;">
-        <span style="font-size: 24px; margin-right: 12px;">📚</span>
-        <div>
-          <p style="color: white; font-size: 14px; font-weight: 600; margin: 0;">10,000+ Premium Prompts</p>
-          <p style="color: #71717a; font-size: 12px; margin: 0;">ChatGPT, Midjourney, DALL-E & more</p>
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #f3f4f6; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
         </div>
       </div>
-      <div style="display: flex; align-items: center; margin-bottom: 12px;">
-        <span style="font-size: 24px; margin-right: 12px;">🤖</span>
-        <div>
-          <p style="color: white; font-size: 14px; font-weight: 600; margin: 0;">AI Account Access</p>
-          <p style="color: #71717a; font-size: 12px; margin: 0;">Premium AI tools at unbeatable prices</p>
-        </div>
-      </div>
-      <div style="display: flex; align-items: center;">
-        <span style="font-size: 24px; margin-right: 12px;">🛒</span>
-        <div>
-          <p style="color: white; font-size: 14px; font-weight: 600; margin: 0;">Seller Marketplace</p>
-          <p style="color: #71717a; font-size: 12px; margin: 0;">Buy & sell digital products</p>
-        </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Welcome to Uptoza</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        Hi {{user_name}}, thanks for joining! You now have access to our digital marketplace with premium AI tools and products.
+      </p>
+      ${ctaButton('Start Exploring', '{{site_url}}/dashboard')}
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-top: 32px;">
+        <p style="margin: 0 0 12px 0; font-size: 13px; font-weight: 600; color: #1a1a1a;">Quick start:</p>
+        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #4b5563; line-height: 1.8;">
+          <li>Browse premium AI accounts</li>
+          <li>Explore digital products</li>
+          <li>Top up your wallet</li>
+        </ul>
       </div>
     </div>
-    
-    ${ctaButton('Explore Prompts', '{{site_url}}/dashboard')}
   `)
 };
 
 const proUpgradeTemplate: EmailTemplate = {
   id: 'pro_upgrade',
-  name: 'Pro Plan Upgrade',
-  description: 'Welcome to Pro membership',
+  name: 'Pro Upgrade',
+  description: 'Confirmation of Pro plan upgrade',
   category: 'marketing',
-  subject: '👑 Welcome to Pro! - Uptoza',
-  variables: ['{{user_name}}', '{{plan_name}}', '{{expiry_date}}'],
-  icon: '👑',
+  subject: 'Welcome to Uptoza Pro',
+  variables: ['{{user_name}}'],
+  icon: 'crown',
   buttonColor: 'amber',
   html: wrapTemplate(`
-    ${iconCircle('👑', 'rgba(245, 158, 11, 0.2)')}
-    <h2 style="color: #fafafa; text-align: center; font-size: 24px; margin: 0 0 8px 0;">You're Now Pro!</h2>
-    <p style="color: #f59e0b; text-align: center; font-size: 14px; font-weight: 600; margin: 0 0 24px 0;">
-      {{plan_name}} Active
-    </p>
-    <p style="color: #a1a1aa; text-align: center; line-height: 1.6; margin: 0 0 24px 0;">
-      Congratulations, {{user_name}}! You now have unlimited access to all premium features.
-    </p>
-    
-    <!-- Pro benefits -->
-    <div style="background: linear-gradient(135deg, #27272a 0%, #1f1f23 100%); border-radius: 12px; padding: 20px; border: 1px solid #f59e0b30;">
-      <p style="color: #f59e0b; font-size: 14px; font-weight: 600; margin: 0 0 16px 0; text-align: center;">✨ Your Pro Benefits</p>
-      <div style="color: #a1a1aa; font-size: 14px; line-height: 2;">
-        ✅ Unlimited prompt access<br>
-        ✅ Priority support<br>
-        ✅ Early access to new features<br>
-        ✅ Exclusive Pro-only prompts<br>
-        ✅ No ads
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #fffbeb; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Welcome to Pro</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        You've unlocked all premium features. Enjoy unlimited access to our complete library.
+      </p>
+      ${ctaButton('Access Pro Features', '{{site_url}}/dashboard', '#f59e0b')}
+      <div style="background: #fffbeb; border-radius: 8px; padding: 20px; margin-top: 32px;">
+        <p style="margin: 0 0 12px 0; font-size: 13px; font-weight: 600; color: #92400e;">Pro benefits:</p>
+        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #78350f; line-height: 1.8;">
+          <li>Unlimited prompts access</li>
+          <li>Priority support</li>
+          <li>Exclusive content</li>
+        </ul>
       </div>
     </div>
-    
-    ${ctaButton('Explore Pro Features', '{{site_url}}/dashboard', 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 'rgba(245, 158, 11, 0.4)')}
-    
-    <p style="color: #71717a; font-size: 12px; text-align: center; margin-top: 24px;">
-      Your Pro membership is valid until <strong style="color: white;">{{expiry_date}}</strong>
-    </p>
-  `, 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)')
+  `)
 };
 
 // ============================================
@@ -543,21 +575,22 @@ export const emailTemplates: EmailTemplate[] = [
   magicLinkTemplate,
   securityAlertTemplate,
   newLoginDetectedTemplate,
+  otpVerificationTemplate,
   // Order
   orderPlacedTemplate,
   orderDeliveredTemplate,
-  orderApprovedTemplate,
   sellerNewOrderTemplate,
+  orderApprovedTemplate,
   // Wallet
   walletTopupTemplate,
   lowBalanceAlertTemplate,
   refundProcessedTemplate,
-  withdrawalCompleteTemplate,
   // Marketing
   welcomeEmailTemplate,
   proUpgradeTemplate,
 ];
 
+// Helper functions
 export const getTemplateById = (id: string): EmailTemplate | undefined => {
   return emailTemplates.find(t => t.id === id);
 };
@@ -567,21 +600,21 @@ export const getTemplatesByCategory = (category: EmailTemplate['category']): Ema
 };
 
 export const getCategoryColor = (category: EmailTemplate['category']): string => {
-  const colors: Record<EmailTemplate['category'], string> = {
-    security: 'bg-red-500/20 text-red-400 border-red-500/30',
-    order: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    wallet: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-    marketing: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
+  const colors: Record<string, string> = {
+    security: 'text-violet-400 bg-violet-500/20 border-violet-500/30',
+    order: 'text-blue-400 bg-blue-500/20 border-blue-500/30',
+    wallet: 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30',
+    marketing: 'text-amber-400 bg-amber-500/20 border-amber-500/30',
   };
-  return colors[category];
+  return colors[category] || 'text-slate-400 bg-slate-500/20 border-slate-500/30';
 };
 
 export const getCategoryIcon = (category: EmailTemplate['category']): string => {
-  const icons: Record<EmailTemplate['category'], string> = {
-    security: '🔒',
-    order: '📦',
-    wallet: '💰',
-    marketing: '📣',
+  const icons: Record<string, string> = {
+    security: 'Shield',
+    order: 'ShoppingCart',
+    wallet: 'Wallet',
+    marketing: 'Megaphone',
   };
-  return icons[category];
+  return icons[category] || 'Mail';
 };

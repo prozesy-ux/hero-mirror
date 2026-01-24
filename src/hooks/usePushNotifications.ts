@@ -36,9 +36,11 @@ export function usePushNotifications(): UsePushNotificationsReturn {
                       'serviceWorker' in navigator && 
                       'PushManager' in window;
     setIsSupported(supported);
+    console.log('[Push] Browser support:', supported);
     
     if (supported) {
       setPermission(Notification.permission);
+      console.log('[Push] Current permission:', Notification.permission);
     }
   }, []);
 
@@ -48,9 +50,12 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
+          console.log('[Push] No session, skipping subscription check');
           setIsSubscribed(false);
           return;
         }
+
+        console.log('[Push] Checking subscription for user:', session.user.id.slice(0, 8));
 
         // Check with backend
         const response = await fetch(
@@ -67,9 +72,19 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         );
 
         const result = await response.json();
+        console.log('[Push] Subscription check result:', result);
         setIsSubscribed(result.isSubscribed);
+
+        // Also check if service worker is registered
+        const registration = await navigator.serviceWorker.getRegistration();
+        console.log('[Push] Service worker registered:', !!registration);
+        
+        if (registration) {
+          const subscription = await registration.pushManager.getSubscription();
+          console.log('[Push] Browser has active subscription:', !!subscription);
+        }
       } catch (error) {
-        console.error('Error checking subscription:', error);
+        console.error('[Push] Error checking subscription:', error);
       }
     };
 
@@ -78,7 +93,8 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     }
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      console.log('[Push] Auth state changed:', event);
       if (isSupported) {
         checkSubscription();
       }
