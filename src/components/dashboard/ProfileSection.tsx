@@ -56,6 +56,8 @@ interface UserPreferences {
   email_notifications: boolean;
   marketing_emails: boolean;
   security_alerts: boolean;
+  security_emails?: boolean;
+  login_alerts?: boolean;
 }
 
 interface UserSession {
@@ -935,7 +937,7 @@ const ProfileSection = () => {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between py-3">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
                     <div className="flex items-center gap-3">
                       <Shield className="h-4 w-4 text-gray-400" />
                       <div>
@@ -947,6 +949,36 @@ const ProfileSection = () => {
                       checked={preferences?.security_alerts ?? true}
                       onCheckedChange={(checked) => updatePreference('security_alerts', checked)}
                       disabled={updatingPreference === 'security_alerts'}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <Key className="h-4 w-4 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Security Emails</p>
+                        <p className="text-xs text-gray-500">Password changes, account recovery</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={preferences?.security_emails ?? true}
+                      onCheckedChange={(checked) => updatePreference('security_emails' as keyof UserPreferences, checked)}
+                      disabled={updatingPreference === 'security_emails'}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-3">
+                      <Globe className="h-4 w-4 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Login Notifications</p>
+                        <p className="text-xs text-gray-500">Email when you sign in from new device</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={preferences?.login_alerts ?? true}
+                      onCheckedChange={(checked) => updatePreference('login_alerts' as keyof UserPreferences, checked)}
+                      disabled={updatingPreference === 'login_alerts'}
                     />
                   </div>
                 </div>
