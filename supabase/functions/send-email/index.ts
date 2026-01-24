@@ -108,22 +108,25 @@ serve(async (req: Request): Promise<Response> => {
     logId = logEntry?.id;
 
     // Call Cloudflare Worker
-    console.log(`Calling worker: ${workerUrl} with from: ${fromAddress}`);
+    console.log(`Calling worker: ${workerUrl} with from: ${fromAddress}, secret length: ${emailSecret.length}`);
     
-    // IMPORTANT:
-    // Do NOT send Cloudflare Access headers to a workers.dev endpoint by default.
-    // If the Worker isn't protected by Access, these headers can trigger 401s
-    // (depending on how the Worker is written).
+    // Cloudflare Access Service Token headers (for Zero Trust bypass)
+    const cfAccessClientId = Deno.env.get("CF_ACCESS_CLIENT_ID");
+    const cfAccessClientSecret = Deno.env.get("CF_ACCESS_CLIENT_SECRET");
+    
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "X-Email-Secret": emailSecret,
-      // Some workers are implemented to check a different header name.
-      // Sending both keeps compatibility without changing your Worker code.
-      "EMAIL_SECRET": emailSecret,
-      // Common pattern: workers validate Authorization bearer tokens.
-      // (We keep X-Email-Secret too for backward compatibility.)
-      "Authorization": `Bearer ${emailSecret}`,
     };
+    
+    // Add Cloudflare Access headers if configured (required when Worker is behind Access)
+    if (cfAccessClientId && cfAccessClientSecret) {
+      headers["CF-Access-Client-Id"] = cfAccessClientId;
+      headers["CF-Access-Client-Secret"] = cfAccessClientSecret;
+      console.log("Using Cloudflare Access service token for authentication");
+    } else {
+      console.log("No Cloudflare Access credentials configured");
+    }
     
     const response = await fetch(workerUrl, {
       method: "POST",
