@@ -519,36 +519,39 @@ const BillingSection = () => {
   const handleUpgrade = async () => {
     if (!user) return;
     
-    setProcessingPayment(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const { error: purchaseError } = await supabase
-      .from('purchases')
-      .insert({
-        user_id: user.id,
-        amount: 19.00,
-        payment_status: 'completed'
-      });
-
-    if (purchaseError) {
-      toast.error('Failed to process payment');
-      setProcessingPayment(false);
+    // Check balance first (UI feedback)
+    if ((wallet?.balance || 0) < 19) {
+      toast.error('Insufficient balance. Please top up your wallet first.');
       return;
     }
+    
+    setProcessingPayment(true);
 
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ is_pro: true })
-      .eq('user_id', user.id);
+    try {
+      // Call atomic RPC function - handles wallet deduction, transaction record, and profile update
+      const { data, error } = await supabase.rpc('purchase_pro_plan', {
+        p_user_id: user.id,
+        p_amount: 19.00
+      });
 
-    setProcessingPayment(false);
+      if (error) throw error;
 
-    if (profileError) {
-      toast.error('Failed to activate Pro status');
-    } else {
+      const result = data as { success: boolean; error?: string; new_balance?: number };
+
+      if (!result.success) {
+        toast.error(result.error || 'Failed to process payment');
+        setProcessingPayment(false);
+        return;
+      }
+
       toast.success('Welcome to Pro! All prompts are now unlocked!');
-      fetchData();
+      fetchData(); // Refresh wallet balance and transactions
       window.location.reload();
+    } catch (error: any) {
+      console.error('Upgrade error:', error);
+      toast.error(error.message || 'Failed to upgrade to Pro');
+    } finally {
+      setProcessingPayment(false);
     }
   };
 
