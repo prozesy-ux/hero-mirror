@@ -6,6 +6,8 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useSearchContext } from '@/contexts/SearchContext';
 import { toast } from 'sonner';
 import { PromptsSidebar } from './PromptsSidebar';
+import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
+
 interface Prompt {
   id: string;
   title: string;
@@ -45,6 +47,7 @@ const PromptsGrid = () => {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [serverIsPro, setServerIsPro] = useState(false);
   
   const { user, isPro } = useAuthContext();
 
@@ -57,32 +60,10 @@ const PromptsGrid = () => {
     );
   };
 
-  const fetchWallet = async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('user_wallets')
-      .select('balance')
-      .eq('user_id', user.id)
-      .single();
-
-    if (error && error.code === 'PGRST116') {
-      // No wallet exists, create one
-      const { data: newWallet } = await supabase
-        .from('user_wallets')
-        .insert({ user_id: user.id, balance: 0 })
-        .select('balance')
-        .single();
-      
-      setWallet(newWallet);
-    } else if (data) {
-      setWallet(data);
-    }
-  };
-
   useEffect(() => {
     fetchData();
 
+    // Keep realtime subscription for live updates
     const channel = supabase
       .channel('prompts-changes')
       .on(
@@ -105,8 +86,6 @@ const PromptsGrid = () => {
 
   useEffect(() => {
     if (user) {
-      fetchWallet();
-      
       // Subscribe to wallet updates
       const walletChannel = supabase
         .channel('prompts-wallet-changes')
@@ -118,7 +97,7 @@ const PromptsGrid = () => {
             table: 'user_wallets',
             filter: `user_id=eq.${user.id}`
           },
-          () => fetchWallet()
+          () => fetchData()
         )
         .subscribe();
       
@@ -131,39 +110,32 @@ const PromptsGrid = () => {
   const fetchData = async () => {
     setLoading(true);
     
-    const { data: promptsData, error: promptsError } = await supabase
-      .from('prompts')
-      .select(`
-        *,
-        categories (
-          name,
-          icon
-        )
-      `)
-      .order('created_at', { ascending: false });
-
-    if (promptsError) {
-      console.error('Error fetching prompts:', promptsError);
-      toast.error('Failed to load prompts');
-    } else {
-      setPrompts(promptsData || []);
-    }
-
-    const { data: categoriesData } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name');
+    // Fetch from BFF - all data in one request
+    const { data, error, isUnauthorized } = await bffApi.getPromptsData();
     
-    setCategories(categoriesData || []);
-
-    if (user) {
-      const { data: favoritesData } = await supabase
-        .from('favorites')
-        .select('prompt_id')
-        .eq('user_id', user.id);
-      
-      setFavorites(favoritesData?.map(f => f.prompt_id) || []);
+    if (isUnauthorized) {
+      handleUnauthorized();
+      return;
     }
+    
+    if (error || !data) {
+      console.error('[PromptsGrid] BFF error:', error);
+      toast.error('Failed to load prompts');
+      setLoading(false);
+      return;
+    }
+    
+    // Set prompts
+    setPrompts(data.prompts || []);
+    
+    // Set categories
+    setCategories(data.categories || []);
+    
+    // Set favorites
+    setFavorites(data.favorites || []);
+    
+    // Set isPro from server
+    setServerIsPro(data.isPro || false);
 
     setLoading(false);
   };
@@ -201,7 +173,7 @@ const PromptsGrid = () => {
   };
 
   const canAccessPrompt = (prompt: Prompt) => {
-    return prompt.is_free || isPro;
+    return prompt.is_free || isPro || serverIsPro;
   };
 
   const handlePromptClick = (prompt: Prompt) => {
