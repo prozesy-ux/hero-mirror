@@ -110,12 +110,25 @@ serve(async (req: Request): Promise<Response> => {
     // Call Cloudflare Worker
     console.log(`Calling worker: ${workerUrl} with from: ${fromAddress}`);
     
+    // Cloudflare Access Service Token headers (for Zero Trust bypass)
+    const cfAccessClientId = Deno.env.get("CF_ACCESS_CLIENT_ID");
+    const cfAccessClientSecret = Deno.env.get("CF_ACCESS_CLIENT_SECRET");
+    
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-Email-Secret": emailSecret,
+    };
+    
+    // Add Cloudflare Access headers if configured
+    if (cfAccessClientId && cfAccessClientSecret) {
+      headers["CF-Access-Client-Id"] = cfAccessClientId;
+      headers["CF-Access-Client-Secret"] = cfAccessClientSecret;
+      console.log("Using Cloudflare Access service token for authentication");
+    }
+    
     const response = await fetch(workerUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Email-Secret": emailSecret,
-      },
+      headers,
       body: JSON.stringify({
         to,
         toName: '',
