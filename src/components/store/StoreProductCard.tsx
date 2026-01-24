@@ -117,7 +117,7 @@ const StoreProductCard = ({
           </div>
         </div>
 
-        {/* Action Buttons - Clean design */}
+        {/* Action Buttons - Mobile optimized with proper touch targets */}
         <div className="flex gap-2">
           {/* Chat Button */}
           {showChat && (
@@ -126,10 +126,10 @@ const StoreProductCard = ({
                 e.stopPropagation();
                 onChat();
               }}
-              className="flex-1 min-w-0 py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium"
+              className="flex-1 min-w-0 py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-sm font-medium mobile-touch-target tap-feedback"
             >
-              <MessageCircle size={14} className="flex-shrink-0" />
-              <span className="hidden sm:inline">Chat</span>
+              <MessageCircle size={16} className="flex-shrink-0" />
+              <span className="hidden xs:inline sm:inline">Chat</span>
             </button>
           )}
           {/* View Button */}
@@ -138,10 +138,10 @@ const StoreProductCard = ({
               e.stopPropagation();
               onView();
             }}
-            className="flex-1 min-w-0 py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium"
+            className="flex-1 min-w-0 py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-sm font-medium mobile-touch-target tap-feedback"
           >
-            <Eye size={14} className="flex-shrink-0" />
-            <span className="hidden sm:inline">View</span>
+            <Eye size={16} className="flex-shrink-0" />
+            <span className="hidden xs:inline sm:inline">View</span>
           </button>
           {/* Buy Button */}
           <button
@@ -150,12 +150,12 @@ const StoreProductCard = ({
               onBuy();
             }}
             disabled={purchasing}
-            className={`flex-[1.5] min-w-0 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all text-sm ${
+            className={`flex-[1.5] min-w-0 font-bold py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all text-sm mobile-touch-target tap-feedback ${
               purchasing
                 ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
                 : isLoggedIn && !hasEnoughBalance
-                ? 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
-                : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-200'
+                ? 'bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-700 border border-amber-300'
+                : 'bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white shadow-sm shadow-emerald-200'
             }`}
           >
             {purchasing ? (
@@ -163,10 +163,10 @@ const StoreProductCard = ({
             ) : isLoggedIn && !hasEnoughBalance ? (
               <>
                 <Wallet className="w-4 h-4 flex-shrink-0" />
-                <span>Top Up</span>
+                <span className="hidden xs:inline">Top Up</span>
               </>
             ) : (
-              <span>Buy Now</span>
+              <span>Buy</span>
             )}
           </button>
         </div>
