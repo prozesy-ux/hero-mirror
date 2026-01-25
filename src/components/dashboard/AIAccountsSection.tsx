@@ -1041,47 +1041,47 @@ const AIAccountsSection = () => {
 
   return (
     <div className="animate-fade-up">
-      {/* Tab Navigation - Pill Style Mobile Optimized */}
-      <div className="mb-4 lg:mb-8">
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
+      {/* Tab Navigation - Clean and Simple */}
+      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
+        <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
           <button
             onClick={() => setActiveTab('browse')}
-            className={`px-4 py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap flex-shrink-0 min-h-[44px] ${
+            className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'browse'
-                ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95'
+                ? 'bg-gray-900 text-white shadow-lg'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
             }`}
           >
-            <ShoppingCart size={16} />
+            <ShoppingCart size={14} />
             Browse
           </button>
           <button
             onClick={() => setActiveTab('purchases')}
-            className={`px-4 py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap flex-shrink-0 min-h-[44px] ${
+            className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'purchases'
-                ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95'
+                ? 'bg-gray-900 text-white shadow-lg'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
             }`}
           >
-            <Package size={16} />
-            <span>Orders</span>
-            {(purchases.length + sellerOrders.length) > 0 && (
-              <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-bold ${
-                activeTab === 'purchases' ? 'bg-white/20 text-white' : 'bg-violet-100 text-violet-700'
+            <Package size={14} />
+            Purchases
+            {purchases.length > 0 && (
+              <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
+                activeTab === 'purchases' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
               }`}>
-                {purchases.length + sellerOrders.length}
+                {purchases.length}
               </span>
             )}
           </button>
           <button
             onClick={() => setActiveTab('stats')}
-            className={`px-4 py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap flex-shrink-0 min-h-[44px] ${
+            className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'stats'
-                ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95'
+                ? 'bg-gray-900 text-white shadow-lg'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
             }`}
           >
-            <BarChart3 size={16} />
+            <BarChart3 size={14} />
             Stats
           </button>
         </div>
@@ -1108,70 +1108,68 @@ const AIAccountsSection = () => {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Search and Filter Row - Sticky on Mobile */}
-            <div className="mobile-sticky-search py-3 lg:py-0 mb-3 sm:mb-4 lg:mb-6">
-              <div className="flex gap-2 sm:gap-3">
-                {/* Mobile Filter Button */}
-                <div className="lg:hidden shrink-0">
-                  <MarketplaceSidebar
-                    trendingAccounts={trendingAccounts}
-                    categories={dynamicCategories}
-                    accounts={accounts}
-                    selectedCategory={categoryFilter}
-                    selectedTags={selectedTags}
-                    onCategorySelect={setCategoryFilter}
-                    onTagSelect={handleTagSelect}
-                    onAccountClick={(account) => {
-                      setSelectedAccount(account);
-                      setShowDetailsModal(true);
-                    }}
-                    getCategoryCount={getCategoryCount}
-                  />
-                </div>
+            {/* Search and Filter Row */}
+            <div className="flex gap-3 mb-6">
+              {/* Mobile Filter Button */}
+              <div className="lg:hidden">
+                <MarketplaceSidebar
+                  trendingAccounts={trendingAccounts}
+                  categories={dynamicCategories}
+                  accounts={accounts}
+                  selectedCategory={categoryFilter}
+                  selectedTags={selectedTags}
+                  onCategorySelect={setCategoryFilter}
+                  onTagSelect={handleTagSelect}
+                  onAccountClick={(account) => {
+                    setSelectedAccount(account);
+                    setShowDetailsModal(true);
+                  }}
+                  getCategoryCount={getCategoryCount}
+                />
+              </div>
 
-                {/* Search Bar */}
-                <div className="relative flex-1">
-                  <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 bg-gray-100 rounded-lg">
-                    <Search size={16} className="sm:w-[18px] sm:h-[18px] text-gray-500" />
-                  </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search products..."
-                    className="w-full bg-white border border-gray-200 rounded-xl sm:rounded-2xl pl-11 sm:pl-14 pr-10 sm:pr-12 py-3 sm:py-4 text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium shadow-sm sm:shadow-md mobile-touch-target"
-                  />
-                  {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        setSelectedTags([]);
-                        setCategoryFilter('all');
-                      }}
-                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors mobile-touch-target"
-                    >
-                      <X size={16} className="sm:w-[18px] sm:h-[18px] text-gray-400" />
-                    </button>
-                  )}
+              {/* Search Bar */}
+              <div className="relative flex-1">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
+                  <Search size={18} className="text-gray-500" />
                 </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search products, categories, tags..."
+                  className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium shadow-md"
+                />
+                {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedTags([]);
+                      setCategoryFilter('all');
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X size={18} className="text-gray-400" />
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Active Filters Pills - Horizontal Scroll on Mobile */}
+            {/* Active Filters Pills */}
             {(selectedTags.length > 0 || categoryFilter !== 'all') && (
-              <div className="filter-pills-scroll mb-3 sm:mb-4 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex sm:flex-wrap sm:gap-2">
+              <div className="flex flex-wrap gap-2 mb-4">
                 {categoryFilter !== 'all' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full text-xs font-medium whitespace-nowrap shrink-0">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full text-xs font-medium">
                     {getCategoryName(categoryFilter)}
-                    <button onClick={() => setCategoryFilter('all')} className="hover:bg-white/20 rounded-full p-0.5 mobile-touch-target">
+                    <button onClick={() => setCategoryFilter('all')} className="hover:bg-white/20 rounded-full p-0.5">
                       <X size={12} />
                     </button>
                   </span>
                 )}
                 {selectedTags.map(tag => (
-                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-500 text-white rounded-full text-xs font-medium whitespace-nowrap shrink-0">
+                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-500 text-white rounded-full text-xs font-medium">
                     {tag}
-                    <button onClick={() => handleTagSelect(tag)} className="hover:bg-white/20 rounded-full p-0.5 mobile-touch-target">
+                    <button onClick={() => handleTagSelect(tag)} className="hover:bg-white/20 rounded-full p-0.5">
                       <X size={12} />
                     </button>
                   </span>
@@ -1179,21 +1177,22 @@ const AIAccountsSection = () => {
               </div>
             )}
 
+
             {/* Products Grid */}
             {filteredAccounts.length === 0 ? (
-              <div className="bg-white rounded-xl sm:rounded-2xl p-8 sm:p-16 text-center border border-gray-200 shadow-md">
-                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                  <ShoppingCart className="w-7 h-7 sm:w-10 sm:h-10 text-gray-400" />
+              <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
+                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+                  <ShoppingCart className="w-10 h-10 text-gray-400" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 tracking-tight">No Products Found</h3>
-                <p className="text-gray-500 mb-4 text-sm sm:text-base">Try adjusting your search or filters</p>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Products Found</h3>
+                <p className="text-gray-500 mb-4">Try adjusting your search or filters</p>
                 <button
                   onClick={() => {
                     setSearchQuery('');
                     setSelectedTags([]);
                     setCategoryFilter('all');
                   }}
-                  className="text-violet-600 font-medium hover:underline text-sm sm:text-base mobile-touch-target"
+                  className="text-violet-600 font-medium hover:underline"
                 >
                   Clear all filters
                 </button>

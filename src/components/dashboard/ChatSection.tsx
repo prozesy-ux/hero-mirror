@@ -663,7 +663,7 @@ const ChatSection = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-200px)] lg:h-[calc(100vh-140px)] bg-background rounded-xl border border-border overflow-hidden shadow-lg">
+    <div className="flex h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] bg-background rounded-xl border border-border overflow-hidden">
       {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
@@ -695,15 +695,15 @@ const ChatSection = () => {
         showChatOnMobile && "hidden lg:flex"
       )}>
         {/* Header */}
-        <div className="p-3 sm:p-4 border-b border-border bg-white">
-          <h2 className="text-base sm:text-lg font-bold mb-2 sm:mb-3">Messages</h2>
+        <div className="p-4 border-b border-border">
+          <h2 className="text-lg font-semibold mb-3">Messages</h2>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search..."
+              placeholder="Search conversations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-11 text-sm"
+              className="pl-9"
             />
           </div>
         </div>
@@ -715,13 +715,13 @@ const ChatSection = () => {
               key={conv.id}
               onClick={() => handleConversationSelect(conv)}
               className={cn(
-                "w-full p-3 sm:p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors text-left border-b border-border/50 min-h-[72px] active:bg-muted/70",
+                "w-full p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors text-left border-b border-border/50",
                 selectedConversation?.id === conv.id && "bg-muted"
               )}
             >
               {/* Avatar */}
               <div className={cn(
-                "w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0",
+                "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0",
                 conv.type === 'support' 
                   ? "bg-violet-100 dark:bg-violet-900/30" 
                   : "bg-emerald-100 dark:bg-emerald-900/30"
@@ -872,7 +872,7 @@ const ChatSection = () => {
                     
                     return (
                       <div key={msg.id} className={cn("flex", isUser ? "justify-end" : "justify-start")}>
-                        <div className="max-w-[85%] sm:max-w-[80%]">
+                        <div className="max-w-[80%]">
                           {/* Sender Label */}
                           <p className={cn(
                             "text-[10px] text-muted-foreground mb-1 px-2",
@@ -1010,51 +1010,41 @@ const ChatSection = () => {
               </div>
             )}
 
-            {/* Input Area - Safe area padding for mobile */}
-            <div className="p-3 sm:p-4 border-t border-border bg-background safe-area-bottom">
+            {/* Input Area */}
+            <div className="p-4 border-t border-border bg-background">
               <div className="flex items-end gap-2">
-                {/* Attachment buttons (only for support - hidden on mobile initially) */}
+                {/* Attachment buttons (only for support) */}
                 {selectedConversation.type === 'support' && !isRecording && (
-                  <div className="hidden sm:flex gap-1">
+                  <div className="flex gap-1">
                     <button
                       onClick={() => imageInputRef.current?.click()}
-                      className="p-2.5 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
                       title="Add image"
                     >
                       <Image size={20} />
                     </button>
                     <button
                       onClick={() => videoInputRef.current?.click()}
-                      className="p-2.5 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
                       title="Add video"
                     >
                       <Video size={20} />
                     </button>
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="p-2.5 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
                       title="Add file"
                     >
                       <Paperclip size={20} />
                     </button>
                     <button
                       onClick={startRecording}
-                      className="p-2.5 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
                       title="Record screen"
                     >
                       <Circle size={20} />
                     </button>
                   </div>
-                )}
-
-                {/* Mobile attachment button - single combined button */}
-                {selectedConversation.type === 'support' && !isRecording && (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="sm:hidden p-2.5 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-                  >
-                    <Paperclip size={20} />
-                  </button>
                 )}
                 
                 {/* Message Input */}
@@ -1065,21 +1055,21 @@ const ChatSection = () => {
                     onKeyDown={handleKeyPress}
                     placeholder={
                       selectedConversation.type === 'support'
-                        ? "Type a message..."
+                        ? "Type your message..."
                         : `Message ${selectedConversation.name}...`
                     }
                     disabled={sendingMessage || isRecording}
-                    className="w-full px-4 py-3 bg-muted rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 min-h-[48px] max-h-[120px] text-sm sm:text-base"
+                    className="w-full px-4 py-3 bg-muted rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 min-h-[48px] max-h-[120px]"
                     rows={1}
                   />
                 </div>
                 
-                {/* Send Button - Larger touch target */}
+                {/* Send Button */}
                 <button
                   onClick={sendMessage}
                   disabled={sendingMessage || isRecording || (!newMessage.trim() && pendingFiles.length === 0)}
                   className={cn(
-                    "p-3 rounded-xl text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[48px] min-h-[48px] flex items-center justify-center",
+                    "p-3 rounded-xl text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                     selectedConversation.type === 'support'
                       ? "bg-violet-500 hover:bg-violet-600"
                       : "bg-emerald-500 hover:bg-emerald-600"

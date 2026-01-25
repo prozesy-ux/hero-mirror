@@ -634,23 +634,23 @@ const BillingSection = () => {
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">
-      {/* Tab Navigation - Pill Style Mobile Optimized */}
-      <div className="mb-4 lg:mb-8">
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
+      {/* Tab Navigation - Mobile Optimized */}
+      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
+        <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => {
             const TabIcon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap flex-shrink-0 min-h-[44px] ${
+                className={`px-3 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
-                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95'
+                    ? 'bg-gray-900 text-white shadow-lg'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
                 }`}
               >
-                <TabIcon size={16} className="shrink-0" />
-                <span>{tab.label}</span>
+                <TabIcon size={14} className="lg:w-4 lg:h-4" />
+                {tab.label}
               </button>
             );
           })}
@@ -659,56 +659,56 @@ const BillingSection = () => {
 
       {/* Wallet Tab */}
       {activeTab === 'wallet' && (
-        <div className="space-y-4 sm:space-y-6">
-          {/* Wallet Card - Mobile Stack */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shrink-0">
-                  <Wallet size={24} className="sm:w-7 sm:h-7 text-white" />
+        <div className="space-y-6">
+          {/* Wallet Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600">
+                  <Wallet size={28} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs sm:text-sm font-medium">Wallet Balance</p>
-                  <h3 className="text-2xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+                  <p className="text-gray-500 text-sm font-medium">Wallet Balance</p>
+                  <h3 className="text-4xl font-bold text-gray-900 tracking-tight">
                     ${(wallet?.balance || 0).toFixed(2)}
                   </h3>
                 </div>
               </div>
               <button
                 onClick={() => setShowTopupModal(true)}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 sm:px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25 mobile-touch-target"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
               >
-                <Plus size={18} className="sm:w-5 sm:h-5" />
+                <Plus size={20} />
                 Add Funds
               </button>
             </div>
           </div>
 
           {/* Payment Methods */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-md">
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight mb-3 sm:mb-4 flex items-center gap-2">
-              <CreditCard className="text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
-              Payment Methods
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
+            <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
+              <CreditCard className="text-gray-500" size={20} />
+              Available Payment Methods
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {paymentMethods.map((method) => (
                 <div 
                   key={method.id}
-                  className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
+                  className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
                 >
                   {method.icon_url ? (
                     <img 
                       src={method.icon_url} 
                       alt={method.name} 
-                      className="h-6 sm:h-8 w-auto mx-auto mb-1.5 sm:mb-2 object-contain"
+                      className="h-8 w-auto mx-auto mb-2 object-contain"
                     />
                   ) : (
-                    <div className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-1.5 sm:mb-2 rounded-lg bg-gray-200 flex items-center justify-center">
-                      <CreditCard size={14} className="sm:w-4 sm:h-4 text-gray-500" />
+                    <div className="h-8 w-8 mx-auto mb-2 rounded-lg bg-gray-200 flex items-center justify-center">
+                      <CreditCard size={16} className="text-gray-500" />
                     </div>
                   )}
-                  <p className="text-gray-900 font-medium text-xs sm:text-sm truncate">{method.name}</p>
-                  <p className="text-gray-500 text-[10px] sm:text-xs">{method.is_automatic ? 'Auto' : 'Manual'}</p>
+                  <p className="text-gray-900 font-medium text-sm">{method.name}</p>
+                  <p className="text-gray-500 text-xs">{method.is_automatic ? 'Automatic' : 'Manual'}</p>
                 </div>
               ))}
             </div>
@@ -718,59 +718,54 @@ const BillingSection = () => {
 
       {/* Transactions Tab */}
       {activeTab === 'transactions' && (
-        <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-gray-200 shadow-md">
-          <h3 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight mb-3 sm:mb-4 flex items-center gap-2">
-            <History className="text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
+            <History className="text-gray-500" size={20} />
             Transaction History
           </h3>
           
           {transactions.length === 0 ? (
-            <p className="text-gray-500 text-center py-8 sm:py-12 text-sm">No transactions yet</p>
+            <p className="text-gray-500 text-center py-12">No transactions yet</p>
           ) : (
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-3">
               {transactions.map((tx) => (
                 <div
                   key={tx.id}
-                  className="p-3 sm:p-4 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
+                  className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
                 >
-                  <div className="flex items-start sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                      <div className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl shrink-0 ${
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2.5 rounded-xl ${
                         tx.type === 'topup' ? 'bg-violet-100' :
                         tx.type === 'purchase' ? 'bg-gray-100' :
                         'bg-blue-100'
                       }`}>
-                        {tx.type === 'topup' && <CircleDollarSign size={16} className="sm:w-[18px] sm:h-[18px] text-violet-600" />}
-                        {tx.type === 'purchase' && <Receipt size={16} className="sm:w-[18px] sm:h-[18px] text-gray-600" />}
-                        {tx.type === 'refund' && <RotateCcw size={16} className="sm:w-[18px] sm:h-[18px] text-blue-600" />}
+                        {tx.type === 'topup' && <CircleDollarSign size={18} className="text-violet-600" />}
+                        {tx.type === 'purchase' && <Receipt size={18} className="text-gray-600" />}
+                        {tx.type === 'refund' && <RotateCcw size={18} className="text-blue-600" />}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-gray-900 font-medium capitalize text-sm truncate">{tx.description || tx.type}</p>
-                        <p className="text-gray-500 text-xs">
+                      <div>
+                        <p className="text-gray-900 font-medium capitalize">{tx.description || tx.type}</p>
+                        <p className="text-gray-500 text-sm">
                           {new Date(tx.created_at).toLocaleDateString('en-US', {
                             month: 'short',
-                            day: 'numeric'
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
                           })}
-                          <span className="hidden sm:inline">
-                            {', '}
-                            {new Date(tx.created_at).toLocaleTimeString('en-US', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
                           {tx.payment_gateway && (
-                            <span className="ml-1 sm:ml-2 text-[10px] sm:text-xs uppercase text-gray-400">
-                              • {tx.payment_gateway}
+                            <span className="ml-2 text-xs uppercase text-gray-400">
+                              via {tx.payment_gateway}
                             </span>
                           )}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className={`font-semibold text-sm sm:text-base ${tx.type === 'topup' ? 'text-violet-600' : tx.type === 'refund' ? 'text-blue-600' : 'text-gray-700'}`}>
+                    <div className="text-right">
+                      <p className={`font-semibold ${tx.type === 'topup' ? 'text-violet-600' : tx.type === 'refund' ? 'text-blue-600' : 'text-gray-700'}`}>
                         {tx.type === 'topup' ? '+' : tx.type === 'refund' ? '+' : '-'}${tx.amount.toFixed(2)}
                       </p>
-                      <span className={`inline-block text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-md font-medium ${
+                      <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
                         tx.status === 'completed' ? 'bg-violet-100 text-violet-700' :
                         tx.status === 'pending' ? 'bg-amber-100 text-amber-700' :
                         'bg-red-100 text-red-700'
@@ -782,9 +777,9 @@ const BillingSection = () => {
                   
                   {/* Transaction ID section for manual payments */}
                   {tx.payment_gateway && tx.payment_gateway !== 'stripe' && tx.status === 'pending' && (
-                    <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200">
+                    <div className="mt-3 pt-3 border-t border-gray-200">
                       {editingTransactionId === tx.id ? (
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <div className="flex items-center gap-2">
                           <input
                             type="text"
                             value={editTransactionIdValue}
@@ -792,28 +787,26 @@ const BillingSection = () => {
                             placeholder="Enter correct transaction ID"
                             className="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30"
                           />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleUpdateTransactionId(tx.id)}
-                              className="flex-1 sm:flex-none px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700 mobile-touch-target"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingTransactionId(null);
-                                setEditTransactionIdValue('');
-                              }}
-                              className="flex-1 sm:flex-none px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300 mobile-touch-target"
-                            >
-                              Cancel
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleUpdateTransactionId(tx.id)}
+                            className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingTransactionId(null);
+                              setEditTransactionIdValue('');
+                            }}
+                            className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                          >
+                            Cancel
+                          </button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs sm:text-sm text-gray-600 truncate">
-                            <span className="font-medium">TxID:</span>{' '}
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Transaction ID:</span>{' '}
                             <span className="font-mono">{tx.transaction_id || 'Not provided'}</span>
                           </p>
                           <button
@@ -821,7 +814,7 @@ const BillingSection = () => {
                               setEditingTransactionId(tx.id);
                               setEditTransactionIdValue(tx.transaction_id || '');
                             }}
-                            className="text-xs text-violet-600 hover:text-violet-700 font-medium shrink-0"
+                            className="text-xs text-violet-600 hover:text-violet-700 font-medium"
                           >
                             Edit
                           </button>
