@@ -18,9 +18,19 @@ const SignIn = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
+  const [isProcessingOAuth, setIsProcessingOAuth] = useState(false);
   const { user, loading: authLoading, signIn, signUp, signInWithGoogle } = useAuthContext();
   const didAutoRedirect = useRef(false);
   const navigate = useNavigate();
+
+  // Detect OAuth callback and show branded loader
+  useEffect(() => {
+    const hash = window.location.hash;
+    const search = window.location.search;
+    if (hash.includes('access_token') || search.includes('code=') || hash.includes('error')) {
+      setIsProcessingOAuth(true);
+    }
+  }, []);
 
   // Handle post-auth redirect (for store purchases and chats)
   const handlePostAuthRedirect = () => {
@@ -144,6 +154,19 @@ const SignIn = () => {
       toast.error(error.message);
     }
   };
+
+  // Show branded loader during OAuth processing
+  if (isProcessingOAuth || (authLoading && window.location.hash.includes('access_token'))) {
+    return (
+      <div className="min-h-dvh bg-black flex flex-col items-center justify-center">
+        <div className="overflow-hidden rounded-2xl bg-white p-0.5 shadow-xl shadow-purple-500/20 mb-6">
+          <img src={promptheroIcon} alt="Uptoza" className="h-20 w-20 rounded-xl" />
+        </div>
+        <p className="text-white text-lg font-medium mb-4">Signing you in...</p>
+        <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
