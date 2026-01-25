@@ -1041,47 +1041,47 @@ const AIAccountsSection = () => {
 
   return (
     <div className="animate-fade-up">
-      {/* Tab Navigation - Clean and Simple */}
-      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
-        <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
+      {/* Tab Navigation - Pill Style Mobile Optimized */}
+      <div className="mb-4 lg:mb-8">
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
           <button
             onClick={() => setActiveTab('browse')}
-            className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
+            className={`px-4 py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap flex-shrink-0 min-h-[44px] ${
               activeTab === 'browse'
-                ? 'bg-gray-900 text-white shadow-lg'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+                ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95'
             }`}
           >
-            <ShoppingCart size={14} />
+            <ShoppingCart size={16} />
             Browse
           </button>
           <button
             onClick={() => setActiveTab('purchases')}
-            className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
+            className={`px-4 py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap flex-shrink-0 min-h-[44px] ${
               activeTab === 'purchases'
-                ? 'bg-gray-900 text-white shadow-lg'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+                ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95'
             }`}
           >
-            <Package size={14} />
-            Purchases
-            {purchases.length > 0 && (
-              <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
-                activeTab === 'purchases' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
+            <Package size={16} />
+            <span>Orders</span>
+            {(purchases.length + sellerOrders.length) > 0 && (
+              <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-bold ${
+                activeTab === 'purchases' ? 'bg-white/20 text-white' : 'bg-violet-100 text-violet-700'
               }`}>
-                {purchases.length}
+                {purchases.length + sellerOrders.length}
               </span>
             )}
           </button>
           <button
             onClick={() => setActiveTab('stats')}
-            className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
+            className={`px-4 py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap flex-shrink-0 min-h-[44px] ${
               activeTab === 'stats'
-                ? 'bg-gray-900 text-white shadow-lg'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+                ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95'
             }`}
           >
-            <BarChart3 size={14} />
+            <BarChart3 size={16} />
             Stats
           </button>
         </div>

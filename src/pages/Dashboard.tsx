@@ -51,22 +51,27 @@ const MobileHeader = () => {
 
   return (
     <>
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm safe-area-top">
-        <div className="flex items-center justify-between px-4 py-3">
-          {/* App Logo/Title placeholder for balance */}
-          <div className="w-9" />
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 shadow-sm safe-area-top">
+        <div className="flex items-center justify-between px-4 py-2.5">
+          {/* App Logo */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">U</span>
+            </div>
+            <span className="font-bold text-gray-900 text-sm">Uptoza</span>
+          </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* Notification Bell */}
-            <button className="relative p-2 rounded-xl text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200">
+            <button className="relative p-2.5 rounded-xl text-gray-500 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center">
               <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
             </button>
 
             {/* Profile Avatar */}
             <Link
               to="/dashboard/profile"
-              className="relative"
+              className="relative min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               <div className="rounded-full bg-gradient-to-br from-violet-500 to-purple-600 p-0.5 w-9 h-9 transition-all duration-300 hover:scale-105 active:scale-95">
                 {profile?.avatar_url ? (
@@ -83,7 +88,7 @@ const MobileHeader = () => {
               </div>
               {/* PRO Crown badge */}
               {profile?.is_pro && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-1.5 ring-white shadow-md">
+                <div className="absolute bottom-0 right-0 w-4 h-4 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-1.5 ring-white shadow-md">
                   <Crown size={8} className="text-black" />
                 </div>
               )}

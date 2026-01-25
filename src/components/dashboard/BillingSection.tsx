@@ -634,23 +634,23 @@ const BillingSection = () => {
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">
-      {/* Tab Navigation - Mobile Optimized */}
-      <div className="bg-white rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
-        <div className="flex gap-0.5 sm:gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
+      {/* Tab Navigation - Pill Style Mobile Optimized */}
+      <div className="mb-4 lg:mb-8">
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
           {tabs.map((tab) => {
             const TabIcon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-2.5 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-[11px] sm:text-xs lg:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-1 sm:flex-none justify-center mobile-touch-target ${
+                className={`px-4 py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap flex-shrink-0 min-h-[44px] ${
                   activeTab === tab.id
-                    ? 'bg-gray-900 text-white shadow-lg'
-                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95'
                 }`}
               >
-                <TabIcon size={14} className="sm:w-4 sm:h-4 shrink-0" />
-                <span className="hidden xs:inline sm:inline">{tab.label}</span>
+                <TabIcon size={16} className="shrink-0" />
+                <span>{tab.label}</span>
               </button>
             );
           })}

@@ -488,15 +488,15 @@ const ProfileSection = () => {
   const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4 lg:space-y-6 animate-fade-up">
-      {/* Compact Profile Header - Stack on mobile */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-5">
-          {/* Avatar with change button */}
+    <div className="max-w-2xl mx-auto space-y-3 sm:space-y-4 lg:space-y-6 animate-fade-up">
+      {/* Compact Profile Card - No redundant header */}
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
+          {/* Avatar with change button - Centered on mobile */}
           <div className="relative group">
-            <Avatar className="h-16 w-16 border-2 border-gray-100">
+            <Avatar className="h-18 w-18 sm:h-16 sm:w-16 border-2 border-gray-100">
               <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || 'User'} />
-              <AvatarFallback className="bg-gray-900 text-white text-base font-semibold">
+              <AvatarFallback className="bg-gray-900 text-white text-lg sm:text-base font-semibold">
                 {getInitials(profile?.full_name)}
               </AvatarFallback>
             </Avatar>
