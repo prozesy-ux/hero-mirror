@@ -244,53 +244,51 @@ const BuyerWallet = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">My Wallet</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage your balance and withdrawals</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">My Wallet</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5 sm:mt-1">Manage your balance and withdrawals</p>
         </div>
       </div>
 
-      {/* Balance Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Available Balance */}
-        <div className="relative bg-card rounded-2xl p-6 border border-border shadow-sm overflow-hidden group hover:shadow-md transition-all">
+      {/* Balance Cards - Mobile 2-col grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+        {/* Available Balance - Full width on mobile */}
+        <div className="col-span-2 md:col-span-1 relative bg-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-border shadow-sm overflow-hidden group hover:shadow-md transition-all">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center">
-              <Wallet className="h-6 w-6 text-emerald-600" />
+          <div className="flex items-center gap-3 sm:block">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-emerald-50 flex items-center justify-center sm:mb-4 shrink-0">
+              <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground">${(wallet?.balance || 0).toFixed(2)}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Available Balance</p>
             </div>
           </div>
-          <p className="text-3xl font-bold text-foreground mb-1">${(wallet?.balance || 0).toFixed(2)}</p>
-          <p className="text-sm text-muted-foreground font-medium">Available Balance</p>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
         </div>
 
         {/* Pending Withdrawals */}
-        <div className="relative bg-card rounded-2xl p-6 border border-border shadow-sm overflow-hidden group hover:shadow-md transition-all">
+        <div className="relative bg-card rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-border shadow-sm overflow-hidden group hover:shadow-md transition-all">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-xl bg-amber-50 flex items-center justify-center">
-              <Clock className="h-6 w-6 text-amber-600" />
-            </div>
+          <div className="h-8 w-8 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-amber-50 flex items-center justify-center mb-2 sm:mb-4">
+            <Clock className="h-4 w-4 sm:h-6 sm:w-6 text-amber-600" />
           </div>
-          <p className="text-3xl font-bold text-foreground mb-1">${pendingAmount.toFixed(2)}</p>
-          <p className="text-sm text-muted-foreground font-medium">Pending Withdrawal</p>
+          <p className="text-lg sm:text-3xl font-bold text-foreground">${pendingAmount.toFixed(2)}</p>
+          <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">Pending</p>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-amber-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
         </div>
 
         {/* Total Withdrawn */}
-        <div className="relative bg-card rounded-2xl p-6 border border-border shadow-sm overflow-hidden group hover:shadow-md transition-all">
+        <div className="relative bg-card rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-border shadow-sm overflow-hidden group hover:shadow-md transition-all">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500" />
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-blue-600" />
-            </div>
+          <div className="h-8 w-8 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-blue-50 flex items-center justify-center mb-2 sm:mb-4">
+            <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
           </div>
-          <p className="text-3xl font-bold text-foreground mb-1">${totalWithdrawn.toFixed(2)}</p>
-          <p className="text-sm text-muted-foreground font-medium">Total Withdrawn</p>
+          <p className="text-lg sm:text-3xl font-bold text-foreground">${totalWithdrawn.toFixed(2)}</p>
+          <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">Withdrawn</p>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
         </div>
       </div>
@@ -300,7 +298,7 @@ const BuyerWallet = () => {
         <button
           onClick={() => setShowWithdrawDialog(true)}
           disabled={!wallet?.balance || wallet.balance <= 0 || hasPendingWithdrawal}
-          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-muted disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center gap-2"
+          className="w-full sm:w-auto px-5 sm:px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-muted disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 mobile-touch-target"
         >
           <ArrowDownCircle size={18} />
           Withdraw Funds
@@ -308,27 +306,27 @@ const BuyerWallet = () => {
       </div>
 
       {hasPendingWithdrawal && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
-          <AlertCircle className="text-amber-600 flex-shrink-0" size={20} />
-          <p className="text-amber-700 text-sm">
-            You have a pending withdrawal request. Please wait for it to be processed before submitting a new one.
+        <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start sm:items-center gap-2 sm:gap-3">
+          <AlertCircle className="text-amber-600 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5 mt-0.5 sm:mt-0" size={20} />
+          <p className="text-amber-700 text-xs sm:text-sm">
+            You have a pending withdrawal. Please wait for it to be processed.
           </p>
         </div>
       )}
 
       {/* Withdrawal History */}
-      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
-          <h2 className="font-semibold text-foreground">Withdrawal History</h2>
+      <div className="bg-card rounded-xl sm:rounded-2xl border border-border shadow-sm overflow-hidden">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border">
+          <h2 className="font-semibold text-foreground text-sm sm:text-base">Withdrawal History</h2>
         </div>
         
         {withdrawals.length === 0 ? (
-          <div className="p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <ArrowDownCircle className="w-8 h-8 text-muted-foreground" />
+          <div className="p-8 sm:p-12 text-center">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <ArrowDownCircle className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">No withdrawals yet</p>
-            <p className="text-muted-foreground/70 text-sm mt-1">Your withdrawal history will appear here</p>
+            <p className="text-muted-foreground text-sm">No withdrawals yet</p>
+            <p className="text-muted-foreground/70 text-xs sm:text-sm mt-1">Your withdrawal history will appear here</p>
           </div>
         ) : (
           <div className="divide-y divide-border">
@@ -336,26 +334,26 @@ const BuyerWallet = () => {
               const statusConfig = getStatusConfig(withdrawal.status);
               const StatusIcon = statusConfig.icon;
               return (
-                <div key={withdrawal.id} className="px-6 py-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                        <DollarSign className="h-5 w-5 text-muted-foreground" />
+                <div key={withdrawal.id} className="px-3 sm:px-6 py-3 sm:py-4 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                       </div>
-                      <div>
-                        <p className="font-semibold text-foreground">${Number(withdrawal.amount).toFixed(2)}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {withdrawal.payment_method} • {format(new Date(withdrawal.created_at), 'MMM d, yyyy')}
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground text-sm sm:text-base">${Number(withdrawal.amount).toFixed(2)}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                          {withdrawal.payment_method} • {format(new Date(withdrawal.created_at), 'MMM d')}
                         </p>
                       </div>
                     </div>
-                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${statusConfig.className}`}>
-                      <StatusIcon size={12} />
-                      {statusConfig.label}
+                    <div className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium border shrink-0 ${statusConfig.className}`}>
+                      <StatusIcon size={10} className="sm:w-3 sm:h-3" />
+                      <span className="hidden xs:inline sm:inline">{statusConfig.label}</span>
                     </div>
                   </div>
                   {withdrawal.admin_notes && (
-                    <p className="mt-2 text-sm text-muted-foreground bg-muted p-2 rounded-lg">
+                    <p className="mt-2 text-xs sm:text-sm text-muted-foreground bg-muted p-2 rounded-lg">
                       Note: {withdrawal.admin_notes}
                     </p>
                   )}
