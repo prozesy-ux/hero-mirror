@@ -1026,7 +1026,7 @@ const AIAccountsSection = () => {
           <div className="flex-1 min-w-0 w-full overflow-hidden">
             {/* Desktop Search Bar - Full width inside content area */}
             <div className="hidden lg:block mb-6">
-              <div className="relative w-full max-w-3xl">
+              <div className="relative w-full">
                 <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input 
                   type="text" 
