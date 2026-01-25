@@ -13,7 +13,6 @@ import { useFloatingChat } from '@/contexts/FloatingChatContext';
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
 import midjourneyLogo from '@/assets/midjourney-logo.avif';
 import geminiLogo from '@/assets/gemini-logo.avif';
-
 interface AIAccount {
   id: string;
   name: string;
@@ -30,7 +29,6 @@ interface AIAccount {
   stock: number | null;
   chat_allowed?: boolean | null;
 }
-
 interface SellerProduct {
   id: string;
   name: string;
@@ -53,7 +51,6 @@ interface SellerProduct {
     is_verified: boolean;
   } | null;
 }
-
 interface PurchasedAccount {
   id: string;
   amount: number;
@@ -68,7 +65,6 @@ interface PurchasedAccount {
     icon_url: string | null;
   } | null;
 }
-
 interface SellerOrderPurchase {
   id: string;
   amount: number;
@@ -92,7 +88,6 @@ interface SellerOrderPurchase {
     user_id: string;
   } | null;
 }
-
 interface InsufficientFundsModal {
   show: boolean;
   required: number;
@@ -100,7 +95,6 @@ interface InsufficientFundsModal {
   shortfall: number;
   accountName?: string;
 }
-
 interface SupportMessage {
   id: string;
   user_id: string;
@@ -109,7 +103,6 @@ interface SupportMessage {
   is_read: boolean;
   created_at: string;
 }
-
 interface DynamicCategory {
   id: string;
   name: string;
@@ -127,7 +120,6 @@ interface PendingPurchase {
   storeSlug: string;
   iconUrl: string | null;
 }
-
 interface PendingChat {
   productId: string;
   productName: string;
@@ -139,19 +131,21 @@ interface PendingChat {
 // Generate stable random purchase count per account
 const getPurchaseCount = (accountId: string) => {
   const hash = accountId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return 150 + (hash % 350);
+  return 150 + hash % 350;
 };
-
 type TabType = 'browse' | 'purchases' | 'stats' | 'chat';
-
 const AIAccountsSection = () => {
-  const { user } = useAuthContext();
+  const {
+    user
+  } = useAuthContext();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('browse');
   const [accounts, setAccounts] = useState<AIAccount[]>([]);
   const [dynamicCategories, setDynamicCategories] = useState<DynamicCategory[]>([]);
   const [purchases, setPurchases] = useState<PurchasedAccount[]>([]);
-  const [wallet, setWallet] = useState<{ balance: number } | null>(null);
+  const [wallet, setWallet] = useState<{
+    balance: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasesLoading, setPurchasesLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
@@ -172,18 +166,23 @@ const AIAccountsSection = () => {
 
   // Seller products state
   const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([]);
-  const { openChat } = useFloatingChat();
+  const {
+    openChat
+  } = useFloatingChat();
 
   // View Details Modal state
   const [selectedAccount, setSelectedAccount] = useState<AIAccount | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  
+
   // Seller Product Details Modal state
   const [selectedSellerProduct, setSelectedSellerProduct] = useState<SellerProduct | null>(null);
   const [showSellerDetailsModal, setShowSellerDetailsModal] = useState(false);
 
   // Quick View Modal state
-  const [quickViewProduct, setQuickViewProduct] = useState<{ type: 'account' | 'seller'; data: AIAccount | SellerProduct } | null>(null);
+  const [quickViewProduct, setQuickViewProduct] = useState<{
+    type: 'account' | 'seller';
+    data: AIAccount | SellerProduct;
+  } | null>(null);
   const [showQuickViewModal, setShowQuickViewModal] = useState(false);
 
   // Email-required product purchase modal
@@ -191,7 +190,11 @@ const AIAccountsSection = () => {
     show: boolean;
     product: SellerProduct | null;
     email: string;
-  }>({ show: false, product: null, email: '' });
+  }>({
+    show: false,
+    product: null,
+    email: ''
+  });
 
   // Chat state
   const [messages, setMessages] = useState<SupportMessage[]>([]);
@@ -202,53 +205,50 @@ const AIAccountsSection = () => {
 
   // Pending purchase state (for post-auth flow from store)
   const [pendingPurchaseData, setPendingPurchaseData] = useState<PendingPurchase | null>(null);
-
   useEffect(() => {
     fetchAccounts();
     fetchCategories();
     fetchSellerProducts();
-    
+
     // Subscribe to realtime updates for categories and accounts
-    const categoriesChannel = supabase
-      .channel('categories-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
-        fetchCategories();
-      })
-      .subscribe();
-
-    const accountsChannel = supabase
-      .channel('accounts-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ai_accounts' }, () => {
-        fetchAccounts();
-      })
-      .subscribe();
-
-    const sellerProductsChannel = supabase
-      .channel('seller-products-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_products' }, () => {
-        fetchSellerProducts();
-      })
-      .subscribe();
-
+    const categoriesChannel = supabase.channel('categories-realtime').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'categories'
+    }, () => {
+      fetchCategories();
+    }).subscribe();
+    const accountsChannel = supabase.channel('accounts-realtime').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'ai_accounts'
+    }, () => {
+      fetchAccounts();
+    }).subscribe();
+    const sellerProductsChannel = supabase.channel('seller-products-realtime').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'seller_products'
+    }, () => {
+      fetchSellerProducts();
+    }).subscribe();
     return () => {
       supabase.removeChannel(categoriesChannel);
       supabase.removeChannel(accountsChannel);
       supabase.removeChannel(sellerProductsChannel);
     };
   }, []);
-
   const fetchCategories = async () => {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('id, name, icon, color, is_active')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true });
-
+    const {
+      data,
+      error
+    } = await supabase.from('categories').select('id, name, icon, color, is_active').eq('is_active', true).order('display_order', {
+      ascending: true
+    });
     if (!error && data) {
       setDynamicCategories(data);
     }
   };
-
   useEffect(() => {
     if (user) {
       fetchPurchases();
@@ -268,7 +268,6 @@ const AIAccountsSection = () => {
       };
     }
   }, [user]);
-
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -276,14 +275,14 @@ const AIAccountsSection = () => {
   // Handle pending purchase or chat from store redirect
   useEffect(() => {
     if (!user) return;
-    
+
     // Handle pending purchase
     const storedPurchase = localStorage.getItem('pendingPurchase');
     if (storedPurchase) {
       try {
         const data = JSON.parse(storedPurchase) as PendingPurchase;
         localStorage.removeItem('pendingPurchase');
-        
+
         // Try to find the product in sellerProducts to open full modal
         const product = sellerProducts.find(p => p.id === data.productId);
         if (product) {
@@ -307,7 +306,7 @@ const AIAccountsSection = () => {
       try {
         const data = JSON.parse(storedChat) as PendingChat;
         localStorage.removeItem('pendingChat');
-        
+
         // Open floating chat directly
         openChat({
           sellerId: data.sellerId,
@@ -323,77 +322,61 @@ const AIAccountsSection = () => {
       }
     }
   }, [user, sellerProducts, openChat]);
-
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({
+      behavior: 'smooth'
+    });
   };
-
   const fetchChatMessages = async () => {
     if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('support_messages')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: true });
-
+    const {
+      data,
+      error
+    } = await supabase.from('support_messages').select('*').eq('user_id', user.id).order('created_at', {
+      ascending: true
+    });
     if (!error && data) {
       setMessages(data as SupportMessage[]);
     }
   };
-
   const fetchUnreadCount = async () => {
     if (!user) return;
-    
-    const { count, error } = await supabase
-      .from('support_messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('sender_type', 'admin')
-      .eq('is_read', false);
-
+    const {
+      count,
+      error
+    } = await supabase.from('support_messages').select('*', {
+      count: 'exact',
+      head: true
+    }).eq('user_id', user.id).eq('sender_type', 'admin').eq('is_read', false);
     if (!error) {
       setUnreadCount(count || 0);
     }
   };
-
   const subscribeToChatMessages = () => {
     if (!user) return () => {};
-
-    const channel = supabase
-      .channel('user-support-messages')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'support_messages',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          fetchChatMessages();
-          fetchUnreadCount();
-        }
-      )
-      .subscribe();
-
+    const channel = supabase.channel('user-support-messages').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'support_messages',
+      filter: `user_id=eq.${user.id}`
+    }, () => {
+      fetchChatMessages();
+      fetchUnreadCount();
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   };
-
   const sendChatMessage = async () => {
     if (!newMessage.trim() || !user) return;
-
     setSendingMessage(true);
-    const { error } = await supabase
-      .from('support_messages')
-      .insert({
-        user_id: user.id,
-        message: newMessage.trim(),
-        sender_type: 'user'
-      });
-
+    const {
+      error
+    } = await supabase.from('support_messages').insert({
+      user_id: user.id,
+      message: newMessage.trim(),
+      sender_type: 'user'
+    });
     if (error) {
       toast.error('Failed to send message');
       console.error('Error sending message:', error);
@@ -404,81 +387,63 @@ const AIAccountsSection = () => {
     }
     setSendingMessage(false);
   };
-
   const fetchWallet = async () => {
     if (!user) return;
-
-    const { data, error } = await supabase
-      .from('user_wallets')
-      .select('balance')
-      .eq('user_id', user.id)
-      .single();
-
+    const {
+      data,
+      error
+    } = await supabase.from('user_wallets').select('balance').eq('user_id', user.id).single();
     if (error && error.code === 'PGRST116') {
       // No wallet exists, create one
-      const { data: newWallet } = await supabase
-        .from('user_wallets')
-        .insert({ user_id: user.id, balance: 0 })
-        .select('balance')
-        .single();
-      
+      const {
+        data: newWallet
+      } = await supabase.from('user_wallets').insert({
+        user_id: user.id,
+        balance: 0
+      }).select('balance').single();
       setWallet(newWallet);
     } else if (data) {
       setWallet(data);
     }
   };
-
   const subscribeToWallet = () => {
     if (!user) return () => {};
-
-    const channel = supabase
-      .channel('my-wallet-ai-accounts')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_wallets',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => fetchWallet()
-      )
-      .subscribe();
-
+    const channel = supabase.channel('my-wallet-ai-accounts').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'user_wallets',
+      filter: `user_id=eq.${user.id}`
+    }, () => fetchWallet()).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   };
-
   const fetchAccounts = async () => {
-    const { data, error } = await supabase
-      .from('ai_accounts')
-      .select('*')
-      .eq('is_available', true)
-      .order('created_at', { ascending: false });
-
+    const {
+      data,
+      error
+    } = await supabase.from('ai_accounts').select('*').eq('is_available', true).order('created_at', {
+      ascending: false
+    });
     if (!error && data) {
       setAccounts(data);
     }
     setLoading(false);
   };
-
   const fetchSellerProducts = async () => {
-    const { data, error } = await supabase
-      .from('seller_products')
-      .select(`
+    const {
+      data,
+      error
+    } = await supabase.from('seller_products').select(`
         *,
         seller_profiles (id, store_name, store_logo_url, is_verified)
-      `)
-      .eq('is_available', true)
-      .eq('is_approved', true)
-      .order('created_at', { ascending: false });
-
+      `).eq('is_available', true).eq('is_approved', true).order('created_at', {
+      ascending: false
+    });
     if (!error && data) {
       setSellerProducts(data as SellerProduct[]);
     }
   };
-
   const handleSellerProductPurchase = async (product: SellerProduct, buyerEmailInput?: string) => {
     if (!user) {
       toast.error('Please sign in to purchase');
@@ -496,12 +461,10 @@ const AIAccountsSection = () => {
     }
 
     // Check wallet balance first
-    const { data: walletData, error: walletError } = await supabase
-      .from('user_wallets')
-      .select('balance')
-      .eq('user_id', user.id)
-      .single();
-
+    const {
+      data: walletData,
+      error: walletError
+    } = await supabase.from('user_wallets').select('balance').eq('user_id', user.id).single();
     if (walletError && walletError.code === 'PGRST116') {
       setInsufficientFundsModal({
         show: true,
@@ -512,9 +475,7 @@ const AIAccountsSection = () => {
       });
       return;
     }
-
     const currentBalance = Number(walletData?.balance) || 0;
-
     if (currentBalance < product.price) {
       setInsufficientFundsModal({
         show: true,
@@ -525,35 +486,34 @@ const AIAccountsSection = () => {
       });
       return;
     }
-
     setPurchasing(product.id);
-
     try {
       const commissionRate = 0.10; // 10% platform commission
       const sellerEarning = product.price * (1 - commissionRate);
 
       // 1. Deduct from buyer wallet
       const newBalance = currentBalance - product.price;
-      const { error: updateError } = await supabase
-        .from('user_wallets')
-        .update({ balance: newBalance })
-        .eq('user_id', user.id);
-
+      const {
+        error: updateError
+      } = await supabase.from('user_wallets').update({
+        balance: newBalance
+      }).eq('user_id', user.id);
       if (updateError) throw new Error('Failed to update wallet balance');
 
       // 2. Create wallet transaction record
-      const { error: transactionError } = await supabase
-        .from('wallet_transactions')
-        .insert({
-          user_id: user.id,
-          type: 'purchase',
-          amount: product.price,
-          status: 'completed',
-          description: `Seller Product: ${product.name}`
-        });
-
+      const {
+        error: transactionError
+      } = await supabase.from('wallet_transactions').insert({
+        user_id: user.id,
+        type: 'purchase',
+        amount: product.price,
+        status: 'completed',
+        description: `Seller Product: ${product.name}`
+      });
       if (transactionError) {
-        await supabase.from('user_wallets').update({ balance: currentBalance }).eq('user_id', user.id);
+        await supabase.from('user_wallets').update({
+          balance: currentBalance
+        }).eq('user_id', user.id);
         throw new Error('Failed to create transaction record');
       }
 
@@ -566,17 +526,16 @@ const AIAccountsSection = () => {
         seller_earning: sellerEarning,
         status: 'pending'
       };
-      
       if (product.requires_email && buyerEmailInput) {
         orderData.buyer_email_input = buyerEmailInput;
       }
-
-      const { error: orderError } = await supabase
-        .from('seller_orders')
-        .insert(orderData);
-
+      const {
+        error: orderError
+      } = await supabase.from('seller_orders').insert(orderData);
       if (orderError) {
-        await supabase.from('user_wallets').update({ balance: currentBalance }).eq('user_id', user.id);
+        await supabase.from('user_wallets').update({
+          balance: currentBalance
+        }).eq('user_id', user.id);
         throw new Error('Failed to create order');
       }
 
@@ -607,8 +566,11 @@ const AIAccountsSection = () => {
       });
 
       // Close email modal if open
-      setEmailRequiredModal({ show: false, product: null, email: '' });
-
+      setEmailRequiredModal({
+        show: false,
+        product: null,
+        email: ''
+      });
       toast.success('Purchase successful! The seller will deliver your account soon.');
       fetchWallet();
       fetchPurchases();
@@ -625,7 +587,6 @@ const AIAccountsSection = () => {
   // Handle pending purchase from store redirect
   const handlePendingPurchase = async (data: PendingPurchase) => {
     if (!user) return;
-    
     const currentBalance = wallet?.balance || 0;
     if (currentBalance < data.price) {
       toast.error('Insufficient balance. Please top up your wallet.');
@@ -633,45 +594,40 @@ const AIAccountsSection = () => {
       navigate('/dashboard/billing');
       return;
     }
-
     setPurchasing(data.productId);
-
     try {
       const commissionRate = 0.10;
       const sellerEarning = data.price * (1 - commissionRate);
 
       // 1. Deduct from buyer wallet
       const newBalance = currentBalance - data.price;
-      const { error: updateError } = await supabase
-        .from('user_wallets')
-        .update({ balance: newBalance })
-        .eq('user_id', user.id);
-
+      const {
+        error: updateError
+      } = await supabase.from('user_wallets').update({
+        balance: newBalance
+      }).eq('user_id', user.id);
       if (updateError) throw new Error('Failed to update wallet balance');
 
       // 2. Create wallet transaction record
-      await supabase
-        .from('wallet_transactions')
-        .insert({
-          user_id: user.id,
-          type: 'purchase',
-          amount: data.price,
-          status: 'completed',
-          description: `Seller Product: ${data.productName}`
-        });
+      await supabase.from('wallet_transactions').insert({
+        user_id: user.id,
+        type: 'purchase',
+        amount: data.price,
+        status: 'completed',
+        description: `Seller Product: ${data.productName}`
+      });
 
       // 3. Create seller order
-      const { error: orderError } = await supabase
-        .from('seller_orders')
-        .insert({
-          seller_id: data.sellerId,
-          buyer_id: user.id,
-          product_id: data.productId,
-          amount: data.price,
-          seller_earning: sellerEarning,
-          status: 'pending'
-        });
-
+      const {
+        error: orderError
+      } = await supabase.from('seller_orders').insert({
+        seller_id: data.sellerId,
+        buyer_id: user.id,
+        product_id: data.productId,
+        amount: data.price,
+        seller_earning: sellerEarning,
+        status: 'pending'
+      });
       if (orderError) throw new Error('Failed to create order');
 
       // 4. Add to seller pending balance
@@ -679,7 +635,6 @@ const AIAccountsSection = () => {
         p_seller_id: data.sellerId,
         p_amount: sellerEarning
       });
-
       toast.success('Purchase successful! The seller will deliver your order soon.');
       setPendingPurchaseData(null);
       fetchWallet();
@@ -692,79 +647,65 @@ const AIAccountsSection = () => {
       setPurchasing(null);
     }
   };
-
   const fetchPurchases = async () => {
-    const { data, error } = await supabase
-      .from('ai_account_purchases')
-      .select(`
+    const {
+      data,
+      error
+    } = await supabase.from('ai_account_purchases').select(`
         *,
         ai_accounts (name, category, icon_url)
-      `)
-      .eq('user_id', user?.id)
-      .order('purchased_at', { ascending: false });
-
+      `).eq('user_id', user?.id).order('purchased_at', {
+      ascending: false
+    });
     if (!error && data) {
       setPurchases(data as PurchasedAccount[]);
     }
     setPurchasesLoading(false);
   };
-
   const fetchSellerOrders = async () => {
     if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('seller_orders')
-      .select(`
+    const {
+      data,
+      error
+    } = await supabase.from('seller_orders').select(`
         *,
         seller_products (name, icon_url, description),
         seller_profiles (id, store_name, store_logo_url, user_id)
-      `)
-      .eq('buyer_id', user.id)
-      .order('created_at', { ascending: false });
-
+      `).eq('buyer_id', user.id).order('created_at', {
+      ascending: false
+    });
     if (!error && data) {
       setSellerOrders(data as SellerOrderPurchase[]);
     }
   };
-
   const subscribeToSellerOrders = () => {
     if (!user) return () => {};
-
-    const channel = supabase
-      .channel('my-seller-orders')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'seller_orders',
-          filter: `buyer_id=eq.${user.id}`
-        },
-        () => {
-          fetchSellerOrders();
-        }
-      )
-      .subscribe();
-
+    const channel = supabase.channel('my-seller-orders').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'seller_orders',
+      filter: `buyer_id=eq.${user.id}`
+    }, () => {
+      fetchSellerOrders();
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   };
-
   const handleApproveDelivery = async (orderId: string) => {
     if (!user) return;
-    
     setApprovingOrder(orderId);
     try {
       const order = sellerOrders.find(o => o.id === orderId);
       if (!order) throw new Error('Order not found');
 
       // Use server-side RPC for atomic approval + fund release (bypasses RLS)
-      const { error: rpcError } = await supabase.rpc('approve_seller_delivery', {
+      const {
+        error: rpcError
+      } = await supabase.rpc('approve_seller_delivery', {
         p_order_id: orderId,
         p_buyer_id: user.id
       });
-
       if (rpcError) throw rpcError;
 
       // Create notification for seller (in notifications for generic user notifications)
@@ -797,7 +738,6 @@ const AIAccountsSection = () => {
         sender_type: 'system',
         product_id: order.product_id
       });
-
       toast.success('Delivery approved! Thank you for your purchase.');
       fetchSellerOrders();
     } catch (error: any) {
@@ -807,31 +747,20 @@ const AIAccountsSection = () => {
       setApprovingOrder(null);
     }
   };
-
   const subscribeToUpdates = () => {
     if (!user) return () => {};
-
-    const channel = supabase
-      .channel('my-account-purchases')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'ai_account_purchases',
-          filter: `user_id=eq.${user?.id}`
-        },
-        () => {
-          fetchPurchases();
-        }
-      )
-      .subscribe();
-
+    const channel = supabase.channel('my-account-purchases').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'ai_account_purchases',
+      filter: `user_id=eq.${user?.id}`
+    }, () => {
+      fetchPurchases();
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   };
-
   const handlePurchase = async (account: AIAccount) => {
     if (!user) {
       toast.error('Please sign in to purchase');
@@ -839,12 +768,10 @@ const AIAccountsSection = () => {
     }
 
     // Check wallet balance first
-    const { data: walletData, error: walletError } = await supabase
-      .from('user_wallets')
-      .select('balance')
-      .eq('user_id', user.id)
-      .single();
-
+    const {
+      data: walletData,
+      error: walletError
+    } = await supabase.from('user_wallets').select('balance').eq('user_id', user.id).single();
     if (walletError && walletError.code === 'PGRST116') {
       // No wallet exists
       setInsufficientFundsModal({
@@ -856,9 +783,7 @@ const AIAccountsSection = () => {
       });
       return;
     }
-
     const currentBalance = Number(walletData?.balance) || 0;
-
     if (currentBalance < account.price) {
       // Show insufficient balance modal
       setInsufficientFundsModal({
@@ -873,56 +798,51 @@ const AIAccountsSection = () => {
 
     // Proceed with purchase
     setPurchasing(account.id);
-
     try {
       // 1. Deduct from wallet
       const newBalance = currentBalance - account.price;
-      const { error: updateError } = await supabase
-        .from('user_wallets')
-        .update({ balance: newBalance })
-        .eq('user_id', user.id);
-
+      const {
+        error: updateError
+      } = await supabase.from('user_wallets').update({
+        balance: newBalance
+      }).eq('user_id', user.id);
       if (updateError) {
         throw new Error('Failed to update wallet balance');
       }
 
       // 2. Create wallet transaction record
-      const { error: transactionError } = await supabase
-        .from('wallet_transactions')
-        .insert({
-          user_id: user.id,
-          type: 'purchase',
-          amount: account.price,
-          status: 'completed',
-          description: `AI Account: ${account.name}`
-        });
-
+      const {
+        error: transactionError
+      } = await supabase.from('wallet_transactions').insert({
+        user_id: user.id,
+        type: 'purchase',
+        amount: account.price,
+        status: 'completed',
+        description: `AI Account: ${account.name}`
+      });
       if (transactionError) {
         // Rollback wallet balance
-        await supabase
-          .from('user_wallets')
-          .update({ balance: currentBalance })
-          .eq('user_id', user.id);
+        await supabase.from('user_wallets').update({
+          balance: currentBalance
+        }).eq('user_id', user.id);
         throw new Error('Failed to create transaction record');
       }
 
       // 3. Create AI account purchase record
-      const { error: purchaseError } = await supabase
-        .from('ai_account_purchases')
-        .insert({
-          user_id: user.id,
-          ai_account_id: account.id,
-          amount: account.price,
-          payment_status: 'completed',
-          delivery_status: 'pending'
-        });
-
+      const {
+        error: purchaseError
+      } = await supabase.from('ai_account_purchases').insert({
+        user_id: user.id,
+        ai_account_id: account.id,
+        amount: account.price,
+        payment_status: 'completed',
+        delivery_status: 'pending'
+      });
       if (purchaseError) {
         // Rollback wallet
-        await supabase
-          .from('user_wallets')
-          .update({ balance: currentBalance })
-          .eq('user_id', user.id);
+        await supabase.from('user_wallets').update({
+          balance: currentBalance
+        }).eq('user_id', user.id);
         throw new Error('Failed to create purchase record');
       }
 
@@ -935,7 +855,6 @@ const AIAccountsSection = () => {
         link: '/dashboard/ai-accounts?tab=purchases',
         is_read: false
       });
-
       toast.success('Purchase successful! Account credentials will be delivered soon.');
       fetchWallet();
       fetchPurchases();
@@ -947,61 +866,51 @@ const AIAccountsSection = () => {
       setPurchasing(null);
     }
   };
-
   const getProductImage = (category: string | null) => {
     switch (category) {
-      case 'chatgpt': return chatgptLogo;
-      case 'midjourney': return midjourneyLogo;
-      case 'gemini': return geminiLogo;
-      case 'claude': return chatgptLogo;
-      default: return chatgptLogo;
+      case 'chatgpt':
+        return chatgptLogo;
+      case 'midjourney':
+        return midjourneyLogo;
+      case 'gemini':
+        return geminiLogo;
+      case 'claude':
+        return chatgptLogo;
+      default:
+        return chatgptLogo;
     }
   };
-
   const toggleCredentials = (id: string) => {
     setShowCredentials(prev => ({
       ...prev,
       [id]: !prev[id]
     }));
   };
-
   const copyCredentials = (credentials: string) => {
     navigator.clipboard.writeText(credentials);
     toast.success('Credentials copied to clipboard');
   };
-
   const handleTagSelect = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    );
+    setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
-
   const getCategoryCount = (categoryId: string) => {
     return accounts.filter(a => a.category_id === categoryId).length;
   };
-
   const getCategoryName = (categoryId: string | null) => {
     if (!categoryId) return 'AI';
     const category = dynamicCategories.find(c => c.id === categoryId);
     return category?.name || 'AI';
   };
-
   const getCategoryColor = (categoryId: string | null) => {
     if (!categoryId) return 'violet';
     const category = dynamicCategories.find(c => c.id === categoryId);
     return category?.color || 'violet';
   };
-
   const filteredAccounts = useMemo(() => {
     return accounts.filter(account => {
-      const matchesSearch = account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        account.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        account.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesSearch = account.name.toLowerCase().includes(searchQuery.toLowerCase()) || account.category?.toLowerCase().includes(searchQuery.toLowerCase()) || account.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesCategory = categoryFilter === 'all' || account.category_id === categoryFilter || account.category === categoryFilter;
-      const matchesTags = selectedTags.length === 0 || 
-        account.tags?.some(tag => selectedTags.includes(tag));
+      const matchesTags = selectedTags.length === 0 || account.tags?.some(tag => selectedTags.includes(tag));
       return matchesSearch && matchesCategory && matchesTags;
     });
   }, [accounts, searchQuery, categoryFilter, selectedTags]);
@@ -1014,7 +923,6 @@ const AIAccountsSection = () => {
   const totalSpent = purchases.reduce((sum, p) => sum + Number(p.amount), 0);
   const deliveredCount = purchases.filter(p => p.delivery_status === 'delivered').length;
   const pendingCount = purchases.filter(p => p.delivery_status === 'pending').length;
-
   const getCategoryColorClass = (color: string | null) => {
     const colorMap: Record<string, string> = {
       violet: 'bg-violet-500',
@@ -1026,63 +934,33 @@ const AIAccountsSection = () => {
       pink: 'bg-pink-500',
       indigo: 'bg-indigo-500',
       teal: 'bg-teal-500',
-      orange: 'bg-orange-500',
+      orange: 'bg-orange-500'
     };
     return colorMap[color || 'violet'] || 'bg-violet-500';
   };
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
+    return <div className="flex items-center justify-center h-64">
         <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-gray-900 animate-spin" />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="animate-fade-up">
+  return <div className="animate-fade-up">
       {/* Tab Navigation - Low text on mobile, icon + short label */}
       <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-gray-200 shadow-md">
         <div className="flex gap-0.5 sm:gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
-          <button
-            onClick={() => setActiveTab('browse')}
-            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${
-              activeTab === 'browse'
-                ? 'bg-gray-900 text-white shadow-lg'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
-            }`}
-          >
+          <button onClick={() => setActiveTab('browse')} className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${activeTab === 'browse' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'}`}>
             <ShoppingCart size={16} />
             <span className="sm:hidden">Shop</span>
             <span className="hidden sm:inline">Browse</span>
           </button>
-          <button
-            onClick={() => setActiveTab('purchases')}
-            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${
-              activeTab === 'purchases'
-                ? 'bg-gray-900 text-white shadow-lg'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
-            }`}
-          >
+          <button onClick={() => setActiveTab('purchases')} className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${activeTab === 'purchases' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'}`}>
             <Package size={16} />
             <span className="sm:hidden">Orders</span>
             <span className="hidden sm:inline">Purchases</span>
-            {purchases.length > 0 && (
-              <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
-                activeTab === 'purchases' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
-              }`}>
+            {purchases.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${activeTab === 'purchases' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'}`}>
                 {purchases.length}
-              </span>
-            )}
+              </span>}
           </button>
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${
-              activeTab === 'stats'
-                ? 'bg-gray-900 text-white shadow-lg'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
-            }`}
-          >
+          <button onClick={() => setActiveTab('stats')} className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${activeTab === 'stats' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'}`}>
             <BarChart3 size={16} />
             <span className="hidden sm:inline">Stats</span>
           </button>
@@ -1090,23 +968,12 @@ const AIAccountsSection = () => {
       </div>
 
       {/* Browse Accounts Tab - New Layout with Sidebar */}
-      {activeTab === 'browse' && (
-        <div className="flex gap-6">
+      {activeTab === 'browse' && <div className="gap-6 items-start justify-start flex flex-col">
           {/* Left Sidebar */}
-          <MarketplaceSidebar
-            trendingAccounts={trendingAccounts}
-            categories={dynamicCategories}
-            accounts={accounts}
-            selectedCategory={categoryFilter}
-            selectedTags={selectedTags}
-            onCategorySelect={setCategoryFilter}
-            onTagSelect={handleTagSelect}
-            onAccountClick={(account) => {
-              setSelectedAccount(account);
-              setShowDetailsModal(true);
-            }}
-            getCategoryCount={getCategoryCount}
-          />
+          <MarketplaceSidebar trendingAccounts={trendingAccounts} categories={dynamicCategories} accounts={accounts} selectedCategory={categoryFilter} selectedTags={selectedTags} onCategorySelect={setCategoryFilter} onTagSelect={handleTagSelect} onAccountClick={account => {
+        setSelectedAccount(account);
+        setShowDetailsModal(true);
+      }} getCategoryCount={getCategoryCount} />
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
@@ -1115,117 +982,67 @@ const AIAccountsSection = () => {
               <div className="flex gap-2 sm:gap-3">
                 {/* Mobile Filter Button - HIDDEN on small mobile, shown on sm-lg */}
                 <div className="hidden sm:block lg:hidden">
-                  <MarketplaceSidebar
-                    trendingAccounts={trendingAccounts}
-                    categories={dynamicCategories}
-                    accounts={accounts}
-                    selectedCategory={categoryFilter}
-                    selectedTags={selectedTags}
-                    onCategorySelect={setCategoryFilter}
-                    onTagSelect={handleTagSelect}
-                    onAccountClick={(account) => {
-                      setSelectedAccount(account);
-                      setShowDetailsModal(true);
-                    }}
-                    getCategoryCount={getCategoryCount}
-                  />
+                  <MarketplaceSidebar trendingAccounts={trendingAccounts} categories={dynamicCategories} accounts={accounts} selectedCategory={categoryFilter} selectedTags={selectedTags} onCategorySelect={setCategoryFilter} onTagSelect={handleTagSelect} onAccountClick={account => {
+                setSelectedAccount(account);
+                setShowDetailsModal(true);
+              }} getCategoryCount={getCategoryCount} />
                 </div>
 
                 {/* Search Bar - Compact design matching Prompts */}
                 <div className="relative flex-1">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search products..."
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-8 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium"
-                  />
-                  {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        setSelectedTags([]);
-                        setCategoryFilter('all');
-                      }}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-md transition-colors"
-                    >
+                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search products..." className="w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-8 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium" />
+                  {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && <button onClick={() => {
+                setSearchQuery('');
+                setSelectedTags([]);
+                setCategoryFilter('all');
+              }} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-md transition-colors">
                       <X size={14} className="text-gray-400" />
-                    </button>
-                  )}
+                    </button>}
                 </div>
               </div>
             </div>
 
             {/* Active Filters Pills - HIDDEN on mobile */}
-            {(selectedTags.length > 0 || categoryFilter !== 'all') && (
-              <div className="hidden sm:flex flex-wrap gap-2 mb-4">
-                {categoryFilter !== 'all' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full text-xs font-medium">
+            {(selectedTags.length > 0 || categoryFilter !== 'all') && <div className="hidden sm:flex flex-wrap gap-2 mb-4">
+                {categoryFilter !== 'all' && <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full text-xs font-medium">
                     {getCategoryName(categoryFilter)}
                     <button onClick={() => setCategoryFilter('all')} className="hover:bg-white/20 rounded-full p-0.5">
                       <X size={12} />
                     </button>
-                  </span>
-                )}
-                {selectedTags.map(tag => (
-                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-500 text-white rounded-full text-xs font-medium">
+                  </span>}
+                {selectedTags.map(tag => <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-500 text-white rounded-full text-xs font-medium">
                     {tag}
                     <button onClick={() => handleTagSelect(tag)} className="hover:bg-white/20 rounded-full p-0.5">
                       <X size={12} />
                     </button>
-                  </span>
-                ))}
-              </div>
-            )}
+                  </span>)}
+              </div>}
 
 
             {/* Products Grid */}
-            {filteredAccounts.length === 0 ? (
-              <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
+            {filteredAccounts.length === 0 ? <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
                 <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
                   <ShoppingCart className="w-10 h-10 text-gray-400" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Products Found</h3>
                 <p className="text-gray-500 mb-4">Try adjusting your search or filters</p>
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedTags([]);
-                    setCategoryFilter('all');
-                  }}
-                  className="text-violet-600 font-medium hover:underline"
-                >
+                <button onClick={() => {
+            setSearchQuery('');
+            setSelectedTags([]);
+            setCategoryFilter('all');
+          }} className="text-violet-600 font-medium hover:underline">
                   Clear all filters
                 </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 px-0.5">
-                {filteredAccounts.map((account) => {
-                  const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
-                  
-                  return (
-                    <div
-                      key={account.id}
-                      className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                    >
+              </div> : <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 px-0">
+                {filteredAccounts.map(account => {
+            const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
+            return <div key={account.id} className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
                       {/* Image */}
                       <div className="relative aspect-[4/3] overflow-hidden">
-                        {account.icon_url ? (
-                          <img 
-                            src={account.icon_url} 
-                            alt={account.name}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                            <img 
-                              src={getProductImage(account.category)} 
-                              alt={account.name}
-                              className="h-20 w-20 object-contain"
-                            />
-                          </div>
-                        )}
+                        {account.icon_url ? <img src={account.icon_url} alt={account.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                            <img src={getProductImage(account.category)} alt={account.name} className="h-20 w-20 object-contain" />
+                          </div>}
 
                         {/* Uptoza Badge - Admin Products */}
                         <div className="absolute top-3 left-3 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
@@ -1234,19 +1051,15 @@ const AIAccountsSection = () => {
                         </div>
 
                         {/* Trending Badge */}
-                        {account.is_trending && (
-                          <div className="absolute top-3 right-3 w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
+                        {account.is_trending && <div className="absolute top-3 right-3 w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
                             <TrendingUp size={16} className="text-white" />
-                          </div>
-                        )}
+                          </div>}
 
                         {/* Low Balance Overlay */}
-                        {!hasEnoughBalance && (
-                          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
+                        {!hasEnoughBalance && <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
                             <Wallet size={28} className="text-white mb-2" />
                             <span className="text-white text-sm font-semibold">Low Balance</span>
-                          </div>
-                        )}
+                          </div>}
                       </div>
 
                       {/* Content */}
@@ -1261,15 +1074,11 @@ const AIAccountsSection = () => {
                         </p>
 
                         {/* Tags - HIDDEN on mobile */}
-                        {account.tags && account.tags.length > 0 && (
-                          <div className="hidden sm:flex flex-wrap gap-1.5 mb-3">
-                            {account.tags.slice(0, 3).map(tag => (
-                              <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                        {account.tags && account.tags.length > 0 && <div className="hidden sm:flex flex-wrap gap-1.5 mb-3">
+                            {account.tags.slice(0, 3).map(tag => <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
                                 {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                              </span>)}
+                          </div>}
 
                         {/* Price Badge */}
                         <div className="mb-2 flex items-center gap-2">
@@ -1277,17 +1086,13 @@ const AIAccountsSection = () => {
                             <Check size={10} />
                             ${account.price}
                           </span>
-                          {account.original_price && account.original_price > account.price && (
-                            <span className="text-[10px] sm:text-xs text-gray-400 line-through">${account.original_price}</span>
-                          )}
+                          {account.original_price && account.original_price > account.price && <span className="text-[10px] sm:text-xs text-gray-400 line-through">${account.original_price}</span>}
                         </div>
 
                         {/* Review Section - HIDDEN on mobile */}
                         <div className="hidden sm:flex items-center gap-2 mb-4">
                           <div className="flex gap-0.5">
-                            {[...Array(5)].map((_, i) => (
-                              <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />
-                            ))}
+                            {[...Array(5)].map((_, i) => <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />)}
                           </div>
                           <span className="text-sm text-gray-600 font-medium">{getPurchaseCount(account.id)}+ sold</span>
                         </div>
@@ -1295,83 +1100,52 @@ const AIAccountsSection = () => {
                         {/* Action Buttons - Compact on mobile */}
                         <div className="flex gap-1.5">
                           {/* Chat Button */}
-                          {account.chat_allowed !== false && (
-                            <button
-                              onClick={() => {
-                                openChat({
-                                  sellerId: 'support',
-                                  sellerName: 'Uptoza Support',
-                                  productId: account.id,
-                                  productName: account.name,
-                                  type: 'support'
-                                });
-                              }}
-                              className="flex-1 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700 min-h-[44px]"
-                            >
+                          {account.chat_allowed !== false && <button onClick={() => {
+                    openChat({
+                      sellerId: 'support',
+                      sellerName: 'Uptoza Support',
+                      productId: account.id,
+                      productName: account.name,
+                      type: 'support'
+                    });
+                  }} className="flex-1 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700 min-h-[44px]">
                               <MessageCircle size={16} />
                               <span className="hidden sm:inline text-sm">Chat</span>
-                            </button>
-                          )}
+                            </button>}
                           {/* View Button */}
-                          <button
-                            onClick={() => {
-                              setQuickViewProduct({ type: 'account', data: account });
-                              setShowQuickViewModal(true);
-                            }}
-                            className="flex-1 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]"
-                          >
+                          <button onClick={() => {
+                    setQuickViewProduct({
+                      type: 'account',
+                      data: account
+                    });
+                    setShowQuickViewModal(true);
+                  }} className="flex-1 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]">
                             <Eye size={16} />
                             <span className="hidden sm:inline text-sm">View</span>
                           </button>
                           {/* Buy Button */}
-                          <button
-                            onClick={() => handlePurchase(account)}
-                            disabled={purchasing === account.id}
-                            className={`flex-[1.2] font-bold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors min-h-[44px] ${
-                              purchasing === account.id
-                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                : hasEnoughBalance
-                                ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
-                                : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
-                            }`}
-                          >
-                            {purchasing === account.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : !hasEnoughBalance ? (
-                              <Wallet className="w-4 h-4" />
-                            ) : (
-                              <span className="text-sm">Buy</span>
-                            )}
+                          <button onClick={() => handlePurchase(account)} disabled={purchasing === account.id} className={`flex-[1.2] font-bold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors min-h-[44px] ${purchasing === account.id ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : hasEnoughBalance ? 'bg-yellow-400 hover:bg-yellow-500 text-black' : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'}`}>
+                            {purchasing === account.id ? <Loader2 className="w-4 h-4 animate-spin" /> : !hasEnoughBalance ? <Wallet className="w-4 h-4" /> : <span className="text-sm">Buy</span>}
                           </button>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    </div>;
+          })}
                 
                 {/* Seller Products */}
                 {sellerProducts.filter(p => {
-                  const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-                  const matchesCategory = categoryFilter === 'all' || p.category_id === categoryFilter;
-                  const matchesTags = selectedTags.length === 0 || p.tags?.some(tag => selectedTags.includes(tag));
-                  return matchesSearch && matchesCategory && matchesTags;
-                }).map((product) => {
-                  const hasEnoughBalance = (wallet?.balance || 0) >= product.price;
-                  
-                  return (
-                    <div
-                      key={`seller-${product.id}`}
-                      className="group bg-white rounded-2xl overflow-hidden border-2 border-emerald-200 shadow-md hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                    >
+            const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesCategory = categoryFilter === 'all' || p.category_id === categoryFilter;
+            const matchesTags = selectedTags.length === 0 || p.tags?.some(tag => selectedTags.includes(tag));
+            return matchesSearch && matchesCategory && matchesTags;
+          }).map(product => {
+            const hasEnoughBalance = (wallet?.balance || 0) >= product.price;
+            return <div key={`seller-${product.id}`} className="group bg-white rounded-2xl overflow-hidden border-2 border-emerald-200 shadow-md hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
                       {/* Image */}
                       <div className="relative aspect-[4/3] overflow-hidden">
-                        {product.icon_url ? (
-                          <img src={product.icon_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                        ) : (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        {product.icon_url ? <img src={product.icon_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                             <Package className="h-16 w-16 text-gray-300" />
-                          </div>
-                        )}
+                          </div>}
 
                         {/* Seller Badge */}
                         <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
@@ -1379,12 +1153,10 @@ const AIAccountsSection = () => {
                           {product.seller_profiles?.store_name || 'Seller'}
                         </div>
 
-                        {!hasEnoughBalance && (
-                          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
+                        {!hasEnoughBalance && <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center">
                             <Wallet size={28} className="text-white mb-2" />
                             <span className="text-white text-sm font-semibold">Low Balance</span>
-                          </div>
-                        )}
+                          </div>}
                       </div>
 
                       {/* Content */}
@@ -1400,9 +1172,7 @@ const AIAccountsSection = () => {
 
                         <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                           <div className="flex gap-0.5">
-                            {[...Array(5)].map((_, i) => (
-                              <Star key={i} size={10} className="sm:w-3 sm:h-3 text-yellow-400 fill-yellow-400" />
-                            ))}
+                            {[...Array(5)].map((_, i) => <Star key={i} size={10} className="sm:w-3 sm:h-3 text-yellow-400 fill-yellow-400" />)}
                           </div>
                           <span className="text-[10px] sm:text-sm text-gray-600 font-medium">{product.sold_count || 0}+ sold</span>
                         </div>
@@ -1410,96 +1180,61 @@ const AIAccountsSection = () => {
                         {/* Action Buttons - Icon only on mobile */}
                         <div className="flex gap-1.5 sm:gap-2">
                           {/* Chat Button */}
-                          {product.chat_allowed !== false && (
-                            <button
-                              onClick={() => {
-                                openChat({
-                                  sellerId: product.seller_id,
-                                  sellerName: product.seller_profiles?.store_name || 'Seller',
-                                  productId: product.id,
-                                  productName: product.name,
-                                  type: 'seller'
-                                });
-                              }}
-                              className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700 min-h-[44px]"
-                            >
+                          {product.chat_allowed !== false && <button onClick={() => {
+                    openChat({
+                      sellerId: product.seller_id,
+                      sellerName: product.seller_profiles?.store_name || 'Seller',
+                      productId: product.id,
+                      productName: product.name,
+                      type: 'seller'
+                    });
+                  }} className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700 min-h-[44px]">
                               <MessageCircle size={16} className="sm:w-4 sm:h-4" />
                               <span className="hidden sm:inline text-sm">Chat</span>
-                            </button>
-                          )}
+                            </button>}
                           {/* View Button */}
-                          <button
-                            onClick={() => {
-                              setQuickViewProduct({ type: 'seller', data: product });
-                              setShowQuickViewModal(true);
-                            }}
-                            className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]"
-                          >
+                          <button onClick={() => {
+                    setQuickViewProduct({
+                      type: 'seller',
+                      data: product
+                    });
+                    setShowQuickViewModal(true);
+                  }} className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]">
                             <Eye size={16} className="sm:w-4 sm:h-4" />
                             <span className="hidden sm:inline text-sm">View</span>
                           </button>
                           {/* Buy Button */}
-                          <button
-                            onClick={() => handleSellerProductPurchase(product)}
-                            disabled={purchasing === product.id}
-                            className={`flex-1 font-bold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 transition-colors min-h-[44px] ${
-                              purchasing === product.id
-                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                : hasEnoughBalance
-                                ? 'bg-yellow-400 hover:bg-yellow-500 text-black'
-                                : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'
-                            }`}
-                          >
-                            {purchasing === product.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : !hasEnoughBalance ? (
-                              <>
+                          <button onClick={() => handleSellerProductPurchase(product)} disabled={purchasing === product.id} className={`flex-1 font-bold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 transition-colors min-h-[44px] ${purchasing === product.id ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : hasEnoughBalance ? 'bg-yellow-400 hover:bg-yellow-500 text-black' : 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300'}`}>
+                            {purchasing === product.id ? <Loader2 className="w-4 h-4 animate-spin" /> : !hasEnoughBalance ? <>
                                 <Wallet className="w-4 h-4" />
                                 <span className="hidden sm:inline text-sm">Top Up</span>
-                              </>
-                            ) : (
-                              <span className="text-sm">Buy</span>
-                            )}
+                              </> : <span className="text-sm">Buy</span>}
                           </button>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    </div>;
+          })}
+              </div>}
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* Seller Product Details Modal */}
       <Dialog open={showSellerDetailsModal} onOpenChange={setShowSellerDetailsModal}>
         <DialogContent className="max-w-lg p-0 overflow-hidden bg-white border-gray-200">
-          {selectedSellerProduct && (
-            <>
+          {selectedSellerProduct && <>
               {/* Product Image */}
               <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200">
-                {selectedSellerProduct.icon_url ? (
-                  <img 
-                    src={selectedSellerProduct.icon_url} 
-                    alt={selectedSellerProduct.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
+                {selectedSellerProduct.icon_url ? <img src={selectedSellerProduct.icon_url} alt={selectedSellerProduct.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
                     <Package className="h-20 w-20 text-gray-300" />
-                  </div>
-                )}
+                  </div>}
                 {/* Seller Badge */}
                 <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
                   <Store size={12} />
                   {selectedSellerProduct.seller_profiles?.store_name || 'Seller'}
                 </div>
-                {selectedSellerProduct.seller_profiles?.is_verified && (
-                  <div className="absolute top-3 right-3 px-2 py-1 bg-blue-500 text-white rounded-full text-xs font-medium">
+                {selectedSellerProduct.seller_profiles?.is_verified && <div className="absolute top-3 right-3 px-2 py-1 bg-blue-500 text-white rounded-full text-xs font-medium">
                     Verified
-                  </div>
-                )}
+                  </div>}
               </div>
 
               {/* Content */}
@@ -1513,23 +1248,17 @@ const AIAccountsSection = () => {
                 {/* Rating & Sales */}
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />
-                    ))}
+                    {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />)}
                   </div>
                   <span className="text-gray-600 text-sm">{selectedSellerProduct.sold_count || 0}+ sold</span>
                 </div>
 
                 {/* Tags */}
-                {selectedSellerProduct.tags && selectedSellerProduct.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {selectedSellerProduct.tags.map(tag => (
-                      <span key={tag} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                {selectedSellerProduct.tags && selectedSellerProduct.tags.length > 0 && <div className="flex flex-wrap gap-2 mb-4">
+                    {selectedSellerProduct.tags.map(tag => <span key={tag} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
                         {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                      </span>)}
+                  </div>}
 
                 {/* Description */}
                 <p className="text-gray-600 text-sm leading-relaxed mb-4">
@@ -1542,94 +1271,62 @@ const AIAccountsSection = () => {
                     <p className="text-xs text-gray-500 mb-1">Price</p>
                     <p className="text-2xl font-bold text-gray-900">${selectedSellerProduct.price}</p>
                   </div>
-                  {selectedSellerProduct.stock !== null && (
-                    <div className="text-right">
+                  {selectedSellerProduct.stock !== null && <div className="text-right">
                       <p className="text-xs text-gray-500 mb-1">In Stock</p>
                       <p className="text-xl font-bold text-gray-900">{selectedSellerProduct.stock}</p>
-                    </div>
-                  )}
+                    </div>}
                 </div>
 
                 {/* Action Buttons - Chat + Buy */}
                 <div className="flex gap-3">
                   {/* Chat Button - Only show if chat is allowed */}
-                  {selectedSellerProduct.chat_allowed !== false && (
-                    <button
-                      onClick={() => {
-                        setShowSellerDetailsModal(false);
-                        openChat({
-                          sellerId: selectedSellerProduct.seller_id,
-                          sellerName: selectedSellerProduct.seller_profiles?.store_name || 'Seller',
-                          productId: selectedSellerProduct.id,
-                          productName: selectedSellerProduct.name,
-                          type: 'seller'
-                        });
-                      }}
-                      className="flex-1 px-4 py-3 bg-emerald-100 text-emerald-700 rounded-xl font-semibold hover:bg-emerald-200 transition-colors flex items-center justify-center gap-2"
-                    >
+                  {selectedSellerProduct.chat_allowed !== false && <button onClick={() => {
+                setShowSellerDetailsModal(false);
+                openChat({
+                  sellerId: selectedSellerProduct.seller_id,
+                  sellerName: selectedSellerProduct.seller_profiles?.store_name || 'Seller',
+                  productId: selectedSellerProduct.id,
+                  productName: selectedSellerProduct.name,
+                  type: 'seller'
+                });
+              }} className="flex-1 px-4 py-3 bg-emerald-100 text-emerald-700 rounded-xl font-semibold hover:bg-emerald-200 transition-colors flex items-center justify-center gap-2">
                       <MessageCircle size={16} />
                       Chat with {selectedSellerProduct.seller_profiles?.store_name || 'Seller'}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      setShowSellerDetailsModal(false);
-                      handleSellerProductPurchase(selectedSellerProduct);
-                    }}
-                    className={`${selectedSellerProduct.chat_allowed !== false ? 'flex-1' : 'w-full'} px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-bold transition-colors flex items-center justify-center gap-2`}
-                  >
+                    </button>}
+                  <button onClick={() => {
+                setShowSellerDetailsModal(false);
+                handleSellerProductPurchase(selectedSellerProduct);
+              }} className={`${selectedSellerProduct.chat_allowed !== false ? 'flex-1' : 'w-full'} px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-bold transition-colors flex items-center justify-center gap-2`}>
                     Buy Now
                     <ArrowRight size={16} />
                   </button>
                 </div>
               </div>
-            </>
-          )}
+            </>}
         </DialogContent>
       </Dialog>
 
       {/* My Purchases Tab */}
-      {activeTab === 'purchases' && (
-        <>
-          {purchasesLoading ? (
-            <div className="flex items-center justify-center h-64">
+      {activeTab === 'purchases' && <>
+          {purchasesLoading ? <div className="flex items-center justify-center h-64">
               <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-gray-900 animate-spin" />
-            </div>
-          ) : purchases.length === 0 && sellerOrders.length === 0 ? (
-            <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
+            </div> : purchases.length === 0 && sellerOrders.length === 0 ? <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
               <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
                 <Package className="w-10 h-10 text-gray-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Purchases Yet</h3>
               <p className="text-gray-500 mb-6">Your purchased accounts will appear here</p>
-              <button
-                onClick={() => setActiveTab('browse')}
-                className="bg-gray-900 text-white font-semibold px-6 py-3 rounded-xl hover:bg-gray-800 transition-all"
-              >
+              <button onClick={() => setActiveTab('browse')} className="bg-gray-900 text-white font-semibold px-6 py-3 rounded-xl hover:bg-gray-800 transition-all">
                 Browse Products
               </button>
-            </div>
-          ) : (
-            <div className="space-y-3 sm:space-y-4">
+            </div> : <div className="space-y-3 sm:space-y-4">
               {/* Seller Orders (Marketplace Purchases) */}
-              {sellerOrders.map((order) => (
-                <div
-                  key={`seller-order-${order.id}`}
-                  className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border-2 border-emerald-200 shadow-md hover:shadow-lg transition-all"
-                >
+              {sellerOrders.map(order => <div key={`seller-order-${order.id}`} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border-2 border-emerald-200 shadow-md hover:shadow-lg transition-all">
                   {/* Stack on mobile, row on desktop */}
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div className="flex items-start gap-3 sm:gap-4">
                       <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-emerald-50 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {order.seller_products?.icon_url ? (
-                          <img 
-                            src={order.seller_products.icon_url}
-                            alt={order.seller_products?.name || 'Product'}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <Store className="w-5 h-5 sm:w-8 sm:h-8 text-emerald-500" />
-                        )}
+                        {order.seller_products?.icon_url ? <img src={order.seller_products.icon_url} alt={order.seller_products?.name || 'Product'} className="w-full h-full object-cover" /> : <Store className="w-5 h-5 sm:w-8 sm:h-8 text-emerald-500" />}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
@@ -1644,11 +1341,11 @@ const AIAccountsSection = () => {
                           From: {order.seller_profiles?.store_name || 'Seller'}
                         </p>
                         <p className="text-gray-400 text-[10px] sm:text-xs">
-                          {new Date(order.created_at).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                          })}
+                          {new Date(order.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
                         </p>
                       </div>
                     </div>
@@ -1659,92 +1356,60 @@ const AIAccountsSection = () => {
                         <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />
                         ${Number(order.amount).toFixed(2)}
                       </span>
-                      {order.status === 'pending' && (
-                        <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                      {order.status === 'pending' && <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
                           <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                           <span className="hidden sm:inline">Awaiting Delivery</span>
                           <span className="sm:hidden">Pending</span>
-                        </span>
-                      )}
-                      {order.status === 'delivered' && !order.buyer_approved && (
-                        <span className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                        </span>}
+                      {order.status === 'delivered' && !order.buyer_approved && <span className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
                           <Truck className="w-3 h-3 sm:w-4 sm:h-4" />
                           Delivered
-                        </span>
-                      )}
-                      {order.status === 'completed' && order.buyer_approved && (
-                        <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                        </span>}
+                      {order.status === 'completed' && order.buyer_approved && <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
                           <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                           Approved
-                        </span>
-                      )}
-                      {order.status === 'completed' && !order.buyer_approved && (
-                        <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                        </span>}
+                      {order.status === 'completed' && !order.buyer_approved && <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
                           <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                           Completed
-                        </span>
-                      )}
+                        </span>}
                     </div>
                   </div>
 
                   {/* Credentials display for delivered orders */}
-                  {order.status === 'delivered' && order.credentials && (
-                    <div className="mt-5 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                  {order.status === 'delivered' && order.credentials && <div className="mt-5 p-4 bg-blue-50 rounded-xl border border-blue-200">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-blue-700">Account Credentials</span>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => toggleCredentials(`seller-${order.id}`)}
-                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
-                          >
-                            {showCredentials[`seller-${order.id}`] ? (
-                              <EyeOff className="w-4 h-4 text-blue-600" />
-                            ) : (
-                              <Eye className="w-4 h-4 text-blue-600" />
-                            )}
+                          <button onClick={() => toggleCredentials(`seller-${order.id}`)} className="p-2 hover:bg-blue-100 rounded-lg transition-colors">
+                            {showCredentials[`seller-${order.id}`] ? <EyeOff className="w-4 h-4 text-blue-600" /> : <Eye className="w-4 h-4 text-blue-600" />}
                           </button>
-                          <button
-                            onClick={() => copyCredentials(order.credentials!)}
-                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
-                          >
+                          <button onClick={() => copyCredentials(order.credentials!)} className="p-2 hover:bg-blue-100 rounded-lg transition-colors">
                             <Copy className="w-4 h-4 text-blue-600" />
                           </button>
                         </div>
                       </div>
                       <code className="text-sm text-blue-900 font-mono block bg-blue-100 p-3 rounded-lg whitespace-pre-wrap">
-                        {showCredentials[`seller-${order.id}`] 
-                          ? order.credentials 
-                          : '••••••••••••••••'}
+                        {showCredentials[`seller-${order.id}`] ? order.credentials : '••••••••••••••••'}
                       </code>
                       
                       {/* Approve Delivery Button */}
                       <div className="mt-4 flex items-center gap-3">
-                        <button
-                          onClick={() => handleApproveDelivery(order.id)}
-                          disabled={approvingOrder === order.id}
-                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50"
-                        >
-                          {approvingOrder === order.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
+                        <button onClick={() => handleApproveDelivery(order.id)} disabled={approvingOrder === order.id} className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50">
+                          {approvingOrder === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <>
                               <ThumbsUp className="w-4 h-4" />
                               Approve Delivery
-                            </>
-                          )}
+                            </>}
                         </button>
-                        <button
-                          onClick={() => {
-                            openChat({
-                              sellerId: order.seller_id,
-                              sellerName: order.seller_profiles?.store_name || 'Seller',
-                              productId: order.product_id,
-                              productName: order.seller_products?.name,
-                              type: 'seller'
-                            });
-                          }}
-                          className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all"
-                        >
+                        <button onClick={() => {
+                openChat({
+                  sellerId: order.seller_id,
+                  sellerName: order.seller_profiles?.store_name || 'Seller',
+                  productId: order.product_id,
+                  productName: order.seller_products?.name,
+                  type: 'seller'
+                });
+              }} className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all">
                           <MessageCircle className="w-4 h-4" />
                           Chat
                         </button>
@@ -1753,79 +1418,53 @@ const AIAccountsSection = () => {
                       <p className="text-xs text-blue-600 mt-3">
                         Please verify the credentials work before approving. This will release payment to the seller.
                       </p>
-                    </div>
-                  )}
+                    </div>}
 
                   {/* Completed order credentials display */}
-                  {order.status === 'completed' && order.credentials && (
-                    <div className="mt-5 p-4 bg-gray-100 rounded-xl border border-gray-200">
+                  {order.status === 'completed' && order.credentials && <div className="mt-5 p-4 bg-gray-100 rounded-xl border border-gray-200">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-gray-600">Account Credentials</span>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => toggleCredentials(`seller-${order.id}`)}
-                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                          >
-                            {showCredentials[`seller-${order.id}`] ? (
-                              <EyeOff className="w-4 h-4 text-gray-500" />
-                            ) : (
-                              <Eye className="w-4 h-4 text-gray-500" />
-                            )}
+                          <button onClick={() => toggleCredentials(`seller-${order.id}`)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                            {showCredentials[`seller-${order.id}`] ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4 text-gray-500" />}
                           </button>
-                          <button
-                            onClick={() => copyCredentials(order.credentials!)}
-                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                          >
+                          <button onClick={() => copyCredentials(order.credentials!)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
                             <Copy className="w-4 h-4 text-gray-500" />
                           </button>
                         </div>
                       </div>
                       <code className="text-sm text-gray-800 font-mono block bg-gray-200 p-3 rounded-lg whitespace-pre-wrap">
-                        {showCredentials[`seller-${order.id}`] 
-                          ? order.credentials 
-                          : '••••••••••••••••'}
+                        {showCredentials[`seller-${order.id}`] ? order.credentials : '••••••••••••••••'}
                       </code>
-                    </div>
-                  )}
+                    </div>}
 
                   {/* Pending delivery message */}
-                  {order.status === 'pending' && (
-                    <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center gap-3">
+                  {order.status === 'pending' && <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center gap-3">
                       <Clock className="w-5 h-5 text-amber-600" />
                       <p className="text-sm text-amber-700">
                         Waiting for seller to deliver your account credentials.
                       </p>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    </div>}
+                </div>)}
 
               {/* Admin Account Purchases */}
-              {purchases.map((purchase) => (
-                <div
-                  key={purchase.id}
-                  className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-gray-200 shadow-md hover:shadow-lg transition-all"
-                >
+              {purchases.map(purchase => <div key={purchase.id} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-gray-200 shadow-md hover:shadow-lg transition-all">
                   {/* Stack on mobile, row on desktop */}
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div className="flex items-start gap-3 sm:gap-4">
                       <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        <img 
-                          src={purchase.ai_accounts?.icon_url || getProductImage(purchase.ai_accounts?.category)}
-                          alt={purchase.ai_accounts?.name || 'Account'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 object-contain"
-                        />
+                        <img src={purchase.ai_accounts?.icon_url || getProductImage(purchase.ai_accounts?.category)} alt={purchase.ai_accounts?.name || 'Account'} className="w-7 h-7 sm:w-10 sm:h-10 object-contain" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="text-sm sm:text-lg font-bold text-gray-900 tracking-tight truncate">
                           {purchase.ai_accounts?.name || 'Account'}
                         </h3>
                         <p className="text-gray-500 text-xs sm:text-sm">
-                          {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                          })}
+                          {new Date(purchase.purchased_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
                         </p>
                       </div>
                     </div>
@@ -1836,60 +1475,38 @@ const AIAccountsSection = () => {
                         <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />
                         Wallet
                       </span>
-                      {purchase.delivery_status === 'pending' ? (
-                        <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                      {purchase.delivery_status === 'pending' ? <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
                           <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                           Pending
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                        </span> : <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
                           <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                           Delivered
-                        </span>
-                      )}
+                        </span>}
                     </div>
                   </div>
 
-                  {purchase.delivery_status === 'delivered' && purchase.account_credentials && (
-                    <div className="mt-5 p-4 bg-gray-100 rounded-xl border border-gray-200">
+                  {purchase.delivery_status === 'delivered' && purchase.account_credentials && <div className="mt-5 p-4 bg-gray-100 rounded-xl border border-gray-200">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-gray-600">Account Credentials</span>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => toggleCredentials(purchase.id)}
-                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                          >
-                            {showCredentials[purchase.id] ? (
-                              <EyeOff className="w-4 h-4 text-gray-500" />
-                            ) : (
-                              <Eye className="w-4 h-4 text-gray-500" />
-                            )}
+                          <button onClick={() => toggleCredentials(purchase.id)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                            {showCredentials[purchase.id] ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4 text-gray-500" />}
                           </button>
-                          <button
-                            onClick={() => copyCredentials(purchase.account_credentials!)}
-                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                          >
+                          <button onClick={() => copyCredentials(purchase.account_credentials!)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
                             <Copy className="w-4 h-4 text-gray-500" />
                           </button>
                         </div>
                       </div>
                       <code className="text-sm text-gray-800 font-mono block bg-gray-200 p-3 rounded-lg">
-                        {showCredentials[purchase.id] 
-                          ? purchase.account_credentials 
-                          : '••••••••••••••••'}
+                        {showCredentials[purchase.id] ? purchase.account_credentials : '••••••••••••••••'}
                       </code>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+                    </div>}
+                </div>)}
+            </div>}
+        </>}
 
       {/* Stats Tab */}
-      {activeTab === 'stats' && (
-        <>
+      {activeTab === 'stats' && <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
             <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
               <p className="text-xs lg:text-sm text-gray-500 mb-1">Total Purchases</p>
@@ -1923,20 +1540,15 @@ const AIAccountsSection = () => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => navigate('/dashboard/billing')}
-                className="px-6 py-3 bg-white text-violet-700 rounded-xl font-semibold hover:bg-white/90 transition-all"
-              >
+              <button onClick={() => navigate('/dashboard/billing')} className="px-6 py-3 bg-white text-violet-700 rounded-xl font-semibold hover:bg-white/90 transition-all">
                 Top Up
               </button>
             </div>
           </div>
-        </>
-      )}
+        </>}
 
       {/* Chat Tab */}
-      {activeTab === 'chat' && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden">
+      {activeTab === 'chat' && <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden">
           {/* Chat Header */}
           <div className="p-4 border-b border-gray-200 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
@@ -1950,84 +1562,44 @@ const AIAccountsSection = () => {
           
           {/* Messages Area */}
           <div className="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50">
-            {messages.length === 0 ? (
-              <div className="h-full flex items-center justify-center">
+            {messages.length === 0 ? <div className="h-full flex items-center justify-center">
                 <div className="text-center">
                   <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                   <p className="text-gray-600">No messages yet</p>
                   <p className="text-gray-500 text-sm">Send us a message and we'll get back to you</p>
                 </div>
-              </div>
-            ) : (
-              messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                      msg.sender_type === 'user'
-                        ? 'bg-violet-500 text-white'
-                        : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
-                    }`}
-                  >
+              </div> : messages.map(msg => <div key={msg.id} className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${msg.sender_type === 'user' ? 'bg-violet-500 text-white' : 'bg-white text-gray-900 border border-gray-200 shadow-sm'}`}>
                     <p className="whitespace-pre-wrap">{msg.message}</p>
                     <span className={`text-xs mt-1 block ${msg.sender_type === 'user' ? 'opacity-60' : 'text-gray-400'}`}>
                       {format(new Date(msg.created_at), 'h:mm a')}
                     </span>
                   </div>
-                </div>
-              ))
-            )}
+                </div>)}
             <div ref={messagesEndRef} />
           </div>
           
           {/* Input Area */}
           <div className="p-4 border-t border-gray-200 bg-white">
             <div className="flex gap-3">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-300"
-                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendChatMessage()}
-              />
-              <button
-                onClick={sendChatMessage}
-                disabled={!newMessage.trim() || sendingMessage}
-                className="bg-violet-500 hover:bg-violet-600 text-white px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Type your message..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-300" onKeyPress={e => e.key === 'Enter' && !e.shiftKey && sendChatMessage()} />
+              <button onClick={sendChatMessage} disabled={!newMessage.trim() || sendingMessage} className="bg-violet-500 hover:bg-violet-600 text-white px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 <Send size={18} />
                 Send
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* View Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
         <DialogContent className="max-w-lg p-0 overflow-hidden">
-          {selectedAccount && (
-            <>
+          {selectedAccount && <>
               {/* Account Image */}
               <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200">
-                {selectedAccount.icon_url ? (
-                  <img 
-                    src={selectedAccount.icon_url} 
-                    alt={selectedAccount.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <img 
-                      src={getProductImage(selectedAccount.category)} 
-                      alt={selectedAccount.name}
-                      className="h-20 w-20 object-contain"
-                    />
-                  </div>
-                )}
+                {selectedAccount.icon_url ? <img src={selectedAccount.icon_url} alt={selectedAccount.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
+                    <img src={getProductImage(selectedAccount.category)} alt={selectedAccount.name} className="h-20 w-20 object-contain" />
+                  </div>}
                 {/* Category Badge */}
                 <div className={`absolute top-3 left-3 px-3 py-1.5 ${getCategoryColorClass(getCategoryColor(selectedAccount.category_id))} text-white rounded-full text-xs font-bold uppercase shadow-lg`}>
                   {getCategoryName(selectedAccount.category_id) || selectedAccount.category || 'AI'}
@@ -2045,9 +1617,7 @@ const AIAccountsSection = () => {
                 {/* Rating & Sales */}
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />
-                    ))}
+                    {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />)}
                     <span className="text-gray-600 text-sm font-medium ml-1">5.0</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-gray-500 text-sm">
@@ -2057,15 +1627,11 @@ const AIAccountsSection = () => {
                 </div>
 
                 {/* Tags */}
-                {selectedAccount.tags && selectedAccount.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {selectedAccount.tags.map(tag => (
-                      <span key={tag} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                {selectedAccount.tags && selectedAccount.tags.length > 0 && <div className="flex flex-wrap gap-2 mb-4">
+                    {selectedAccount.tags.map(tag => <span key={tag} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
                         {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                      </span>)}
+                  </div>}
 
                 {/* Description */}
                 <p className="text-gray-600 text-sm leading-relaxed mb-4">
@@ -2078,89 +1644,63 @@ const AIAccountsSection = () => {
                     <p className="text-xs text-gray-500 mb-1">Price</p>
                     <div className="flex items-center gap-2">
                       <p className="text-2xl font-bold text-gray-900">${selectedAccount.price}</p>
-                      {selectedAccount.original_price && selectedAccount.original_price > selectedAccount.price && (
-                        <span className="text-sm text-gray-400 line-through">${selectedAccount.original_price}</span>
-                      )}
+                      {selectedAccount.original_price && selectedAccount.original_price > selectedAccount.price && <span className="text-sm text-gray-400 line-through">${selectedAccount.original_price}</span>}
                     </div>
                     <p className="text-xs text-emerald-600 font-medium">One-time payment</p>
                   </div>
-                  {selectedAccount.stock !== null && (
-                    <div className="text-right">
+                  {selectedAccount.stock !== null && <div className="text-right">
                       <p className="text-xs text-gray-500 mb-1">In Stock</p>
                       <p className="text-xl font-bold text-gray-900">{selectedAccount.stock}</p>
                       <p className="text-xs text-gray-500">Available</p>
-                    </div>
-                  )}
+                    </div>}
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex gap-3">
                   {/* Chat Button - Only show if chat is allowed */}
-                  {selectedAccount.chat_allowed !== false && (
-                    <button
-                      onClick={() => {
-                        setShowDetailsModal(false);
-                        openChat({
-                          sellerId: 'support',
-                          sellerName: 'Uptoza Support',
-                          productId: selectedAccount.id,
-                          productName: selectedAccount.name,
-                          type: 'support'
-                        });
-                      }}
-                      className="flex-1 px-4 py-3 bg-violet-100 text-violet-700 rounded-xl font-semibold hover:bg-violet-200 transition-colors flex items-center justify-center gap-2"
-                    >
+                  {selectedAccount.chat_allowed !== false && <button onClick={() => {
+                setShowDetailsModal(false);
+                openChat({
+                  sellerId: 'support',
+                  sellerName: 'Uptoza Support',
+                  productId: selectedAccount.id,
+                  productName: selectedAccount.name,
+                  type: 'support'
+                });
+              }} className="flex-1 px-4 py-3 bg-violet-100 text-violet-700 rounded-xl font-semibold hover:bg-violet-200 transition-colors flex items-center justify-center gap-2">
                       <MessageCircle size={16} />
                       Chat with Uptoza
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      setShowDetailsModal(false);
-                      handlePurchase(selectedAccount);
-                    }}
-                    className={`${selectedAccount.chat_allowed !== false ? 'flex-1' : 'w-full'} px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-bold transition-colors flex items-center justify-center gap-2`}
-                  >
+                    </button>}
+                  <button onClick={() => {
+                setShowDetailsModal(false);
+                handlePurchase(selectedAccount);
+              }} className={`${selectedAccount.chat_allowed !== false ? 'flex-1' : 'w-full'} px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-bold transition-colors flex items-center justify-center gap-2`}>
                     Buy Now
                     <ArrowRight size={16} />
                   </button>
                 </div>
               </div>
-            </>
-          )}
+            </>}
         </DialogContent>
       </Dialog>
 
       {/* Quick View Modal */}
       <Dialog open={showQuickViewModal} onOpenChange={setShowQuickViewModal}>
         <DialogContent className="max-w-sm p-0 overflow-hidden bg-white border-gray-200">
-          {quickViewProduct && (
-            <>
+          {quickViewProduct && <>
               {/* Product Image */}
               <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200">
-                {quickViewProduct.data.icon_url ? (
-                  <img 
-                    src={quickViewProduct.data.icon_url} 
-                    alt={quickViewProduct.data.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
+                {quickViewProduct.data.icon_url ? <img src={quickViewProduct.data.icon_url} alt={quickViewProduct.data.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
                     <Package className="h-16 w-16 text-gray-300" />
-                  </div>
-                )}
+                  </div>}
                 {/* Badge */}
-                {quickViewProduct.type === 'seller' ? (
-                  <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                {quickViewProduct.type === 'seller' ? <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
                     <Store size={12} />
                     {(quickViewProduct.data as SellerProduct).seller_profiles?.store_name || 'Seller'}
-                  </div>
-                ) : (
-                  <div className="absolute top-3 left-3 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                  </div> : <div className="absolute top-3 left-3 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
                     <span className="w-2 h-2 rounded-full bg-white/80" />
                     Uptoza
-                  </div>
-                )}
+                  </div>}
               </div>
 
               {/* Content */}
@@ -2176,96 +1716,78 @@ const AIAccountsSection = () => {
                 </div>
 
                 {/* Description */}
-                <p className="text-sm text-gray-600 mb-4 line-clamp-4 whitespace-pre-line" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <p className="text-sm text-gray-600 mb-4 line-clamp-4 whitespace-pre-line" style={{
+              fontFamily: 'system-ui, -apple-system, sans-serif'
+            }}>
                   {quickViewProduct.data.description || 'No description available'}
                 </p>
 
                 {/* Action Buttons - 1 Row */}
                 <div className="flex items-center gap-2">
                   {/* Chat Button */}
-                  {quickViewProduct.data.chat_allowed !== false && (
-                    <button
-                      onClick={() => {
-                        setShowQuickViewModal(false);
-                        if (quickViewProduct.type === 'seller') {
-                          const product = quickViewProduct.data as SellerProduct;
-                          openChat({
-                            sellerId: product.seller_id,
-                            sellerName: product.seller_profiles?.store_name || 'Seller',
-                            productId: product.id,
-                            productName: product.name,
-                            type: 'seller'
-                          });
-                        } else {
-                          openChat({
-                            sellerId: 'support',
-                            sellerName: 'Uptoza Support',
-                            productId: quickViewProduct.data.id,
-                            productName: quickViewProduct.data.name,
-                            type: 'support'
-                          });
-                        }
-                      }}
-                      className={`flex-1 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-sm ${
-                        quickViewProduct.type === 'seller'
-                          ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'
-                          : 'bg-violet-100 hover:bg-violet-200 text-violet-700'
-                      }`}
-                    >
+                  {quickViewProduct.data.chat_allowed !== false && <button onClick={() => {
+                setShowQuickViewModal(false);
+                if (quickViewProduct.type === 'seller') {
+                  const product = quickViewProduct.data as SellerProduct;
+                  openChat({
+                    sellerId: product.seller_id,
+                    sellerName: product.seller_profiles?.store_name || 'Seller',
+                    productId: product.id,
+                    productName: product.name,
+                    type: 'seller'
+                  });
+                } else {
+                  openChat({
+                    sellerId: 'support',
+                    sellerName: 'Uptoza Support',
+                    productId: quickViewProduct.data.id,
+                    productName: quickViewProduct.data.name,
+                    type: 'support'
+                  });
+                }
+              }} className={`flex-1 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-sm ${quickViewProduct.type === 'seller' ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700' : 'bg-violet-100 hover:bg-violet-200 text-violet-700'}`}>
                       <MessageCircle size={16} />
                       Chat
-                    </button>
-                  )}
+                    </button>}
 
                   {/* Full View Button */}
-                  <button
-                    onClick={() => {
-                      setShowQuickViewModal(false);
-                      navigate(`/dashboard/ai-accounts/product/${quickViewProduct.data.id}`);
-                    }}
-                    className="flex-1 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm"
-                  >
+                  <button onClick={() => {
+                setShowQuickViewModal(false);
+                navigate(`/dashboard/ai-accounts/product/${quickViewProduct.data.id}`);
+              }} className="flex-1 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm">
                     <Eye size={16} />
                     View
                   </button>
 
                   {/* Buy Now Button */}
-                  <button
-                    onClick={() => {
-                      setShowQuickViewModal(false);
-                      if (quickViewProduct.type === 'seller') {
-                        handleSellerProductPurchase(quickViewProduct.data as SellerProduct);
-                      } else {
-                        handlePurchase(quickViewProduct.data as AIAccount);
-                      }
-                    }}
-                    disabled={purchasing === quickViewProduct.data.id}
-                    className="flex-1 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-yellow-400 hover:bg-yellow-500 text-black text-sm"
-                  >
-                    {purchasing === quickViewProduct.data.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
+                  <button onClick={() => {
+                setShowQuickViewModal(false);
+                if (quickViewProduct.type === 'seller') {
+                  handleSellerProductPurchase(quickViewProduct.data as SellerProduct);
+                } else {
+                  handlePurchase(quickViewProduct.data as AIAccount);
+                }
+              }} disabled={purchasing === quickViewProduct.data.id} className="flex-1 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-yellow-400 hover:bg-yellow-500 text-black text-sm">
+                    {purchasing === quickViewProduct.data.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <>
                         <ShoppingCart size={16} />
                         Buy
-                      </>
-                    )}
+                      </>}
                   </button>
                 </div>
               </div>
-            </>
-          )}
+            </>}
         </DialogContent>
       </Dialog>
 
       {/* Insufficient Funds Modal */}
-      {insufficientFundsModal.show && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      {insufficientFundsModal.show && <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
-            <button
-              onClick={() => setInsufficientFundsModal({ show: false, required: 0, current: 0, shortfall: 0 })}
-              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
+            <button onClick={() => setInsufficientFundsModal({
+          show: false,
+          required: 0,
+          current: 0,
+          shortfall: 0
+        })} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors">
               <X size={20} />
             </button>
             
@@ -2296,36 +1818,39 @@ const AIAccountsSection = () => {
               </div>
               
               <div className="flex gap-3">
-                <button
-                  onClick={() => setInsufficientFundsModal({ show: false, required: 0, current: 0, shortfall: 0 })}
-                  className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium"
-                >
+                <button onClick={() => setInsufficientFundsModal({
+              show: false,
+              required: 0,
+              current: 0,
+              shortfall: 0
+            })} className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium">
                   Cancel
                 </button>
-                <button
-                  onClick={() => {
-                    setInsufficientFundsModal({ show: false, required: 0, current: 0, shortfall: 0 });
-                    navigate('/dashboard/billing');
-                  }}
-                  className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors flex items-center justify-center gap-2 font-semibold"
-                >
+                <button onClick={() => {
+              setInsufficientFundsModal({
+                show: false,
+                required: 0,
+                current: 0,
+                shortfall: 0
+              });
+              navigate('/dashboard/billing');
+            }} className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors flex items-center justify-center gap-2 font-semibold">
                   <Wallet size={18} />
                   Top Up Wallet
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* Email Required Modal */}
-      {emailRequiredModal.show && emailRequiredModal.product && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      {emailRequiredModal.show && emailRequiredModal.product && <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
-            <button
-              onClick={() => setEmailRequiredModal({ show: false, product: null, email: '' })}
-              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
+            <button onClick={() => setEmailRequiredModal({
+          show: false,
+          product: null,
+          email: ''
+        })} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors">
               <X size={20} />
             </button>
             
@@ -2343,73 +1868,49 @@ const AIAccountsSection = () => {
               </p>
               
               <div className="mb-6">
-                <input
-                  type="email"
-                  value={emailRequiredModal.email}
-                  onChange={(e) => setEmailRequiredModal(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="Enter your email address"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
-                  autoFocus
-                />
+                <input type="email" value={emailRequiredModal.email} onChange={e => setEmailRequiredModal(prev => ({
+              ...prev,
+              email: e.target.value
+            }))} placeholder="Enter your email address" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center" autoFocus />
                 <p className="text-xs text-gray-500 mt-2">
                   This email will be shared with the seller for product access
                 </p>
               </div>
               
               <div className="flex gap-3">
-                <button
-                  onClick={() => setEmailRequiredModal({ show: false, product: null, email: '' })}
-                  className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium"
-                >
+                <button onClick={() => setEmailRequiredModal({
+              show: false,
+              product: null,
+              email: ''
+            })} className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium">
                   Cancel
                 </button>
-                <button
-                  onClick={() => {
-                    if (!emailRequiredModal.email.trim() || !emailRequiredModal.email.includes('@')) {
-                      toast.error('Please enter a valid email address');
-                      return;
-                    }
-                    handleSellerProductPurchase(emailRequiredModal.product!, emailRequiredModal.email.trim());
-                  }}
-                  disabled={!emailRequiredModal.email.trim() || purchasing === emailRequiredModal.product?.id}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {purchasing === emailRequiredModal.product?.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    'Confirm Purchase'
-                  )}
+                <button onClick={() => {
+              if (!emailRequiredModal.email.trim() || !emailRequiredModal.email.includes('@')) {
+                toast.error('Please enter a valid email address');
+                return;
+              }
+              handleSellerProductPurchase(emailRequiredModal.product!, emailRequiredModal.email.trim());
+            }} disabled={!emailRequiredModal.email.trim() || purchasing === emailRequiredModal.product?.id} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                  {purchasing === emailRequiredModal.product?.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Purchase'}
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* Pending Purchase Modal - for products from external stores */}
-      {pendingPurchaseData && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      {pendingPurchaseData && <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
             {/* Product Image */}
             <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200">
-              {pendingPurchaseData.iconUrl ? (
-                <img 
-                  src={pendingPurchaseData.iconUrl} 
-                  alt={pendingPurchaseData.productName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
+              {pendingPurchaseData.iconUrl ? <img src={pendingPurchaseData.iconUrl} alt={pendingPurchaseData.productName} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
                   <Package className="h-20 w-20 text-gray-300" />
-                </div>
-              )}
+                </div>}
               <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold">
                 From {pendingPurchaseData.storeSlug}
               </div>
-              <button
-                onClick={() => setPendingPurchaseData(null)}
-                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
-              >
+              <button onClick={() => setPendingPurchaseData(null)} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors">
                 <X className="w-4 h-4 text-white" />
               </button>
             </div>
@@ -2435,8 +1936,7 @@ const AIAccountsSection = () => {
               </div>
 
               {/* Insufficient Balance Warning */}
-              {(wallet?.balance || 0) < pendingPurchaseData.price && (
-                <div className="flex items-start gap-2 p-3 mb-4 bg-red-50 border border-red-200 rounded-lg">
+              {(wallet?.balance || 0) < pendingPurchaseData.price && <div className="flex items-start gap-2 p-3 mb-4 bg-red-50 border border-red-200 rounded-lg">
                   <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-red-700">Insufficient Balance</p>
@@ -2444,51 +1944,29 @@ const AIAccountsSection = () => {
                       You need ${(pendingPurchaseData.price - (wallet?.balance || 0)).toFixed(2)} more to complete this purchase.
                     </p>
                   </div>
-                </div>
-              )}
+                </div>}
 
               {/* Action Buttons */}
               <div className="flex gap-3">
-                <button
-                  onClick={() => setPendingPurchaseData(null)}
-                  className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium"
-                >
+                <button onClick={() => setPendingPurchaseData(null)} className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors font-medium">
                   Cancel
                 </button>
-                {(wallet?.balance || 0) < pendingPurchaseData.price ? (
-                  <button
-                    onClick={() => {
-                      setPendingPurchaseData(null);
-                      navigate('/dashboard/billing');
-                    }}
-                    className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors flex items-center justify-center gap-2 font-semibold"
-                  >
+                {(wallet?.balance || 0) < pendingPurchaseData.price ? <button onClick={() => {
+              setPendingPurchaseData(null);
+              navigate('/dashboard/billing');
+            }} className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors flex items-center justify-center gap-2 font-semibold">
                     <Wallet size={18} />
                     Top Up Wallet
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handlePendingPurchase(pendingPurchaseData)}
-                    disabled={purchasing === pendingPurchaseData.productId}
-                    className="flex-1 px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {purchasing === pendingPurchaseData.productId ? (
-                      <Loader2 className="animate-spin" size={18} />
-                    ) : (
-                      <>
+                  </button> : <button onClick={() => handlePendingPurchase(pendingPurchaseData)} disabled={purchasing === pendingPurchaseData.productId} className="flex-1 px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                    {purchasing === pendingPurchaseData.productId ? <Loader2 className="animate-spin" size={18} /> : <>
                         Buy Now
                         <ArrowRight size={16} />
-                      </>
-                    )}
-                  </button>
-                )}
+                      </>}
+                  </button>}
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        </div>}
+    </div>;
 };
-
 export default AIAccountsSection;
