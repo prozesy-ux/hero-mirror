@@ -980,18 +980,18 @@ const AIAccountsSection = () => {
           {/* Main Content */}
           <div className="flex-1 min-w-0 w-full">
             {/* Search Bar - Sticky on mobile with white background */}
-            <div className="sticky top-14 z-10 bg-white/95 backdrop-blur-md pb-3 pt-3 -mx-3 px-3 border-b border-gray-100 lg:static lg:top-auto lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:pb-0 lg:pt-0 lg:mx-0 lg:px-0 lg:border-none mb-0 lg:mb-6">
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md pb-3 pt-3 -mx-3 px-3 border-b border-gray-100 lg:relative lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:pb-0 lg:pt-0 lg:mx-0 lg:px-0 lg:border-none mb-4">
               {/* 2-column layout on mobile: Search | Filter */}
-              <div className="grid grid-cols-[1fr,auto] gap-2 lg:flex lg:gap-3 lg:w-auto lg:max-w-md">
+              <div className="grid grid-cols-[1fr,auto] gap-2 lg:block">
                 {/* Search Bar - White based design */}
-                <div className="relative flex-1">
+                <div className="relative w-full lg:w-64">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input 
                     type="text" 
                     value={searchQuery} 
                     onChange={e => setSearchQuery(e.target.value)} 
                     placeholder="Search..." 
-                    className="w-full bg-white lg:bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-8 py-2.5 text-sm text-gray-900 placeholder-gray-400 lg:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-100 lg:focus:ring-violet-200 focus:border-violet-300 transition-all shadow-sm lg:shadow-none" 
+                    className="w-full bg-white lg:bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-8 py-2 text-sm text-gray-900 placeholder-gray-400 lg:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-100 lg:focus:ring-violet-200 focus:border-violet-300 transition-all shadow-sm lg:shadow-none" 
                   />
                   {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
                     <button 
