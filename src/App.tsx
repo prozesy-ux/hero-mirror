@@ -14,8 +14,6 @@ import Seller from "./pages/Seller";
 import Admin from "./pages/Admin";
 import Store from "./pages/Store";
 import ProductFullView from "./pages/ProductFullView";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -43,8 +41,6 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/store/:storeSlug" element={<Store />} />
             <Route path="/store/:storeSlug/product/:productId" element={<ProductFullView />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
             <Route path="/dashboard/*" element={
               <ProtectedRoute>
                 <Dashboard />

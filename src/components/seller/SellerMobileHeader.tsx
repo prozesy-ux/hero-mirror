@@ -6,33 +6,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Bell, BellRing, X } from 'lucide-react';
-import { format } from 'date-fns';
 import theLogo from '@/assets/the-logo.png';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ScrollArea } from '@/components/ui/scroll-area';
-
-interface SellerNotification {
-  id: string;
-  title: string;
-  message: string;
-  type: string;
-  is_read: boolean;
-  created_at: string;
-  link: string | null;
-}
 
 const SellerMobileHeader = () => {
   const { profile } = useSellerContext();
   const { permission, isSubscribed, isLoading: pushLoading, subscribe, isSupported } = usePushNotifications();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState<SellerNotification[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [pushBannerDismissed, setPushBannerDismissed] = useState(true);
 
   useEffect(() => {
@@ -48,28 +28,11 @@ const SellerMobileHeader = () => {
       setUnreadCount(count || 0);
     };
 
-    const fetchNotifications = async () => {
-      if (!profile?.id) return;
-
-      const { data } = await supabase
-        .from('seller_notifications')
-        .select('*')
-        .eq('seller_id', profile.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (data) setNotifications(data);
-    };
-
     fetchUnread();
-    fetchNotifications();
 
     const channel = supabase
       .channel('seller-mobile-notifications')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_notifications' }, () => {
-        fetchUnread();
-        fetchNotifications();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_notifications' }, fetchUnread)
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -97,23 +60,6 @@ const SellerMobileHeader = () => {
     setPushBannerDismissed(true);
   };
 
-  const markAsRead = async (notificationId: string) => {
-    await supabase
-      .from('seller_notifications')
-      .update({ is_read: true })
-      .eq('id', notificationId);
-  };
-
-  const markAllAsRead = async () => {
-    if (!profile?.id) return;
-    
-    await supabase
-      .from('seller_notifications')
-      .update({ is_read: true })
-      .eq('seller_id', profile.id)
-      .eq('is_read', false);
-  };
-
   return (
     <>
       <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-100 flex items-center justify-between px-4 lg:hidden z-50">
@@ -122,89 +68,19 @@ const SellerMobileHeader = () => {
         </Link>
 
         <div className="flex items-center gap-3">
-          {/* Notification Dropdown */}
-          <DropdownMenu open={showDropdown} onOpenChange={setShowDropdown}>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="relative"
-              >
-                <Bell className="h-5 w-5 text-slate-600" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="end" 
-              className="w-80 bg-white border border-slate-200 shadow-xl z-[100] rounded-xl p-0 overflow-hidden"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between p-3 border-b border-slate-100">
-                <h3 className="font-semibold text-slate-900">Notifications</h3>
-                {notifications.some(n => !n.is_read) && (
-                  <button 
-                    onClick={markAllAsRead}
-                    className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
-                  >
-                    Mark all read
-                  </button>
-                )}
-              </div>
-              
-              {/* Notifications List */}
-              <ScrollArea className="max-h-64">
-                {notifications.length === 0 ? (
-                  <div className="p-6 text-center">
-                    <Bell size={32} className="text-slate-300 mx-auto mb-2" />
-                    <p className="text-slate-500 text-sm">No notifications yet</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-slate-100">
-                    {notifications.map((notif) => (
-                      <DropdownMenuItem 
-                        key={notif.id}
-                        onClick={() => {
-                          markAsRead(notif.id);
-                          if (notif.link) navigate(notif.link);
-                        }}
-                        className={`flex flex-col items-start p-3 cursor-pointer focus:bg-slate-50 ${
-                          !notif.is_read ? 'bg-emerald-50/50' : ''
-                        }`}
-                      >
-                        <div className="flex items-start gap-2 w-full">
-                          <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                            !notif.is_read ? 'bg-emerald-500' : 'bg-transparent'
-                          }`} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate">{notif.title}</p>
-                            <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{notif.message}</p>
-                            <p className="text-[10px] text-slate-400 mt-1">
-                              {format(new Date(notif.created_at), 'MMM d, h:mm a')}
-                            </p>
-                          </div>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-              
-              {/* Footer */}
-              {notifications.length > 0 && (
-                <Link 
-                  to="/seller/support"
-                  onClick={() => setShowDropdown(false)}
-                  className="block text-center py-2.5 text-sm text-emerald-600 hover:text-emerald-700 font-medium border-t border-slate-100 bg-slate-50"
-                >
-                  View all notifications
-                </Link>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="relative"
+            onClick={() => navigate('/seller/support')}
+          >
+            <Bell className="h-5 w-5 text-slate-600" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Button>
 
           <Link to="/seller/settings">
             <Avatar className="h-8 w-8 ring-2 ring-emerald-100">
