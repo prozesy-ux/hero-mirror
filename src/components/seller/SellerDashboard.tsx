@@ -207,45 +207,45 @@ const SellerDashboard = () => {
         </div>
       )}
 
-      {/* Main Stats Grid - Premium Gradient Cards - Mobile Optimized */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* Main Stats Grid - Premium Gradient Cards like Analytics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <button
             key={index}
             onClick={stat.onClick}
-            className={`relative rounded-xl sm:rounded-2xl p-3 sm:p-5 overflow-hidden text-left transition-all active:scale-[0.98] hover:shadow-xl ${stat.gradient}`}
+            className={`relative rounded-2xl p-5 overflow-hidden text-left transition-all hover:scale-[1.02] hover:shadow-xl ${stat.gradient}`}
           >
             <div className="flex items-start justify-between relative z-10">
               <div>
-                <p className="text-white/80 text-[10px] sm:text-xs font-medium uppercase tracking-wide">{stat.label}</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mt-0.5 sm:mt-1">{stat.value}</p>
+                <p className="text-white/80 text-xs font-medium uppercase tracking-wide">{stat.label}</p>
+                <p className="text-2xl lg:text-3xl font-bold text-white mt-1">{stat.value}</p>
                 {stat.change && (
-                  <div className="flex items-center gap-1 mt-1 sm:mt-2">
-                    <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white/90" />
-                    <span className="text-[10px] sm:text-xs font-semibold text-white/90">{stat.change}</span>
+                  <div className="flex items-center gap-1 mt-2">
+                    <ArrowUpRight className="h-3.5 w-3.5 text-white/90" />
+                    <span className="text-xs font-semibold text-white/90">{stat.change}</span>
                   </div>
                 )}
               </div>
-              <div className="h-8 w-8 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center">
-                <stat.icon className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+              <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
+                <stat.icon className="h-6 w-6 text-white" />
               </div>
             </div>
           </button>
         ))}
       </div>
 
-      {/* Quick Stats Row - Mobile Scrollable */}
-      <div className="flex gap-2 sm:gap-3 overflow-x-auto hide-scrollbar pb-1 -mx-1 px-1">
+      {/* Quick Stats Row */}
+      <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'Completed', value: completedOrders, icon: CheckCircle, color: 'text-emerald-500' },
           { label: 'Pending', value: pendingOrders, icon: Clock, color: 'text-amber-500' },
           { label: 'Delivered', value: deliveredOrders, icon: TrendingUp, color: 'text-blue-500' },
           { label: 'Total', value: orders.length, icon: ShoppingBag, color: 'text-violet-500' }
         ].map((stat, index) => (
-          <div key={index} className="flex-shrink-0 bg-white rounded-xl p-2.5 sm:p-3 text-center border border-slate-100 shadow-sm min-w-[72px] sm:min-w-[80px]">
-            <stat.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${stat.color} mx-auto mb-0.5 sm:mb-1`} />
-            <p className="seller-stat-number text-base sm:text-lg text-slate-900">{stat.value}</p>
-            <p className="text-[9px] sm:text-[10px] text-slate-600 font-medium">{stat.label}</p>
+          <div key={index} className="bg-white rounded-xl p-3 text-center border border-slate-100 shadow-sm">
+            <stat.icon className={`w-4 h-4 ${stat.color} mx-auto mb-1`} />
+            <p className="seller-stat-number text-lg text-slate-900">{stat.value}</p>
+            <p className="text-[10px] text-slate-600 font-medium">{stat.label}</p>
           </div>
         ))}
       </div>

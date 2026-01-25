@@ -83,14 +83,14 @@ const StoreProductCard = ({
       </div>
 
       {/* Content */}
-      <div className="p-3 sm:p-4">
-        <h3 className="font-bold text-slate-900 text-sm sm:text-base leading-tight line-clamp-2 mb-1.5 sm:mb-2 group-hover:text-emerald-700 transition-colors">
+      <div className="p-4">
+        <h3 className="font-bold text-slate-900 text-base leading-tight line-clamp-2 mb-2 group-hover:text-emerald-700 transition-colors">
           {product.name}
         </h3>
 
-        {/* Tags - hidden on mobile for space */}
+        {/* Tags - compact */}
         {product.tags && product.tags.length > 0 && (
-          <div className="hidden sm:flex flex-wrap gap-1 mb-3">
+          <div className="flex flex-wrap gap-1 mb-3">
             {product.tags.slice(0, 2).map(tag => (
               <span key={tag} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-medium">
                 {tag}
@@ -105,20 +105,20 @@ const StoreProductCard = ({
         )}
 
         {/* Price & Rating Row */}
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <span className="text-lg sm:text-xl font-bold text-emerald-600">${product.price}</span>
-          <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-xl font-bold text-emerald-600">${product.price}</span>
+          <div className="flex items-center gap-1.5">
             <div className="flex gap-0.5">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} size={9} className="sm:w-2.5 sm:h-2.5 text-amber-400 fill-amber-400" />
+                <Star key={i} size={10} className="text-amber-400 fill-amber-400" />
               ))}
             </div>
-            <span className="text-[10px] sm:text-xs text-slate-500 font-medium">{product.sold_count || 0}</span>
+            <span className="text-xs text-slate-500 font-medium">{product.sold_count || 0}</span>
           </div>
         </div>
 
-        {/* Action Buttons - Icon only on mobile */}
-        <div className="flex gap-1.5 sm:gap-2">
+        {/* Action Buttons - Mobile optimized with proper touch targets */}
+        <div className="flex gap-2">
           {/* Chat Button */}
           {showChat && (
             <button
@@ -126,10 +126,10 @@ const StoreProductCard = ({
                 e.stopPropagation();
                 onChat();
               }}
-              className="flex-1 min-w-0 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-medium min-h-[44px]"
+              className="flex-1 min-w-0 py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-sm font-medium mobile-touch-target tap-feedback"
             >
               <MessageCircle size={16} className="flex-shrink-0" />
-              <span className="hidden sm:inline text-sm">Chat</span>
+              <span className="hidden xs:inline sm:inline">Chat</span>
             </button>
           )}
           {/* View Button */}
@@ -138,10 +138,10 @@ const StoreProductCard = ({
               e.stopPropagation();
               onView();
             }}
-            className="flex-1 min-w-0 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-medium min-h-[44px]"
+            className="flex-1 min-w-0 py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-sm font-medium mobile-touch-target tap-feedback"
           >
             <Eye size={16} className="flex-shrink-0" />
-            <span className="hidden sm:inline text-sm">View</span>
+            <span className="hidden xs:inline sm:inline">View</span>
           </button>
           {/* Buy Button */}
           <button
@@ -150,7 +150,7 @@ const StoreProductCard = ({
               onBuy();
             }}
             disabled={purchasing}
-            className={`flex-[1.5] min-w-0 font-bold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 transition-all min-h-[44px] ${
+            className={`flex-[1.5] min-w-0 font-bold py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all text-sm mobile-touch-target tap-feedback ${
               purchasing
                 ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
                 : isLoggedIn && !hasEnoughBalance
@@ -163,10 +163,10 @@ const StoreProductCard = ({
             ) : isLoggedIn && !hasEnoughBalance ? (
               <>
                 <Wallet className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline text-sm">Top Up</span>
+                <span className="hidden xs:inline">Top Up</span>
               </>
             ) : (
-              <span className="text-sm">Buy</span>
+              <span>Buy</span>
             )}
           </button>
         </div>

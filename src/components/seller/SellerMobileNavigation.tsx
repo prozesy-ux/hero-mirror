@@ -1,20 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
-import { LayoutDashboard, Package, ShoppingCart, Lightbulb, Share2, Menu, ExternalLink } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Lightbulb, Share2 } from 'lucide-react';
 import ShareStoreModal from './ShareStoreModal';
-import theLogo from '@/assets/the-logo.png';
-import metaLogo from '@/assets/meta-logo.png';
-import googleAdsLogo from '@/assets/google-ads-logo.png';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const SellerMobileNavigation = () => {
   const location = useLocation();
   const { orders, profile } = useSellerContext();
   const [showShareModal, setShowShareModal] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [animatingItem, setAnimatingItem] = useState<string | null>(null);
+  const prevPathRef = useRef(location.pathname);
 
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
+
+  // Trigger animation on route change
+  useEffect(() => {
+    if (prevPathRef.current !== location.pathname) {
+      setAnimatingItem(location.pathname);
+      const timer = setTimeout(() => setAnimatingItem(null), 350);
+      prevPathRef.current = location.pathname;
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname]);
 
   const navItems = [
     { to: '/seller', icon: LayoutDashboard, label: 'Home', exact: true },
@@ -30,59 +37,11 @@ const SellerMobileNavigation = () => {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 lg:hidden z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]">
-        <div className="flex items-center justify-around px-1 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-          {/* Hamburger Menu - Opens Left Panel */}
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetTrigger asChild>
-              <button className="relative flex flex-col items-center gap-1 px-3 py-1.5 transition-colors duration-200 active:scale-95 active:opacity-80 text-slate-400">
-                <Menu size={22} strokeWidth={1.8} />
-                <span className="text-[10px] font-semibold">Menu</span>
-              </button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-white">
-              {/* Logo */}
-              <div className="p-4 border-b border-slate-100">
-                <Link to="/seller" onClick={() => setSidebarOpen(false)}>
-                  <img src={theLogo} alt="Uptoza" className="h-8 w-auto" />
-                </Link>
-              </div>
-              
-              {/* Spacer */}
-              <div className="flex-1" />
-              
-              {/* Ads Agency Card */}
-              <div className="p-3 mt-auto">
-                <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                  {/* Logos Row */}
-                  <div className="flex items-center justify-center gap-4 mb-3">
-                    <div className="w-10 h-10 bg-white rounded-lg border border-slate-100 flex items-center justify-center p-1.5 shadow-sm">
-                      <img src={metaLogo} alt="Meta" className="w-full h-full object-contain" />
-                    </div>
-                    <div className="w-10 h-10 bg-white rounded-lg border border-slate-100 flex items-center justify-center p-1.5 shadow-sm">
-                      <img src={googleAdsLogo} alt="Google Ads" className="w-full h-full object-contain" />
-                    </div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="text-center">
-                    <h3 className="text-sm font-bold text-slate-900 mb-1">Ads Agency</h3>
-                    <p className="text-xs text-slate-500 mb-3 leading-relaxed">
-                      Get professional ad campaigns managed by experts
-                    </p>
-                    <button className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md">
-                      Learn More
-                      <ExternalLink size={12} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          {/* First two nav items */}
-          {navItems.slice(0, 2).map((item) => {
+      <nav className="fixed bottom-0 left-0 right-0 mobile-nav-floating bg-white/95 border-t border-slate-100/50 lg:hidden z-50 safe-area-bottom">
+        <div className="flex items-center justify-around px-2 py-1.5">
+          {navItems.map((item) => {
             const active = isActive(item.to, item.exact);
+            const isAnimating = animatingItem === item.to;
             const Icon = item.icon;
             
             return (
@@ -90,64 +49,54 @@ const SellerMobileNavigation = () => {
                 key={item.to}
                 to={item.to}
                 className={`
-                  relative flex flex-col items-center gap-1 px-3 py-1.5
-                  transition-colors duration-200
-                  active:scale-95 active:opacity-80
-                  ${active ? 'text-emerald-600' : 'text-slate-400'}
+                  relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl 
+                  transition-all duration-300 ease-out tap-feedback mobile-touch-target
+                  ${active 
+                    ? 'nav-bg-emerald-active text-white scale-105' 
+                    : 'text-slate-400 hover:text-slate-600'
+                  }
+                  ${isAnimating ? 'nav-item-pop' : ''}
                 `}
               >
-                <div className="relative">
-                  <Icon size={22} strokeWidth={active ? 2.2 : 1.8} />
+                {/* Icon container with glow effect */}
+                <div className={`relative ${active ? 'nav-glow-emerald' : ''} rounded-xl p-0.5`}>
+                  <Icon 
+                    className={`h-5 w-5 nav-icon-fill ${active ? 'active' : ''} transition-all duration-200`}
+                    strokeWidth={active ? 2.5 : 2}
+                    fill={active ? 'currentColor' : 'none'}
+                  />
+                  
+                  {/* Badge */}
                   {item.badge && item.badge > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                    <span className="absolute -top-2 -right-2 h-[18px] min-w-[18px] px-1 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center badge-pulse shadow-lg shadow-red-500/30">
                       {item.badge > 9 ? '9+' : item.badge}
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] font-semibold">{item.label}</span>
+                
+                {/* Label */}
+                <span className={`text-[10px] font-semibold tracking-wide transition-all duration-200 ${active ? 'opacity-100' : 'opacity-70'}`}>
+                  {item.label}
+                </span>
+                
+                {/* Active indicator dot */}
+                {active && (
+                  <span className="absolute -bottom-0.5 w-1 h-1 bg-white rounded-full nav-indicator-animate shadow-sm" />
+                )}
               </Link>
             );
           })}
-
-          {/* Center Share Button - Elevated */}
+          
+          {/* Share Button */}
           <button
             onClick={() => setShowShareModal(true)}
-            className="relative flex flex-col items-center gap-1 -mt-5"
+            className="relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl transition-all duration-300 ease-out tap-feedback mobile-touch-target text-slate-400 hover:text-slate-600 active:scale-95"
           >
-            <div className="w-14 h-14 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30 active:scale-95 transition-transform">
-              <Share2 size={24} className="text-white" strokeWidth={2} />
+            <div className="rounded-xl p-0.5">
+              <Share2 className="h-5 w-5" strokeWidth={2} />
             </div>
-            <span className="text-[10px] font-semibold text-emerald-600">Share</span>
+            <span className="text-[10px] font-semibold tracking-wide opacity-70">Share</span>
           </button>
-
-          {/* Last two nav items */}
-          {navItems.slice(2).map((item) => {
-            const active = isActive(item.to, item.exact);
-            const Icon = item.icon;
-            
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`
-                  relative flex flex-col items-center gap-1 px-3 py-1.5
-                  transition-colors duration-200
-                  active:scale-95 active:opacity-80
-                  ${active ? 'text-emerald-600' : 'text-slate-400'}
-                `}
-              >
-                <div className="relative">
-                  <Icon size={22} strokeWidth={active ? 2.2 : 1.8} />
-                  {item.badge && item.badge > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                      {item.badge > 9 ? '9+' : item.badge}
-                    </span>
-                  )}
-                </div>
-                <span className="text-[10px] font-semibold">{item.label}</span>
-              </Link>
-            );
-          })}
         </div>
       </nav>
 

@@ -365,27 +365,26 @@ const SellerWallet = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto animate-fade-up px-3 sm:px-0">
+    <div className="max-w-4xl mx-auto animate-fade-up">
       {/* Tab Navigation - Mobile Optimized */}
-      <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-gray-200 shadow-md">
-        <div className="flex gap-1 overflow-x-auto hide-scrollbar">
+      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
+        <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => {
             const TabIcon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
+                className={`px-3 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'bg-gray-900 text-white shadow-lg'
                     : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
                 }`}
               >
-                <TabIcon size={14} />
-                <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden">{tab.label.slice(0, 4)}</span>
+                <TabIcon size={14} className="lg:w-4 lg:h-4" />
+                {tab.label}
                 {tab.id === 'accounts' && savedAccounts.length > 0 && (
-                  <span className={`text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-white/20' : 'bg-gray-200'}`}>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-white/20' : 'bg-gray-200'}`}>
                     {savedAccounts.length}
                   </span>
                 )}
@@ -397,17 +396,17 @@ const SellerWallet = () => {
 
       {/* Wallet Tab */}
       {activeTab === 'wallet' && (
-        <div className="space-y-4 sm:space-y-6">
-          {/* Wallet Card - Stack on mobile */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600">
-                  <Wallet size={24} className="sm:w-7 sm:h-7 text-white" />
+        <div className="space-y-6">
+          {/* Wallet Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600">
+                  <Wallet size={28} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs sm:text-sm font-medium">Wallet Balance</p>
-                  <h3 className="text-2xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+                  <p className="text-gray-500 text-sm font-medium">Wallet Balance</p>
+                  <h3 className="text-4xl font-bold text-gray-900 tracking-tight">
                     ${(wallet?.balance || 0).toFixed(2)}
                   </h3>
                 </div>
@@ -415,10 +414,10 @@ const SellerWallet = () => {
               <button
                 onClick={() => setShowWithdrawDialog(true)}
                 disabled={!wallet?.balance || wallet.balance < 5 || hasPendingWithdrawal || savedAccounts.length === 0}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
               >
                 <ArrowDownCircle size={20} />
-                Withdraw
+                Withdraw Funds
               </button>
             </div>
           </div>

@@ -235,26 +235,21 @@ const SellerChat = () => {
     );
   }
 
-  // Mobile view state
-  const [showChatOnMobile, setShowChatOnMobile] = useState(false);
-
   return (
-    <div className="p-3 sm:p-4 lg:p-6 bg-slate-50 min-h-screen">
+    <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
       {/* Unread Badge */}
       {totalUnread > 0 && (
-        <div className="flex justify-end mb-3 sm:mb-4">
-          <Badge className="bg-emerald-500 text-white text-xs">
+        <div className="flex justify-end mb-4">
+          <Badge className="bg-emerald-500 text-white">
             {totalUnread} unread
           </Badge>
         </div>
       )}
 
       {/* Chat Interface */}
-      <div className="flex h-[calc(100vh-180px)] sm:h-[calc(100vh-200px)] gap-3 sm:gap-4">
-        {/* Users List - Hidden on mobile when chat is open */}
-        <div className={`bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col ${
-          showChatOnMobile ? 'hidden lg:flex' : 'flex'
-        } w-full lg:w-80 flex-shrink-0`}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-200px)]">
+        {/* Users List */}
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
           <div className="p-3 border-b border-slate-100">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -275,37 +270,34 @@ const SellerChat = () => {
               </div>
             ) : (
               <div className="p-2 space-y-1">
-                {filteredUsers.map((chatUser) => (
+                {filteredUsers.map((user) => (
                   <button
-                    key={chatUser.buyer_id}
-                    onClick={() => {
-                      setSelectedUser(chatUser.buyer_id);
-                      setShowChatOnMobile(true);
-                    }}
-                    className={`w-full p-3 rounded-lg text-left transition-all min-h-[64px] ${
-                      selectedUser === chatUser.buyer_id
+                    key={user.buyer_id}
+                    onClick={() => setSelectedUser(user.buyer_id)}
+                    className={`w-full p-3 rounded-lg text-left transition-all ${
+                      selectedUser === user.buyer_id
                         ? 'bg-emerald-50 border border-emerald-100'
-                        : 'hover:bg-slate-50 active:bg-slate-100'
+                        : 'hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10 flex-shrink-0">
+                      <Avatar className="h-10 w-10">
                         <AvatarFallback className="bg-slate-100 text-slate-600 text-sm">
-                          {(chatUser.full_name || chatUser.email).charAt(0).toUpperCase()}
+                          {(user.full_name || user.email).charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-between">
                           <p className="font-medium text-sm text-slate-900 truncate">
-                            {chatUser.full_name || chatUser.email.split('@')[0]}
+                            {user.full_name || user.email.split('@')[0]}
                           </p>
-                          {chatUser.unread_count > 0 && (
-                            <Badge className="bg-emerald-500 text-white text-[10px] h-5 min-w-[18px] flex-shrink-0">
-                              {chatUser.unread_count}
+                          {user.unread_count > 0 && (
+                            <Badge className="bg-emerald-500 text-white text-[10px] h-5 min-w-[20px]">
+                              {user.unread_count}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-slate-500 truncate">{chatUser.last_message}</p>
+                        <p className="text-xs text-slate-500 truncate">{user.last_message}</p>
                       </div>
                     </div>
                   </button>
@@ -315,30 +307,19 @@ const SellerChat = () => {
           </ScrollArea>
         </div>
 
-        {/* Chat Area - Full screen on mobile when active */}
-        <div className={`flex-1 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col ${
-          !showChatOnMobile ? 'hidden lg:flex' : 'flex'
-        }`}>
+        {/* Chat Area */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
           {selectedUser ? (
             <>
-              {/* Chat Header with back button */}
-              <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
-                {/* Back button for mobile */}
-                <button 
-                  onClick={() => setShowChatOnMobile(false)}
-                  className="lg:hidden p-2 -ml-1 hover:bg-slate-100 rounded-lg active:scale-95 transition-all"
-                >
-                  <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <Avatar className="h-10 w-10 flex-shrink-0">
+              {/* Chat Header */}
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+                <Avatar className="h-10 w-10">
                   <AvatarFallback className="bg-slate-100">
                     <User className="h-4 w-4 text-slate-500" />
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-900 truncate">
+                <div>
+                  <p className="font-semibold text-slate-900">
                     {chatUsers.find(u => u.buyer_id === selectedUser)?.full_name || 
                      chatUsers.find(u => u.buyer_id === selectedUser)?.email}
                   </p>
@@ -406,7 +387,7 @@ const SellerChat = () => {
               </ScrollArea>
 
               {/* Input */}
-              <div className="p-3 sm:p-4 border-t border-slate-100">
+              <div className="p-4 border-t border-slate-100">
                 <div className="flex gap-2">
                   <Input
                     placeholder="Type a message..."
@@ -414,12 +395,12 @@ const SellerChat = () => {
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={sending}
-                    className="border-slate-200 h-10 sm:h-auto"
+                    className="border-slate-200"
                   />
                   <Button
                     onClick={sendMessage}
                     disabled={sending || !newMessage.trim()}
-                    className="bg-emerald-500 hover:bg-emerald-600 px-3 sm:px-4 min-w-[44px]"
+                    className="bg-emerald-500 hover:bg-emerald-600 px-4"
                   >
                     {sending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

@@ -624,10 +624,10 @@ const BillingSection = () => {
   ];
 
   const tabs = [
-    { id: 'wallet' as BillingTab, label: 'Wallet', shortLabel: 'Wallet', icon: Wallet },
-    { id: 'transactions' as BillingTab, label: 'Transactions', shortLabel: 'Txns', icon: History },
-    { id: 'plan' as BillingTab, label: 'Plan', shortLabel: 'Plan', icon: Crown },
-    { id: 'purchases' as BillingTab, label: 'Purchases', shortLabel: 'Buy', icon: ShoppingBag },
+    { id: 'wallet' as BillingTab, label: 'Wallet', icon: Wallet },
+    { id: 'transactions' as BillingTab, label: 'Transactions', icon: History },
+    { id: 'plan' as BillingTab, label: 'Plan', icon: Crown },
+    { id: 'purchases' as BillingTab, label: 'Purchases', icon: ShoppingBag },
   ];
 
   // Removed blocking loading overlay - now using toast notifications instead
@@ -635,23 +635,22 @@ const BillingSection = () => {
   return (
     <div className="max-w-4xl mx-auto animate-fade-up">
       {/* Tab Navigation - Mobile Optimized */}
-      <div className="bg-white rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
-        <div className="flex gap-0.5 sm:gap-1 lg:gap-2">
+      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
+        <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => {
             const TabIcon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 px-2 sm:px-3 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-[10px] sm:text-xs lg:text-sm transition-all duration-200 flex items-center justify-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap ${
+                className={`px-3 lg:px-6 py-2.5 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'bg-gray-900 text-white shadow-lg'
                     : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
                 }`}
               >
-                <TabIcon size={12} className="sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
-                <span className="sm:hidden">{tab.shortLabel}</span>
-                <span className="hidden sm:inline">{tab.label}</span>
+                <TabIcon size={14} className="lg:w-4 lg:h-4" />
+                {tab.label}
               </button>
             );
           })}
@@ -660,26 +659,26 @@ const BillingSection = () => {
 
       {/* Wallet Tab */}
       {activeTab === 'wallet' && (
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-6">
           {/* Wallet Card */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600">
-                  <Wallet size={24} className="sm:w-7 sm:h-7 text-white" />
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600">
+                  <Wallet size={28} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs sm:text-sm font-medium">Wallet Balance</p>
-                  <h3 className="text-2xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+                  <p className="text-gray-500 text-sm font-medium">Wallet Balance</p>
+                  <h3 className="text-4xl font-bold text-gray-900 tracking-tight">
                     ${(wallet?.balance || 0).toFixed(2)}
                   </h3>
                 </div>
               </div>
               <button
                 onClick={() => setShowTopupModal(true)}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 sm:px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
               >
-                <Plus size={18} className="sm:w-5 sm:h-5" />
+                <Plus size={20} />
                 Add Funds
               </button>
             </div>
@@ -719,36 +718,35 @@ const BillingSection = () => {
 
       {/* Transactions Tab */}
       {activeTab === 'transactions' && (
-        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-md">
-          <h3 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight mb-3 sm:mb-4 flex items-center gap-2">
-            <History className="text-gray-500" size={18} />
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
+            <History className="text-gray-500" size={20} />
             Transaction History
           </h3>
           
           {transactions.length === 0 ? (
             <p className="text-gray-500 text-center py-12">No transactions yet</p>
           ) : (
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-3">
               {transactions.map((tx) => (
                 <div
                   key={tx.id}
-                  className="p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
+                  className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-                    {/* Icon + Info */}
-                    <div className="flex items-start gap-2.5 sm:gap-3">
-                      <div className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl flex-shrink-0 ${
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2.5 rounded-xl ${
                         tx.type === 'topup' ? 'bg-violet-100' :
                         tx.type === 'purchase' ? 'bg-gray-100' :
                         'bg-blue-100'
                       }`}>
-                        {tx.type === 'topup' && <CircleDollarSign size={16} className="sm:w-[18px] sm:h-[18px] text-violet-600" />}
-                        {tx.type === 'purchase' && <Receipt size={16} className="sm:w-[18px] sm:h-[18px] text-gray-600" />}
-                        {tx.type === 'refund' && <RotateCcw size={16} className="sm:w-[18px] sm:h-[18px] text-blue-600" />}
+                        {tx.type === 'topup' && <CircleDollarSign size={18} className="text-violet-600" />}
+                        {tx.type === 'purchase' && <Receipt size={18} className="text-gray-600" />}
+                        {tx.type === 'refund' && <RotateCcw size={18} className="text-blue-600" />}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-gray-900 font-medium text-sm capitalize truncate">{tx.description || tx.type}</p>
-                        <p className="text-gray-500 text-xs">
+                      <div>
+                        <p className="text-gray-900 font-medium capitalize">{tx.description || tx.type}</p>
+                        <p className="text-gray-500 text-sm">
                           {new Date(tx.created_at).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -756,19 +754,18 @@ const BillingSection = () => {
                             minute: '2-digit'
                           })}
                           {tx.payment_gateway && (
-                            <span className="ml-1.5 uppercase text-gray-400">
+                            <span className="ml-2 text-xs uppercase text-gray-400">
                               via {tx.payment_gateway}
                             </span>
                           )}
                         </p>
                       </div>
                     </div>
-                    {/* Amount + Status - Right aligned on desktop, below on mobile */}
-                    <div className="flex items-center justify-between sm:justify-end gap-2 pl-9 sm:pl-0">
-                      <p className={`font-semibold text-sm sm:text-base ${tx.type === 'topup' ? 'text-violet-600' : tx.type === 'refund' ? 'text-blue-600' : 'text-gray-700'}`}>
+                    <div className="text-right">
+                      <p className={`font-semibold ${tx.type === 'topup' ? 'text-violet-600' : tx.type === 'refund' ? 'text-blue-600' : 'text-gray-700'}`}>
                         {tx.type === 'topup' ? '+' : tx.type === 'refund' ? '+' : '-'}${tx.amount.toFixed(2)}
                       </p>
-                      <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-medium ${
+                      <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
                         tx.status === 'completed' ? 'bg-violet-100 text-violet-700' :
                         tx.status === 'pending' ? 'bg-amber-100 text-amber-700' :
                         'bg-red-100 text-red-700'
@@ -998,16 +995,16 @@ const BillingSection = () => {
 
       {/* Purchases Tab */}
       {activeTab === 'purchases' && (
-        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-md">
-          <h3 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight mb-3 sm:mb-4 flex items-center gap-2">
-            <ClipboardList className="text-gray-500" size={18} />
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
+            <ClipboardList className="text-gray-500" size={20} />
             Purchase History
           </h3>
           
           {purchases.length === 0 ? (
             <p className="text-gray-500 text-center py-12">No purchases yet</p>
           ) : (
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-3">
               {purchases.map((purchase) => {
                 const refundStatus = refundRequests.find(r => r.amount === purchase.amount);
                 const canRequestRefund = purchase.payment_status === 'completed' && !refundStatus;
@@ -1015,16 +1012,15 @@ const BillingSection = () => {
                 return (
                   <div
                     key={purchase.id}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-100 gap-3 hover:bg-gray-100 transition-all"
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 flex-wrap gap-3 hover:bg-gray-100 transition-all"
                   >
-                    {/* Product Info */}
-                    <div className="flex items-start gap-2.5 sm:gap-4">
-                      <div className="p-2.5 sm:p-3 bg-gray-100 rounded-lg sm:rounded-xl flex-shrink-0">
-                        <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px] text-gray-600" />
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-gray-100 rounded-xl">
+                        <ShoppingBag size={18} className="text-gray-600" />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-gray-900 font-semibold text-sm sm:text-base truncate">Pro Plan - Lifetime Access</p>
-                        <p className="text-gray-500 text-xs sm:text-sm">
+                      <div>
+                        <p className="text-gray-900 font-semibold">Pro Plan - Lifetime Access</p>
+                        <p className="text-gray-500 text-sm">
                           {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric', 
@@ -1033,11 +1029,10 @@ const BillingSection = () => {
                         </p>
                       </div>
                     </div>
-                    {/* Price & Status - Full width row on mobile */}
-                    <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 pl-10 sm:pl-0">
-                      <div className="text-left sm:text-right">
-                        <p className="text-gray-900 font-semibold text-base sm:text-lg">${purchase.amount.toFixed(2)}</p>
-                        <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-medium inline-block ${
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-gray-900 font-semibold text-lg">${purchase.amount.toFixed(2)}</p>
+                        <span className={`text-xs px-2.5 py-1 rounded-md font-medium ${
                           purchase.payment_status === 'completed'
                             ? 'bg-violet-100 text-violet-700'
                             : 'bg-amber-100 text-amber-700'
@@ -1046,7 +1041,7 @@ const BillingSection = () => {
                         </span>
                       </div>
                       {refundStatus ? (
-                        <span className={`text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-medium whitespace-nowrap ${
+                        <span className={`text-xs px-3 py-1.5 rounded-lg font-medium ${
                           refundStatus.status === 'pending'
                             ? 'bg-amber-100 text-amber-700'
                             : refundStatus.status === 'approved'
@@ -1058,10 +1053,10 @@ const BillingSection = () => {
                       ) : canRequestRefund && (
                         <button
                           onClick={() => setShowRefundModal(purchase.id)}
-                          className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm text-gray-500 hover:text-gray-900 transition-colors px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 rounded-lg border border-gray-200 hover:bg-gray-200"
+                          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors px-3 py-1.5 bg-gray-100 rounded-lg border border-gray-200 hover:bg-gray-200"
                         >
-                          <RotateCcw size={12} className="sm:w-3.5 sm:h-3.5" />
-                          <span className="hidden sm:inline">Request</span> Refund
+                          <RotateCcw size={14} />
+                          Request Refund
                         </button>
                       )}
                     </div>
