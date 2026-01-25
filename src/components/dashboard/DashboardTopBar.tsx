@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, FileText, Bot, CreditCard, MessageCircle, 
-  Crown, LogOut, User, ChevronDown, Wallet, X, Check, ExternalLink
+  Crown, LogOut, User, ChevronDown, Wallet, X, Check, ExternalLink, Sparkles
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useSearchContext } from '@/contexts/SearchContext';
@@ -306,8 +306,18 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
         {/* Spacer to push right section to the end */}
         <div className="flex-1" />
 
-        {/* Right Section - Wallet, Notifications, Profile */}
+        {/* Right Section - Become Seller, Wallet, Notifications, Profile */}
         <div className="flex items-center gap-3 ml-6">
+          {/* Become a Seller CTA - Premium Design */}
+          <Link
+            to="/seller"
+            className="group relative flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold text-sm shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-[1.02]"
+          >
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-400 opacity-0 group-hover:opacity-100 blur transition-opacity duration-300" />
+            <Sparkles size={16} className="relative z-10" />
+            <span className="relative z-10">Become a Seller</span>
+          </Link>
+
           {/* Wallet Balance */}
           <button
             onClick={() => navigate('/dashboard/billing')}
