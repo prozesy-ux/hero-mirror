@@ -977,28 +977,50 @@ const AIAccountsSection = () => {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Search Bar - Sticky on mobile with backdrop blur */}
-            <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md pb-3 -mx-3 px-3 sm:static sm:mx-0 sm:px-0 sm:bg-transparent sm:backdrop-blur-none">
-              <div className="flex gap-2 sm:gap-3">
-                {/* Mobile Filter Button - HIDDEN on small mobile, shown on sm-lg */}
-                <div className="hidden sm:block lg:hidden">
-                  <MarketplaceSidebar trendingAccounts={trendingAccounts} categories={dynamicCategories} accounts={accounts} selectedCategory={categoryFilter} selectedTags={selectedTags} onCategorySelect={setCategoryFilter} onTagSelect={handleTagSelect} onAccountClick={account => {
-                setSelectedAccount(account);
-                setShowDetailsModal(true);
-              }} getCategoryCount={getCategoryCount} />
-                </div>
-
-                {/* Search Bar - Compact design matching Prompts */}
+            {/* Search Bar - Sticky on mobile with white background */}
+            <div className="sticky top-14 lg:top-0 z-10 bg-white/95 backdrop-blur-md pb-3 pt-3 -mx-3 px-3 sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:bg-transparent sm:backdrop-blur-none border-b border-gray-100 sm:border-none">
+              {/* 2-column layout on mobile: Search | Filter */}
+              <div className="grid grid-cols-[1fr,auto] gap-2 sm:flex sm:gap-3">
+                {/* Search Bar - White based design */}
                 <div className="relative flex-1">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search products..." className="w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-8 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium" />
-                  {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && <button onClick={() => {
-                setSearchQuery('');
-                setSelectedTags([]);
-                setCategoryFilter('all');
-              }} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-md transition-colors">
+                  <input 
+                    type="text" 
+                    value={searchQuery} 
+                    onChange={e => setSearchQuery(e.target.value)} 
+                    placeholder="Search..." 
+                    className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-8 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-300 transition-all shadow-sm" 
+                  />
+                  {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
+                    <button 
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedTags([]);
+                        setCategoryFilter('all');
+                      }} 
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-md transition-colors"
+                    >
                       <X size={14} className="text-gray-400" />
-                    </button>}
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter Button - Always visible on mobile */}
+                <div className="lg:hidden">
+                  <MarketplaceSidebar 
+                    trendingAccounts={trendingAccounts} 
+                    categories={dynamicCategories} 
+                    accounts={accounts} 
+                    selectedCategory={categoryFilter} 
+                    selectedTags={selectedTags} 
+                    onCategorySelect={setCategoryFilter} 
+                    onTagSelect={handleTagSelect} 
+                    onAccountClick={account => {
+                      setSelectedAccount(account);
+                      setShowDetailsModal(true);
+                    }} 
+                    getCategoryCount={getCategoryCount} 
+                  />
                 </div>
               </div>
             </div>
@@ -1034,7 +1056,7 @@ const AIAccountsSection = () => {
           }} className="text-violet-600 font-medium hover:underline">
                   Clear all filters
                 </button>
-              </div> : <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 px-0">
+              </div> : <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 px-0.5 sm:px-0">
                 {filteredAccounts.map(account => {
             const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
             return <div key={account.id} className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
