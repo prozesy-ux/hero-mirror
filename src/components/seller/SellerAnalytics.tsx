@@ -129,50 +129,50 @@ const SellerAnalytics = () => {
   }
 
   const StatCard = ({ title, value, change, icon: Icon, gradient }: any) => (
-    <div className={`relative rounded-2xl p-5 overflow-hidden ${gradient}`}>
+    <div className={`relative rounded-xl sm:rounded-2xl p-3 sm:p-5 overflow-hidden ${gradient}`}>
       <div className="flex items-start justify-between relative z-10">
-        <div>
-          <p className="text-white/80 text-xs font-medium uppercase tracking-wide">{title}</p>
-          <p className="text-2xl lg:text-3xl font-bold text-white mt-1">{value}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-white/80 text-[10px] sm:text-xs font-medium uppercase tracking-wide truncate">{title}</p>
+          <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-white mt-0.5 sm:mt-1 truncate">{value}</p>
           {change !== undefined && (
-            <div className="flex items-center gap-1 mt-2">
-              {change >= 0 ? <ArrowUpRight className="h-3.5 w-3.5 text-white/90" /> : <ArrowDownRight className="h-3.5 w-3.5 text-white/90" />}
-              <span className="text-xs font-semibold text-white/90">{Math.abs(change).toFixed(1)}%</span>
+            <div className="flex items-center gap-1 mt-1 sm:mt-2">
+              {change >= 0 ? <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white/90" /> : <ArrowDownRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white/90" />}
+              <span className="text-[10px] sm:text-xs font-semibold text-white/90">{Math.abs(change).toFixed(1)}%</span>
             </div>
           )}
         </div>
-        <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
-          <Icon className="h-6 w-6 text-white" />
+        <div className="h-8 w-8 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+          <Icon className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="p-6 lg:p-8 bg-slate-50 min-h-screen space-y-6 seller-dashboard">
-      {/* Period Selector */}
+    <div className="p-3 sm:p-4 lg:p-6 bg-slate-50 min-h-screen space-y-4 sm:space-y-6 seller-dashboard">
+      {/* Period Selector - Scrollable on mobile */}
       <div className="flex justify-end">
-        <div className="flex items-center gap-1 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-1 bg-white rounded-xl p-1 border border-slate-200 shadow-sm overflow-x-auto hide-scrollbar">
           {(['7d', '30d', 'all'] as Period[]).map((p) => (
             <Button
               key={p}
               size="sm"
               variant={period === p ? 'default' : 'ghost'}
               onClick={() => setPeriod(p)}
-              className={`rounded-lg text-xs ${period === p ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`rounded-lg text-xs flex-shrink-0 px-3 ${period === p ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              {p === '7d' ? '7 Days' : p === '30d' ? '30 Days' : 'All'}
+              {p === '7d' ? '7D' : p === '30d' ? '30D' : 'All'}
             </Button>
           ))}
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Grid - 2 columns on mobile */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <StatCard title="Revenue" value={`$${analyticsData.totalRevenue.toFixed(2)}`} change={analyticsData.revenueChange} icon={DollarSign} gradient="bg-gradient-to-br from-emerald-500 to-teal-600" />
         <StatCard title="Orders" value={analyticsData.totalOrders} change={analyticsData.ordersChange} icon={ShoppingCart} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" />
         <StatCard title="Avg Order" value={`$${analyticsData.avgOrderValue.toFixed(2)}`} icon={Target} gradient="bg-gradient-to-br from-violet-500 to-purple-600" />
-        <StatCard title="Success Rate" value={`${analyticsData.conversionRate.toFixed(0)}%`} icon={TrendingUp} gradient="bg-gradient-to-br from-amber-500 to-orange-600" />
+        <StatCard title="Success" value={`${analyticsData.conversionRate.toFixed(0)}%`} icon={TrendingUp} gradient="bg-gradient-to-br from-amber-500 to-orange-600" />
       </div>
 
       {/* Insights Banner */}
@@ -189,12 +189,12 @@ const SellerAnalytics = () => {
       )}
 
       {/* Charts */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Revenue Chart */}
-        <Card className="lg:col-span-2 border-0 shadow-md bg-white rounded-2xl">
-          <CardContent className="p-5">
-            <h3 className="text-base font-semibold text-slate-900 mb-4">Revenue Trend</h3>
-            <div className="h-64">
+        <Card className="lg:col-span-2 border-0 shadow-md bg-white rounded-xl sm:rounded-2xl">
+          <CardContent className="p-3 sm:p-5">
+            <h3 className="text-sm sm:text-base font-semibold text-slate-900 mb-3 sm:mb-4">Revenue Trend</h3>
+            <div className="h-48 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={analyticsData.dailyData}>
                   <defs>
@@ -204,9 +204,9 @@ const SellerAnalytics = () => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
-                  <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} width={35} />
+                  <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} />
                   <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fill="url(#revenueGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
