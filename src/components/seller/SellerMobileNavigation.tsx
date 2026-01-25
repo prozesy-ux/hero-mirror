@@ -1,26 +1,100 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
-import { LayoutDashboard, Package, ShoppingCart, Lightbulb, Share2, Menu, ExternalLink } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { LayoutDashboard, Package, ShoppingCart, Share2, Menu, ExternalLink, Bell } from 'lucide-react';
 import ShareStoreModal from './ShareStoreModal';
 import theLogo from '@/assets/the-logo.png';
 import metaLogo from '@/assets/meta-logo.png';
 import googleAdsLogo from '@/assets/google-ads-logo.png';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { format } from 'date-fns';
+
+interface SellerNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  is_read: boolean;
+  created_at: string;
+  link: string | null;
+}
 
 const SellerMobileNavigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { orders, profile } = useSellerContext();
   const [showShareModal, setShowShareModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<SellerNotification[]>([]);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!profile?.id) return;
+
+      const { data, count } = await supabase
+        .from('seller_notifications')
+        .select('*', { count: 'exact' })
+        .eq('seller_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (data) setNotifications(data);
+      
+      const { count: unread } = await supabase
+        .from('seller_notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('seller_id', profile.id)
+        .eq('is_read', false);
+      
+      setUnreadCount(unread || 0);
+    };
+
+    fetchNotifications();
+
+    const channel = supabase
+      .channel('seller-mobile-nav-notifications')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_notifications' }, () => {
+        fetchNotifications();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.id]);
+
+  const markAsRead = async (notificationId: string) => {
+    await supabase
+      .from('seller_notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId);
+  };
+
+  const markAllAsRead = async () => {
+    if (!profile?.id) return;
+    await supabase
+      .from('seller_notifications')
+      .update({ is_read: true })
+      .eq('seller_id', profile.id)
+      .eq('is_read', false);
+  };
 
   const navItems = [
     { to: '/seller', icon: LayoutDashboard, label: 'Home', exact: true },
     { to: '/seller/products', icon: Package, label: 'Products' },
     { to: '/seller/orders', icon: ShoppingCart, label: 'Orders', badge: pendingOrders },
-    { to: '/seller/feature-requests', icon: Lightbulb, label: 'Requests' },
   ];
 
   const isActive = (path: string, exact?: boolean) => {
@@ -120,7 +194,7 @@ const SellerMobileNavigation = () => {
             <span className="text-[10px] font-semibold text-emerald-600">Share</span>
           </button>
 
-          {/* Last two nav items */}
+          {/* Orders nav item */}
           {navItems.slice(2).map((item) => {
             const active = isActive(item.to, item.exact);
             const Icon = item.icon;
@@ -130,7 +204,7 @@ const SellerMobileNavigation = () => {
                 key={item.to}
                 to={item.to}
                 className={`
-                  relative flex flex-col items-center gap-1 px-3 py-1.5
+                  relative flex flex-col items-center gap-1 px-2 py-1.5
                   transition-colors duration-200
                   active:scale-95 active:opacity-80
                   ${active ? 'text-emerald-600' : 'text-slate-400'}
@@ -148,6 +222,106 @@ const SellerMobileNavigation = () => {
               </Link>
             );
           })}
+
+          {/* Notification Bell */}
+          <DropdownMenu open={showNotifDropdown} onOpenChange={setShowNotifDropdown}>
+            <DropdownMenuTrigger asChild>
+              <button className="relative flex flex-col items-center gap-1 px-2 py-1.5 text-slate-400 active:scale-95">
+                <div className="relative">
+                  <Bell size={22} strokeWidth={1.8} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-semibold">Alerts</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="end" 
+              className="w-80 bg-white border border-slate-200 shadow-xl z-[100] rounded-xl p-0 overflow-hidden mb-2"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-3 border-b border-slate-100">
+                <h3 className="font-semibold text-slate-900 text-sm">Notifications</h3>
+                {notifications.some(n => !n.is_read) && (
+                  <button 
+                    onClick={markAllAsRead}
+                    className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                  >
+                    Mark all read
+                  </button>
+                )}
+              </div>
+              
+              {/* Notifications List */}
+              <ScrollArea className="max-h-64">
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <Bell size={32} className="text-slate-300 mx-auto mb-2" />
+                    <p className="text-slate-500 text-sm">No notifications yet</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {notifications.map((notif) => (
+                      <DropdownMenuItem 
+                        key={notif.id}
+                        onClick={() => {
+                          markAsRead(notif.id);
+                          setShowNotifDropdown(false);
+                          if (notif.link) navigate(notif.link);
+                        }}
+                        className={`flex flex-col items-start p-3 cursor-pointer focus:bg-slate-50 ${
+                          !notif.is_read ? 'bg-emerald-50/50' : ''
+                        }`}
+                      >
+                        <div className="flex items-start gap-2 w-full">
+                          <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                            !notif.is_read ? 'bg-emerald-500' : 'bg-transparent'
+                          }`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 truncate">{notif.title}</p>
+                            <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{notif.message}</p>
+                            <p className="text-[10px] text-slate-400 mt-1">
+                              {format(new Date(notif.created_at), 'MMM d, h:mm a')}
+                            </p>
+                          </div>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+              
+              {/* Footer */}
+              {notifications.length > 0 && (
+                <Link 
+                  to="/seller/support"
+                  onClick={() => setShowNotifDropdown(false)}
+                  className="block text-center py-2.5 text-sm text-emerald-600 hover:text-emerald-700 font-medium border-t border-slate-100 bg-slate-50"
+                >
+                  View all
+                </Link>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Profile Avatar */}
+          <Link 
+            to="/seller/settings" 
+            className={`flex flex-col items-center gap-1 px-2 py-1.5 ${
+              isActive('/seller/settings') ? 'text-emerald-600' : 'text-slate-400'
+            }`}
+          >
+            <Avatar className="h-6 w-6 ring-1 ring-emerald-200">
+              <AvatarImage src={profile?.store_logo_url || ''} />
+              <AvatarFallback className="bg-emerald-100 text-emerald-700 text-[10px] font-semibold">
+                {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-[10px] font-semibold">Profile</span>
+          </Link>
         </div>
       </nav>
 

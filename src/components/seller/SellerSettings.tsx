@@ -368,9 +368,9 @@ const SellerSettings = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6 lg:p-8 pb-24 space-y-6 seller-dashboard">
-      {/* Profile Header - Banner First Design */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative">
+    <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-6 pb-24 space-y-4 sm:space-y-6 seller-dashboard">
+      {/* Profile Header - Banner First Design - Mobile Optimized */}
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative">
         {/* Dynamic Banner */}
         <div className="relative">
           {formData.store_banner_url ? (
@@ -378,31 +378,31 @@ const SellerSettings = () => {
               <img 
                 src={formData.store_banner_url} 
                 alt="Store banner"
-                className="w-full h-32 object-cover"
+                className="w-full h-24 sm:h-32 object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             </div>
           ) : (
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 h-32" />
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 h-24 sm:h-32" />
           )}
         </div>
         
-        {/* Content Area */}
-        <div className="px-6 pb-6 pt-4">
-          <div className="flex items-start gap-4">
+        {/* Content Area - Mobile Stack */}
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
             {/* Logo with upload */}
-            <div className="relative -mt-14 z-20 flex-shrink-0">
-              <Avatar className="w-20 h-20 border-4 border-white shadow-lg ring-2 ring-slate-100">
+            <div className="relative -mt-10 sm:-mt-14 z-20 flex-shrink-0 mx-auto sm:mx-0">
+              <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-white shadow-lg ring-2 ring-slate-100">
                 <AvatarImage src={formData.store_logo_url} />
-                <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-xl font-bold">
+                <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-lg sm:text-xl font-bold">
                   {getInitials(formData.store_name || 'Store')}
                 </AvatarFallback>
               </Avatar>
-              <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full border border-slate-200 shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors z-30">
+              <label className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full border border-slate-200 shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors z-30">
                 {uploading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                  <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin text-slate-400" />
                 ) : (
-                  <Upload className="w-4 h-4 text-slate-500" />
+                  <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />
                 )}
                 <input
                   type="file"
@@ -414,15 +414,15 @@ const SellerSettings = () => {
               </label>
             </div>
             
-            {/* Store Info - Separate rows */}
-            <div className="flex-1 min-w-0 pt-1">
+            {/* Store Info - Centered on mobile, left on desktop */}
+            <div className="flex-1 min-w-0 pt-1 text-center sm:text-left">
               {/* Store Name */}
-              <h2 className="seller-heading text-2xl font-bold text-slate-900 truncate leading-tight">
+              <h2 className="seller-heading text-xl sm:text-2xl font-bold text-slate-900 truncate leading-tight">
                 {formData.store_name || 'Your Store'}
               </h2>
               
-              {/* Badges - Separate row */}
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {/* Badges - Centered on mobile */}
+              <div className="flex items-center justify-center sm:justify-start gap-2 mt-2 flex-wrap">
                 {profile?.is_verified ? (
                   <Badge className="bg-emerald-100 text-emerald-700 border-0 text-xs px-2 py-0.5">
                     <CheckCircle className="w-3 h-3 mr-1" />
@@ -435,46 +435,54 @@ const SellerSettings = () => {
                 )}
                 {hasChanges && (
                   <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 animate-pulse text-xs px-2 py-0.5">
-                    Unsaved Changes
+                    Unsaved
                   </Badge>
                 )}
               </div>
               
               {/* Seller since */}
-              <p className="text-sm text-slate-500 mt-2">
+              <p className="text-xs sm:text-sm text-slate-500 mt-2">
                 Seller since {(profile as any)?.created_at ? new Date((profile as any).created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
               </p>
             </div>
             
-            {/* Saving indicator */}
+            {/* Saving indicator - Desktop only */}
             {saving && (
-              <div className="flex items-center gap-2 text-sm text-emerald-600 flex-shrink-0">
+              <div className="hidden sm:flex items-center gap-2 text-sm text-emerald-600 flex-shrink-0">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Saving...</span>
               </div>
             )}
           </div>
+          
+          {/* Mobile Saving indicator */}
+          {saving && (
+            <div className="sm:hidden flex items-center justify-center gap-2 text-sm text-emerald-600 mt-3">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Saving...</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Settings Accordion */}
-      <Accordion type="multiple" defaultValue={['store-info', 'display-settings']} className="space-y-4">
+      {/* Settings Accordion - Mobile Optimized */}
+      <Accordion type="multiple" defaultValue={['store-info', 'display-settings']} className="space-y-3 sm:space-y-4">
         {/* Store Information */}
-        <AccordionItem value="store-info" className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 overflow-hidden">
-          <AccordionTrigger className="py-5 hover:no-underline">
+        <AccordionItem value="store-info" className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm px-4 sm:px-6 overflow-hidden">
+          <AccordionTrigger className="py-4 sm:py-5 hover:no-underline">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
-                <Store className="w-5 h-5 text-emerald-600" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
+                <Store className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
               </div>
               <div className="text-left">
-                <p className="font-semibold text-slate-900">Store Information</p>
-                <p className="text-sm text-slate-500">Manage your store name, description, and branding</p>
+                <p className="font-semibold text-slate-900 text-sm sm:text-base">Store Information</p>
+                <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">Manage your store name, description, and branding</p>
               </div>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-6 space-y-5">
+          <AccordionContent className="pb-5 sm:pb-6 space-y-4 sm:space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="store_name" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="store_name" className="text-xs sm:text-sm font-medium text-slate-700">
                 Store Name
               </Label>
               <Input
@@ -482,12 +490,12 @@ const SellerSettings = () => {
                 value={formData.store_name}
                 onChange={(e) => updateFormData({ store_name: e.target.value })}
                 placeholder="Enter your store name"
-                className="h-11 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20"
+                className="h-10 sm:h-11 rounded-lg sm:rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="store_tagline" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="store_tagline" className="text-xs sm:text-sm font-medium text-slate-700">
                 Store Tagline
               </Label>
               <Input
@@ -495,13 +503,13 @@ const SellerSettings = () => {
                 value={formData.store_tagline}
                 onChange={(e) => updateFormData({ store_tagline: e.target.value })}
                 placeholder="e.g., Premium AI accounts at unbeatable prices"
-                className="h-11 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20"
+                className="h-10 sm:h-11 rounded-lg sm:rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20"
                 maxLength={100}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="store_description" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="store_description" className="text-xs sm:text-sm font-medium text-slate-700">
                 Store Description
               </Label>
               <Textarea
@@ -510,34 +518,34 @@ const SellerSettings = () => {
                 onChange={(e) => updateFormData({ store_description: e.target.value })}
                 placeholder="Tell customers about your store..."
                 rows={4}
-                className="rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 resize-none"
+                className="rounded-lg sm:rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 resize-none"
               />
             </div>
 
             {/* Store URL */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <Label className="text-xs sm:text-sm font-medium text-slate-700 flex items-center gap-2">
                 <Globe className="w-4 h-4" />
                 Store URL
               </Label>
-              <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-sm text-slate-500">{window.location.origin}/store/</span>
-                <span className="text-sm font-medium text-emerald-700">{formData.store_slug || 'your-store'}</span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 p-3 bg-slate-50 rounded-lg sm:rounded-xl border border-slate-200">
+                <span className="text-xs sm:text-sm text-slate-500 truncate">{window.location.origin}/store/</span>
+                <span className="text-xs sm:text-sm font-medium text-emerald-700">{formData.store_slug || 'your-store'}</span>
               </div>
             </div>
 
             {/* Logo Upload */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Logo URL</Label>
-              <div className="flex gap-3">
+              <Label className="text-xs sm:text-sm font-medium text-slate-700">Logo URL</Label>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <Input
                   value={formData.store_logo_url}
                   onChange={(e) => updateFormData({ store_logo_url: e.target.value })}
                   placeholder="https://example.com/logo.png"
-                  className="h-11 rounded-xl border-slate-200"
+                  className="h-10 sm:h-11 rounded-lg sm:rounded-xl border-slate-200"
                 />
                 <label className="flex-shrink-0">
-                  <Button type="button" variant="outline" className="h-11 rounded-xl border-slate-200" disabled={uploading} asChild>
+                  <Button type="button" variant="outline" className="h-10 sm:h-11 rounded-lg sm:rounded-xl border-slate-200 w-full sm:w-auto" disabled={uploading} asChild>
                     <span>
                       {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Image className="w-4 h-4 mr-2" />Upload</>}
                     </span>

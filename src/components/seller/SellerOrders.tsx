@@ -303,19 +303,6 @@ const SellerOrders = () => {
 
   return (
     <div className="p-3 sm:p-4 lg:p-6 bg-slate-50 min-h-screen">
-      {/* Export Button */}
-      <div className="flex justify-end mb-4 sm:mb-6">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExportCSV}
-          className="border-slate-200 text-slate-600 hover:bg-slate-50"
-        >
-          <Download className="h-4 w-4 mr-1.5" />
-          <span className="hidden sm:inline">Export</span>
-        </Button>
-      </div>
-
       {/* Bulk Actions Bar */}
       {selectedOrders.size > 0 && (
         <div className="flex items-center gap-2 sm:gap-3 bg-violet-50 border border-violet-200 rounded-xl p-2 sm:p-3 mb-4">
@@ -369,7 +356,7 @@ const SellerOrders = () => {
         </div>
       </div>
 
-      {/* Tabs - Horizontally scrollable on mobile */}
+      {/* Tabs with Export CSV in Tab Bar */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <TabsList className="bg-white border border-slate-200 p-1 flex overflow-x-auto hide-scrollbar w-full sm:w-auto">
@@ -400,16 +387,29 @@ const SellerOrders = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Select All (only for pending) */}
-          {activeTab === 'pending' && pendingSelectableCount > 0 && (
-            <label className="hidden sm:flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-              <Checkbox
-                checked={selectedOrders.size === pendingSelectableCount && pendingSelectableCount > 0}
-                onCheckedChange={handleSelectAll}
-              />
-              Select all
-            </label>
-          )}
+          {/* Export CSV Button - Right side of tab bar */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              className="border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg flex-shrink-0"
+            >
+              <Download className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Export CSV</span>
+            </Button>
+
+            {/* Select All (only for pending) */}
+            {activeTab === 'pending' && pendingSelectableCount > 0 && (
+              <label className="hidden sm:flex items-center gap-2 text-sm text-slate-600 cursor-pointer px-2">
+                <Checkbox
+                  checked={selectedOrders.size === pendingSelectableCount && pendingSelectableCount > 0}
+                  onCheckedChange={handleSelectAll}
+                />
+                <span className="text-xs font-medium">All</span>
+              </label>
+            )}
+          </div>
         </div>
 
         <TabsContent value={activeTab}>
