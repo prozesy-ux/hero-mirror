@@ -560,4 +560,36 @@
   .nav-icon-fill.active {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
   }
+
+  /* Modal overlay with high z-index */
+  .modal-overlay-high {
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .modal-content-high {
+    z-index: 101;
+  }
+
+  /* Chat input safe area */
+  .chat-input-safe {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  /* Mobile wallet stack */
+  .mobile-wallet-stack {
+    @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4;
+  }
+
+  /* Profile compact card */
+  .profile-compact-card {
+    @apply flex flex-col sm:flex-row items-center gap-4 sm:gap-5;
+  }
+
+  /* Mobile accordion touch target */
+  .accordion-touch-target [data-radix-accordion-trigger] {
+    min-height: 52px;
+  }
 }
