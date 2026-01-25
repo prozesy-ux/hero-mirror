@@ -1015,7 +1015,7 @@ const AIAccountsSection = () => {
         {/* Main Layout: Sidebar + Products */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* Left Sidebar - Desktop Only */}
-          <div className="hidden lg:block w-64 flex-shrink-0">
+          <div className="hidden lg:block w-72 flex-shrink-0">
             <MarketplaceSidebar trendingAccounts={trendingAccounts} categories={dynamicCategories} accounts={accounts} selectedCategory={categoryFilter} selectedTags={selectedTags} onCategorySelect={setCategoryFilter} onTagSelect={handleTagSelect} onAccountClick={account => {
               setSelectedAccount(account);
               setShowDetailsModal(true);
@@ -1023,17 +1023,17 @@ const AIAccountsSection = () => {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 min-w-0 w-full">
+          <div className="flex-1 min-w-0 w-full overflow-hidden">
             {/* Desktop Search Bar - Full width inside content area */}
-            <div className="hidden lg:block mb-4">
-              <div className="relative w-full">
-                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <div className="hidden lg:block mb-6">
+              <div className="relative w-full max-w-3xl">
+                <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input 
                   type="text" 
                   value={searchQuery} 
                   onChange={e => setSearchQuery(e.target.value)} 
                   placeholder="Search products, categories, tags..." 
-                  className="w-full pl-11 pr-10 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-300 transition-all shadow-sm" 
+                  className="w-full pl-12 pr-12 py-3.5 bg-white border border-gray-200 rounded-2xl text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-300 transition-all shadow-sm" 
                 />
                 {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
                   <button 
@@ -1042,9 +1042,9 @@ const AIAccountsSection = () => {
                       setSelectedTags([]);
                       setCategoryFilter('all');
                     }} 
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <X size={16} className="text-gray-400" />
+                    <X size={18} className="text-gray-400" />
                   </button>
                 )}
               </div>
