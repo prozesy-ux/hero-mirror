@@ -1108,68 +1108,70 @@ const AIAccountsSection = () => {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Search and Filter Row */}
-            <div className="flex gap-3 mb-6">
-              {/* Mobile Filter Button */}
-              <div className="lg:hidden">
-                <MarketplaceSidebar
-                  trendingAccounts={trendingAccounts}
-                  categories={dynamicCategories}
-                  accounts={accounts}
-                  selectedCategory={categoryFilter}
-                  selectedTags={selectedTags}
-                  onCategorySelect={setCategoryFilter}
-                  onTagSelect={handleTagSelect}
-                  onAccountClick={(account) => {
-                    setSelectedAccount(account);
-                    setShowDetailsModal(true);
-                  }}
-                  getCategoryCount={getCategoryCount}
-                />
-              </div>
-
-              {/* Search Bar */}
-              <div className="relative flex-1">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
-                  <Search size={18} className="text-gray-500" />
-                </div>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products, categories, tags..."
-                  className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium shadow-md"
-                />
-                {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setSelectedTags([]);
-                      setCategoryFilter('all');
+            {/* Search and Filter Row - Sticky on Mobile */}
+            <div className="mobile-sticky-search py-3 lg:py-0 mb-3 sm:mb-4 lg:mb-6">
+              <div className="flex gap-2 sm:gap-3">
+                {/* Mobile Filter Button */}
+                <div className="lg:hidden shrink-0">
+                  <MarketplaceSidebar
+                    trendingAccounts={trendingAccounts}
+                    categories={dynamicCategories}
+                    accounts={accounts}
+                    selectedCategory={categoryFilter}
+                    selectedTags={selectedTags}
+                    onCategorySelect={setCategoryFilter}
+                    onTagSelect={handleTagSelect}
+                    onAccountClick={(account) => {
+                      setSelectedAccount(account);
+                      setShowDetailsModal(true);
                     }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <X size={18} className="text-gray-400" />
-                  </button>
-                )}
+                    getCategoryCount={getCategoryCount}
+                  />
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative flex-1">
+                  <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 bg-gray-100 rounded-lg">
+                    <Search size={16} className="sm:w-[18px] sm:h-[18px] text-gray-500" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search products..."
+                    className="w-full bg-white border border-gray-200 rounded-xl sm:rounded-2xl pl-11 sm:pl-14 pr-10 sm:pr-12 py-3 sm:py-4 text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium shadow-sm sm:shadow-md mobile-touch-target"
+                  />
+                  {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedTags([]);
+                        setCategoryFilter('all');
+                      }}
+                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors mobile-touch-target"
+                    >
+                      <X size={16} className="sm:w-[18px] sm:h-[18px] text-gray-400" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Active Filters Pills */}
+            {/* Active Filters Pills - Horizontal Scroll on Mobile */}
             {(selectedTags.length > 0 || categoryFilter !== 'all') && (
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="filter-pills-scroll mb-3 sm:mb-4 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex sm:flex-wrap sm:gap-2">
                 {categoryFilter !== 'all' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full text-xs font-medium">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full text-xs font-medium whitespace-nowrap shrink-0">
                     {getCategoryName(categoryFilter)}
-                    <button onClick={() => setCategoryFilter('all')} className="hover:bg-white/20 rounded-full p-0.5">
+                    <button onClick={() => setCategoryFilter('all')} className="hover:bg-white/20 rounded-full p-0.5 mobile-touch-target">
                       <X size={12} />
                     </button>
                   </span>
                 )}
                 {selectedTags.map(tag => (
-                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-500 text-white rounded-full text-xs font-medium">
+                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-500 text-white rounded-full text-xs font-medium whitespace-nowrap shrink-0">
                     {tag}
-                    <button onClick={() => handleTagSelect(tag)} className="hover:bg-white/20 rounded-full p-0.5">
+                    <button onClick={() => handleTagSelect(tag)} className="hover:bg-white/20 rounded-full p-0.5 mobile-touch-target">
                       <X size={12} />
                     </button>
                   </span>
@@ -1177,22 +1179,21 @@ const AIAccountsSection = () => {
               </div>
             )}
 
-
             {/* Products Grid */}
             {filteredAccounts.length === 0 ? (
-              <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
-                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
-                  <ShoppingCart className="w-10 h-10 text-gray-400" />
+              <div className="bg-white rounded-xl sm:rounded-2xl p-8 sm:p-16 text-center border border-gray-200 shadow-md">
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                  <ShoppingCart className="w-7 h-7 sm:w-10 sm:h-10 text-gray-400" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Products Found</h3>
-                <p className="text-gray-500 mb-4">Try adjusting your search or filters</p>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 tracking-tight">No Products Found</h3>
+                <p className="text-gray-500 mb-4 text-sm sm:text-base">Try adjusting your search or filters</p>
                 <button
                   onClick={() => {
                     setSearchQuery('');
                     setSelectedTags([]);
                     setCategoryFilter('all');
                   }}
-                  className="text-violet-600 font-medium hover:underline"
+                  className="text-violet-600 font-medium hover:underline text-sm sm:text-base mobile-touch-target"
                 >
                   Clear all filters
                 </button>
