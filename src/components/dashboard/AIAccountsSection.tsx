@@ -968,15 +968,17 @@ const AIAccountsSection = () => {
       </div>
 
       {/* Browse Accounts Tab - New Layout with Sidebar */}
-      {activeTab === 'browse' && <div className="gap-6 items-start justify-start flex flex-col">
-          {/* Left Sidebar */}
-          <MarketplaceSidebar trendingAccounts={trendingAccounts} categories={dynamicCategories} accounts={accounts} selectedCategory={categoryFilter} selectedTags={selectedTags} onCategorySelect={setCategoryFilter} onTagSelect={handleTagSelect} onAccountClick={account => {
-        setSelectedAccount(account);
-        setShowDetailsModal(true);
-      }} getCategoryCount={getCategoryCount} />
+      {activeTab === 'browse' && <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {/* Left Sidebar - Desktop Only */}
+          <div className="hidden lg:block w-64 flex-shrink-0">
+            <MarketplaceSidebar trendingAccounts={trendingAccounts} categories={dynamicCategories} accounts={accounts} selectedCategory={categoryFilter} selectedTags={selectedTags} onCategorySelect={setCategoryFilter} onTagSelect={handleTagSelect} onAccountClick={account => {
+              setSelectedAccount(account);
+              setShowDetailsModal(true);
+            }} getCategoryCount={getCategoryCount} />
+          </div>
 
           {/* Main Content */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 w-full">
             {/* Search Bar - Sticky on mobile with white background */}
             <div className="sticky top-14 lg:top-0 z-10 bg-white/95 backdrop-blur-md pb-3 pt-3 -mx-3 px-3 sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:bg-transparent sm:backdrop-blur-none border-b border-gray-100 sm:border-none">
               {/* 2-column layout on mobile: Search | Filter */}
