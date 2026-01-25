@@ -56,7 +56,7 @@ const DashboardLayout = () => {
   const { isCollapsed } = useSidebarContext();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Mobile Header removed - elements moved to bottom nav */}
       
       {/* Desktop Sidebar */}

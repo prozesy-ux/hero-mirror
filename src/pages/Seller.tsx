@@ -562,7 +562,7 @@ const SellerMainContent = () => {
 const SellerContent = () => {
   return (
     <SellerSidebarProvider>
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-slate-50 overflow-x-hidden">
         {/* Mobile Header - Only visible on mobile */}
         <SellerMobileHeader />
         
