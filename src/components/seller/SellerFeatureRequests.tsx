@@ -145,8 +145,9 @@ const SellerFeatureRequests = () => {
   ];
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
-      <div className="grid lg:grid-cols-3 gap-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+      {/* Mobile: Stack form below list, Desktop: Side by side */}
+      <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Submit Form */}
         <div className="lg:col-span-1">
           <Card className="border-slate-200 shadow-sm">
@@ -229,13 +230,13 @@ const SellerFeatureRequests = () => {
         <div className="lg:col-span-2">
           <Card className="border-slate-200 shadow-sm">
             <CardContent className="p-5">
-              {/* Tabs */}
-              <div className="flex items-center gap-2 mb-5 border-b border-slate-100 pb-4">
+              {/* Tabs - Scrollable on mobile */}
+              <div className="flex items-center gap-1 sm:gap-2 mb-4 sm:mb-5 border-b border-slate-100 pb-3 sm:pb-4 overflow-x-auto hide-scrollbar">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-shrink-0 ${
                       activeTab === tab.id
                         ? 'bg-emerald-50 text-emerald-700'
                         : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
@@ -243,7 +244,7 @@ const SellerFeatureRequests = () => {
                   >
                     {tab.label}
                     {tab.id !== 'all' && (
-                      <span className="ml-1.5 text-xs">
+                      <span className="ml-1 text-[10px] sm:text-xs">
                         ({requests.filter(r => r.status === tab.id).length})
                       </span>
                     )}

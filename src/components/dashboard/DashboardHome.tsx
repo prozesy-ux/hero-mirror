@@ -217,7 +217,7 @@ const DashboardHome = () => {
               return (
                 <div
                   key={prompt.id}
-                  className="group flex-shrink-0 w-[240px] lg:w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300"
+                  className="group flex-shrink-0 w-[200px] sm:w-[240px] lg:w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300"
                 >
                   {/* Large Image Section */}
                   <div className="relative aspect-[4/3] overflow-hidden">
@@ -259,20 +259,20 @@ const DashboardHome = () => {
                   </div>
 
                   {/* Content Section */}
-                  <div className="p-5">
+                  <div className="p-3 sm:p-4 lg:p-5">
                     {/* Title */}
-                    <h3 className="font-bold text-gray-900 text-base leading-tight line-clamp-2 mb-2">
+                    <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight line-clamp-2 mb-1.5 sm:mb-2">
                       {prompt.title}
                     </h3>
                     
                     {/* Description - more visible */}
                     {prompt.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-3">{prompt.description}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2 sm:line-clamp-3">{prompt.description}</p>
                     )}
 
                     {/* Pro Access Badge */}
-                    <div className="mb-3">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                    <div className="mb-2 sm:mb-3">
+                      <span className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold ${
                         prompt.is_free 
                           ? 'bg-emerald-100 text-emerald-700' 
                           : 'bg-violet-100 text-violet-700'
@@ -291,16 +291,16 @@ const DashboardHome = () => {
                       </span>
                     </div>
 
-                    {/* Review Section */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <img src={starsIcon} alt="rating" className="h-4" />
-                      <span className="text-sm text-gray-600 font-medium">4.9 (120+ reviews)</span>
+                    {/* Review Section - hidden on smallest screens */}
+                    <div className="hidden sm:flex items-center gap-2 mb-3 sm:mb-4">
+                      <img src={starsIcon} alt="rating" className="h-3 sm:h-4" />
+                      <span className="text-xs sm:text-sm text-gray-600 font-medium">4.9 (120+ reviews)</span>
                     </div>
 
                     {/* CTA Button */}
                     <Link
                       to="/dashboard/prompts"
-                      className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                      className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
                     >
                       {isLocked ? 'Unlock Prompt' : 'View Prompt'}
                       <img src={btnArrow} alt="arrow" className="w-4 h-4" />

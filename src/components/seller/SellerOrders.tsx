@@ -302,9 +302,9 @@ const SellerOrders = () => {
   }
 
   return (
-    <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
+    <div className="p-3 sm:p-4 lg:p-6 bg-slate-50 min-h-screen">
       {/* Export Button */}
-      <div className="flex justify-end mb-6">
+      <div className="flex justify-end mb-4 sm:mb-6">
         <Button
           variant="outline"
           size="sm"
@@ -312,30 +312,31 @@ const SellerOrders = () => {
           className="border-slate-200 text-slate-600 hover:bg-slate-50"
         >
           <Download className="h-4 w-4 mr-1.5" />
-          Export
+          <span className="hidden sm:inline">Export</span>
         </Button>
       </div>
 
       {/* Bulk Actions Bar */}
       {selectedOrders.size > 0 && (
-        <div className="flex items-center gap-3 bg-violet-50 border border-violet-200 rounded-xl p-3 mb-4">
-          <Badge className="bg-violet-500 text-white">
+        <div className="flex items-center gap-2 sm:gap-3 bg-violet-50 border border-violet-200 rounded-xl p-2 sm:p-3 mb-4">
+          <Badge className="bg-violet-500 text-white text-xs">
             {selectedOrders.size} selected
           </Badge>
           <Button
             size="sm"
             variant="ghost"
             onClick={() => setSelectedOrders(new Set())}
-            className="text-slate-600 hover:bg-slate-100"
+            className="text-slate-600 hover:bg-slate-100 text-xs sm:text-sm"
           >
             Clear
           </Button>
         </div>
       )}
 
-      {/* Search & Date Filter */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
+      {/* Search & Date Filter - Mobile optimized */}
+      <div className="flex flex-col gap-3 mb-4 sm:mb-6">
+        {/* Search */}
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Search orders..."
@@ -344,73 +345,64 @@ const SellerOrders = () => {
             className="pl-10 bg-white border-slate-200"
           />
         </div>
-        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1">
-          <Button
-            size="sm"
-            variant={dateRange === 'today' ? 'default' : 'ghost'}
-            onClick={() => setDateRange('today')}
-            className={dateRange === 'today' ? 'bg-slate-900 text-white' : 'text-slate-600'}
-          >
-            Today
-          </Button>
-          <Button
-            size="sm"
-            variant={dateRange === 'week' ? 'default' : 'ghost'}
-            onClick={() => setDateRange('week')}
-            className={dateRange === 'week' ? 'bg-slate-900 text-white' : 'text-slate-600'}
-          >
-            Week
-          </Button>
-          <Button
-            size="sm"
-            variant={dateRange === 'month' ? 'default' : 'ghost'}
-            onClick={() => setDateRange('month')}
-            className={dateRange === 'month' ? 'bg-slate-900 text-white' : 'text-slate-600'}
-          >
-            Month
-          </Button>
-          <Button
-            size="sm"
-            variant={dateRange === 'all' ? 'default' : 'ghost'}
-            onClick={() => setDateRange('all')}
-            className={dateRange === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600'}
-          >
-            All
-          </Button>
+        
+        {/* Date Filter - Horizontal scrollable on mobile */}
+        <div className="flex overflow-x-auto hide-scrollbar gap-1 bg-white border border-slate-200 rounded-lg p-1">
+          {[
+            { key: 'today', label: 'Today' },
+            { key: 'week', label: 'Week' },
+            { key: 'month', label: 'Month' },
+            { key: 'all', label: 'All' }
+          ].map((item) => (
+            <Button
+              key={item.key}
+              size="sm"
+              variant={dateRange === item.key ? 'default' : 'ghost'}
+              onClick={() => setDateRange(item.key as typeof dateRange)}
+              className={`flex-shrink-0 text-xs sm:text-sm px-3 ${
+                dateRange === item.key ? 'bg-slate-900 text-white' : 'text-slate-600'
+              }`}
+            >
+              {item.label}
+            </Button>
+          ))}
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Horizontally scrollable on mobile */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <div className="flex items-center justify-between">
-          <TabsList className="bg-white border border-slate-200 p-1">
-            <TabsTrigger value="pending" className="gap-2 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
-              Pending
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <TabsList className="bg-white border border-slate-200 p-1 flex overflow-x-auto hide-scrollbar w-full sm:w-auto">
+            <TabsTrigger value="pending" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
+              <span className="hidden sm:inline">Pending</span>
+              <span className="sm:hidden">Pend</span>
               {pendingCount > 0 && (
-                <Badge className="bg-amber-500 text-white text-[10px] h-5 min-w-[20px]">
+                <Badge className="bg-amber-500 text-white text-[10px] h-5 min-w-[18px]">
                   {pendingCount}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="delivered" className="gap-2 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
-              Delivered
+            <TabsTrigger value="delivered" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
+              <span className="hidden sm:inline">Delivered</span>
+              <span className="sm:hidden">Sent</span>
               {deliveredCount > 0 && (
-                <Badge className="bg-blue-500 text-white text-[10px] h-5 min-w-[20px]">
+                <Badge className="bg-blue-500 text-white text-[10px] h-5 min-w-[18px]">
                   {deliveredCount}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="completed" className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
-              Completed ({completedCount})
+            <TabsTrigger value="completed" className="flex-shrink-0 text-xs sm:text-sm data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
+              <span className="hidden sm:inline">Completed ({completedCount})</span>
+              <span className="sm:hidden">Done ({completedCount})</span>
             </TabsTrigger>
-            <TabsTrigger value="all" className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
+            <TabsTrigger value="all" className="flex-shrink-0 text-xs sm:text-sm data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
               All
             </TabsTrigger>
           </TabsList>
 
           {/* Select All (only for pending) */}
           {activeTab === 'pending' && pendingSelectableCount > 0 && (
-            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+            <label className="hidden sm:flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
               <Checkbox
                 checked={selectedOrders.size === pendingSelectableCount && pendingSelectableCount > 0}
                 onCheckedChange={handleSelectAll}
@@ -441,52 +433,58 @@ const SellerOrders = () => {
                     key={order.id} 
                     className={`bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-lg hover:border-slate-200 transition-all duration-200 border-l-4 ${statusConfig.accentColor}`}
                   >
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-4">
+                    <div className="p-3 sm:p-4">
+                      {/* Mobile-first layout: Stack vertically on mobile */}
+                      <div className="space-y-3 sm:space-y-0 sm:flex sm:items-start sm:justify-between sm:gap-4">
+                        {/* Product Info Row */}
+                        <div className="flex items-start gap-3">
                           {/* Checkbox for pending orders */}
                           {order.status === 'pending' && (
                             <Checkbox
                               checked={selectedOrders.has(order.id)}
                               onCheckedChange={(checked) => handleSelectOrder(order.id, !!checked)}
-                              className="mt-1"
+                              className="mt-1 flex-shrink-0"
                             />
                           )}
                           
-                          <div className="h-14 w-14 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {order.product?.icon_url ? (
                               <img src={order.product.icon_url} alt="" className="h-full w-full object-cover" />
                             ) : (
-                              <Package className="h-7 w-7 text-slate-400" />
+                              <Package className="h-6 w-6 sm:h-7 sm:w-7 text-slate-400" />
                             )}
                           </div>
-                          <div className="space-y-1">
-                            <h3 className="font-semibold text-slate-900 text-lg">{order.product?.name || 'Product'}</h3>
-                            <p className="text-sm text-slate-500">{order.buyer?.email || 'Unknown buyer'}</p>
-                            <p className="text-xs text-slate-400">
-                              {format(new Date(order.created_at), 'MMM d, yyyy • h:mm a')}
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-semibold text-slate-900 text-sm sm:text-lg truncate">{order.product?.name || 'Product'}</h3>
+                            <p className="text-xs sm:text-sm text-slate-500 truncate">{order.buyer?.email || 'Unknown buyer'}</p>
+                            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">
+                              {format(new Date(order.created_at), 'MMM d, h:mm a')}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-end gap-2">
-                          <p className="font-bold text-xl text-emerald-600">
+                        {/* Price + Actions Row - Full width on mobile */}
+                        <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                          <p className="font-bold text-lg sm:text-xl text-emerald-600">
                             +${Number(order.seller_earning).toFixed(2)}
                           </p>
-                          <Badge variant="outline" className={`text-[11px] font-medium ${statusConfig.className}`}>
-                            <StatusIcon className="h-3 w-3 mr-1" />
-                            {statusConfig.label}
-                          </Badge>
-                          {order.status === 'pending' && (
-                            <Button
-                              size="sm"
-                              onClick={() => setSelectedOrder(order.id)}
-                              className="bg-emerald-500 hover:bg-emerald-600 mt-1"
-                            >
-                              <Send className="h-3.5 w-3.5 mr-1.5" />
-                              Deliver
-                            </Button>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className={`text-[10px] sm:text-[11px] font-medium ${statusConfig.className}`}>
+                              <StatusIcon className="h-3 w-3 mr-0.5 sm:mr-1" />
+                              <span className="hidden sm:inline">{statusConfig.label}</span>
+                              <span className="sm:hidden">{statusConfig.label.split(' ')[0]}</span>
+                            </Badge>
+                            {order.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                onClick={() => setSelectedOrder(order.id)}
+                                className="bg-emerald-500 hover:bg-emerald-600 h-8 text-xs sm:text-sm"
+                              >
+                                <Send className="h-3.5 w-3.5 sm:mr-1.5" />
+                                <span className="hidden sm:inline">Deliver</span>
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
