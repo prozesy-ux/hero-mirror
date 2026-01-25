@@ -27,7 +27,7 @@ const DashboardContent = () => {
   const { isCollapsed } = useSidebarContext();
 
   return (
-    <main className={`pb-24 lg:pb-0 pt-14 lg:pt-16 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white transition-all duration-300 ${
+    <main className={`pb-24 lg:pb-0 pt-0 lg:pt-16 min-h-screen bg-gradient-to-br from-gray-50 via-gray-100/50 to-white transition-all duration-300 ${
       isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-60'
     }`}>
       <div className="relative p-3 sm:p-4 lg:p-8">
