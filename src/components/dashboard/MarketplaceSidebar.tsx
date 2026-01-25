@@ -233,7 +233,7 @@ const MarketplaceSidebar = (props: MarketplaceSidebarProps) => {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-72 flex-shrink-0 sticky top-0 h-[calc(100vh-200px)] overflow-hidden">
+      <aside className="hidden lg:block w-72 flex-shrink-0 h-fit max-h-[calc(100vh-200px)] overflow-y-auto">
         <SidebarContent {...props} />
       </aside>
 
