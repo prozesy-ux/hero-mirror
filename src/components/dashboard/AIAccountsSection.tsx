@@ -980,9 +980,9 @@ const AIAccountsSection = () => {
           {/* Main Content */}
           <div className="flex-1 min-w-0 w-full">
             {/* Search Bar - Sticky on mobile with white background */}
-            <div className="sticky top-14 lg:top-0 z-10 bg-white/95 backdrop-blur-md pb-3 pt-3 -mx-3 px-3 sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:bg-transparent sm:backdrop-blur-none border-b border-gray-100 sm:border-none">
+            <div className="sticky top-14 z-10 bg-white/95 backdrop-blur-md pb-3 pt-3 -mx-3 px-3 border-b border-gray-100 lg:static lg:top-auto lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:pb-0 lg:pt-0 lg:mx-0 lg:px-0 lg:border-none mb-0 lg:mb-6">
               {/* 2-column layout on mobile: Search | Filter */}
-              <div className="grid grid-cols-[1fr,auto] gap-2 sm:flex sm:gap-3">
+              <div className="grid grid-cols-[1fr,auto] gap-2 lg:flex lg:gap-3 lg:w-auto lg:max-w-md">
                 {/* Search Bar - White based design */}
                 <div className="relative flex-1">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -991,7 +991,7 @@ const AIAccountsSection = () => {
                     value={searchQuery} 
                     onChange={e => setSearchQuery(e.target.value)} 
                     placeholder="Search..." 
-                    className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-8 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-300 transition-all shadow-sm" 
+                    className="w-full bg-white lg:bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-8 py-2.5 text-sm text-gray-900 placeholder-gray-400 lg:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-100 lg:focus:ring-violet-200 focus:border-violet-300 transition-all shadow-sm lg:shadow-none" 
                   />
                   {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
                     <button 
@@ -1186,7 +1186,7 @@ const AIAccountsSection = () => {
                       {/* Content */}
                       <div className="p-3 sm:p-4 lg:p-5">
                         <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight line-clamp-2 mb-1.5 sm:mb-2">{product.name}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">{product.description || 'Premium account from verified seller'}</p>
+                        <p className="hidden sm:block text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">{product.description || 'Premium account from verified seller'}</p>
                         
                         <div className="mb-2 sm:mb-3 flex items-center gap-2">
                           <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-100 text-emerald-700">
@@ -1194,7 +1194,7 @@ const AIAccountsSection = () => {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                        <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                           <div className="flex gap-0.5">
                             {[...Array(5)].map((_, i) => <Star key={i} size={10} className="sm:w-3 sm:h-3 text-yellow-400 fill-yellow-400" />)}
                           </div>
