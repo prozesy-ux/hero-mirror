@@ -1131,17 +1131,15 @@ const AIAccountsSection = () => {
                   />
                 </div>
 
-                {/* Search Bar */}
+                {/* Search Bar - Compact design matching Prompts */}
                 <div className="relative flex-1">
-                  <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 bg-gray-100 rounded-lg">
-                    <Search size={16} className="sm:w-[18px] sm:h-[18px] text-gray-500" />
-                  </div>
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search products..."
-                    className="w-full bg-white border border-gray-200 rounded-xl sm:rounded-2xl pl-11 sm:pl-14 pr-10 py-3 sm:py-4 text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium shadow-md"
+                    className="w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-8 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium"
                   />
                   {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
                     <button
@@ -1150,9 +1148,9 @@ const AIAccountsSection = () => {
                         setSelectedTags([]);
                         setCategoryFilter('all');
                       }}
-                      className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-md transition-colors"
                     >
-                      <X size={16} className="sm:w-[18px] sm:h-[18px] text-gray-400" />
+                      <X size={14} className="text-gray-400" />
                     </button>
                   )}
                 </div>
@@ -1202,7 +1200,7 @@ const AIAccountsSection = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 px-0.5">
                 {filteredAccounts.map((account) => {
                   const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
                   
