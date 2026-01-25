@@ -1041,30 +1041,32 @@ const AIAccountsSection = () => {
 
   return (
     <div className="animate-fade-up">
-      {/* Tab Navigation - Clean and Simple */}
-      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
-        <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
+      {/* Tab Navigation - Low text on mobile, icon + short label */}
+      <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-gray-200 shadow-md">
+        <div className="flex gap-0.5 sm:gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
           <button
             onClick={() => setActiveTab('browse')}
-            className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
+            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${
               activeTab === 'browse'
                 ? 'bg-gray-900 text-white shadow-lg'
                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
             }`}
           >
-            <ShoppingCart size={14} />
-            Browse
+            <ShoppingCart size={16} />
+            <span className="sm:hidden">Shop</span>
+            <span className="hidden sm:inline">Browse</span>
           </button>
           <button
             onClick={() => setActiveTab('purchases')}
-            className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
+            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${
               activeTab === 'purchases'
                 ? 'bg-gray-900 text-white shadow-lg'
                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
             }`}
           >
-            <Package size={14} />
-            Purchases
+            <Package size={16} />
+            <span className="sm:hidden">Orders</span>
+            <span className="hidden sm:inline">Purchases</span>
             {purchases.length > 0 && (
               <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
                 activeTab === 'purchases' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
@@ -1075,14 +1077,14 @@ const AIAccountsSection = () => {
           </button>
           <button
             onClick={() => setActiveTab('stats')}
-            className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
+            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${
               activeTab === 'stats'
                 ? 'bg-gray-900 text-white shadow-lg'
                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
             }`}
           >
-            <BarChart3 size={14} />
-            Stats
+            <BarChart3 size={16} />
+            <span className="hidden sm:inline">Stats</span>
           </button>
         </div>
       </div>
@@ -1108,56 +1110,58 @@ const AIAccountsSection = () => {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Search and Filter Row */}
-            <div className="flex gap-3 mb-6">
-              {/* Mobile Filter Button */}
-              <div className="lg:hidden">
-                <MarketplaceSidebar
-                  trendingAccounts={trendingAccounts}
-                  categories={dynamicCategories}
-                  accounts={accounts}
-                  selectedCategory={categoryFilter}
-                  selectedTags={selectedTags}
-                  onCategorySelect={setCategoryFilter}
-                  onTagSelect={handleTagSelect}
-                  onAccountClick={(account) => {
-                    setSelectedAccount(account);
-                    setShowDetailsModal(true);
-                  }}
-                  getCategoryCount={getCategoryCount}
-                />
-              </div>
-
-              {/* Search Bar */}
-              <div className="relative flex-1">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
-                  <Search size={18} className="text-gray-500" />
-                </div>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products, categories, tags..."
-                  className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium shadow-md"
-                />
-                {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setSelectedTags([]);
-                      setCategoryFilter('all');
+            {/* Search Bar - Sticky on mobile with backdrop blur */}
+            <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md pb-3 -mx-3 px-3 sm:static sm:mx-0 sm:px-0 sm:bg-transparent sm:backdrop-blur-none">
+              <div className="flex gap-2 sm:gap-3">
+                {/* Mobile Filter Button - HIDDEN on small mobile, shown on sm-lg */}
+                <div className="hidden sm:block lg:hidden">
+                  <MarketplaceSidebar
+                    trendingAccounts={trendingAccounts}
+                    categories={dynamicCategories}
+                    accounts={accounts}
+                    selectedCategory={categoryFilter}
+                    selectedTags={selectedTags}
+                    onCategorySelect={setCategoryFilter}
+                    onTagSelect={handleTagSelect}
+                    onAccountClick={(account) => {
+                      setSelectedAccount(account);
+                      setShowDetailsModal(true);
                     }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <X size={18} className="text-gray-400" />
-                  </button>
-                )}
+                    getCategoryCount={getCategoryCount}
+                  />
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative flex-1">
+                  <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 bg-gray-100 rounded-lg">
+                    <Search size={16} className="sm:w-[18px] sm:h-[18px] text-gray-500" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search products..."
+                    className="w-full bg-white border border-gray-200 rounded-xl sm:rounded-2xl pl-11 sm:pl-14 pr-10 py-3 sm:py-4 text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 transition-all font-medium shadow-md"
+                  />
+                  {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedTags([]);
+                        setCategoryFilter('all');
+                      }}
+                      className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <X size={16} className="sm:w-[18px] sm:h-[18px] text-gray-400" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Active Filters Pills */}
+            {/* Active Filters Pills - HIDDEN on mobile */}
             {(selectedTags.length > 0 || categoryFilter !== 'all') && (
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="hidden sm:flex flex-wrap gap-2 mb-4">
                 {categoryFilter !== 'all' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full text-xs font-medium">
                     {getCategoryName(categoryFilter)}
@@ -1249,16 +1253,16 @@ const AIAccountsSection = () => {
 
                       {/* Content */}
                       <div className="p-3 sm:p-4 lg:p-5">
-                        <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight line-clamp-2 mb-1.5 sm:mb-2">
+                        <h3 className="font-bold text-gray-900 text-sm leading-tight line-clamp-2 mb-1.5">
                           {account.name}
                         </h3>
                         
-                        {/* Description - shorter on mobile */}
-                        <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">
+                        {/* Description - HIDDEN on mobile */}
+                        <p className="hidden sm:block text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">
                           {account.description || 'Premium account with full access'}
                         </p>
 
-                        {/* Tags - hidden on mobile */}
+                        {/* Tags - HIDDEN on mobile */}
                         {account.tags && account.tags.length > 0 && (
                           <div className="hidden sm:flex flex-wrap gap-1.5 mb-3">
                             {account.tags.slice(0, 3).map(tag => (
@@ -1270,9 +1274,9 @@ const AIAccountsSection = () => {
                         )}
 
                         {/* Price Badge */}
-                        <div className="mb-2 sm:mb-3 flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-100 text-emerald-700">
-                            <Check size={10} className="sm:w-3 sm:h-3" />
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-100 text-emerald-700">
+                            <Check size={10} />
                             ${account.price}
                           </span>
                           {account.original_price && account.original_price > account.price && (
@@ -1280,18 +1284,18 @@ const AIAccountsSection = () => {
                           )}
                         </div>
 
-                        {/* Review Section - compact on mobile */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                        {/* Review Section - HIDDEN on mobile */}
+                        <div className="hidden sm:flex items-center gap-2 mb-4">
                           <div className="flex gap-0.5">
                             {[...Array(5)].map((_, i) => (
-                              <Star key={i} size={10} className="sm:w-3 sm:h-3 text-yellow-400 fill-yellow-400" />
+                              <Star key={i} size={12} className="text-yellow-400 fill-yellow-400" />
                             ))}
                           </div>
-                          <span className="text-[10px] sm:text-sm text-gray-600 font-medium">{getPurchaseCount(account.id)}+ sold</span>
+                          <span className="text-sm text-gray-600 font-medium">{getPurchaseCount(account.id)}+ sold</span>
                         </div>
 
-                        {/* Action Buttons - Icon only on mobile, icon+text on larger */}
-                        <div className="flex gap-1.5 sm:gap-2">
+                        {/* Action Buttons - Compact on mobile */}
+                        <div className="flex gap-1.5">
                           {/* Chat Button */}
                           {account.chat_allowed !== false && (
                             <button
@@ -1304,9 +1308,9 @@ const AIAccountsSection = () => {
                                   type: 'support'
                                 });
                               }}
-                              className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700 min-h-[44px]"
+                              className="flex-1 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700 min-h-[44px]"
                             >
-                              <MessageCircle size={16} className="sm:w-4 sm:h-4" />
+                              <MessageCircle size={16} />
                               <span className="hidden sm:inline text-sm">Chat</span>
                             </button>
                           )}
@@ -1316,16 +1320,16 @@ const AIAccountsSection = () => {
                               setQuickViewProduct({ type: 'account', data: account });
                               setShowQuickViewModal(true);
                             }}
-                            className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]"
+                            className="flex-1 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]"
                           >
-                            <Eye size={16} className="sm:w-4 sm:h-4" />
+                            <Eye size={16} />
                             <span className="hidden sm:inline text-sm">View</span>
                           </button>
                           {/* Buy Button */}
                           <button
                             onClick={() => handlePurchase(account)}
                             disabled={purchasing === account.id}
-                            className={`flex-1 font-bold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 transition-colors min-h-[44px] ${
+                            className={`flex-[1.2] font-bold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors min-h-[44px] ${
                               purchasing === account.id
                                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                 : hasEnoughBalance
@@ -1336,10 +1340,7 @@ const AIAccountsSection = () => {
                             {purchasing === account.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : !hasEnoughBalance ? (
-                              <>
-                                <Wallet className="w-4 h-4" />
-                                <span className="hidden sm:inline text-sm">Top Up</span>
-                              </>
+                              <Wallet className="w-4 h-4" />
                             ) : (
                               <span className="text-sm">Buy</span>
                             )}
@@ -1611,16 +1612,17 @@ const AIAccountsSection = () => {
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Seller Orders (Marketplace Purchases) */}
               {sellerOrders.map((order) => (
                 <div
                   key={`seller-order-${order.id}`}
-                  className="bg-white rounded-2xl p-6 border-2 border-emerald-200 shadow-md hover:shadow-lg transition-all"
+                  className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border-2 border-emerald-200 shadow-md hover:shadow-lg transition-all"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center overflow-hidden">
+                  {/* Stack on mobile, row on desktop */}
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-emerald-50 flex items-center justify-center overflow-hidden flex-shrink-0">
                         {order.seller_products?.icon_url ? (
                           <img 
                             src={order.seller_products.icon_url}
@@ -1628,23 +1630,23 @@ const AIAccountsSection = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <Store className="w-8 h-8 text-emerald-500" />
+                          <Store className="w-5 h-5 sm:w-8 sm:h-8 text-emerald-500" />
                         )}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <h3 className="text-sm sm:text-lg font-bold text-gray-900 tracking-tight truncate max-w-[180px] sm:max-w-none">
                             {order.seller_products?.name || 'Product'}
                           </h3>
-                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
+                          <span className="px-1.5 sm:px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] sm:text-xs font-medium flex-shrink-0">
                             Marketplace
                           </span>
                         </div>
-                        <p className="text-gray-500 text-sm">
+                        <p className="text-gray-500 text-xs sm:text-sm truncate">
                           From: {order.seller_profiles?.store_name || 'Seller'}
                         </p>
-                        <p className="text-gray-400 text-xs">
-                          Purchased on {new Date(order.created_at).toLocaleDateString('en-US', { 
+                        <p className="text-gray-400 text-[10px] sm:text-xs">
+                          {new Date(order.created_at).toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric', 
                             year: 'numeric' 
@@ -1653,32 +1655,34 @@ const AIAccountsSection = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1.5 bg-violet-50 text-violet-600 px-3 py-1.5 rounded-full text-sm font-medium">
-                        <Wallet className="w-4 h-4" />
+                    {/* Badges - wrap on mobile */}
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
+                      <span className="flex items-center gap-1 sm:gap-1.5 bg-violet-50 text-violet-600 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium">
+                        <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />
                         ${Number(order.amount).toFixed(2)}
                       </span>
                       {order.status === 'pending' && (
-                        <span className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full text-sm font-medium">
-                          <Clock className="w-4 h-4" />
-                          Awaiting Delivery
+                        <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <span className="hidden sm:inline">Awaiting Delivery</span>
+                          <span className="sm:hidden">Pending</span>
                         </span>
                       )}
                       {order.status === 'delivered' && !order.buyer_approved && (
-                        <span className="flex items-center gap-1.5 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-sm font-medium">
-                          <Truck className="w-4 h-4" />
+                        <span className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <Truck className="w-3 h-3 sm:w-4 sm:h-4" />
                           Delivered
                         </span>
                       )}
                       {order.status === 'completed' && order.buyer_approved && (
-                        <span className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-sm font-medium">
-                          <CheckCircle className="w-4 h-4" />
+                        <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                           Approved
                         </span>
                       )}
                       {order.status === 'completed' && !order.buyer_approved && (
-                        <span className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-sm font-medium">
-                          <CheckCircle className="w-4 h-4" />
+                        <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                           Completed
                         </span>
                       )}
@@ -1802,23 +1806,24 @@ const AIAccountsSection = () => {
               {purchases.map((purchase) => (
                 <div
                   key={purchase.id}
-                  className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md hover:shadow-lg transition-all"
+                  className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-gray-200 shadow-md hover:shadow-lg transition-all"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                              <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
-                                <img 
-                                  src={purchase.ai_accounts?.icon_url || getProductImage(purchase.ai_accounts?.category)}
-                                  alt={purchase.ai_accounts?.name || 'Account'}
-                                  className="w-10 h-10 object-contain"
-                                />
-                              </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+                  {/* Stack on mobile, row on desktop */}
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <img 
+                          src={purchase.ai_accounts?.icon_url || getProductImage(purchase.ai_accounts?.category)}
+                          alt={purchase.ai_accounts?.name || 'Account'}
+                          className="w-7 h-7 sm:w-10 sm:h-10 object-contain"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm sm:text-lg font-bold text-gray-900 tracking-tight truncate">
                           {purchase.ai_accounts?.name || 'Account'}
                         </h3>
-                        <p className="text-gray-500 text-sm">
-                          Purchased on {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
+                        <p className="text-gray-500 text-xs sm:text-sm">
+                          {new Date(purchase.purchased_at).toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric', 
                             year: 'numeric' 
@@ -1827,20 +1832,20 @@ const AIAccountsSection = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      {/* Paid from Wallet Badge */}
-                      <span className="flex items-center gap-1.5 bg-violet-50 text-violet-600 px-3 py-1.5 rounded-full text-sm font-medium">
-                        <Wallet className="w-4 h-4" />
+                    {/* Badges - wrap on mobile */}
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
+                      <span className="flex items-center gap-1 bg-violet-50 text-violet-600 px-2 py-1 rounded-full text-xs sm:text-sm font-medium">
+                        <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />
                         Wallet
                       </span>
                       {purchase.delivery_status === 'pending' ? (
-                        <span className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full text-sm font-medium">
-                          <Clock className="w-4 h-4" />
+                        <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                           Pending
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-sm font-medium">
-                          <CheckCircle className="w-4 h-4" />
+                        <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                           Delivered
                         </span>
                       )}
