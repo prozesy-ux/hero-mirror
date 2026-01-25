@@ -968,7 +968,78 @@ const AIAccountsSection = () => {
       </div>
 
       {/* Browse Accounts Tab - New Layout with Sidebar */}
-      {activeTab === 'browse' && <div className="flex flex-col lg:flex-row gap-6 items-start">
+      {activeTab === 'browse' && <>
+        {/* Desktop Search Bar - Above the layout like PromptsGrid */}
+        <div className="hidden lg:block mb-4">
+          <div className="relative w-64">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input 
+              type="text" 
+              value={searchQuery} 
+              onChange={e => setSearchQuery(e.target.value)} 
+              placeholder="Search..." 
+              className="w-full pl-9 pr-8 py-2 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all" 
+            />
+            {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
+              <button 
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedTags([]);
+                  setCategoryFilter('all');
+                }} 
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-md transition-colors"
+              >
+                <X size={14} className="text-gray-400" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Search Bar - Sticky at top */}
+        <div className="lg:hidden sticky top-0 z-10 bg-white/95 backdrop-blur-md pb-3 pt-3 -mx-3 px-3 border-b border-gray-100 mb-4">
+          <div className="grid grid-cols-[1fr,auto] gap-2">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)} 
+                placeholder="Search..." 
+                className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-8 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-300 transition-all shadow-sm" 
+              />
+              {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
+                <button 
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedTags([]);
+                    setCategoryFilter('all');
+                  }} 
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  <X size={14} className="text-gray-400" />
+                </button>
+              )}
+            </div>
+            {/* Filter Button - Mobile only */}
+            <MarketplaceSidebar 
+              trendingAccounts={trendingAccounts} 
+              categories={dynamicCategories} 
+              accounts={accounts} 
+              selectedCategory={categoryFilter} 
+              selectedTags={selectedTags} 
+              onCategorySelect={setCategoryFilter} 
+              onTagSelect={handleTagSelect} 
+              onAccountClick={account => {
+                setSelectedAccount(account);
+                setShowDetailsModal(true);
+              }} 
+              getCategoryCount={getCategoryCount} 
+            />
+          </div>
+        </div>
+
+        {/* Main Layout: Sidebar + Products */}
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* Left Sidebar - Desktop Only */}
           <div className="hidden lg:block w-64 flex-shrink-0">
             <MarketplaceSidebar trendingAccounts={trendingAccounts} categories={dynamicCategories} accounts={accounts} selectedCategory={categoryFilter} selectedTags={selectedTags} onCategorySelect={setCategoryFilter} onTagSelect={handleTagSelect} onAccountClick={account => {
@@ -979,54 +1050,6 @@ const AIAccountsSection = () => {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0 w-full">
-            {/* Search Bar - Sticky on mobile with white background */}
-            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md pb-3 pt-3 -mx-3 px-3 border-b border-gray-100 lg:relative lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:pb-0 lg:pt-0 lg:mx-0 lg:px-0 lg:border-none mb-4">
-              {/* 2-column layout on mobile: Search | Filter */}
-              <div className="grid grid-cols-[1fr,auto] gap-2 lg:block">
-                {/* Search Bar - White based design */}
-                <div className="relative w-full lg:w-64">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input 
-                    type="text" 
-                    value={searchQuery} 
-                    onChange={e => setSearchQuery(e.target.value)} 
-                    placeholder="Search..." 
-                    className="w-full bg-white lg:bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-8 py-2 text-sm text-gray-900 placeholder-gray-400 lg:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-100 lg:focus:ring-violet-200 focus:border-violet-300 transition-all shadow-sm lg:shadow-none" 
-                  />
-                  {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
-                    <button 
-                      onClick={() => {
-                        setSearchQuery('');
-                        setSelectedTags([]);
-                        setCategoryFilter('all');
-                      }} 
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-md transition-colors"
-                    >
-                      <X size={14} className="text-gray-400" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Filter Button - Always visible on mobile */}
-                <div className="lg:hidden">
-                  <MarketplaceSidebar 
-                    trendingAccounts={trendingAccounts} 
-                    categories={dynamicCategories} 
-                    accounts={accounts} 
-                    selectedCategory={categoryFilter} 
-                    selectedTags={selectedTags} 
-                    onCategorySelect={setCategoryFilter} 
-                    onTagSelect={handleTagSelect} 
-                    onAccountClick={account => {
-                      setSelectedAccount(account);
-                      setShowDetailsModal(true);
-                    }} 
-                    getCategoryCount={getCategoryCount} 
-                  />
-                </div>
-              </div>
-            </div>
-
             {/* Active Filters Pills - HIDDEN on mobile */}
             {(selectedTags.length > 0 || categoryFilter !== 'all') && <div className="hidden sm:flex flex-wrap gap-2 mb-4">
                 {categoryFilter !== 'all' && <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full text-xs font-medium">
@@ -1043,7 +1066,6 @@ const AIAccountsSection = () => {
                   </span>)}
               </div>}
 
-
             {/* Products Grid */}
             {filteredAccounts.length === 0 ? <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
                 <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
@@ -1058,7 +1080,7 @@ const AIAccountsSection = () => {
           }} className="text-violet-600 font-medium hover:underline">
                   Clear all filters
                 </button>
-              </div> : <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 px-0.5 sm:px-0">
+              </div> : <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
                 {filteredAccounts.map(account => {
             const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
             return <div key={account.id} className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
@@ -1240,7 +1262,8 @@ const AIAccountsSection = () => {
           })}
               </div>}
           </div>
-        </div>}
+        </div>
+      </>}
 
       {/* Seller Product Details Modal */}
       <Dialog open={showSellerDetailsModal} onOpenChange={setShowSellerDetailsModal}>
