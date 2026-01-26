@@ -751,6 +751,62 @@ const SellerSettings = () => {
           </AccordionItem>
         )}
 
+        {/* Two-Factor Authentication */}
+        <AccordionItem value="security-2fa" className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm px-4 sm:px-6 overflow-hidden">
+          <AccordionTrigger className="py-4 sm:py-5 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-slate-900 text-sm sm:text-base">Two-Factor Authentication</p>
+                <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">Add an extra layer of security for withdrawals</p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pb-5 sm:pb-6 space-y-4">
+            <div className="p-4 rounded-xl bg-violet-50 border border-violet-100">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-violet-100 rounded-lg">
+                  <Shield className="w-5 h-5 text-violet-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-violet-900">Withdrawal Protection Active</h4>
+                  <p className="text-sm text-violet-700 mt-1">
+                    All withdrawals require email OTP verification. A 6-digit code is sent to your registered email before any withdrawal can be processed.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <p className="text-sm font-medium text-slate-700 mb-3">Security features enabled:</p>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-sm text-slate-600">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  Email OTP for all withdrawal requests
+                </li>
+                <li className="flex items-center gap-2 text-sm text-slate-600">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  10-minute code expiration
+                </li>
+                <li className="flex items-center gap-2 text-sm text-slate-600">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  One active code at a time
+                </li>
+                <li className="flex items-center gap-2 text-sm text-slate-600">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  Single-use verification codes
+                </li>
+              </ul>
+            </div>
+            
+            <p className="text-xs text-slate-500">
+              💡 Tip: Keep your email secure to protect your funds. Never share OTP codes with anyone.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
         {/* Social Media Links */}
         <AccordionItem value="social-links" className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 overflow-hidden">
           <AccordionTrigger className="py-5 hover:no-underline">

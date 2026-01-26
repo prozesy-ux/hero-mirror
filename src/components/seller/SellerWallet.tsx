@@ -19,7 +19,10 @@ import {
   Star,
   Building2,
   Smartphone,
-  Bitcoin
+  Bitcoin,
+  Mail,
+  RefreshCw,
+  ShieldCheck
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -28,6 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 interface PaymentMethod {
   id: string;
@@ -162,6 +166,14 @@ const SellerWallet = () => {
   const [cryptoNetwork, setCryptoNetwork] = useState('');
   const [isPrimary, setIsPrimary] = useState(false);
   const [addStep, setAddStep] = useState<1 | 2>(1);
+  
+  // OTP verification state
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [otpValue, setOTPValue] = useState('');
+  const [otpSending, setOTPSending] = useState(false);
+  const [otpVerifying, setOTPVerifying] = useState(false);
+  const [pendingWithdrawalData, setPendingWithdrawalData] = useState<{amount: number; accountId: string} | null>(null);
+  const [otpExpiry, setOTPExpiry] = useState<Date | null>(null);
 
   const quickAmounts = [5, 10, 25, 50, 100];
 
@@ -358,6 +370,7 @@ const SellerWallet = () => {
     setAddStep(1);
   };
 
+  // Send OTP for withdrawal verification
   const handleWithdraw = async () => {
     if (!profile || !withdrawAmount || !selectedAccountForWithdraw) {
       toast.error('Please select an account');
@@ -396,42 +409,122 @@ const SellerWallet = () => {
       return;
     }
 
-    setSubmitting(true);
+    setOTPSending(true);
 
     try {
-      // Create withdrawal request with account reference
-      const { error: withdrawalError } = await supabase
-        .from('seller_withdrawals')
-        .insert({
-          seller_id: profile.id,
-          amount: withdrawAmount,
-          payment_method: selectedAccount.payment_method_code,
-          account_details: `${selectedAccount.account_name} - ${selectedAccount.account_number}${selectedAccount.bank_name ? ` (${selectedAccount.bank_name})` : ''}`,
-          payment_account_id: selectedAccount.id,
-          status: 'pending'
-        });
+      // Get current session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Please log in again');
+        return;
+      }
 
-      if (withdrawalError) throw withdrawalError;
+      // Call send-withdrawal-otp edge function
+      const response = await supabase.functions.invoke('send-withdrawal-otp', {
+        body: { 
+          amount: withdrawAmount, 
+          account_id: selectedAccountForWithdraw 
+        }
+      });
 
-      // Deduct from available balance
-      const newBalance = (wallet?.balance || 0) - withdrawAmount;
-      const { error: walletError } = await supabase
-        .from('seller_wallets')
-        .update({ balance: newBalance })
-        .eq('seller_id', profile.id);
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to send OTP');
+      }
 
-      if (walletError) throw walletError;
+      if (!response.data?.success) {
+        throw new Error(response.data?.error || 'Failed to send OTP');
+      }
 
-      toast.success('Withdrawal request submitted successfully');
+      // Store pending withdrawal data
+      setPendingWithdrawalData({
+        amount: withdrawAmount,
+        accountId: selectedAccountForWithdraw
+      });
+      
+      if (response.data.expires_at) {
+        setOTPExpiry(new Date(response.data.expires_at));
+      }
+
+      // Close withdraw dialog, open OTP modal
       setShowWithdrawDialog(false);
+      setShowOTPModal(true);
+      toast.success('OTP sent to your email');
+    } catch (error: any) {
+      console.error('OTP send error:', error);
+      toast.error(error.message || 'Failed to send OTP');
+    } finally {
+      setOTPSending(false);
+    }
+  };
+
+  // Verify OTP and complete withdrawal
+  const handleVerifyOTP = async () => {
+    if (!pendingWithdrawalData || otpValue.length !== 6) return;
+
+    setOTPVerifying(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Please log in again');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('verify-withdrawal-otp', {
+        body: { otp_code: otpValue }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Invalid OTP');
+      }
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.error || 'Invalid or expired OTP');
+      }
+
+      toast.success(`Withdrawal of $${response.data.amount} submitted successfully!`);
+      setShowOTPModal(false);
+      setOTPValue('');
+      setPendingWithdrawalData(null);
       setWithdrawAmount(10);
       setSelectedAccountForWithdraw(null);
       refreshWallet();
       refreshWithdrawals();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to submit withdrawal');
+      console.error('OTP verify error:', error);
+      toast.error(error.message || 'Invalid or expired OTP');
     } finally {
-      setSubmitting(false);
+      setOTPVerifying(false);
+    }
+  };
+
+  // Resend OTP
+  const handleResendOTP = async () => {
+    if (!pendingWithdrawalData) return;
+    setOTPSending(true);
+    setOTPValue('');
+    
+    try {
+      const response = await supabase.functions.invoke('send-withdrawal-otp', {
+        body: { 
+          amount: pendingWithdrawalData.amount, 
+          account_id: pendingWithdrawalData.accountId 
+        }
+      });
+
+      if (response.error || !response.data?.success) {
+        throw new Error(response.data?.error || 'Failed to resend OTP');
+      }
+
+      if (response.data.expires_at) {
+        setOTPExpiry(new Date(response.data.expires_at));
+      }
+      
+      toast.success('New OTP sent to your email');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to resend OTP');
+    } finally {
+      setOTPSending(false);
     }
   };
 
@@ -1043,6 +1136,83 @@ const SellerWallet = () => {
                 {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : <Plus className="mr-2" size={18} />}
                 Add Account
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* OTP Verification Modal */}
+      <Dialog open={showOTPModal} onOpenChange={(open) => {
+        if (!open) {
+          setShowOTPModal(false);
+          setOTPValue('');
+        }
+      }}>
+        <DialogContent className="max-w-sm p-0 overflow-hidden">
+          {/* Gradient Header */}
+          <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-6 text-white text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
+              <ShieldCheck className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold">Verify Withdrawal</h3>
+            <p className="text-violet-100 text-sm mt-2">
+              Withdrawing ${pendingWithdrawalData?.amount || 0} to your account
+            </p>
+          </div>
+          
+          <div className="p-6 space-y-6">
+            <div className="text-center">
+              <p className="text-gray-600 text-sm mb-6">
+                Enter the 6-digit code sent to your email
+              </p>
+              <div className="flex justify-center">
+                <InputOTP value={otpValue} onChange={setOTPValue} maxLength={6}>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} className="w-11 h-14 text-xl border-gray-300" />
+                    <InputOTPSlot index={1} className="w-11 h-14 text-xl border-gray-300" />
+                    <InputOTPSlot index={2} className="w-11 h-14 text-xl border-gray-300" />
+                    <InputOTPSlot index={3} className="w-11 h-14 text-xl border-gray-300" />
+                    <InputOTPSlot index={4} className="w-11 h-14 text-xl border-gray-300" />
+                    <InputOTPSlot index={5} className="w-11 h-14 text-xl border-gray-300" />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              
+              {otpExpiry && (
+                <p className="text-xs text-gray-400 mt-3">
+                  Code expires in 10 minutes
+                </p>
+              )}
+            </div>
+            
+            <Button 
+              onClick={handleVerifyOTP} 
+              disabled={otpValue.length !== 6 || otpVerifying}
+              className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 rounded-xl"
+            >
+              {otpVerifying ? <Loader2 className="animate-spin mr-2" size={18} /> : <CheckCircle className="mr-2" size={18} />}
+              Confirm Withdrawal
+            </Button>
+            
+            <div className="text-center text-sm">
+              <span className="text-gray-500">Didn't receive the code? </span>
+              <button 
+                onClick={handleResendOTP} 
+                disabled={otpSending}
+                className="text-violet-600 hover:text-violet-700 font-medium inline-flex items-center gap-1"
+              >
+                {otpSending ? (
+                  <>
+                    <Loader2 className="animate-spin" size={14} />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={14} />
+                    Resend Code
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </DialogContent>
