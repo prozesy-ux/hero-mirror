@@ -83,7 +83,10 @@ serve(async (req) => {
       'screen_share_sessions',
       'seller_payment_accounts',
       'email_logs',
-      'email_settings'
+      'email_settings',
+      'discount_codes',
+      'admin_audit_logs',
+      'platform_announcements'
     ];
 
     if (!allowedTables.includes(table)) {
