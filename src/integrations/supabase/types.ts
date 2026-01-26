@@ -380,6 +380,51 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_payment_accounts: {
+        Row: {
+          account_details: Json | null
+          account_name: string
+          account_number: string
+          bank_name: string | null
+          country: string | null
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          is_verified: boolean | null
+          payment_method_code: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_details?: Json | null
+          account_name: string
+          account_number: string
+          bank_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          payment_method_code: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_details?: Json | null
+          account_name?: string
+          account_number?: string
+          bank_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          payment_method_code?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       buyer_wishlist: {
         Row: {
           created_at: string | null
@@ -401,6 +446,39 @@ export type Database = {
           product_id?: string
           product_type?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      buyer_withdrawal_otps: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          otp_code: string
+          payment_account_id: string
+          user_id: string
+          verified: boolean | null
+          withdrawal_amount: number
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          otp_code: string
+          payment_account_id: string
+          user_id: string
+          verified?: boolean | null
+          withdrawal_amount: number
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          payment_account_id?: string
+          user_id?: string
+          verified?: boolean | null
+          withdrawal_amount?: number
         }
         Relationships: []
       }
