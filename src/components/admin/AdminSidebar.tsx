@@ -23,7 +23,11 @@ import {
   ShoppingBag,
   Banknote,
   Bell,
-  Mail
+  Mail,
+  TrendingUp,
+  Tag,
+  Megaphone,
+  ClipboardList
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -126,6 +130,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
 
     const navItems = [
       { icon: <LayoutDashboard size={22} />, label: 'Dashboard', to: '/admin' },
+      { icon: <TrendingUp size={22} />, label: 'Analytics', to: '/admin/analytics' },
       { icon: <FileText size={22} />, label: 'Prompts', to: '/admin/prompts' },
       { icon: <FolderOpen size={22} />, label: 'Categories', to: '/admin/categories' },
       { icon: <Users size={22} />, label: 'Users', to: '/admin/users' },
@@ -139,6 +144,9 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
       { icon: <Bell size={22} />, label: 'Push Notifications', to: '/admin/push-notifications' },
       { icon: <Mail size={22} />, label: 'Email', to: '/admin/email-templates' },
       { icon: <Store size={22} />, label: 'Resellers', to: '/admin/resellers' },
+      { icon: <Tag size={22} />, label: 'Coupons', to: '/admin/coupons' },
+      { icon: <Megaphone size={22} />, label: 'Announcements', to: '/admin/announcements' },
+      { icon: <ClipboardList size={22} />, label: 'Audit Logs', to: '/admin/audit-logs' },
     ];
 
     return (
