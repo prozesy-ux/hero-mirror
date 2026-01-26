@@ -84,7 +84,9 @@ serve(async (req) => {
       'email_settings',
       'discount_codes',
       'admin_audit_logs',
-      'platform_announcements'
+      'platform_announcements',
+      'buyer_payment_accounts',
+      'buyer_withdrawals'
     ];
 
     if (!allowedTables.includes(table)) {
