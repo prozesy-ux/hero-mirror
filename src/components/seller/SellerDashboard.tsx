@@ -1,26 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
+  Package, 
+  TrendingUp, 
   Wallet, 
-  Clock, 
-  DollarSign, 
-  Package,
-  ShoppingBag,
-  CheckCircle,
-  TrendingUp,
-  Plus,
-  ArrowRight,
-  ShieldCheck,
-  Activity,
+  RotateCcw,
+  Globe,
+  MessageSquare,
   BarChart3,
-  ArrowUpRight
+  Star,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isToday, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface TrustScore {
   trust_score: number;
@@ -32,6 +32,7 @@ interface TrustScore {
 const SellerDashboard = () => {
   const { profile, wallet, products, orders, loading } = useSellerContext();
   const [trustScore, setTrustScore] = useState<TrustScore | null>(null);
+  const [outOfStockIndex, setOutOfStockIndex] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,7 +41,6 @@ const SellerDashboard = () => {
     }
   }, [profile?.id]);
 
-  // Real-time subscription for trust score updates
   useEffect(() => {
     if (!profile?.id) return;
 
@@ -73,308 +73,480 @@ const SellerDashboard = () => {
     }
   };
 
-  const pendingOrders = orders.filter(o => o.status === 'pending').length;
-  const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
-  const completedOrders = orders.filter(o => o.status === 'completed').length;
-  const totalEarnings = orders
-    .filter(o => o.status === 'completed')
-    .reduce((sum, o) => sum + (Number(o.seller_earning) || 0), 0);
+  // Calculate stats
+  const todayOrders = orders.filter(o => {
+    try {
+      return isToday(parseISO(o.created_at));
+    } catch {
+      return false;
+    }
+  });
 
+  const todayOrderCount = todayOrders.length;
+  const todaySales = todayOrders.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
+  const returnsCount = orders.filter(o => o.status === 'refunded' || o.status === 'return').length;
+  const deliveredOrders = orders.filter(o => o.status === 'delivered' || o.status === 'completed').length;
+  const buyBoxWinRate = orders.length > 0 ? Math.round((deliveredOrders / orders.length) * 100) : 0;
+
+  // Out of stock products
+  const outOfStockProducts = products.filter(p => (p.stock ?? 0) === 0);
+
+  // Recent orders for table (last 4)
   const recentOrders = orders
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 5);
+    .slice(0, 4);
+
+  // Sales chart data (last 7 days mock - in real scenario, aggregate from orders)
+  const salesChartData = useMemo(() => {
+    const data = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dayOrders = orders.filter(o => {
+        try {
+          const orderDate = parseISO(o.created_at);
+          return orderDate.toDateString() === date.toDateString();
+        } catch {
+          return false;
+        }
+      });
+      const revenue = dayOrders.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
+      data.push({
+        name: format(date, 'EEE'),
+        revenue: revenue,
+        percentage: Math.min(100, (revenue / 1000) * 100) // Scale for visualization
+      });
+    }
+    return data;
+  }, [orders]);
+
+  const handlePrevProduct = () => {
+    setOutOfStockIndex(prev => 
+      prev === 0 ? Math.max(0, outOfStockProducts.length - 1) : prev - 1
+    );
+  };
+
+  const handleNextProduct = () => {
+    setOutOfStockIndex(prev => 
+      prev >= outOfStockProducts.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const getStatusBadgeClass = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'delivered':
+      case 'completed':
+        return 'bg-emerald-100 text-emerald-700 border-0';
+      case 'pending':
+        return 'bg-amber-100 text-amber-700 border-0';
+      case 'return':
+      case 'refunded':
+        return 'bg-blue-100 text-blue-700 border-0';
+      default:
+        return 'bg-gray-100 text-gray-700 border-0';
+    }
+  };
 
   if (loading) {
     return (
-      <div className="space-y-6 seller-dashboard">
+      <div className="space-y-5 p-1">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-36 rounded-2xl" />
+            <Skeleton key={i} className="h-32 rounded-2xl bg-white" />
           ))}
         </div>
-        <Skeleton className="h-64 rounded-2xl" />
+        <div className="grid lg:grid-cols-3 gap-4">
+          <Skeleton className="lg:col-span-2 h-72 rounded-2xl bg-white" />
+          <Skeleton className="h-72 rounded-2xl bg-white" />
+        </div>
       </div>
     );
   }
 
-  const getTrustScoreColor = (score: number) => {
-    if (score >= 90) return 'text-emerald-500';
-    if (score >= 70) return 'text-blue-500';
-    if (score >= 50) return 'text-amber-500';
-    return 'text-red-500';
-  };
-
-  const getTrustScoreBg = (score: number) => {
-    if (score >= 90) return 'from-emerald-500 to-teal-500';
-    if (score >= 70) return 'from-blue-500 to-indigo-500';
-    if (score >= 50) return 'from-amber-500 to-orange-500';
-    return 'from-red-500 to-rose-500';
-  };
-
-  // Premium gradient stats matching Analytics design
-  const stats = [
-    {
-      label: 'BALANCE',
-      value: `$${(wallet?.balance || 0).toFixed(2)}`,
-      change: 'Available',
-      icon: Wallet,
-      gradient: 'bg-gradient-to-br from-emerald-500 to-teal-600',
-      onClick: () => navigate('/seller/wallet')
-    },
-    {
-      label: 'PENDING',
-      value: `$${Math.max(0, wallet?.pending_balance || 0).toFixed(2)}`,
-      change: 'Processing',
-      icon: Clock,
-      gradient: 'bg-gradient-to-br from-amber-500 to-orange-600',
-      onClick: () => navigate('/seller/wallet')
-    },
-    {
-      label: 'EARNINGS',
-      value: `$${totalEarnings.toFixed(2)}`,
-      change: `${orders.length} orders`,
-      icon: DollarSign,
-      gradient: 'bg-gradient-to-br from-violet-500 to-purple-600',
-      onClick: () => navigate('/seller/orders')
-    },
-    {
-      label: 'PRODUCTS',
-      value: products.length.toString(),
-      change: `${products.filter(p => p.is_approved).length} live`,
-      icon: Package,
-      gradient: 'bg-gradient-to-br from-blue-500 to-indigo-600',
-      onClick: () => navigate('/seller/products')
-    }
-  ];
+  const currentOutOfStock = outOfStockProducts[outOfStockIndex];
 
   return (
-    <div className="space-y-6 seller-dashboard">
-      {/* Trust Score Header - TikTok Store Premium Design */}
-      {trustScore && (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-6 text-white shadow-xl">
-          {/* Glass overlay */}
-          <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]" />
-          
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-          
-          <div className="relative z-10">
-            {/* Seller Badge */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <Badge className={`text-xs font-bold px-2.5 py-0.5 ${
-                    trustScore.trust_score >= 90 ? 'bg-emerald-400 text-emerald-900' :
-                    trustScore.trust_score >= 70 ? 'bg-blue-400 text-blue-900' : 'bg-amber-400 text-amber-900'
-                  }`}>
-                    {trustScore.trust_score >= 90 ? '⭐ TOP SELLER' : 
-                     trustScore.trust_score >= 70 ? '✓ TRUSTED' : '📈 GROWING'}
-                  </Badge>
-                  <h3 className="text-2xl sm:text-3xl font-bold mt-1">{trustScore.trust_score}% Trust Score</h3>
-                </div>
-              </div>
-            </div>
-            
-            {/* Progress Bar */}
-            <div className="h-2.5 bg-white/20 rounded-full overflow-hidden mb-5">
-              <div 
-                className="h-full bg-gradient-to-r from-white to-white/80 rounded-full transition-all duration-1000" 
-                style={{ width: `${trustScore.trust_score}%` }} 
-              />
-            </div>
-            
-            {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center p-3 sm:p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-                <p className="text-2xl sm:text-3xl font-bold">{trustScore.successful_orders}</p>
-                <p className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wide">Completed</p>
-              </div>
-              <div className="text-center p-3 sm:p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-                <p className="text-2xl sm:text-3xl font-bold">{trustScore.buyer_approved_count}</p>
-                <p className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wide">Approved</p>
-              </div>
-              <div className="text-center p-3 sm:p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-                <p className="text-2xl sm:text-3xl font-bold">{trustScore.total_reports}</p>
-                <p className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wide">Reports</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Stats Grid - Premium Gradient Cards - Mobile Optimized */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {stats.map((stat, index) => (
-          <button
-            key={index}
-            onClick={stat.onClick}
-            className={`relative rounded-xl sm:rounded-2xl p-3 sm:p-5 overflow-hidden text-left transition-all active:scale-[0.98] hover:shadow-xl ${stat.gradient}`}
-          >
-            <div className="flex items-start justify-between relative z-10">
-              <div>
-                <p className="text-white/80 text-[10px] sm:text-xs font-medium uppercase tracking-wide">{stat.label}</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mt-0.5 sm:mt-1">{stat.value}</p>
-                {stat.change && (
-                  <div className="flex items-center gap-1 mt-1 sm:mt-2">
-                    <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white/90" />
-                    <span className="text-[10px] sm:text-xs font-semibold text-white/90">{stat.change}</span>
-                  </div>
-                )}
-              </div>
-              <div className="h-8 w-8 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center">
-                <stat.icon className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Quick Stats Row - Mobile Scrollable */}
-      <div className="flex gap-2 sm:gap-3 overflow-x-auto hide-scrollbar pb-1 -mx-1 px-1">
-        {[
-          { label: 'Completed', value: completedOrders, icon: CheckCircle, color: 'text-emerald-500' },
-          { label: 'Pending', value: pendingOrders, icon: Clock, color: 'text-amber-500' },
-          { label: 'Delivered', value: deliveredOrders, icon: TrendingUp, color: 'text-blue-500' },
-          { label: 'Total', value: orders.length, icon: ShoppingBag, color: 'text-violet-500' }
-        ].map((stat, index) => (
-          <div key={index} className="flex-shrink-0 bg-white rounded-xl p-2.5 sm:p-3 text-center border border-slate-100 shadow-sm min-w-[72px] sm:min-w-[80px]">
-            <stat.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${stat.color} mx-auto mb-0.5 sm:mb-1`} />
-            <p className="seller-stat-number text-base sm:text-lg text-slate-900">{stat.value}</p>
-            <p className="text-[9px] sm:text-[10px] text-slate-600 font-medium">{stat.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Quick Actions - Clean Buttons */}
-      <div className="flex flex-wrap gap-3">
-        <Button
-          onClick={() => navigate('/seller/products')}
-          className="bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 rounded-xl font-semibold"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Product
-        </Button>
-        <Button
-          variant="outline"
+    <div className="space-y-5">
+      {/* Top Stats Row - 4 Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Today's Order */}
+        <div 
+          className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
           onClick={() => navigate('/seller/orders')}
-          className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
         >
-          <ShoppingBag className="w-4 h-4 mr-2" />
-          View Orders
-        </Button>
-        <Button
-          variant="outline"
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs text-gray-500 font-medium mb-1">Today's Order</p>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">{todayOrderCount}</p>
+              <div className="flex items-center gap-1 mt-2">
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="text-xs font-medium text-emerald-500">1.3% Up from yesterday</span>
+              </div>
+            </div>
+            <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
+              <Package className="h-6 w-6 text-orange-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* Today's Sale */}
+        <div 
+          className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
           onClick={() => navigate('/seller/analytics')}
-          className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
         >
-          <BarChart3 className="w-4 h-4 mr-2" />
-          Analytics
-        </Button>
-        <Button
-          variant="outline"
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs text-gray-500 font-medium mb-1">Today's Sale</p>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">₹{todaySales.toLocaleString()}</p>
+              <div className="flex items-center gap-1 mt-2">
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="text-xs font-medium text-emerald-500">1.3% Up from yesterday</span>
+              </div>
+            </div>
+            <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center">
+              <BarChart3 className="h-6 w-6 text-emerald-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* Total Balance */}
+        <div 
+          className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
           onClick={() => navigate('/seller/wallet')}
-          className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
         >
-          <Wallet className="w-4 h-4 mr-2" />
-          Withdraw
-        </Button>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs text-gray-500 font-medium mb-1">Total Balance</p>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">₹{(wallet?.balance || 0).toLocaleString()}</p>
+              <p className="text-xs text-gray-500 mt-2">Revenue sent to your wallet</p>
+            </div>
+            <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+              <Wallet className="h-6 w-6 text-blue-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* Returns & Refunds */}
+        <div 
+          className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => navigate('/seller/orders')}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs text-gray-500 font-medium mb-1">Returns & Refunds</p>
+              <p className="text-3xl font-bold text-gray-900 tracking-tight">{returnsCount}</p>
+              <p className="text-xs text-gray-500 mt-2">Processed returns</p>
+            </div>
+            <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+              <RotateCcw className="h-6 w-6 text-purple-500" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Recent Activity - Timeline Style */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
-              <Activity className="w-4 h-4 text-violet-600" />
-            </div>
-            <div>
-              <h3 className="seller-heading text-slate-900">Recent Activity</h3>
-              <p className="text-xs text-slate-500">Your latest orders</p>
-            </div>
+      {/* Middle Section - Sales Chart + Quick Stats */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        {/* Sales Details Chart */}
+        <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-base font-semibold text-gray-900">Sales Details</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="rounded-full text-xs font-medium border-gray-200 text-gray-600 hover:bg-gray-50"
+            >
+              October
+              <ChevronDown className="h-3.5 w-3.5 ml-1" />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/seller/orders')}
-            className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 font-medium rounded-lg"
-          >
-            View All
-            <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
+          
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={salesChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: '#9CA3AF' }}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: '#9CA3AF' }}
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
+                    border: '1px solid #E5E7EB', 
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                  }}
+                  formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="percentage" 
+                  stroke="#3B82F6" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorRevenue)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        
-        {recentOrders.length === 0 ? (
-          <div className="p-10 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-              <ShoppingBag className="w-6 h-6 text-slate-400" />
-            </div>
-            <p className="font-semibold text-slate-900 mb-1">No orders yet</p>
-            <p className="text-sm text-slate-500">Your recent orders will appear here</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-50">
-            {recentOrders.map((order, index) => (
-              <div key={order.id} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors group">
-                {/* Timeline Indicator */}
-                <div className="relative flex flex-col items-center">
-                  <div className={`w-3 h-3 rounded-full ${
-                    order.status === 'completed' ? 'bg-emerald-500' :
-                    order.status === 'delivered' ? 'bg-blue-500' : 'bg-amber-500'
-                  }`} />
-                  {index < recentOrders.length - 1 && (
-                    <div className="w-px h-full bg-slate-200 absolute top-4" />
-                  )}
-                </div>
 
+        {/* Quick Stats 2x2 Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Market Place */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <Globe className="h-5 w-5 text-blue-500" />
+              </div>
+              <button className="text-gray-400 hover:text-gray-600">
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">01</p>
+            <p className="text-xs text-gray-500 font-medium">Market Place</p>
+          </div>
+
+          {/* Buyer's Message */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <MessageSquare className="h-5 w-5 text-blue-500" />
+              </div>
+              <button className="text-gray-400 hover:text-gray-600">
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">05</p>
+            <p className="text-xs text-gray-500 font-medium">Buyer's Message</p>
+          </div>
+
+          {/* Buy Box Wins */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                <BarChart3 className="h-5 w-5 text-emerald-500" />
+              </div>
+              <button className="text-gray-400 hover:text-gray-600">
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{buyBoxWinRate}%</p>
+            <p className="text-xs text-gray-500 font-medium">Buy Box Wins</p>
+          </div>
+
+          {/* Customer Feedback */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <Star className="h-5 w-5 text-amber-500" />
+              </div>
+              <button className="text-gray-400 hover:text-gray-600">
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex items-center gap-1">
+              <p className="text-2xl font-bold text-gray-900">4.5</p>
+              <div className="flex items-center">
+                {[1, 2, 3, 4].map(i => (
+                  <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                ))}
+                <Star className="h-3 w-3 fill-gray-200 text-gray-200" />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 font-medium">Customer Feedback</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section - Orders Table + Out of Stock */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        {/* Order Details Table */}
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
+            <h3 className="text-base font-semibold text-gray-900">Order Details</h3>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/seller/orders')}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-medium text-xs"
+              >
+                View All
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-full text-xs font-medium border-gray-200 text-gray-600 hover:bg-gray-50"
+              >
+                October
+                <ChevronDown className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Product Name</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Order Date - Time</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery Date</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {recentOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-10 text-center">
+                      <div className="flex flex-col items-center">
+                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                          <Package className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <p className="text-sm font-medium text-gray-900 mb-1">No orders yet</p>
+                        <p className="text-xs text-gray-500">Your recent orders will appear here</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  recentOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-5 py-3">
+                        <span className="text-sm font-medium text-gray-900">
+                          #{order.id.slice(0, 8).toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                            {order.product?.icon_url ? (
+                              <img 
+                                src={order.product.icon_url} 
+                                alt={order.product?.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="w-4 h-4 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-sm text-gray-900 truncate max-w-[120px]">
+                            {order.product?.name || 'Unknown Product'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="text-sm text-gray-600">1</span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="text-sm text-gray-600">
+                          {format(new Date(order.created_at), 'MMM d, yyyy - h:mm a')}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="text-sm text-gray-600">
+                          {order.delivered_at 
+                            ? format(new Date(order.delivered_at), 'MMM d, yyyy')
+                            : '-'
+                          }
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <Badge className={`text-xs font-medium ${getStatusBadgeClass(order.status)}`}>
+                          {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Out of Stock Card */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Out of Stock</h3>
+          
+          {outOfStockProducts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
+                <Package className="w-7 h-7 text-emerald-500" />
+              </div>
+              <p className="text-sm font-medium text-gray-900 mb-1">All stocked up!</p>
+              <p className="text-xs text-gray-500 text-center">No products are out of stock</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              {/* Navigation */}
+              <div className="flex items-center justify-between w-full mb-4">
+                <button 
+                  onClick={handlePrevProduct}
+                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4 text-gray-600" />
+                </button>
+                
                 {/* Product Image */}
-                <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-100">
-                  {order.product?.icon_url ? (
+                <div className="w-28 h-28 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center">
+                  {currentOutOfStock?.icon_url ? (
                     <img 
-                      src={order.product.icon_url} 
-                      alt={order.product?.name}
+                      src={currentOutOfStock.icon_url}
+                      alt={currentOutOfStock.name}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="w-5 h-5 text-slate-400" />
-                    </div>
+                    <Package className="w-12 h-12 text-gray-400" />
                   )}
                 </div>
-
-                {/* Order Details */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-900 truncate group-hover:text-violet-700 transition-colors">
-                    {order.product?.name || 'Unknown Product'}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {order.buyer?.email?.split('@')[0] || 'Customer'} • {format(new Date(order.created_at), 'MMM d, h:mm a')}
-                  </p>
-                </div>
-
-                {/* Status & Amount */}
-                <div className="text-right flex-shrink-0">
-                  <p className="seller-stat-number text-lg text-slate-900">${(Number(order.seller_earning) || 0).toFixed(2)}</p>
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] font-semibold ${
-                      order.status === 'completed'
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                        : order.status === 'delivered'
-                        ? 'border-blue-200 bg-blue-50 text-blue-700'
-                        : 'border-amber-200 bg-amber-50 text-amber-700'
-                    }`}
-                  >
-                    {order.status.toUpperCase()}
-                  </Badge>
-                </div>
+                
+                <button 
+                  onClick={handleNextProduct}
+                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4 text-gray-600" />
+                </button>
               </div>
-            ))}
-          </div>
-        )}
+
+              {/* Product Info */}
+              <p className="text-sm font-medium text-gray-900 text-center mb-1 truncate max-w-full px-4">
+                {currentOutOfStock?.name || 'Product Name'}
+              </p>
+              <p className="text-lg font-bold text-orange-500">
+                ₹{(currentOutOfStock?.price || 0).toLocaleString()}
+              </p>
+
+              {/* Pagination Dots */}
+              <div className="flex items-center gap-1.5 mt-4">
+                {outOfStockProducts.slice(0, 5).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setOutOfStockIndex(i)}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      i === outOfStockIndex ? 'bg-orange-500' : 'bg-gray-200'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
