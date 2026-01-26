@@ -1,316 +1,144 @@
 
-# Complete Dashboard Synchronization & Enhancement Plan
+Goal
+- Make Buyer dashboard visuals and behavior match Seller dashboard (especially Wallet).
+- Make it 100% impossible for a Buyer or Seller to submit a second withdrawal while any earlier withdrawal is still “in progress” (pending/processing/etc.), even if they click fast, refresh, use multiple tabs, or the UI check fails.
 
-## Overview
+What I found (root causes)
+1) Buyer Wallet UI is not the same as Seller Wallet UI
+- BuyerWallet uses emerald/teal gradients and “bg-card / border-border” styling.
+- SellerWallet uses the violet/purple gradient theme and different button/tab styles.
+- Labels differ (e.g., Buyer “History” tab vs Seller “Withdrawals”), and some sections exist in Seller but not in Buyer (e.g., “Available Withdrawal Methods” block).
 
-This plan addresses all your requirements for synchronizing Buyer and Seller dashboards, adding currency support throughout, removing section titles, adding more navigation items to the buyer sidebar, fixing analytics data, and implementing country selection in admin payment settings.
+2) “Second withdrawal while pending” can still happen because current protection is mostly UI-based and not fully consistent server-side
+- UI now blocks pending statuses with isBlockingWithdrawalStatus and disables the button.
+- But the OTP verification backend functions still do a strict status check `.eq("status","pending")` which:
+  - is case-sensitive and whitespace-sensitive
+  - uses `.single()` (can behave badly if unexpected multiple rows exist)
+  - does not cover other “in progress” statuses (processing, queued, etc.)
+- Most importantly: there is no database-level lock/constraint that guarantees “only 1 in-progress withdrawal per user/seller”.
 
----
+Solution strategy (to reach 100% accuracy)
+We will add a hard backend rule at the database layer, then update the backend functions and UI to handle and display the rule cleanly.
 
-## Phase 1: Buyer Dashboard Navigation Enhancement
+Phase A — Database-level guarantee (the “100% accurate” part)
+A1) Add a UNIQUE PARTIAL INDEX for Buyer withdrawals
+- Enforce: Only one “blocking/in-progress” withdrawal row per user_id at any time.
+- Use a normalized predicate: `lower(trim(status)) IN (...)`
 
-### Files to Modify
-- `src/components/dashboard/DashboardSidebar.tsx`
-- `src/components/dashboard/MobileNavigation.tsx`
-- `src/pages/Dashboard.tsx`
+A2) Add a UNIQUE PARTIAL INDEX for Seller withdrawals
+- Enforce the same rule for `seller_id`.
 
-### New Files to Create
-- `src/components/dashboard/BuyerDashboardHome.tsx`
-- `src/components/dashboard/BuyerReports.tsx`
+A3) Decide the blocking statuses list once, and use it everywhere
+- Suggested canonical list:
+  - pending, processing, queued, in_review, awaiting, requested, approved
+- Rationale:
+  - “approved” can still be “in-progress” in many flows; if your admin uses “approved” as a final state, we can exclude it. But safest is to treat it as blocking.
 
-### Changes
+Deliverable (migration)
+- Create a migration that adds both indexes:
+  - buyer_withdrawals_one_in_progress_per_user
+  - seller_withdrawals_one_in_progress_per_seller
 
-**DashboardSidebar.tsx - Add new nav items at top:**
-```text
-const navItems = [
-  { to: '/dashboard/home', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
-  { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Marketplace' },
-  { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
-  { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
-  { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/dashboard/reports', icon: FileText, label: 'Reports' },
-  { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
-  { to: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
-  { to: '/dashboard/chat', icon: MessageSquare, label: 'Support' },
-  { to: '/dashboard/profile', icon: User, label: 'Profile' },
-];
-```
+Phase B — Backend functions: enforce + return clean error
+B1) Update OTP verification functions to use safer “in-progress” detection
+Files:
+- supabase/functions/verify-buyer-withdrawal-otp/index.ts
+- supabase/functions/verify-withdrawal-otp/index.ts
 
-**MobileNavigation.tsx - Update sidebarNavItems similarly**
+Changes:
+- Replace the `.eq("status","pending").single()` check with:
+  - a query that checks for any status in the blocking set, without `.single()`
+  - or skip pre-check and rely on the unique index, catching a unique violation on insert.
+- Add explicit handling of Postgres unique-violation error (SQLSTATE 23505):
+  - Return HTTP 409 (or 400) with message: “You already have a pending withdrawal. Please wait.”
 
-**Dashboard.tsx - Add routes:**
-```tsx
-<Route path="home" element={<BuyerDashboardHome />} />
-<Route path="reports" element={<BuyerReports />} />
-```
+B2) Update “send OTP” functions to prevent sending OTP when a withdrawal is already in progress
+Files:
+- supabase/functions/send-buyer-withdrawal-otp/index.ts
+- supabase/functions/send-withdrawal-otp/index.ts
 
-**BuyerDashboardHome.tsx - New component with:**
-- Account overview stats (wallet balance, total orders, total spent)
-- Recent orders list
-- Quick actions (Add Funds, Browse Marketplace, View Wishlist)
-- No section title (minimal design)
+Changes:
+- Before generating OTP, check for an existing in-progress withdrawal (using the same normalized status logic).
+- If found: return success:false + friendly message (don’t send OTP, don’t insert OTP row).
 
-**BuyerReports.tsx - New component with:**
-- Spending charts and CSV export
-- Currency-formatted amounts using `useCurrency`
-- Date range filter
-- No section title
+Why this matters
+- This avoids users generating multiple OTPs and then successfully verifying the “newer” one while they already have a pending withdrawal.
 
----
+Phase C — UI: make Buyer Wallet pixel-perfect same as Seller Wallet
+C1) Make BuyerWallet match SellerWallet design and labels exactly
+File:
+- src/components/dashboard/BuyerWallet.tsx
 
-## Phase 2: Buyer Wallet - Match Seller Wallet Design Exactly
+Changes:
+- Switch Buyer wallet theme from emerald/teal to violet/purple to match Seller.
+- Align tab header style:
+  - use white background, gray-900 active tab styling (as SellerWallet does)
+- Align labels:
+  - Tab labels and section labels should match SellerWallet exactly (e.g., “Withdrawals” not “History” if that’s what Seller uses).
+- Match the wallet card:
+  - same gradient icon container
+  - same “Wallet Balance” label text
+  - same button gradient and disabled styling
+- Add “Available Withdrawal Methods” block like SellerWallet (Buyer already fetches paymentMethods from BFF; use it to render same grid).
+- Ensure dialogs match:
+  - withdraw dialog header icon gradient
+  - quick amount buttons layout (Seller uses 5-column grid)
 
-### File to Modify
-- `src/components/dashboard/BuyerWallet.tsx`
+C2) Make the “Withdraw” action impossible to open when blocked
+- Keep existing defensive click-check (already present), but ensure all entry points (button, any CTA, modal open) respect hasPendingWithdrawal.
+- If blocked:
+  - show toast
+  - keep button disabled + show “Pending...”
 
-### Changes
-Copy exact design from SellerWallet.tsx:
-- Same violet-purple gradient theme
-- Same tab structure (Wallet | Accounts | History)
-- Same card layouts with gradient borders
-- Same form styling for add account modal
-- Same quick amount buttons styling
-- Same account cards with method icons
-- Import same icon components and styles
+Phase D — Buyer Dashboard metrics/filters parity with Seller
+D1) Align BuyerDashboardHome layout with SellerDashboard’s header/filters pattern (light gray bg, date filter row, export button row)
+File:
+- src/components/dashboard/BuyerDashboardHome.tsx
 
-The current BuyerWallet already has similar structure but needs visual refinement to be pixel-perfect match.
+Changes:
+- Add date range filter + period dropdown similar to SellerDashboard/SellerAnalytics
+- Make stat cards match style (rounded-2xl, same typographic scale, same icons style)
+- Use real values from buyer orders + wallet:
+  - Today’s Orders
+  - Today’s Spend
+  - Total Balance
+  - Wishlist count
+- Keep section titles removed except Notifications (per your earlier instruction)
 
----
+Note: BuyerAnalytics already has date range + export; we’ll align spacing and card styles to match SellerAnalytics more closely.
 
-## Phase 3: Remove Section Titles (Both Dashboards)
+Phase E — Verification checklist (to confirm “100% accurate”)
+E1) Manual tests in preview
+Buyer:
+- Create a withdrawal → status pending
+- Refresh page → Withdraw button must stay disabled (“Pending…”)
+- Try from another tab/device session → second withdrawal must fail (server denies)
+- If using OTP:
+  - Attempt to request OTP again while pending → must be blocked
+  - Attempt to verify OTP while pending exists → must be blocked
 
-### Files to Modify
-- `src/components/dashboard/BuyerAnalytics.tsx` - Remove "Spending Analytics" title
-- `src/components/dashboard/BuyerOrders.tsx` - Remove any title
-- `src/components/dashboard/BuyerWallet.tsx` - Remove title (keep tabs only)
-- `src/components/dashboard/BuyerWishlist.tsx` - Remove title
-- `src/components/seller/SellerAnalytics.tsx` - Already no title
-- `src/components/seller/SellerDashboard.tsx` - Keep "Dashboard" badge with trust score
-- `src/components/seller/SellerWallet.tsx` - Remove title
+Seller:
+- Same test flow for seller withdrawals, both OTP and non-OTP paths.
 
-### Exception
-- Keep **Notifications** section title in `BuyerNotifications.tsx` as requested
+E2) Confirm database constraint behavior
+- Attempt to insert a second pending withdrawal row directly (through app flow) → must return unique constraint violation → app shows friendly error.
 
----
+Files impacted summary
+Database
+- New migration: add 2 partial unique indexes for buyer_withdrawals and seller_withdrawals.
 
-## Phase 4: Currency Integration - All Sections
+Backend functions
+- verify-withdrawal-otp (seller)
+- verify-buyer-withdrawal-otp (buyer)
+- send-withdrawal-otp (seller)
+- send-buyer-withdrawal-otp (buyer)
 
-### Files to Modify
-- `src/components/dashboard/DashboardTopBar.tsx` - Add CurrencySelector
-- `src/components/dashboard/BuyerAnalytics.tsx` - Replace hardcoded ₹ with formatAmountOnly()
-- `src/components/dashboard/BuyerOrders.tsx` - Check and fix currency symbols
-- `src/components/dashboard/BuyerDashboardHome.tsx` (new) - Use currency formatting
-- `src/components/dashboard/BuyerReports.tsx` (new) - Use currency formatting
+Frontend
+- BuyerWallet.tsx (full visual parity with SellerWallet + same labels + same blocks)
+- BuyerDashboardHome.tsx (metrics + filters + styling parity focus)
+- (Optional polish) BuyerAnalytics.tsx spacing and card consistency, if needed.
 
-### DashboardTopBar.tsx Changes
-Add CurrencySelector next to wallet balance:
-```tsx
-import { CurrencySelector } from '@/components/ui/currency-selector';
-import { useCurrency } from '@/contexts/CurrencyContext';
-
-// In component:
-const { formatAmountOnly } = useCurrency();
-
-// In render, next to wallet button:
-<CurrencySelector variant="minimal" />
-
-// Update wallet display:
-<span>{formatAmountOnly(wallet?.balance || 0)}</span>
-```
-
-### BuyerAnalytics.tsx Changes
-Replace all `₹` hardcoded symbols:
-```tsx
-// Before: ₹{stats.totalSpent.toFixed(0)}
-// After:  {formatAmountOnly(stats.totalSpent)}
-```
-
----
-
-## Phase 5: Seller Analytics - Real Data (Replace Mock Values)
-
-### File to Modify
-- `src/components/seller/SellerAnalytics.tsx`
-
-### Current Mock Data (Lines 177-188)
-```javascript
-// Simulated metrics - REMOVE THESE
-const pageViews = Math.max(todayOrderCount * 15, Math.floor(Math.random() * 500) + 100);
-const visitors = Math.max(todayOrderCount * 8, Math.floor(Math.random() * 300) + 50);
-const clicks = Math.max(todayOrderCount * 5, Math.floor(Math.random() * 200) + 30);
-const buyerMessages = Math.floor(Math.random() * 20) + 5;
-const avgRating = 4.2;
-```
-
-### Replace With Real Database Queries
-Add these inside the component:
-```tsx
-const [realMetrics, setRealMetrics] = useState({
-  buyerMessages: 0,
-  avgRating: 0,
-  conversionRate: 0
-});
-
-useEffect(() => {
-  if (!profile?.id) return;
-  
-  const fetchRealMetrics = async () => {
-    // Buyer Messages - count from seller_chats
-    const { count: messageCount } = await supabase
-      .from('seller_chats')
-      .select('*', { count: 'exact', head: true })
-      .eq('seller_id', profile.id);
-    
-    // Average Rating - from product_reviews
-    const { data: reviews } = await supabase
-      .from('product_reviews')
-      .select('rating, product:seller_products!inner(seller_id)')
-      .eq('product.seller_id', profile.id);
-    
-    const avgRating = reviews?.length 
-      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
-      : 0;
-    
-    // Conversion rate - orders / products viewed (derived from order count)
-    const conversionRate = orders.length > 0 
-      ? Math.min((orders.length / Math.max(products.length * 10, 1)) * 100, 100) 
-      : 0;
-    
-    setRealMetrics({
-      buyerMessages: messageCount || 0,
-      avgRating: avgRating,
-      conversionRate
-    });
-  };
-  
-  fetchRealMetrics();
-}, [profile?.id, orders.length, products.length]);
-```
-
-Then update the analyticsData useMemo to use `realMetrics` instead of random values.
-
----
-
-## Phase 6: Admin Payment Settings - Country Selection
-
-### File to Modify
-- `src/components/admin/PaymentSettingsManagement.tsx`
-
-### Database Change Required
-```sql
-ALTER TABLE payment_methods 
-ADD COLUMN IF NOT EXISTS countries TEXT[] DEFAULT ARRAY['DEFAULT'];
-```
-
-### UI Changes
-Add country multi-select in the form modal:
-```tsx
-// Add to formData state
-const [formData, setFormData] = useState({
-  ...existing fields,
-  countries: ['DEFAULT'] as string[]
-});
-
-// Add COUNTRY_OPTIONS constant
-const COUNTRY_OPTIONS = [
-  { code: 'IN', name: 'India' },
-  { code: 'BD', name: 'Bangladesh' },
-  { code: 'PK', name: 'Pakistan' },
-  { code: 'DEFAULT', name: 'Global (All Countries)' }
-];
-
-// Add to modal form (after currency select):
-<div className="space-y-2">
-  <Label className="text-gray-300">Available Countries</Label>
-  <div className="flex flex-wrap gap-2">
-    {COUNTRY_OPTIONS.map(country => (
-      <button
-        key={country.code}
-        type="button"
-        onClick={() => {
-          const current = formData.countries;
-          if (current.includes(country.code)) {
-            setFormData({...formData, countries: current.filter(c => c !== country.code)});
-          } else {
-            setFormData({...formData, countries: [...current, country.code]});
-          }
-        }}
-        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-          formData.countries.includes(country.code)
-            ? 'bg-violet-500 text-white'
-            : 'bg-white/10 text-gray-300 hover:bg-white/20'
-        }`}
-      >
-        {country.name}
-      </button>
-    ))}
-  </div>
-</div>
-```
-
----
-
-## Phase 7: UI/UX Fixes
-
-### Floating Chat Position
-**File:** `src/components/dashboard/FloatingChatWidget.tsx`
-
-Update positioning:
-```tsx
-// Current: bottom-20 lg:bottom-6 right-4 z-50
-// Change to: bottom-24 lg:bottom-6 right-4 z-[60]
-className="fixed bottom-24 lg:bottom-6 right-4 z-[60] flex flex-col items-end gap-3"
-```
-
-### Quick Stats - Sticky Positioning
-**Files:** 
-- `src/components/seller/SellerAnalytics.tsx`
-- `src/components/seller/SellerDashboard.tsx`
-
-The Quick Stats sections should scroll with content (not sticky) as they're part of the dashboard grid. No change needed here - the current layout is correct.
-
----
-
-## Technical Implementation Summary
-
-### New Files (2)
-| File | Description |
-|------|-------------|
-| `src/components/dashboard/BuyerDashboardHome.tsx` | Dashboard overview with stats, recent orders, quick actions |
-| `src/components/dashboard/BuyerReports.tsx` | Spending reports with charts, CSV export, currency formatting |
-
-### Modified Files (12)
-| File | Changes |
-|------|---------|
-| `DashboardSidebar.tsx` | Add Dashboard and Reports nav items |
-| `MobileNavigation.tsx` | Add Dashboard and Reports to sidebar nav |
-| `Dashboard.tsx` | Add routes for /home and /reports |
-| `DashboardTopBar.tsx` | Add CurrencySelector, format wallet with useCurrency |
-| `BuyerWallet.tsx` | Visual refinement to match SellerWallet exactly |
-| `BuyerAnalytics.tsx` | Remove title, replace ₹ with formatAmountOnly() |
-| `BuyerOrders.tsx` | Remove title, use currency formatting |
-| `SellerAnalytics.tsx` | Replace mock data with real database queries |
-| `PaymentSettingsManagement.tsx` | Add country multi-select |
-| `FloatingChatWidget.tsx` | Update z-index to z-[60], bottom-24 on mobile |
-
-### Database Migration (1)
-```sql
-ALTER TABLE payment_methods 
-ADD COLUMN IF NOT EXISTS countries TEXT[] DEFAULT ARRAY['DEFAULT'];
-```
-
----
-
-## Implementation Order
-
-1. **Navigation Updates** - Add Dashboard + Reports to sidebars
-2. **Create New Components** - BuyerDashboardHome + BuyerReports
-3. **Currency Integration** - Add selector to buyer header, fix all currency displays
-4. **Remove Section Titles** - Clean up both dashboards (except Notifications)
-5. **Real Data Analytics** - Replace mock values in SellerAnalytics
-6. **Admin Payment Countries** - Add country selection to payment settings
-7. **UI Fixes** - Chat positioning fix
-8. **Auto-publish** - Deploy all changes
-
-All changes will be implemented and auto-published upon approval.
+Important implementation notes
+- Avoid `.single()` for “pending check” queries. Use `.maybeSingle()` or a normal `.select('id').limit(1)` pattern to avoid false failures.
+- Treat status comparisons as normalized (trim + lowercase) in backend logic.
+- The database unique partial index is the final authority; UI checks remain for UX only.
