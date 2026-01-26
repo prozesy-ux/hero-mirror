@@ -11,6 +11,14 @@ interface WithdrawalOTPRequest {
   account_id: string;
 }
 
+// Canonical list of statuses that block new withdrawals
+const BLOCKING_STATUSES = ['pending', 'processing', 'queued', 'in_review', 'awaiting', 'requested'];
+
+function isBlockingStatus(status: string | null | undefined): boolean {
+  if (!status) return false;
+  return BLOCKING_STATUSES.includes(status.toLowerCase().trim());
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -57,13 +65,32 @@ serve(async (req) => {
       );
     }
 
+    // Check for any existing in-progress withdrawal BEFORE generating OTP
+    const { data: existingWithdrawals } = await serviceClient
+      .from("buyer_withdrawals")
+      .select("id, status")
+      .eq("user_id", userId);
+
+    const hasBlockingWithdrawal = existingWithdrawals?.some(w => isBlockingStatus(w.status));
+    
+    if (hasBlockingWithdrawal) {
+      console.log(`[BUYER-OTP] Blocked - user ${userId} already has pending withdrawal`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "You already have a pending withdrawal. Please wait for it to be processed before requesting another." 
+        }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get buyer's payment account
     const { data: account, error: accountError } = await serviceClient
       .from("buyer_payment_accounts")
       .select("account_name, payment_method_code")
       .eq("id", account_id)
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (accountError || !account) {
       return new Response(
@@ -124,8 +151,8 @@ serve(async (req) => {
     <div style="background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
       <div style="padding: 40px;">
         <div style="text-align: center; margin-bottom: 32px;">
-          <div style="display: inline-block; width: 48px; height: 48px; background: #ecfdf5; border-radius: 12px; line-height: 48px;">
-            <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <div style="display: inline-block; width: 48px; height: 48px; background: #f3e8ff; border-radius: 12px; line-height: 48px;">
+            <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </div>
         </div>
         <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Withdrawal Verification</h2>
@@ -136,7 +163,7 @@ serve(async (req) => {
           Enter this code to confirm:
         </p>
         <div style="text-align: center; padding: 24px 0;">
-          <div style="display: inline-block; background: #ecfdf5; border: 2px dashed #10b981; border-radius: 8px; padding: 20px 40px;">
+          <div style="display: inline-block; background: #f3e8ff; border: 2px dashed #8b5cf6; border-radius: 8px; padding: 20px 40px;">
             <span style="font-family: 'SF Mono', monospace; font-size: 32px; font-weight: 600; color: #1a1a1a; letter-spacing: 6px;">${otpCode}</span>
           </div>
           <p style="margin: 12px 0 0 0; font-size: 12px; color: #6b7280;">This code expires in 10 minutes</p>
