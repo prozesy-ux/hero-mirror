@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
   AreaChart, 
   Area, 
@@ -25,7 +27,6 @@ import {
   Award,
   Star,
   AlertTriangle,
-  ChevronDown,
   Download,
   Calendar as CalendarIcon
 } from 'lucide-react';
@@ -38,6 +39,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { DateRange } from 'react-day-picker';
 
 interface TrustScore {
   trust_score: number;
@@ -49,8 +52,29 @@ interface TrustScore {
 const SellerDashboard = () => {
   const { profile, wallet, products, orders, loading } = useSellerContext();
   const [trustScore, setTrustScore] = useState<TrustScore | null>(null);
-  const [chartPeriod, setChartPeriod] = useState<'7d' | '30d' | '90d'>('30d');
+  const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'custom'>('30d');
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: subDays(new Date(), 30),
+    to: new Date()
+  });
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Update date range when period changes
+  useEffect(() => {
+    const now = new Date();
+    switch (period) {
+      case '7d':
+        setDateRange({ from: subDays(now, 7), to: now });
+        break;
+      case '30d':
+        setDateRange({ from: subDays(now, 30), to: now });
+        break;
+      case '90d':
+        setDateRange({ from: subDays(now, 90), to: now });
+        break;
+    }
+  }, [period]);
 
   useEffect(() => {
     if (profile?.id) {
@@ -90,25 +114,33 @@ const SellerDashboard = () => {
     }
   };
 
-  // Calculate stats
+  // Filter orders by date range
+  const filteredOrders = useMemo(() => {
+    if (!dateRange.from || !dateRange.to) return orders;
+    return orders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      return orderDate >= dateRange.from! && orderDate <= dateRange.to!;
+    });
+  }, [orders, dateRange]);
+
+  // Calculate stats from filtered orders
   const todayStart = startOfDay(new Date());
   const todayOrders = orders.filter(o => new Date(o.created_at) >= todayStart);
   const todaySales = todayOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
-  const pendingOrders = orders.filter(o => o.status === 'pending').length;
-  const completedOrders = orders.filter(o => o.status === 'completed').length;
-  const refundedOrders = orders.filter(o => o.status === 'refunded').length;
+  const pendingOrders = filteredOrders.filter(o => o.status === 'pending').length;
+  const completedOrders = filteredOrders.filter(o => o.status === 'completed').length;
+  const refundedOrders = filteredOrders.filter(o => o.status === 'refunded').length;
 
-  // Chart data
+  // Chart data from filtered orders
   const chartData = useMemo(() => {
-    const days = chartPeriod === '7d' ? 7 : chartPeriod === '30d' ? 30 : 90;
-    const startDate = subDays(new Date(), days);
-    const dateRange = eachDayOfInterval({ start: startDate, end: new Date() });
+    if (!dateRange.from || !dateRange.to) return [];
+    const dateInterval = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
 
-    return dateRange.map(day => {
+    return dateInterval.map(day => {
       const dayStart = startOfDay(day);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
       
-      const dayOrders = orders.filter(order => {
+      const dayOrders = filteredOrders.filter(order => {
         const orderDate = new Date(order.created_at);
         return isWithinInterval(orderDate, { start: dayStart, end: dayEnd });
       });
@@ -119,7 +151,7 @@ const SellerDashboard = () => {
         orders: dayOrders.length
       };
     });
-  }, [orders, chartPeriod]);
+  }, [filteredOrders, dateRange]);
 
   // Recent orders for table
   const recentOrders = orders
@@ -136,6 +168,36 @@ const SellerDashboard = () => {
     .filter(p => p.sold_count > 0)
     .sort((a, b) => b.sold_count - a.sold_count)
     .slice(0, 5);
+
+  // Export function
+  const handleExport = () => {
+    if (filteredOrders.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+
+    const csvContent = [
+      ['Order ID', 'Product', 'Amount ($)', 'Status', 'Date'].join(','),
+      ...filteredOrders.map(order => [
+        order.id.slice(0, 8),
+        `"${order.product?.name || 'Unknown'}"`,
+        order.seller_earning.toFixed(2),
+        order.status,
+        format(new Date(order.created_at), 'yyyy-MM-dd HH:mm')
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orders-${format(dateRange.from || new Date(), 'yyyy-MM-dd')}-to-${format(dateRange.to || new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Report exported successfully!');
+  };
 
   if (loading) {
     return (
@@ -167,27 +229,75 @@ const SellerDashboard = () => {
 
   return (
     <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen space-y-6 seller-dashboard">
-      {/* Dashboard Header */}
+      {/* Dashboard Header - Shopeers Style */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 seller-heading">Dashboard</h1>
-          <p className="text-sm text-slate-500">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
-        </div>
         <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-slate-800 seller-heading">Dashboard</h1>
           {trustScore && (
-            <Badge className={`px-3 py-1.5 text-xs font-semibold ${
+            <Badge className={`px-2.5 py-1 text-xs font-semibold ${
               trustScore.trust_score >= 90 ? 'bg-emerald-100 text-emerald-700' :
               trustScore.trust_score >= 70 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
             }`}>
-              <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
-              {trustScore.trust_score}% Trust Score
+              <ShieldCheck className="w-3 h-3 mr-1" />
+              {trustScore.trust_score}%
             </Badge>
           )}
+        </div>
+        
+        {/* Date Filter + Period + Export */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Date Range Picker */}
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="bg-white border-slate-200 rounded-xl h-9 px-3 text-sm font-normal text-slate-600 hover:bg-slate-50"
+              >
+                <CalendarIcon className="w-4 h-4 mr-2 text-slate-400" />
+                {dateRange.from && dateRange.to ? (
+                  <span>
+                    {format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}
+                  </span>
+                ) : (
+                  <span>Pick a date range</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 bg-white" align="end">
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={(range) => {
+                  setDateRange(range || { from: undefined, to: undefined });
+                  if (range?.from && range?.to) {
+                    setPeriod('custom');
+                    setCalendarOpen(false);
+                  }
+                }}
+                numberOfMonths={2}
+                className="pointer-events-auto"
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* Period Dropdown */}
+          <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+            <SelectTrigger className="w-[130px] bg-white border-slate-200 rounded-xl h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Export Button */}
           <Button 
-            variant="outline" 
-            size="sm"
-            className="bg-white border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl"
-            onClick={() => navigate('/seller/analytics')}
+            onClick={handleExport}
+            className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl h-9 px-4"
           >
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -195,7 +305,7 @@ const SellerDashboard = () => {
         </div>
       </div>
 
-      {/* Stats Cards - 4 Column Grid */}
+      {/* Stats Cards - 4 Column Grid with Folder Icons */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Today's Orders */}
         <button 
@@ -205,14 +315,14 @@ const SellerDashboard = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Today's Orders</p>
-              <p className="text-3xl font-extrabold text-slate-800 mt-1 seller-stat-number">{todayOrders.length}</p>
+              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">{todayOrders.length}</p>
               <div className="flex items-center gap-1.5 mt-2">
                 <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-xs font-medium text-emerald-600">+{pendingOrders} pending</span>
+                <span className="text-[11px] font-semibold text-emerald-600">+{pendingOrders} pending</span>
               </div>
             </div>
-            <div className="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center">
-              <ShoppingBag className="h-6 w-6 text-amber-600" />
+            <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
+              <ShoppingBag className="h-6 w-6 text-orange-500" />
             </div>
           </div>
         </button>
@@ -225,14 +335,14 @@ const SellerDashboard = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Today's Sales</p>
-              <p className="text-3xl font-extrabold text-slate-800 mt-1 seller-stat-number">${todaySales.toFixed(0)}</p>
+              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">${todaySales.toFixed(0)}</p>
               <div className="flex items-center gap-1.5 mt-2">
                 <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-xs font-medium text-emerald-600">{completedOrders} completed</span>
+                <span className="text-[11px] font-semibold text-emerald-600">{completedOrders} completed</span>
               </div>
             </div>
             <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-emerald-600" />
+              <DollarSign className="h-6 w-6 text-emerald-500" />
             </div>
           </div>
         </button>
@@ -245,13 +355,13 @@ const SellerDashboard = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Balance</p>
-              <p className="text-3xl font-extrabold text-slate-800 mt-1 seller-stat-number">${(wallet?.balance || 0).toFixed(0)}</p>
+              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">${(wallet?.balance || 0).toFixed(0)}</p>
               <div className="flex items-center gap-1.5 mt-2">
-                <span className="text-xs font-medium text-slate-500">${(wallet?.pending_balance || 0).toFixed(0)} pending</span>
+                <span className="text-[11px] font-medium text-slate-500">${(wallet?.pending_balance || 0).toFixed(0)} pending</span>
               </div>
             </div>
             <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-blue-600" />
+              <TrendingUp className="h-6 w-6 text-blue-500" />
             </div>
           </div>
         </button>
@@ -261,20 +371,20 @@ const SellerDashboard = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Returns & Refunds</p>
-              <p className="text-3xl font-extrabold text-slate-800 mt-1 seller-stat-number">{refundedOrders}</p>
+              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">{refundedOrders}</p>
               <div className="flex items-center gap-1.5 mt-2">
                 {refundedOrders > 0 ? (
                   <>
                     <TrendingDown className="h-3.5 w-3.5 text-red-500" />
-                    <span className="text-xs font-medium text-red-600">Needs attention</span>
+                    <span className="text-[11px] font-semibold text-red-600">Needs attention</span>
                   </>
                 ) : (
-                  <span className="text-xs font-medium text-emerald-600">All clear!</span>
+                  <span className="text-[11px] font-semibold text-emerald-600">All clear!</span>
                 )}
               </div>
             </div>
             <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center">
-              <Package className="h-6 w-6 text-red-600" />
+              <Package className="h-6 w-6 text-red-500" />
             </div>
           </div>
         </div>
@@ -289,22 +399,12 @@ const SellerDashboard = () => {
               <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
               <p className="text-sm text-slate-500">Revenue over time</p>
             </div>
-            <Select value={chartPeriod} onValueChange={(v) => setChartPeriod(v as typeof chartPeriod)}>
-              <SelectTrigger className="w-[130px] bg-slate-50 border-slate-200 rounded-xl text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Last 7 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="90d">Last 90 days</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="dashboardSalesGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
                     <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                   </linearGradient>
@@ -329,7 +429,8 @@ const SellerDashboard = () => {
                     borderRadius: 12, 
                     border: 'none', 
                     boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                    fontSize: 12
+                    fontSize: 12,
+                    backgroundColor: 'white'
                   }}
                   formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
                 />
@@ -338,7 +439,7 @@ const SellerDashboard = () => {
                   dataKey="sales" 
                   stroke="#3B82F6" 
                   strokeWidth={2.5}
-                  fill="url(#salesGradient)" 
+                  fill="url(#dashboardSalesGradient)" 
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -434,163 +535,138 @@ const SellerDashboard = () => {
               <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
-
-          {recentOrders.length === 0 ? (
-            <div className="p-10 text-center">
-              <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm text-slate-500">No orders yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Order ID</th>
-                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Product</th>
-                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3 hidden sm:table-cell">Date</th>
-                    <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Amount</th>
-                    <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Status</th>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-4">Order ID</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-4">Product</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-4">Amount</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-4">Date</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-4">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {recentOrders.length > 0 ? recentOrders.map(order => (
+                  <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="p-4">
+                      <span className="text-sm font-medium text-slate-800">#{order.id.slice(0, 8)}</span>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-sm text-slate-600 line-clamp-1">{order.product?.name || 'Unknown'}</span>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-sm font-semibold text-slate-800">${Number(order.seller_earning).toFixed(2)}</span>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-sm text-slate-500">{format(new Date(order.created_at), 'MMM d, HH:mm')}</span>
+                    </td>
+                    <td className="p-4">
+                      {getStatusBadge(order.status || 'pending')}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {recentOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-5 py-3">
-                        <span className="text-sm font-medium text-slate-700">#{order.id.slice(-6).toUpperCase()}</span>
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {order.product?.icon_url ? (
-                              <img src={order.product.icon_url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <Package className="w-4 h-4 text-slate-400" />
-                            )}
-                          </div>
-                          <span className="text-sm text-slate-700 truncate max-w-[120px]">
-                            {order.product?.name || 'Product'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3 hidden sm:table-cell">
-                        <span className="text-sm text-slate-500">{format(new Date(order.created_at), 'MMM d, h:mm a')}</span>
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <span className="text-sm font-semibold text-slate-800">${Number(order.seller_earning).toFixed(2)}</span>
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        {getStatusBadge(order.status)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                )) : (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-slate-500">
+                      No orders yet
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Low Stock / Out of Stock */}
+        {/* Low Stock Alert */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h3 className="text-base font-semibold text-slate-800">Low Stock Alert</h3>
-              <p className="text-sm text-slate-500">Products need restocking</p>
-            </div>
+          <div className="flex items-center gap-2 mb-5">
             <AlertTriangle className="w-5 h-5 text-amber-500" />
+            <h3 className="text-base font-semibold text-slate-800">Low Stock</h3>
           </div>
-
-          {lowStockProducts.length === 0 ? (
-            <div className="py-8 text-center">
-              <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">All products in stock</p>
-            </div>
-          ) : (
+          {lowStockProducts.length > 0 ? (
             <div className="space-y-3">
-              {lowStockProducts.map((product) => (
-                <div key={product.id} className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border border-amber-100">
-                  <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {product.icon_url ? (
-                      <img src={product.icon_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <Package className="w-5 h-5 text-slate-400" />
-                    )}
+              {lowStockProducts.map(product => (
+                <div key={product.id} className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl">
+                  <div className="w-10 h-10 rounded-lg bg-white border border-amber-200 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-amber-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-800 truncate">{product.name}</p>
-                    <p className="text-xs text-amber-600 font-medium">
-                      {(product.stock ?? 0) === 0 ? 'Out of stock' : `${product.stock} left`}
-                    </p>
+                    <p className="text-xs text-amber-600 font-semibold">{product.stock ?? 0} left</p>
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm text-slate-500">All products in stock</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Best Selling Products */}
-      {bestSellers.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between p-5 border-b border-slate-100">
-            <div>
-              <h3 className="text-base font-semibold text-slate-800">Best Selling Products</h3>
-              <p className="text-sm text-slate-500">Top performers this month</p>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate('/seller/products')}
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
-            >
-              View All
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
+      {/* Best Sellers Row */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-base font-semibold text-slate-800">Best Selling Products</h3>
+            <p className="text-sm text-slate-500">Top performers this period</p>
           </div>
-
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/seller/products')}
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
+          >
+            View All
+            <ArrowRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+        
+        {bestSellers.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">#</th>
-                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Product</th>
-                  <th className="text-center text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Sold</th>
-                  <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Revenue</th>
-                  <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3 hidden sm:table-cell">Rating</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-3">#</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-3">Product</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-3">Sold</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-3">Price</th>
+                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-3">Rating</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {bestSellers.map((product, index) => (
+                {bestSellers.map((product, i) => (
                   <tr key={product.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3">
-                      <span className="text-sm font-bold text-slate-400">{index + 1}</span>
+                    <td className="p-3">
+                      <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
+                        {i + 1}
+                      </span>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="p-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden">
                           {product.icon_url ? (
                             <img src={product.icon_url} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <Package className="w-5 h-5 text-slate-400" />
                           )}
                         </div>
-                        <span className="text-sm font-medium text-slate-700 truncate max-w-[150px]">
-                          {product.name}
-                        </span>
+                        <span className="text-sm font-medium text-slate-800 line-clamp-1">{product.name}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-center">
+                    <td className="p-3">
                       <span className="text-sm font-semibold text-slate-800">{product.sold_count}</span>
                     </td>
-                    <td className="px-5 py-3 text-right">
-                      <span className="text-sm font-semibold text-emerald-600">
-                        ${(product.sold_count * product.price * 0.9).toFixed(2)}
-                      </span>
+                    <td className="p-3">
+                      <span className="text-sm text-slate-600">${product.price}</span>
                     </td>
-                    <td className="px-5 py-3 text-right hidden sm:table-cell">
-                      <div className="flex items-center justify-end gap-0.5">
-                        {[1, 2, 3, 4, 5].map(i => (
-                          <Star key={i} className={`h-3.5 w-3.5 ${i <= 4 ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
-                        ))}
+                    <td className="p-3">
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        <span className="text-sm text-slate-600">4.5</span>
                       </div>
                     </td>
                   </tr>
@@ -598,8 +674,13 @@ const SellerDashboard = () => {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-8">
+            <Award className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm text-slate-500">No sales yet</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
