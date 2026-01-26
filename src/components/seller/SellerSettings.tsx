@@ -779,16 +779,22 @@ const SellerSettings = () => {
                 checked={(profile as any)?.two_factor_enabled !== false}
                 onCheckedChange={async (checked) => {
                   if (!profile?.id) return;
+                  setSaving(true);
                   try {
+                    console.log('[2FA_TOGGLE] Updating seller 2FA:', { checked, profile_id: profile.id });
                     const { error } = await supabase
                       .from('seller_profiles')
                       .update({ two_factor_enabled: checked })
                       .eq('id', profile.id);
                     if (error) throw error;
-                    refreshProfile();
+                    console.log('[2FA_TOGGLE] Update successful');
+                    await refreshProfile();
                     toast.success(checked ? '2FA protection enabled' : '2FA protection disabled');
                   } catch (err: any) {
+                    console.error('[2FA_TOGGLE] Error:', err);
                     toast.error(err.message || 'Failed to update 2FA setting');
+                  } finally {
+                    setSaving(false);
                   }
                 }}
                 disabled={saving}
