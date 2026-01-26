@@ -1,0 +1,2 @@
+ALTER TABLE payment_methods 
+ADD COLUMN IF NOT EXISTS countries TEXT[] DEFAULT ARRAY['DEFAULT'];

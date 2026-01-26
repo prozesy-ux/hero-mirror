@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { DollarSign, ShoppingBag, TrendingUp, TrendingDown, Calendar, Download, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ interface Order {
 }
 
 const BuyerAnalytics = () => {
+  const { formatAmountOnly } = useCurrency();
   const { user } = useAuthContext();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,13 +197,8 @@ const BuyerAnalytics = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800">Spending Analytics</h1>
-          <p className="text-sm text-slate-500">Track your purchase history and spending patterns</p>
-        </div>
-
+      {/* Header - No Title */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Date Range Picker */}
           <Popover>
@@ -252,7 +249,7 @@ const BuyerAnalytics = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500">Total Spent</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">₹{stats.totalSpent.toFixed(0)}</p>
+              <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(stats.totalSpent)}</p>
               {stats.spentChange !== 0 && (
                 <div className="flex items-center gap-1 mt-2">
                   {stats.spentChange > 0 ? (
@@ -291,7 +288,7 @@ const BuyerAnalytics = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500">Avg Order Value</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">₹{stats.avgOrderValue.toFixed(0)}</p>
+              <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(stats.avgOrderValue)}</p>
             </div>
             <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-violet-600" />
@@ -304,7 +301,7 @@ const BuyerAnalytics = () => {
             <div>
               <p className="text-xs font-medium text-slate-500">This Month</p>
               <p className="text-2xl font-bold text-slate-800 mt-1">
-                ₹{orders.filter(o => new Date(o.created_at) >= startOfMonth(new Date())).reduce((s, o) => s + o.amount, 0)}
+                {formatAmountOnly(orders.filter(o => new Date(o.created_at) >= startOfMonth(new Date())).reduce((s, o) => s + o.amount, 0))}
               </p>
             </div>
             <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
@@ -340,7 +337,7 @@ const BuyerAnalytics = () => {
                 />
                 <Tooltip 
                   formatter={(value: any, name: any) => [
-                    name === 'percentage' ? `${value}%` : `₹${value}`,
+                    name === 'percentage' ? `${value}%` : formatAmountOnly(value),
                     name === 'percentage' ? 'Relative' : 'Amount'
                   ]}
                   contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0' }}
@@ -380,7 +377,7 @@ const BuyerAnalytics = () => {
                     <Cell key={index} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: any) => `₹${value}`} />
+                <Tooltip formatter={(value: any) => formatAmountOnly(value)} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -400,8 +397,8 @@ const BuyerAnalytics = () => {
             <BarChart data={monthlyTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="#94A3B8" />
-              <YAxis tick={{ fontSize: 11 }} stroke="#94A3B8" tickFormatter={(v) => `₹${v}`} />
-              <Tooltip formatter={(value: any) => `₹${value}`} />
+              <YAxis tick={{ fontSize: 11 }} stroke="#94A3B8" tickFormatter={(v) => formatAmountOnly(v)} />
+              <Tooltip formatter={(value: any) => formatAmountOnly(value)} />
               <Bar dataKey="amount" fill="#10B981" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

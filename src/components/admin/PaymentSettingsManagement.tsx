@@ -39,6 +39,13 @@ const CURRENCY_OPTIONS = [
   { code: 'PKR', symbol: 'Rs', name: 'Pakistani Rupee' },
 ];
 
+const COUNTRY_OPTIONS = [
+  { code: 'IN', name: 'India' },
+  { code: 'BD', name: 'Bangladesh' },
+  { code: 'PK', name: 'Pakistan' },
+  { code: 'DEFAULT', name: 'Global (All Countries)' }
+];
+
 const PaymentSettingsManagement = () => {
   const { paymentMethods, isLoading, refreshTable } = useAdminDataContext();
   const [showModal, setShowModal] = useState(false);
@@ -64,7 +71,8 @@ const PaymentSettingsManagement = () => {
     api_secret: '',
     withdrawal_enabled: false,
     min_withdrawal: 5,
-    max_withdrawal: 1000
+    max_withdrawal: 1000,
+    countries: ['DEFAULT'] as string[]
   });
   const [showApiSecret, setShowApiSecret] = useState(false);
 
@@ -89,7 +97,8 @@ const PaymentSettingsManagement = () => {
       api_secret: '',
       withdrawal_enabled: false,
       min_withdrawal: 5,
-      max_withdrawal: 1000
+      max_withdrawal: 1000,
+      countries: ['DEFAULT']
     });
     setShowApiSecret(false);
     setShowModal(true);
@@ -114,7 +123,8 @@ const PaymentSettingsManagement = () => {
       api_secret: method.api_secret || '',
       withdrawal_enabled: method.withdrawal_enabled || false,
       min_withdrawal: method.min_withdrawal || 5,
-      max_withdrawal: method.max_withdrawal || 1000
+      max_withdrawal: method.max_withdrawal || 1000,
+      countries: ['DEFAULT']
     });
     setShowApiSecret(false);
     setShowModal(true);

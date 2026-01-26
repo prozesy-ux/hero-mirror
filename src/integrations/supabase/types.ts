@@ -901,6 +901,7 @@ export type Database = {
           api_key: string | null
           api_secret: string | null
           code: string
+          countries: string[] | null
           created_at: string | null
           currency_code: string | null
           display_order: number | null
@@ -923,6 +924,7 @@ export type Database = {
           api_key?: string | null
           api_secret?: string | null
           code: string
+          countries?: string[] | null
           created_at?: string | null
           currency_code?: string | null
           display_order?: number | null
@@ -945,6 +947,7 @@ export type Database = {
           api_key?: string | null
           api_secret?: string | null
           code?: string
+          countries?: string[] | null
           created_at?: string | null
           currency_code?: string | null
           display_order?: number | null
