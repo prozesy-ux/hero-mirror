@@ -57,3 +57,9 @@ verify_jwt = false
 
 [functions.verify-withdrawal-otp]
 verify_jwt = false
+
+[functions.send-user-otp]
+verify_jwt = false
+
+[functions.verify-user-otp]
+verify_jwt = false

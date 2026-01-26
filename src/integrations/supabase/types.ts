@@ -842,6 +842,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_pro: boolean | null
+          two_factor_enabled: boolean | null
           updated_at: string | null
           user_id: string
           username: string | null
@@ -853,6 +854,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_pro?: boolean | null
+          two_factor_enabled?: boolean | null
           updated_at?: string | null
           user_id: string
           username?: string | null
@@ -864,6 +866,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_pro?: boolean | null
+          two_factor_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string
           username?: string | null
@@ -1708,6 +1711,7 @@ export type Database = {
           store_video_url: string | null
           total_orders: number | null
           total_sales: number | null
+          two_factor_enabled: boolean | null
           updated_at: string | null
           user_id: string
         }
@@ -1739,6 +1743,7 @@ export type Database = {
           store_video_url?: string | null
           total_orders?: number | null
           total_sales?: number | null
+          two_factor_enabled?: boolean | null
           updated_at?: string | null
           user_id: string
         }
@@ -1770,6 +1775,7 @@ export type Database = {
           store_video_url?: string | null
           total_orders?: number | null
           total_sales?: number | null
+          two_factor_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string
         }
@@ -2052,6 +2058,36 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           verified_at?: string | null
+        }
+        Relationships: []
+      }
+      user_otps: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          otp_code: string
+          user_id: string
+          verified: boolean | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          otp_code: string
+          user_id: string
+          verified?: boolean | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          user_id?: string
+          verified?: boolean | null
         }
         Relationships: []
       }

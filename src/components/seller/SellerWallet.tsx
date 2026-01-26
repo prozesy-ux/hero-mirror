@@ -370,7 +370,7 @@ const SellerWallet = () => {
     setAddStep(1);
   };
 
-  // Send OTP for withdrawal verification
+  // Send OTP for withdrawal verification (if 2FA enabled) or process directly
   const handleWithdraw = async () => {
     if (!profile || !withdrawAmount || !selectedAccountForWithdraw) {
       toast.error('Please select an account');
@@ -409,51 +409,90 @@ const SellerWallet = () => {
       return;
     }
 
-    setOTPSending(true);
+    // Check if 2FA is enabled (default true if undefined)
+    const is2FAEnabled = (profile as any)?.two_factor_enabled !== false;
 
-    try {
-      // Get current session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Please log in again');
-        return;
-      }
+    if (is2FAEnabled) {
+      // Send OTP for verification
+      setOTPSending(true);
 
-      // Call send-withdrawal-otp edge function
-      const response = await supabase.functions.invoke('send-withdrawal-otp', {
-        body: { 
-          amount: withdrawAmount, 
-          account_id: selectedAccountForWithdraw 
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast.error('Please log in again');
+          return;
         }
-      });
 
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to send OTP');
+        const response = await supabase.functions.invoke('send-withdrawal-otp', {
+          body: { 
+            amount: withdrawAmount, 
+            account_id: selectedAccountForWithdraw 
+          }
+        });
+
+        if (response.error) {
+          throw new Error(response.error.message || 'Failed to send OTP');
+        }
+
+        if (!response.data?.success) {
+          throw new Error(response.data?.error || 'Failed to send OTP');
+        }
+
+        setPendingWithdrawalData({
+          amount: withdrawAmount,
+          accountId: selectedAccountForWithdraw
+        });
+        
+        if (response.data.expires_at) {
+          setOTPExpiry(new Date(response.data.expires_at));
+        }
+
+        setShowWithdrawDialog(false);
+        setShowOTPModal(true);
+        toast.success('OTP sent to your email');
+      } catch (error: any) {
+        console.error('OTP send error:', error);
+        toast.error(error.message || 'Failed to send OTP');
+      } finally {
+        setOTPSending(false);
       }
+    } else {
+      // 2FA disabled - process withdrawal directly
+      setSubmitting(true);
+      try {
+        const { error } = await supabase
+          .from('seller_withdrawals')
+          .insert({
+            seller_id: profile.id,
+            amount: withdrawAmount,
+            payment_method: selectedAccount.payment_method_code,
+            account_details: `${selectedAccount.account_name} - ${selectedAccount.account_number}${selectedAccount.bank_name ? ` (${selectedAccount.bank_name})` : ''}`,
+            status: 'pending'
+          });
 
-      if (!response.data?.success) {
-        throw new Error(response.data?.error || 'Failed to send OTP');
+        if (error) throw error;
+
+        // Deduct from balance
+        const { error: walletError } = await supabase
+          .from('seller_wallets')
+          .update({ balance: (wallet?.balance || 0) - withdrawAmount })
+          .eq('seller_id', profile.id);
+
+        if (walletError) {
+          console.error('Wallet update error:', walletError);
+        }
+
+        toast.success('Withdrawal request submitted!');
+        setShowWithdrawDialog(false);
+        setWithdrawAmount(10);
+        setSelectedAccountForWithdraw(null);
+        refreshWallet();
+        refreshWithdrawals();
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to submit withdrawal');
+      } finally {
+        setSubmitting(false);
       }
-
-      // Store pending withdrawal data
-      setPendingWithdrawalData({
-        amount: withdrawAmount,
-        accountId: selectedAccountForWithdraw
-      });
-      
-      if (response.data.expires_at) {
-        setOTPExpiry(new Date(response.data.expires_at));
-      }
-
-      // Close withdraw dialog, open OTP modal
-      setShowWithdrawDialog(false);
-      setShowOTPModal(true);
-      toast.success('OTP sent to your email');
-    } catch (error: any) {
-      console.error('OTP send error:', error);
-      toast.error(error.message || 'Failed to send OTP');
-    } finally {
-      setOTPSending(false);
     }
   };
 

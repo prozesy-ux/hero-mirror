@@ -868,25 +868,72 @@ const ProfileSection = () => {
                 </div>
                 <div className="text-left">
                   <span className="text-sm font-medium text-gray-900 block">Two-Factor Authentication</span>
-                  <span className="text-xs text-gray-500">Secure your account with extra verification</span>
+                  <span className="text-xs text-gray-500">
+                    {(profile as any)?.two_factor_enabled !== false ? 'Enabled - Extra verification for sensitive actions' : 'Disabled'}
+                  </span>
                 </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
               <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-emerald-100 rounded-lg">
-                      <Shield className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-emerald-900">Email Verification Active</h4>
-                      <p className="text-sm text-emerald-700 mt-1">
-                        Important account actions are protected with email verification codes sent to your registered email address.
-                      </p>
+                {/* Toggle Switch */}
+                <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100">
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 text-sm">Enable 2FA Protection</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      When enabled, sensitive actions require email OTP verification
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={(profile as any)?.two_factor_enabled !== false}
+                    onCheckedChange={async (checked) => {
+                      if (!user) return;
+                      try {
+                        const { error } = await supabase
+                          .from('profiles')
+                          .update({ two_factor_enabled: checked })
+                          .eq('user_id', user.id);
+                        if (error) throw error;
+                        toast.success(checked ? '2FA protection enabled' : '2FA protection disabled');
+                        window.location.reload();
+                      } catch (err: any) {
+                        toast.error(err.message || 'Failed to update 2FA setting');
+                      }
+                    }}
+                    disabled={loading}
+                  />
+                </div>
+                
+                {/* Status Info */}
+                {(profile as any)?.two_factor_enabled !== false ? (
+                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-emerald-100 rounded-lg">
+                        <Shield className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-emerald-900">Email Verification Active</h4>
+                        <p className="text-sm text-emerald-700 mt-1">
+                          Important account actions are protected with email verification codes sent to your registered email address.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-amber-100 rounded-lg">
+                        <AlertTriangle className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-amber-900">Protection Disabled</h4>
+                        <p className="text-sm text-amber-700 mt-1">
+                          Warning: Sensitive actions will proceed without OTP verification. We recommend keeping 2FA enabled.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                   <p className="text-sm font-medium text-gray-700 mb-3">Protected actions include:</p>

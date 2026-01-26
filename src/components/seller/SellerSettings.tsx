@@ -760,27 +760,74 @@ const SellerSettings = () => {
               </div>
               <div className="text-left">
                 <p className="font-semibold text-slate-900 text-sm sm:text-base">Two-Factor Authentication</p>
-                <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">Add an extra layer of security for withdrawals</p>
+                <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">
+                  {(profile as any)?.two_factor_enabled !== false ? 'Enabled - OTP required for withdrawals' : 'Disabled - Withdrawals without OTP'}
+                </p>
               </div>
             </div>
           </AccordionTrigger>
           <AccordionContent className="pb-5 sm:pb-6 space-y-4">
-            <div className="p-4 rounded-xl bg-violet-50 border border-violet-100">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-violet-100 rounded-lg">
-                  <Shield className="w-5 h-5 text-violet-600" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-violet-900">Withdrawal Protection Active</h4>
-                  <p className="text-sm text-violet-700 mt-1">
-                    All withdrawals require email OTP verification. A 6-digit code is sent to your registered email before any withdrawal can be processed.
-                  </p>
-                </div>
+            {/* Toggle Switch */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="flex-1">
+                <p className="font-medium text-slate-900 text-sm sm:text-base">Enable 2FA Protection</p>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  When enabled, all withdrawals require email OTP verification
+                </p>
               </div>
+              <Switch 
+                checked={(profile as any)?.two_factor_enabled !== false}
+                onCheckedChange={async (checked) => {
+                  if (!profile?.id) return;
+                  try {
+                    const { error } = await supabase
+                      .from('seller_profiles')
+                      .update({ two_factor_enabled: checked })
+                      .eq('id', profile.id);
+                    if (error) throw error;
+                    refreshProfile();
+                    toast.success(checked ? '2FA protection enabled' : '2FA protection disabled');
+                  } catch (err: any) {
+                    toast.error(err.message || 'Failed to update 2FA setting');
+                  }
+                }}
+                disabled={saving}
+              />
             </div>
             
+            {/* Status Info */}
+            {(profile as any)?.two_factor_enabled !== false ? (
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-emerald-100 rounded-lg">
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-emerald-900">Protection Active</h4>
+                    <p className="text-sm text-emerald-700 mt-1">
+                      A 6-digit OTP code will be sent to your email before any withdrawal can be processed.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-amber-100 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-amber-900">Protection Disabled</h4>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Warning: Withdrawals will process without OTP verification. We recommend keeping 2FA enabled for security.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <p className="text-sm font-medium text-slate-700 mb-3">Security features enabled:</p>
+              <p className="text-sm font-medium text-slate-700 mb-3">Security features when 2FA is enabled:</p>
               <ul className="space-y-2">
                 <li className="flex items-center gap-2 text-sm text-slate-600">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
