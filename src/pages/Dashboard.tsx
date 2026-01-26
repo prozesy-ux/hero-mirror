@@ -20,6 +20,7 @@ import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import { SearchProvider } from '@/contexts/SearchContext';
 import { SidebarProvider, useSidebarContext } from '@/contexts/SidebarContext';
 import { FloatingChatProvider } from '@/contexts/FloatingChatContext';
+import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
@@ -84,13 +85,15 @@ const DashboardLayout = () => {
 
 const Dashboard = () => {
   return (
-    <SidebarProvider>
-      <SearchProvider>
-        <FloatingChatProvider>
-          <DashboardLayout />
-        </FloatingChatProvider>
-      </SearchProvider>
-    </SidebarProvider>
+    <CurrencyProvider>
+      <SidebarProvider>
+        <SearchProvider>
+          <FloatingChatProvider>
+            <DashboardLayout />
+          </FloatingChatProvider>
+        </SearchProvider>
+      </SidebarProvider>
+    </CurrencyProvider>
   );
 };
 
