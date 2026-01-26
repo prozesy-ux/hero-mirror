@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sparkles, ShoppingBag, Wallet, MessageSquare, User, Bell, Menu, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { Sparkles, ShoppingBag, Wallet, MessageSquare, User, Bell, Menu, ShoppingCart, Heart, BarChart3, ExternalLink } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -128,11 +128,24 @@ const MobileNavigation = () => {
     fetchUnreadCount();
   };
 
-  const navItems = [
+  // Bottom nav items (limited for mobile)
+  const bottomNavItems = [
     { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompt' },
     { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Market' },
-    { to: '/dashboard/billing', icon: Wallet, label: 'Wallet' },
+    { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'Chat' },
+  ];
+
+  // Full sidebar nav items
+  const sidebarNavItems = [
+    { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
+    { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Marketplace' },
+    { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
+    { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
+    { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
+    { to: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
+    { to: '/dashboard/chat', icon: MessageSquare, label: 'Support' },
     { to: '/dashboard/profile', icon: User, label: 'Profile' },
   ];
 
@@ -159,11 +172,31 @@ const MobileNavigation = () => {
                 </Link>
               </div>
               
-              {/* Spacer */}
-              <div className="flex-1" />
+              {/* Navigation Links */}
+              <nav className="p-3 space-y-1">
+                {sidebarNavItems.map((item) => {
+                  const active = isActive(item.to);
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-colors ${
+                        active 
+                          ? 'bg-violet-100 text-violet-700 font-medium' 
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon size={20} />
+                      <span className="text-sm">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
               
               {/* Ads Agency Card */}
-              <div className="p-3 mt-auto">
+              <div className="p-3 mt-auto absolute bottom-0 left-0 right-0">
                 <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
                   {/* Logos Row */}
                   <div className="flex items-center justify-center gap-4 mb-3">
@@ -192,7 +225,7 @@ const MobileNavigation = () => {
           </Sheet>
           
           {/* Nav Items */}
-          {navItems.map((item) => {
+          {bottomNavItems.map((item) => {
             const active = isActive(item.to);
             const Icon = item.icon;
             
@@ -293,11 +326,11 @@ const MobileNavigation = () => {
               {/* Footer */}
               {notifications.length > 0 && (
                 <Link 
-                  to="/dashboard/chat"
+                  to="/dashboard/notifications"
                   onClick={() => setShowDropdown(false)}
                   className="block text-center py-2.5 text-sm text-violet-600 hover:text-violet-700 font-medium border-t border-gray-100 bg-gray-50"
                 >
-                  View all messages
+                  View all notifications
                 </Link>
               )}
             </DropdownMenuContent>
