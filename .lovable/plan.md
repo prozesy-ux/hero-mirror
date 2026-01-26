@@ -1,234 +1,322 @@
 
-# Fix: Withdrawal OTP Not Opening - Missing 2FA Field in Profile
 
-## Root Cause Identified
+# Amazon Seller Central Dashboard Recreation
 
-After investigating the code flow, I found the exact issue:
+## Overview
 
-### The Problem: Missing Field in TypeScript Interface
-
-**File: `src/contexts/SellerContext.tsx` (lines 7-18)**
-
-The `SellerProfile` interface is missing the `two_factor_enabled` field:
-
-```typescript
-interface SellerProfile {
-  id: string;
-  user_id: string;
-  store_name: string;
-  store_description: string | null;
-  store_logo_url: string | null;
-  is_verified: boolean;
-  is_active: boolean;
-  commission_rate: number;
-  total_sales: number;
-  total_orders: number;
-  // ❌ MISSING: two_factor_enabled field!
-}
-```
-
-**File: `src/components/seller/SellerWallet.tsx` (line 415)**
-
-The withdrawal handler checks for 2FA status:
-
-```typescript
-const is2FAEnabled = (profile as any)?.two_factor_enabled !== false;
-```
-
-Because the field is missing from the interface:
-- The value is `undefined`
-- `undefined !== false` evaluates to `true`
-- The code ALWAYS tries to send OTP, even when it shouldn't
-- BUT the actual backend data has `two_factor_enabled: true` for all sellers
-
-### Why This Breaks the Flow
-
-1. **Database Reality**: All sellers have `two_factor_enabled: true` (confirmed via query)
-2. **BFF Returns It**: The `bff-seller-dashboard` fetches `seller_profiles` with `select('*')` which includes this field
-3. **TypeScript Strips It**: The frontend interface doesn't define it, so TypeScript doesn't recognize it
-4. **Code Uses `any`**: The check uses `(profile as any)` to bypass TypeScript, but the field is still undefined
-5. **Always Defaults to True**: `undefined !== false` is `true`, so OTP is always attempted
-
-### Additional Issue: API Key Was Invalid
-
-You provided a new Resend API key: `re_EomoCGaJ_6RqyUFzXc1UR1SSquuW5rYt9`
-
-The old key was returning 401 errors, which we've already fixed by updating the secret.
+This plan recreates the Amazon Seller Central dashboard UI exactly as shown in the Behance reference, matching the card layouts, typography, spacing, colors, and visual balance precisely.
 
 ---
 
-## Solution Plan
+## Reference Design Analysis
 
-### Step 1: Add Missing Field to SellerProfile Interface
+### Key Visual Elements from Behance
 
-**File: `src/contexts/SellerContext.tsx`**
+| Element | Design Specification |
+|---------|---------------------|
+| **Background** | Light gray (#F7F8FA) |
+| **Cards** | Pure white, rounded-xl (~16px), subtle shadow |
+| **Primary Color** | Amazon Orange (#FF9900) |
+| **Text Colors** | Dark gray (#1F2937) for headings, lighter gray for labels |
+| **Font** | Clean sans-serif (Inter/Poppins style) |
+| **Card Padding** | 20-24px internal padding |
+| **Grid Gap** | 16-20px between cards |
 
-Update the interface to include the 2FA field:
-
-```typescript
-interface SellerProfile {
-  id: string;
-  user_id: string;
-  store_name: string;
-  store_description: string | null;
-  store_logo_url: string | null;
-  is_verified: boolean;
-  is_active: boolean;
-  commission_rate: number;
-  total_sales: number;
-  total_orders: number;
-  two_factor_enabled: boolean;  // ✅ ADD THIS
-}
-```
-
-### Step 2: Verify BFF Returns the Field
-
-**File: `supabase/functions/bff-seller-dashboard/index.ts` (line 41)**
-
-The BFF already fetches all fields correctly:
-
-```typescript
-const { data: profile, error: profileError } = await supabase
-  .from('seller_profiles')
-  .select('*')  // ✅ Already includes two_factor_enabled
-  .eq('user_id', userId)
-  .single();
-```
-
-No changes needed here.
-
-### Step 3: Improve 2FA Check Logic
-
-**File: `src/components/seller/SellerWallet.tsx` (line 415)**
-
-Improve the check to be more explicit:
-
-```typescript
-// Old (buggy):
-const is2FAEnabled = (profile as any)?.two_factor_enabled !== false;
-
-// New (explicit):
-const is2FAEnabled = profile.two_factor_enabled === true;
-```
-
-Now that the interface includes the field, we don't need `as any` and can use proper type checking.
-
-### Step 4: Add Console Logging for Debugging
-
-Add debug logs to confirm the value flows through:
-
-```typescript
-console.log('[WITHDRAW] Profile 2FA status:', {
-  two_factor_enabled: profile.two_factor_enabled,
-  is2FAEnabled
-});
-```
-
----
-
-## Expected Behavior After Fix
-
-### When 2FA is Enabled (Default)
-1. User clicks "Withdraw" → Console shows "2FA enabled - sending OTP..."
-2. Edge function receives request → Generates 6-digit OTP
-3. OTP stored in `withdrawal_otps` table
-4. Email sent via Resend (with valid API key)
-5. Frontend receives success response
-6. **OTP modal opens** with input field
-7. User receives email with code
-8. User enters code → Withdrawal processed
-
-### When 2FA is Disabled
-1. User clicks "Withdraw" → Console shows "2FA disabled - processing direct withdrawal..."
-2. Withdrawal created immediately (no OTP)
-3. Balance deducted
-4. Success toast shown
-
----
-
-## Technical Flow Diagram
+### Layout Structure
 
 ```text
-User Clicks "Withdraw"
-        │
-        ▼
-Check profile.two_factor_enabled
-        │
-   ┌────┴─────┐
-   │          │
-   ▼          ▼
- true       false
-   │          │
-   │    Create withdrawal directly
-   │    (skip OTP)
-   │          │
-   ▼          ▼
-Call send-withdrawal-otp
-   │
-   ▼
-Generate OTP + Store in DB
-   │
-   ▼
-Send Email via Resend
-   │
-   ▼
-✅ Open OTP Modal
-   │
-   ▼
-User enters 6-digit code
-   │
-   ▼
-Verify OTP + Process withdrawal
++-----------------------------------------------+
+|  Top Stats Row (4 cards)                       |
+|  [Today's Order] [Today's Sale] [Balance] [Returns]|
++---------------------------+-------------------+
+|  Sales Chart (with month  |  Quick Stats     |
+|  dropdown) - 2/3 width    |  2x2 grid        |
++---------------------------+-------------------+
+|  Order Details Table      |  Out of Stock    |
+|  (with View All + month)  |  Product Card    |
++---------------------------+-------------------+
 ```
 
 ---
 
-## Files to Modify
+## Implementation Plan
 
-| File | Change | Lines |
-|------|--------|-------|
-| `src/contexts/SellerContext.tsx` | Add `two_factor_enabled: boolean` to `SellerProfile` interface | 7-18 |
-| `src/components/seller/SellerWallet.tsx` | Improve 2FA check logic, add debug logging | 415-420 |
+### File to Create/Modify
 
----
-
-## Why This Will Fix the Issue
-
-1. **Proper Data Flow**: The `two_factor_enabled` field will flow from database → BFF → frontend properly
-2. **Type Safety**: TypeScript will recognize the field, no need for `as any` casting
-3. **Correct Logic**: The check will properly evaluate the boolean value instead of defaulting to `true`
-4. **Valid API Key**: The new Resend key will allow emails to send successfully
-5. **Better Debugging**: Console logs will show the actual 2FA status for troubleshooting
+| File | Action |
+|------|--------|
+| `src/components/seller/SellerDashboard.tsx` | Complete rewrite to match Behance design |
 
 ---
 
-## Testing Checklist
+## Detailed Component Structure
 
-After implementing the fix:
+### 1. Top Stats Row (4 Cards)
 
-✅ **Test 1: With 2FA Enabled (Default)**
-- Go to Seller Dashboard → Wallet tab
-- Click "Withdraw" button
-- Select account and amount
-- **Expected**: Console shows "2FA enabled", OTP modal opens, email received
+Each card follows this exact structure from the reference:
 
-✅ **Test 2: Check Console Logs**
-- Open browser DevTools → Console tab
-- Look for: `[WITHDRAW] Profile 2FA status: { two_factor_enabled: true, is2FAEnabled: true }`
-- Verify edge function logs show: `[OTP] Generated OTP for seller...`
+```text
++----------------------------------+
+|  Label (gray, 12-13px)      [Icon]|
+|  Value (bold, 28-32px, black)     |
+|  ↗ X.X% Up from yesterday (green) |
+|  OR                               |
+|  Subtitle text (gray)             |
++----------------------------------+
+```
 
-✅ **Test 3: Verify Email Delivery**
-- Check registered email inbox
-- Look for email with subject: "Withdrawal Verification Code: XXXXXX"
-- Verify 6-digit code is visible
+**Cards Configuration:**
+- **Today's Order**: Orange gift box icon, count value, green percentage
+- **Today's Sale**: Green chart icon, ₹ currency value, green percentage  
+- **Total Balance**: Blue wallet icon, ₹ currency value, gray subtitle
+- **Returns & Refunds**: Purple return icon, count, gray subtitle
 
-✅ **Test 4: Complete Withdrawal**
-- Enter the 6-digit OTP code
-- **Expected**: "Withdrawal submitted successfully!" toast
-- Check withdrawals list for new pending request
+**Styling:**
+- Background: `bg-white`
+- Border radius: `rounded-2xl`
+- Shadow: `shadow-sm hover:shadow-md`
+- Padding: `p-5 sm:p-6`
+- Icon container: 48px circle with light tinted background
+
+### 2. Sales Details Chart Section
+
+**Layout:** 2/3 width on desktop
+
+**Header:**
+- Title "Sales Details" (font-semibold, 16-18px)
+- Right side: Month dropdown (rounded button with chevron)
+
+**Chart:**
+- Line/Area chart with blue gradient fill
+- X-axis: Revenue markers (5k, 10k, 15k, etc.)
+- Y-axis: Percentage (20%, 40%, 60%, 80%, 100%)
+- Data point tooltip showing exact value
+
+### 3. Quick Stats Grid (4 mini cards)
+
+**Layout:** 2x2 grid to the right of chart
+
+Each mini card:
+```text
++----------------+
+| [Icon]  [...]  |
+| 01             |
+| Market Place   |
++----------------+
+```
+
+**Cards:**
+- Market Place (globe icon, blue): Count
+- Buyer's Message (message icon, blue): Count
+- Buy Box Wins (chart icon, green): 80% percentage
+- Customer Feedback (stars): 4.5 stars with count
+
+### 4. Order Details Table
+
+**Header Row:**
+- "Order Details" title (left)
+- "View All" button + Month dropdown (right)
+
+**Table Columns:**
+| Order ID | Product Name | Qty | Order Date - Time | Delivery Date | Status |
+
+**Status Badges:**
+- Pending: Orange/yellow background
+- Delivered: Green background
+- Return: Blue/purple background
+
+**Row Styling:**
+- Light gray separator between rows
+- Product image thumbnail (32px rounded)
+- Clean typography hierarchy
+
+### 5. Out of Stock Section
+
+**Card Layout:**
+```text
++------------------------+
+|  Out of Stock          |
+|                        |
+|  [<] [Product Image] [>]|
+|                        |
+|  Apple Watch Series 4  |
+|  ₹79,999.00 (orange)   |
++------------------------+
+```
+
+**Features:**
+- Carousel navigation arrows
+- Product image (centered, 120px)
+- Product name (14px, medium weight)
+- Price in Amazon orange (#FF9900)
 
 ---
 
-## Security Note
+## Technical Implementation
 
-All sellers currently have `two_factor_enabled: true` by default, which is the secure behavior. This fix ensures the frontend properly respects that setting instead of accidentally breaking the OTP flow due to a missing TypeScript field.
+### Color Constants
+
+```typescript
+const AMAZON_COLORS = {
+  orange: '#FF9900',
+  orangeLight: '#FFF4E5',
+  background: '#F7F8FA',
+  cardBg: '#FFFFFF',
+  textPrimary: '#1F2937',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  greenPositive: '#10B981',
+  greenLight: '#D1FAE5',
+  blueAccent: '#3B82F6',
+  blueLight: '#DBEAFE',
+  purpleAccent: '#8B5CF6',
+  purpleLight: '#EDE9FE'
+};
+```
+
+### Typography Scale
+
+```typescript
+const typography = {
+  statValue: 'text-3xl font-bold tracking-tight',
+  statLabel: 'text-xs text-gray-500 font-medium uppercase tracking-wide',
+  cardTitle: 'text-base font-semibold text-gray-900',
+  tableHeader: 'text-xs font-medium text-gray-500 uppercase',
+  tableCell: 'text-sm text-gray-900'
+};
+```
+
+### Card Component Pattern
+
+```typescript
+// Stat Card with Icon
+<div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+  <div className="flex items-start justify-between">
+    <div>
+      <p className="text-xs text-gray-500 font-medium mb-1">Today's Order</p>
+      <p className="text-3xl font-bold text-gray-900">65</p>
+      <div className="flex items-center gap-1 mt-2">
+        <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+        <span className="text-xs font-medium text-emerald-500">1.3% Up from yesterday</span>
+      </div>
+    </div>
+    <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
+      <Package className="h-6 w-6 text-orange-500" />
+    </div>
+  </div>
+</div>
+```
+
+---
+
+## Grid Layout Structure
+
+```tsx
+<div className="space-y-5">
+  {/* Top Stats - 4 columns */}
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    {/* 4 stat cards */}
+  </div>
+
+  {/* Middle Section - Chart + Quick Stats */}
+  <div className="grid lg:grid-cols-3 gap-4">
+    {/* Sales Chart - spans 2 columns */}
+    <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm">
+      {/* Chart content */}
+    </div>
+    
+    {/* Quick Stats - 2x2 grid */}
+    <div className="grid grid-cols-2 gap-3">
+      {/* 4 mini stat cards */}
+    </div>
+  </div>
+
+  {/* Bottom Section - Orders Table + Out of Stock */}
+  <div className="grid lg:grid-cols-3 gap-4">
+    {/* Order Details Table - spans 2 columns */}
+    <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm overflow-hidden">
+      {/* Table content */}
+    </div>
+    
+    {/* Out of Stock Card */}
+    <div className="bg-white rounded-2xl p-5 shadow-sm">
+      {/* Product carousel */}
+    </div>
+  </div>
+</div>
+```
+
+---
+
+## Spacing Guidelines (Exact Match)
+
+| Element | Spacing |
+|---------|---------|
+| Page padding | `p-5 lg:p-6` |
+| Section gap | `space-y-5` (20px) |
+| Card internal padding | `p-5` (20px) |
+| Grid gaps | `gap-4` (16px) |
+| Mini card padding | `p-4` (16px) |
+| Icon size (large) | 48px (h-12 w-12) |
+| Icon size (small) | 40px (h-10 w-10) |
+
+---
+
+## Data Mapping
+
+**From existing context to Amazon design:**
+
+| Amazon Design | Current Data Source |
+|--------------|---------------------|
+| Today's Order | `orders.filter(today).length` |
+| Today's Sale | `orders.filter(today).reduce(sum)` |
+| Total Balance | `wallet?.balance` |
+| Returns & Refunds | `orders.filter(refunded).length` |
+| Market Place | Static "01" or from profile |
+| Buyer's Message | Unread chat count |
+| Buy Box Wins | `(deliveredOrders/totalOrders)*100` |
+| Customer Feedback | Average rating from reviews |
+| Order Details | `recentOrders.slice(0, 4)` |
+| Out of Stock | `products.filter(stock === 0)` |
+
+---
+
+## Mobile Responsiveness
+
+**Breakpoint Behavior:**
+
+| Breakpoint | Layout |
+|------------|--------|
+| Mobile (<640px) | 2-column stat grid, stacked sections |
+| Tablet (640-1024px) | 2-column, chart full width |
+| Desktop (>1024px) | Full 3-column layout as reference |
+
+---
+
+## What Gets Removed/Changed
+
+**Current elements to remove:**
+- Trust Score banner (violet gradient)
+- Quick Stats horizontal scroll bar
+- Quick Actions buttons row
+- Timeline-style activity list
+
+**Current elements to replace:**
+- Gradient stat cards → White cards with icons
+- Activity timeline → Order details table
+- No visual balance → Exact Behance proportions
+
+---
+
+## Summary
+
+This redesign transforms the current seller dashboard from a gradient-heavy, modern SaaS style to the clean, professional Amazon Seller Central aesthetic with:
+
+1. White card backgrounds instead of gradients
+2. Circular tinted icon containers
+3. Proper table layout for orders
+4. 2x2 mini-stat grid
+5. Out of stock product carousel
+6. Amazon orange (#FF9900) accent color
+7. Exact spacing and typography matching reference
+
