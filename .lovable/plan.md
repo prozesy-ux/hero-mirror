@@ -1,213 +1,316 @@
 
-# Comprehensive Dashboard Updates Plan
+# Complete Dashboard Synchronization & Enhancement Plan
 
-## Summary of Requested Changes
+## Overview
 
-Based on your message, you need the following updates across Buyer Dashboard, Seller Dashboard, and Admin Panel:
+This plan addresses all your requirements for synchronizing Buyer and Seller dashboards, adding currency support throughout, removing section titles, adding more navigation items to the buyer sidebar, fixing analytics data, and implementing country selection in admin payment settings.
 
 ---
 
-## 1. Buyer Dashboard - Left Panel Enhancements
-
-### Current State
-The sidebar (`DashboardSidebar.tsx`) has 9 navigation items: Prompts, Marketplace, My Orders, Wishlist, Analytics, Wallet, Notifications, Support, Profile.
-
-### Changes Needed
-Add additional sections like:
-- **Dashboard** (Home/Overview page)
-- **Reports** (Purchase history reports)
+## Phase 1: Buyer Dashboard Navigation Enhancement
 
 ### Files to Modify
-- `src/components/dashboard/DashboardSidebar.tsx` - Add new nav items
-- `src/components/dashboard/MobileNavigation.tsx` - Add mobile menu items
-- `src/pages/Dashboard.tsx` - Add routes for new pages
-- Create `src/components/dashboard/BuyerDashboardHome.tsx` - Dashboard overview
-- Create `src/components/dashboard/BuyerReports.tsx` - Reports section
-
----
-
-## 2. Buyer Wallet - Withdraw Function (Same as Seller)
-
-### Current State
-`BuyerWallet.tsx` has basic withdraw functionality but differs from the premium seller wallet design.
-
-### Changes Needed
-- **Add Accounts Tab** - Let buyers save payment accounts (like sellers)
-- **Add OTP Verification** - If 2FA enabled, verify before withdrawal
-- **Premium UI** - Match seller wallet's violet/purple gradient theme
-- **Saved Accounts System** - Bank/UPI/bKash/Crypto support per country
-
-### Database Changes Needed
-Create `buyer_payment_accounts` table (similar to `seller_payment_accounts`)
-
-### Files to Modify/Create
-- `src/components/dashboard/BuyerWallet.tsx` - Complete redesign with tabs, accounts, OTP
-- Edge functions: `send-buyer-withdrawal-otp`, `verify-buyer-withdrawal-otp`
-
----
-
-## 3. Admin Panel - Unified Withdrawals Section
-
-### Current State
-- Seller withdrawals managed in `SellerWithdrawalsAdmin.tsx` (accessed via resellers menu)
-- Buyer withdrawals table exists (`buyer_withdrawals`) but no admin UI
-
-### Changes Needed
-- Move **all withdrawals** to Wallet section
-- Add **Buyer Withdrawals** tab in `WalletManagement.tsx`
-- Add **Seller Withdrawals** tab in `WalletManagement.tsx`
-- Show clear indicator of **who is withdrawing** (Buyer vs Seller badge)
-
-### Files to Modify
-- `src/components/admin/WalletManagement.tsx` - Add buyer/seller withdrawal tabs
-- `src/pages/Admin.tsx` - Remove separate seller-withdrawals route
-- `src/components/admin/AdminSidebar.tsx` - Remove seller withdrawals from resellers menu
-- Add `buyer_withdrawals` to admin-fetch-data whitelist
-
----
-
-## 4. Currency Settings - Both Dashboards
-
-### Current State
-- Seller Dashboard: Currency selector in `SellerTopBar.tsx` with exchange rate display
-- Buyer Dashboard: No currency selector
-
-### Changes Needed
-**Buyer Dashboard:**
-- Add currency selector (same as seller)
-- Country-based default currency detection
-- Show rate only in wallet section, not header
-
-**Seller Dashboard:**
-- Remove rate display from header
-- Show rate only in wallet section
-
-### Files to Modify
-- `src/components/dashboard/DashboardTopBar.tsx` - Add currency selector (minimal variant)
-- `src/components/dashboard/BuyerWallet.tsx` - Show current exchange rate
-- `src/components/seller/SellerTopBar.tsx` - Verify rate not shown (already minimal)
-- `src/pages/Dashboard.tsx` - Wrap with CurrencyProvider
-- Create/update currency context to support buyer country detection
-
----
-
-## 5. Seller Dashboard Analytics - Real Data
-
-### Current State
-`SellerAnalytics.tsx` uses some simulated/mock data:
-- `buyerMessages` - Random value
-- `pageViews`, `visitors`, `clicks` - Simulated values
-- `avgRating` - Hardcoded 4.2
-
-### Changes Needed
-Replace simulated metrics with real database queries:
-- **Buyer Messages**: Count from `seller_chats` table
-- **Page Views/Visitors**: Track in database or remove if not available
-- Performance data shows **best sellers algorithm** based on:
-  - Total sales amount
-  - Order completion rate
-  - Trust score
-  - Response time
-
-### Files to Modify
-- `src/components/seller/SellerAnalytics.tsx` - Replace mock data with real queries
-- `src/components/seller/SellerDashboard.tsx` - Update quick stats
-- `src/components/seller/SellerPerformance.tsx` - Already uses real data (good)
-
----
-
-## 6. Fixed Chat Box Positions
-
-### Current State
-`FloatingChatWidget.tsx` positions chat boxes at `bottom-20 lg:bottom-6 right-4`
-
-### Issue
-- May overlap with mobile navigation
-- Position might shift based on content
-
-### Changes Needed
-- Ensure chat boxes have **fixed, consistent positioning**
-- Account for mobile bottom nav height (80px)
-- Prevent overlap with other floating elements
-
-### Files to Modify
-- `src/components/dashboard/FloatingChatWidget.tsx` - Fix z-index and positioning
-- Review `FloatingChatBox.tsx` and `FloatingSupportChatBox.tsx` dimensions
-
----
-
-## Technical Implementation Details
-
-### Database Migration
-```sql
--- Create buyer payment accounts table
-CREATE TABLE buyer_payment_accounts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id),
-  payment_method_code TEXT NOT NULL,
-  account_name TEXT NOT NULL,
-  account_number TEXT NOT NULL,
-  bank_name TEXT,
-  is_primary BOOLEAN DEFAULT false,
-  is_verified BOOLEAN DEFAULT false,
-  country TEXT,
-  account_details JSONB,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE buyer_payment_accounts ENABLE ROW LEVEL SECURITY;
-
--- RLS policies
-CREATE POLICY "Users can manage own accounts" ON buyer_payment_accounts
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Admin can view all" ON buyer_payment_accounts
-  FOR SELECT USING (has_role(auth.uid(), 'admin'));
-```
-
-### Edge Function Whitelist Updates
-Add to `admin-fetch-data/index.ts` and `admin-mutate-data/index.ts`:
-- `buyer_payment_accounts`
-- `buyer_withdrawals` (already exists, ensure whitelisted)
-
-### Currency Context Updates
-- Wrap Dashboard.tsx with CurrencyProvider
-- Detect buyer country from profile or IP
-- Use same exchange rates from `payment_methods` table
-
----
-
-## Files Summary
+- `src/components/dashboard/DashboardSidebar.tsx`
+- `src/components/dashboard/MobileNavigation.tsx`
+- `src/pages/Dashboard.tsx`
 
 ### New Files to Create
-1. `src/components/dashboard/BuyerDashboardHome.tsx`
-2. `src/components/dashboard/BuyerReports.tsx`
-3. `supabase/functions/send-buyer-withdrawal-otp/index.ts`
-4. `supabase/functions/verify-buyer-withdrawal-otp/index.ts`
+- `src/components/dashboard/BuyerDashboardHome.tsx`
+- `src/components/dashboard/BuyerReports.tsx`
 
-### Files to Modify
-1. `src/components/dashboard/DashboardSidebar.tsx`
-2. `src/components/dashboard/MobileNavigation.tsx`
-3. `src/pages/Dashboard.tsx`
-4. `src/components/dashboard/BuyerWallet.tsx` (major redesign)
-5. `src/components/dashboard/DashboardTopBar.tsx`
-6. `src/components/admin/WalletManagement.tsx` (add withdrawal tabs)
-7. `src/components/admin/AdminSidebar.tsx`
-8. `src/pages/Admin.tsx`
-9. `src/components/seller/SellerAnalytics.tsx`
-10. `src/components/seller/SellerDashboard.tsx`
-11. `src/components/dashboard/FloatingChatWidget.tsx`
-12. `supabase/functions/admin-fetch-data/index.ts`
-13. `supabase/functions/admin-mutate-data/index.ts`
+### Changes
+
+**DashboardSidebar.tsx - Add new nav items at top:**
+```text
+const navItems = [
+  { to: '/dashboard/home', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
+  { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Marketplace' },
+  { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
+  { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
+  { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/dashboard/reports', icon: FileText, label: 'Reports' },
+  { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
+  { to: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
+  { to: '/dashboard/chat', icon: MessageSquare, label: 'Support' },
+  { to: '/dashboard/profile', icon: User, label: 'Profile' },
+];
+```
+
+**MobileNavigation.tsx - Update sidebarNavItems similarly**
+
+**Dashboard.tsx - Add routes:**
+```tsx
+<Route path="home" element={<BuyerDashboardHome />} />
+<Route path="reports" element={<BuyerReports />} />
+```
+
+**BuyerDashboardHome.tsx - New component with:**
+- Account overview stats (wallet balance, total orders, total spent)
+- Recent orders list
+- Quick actions (Add Funds, Browse Marketplace, View Wishlist)
+- No section title (minimal design)
+
+**BuyerReports.tsx - New component with:**
+- Spending charts and CSV export
+- Currency-formatted amounts using `useCurrency`
+- Date range filter
+- No section title
 
 ---
 
-## Priority Order
+## Phase 2: Buyer Wallet - Match Seller Wallet Design Exactly
 
-1. **Currency System** - Add to buyer dashboard, show rates in wallet only
-2. **Buyer Wallet Redesign** - Premium UI with accounts and OTP
-3. **Admin Wallet Unification** - Combine buyer/seller withdrawals
-4. **Buyer Dashboard Navigation** - Add Dashboard Home and Reports
-5. **Seller Analytics Real Data** - Replace mock values
-6. **Chat Box Positioning** - Fix floating widget positions
+### File to Modify
+- `src/components/dashboard/BuyerWallet.tsx`
+
+### Changes
+Copy exact design from SellerWallet.tsx:
+- Same violet-purple gradient theme
+- Same tab structure (Wallet | Accounts | History)
+- Same card layouts with gradient borders
+- Same form styling for add account modal
+- Same quick amount buttons styling
+- Same account cards with method icons
+- Import same icon components and styles
+
+The current BuyerWallet already has similar structure but needs visual refinement to be pixel-perfect match.
+
+---
+
+## Phase 3: Remove Section Titles (Both Dashboards)
+
+### Files to Modify
+- `src/components/dashboard/BuyerAnalytics.tsx` - Remove "Spending Analytics" title
+- `src/components/dashboard/BuyerOrders.tsx` - Remove any title
+- `src/components/dashboard/BuyerWallet.tsx` - Remove title (keep tabs only)
+- `src/components/dashboard/BuyerWishlist.tsx` - Remove title
+- `src/components/seller/SellerAnalytics.tsx` - Already no title
+- `src/components/seller/SellerDashboard.tsx` - Keep "Dashboard" badge with trust score
+- `src/components/seller/SellerWallet.tsx` - Remove title
+
+### Exception
+- Keep **Notifications** section title in `BuyerNotifications.tsx` as requested
+
+---
+
+## Phase 4: Currency Integration - All Sections
+
+### Files to Modify
+- `src/components/dashboard/DashboardTopBar.tsx` - Add CurrencySelector
+- `src/components/dashboard/BuyerAnalytics.tsx` - Replace hardcoded ₹ with formatAmountOnly()
+- `src/components/dashboard/BuyerOrders.tsx` - Check and fix currency symbols
+- `src/components/dashboard/BuyerDashboardHome.tsx` (new) - Use currency formatting
+- `src/components/dashboard/BuyerReports.tsx` (new) - Use currency formatting
+
+### DashboardTopBar.tsx Changes
+Add CurrencySelector next to wallet balance:
+```tsx
+import { CurrencySelector } from '@/components/ui/currency-selector';
+import { useCurrency } from '@/contexts/CurrencyContext';
+
+// In component:
+const { formatAmountOnly } = useCurrency();
+
+// In render, next to wallet button:
+<CurrencySelector variant="minimal" />
+
+// Update wallet display:
+<span>{formatAmountOnly(wallet?.balance || 0)}</span>
+```
+
+### BuyerAnalytics.tsx Changes
+Replace all `₹` hardcoded symbols:
+```tsx
+// Before: ₹{stats.totalSpent.toFixed(0)}
+// After:  {formatAmountOnly(stats.totalSpent)}
+```
+
+---
+
+## Phase 5: Seller Analytics - Real Data (Replace Mock Values)
+
+### File to Modify
+- `src/components/seller/SellerAnalytics.tsx`
+
+### Current Mock Data (Lines 177-188)
+```javascript
+// Simulated metrics - REMOVE THESE
+const pageViews = Math.max(todayOrderCount * 15, Math.floor(Math.random() * 500) + 100);
+const visitors = Math.max(todayOrderCount * 8, Math.floor(Math.random() * 300) + 50);
+const clicks = Math.max(todayOrderCount * 5, Math.floor(Math.random() * 200) + 30);
+const buyerMessages = Math.floor(Math.random() * 20) + 5;
+const avgRating = 4.2;
+```
+
+### Replace With Real Database Queries
+Add these inside the component:
+```tsx
+const [realMetrics, setRealMetrics] = useState({
+  buyerMessages: 0,
+  avgRating: 0,
+  conversionRate: 0
+});
+
+useEffect(() => {
+  if (!profile?.id) return;
+  
+  const fetchRealMetrics = async () => {
+    // Buyer Messages - count from seller_chats
+    const { count: messageCount } = await supabase
+      .from('seller_chats')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', profile.id);
+    
+    // Average Rating - from product_reviews
+    const { data: reviews } = await supabase
+      .from('product_reviews')
+      .select('rating, product:seller_products!inner(seller_id)')
+      .eq('product.seller_id', profile.id);
+    
+    const avgRating = reviews?.length 
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
+      : 0;
+    
+    // Conversion rate - orders / products viewed (derived from order count)
+    const conversionRate = orders.length > 0 
+      ? Math.min((orders.length / Math.max(products.length * 10, 1)) * 100, 100) 
+      : 0;
+    
+    setRealMetrics({
+      buyerMessages: messageCount || 0,
+      avgRating: avgRating,
+      conversionRate
+    });
+  };
+  
+  fetchRealMetrics();
+}, [profile?.id, orders.length, products.length]);
+```
+
+Then update the analyticsData useMemo to use `realMetrics` instead of random values.
+
+---
+
+## Phase 6: Admin Payment Settings - Country Selection
+
+### File to Modify
+- `src/components/admin/PaymentSettingsManagement.tsx`
+
+### Database Change Required
+```sql
+ALTER TABLE payment_methods 
+ADD COLUMN IF NOT EXISTS countries TEXT[] DEFAULT ARRAY['DEFAULT'];
+```
+
+### UI Changes
+Add country multi-select in the form modal:
+```tsx
+// Add to formData state
+const [formData, setFormData] = useState({
+  ...existing fields,
+  countries: ['DEFAULT'] as string[]
+});
+
+// Add COUNTRY_OPTIONS constant
+const COUNTRY_OPTIONS = [
+  { code: 'IN', name: 'India' },
+  { code: 'BD', name: 'Bangladesh' },
+  { code: 'PK', name: 'Pakistan' },
+  { code: 'DEFAULT', name: 'Global (All Countries)' }
+];
+
+// Add to modal form (after currency select):
+<div className="space-y-2">
+  <Label className="text-gray-300">Available Countries</Label>
+  <div className="flex flex-wrap gap-2">
+    {COUNTRY_OPTIONS.map(country => (
+      <button
+        key={country.code}
+        type="button"
+        onClick={() => {
+          const current = formData.countries;
+          if (current.includes(country.code)) {
+            setFormData({...formData, countries: current.filter(c => c !== country.code)});
+          } else {
+            setFormData({...formData, countries: [...current, country.code]});
+          }
+        }}
+        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+          formData.countries.includes(country.code)
+            ? 'bg-violet-500 text-white'
+            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+        }`}
+      >
+        {country.name}
+      </button>
+    ))}
+  </div>
+</div>
+```
+
+---
+
+## Phase 7: UI/UX Fixes
+
+### Floating Chat Position
+**File:** `src/components/dashboard/FloatingChatWidget.tsx`
+
+Update positioning:
+```tsx
+// Current: bottom-20 lg:bottom-6 right-4 z-50
+// Change to: bottom-24 lg:bottom-6 right-4 z-[60]
+className="fixed bottom-24 lg:bottom-6 right-4 z-[60] flex flex-col items-end gap-3"
+```
+
+### Quick Stats - Sticky Positioning
+**Files:** 
+- `src/components/seller/SellerAnalytics.tsx`
+- `src/components/seller/SellerDashboard.tsx`
+
+The Quick Stats sections should scroll with content (not sticky) as they're part of the dashboard grid. No change needed here - the current layout is correct.
+
+---
+
+## Technical Implementation Summary
+
+### New Files (2)
+| File | Description |
+|------|-------------|
+| `src/components/dashboard/BuyerDashboardHome.tsx` | Dashboard overview with stats, recent orders, quick actions |
+| `src/components/dashboard/BuyerReports.tsx` | Spending reports with charts, CSV export, currency formatting |
+
+### Modified Files (12)
+| File | Changes |
+|------|---------|
+| `DashboardSidebar.tsx` | Add Dashboard and Reports nav items |
+| `MobileNavigation.tsx` | Add Dashboard and Reports to sidebar nav |
+| `Dashboard.tsx` | Add routes for /home and /reports |
+| `DashboardTopBar.tsx` | Add CurrencySelector, format wallet with useCurrency |
+| `BuyerWallet.tsx` | Visual refinement to match SellerWallet exactly |
+| `BuyerAnalytics.tsx` | Remove title, replace ₹ with formatAmountOnly() |
+| `BuyerOrders.tsx` | Remove title, use currency formatting |
+| `SellerAnalytics.tsx` | Replace mock data with real database queries |
+| `PaymentSettingsManagement.tsx` | Add country multi-select |
+| `FloatingChatWidget.tsx` | Update z-index to z-[60], bottom-24 on mobile |
+
+### Database Migration (1)
+```sql
+ALTER TABLE payment_methods 
+ADD COLUMN IF NOT EXISTS countries TEXT[] DEFAULT ARRAY['DEFAULT'];
+```
+
+---
+
+## Implementation Order
+
+1. **Navigation Updates** - Add Dashboard + Reports to sidebars
+2. **Create New Components** - BuyerDashboardHome + BuyerReports
+3. **Currency Integration** - Add selector to buyer header, fix all currency displays
+4. **Remove Section Titles** - Clean up both dashboards (except Notifications)
+5. **Real Data Analytics** - Replace mock values in SellerAnalytics
+6. **Admin Payment Countries** - Add country selection to payment settings
+7. **UI Fixes** - Chat positioning fix
+8. **Auto-publish** - Deploy all changes
+
+All changes will be implemented and auto-published upon approval.
