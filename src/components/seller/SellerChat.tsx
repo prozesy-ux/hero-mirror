@@ -46,6 +46,7 @@ const SellerChat = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showChatOnMobile, setShowChatOnMobile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -235,8 +236,7 @@ const SellerChat = () => {
     );
   }
 
-  // Mobile view state
-  const [showChatOnMobile, setShowChatOnMobile] = useState(false);
+
 
   return (
     <div className="p-3 sm:p-4 lg:p-6 bg-slate-50 min-h-screen">
