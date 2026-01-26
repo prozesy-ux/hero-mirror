@@ -168,6 +168,19 @@ const BuyerWallet = () => {
 
   const quickAmounts = [5, 10, 25, 50, 100];
 
+  const isBlockingWithdrawalStatus = (status?: string | null) => {
+    const s = (status || '').trim().toLowerCase();
+    // Treat any “not completed yet” state as blocking to prevent double-withdraw.
+    return (
+      s === 'pending' ||
+      s === 'processing' ||
+      s === 'queued' ||
+      s === 'in_review' ||
+      s === 'awaiting' ||
+      s === 'requested'
+    );
+  };
+
   const getAvailableMethods = () => {
     const countryConfig = COUNTRY_PAYMENT_METHODS[userCountry] || COUNTRY_PAYMENT_METHODS.DEFAULT;
     return countryConfig.methods;
@@ -386,7 +399,7 @@ const BuyerWallet = () => {
       return;
     }
 
-    const pendingWithdrawal = withdrawals.find(w => w.status === 'pending');
+    const pendingWithdrawal = withdrawals.find(w => isBlockingWithdrawalStatus(w.status));
     if (pendingWithdrawal) {
       toast.error('You already have a pending withdrawal request');
       return;
@@ -524,7 +537,7 @@ const BuyerWallet = () => {
     }
   };
 
-  const hasPendingWithdrawal = withdrawals.some(w => w.status === 'pending');
+  const hasPendingWithdrawal = withdrawals.some(w => isBlockingWithdrawalStatus(w.status));
   const totalWithdrawn = withdrawals.filter(w => w.status === 'completed').reduce((sum, w) => sum + Number(w.amount), 0);
   const pendingAmount = withdrawals.filter(w => w.status === 'pending').reduce((sum, w) => sum + Number(w.amount), 0);
 
