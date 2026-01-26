@@ -23,7 +23,8 @@ import {
   Bitcoin,
   Mail,
   RefreshCw,
-  ShieldCheck
+  ShieldCheck,
+  ChevronLeft
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -33,6 +34,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { 
+  ACCOUNT_TYPES, 
+  getDigitalWalletsForCountry, 
+  getWalletByCode, 
+  isDigitalWalletCode,
+  getCountryName,
+  type AccountType,
+  type DigitalWallet
+} from '@/lib/digital-wallets-config';
 
 interface PaymentMethod {
   id: string;
@@ -64,32 +74,7 @@ interface SavedAccount {
 }
 
 type WalletTab = 'wallet' | 'withdrawals' | 'accounts';
-
-// Country-based payment method configuration
-const COUNTRY_PAYMENT_METHODS: Record<string, { name: string; methods: { code: string; label: string; icon: string }[] }> = {
-  IN: {
-    name: 'India',
-    methods: [
-      { code: 'bank', label: 'Bank Transfer', icon: 'bank' },
-      { code: 'upi', label: 'UPI', icon: 'upi' },
-      { code: 'crypto', label: 'Crypto', icon: 'crypto' }
-    ]
-  },
-  BD: {
-    name: 'Bangladesh',
-    methods: [
-      { code: 'bank', label: 'Bank Transfer', icon: 'bank' },
-      { code: 'bkash', label: 'bKash', icon: 'bkash' }
-    ]
-  },
-  DEFAULT: {
-    name: 'Other',
-    methods: [
-      { code: 'bank', label: 'Bank Transfer', icon: 'bank' },
-      { code: 'crypto', label: 'Crypto', icon: 'crypto' }
-    ]
-  }
-};
+type AddAccountStep = 'type' | 'wallet' | 'details';
 
 // Currency helper functions
 const getCurrencySymbol = (code: string | null): string => {
@@ -117,13 +102,13 @@ const maskAccountNumber = (accountNumber: string): string => {
 };
 
 const getMethodIcon = (code: string) => {
+  // Check if it's a digital wallet first
+  if (isDigitalWalletCode(code)) {
+    return <Smartphone className="w-5 h-5 text-violet-600" />;
+  }
   switch (code) {
     case 'bank':
       return <Building2 className="w-5 h-5 text-blue-600" />;
-    case 'upi':
-      return <Smartphone className="w-5 h-5 text-green-600" />;
-    case 'bkash':
-      return <Wallet className="w-5 h-5 text-pink-600" />;
     case 'crypto':
       return <Bitcoin className="w-5 h-5 text-orange-500" />;
     default:
@@ -132,17 +117,14 @@ const getMethodIcon = (code: string) => {
 };
 
 const getMethodBg = (code: string) => {
+  // Check if it's a digital wallet
+  const wallet = getWalletByCode(code);
+  if (wallet) return wallet.bgColor;
+  
   switch (code) {
-    case 'bank':
-      return 'bg-blue-50';
-    case 'upi':
-      return 'bg-green-50';
-    case 'bkash':
-      return 'bg-pink-50';
-    case 'crypto':
-      return 'bg-orange-50';
-    default:
-      return 'bg-gray-50';
+    case 'bank': return 'bg-blue-50';
+    case 'crypto': return 'bg-orange-50';
+    default: return 'bg-gray-50';
   }
 };
 
@@ -159,15 +141,16 @@ const SellerWallet = () => {
   const [activeTab, setActiveTab] = useState<WalletTab>('wallet');
   const [sellerCountry, setSellerCountry] = useState<string>('BD');
   
-  // Add account form state
-  const [selectedMethod, setSelectedMethod] = useState('');
+  // Add account form state - NEW 3-tier system
+  const [addAccountStep, setAddAccountStep] = useState<AddAccountStep>('type');
+  const [selectedAccountType, setSelectedAccountType] = useState<AccountType | null>(null);
+  const [selectedDigitalWallet, setSelectedDigitalWallet] = useState<DigitalWallet | null>(null);
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [bankName, setBankName] = useState('');
   const [ifscCode, setIfscCode] = useState('');
   const [cryptoNetwork, setCryptoNetwork] = useState('');
   const [isPrimary, setIsPrimary] = useState(false);
-  const [addStep, setAddStep] = useState<1 | 2>(1);
   
   // OTP verification state
   const [showOTPModal, setShowOTPModal] = useState(false);
@@ -179,28 +162,8 @@ const SellerWallet = () => {
 
   const quickAmounts = [5, 10, 25, 50, 100];
 
-  const isBlockingWithdrawalStatus = (status?: string | null) => {
-    const s = (status || '').trim().toLowerCase();
-    // Treat any “not completed yet” state as blocking to prevent double-withdraw.
-    return (
-      s === 'pending' ||
-      s === 'processing' ||
-      s === 'queued' ||
-      s === 'in_review' ||
-      s === 'awaiting' ||
-      s === 'requested'
-    );
-  };
-
-  // Get available methods for seller's country
-  const getAvailableMethods = () => {
-    const countryConfig = COUNTRY_PAYMENT_METHODS[sellerCountry] || COUNTRY_PAYMENT_METHODS.DEFAULT;
-    return countryConfig.methods;
-  };
-
-  const getCountryName = () => {
-    const countryConfig = COUNTRY_PAYMENT_METHODS[sellerCountry] || COUNTRY_PAYMENT_METHODS.DEFAULT;
-    return countryConfig.name;
+  const getAvailableDigitalWallets = () => {
+    return getDigitalWalletsForCountry(sellerCountry);
   };
 
   useEffect(() => {
@@ -279,8 +242,21 @@ const SellerWallet = () => {
   };
 
   const handleAddAccount = async () => {
-    if (!profile?.id || !selectedMethod || !accountName.trim() || !accountNumber.trim()) {
+    if (!profile?.id || !accountName.trim() || !accountNumber.trim()) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Determine the payment method code
+    let methodCode = '';
+    if (selectedAccountType === 'bank') {
+      methodCode = 'bank';
+    } else if (selectedAccountType === 'crypto') {
+      methodCode = 'crypto';
+    } else if (selectedDigitalWallet) {
+      methodCode = selectedDigitalWallet.code;
+    } else {
+      toast.error('Please select a payment method');
       return;
     }
 
@@ -292,15 +268,15 @@ const SellerWallet = () => {
           .from('seller_payment_accounts')
           .update({ is_primary: false })
           .eq('seller_id', profile.id)
-          .eq('payment_method_code', selectedMethod);
+          .eq('payment_method_code', methodCode);
       }
 
       // Build account details JSON
       const accountDetails: Record<string, string> = {};
-      if (selectedMethod === 'bank' && ifscCode) {
+      if (selectedAccountType === 'bank' && ifscCode) {
         accountDetails.ifsc = ifscCode;
       }
-      if (selectedMethod === 'crypto' && cryptoNetwork) {
+      if (selectedAccountType === 'crypto' && cryptoNetwork) {
         accountDetails.network = cryptoNetwork;
       }
 
@@ -308,7 +284,7 @@ const SellerWallet = () => {
         .from('seller_payment_accounts')
         .insert({
           seller_id: profile.id,
-          payment_method_code: selectedMethod,
+          payment_method_code: methodCode,
           account_name: accountName.trim(),
           account_number: accountNumber.trim(),
           bank_name: bankName.trim() || null,
@@ -375,14 +351,15 @@ const SellerWallet = () => {
   };
 
   const resetAddAccountForm = () => {
-    setSelectedMethod('');
+    setAddAccountStep('type');
+    setSelectedAccountType(null);
+    setSelectedDigitalWallet(null);
     setAccountName('');
     setAccountNumber('');
     setBankName('');
     setIfscCode('');
     setCryptoNetwork('');
     setIsPrimary(false);
-    setAddStep(1);
   };
 
   // Send OTP for withdrawal verification (if 2FA enabled) or process directly
@@ -419,8 +396,7 @@ const SellerWallet = () => {
       return;
     }
 
-
-    // Check if 2FA is enabled - properly typed now
+    // Check if 2FA is enabled
     const is2FAEnabled = profile.two_factor_enabled === true;
     console.log('[WITHDRAW] Profile 2FA status:', { two_factor_enabled: profile.two_factor_enabled, is2FAEnabled });
 
@@ -609,13 +585,23 @@ const SellerWallet = () => {
     }
   };
 
-  
-
   const tabs = [
     { id: 'wallet' as WalletTab, label: 'Wallet', icon: Wallet },
     { id: 'accounts' as WalletTab, label: 'Accounts', icon: CreditCard },
     { id: 'withdrawals' as WalletTab, label: 'Withdrawals', icon: History },
   ];
+
+  // Get display label for saved account
+  const getAccountDisplayLabel = (account: SavedAccount) => {
+    const wallet = getWalletByCode(account.payment_method_code);
+    if (wallet) return wallet.label;
+    
+    switch (account.payment_method_code) {
+      case 'bank': return 'Bank Account';
+      case 'crypto': return 'Crypto Wallet';
+      default: return account.payment_method_code.toUpperCase();
+    }
+  };
 
   if (loading) {
     return (
@@ -627,7 +613,7 @@ const SellerWallet = () => {
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-up px-3 sm:px-0">
-      {/* Tab Navigation - Mobile Optimized */}
+      {/* Tab Navigation */}
       <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-gray-200 shadow-md">
         <div className="flex gap-1 overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => {
@@ -674,9 +660,7 @@ const SellerWallet = () => {
                 </div>
               </div>
               <button
-                onClick={() => {
-                  setShowWithdrawDialog(true);
-                }}
+                onClick={() => setShowWithdrawDialog(true)}
                 disabled={!wallet?.balance || wallet.balance < 5 || savedAccounts.length === 0}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
               >
@@ -745,51 +729,58 @@ const SellerWallet = () => {
         <div className="space-y-6">
           {/* Active Accounts Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {savedAccounts.map(account => (
-              <div 
-                key={account.id}
-                className="p-4 rounded-xl border border-gray-200 bg-white hover:shadow-md transition-all relative"
-              >
-                {account.is_primary && (
-                  <Badge className="absolute -top-2 -right-2 bg-violet-600 text-white text-[10px]">
-                    <Star className="w-3 h-3 mr-0.5" /> Primary
-                  </Badge>
-                )}
-                
-                <div className="flex items-start gap-3">
-                  <div className={`p-2.5 rounded-lg ${getMethodBg(account.payment_method_code)}`}>
-                    {getMethodIcon(account.payment_method_code)}
+            {savedAccounts.map(account => {
+              const walletInfo = getWalletByCode(account.payment_method_code);
+              return (
+                <div 
+                  key={account.id}
+                  className="p-4 rounded-xl border border-gray-200 bg-white hover:shadow-md transition-all relative"
+                >
+                  {account.is_primary && (
+                    <Badge className="absolute -top-2 -right-2 bg-violet-600 text-white text-[10px]">
+                      <Star className="w-3 h-3 mr-0.5" /> Primary
+                    </Badge>
+                  )}
+                  
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2.5 rounded-lg ${getMethodBg(account.payment_method_code)} flex items-center justify-center`}>
+                      {walletInfo?.logo ? (
+                        <img src={walletInfo.logo} alt={walletInfo.label} className="w-6 h-6 object-contain" />
+                      ) : (
+                        getMethodIcon(account.payment_method_code)
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{account.account_name}</p>
+                      <p className="text-sm text-gray-500 font-mono">{maskAccountNumber(account.account_number)}</p>
+                      {account.bank_name && (
+                        <p className="text-xs text-gray-400 mt-1 truncate">{account.bank_name}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{account.account_name}</p>
-                    <p className="text-sm text-gray-500 font-mono">{maskAccountNumber(account.account_number)}</p>
-                    {account.bank_name && (
-                      <p className="text-xs text-gray-400 mt-1 truncate">{account.bank_name}</p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-                  <span className="text-xs text-gray-400 uppercase">{account.payment_method_code}</span>
-                  <div className="flex items-center gap-2">
-                    {!account.is_primary && (
+                  
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                    <span className="text-xs text-gray-400">{getAccountDisplayLabel(account)}</span>
+                    <div className="flex items-center gap-2">
+                      {!account.is_primary && (
+                        <button 
+                          onClick={() => handleSetPrimary(account.id, account.payment_method_code)}
+                          className="text-xs text-violet-600 hover:text-violet-700 font-medium"
+                        >
+                          Set Primary
+                        </button>
+                      )}
                       <button 
-                        onClick={() => handleSetPrimary(account.id, account.payment_method_code)}
-                        className="text-xs text-violet-600 hover:text-violet-700 font-medium"
+                        onClick={() => handleDeleteAccount(account.id)}
+                        className="text-xs text-red-500 hover:text-red-600"
                       >
-                        Set Primary
+                        <Trash2 size={14} />
                       </button>
-                    )}
-                    <button 
-                      onClick={() => handleDeleteAccount(account.id)}
-                      className="text-xs text-red-500 hover:text-red-600"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             
             {/* Add Account Card */}
             <button 
@@ -819,6 +810,7 @@ const SellerWallet = () => {
             <div className="space-y-3">
               {withdrawals.map((withdrawal) => {
                 const statusConfig = getStatusConfig(withdrawal.status);
+                const walletInfo = getWalletByCode(withdrawal.payment_method);
                 return (
                   <div
                     key={withdrawal.id}
@@ -833,8 +825,8 @@ const SellerWallet = () => {
                           <p className="text-gray-900 font-medium">{formatAmount(Number(withdrawal.amount), true)}</p>
                           <p className="text-gray-500 text-sm">
                             {format(new Date(withdrawal.created_at), 'MMM d, yyyy')}
-                            <span className="ml-2 text-xs uppercase text-gray-400">
-                              via {withdrawal.payment_method}
+                            <span className="ml-2 text-xs text-gray-400">
+                              via {walletInfo?.label || withdrawal.payment_method}
                             </span>
                           </p>
                         </div>
@@ -904,6 +896,7 @@ const SellerWallet = () => {
               <div className="grid gap-3 max-h-60 overflow-y-auto">
                 {savedAccounts.map(account => {
                   const method = paymentMethods.find(m => m.code === account.payment_method_code);
+                  const walletInfo = getWalletByCode(account.payment_method_code);
                   return (
                     <button
                       key={account.id}
@@ -916,7 +909,9 @@ const SellerWallet = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          {method?.icon_url ? (
+                          {walletInfo?.logo ? (
+                            <img src={walletInfo.logo} className="w-8 h-8 object-contain" alt={walletInfo.label} />
+                          ) : method?.icon_url ? (
                             <img src={method.icon_url} className="w-8 h-8 object-contain" alt={method.name} />
                           ) : (
                             <CreditCard size={20} className="text-gray-400" />
@@ -924,7 +919,7 @@ const SellerWallet = () => {
                           <div>
                             <p className="font-medium text-gray-900">{account.account_name}</p>
                             <p className="text-sm text-gray-500">
-                              {method?.name || account.payment_method_code} - {maskAccountNumber(account.account_number)}
+                              {walletInfo?.label || method?.name || account.payment_method_code} - {maskAccountNumber(account.account_number)}
                             </p>
                           </div>
                         </div>
@@ -966,71 +961,153 @@ const SellerWallet = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Account Modal - Premium Design */}
+      {/* Add Account Modal - NEW 3-TIER SYSTEM */}
       <Dialog open={showAddAccountModal} onOpenChange={(open) => { setShowAddAccountModal(open); if (!open) resetAddAccountForm(); }}>
         <DialogContent className="max-w-md p-0 overflow-hidden">
           {/* Gradient Header */}
           <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-6 text-white">
             <div className="flex items-center gap-3">
+              {addAccountStep !== 'type' && (
+                <button 
+                  onClick={() => {
+                    if (addAccountStep === 'details') {
+                      if (selectedAccountType === 'digital_wallet') {
+                        setAddAccountStep('wallet');
+                        setSelectedDigitalWallet(null);
+                      } else {
+                        setAddAccountStep('type');
+                        setSelectedAccountType(null);
+                      }
+                    } else if (addAccountStep === 'wallet') {
+                      setAddAccountStep('type');
+                      setSelectedAccountType(null);
+                    }
+                  }}
+                  className="p-2 -ml-2 rounded-lg hover:bg-white/20 transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              )}
               <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
                 <CreditCard className="w-6 h-6" />
               </div>
               <div>
                 <h2 className="text-xl font-bold">Add Payment Account</h2>
-                <p className="text-violet-100 text-sm">{getCountryName()} withdrawal methods</p>
+                <p className="text-violet-100 text-sm">{getCountryName(sellerCountry)} withdrawal methods</p>
               </div>
             </div>
           </div>
 
           <div className="p-6 space-y-5">
-            {/* Step 1: Select Payment Method */}
-            <div>
-              <Label className="text-gray-600 text-sm font-medium mb-3 flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">1</span>
-                Select Payment Method
-              </Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {getAvailableMethods().map((method) => (
-                  <button
-                    key={method.code}
-                    onClick={() => { setSelectedMethod(method.code); setAddStep(2); }}
-                    className={`p-4 rounded-xl border-2 text-center transition-all ${
-                      selectedMethod === method.code
-                        ? 'border-violet-500 bg-violet-50 ring-2 ring-violet-200'
-                        : 'border-gray-200 hover:border-violet-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className={`h-10 w-10 mx-auto mb-2 rounded-lg ${getMethodBg(method.code)} flex items-center justify-center`}>
-                      {getMethodIcon(method.code)}
-                    </div>
-                    <p className="text-gray-900 font-medium text-sm">{method.label}</p>
-                  </button>
-                ))}
+            {/* Step 1: Select Account Type */}
+            {addAccountStep === 'type' && (
+              <div className="animate-fade-up">
+                <Label className="text-gray-600 text-sm font-medium mb-4 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">1</span>
+                  Select Account Type
+                </Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {ACCOUNT_TYPES.map((type) => (
+                    <button
+                      key={type.code}
+                      onClick={() => {
+                        setSelectedAccountType(type.code);
+                        if (type.code === 'digital_wallet') {
+                          setAddAccountStep('wallet');
+                        } else {
+                          setAddAccountStep('details');
+                        }
+                      }}
+                      className="p-4 rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-all text-center"
+                    >
+                      <div className={`h-12 w-12 mx-auto mb-2 rounded-xl flex items-center justify-center ${
+                        type.code === 'bank' ? 'bg-blue-50' : 
+                        type.code === 'digital_wallet' ? 'bg-violet-50' : 'bg-orange-50'
+                      }`}>
+                        {type.code === 'bank' && <Building2 className="w-6 h-6 text-blue-600" />}
+                        {type.code === 'digital_wallet' && <Smartphone className="w-6 h-6 text-violet-600" />}
+                        {type.code === 'crypto' && <Bitcoin className="w-6 h-6 text-orange-500" />}
+                      </div>
+                      <p className="text-gray-900 font-medium text-sm">{type.label}</p>
+                      <p className="text-gray-400 text-xs mt-1">{type.description}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Step 2: Account Details Form */}
-            {selectedMethod && (
+            {/* Step 2: Select Digital Wallet (only for digital_wallet type) */}
+            {addAccountStep === 'wallet' && (
+              <div className="animate-fade-up">
+                <Label className="text-gray-600 text-sm font-medium mb-4 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">2</span>
+                  Select Wallet
+                </Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {getAvailableDigitalWallets().map((wallet) => (
+                    <button
+                      key={wallet.code}
+                      onClick={() => {
+                        setSelectedDigitalWallet(wallet);
+                        setAddAccountStep('details');
+                      }}
+                      className="p-4 rounded-xl border-2 border-gray-200 hover:border-violet-400 transition-all text-center group"
+                      style={{ '--wallet-color': wallet.color } as React.CSSProperties}
+                    >
+                      <div className={`h-14 w-14 mx-auto mb-2 rounded-xl ${wallet.bgColor} flex items-center justify-center p-2 group-hover:scale-105 transition-transform`}>
+                        <img 
+                          src={wallet.logo} 
+                          alt={wallet.label}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <p className="text-gray-900 font-medium text-sm">{wallet.label}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Enter Account Details */}
+            {addAccountStep === 'details' && (
               <div className="space-y-4 animate-fade-up">
                 <Label className="text-gray-600 text-sm font-medium flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">2</span>
+                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">
+                    {selectedAccountType === 'digital_wallet' ? '3' : '2'}
+                  </span>
                   Enter Account Details
                 </Label>
 
-                {/* Bank Transfer Fields - Premium Floating Labels */}
-                {selectedMethod === 'bank' && (
-                  <>
-                    <div className="relative">
-                      <Input 
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
-                        placeholder=" "
-                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
-                      />
-                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
-                        Account Holder Name
-                      </label>
+                {/* Show selected wallet branding for digital wallets */}
+                {selectedDigitalWallet && (
+                  <div className={`p-4 rounded-xl ${selectedDigitalWallet.bgColor} flex items-center gap-3 mb-4`}>
+                    <img src={selectedDigitalWallet.logo} alt={selectedDigitalWallet.label} className="w-10 h-10 object-contain" />
+                    <div>
+                      <p className="font-semibold text-gray-900">{selectedDigitalWallet.label}</p>
+                      <p className="text-sm text-gray-500">Enter your account details</p>
                     </div>
+                  </div>
+                )}
+
+                {/* Account Holder Name - All types */}
+                <div className="relative">
+                  <Input 
+                    value={accountName}
+                    onChange={(e) => setAccountName(e.target.value)}
+                    placeholder=" "
+                    className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
+                  />
+                  <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                    Account Holder Name
+                  </label>
+                </div>
+
+                {/* Bank Account Fields */}
+                {selectedAccountType === 'bank' && (
+                  <>
                     <div className="relative">
                       <Input 
                         value={accountNumber}
@@ -1067,76 +1144,24 @@ const SellerWallet = () => {
                   </>
                 )}
 
-                {/* UPI Fields (India only) - Premium Floating Labels */}
-                {selectedMethod === 'upi' && (
-                  <>
-                    <div className="relative">
-                      <Input 
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
-                        placeholder=" "
-                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
-                      />
-                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
-                        Account Holder Name
-                      </label>
-                    </div>
-                    <div className="relative">
-                      <Input 
-                        value={accountNumber}
-                        onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder=" "
-                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
-                      />
-                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
-                        UPI ID (e.g. name@upi)
-                      </label>
-                    </div>
-                  </>
+                {/* Digital Wallet Fields */}
+                {selectedAccountType === 'digital_wallet' && selectedDigitalWallet && (
+                  <div className="relative">
+                    <Input 
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value)}
+                      placeholder={selectedDigitalWallet.placeholder}
+                      className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
+                    />
+                    <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                      {selectedDigitalWallet.inputLabel}
+                    </label>
+                  </div>
                 )}
 
-                {/* bKash Fields (Bangladesh only) - Premium Floating Labels */}
-                {selectedMethod === 'bkash' && (
+                {/* Crypto Fields */}
+                {selectedAccountType === 'crypto' && (
                   <>
-                    <div className="relative">
-                      <Input 
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
-                        placeholder=" "
-                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
-                      />
-                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
-                        Account Holder Name
-                      </label>
-                    </div>
-                    <div className="relative">
-                      <Input 
-                        value={accountNumber}
-                        onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder=" "
-                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
-                      />
-                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
-                        bKash Number
-                      </label>
-                    </div>
-                  </>
-                )}
-
-                {/* Crypto Fields - Premium Floating Labels */}
-                {selectedMethod === 'crypto' && (
-                  <>
-                    <div className="relative">
-                      <Input 
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
-                        placeholder=" "
-                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
-                      />
-                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
-                        Wallet Name / Label
-                      </label>
-                    </div>
                     <div className="space-y-1.5">
                       <label className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">Network</label>
                       <Select value={cryptoNetwork} onValueChange={setCryptoNetwork}>
@@ -1167,36 +1192,45 @@ const SellerWallet = () => {
                 {/* Primary Account Toggle */}
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                   <Checkbox 
-                    id="primary"
+                    id="primary-seller"
                     checked={isPrimary}
                     onCheckedChange={(checked) => setIsPrimary(checked as boolean)}
                   />
-                  <Label htmlFor="primary" className="cursor-pointer">
+                  <Label htmlFor="primary-seller" className="cursor-pointer">
                     <span className="text-gray-900 font-medium">Set as primary</span>
                     <span className="text-gray-500 text-sm block">Use this account for all withdrawals</span>
                   </Label>
                 </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => { setShowAddAccountModal(false); resetAddAccountForm(); }}
+                    className="flex-1 h-12 rounded-xl"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleAddAccount} 
+                    disabled={!accountName || !accountNumber || submitting}
+                    className="flex-1 h-12 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Account
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-2">
-              <Button 
-                variant="outline" 
-                onClick={() => { setShowAddAccountModal(false); resetAddAccountForm(); }}
-                className="flex-1 h-12 rounded-xl"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleAddAccount} 
-                disabled={!selectedMethod || !accountName || !accountNumber || submitting}
-                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
-              >
-                {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : <Plus className="mr-2" size={18} />}
-                Add Account
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -1216,61 +1250,59 @@ const SellerWallet = () => {
             </div>
             <h3 className="text-xl font-bold">Verify Withdrawal</h3>
             <p className="text-violet-100 text-sm mt-2">
-              Withdrawing ${pendingWithdrawalData?.amount || 0} to your account
+              Enter the 6-digit code sent to your email
             </p>
-          </div>
-          
-          <div className="p-6 space-y-6">
-            <div className="text-center">
-              <p className="text-gray-600 text-sm mb-6">
-                Enter the 6-digit code sent to your email
-              </p>
-              <div className="flex justify-center">
-                <InputOTP value={otpValue} onChange={setOTPValue} maxLength={6}>
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} className="w-11 h-14 text-xl border-gray-300" />
-                    <InputOTPSlot index={1} className="w-11 h-14 text-xl border-gray-300" />
-                    <InputOTPSlot index={2} className="w-11 h-14 text-xl border-gray-300" />
-                    <InputOTPSlot index={3} className="w-11 h-14 text-xl border-gray-300" />
-                    <InputOTPSlot index={4} className="w-11 h-14 text-xl border-gray-300" />
-                    <InputOTPSlot index={5} className="w-11 h-14 text-xl border-gray-300" />
-                  </InputOTPGroup>
-                </InputOTP>
+            {pendingWithdrawalData && (
+              <div className="mt-4 p-3 bg-white/10 rounded-xl">
+                <p className="text-white/80 text-sm">Withdrawing</p>
+                <p className="text-2xl font-bold">${pendingWithdrawalData.amount}</p>
               </div>
-              
-              {otpExpiry && (
-                <p className="text-xs text-gray-400 mt-3">
-                  Code expires in 10 minutes
-                </p>
-              )}
+            )}
+          </div>
+
+          <div className="p-6">
+            <div className="flex justify-center mb-6">
+              <InputOTP
+                value={otpValue}
+                onChange={setOTPValue}
+                maxLength={6}
+              >
+                <InputOTPGroup>
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                    <InputOTPSlot key={index} index={index} className="w-12 h-14 text-xl" />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
             </div>
-            
-            <Button 
-              onClick={handleVerifyOTP} 
-              disabled={otpValue.length !== 6 || otpVerifying}
-              className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 rounded-xl"
+
+            <Button
+              onClick={handleVerifyOTP}
+              disabled={otpVerifying || otpValue.length !== 6}
+              className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
             >
-              {otpVerifying ? <Loader2 className="animate-spin mr-2" size={18} /> : <CheckCircle className="mr-2" size={18} />}
-              Confirm Withdrawal
+              {otpVerifying ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Verifying...
+                </>
+              ) : (
+                'Verify & Withdraw'
+              )}
             </Button>
-            
-            <div className="text-center text-sm">
-              <span className="text-gray-500">Didn't receive the code? </span>
-              <button 
-                onClick={handleResendOTP} 
+
+            <div className="mt-4 text-center">
+              <button
+                onClick={handleResendOTP}
                 disabled={otpSending}
-                className="text-violet-600 hover:text-violet-700 font-medium inline-flex items-center gap-1"
+                className="text-sm text-gray-500 hover:text-violet-600 transition-colors"
               >
                 {otpSending ? (
-                  <>
-                    <Loader2 className="animate-spin" size={14} />
+                  <span className="flex items-center gap-2 justify-center">
+                    <Loader2 className="w-3 h-3 animate-spin" />
                     Sending...
-                  </>
+                  </span>
                 ) : (
-                  <>
-                    <RefreshCw size={14} />
-                    Resend Code
-                  </>
+                  "Didn't receive code? Resend"
                 )}
               </button>
             </div>
