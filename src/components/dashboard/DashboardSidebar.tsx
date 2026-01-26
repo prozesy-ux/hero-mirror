@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, ExternalLink, Sparkles, ShoppingBag, Wallet, MessageSquare, User, ShoppingCart, Heart, BarChart3, Bell } from 'lucide-react';
 import { useSidebarContext } from '@/contexts/SidebarContext';
 import metaLogo from '@/assets/meta-logo.png';
 import googleAdsLogo from '@/assets/google-ads-logo.png';
@@ -9,8 +10,23 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+const navItems = [
+  { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
+  { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Marketplace' },
+  { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
+  { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
+  { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
+  { to: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
+  { to: '/dashboard/chat', icon: MessageSquare, label: 'Support' },
+  { to: '/dashboard/profile', icon: User, label: 'Profile' },
+];
+
 const DashboardSidebar = () => {
   const { isCollapsed, toggleSidebar } = useSidebarContext();
+  const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
     <TooltipProvider>
@@ -19,8 +35,50 @@ const DashboardSidebar = () => {
           isCollapsed ? 'w-[72px]' : 'w-60'
         }`}
       >
-        {/* Spacer */}
-        <div className="flex-1" />
+        {/* Navigation Links */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {navItems.map((item) => {
+            const active = isActive(item.to);
+            const Icon = item.icon;
+
+            if (isCollapsed) {
+              return (
+                <Tooltip key={item.to} delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={item.to}
+                      className={`flex items-center justify-center w-full p-3 rounded-xl transition-colors ${
+                        active 
+                          ? 'bg-violet-100 text-violet-700' 
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon size={20} />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="bg-gray-900 text-white border-0">
+                    <p>{item.label}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-colors ${
+                  active 
+                    ? 'bg-violet-100 text-violet-700 font-medium' 
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <Icon size={20} />
+                <span className="text-sm">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
 
         {/* Ads Agency Card - White Design with Meta & Google Logos */}
         {!isCollapsed ? (

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { supabase } from '@/integrations/supabase/client';
-import { LayoutDashboard, Package, ShoppingCart, Share2, Menu, ExternalLink, Bell } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Share2, Menu, ExternalLink, Bell, BarChart3, Warehouse, Users, Tag, FileText, Activity, MessageSquare, Wallet, Settings, Lightbulb, HelpCircle } from 'lucide-react';
 import ShareStoreModal from './ShareStoreModal';
 import theLogo from '@/assets/the-logo.png';
 import metaLogo from '@/assets/meta-logo.png';
@@ -27,6 +27,24 @@ interface SellerNotification {
   created_at: string;
   link: string | null;
 }
+
+// Full sidebar nav items
+const sidebarNavItems = [
+  { to: '/seller', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+  { to: '/seller/products', icon: Package, label: 'Products' },
+  { to: '/seller/orders', icon: ShoppingCart, label: 'Orders' },
+  { to: '/seller/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/seller/inventory', icon: Warehouse, label: 'Inventory' },
+  { to: '/seller/customers', icon: Users, label: 'Customers' },
+  { to: '/seller/marketing', icon: Tag, label: 'Marketing' },
+  { to: '/seller/reports', icon: FileText, label: 'Reports' },
+  { to: '/seller/performance', icon: Activity, label: 'Performance' },
+  { to: '/seller/chat', icon: MessageSquare, label: 'Chat' },
+  { to: '/seller/wallet', icon: Wallet, label: 'Wallet' },
+  { to: '/seller/feature-requests', icon: Lightbulb, label: 'Features' },
+  { to: '/seller/support', icon: HelpCircle, label: 'Support' },
+  { to: '/seller/settings', icon: Settings, label: 'Settings' },
+];
 
 const SellerMobileNavigation = () => {
   const location = useLocation();
@@ -91,6 +109,7 @@ const SellerMobileNavigation = () => {
       .eq('is_read', false);
   };
 
+  // Bottom nav items (limited for mobile)
   const navItems = [
     { to: '/seller', icon: LayoutDashboard, label: 'Home', exact: true },
     { to: '/seller/products', icon: Package, label: 'Products' },
@@ -114,7 +133,7 @@ const SellerMobileNavigation = () => {
                 <span className="text-[10px] font-semibold">Menu</span>
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-white">
+            <SheetContent side="left" className="w-72 p-0 bg-white flex flex-col">
               {/* Logo */}
               <div className="p-4 border-b border-slate-100">
                 <Link to="/seller" onClick={() => setSidebarOpen(false)}>
@@ -122,11 +141,33 @@ const SellerMobileNavigation = () => {
                 </Link>
               </div>
               
-              {/* Spacer */}
-              <div className="flex-1" />
+              {/* Navigation Links */}
+              <ScrollArea className="flex-1 p-3">
+                <nav className="space-y-1">
+                  {sidebarNavItems.map((item) => {
+                    const active = isActive(item.to, item.exact);
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-colors ${
+                          active 
+                            ? 'bg-emerald-100 text-emerald-700 font-medium' 
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                      >
+                        <Icon size={20} />
+                        <span className="text-sm">{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </ScrollArea>
               
               {/* Ads Agency Card */}
-              <div className="p-3 mt-auto">
+              <div className="p-3 border-t border-slate-100">
                 <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
                   {/* Logos Row */}
                   <div className="flex items-center justify-center gap-4 mb-3">
