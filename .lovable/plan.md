@@ -1,234 +1,247 @@
 
-# Fix: Withdrawal OTP Not Opening - Missing 2FA Field in Profile
 
-## Root Cause Identified
+# Amazon Seller Central Dashboard Redesign
 
-After investigating the code flow, I found the exact issue:
+## Overview
 
-### The Problem: Missing Field in TypeScript Interface
+This plan recreates the Seller Dashboard to match the **Amazon Seller Central / Shopeers** design aesthetic from the Behance reference images. The redesign focuses on:
 
-**File: `src/contexts/SellerContext.tsx` (lines 7-18)**
-
-The `SellerProfile` interface is missing the `two_factor_enabled` field:
-
-```typescript
-interface SellerProfile {
-  id: string;
-  user_id: string;
-  store_name: string;
-  store_description: string | null;
-  store_logo_url: string | null;
-  is_verified: boolean;
-  is_active: boolean;
-  commission_rate: number;
-  total_sales: number;
-  total_orders: number;
-  // ❌ MISSING: two_factor_enabled field!
-}
-```
-
-**File: `src/components/seller/SellerWallet.tsx` (line 415)**
-
-The withdrawal handler checks for 2FA status:
-
-```typescript
-const is2FAEnabled = (profile as any)?.two_factor_enabled !== false;
-```
-
-Because the field is missing from the interface:
-- The value is `undefined`
-- `undefined !== false` evaluates to `true`
-- The code ALWAYS tries to send OTP, even when it shouldn't
-- BUT the actual backend data has `two_factor_enabled: true` for all sellers
-
-### Why This Breaks the Flow
-
-1. **Database Reality**: All sellers have `two_factor_enabled: true` (confirmed via query)
-2. **BFF Returns It**: The `bff-seller-dashboard` fetches `seller_profiles` with `select('*')` which includes this field
-3. **TypeScript Strips It**: The frontend interface doesn't define it, so TypeScript doesn't recognize it
-4. **Code Uses `any`**: The check uses `(profile as any)` to bypass TypeScript, but the field is still undefined
-5. **Always Defaults to True**: `undefined !== false` is `true`, so OTP is always attempted
-
-### Additional Issue: API Key Was Invalid
-
-You provided a new Resend API key: `re_EomoCGaJ_6RqyUFzXc1UR1SSquuW5rYt9`
-
-The old key was returning 401 errors, which we've already fixed by updating the secret.
+- **Light gray background (#F7F8FA)** with clean white cards
+- **Professional sans-serif typography** (Inter/Plus Jakarta Sans)
+- **4 top stat cards** with colored icons (not gradients)
+- **Sales Details AreaChart** with clean styling
+- **Order Details Table** with proper filters
+- **Quick Stats grid** and product performance sections
+- **Enhanced date/period filters** (Today, Yesterday, Week, Month, Custom)
 
 ---
 
-## Solution Plan
+## Design Specifications from Reference
 
-### Step 1: Add Missing Field to SellerProfile Interface
+### Color Palette
+| Element | Color |
+|---------|-------|
+| Background | `#F7F8FA` (light gray) |
+| Card Background | `#FFFFFF` (pure white) |
+| Primary Accent | `#10B981` (emerald/green for positive) |
+| Secondary Accent | `#F59E0B` (amber for orders/pending) |
+| Text Primary | `#1E293B` (slate-800) |
+| Text Secondary | `#64748B` (slate-500) |
+| Border | `#E2E8F0` (slate-200) |
+| Chart Line | `#3B82F6` (blue-500) |
 
-**File: `src/contexts/SellerContext.tsx`**
+### Typography
+| Element | Size | Weight |
+|---------|------|--------|
+| Stat Numbers | 28-32px | 700-800 |
+| Card Headers | 16px | 600 |
+| Labels | 12px | 500 |
+| Body Text | 14px | 400 |
 
-Update the interface to include the 2FA field:
-
-```typescript
-interface SellerProfile {
-  id: string;
-  user_id: string;
-  store_name: string;
-  store_description: string | null;
-  store_logo_url: string | null;
-  is_verified: boolean;
-  is_active: boolean;
-  commission_rate: number;
-  total_sales: number;
-  total_orders: number;
-  two_factor_enabled: boolean;  // ✅ ADD THIS
-}
-```
-
-### Step 2: Verify BFF Returns the Field
-
-**File: `supabase/functions/bff-seller-dashboard/index.ts` (line 41)**
-
-The BFF already fetches all fields correctly:
-
-```typescript
-const { data: profile, error: profileError } = await supabase
-  .from('seller_profiles')
-  .select('*')  // ✅ Already includes two_factor_enabled
-  .eq('user_id', userId)
-  .single();
-```
-
-No changes needed here.
-
-### Step 3: Improve 2FA Check Logic
-
-**File: `src/components/seller/SellerWallet.tsx` (line 415)**
-
-Improve the check to be more explicit:
-
-```typescript
-// Old (buggy):
-const is2FAEnabled = (profile as any)?.two_factor_enabled !== false;
-
-// New (explicit):
-const is2FAEnabled = profile.two_factor_enabled === true;
-```
-
-Now that the interface includes the field, we don't need `as any` and can use proper type checking.
-
-### Step 4: Add Console Logging for Debugging
-
-Add debug logs to confirm the value flows through:
-
-```typescript
-console.log('[WITHDRAW] Profile 2FA status:', {
-  two_factor_enabled: profile.two_factor_enabled,
-  is2FAEnabled
-});
-```
+### Spacing
+| Element | Value |
+|---------|-------|
+| Card Padding | 20-24px |
+| Card Border Radius | 16px (rounded-2xl) |
+| Grid Gap | 16-24px |
+| Section Margin | 24px |
 
 ---
 
-## Expected Behavior After Fix
+## Components to Redesign
 
-### When 2FA is Enabled (Default)
-1. User clicks "Withdraw" → Console shows "2FA enabled - sending OTP..."
-2. Edge function receives request → Generates 6-digit OTP
-3. OTP stored in `withdrawal_otps` table
-4. Email sent via Resend (with valid API key)
-5. Frontend receives success response
-6. **OTP modal opens** with input field
-7. User receives email with code
-8. User enters code → Withdrawal processed
+### 1. SellerDashboard.tsx (Main Dashboard)
 
-### When 2FA is Disabled
-1. User clicks "Withdraw" → Console shows "2FA disabled - processing direct withdrawal..."
-2. Withdrawal created immediately (no OTP)
-3. Balance deducted
-4. Success toast shown
+**Current State**: Uses gradient cards, TikTok-style trust score banner, timeline-style activity
 
----
-
-## Technical Flow Diagram
+**New Design Structure**:
 
 ```text
-User Clicks "Withdraw"
-        │
-        ▼
-Check profile.two_factor_enabled
-        │
-   ┌────┴─────┐
-   │          │
-   ▼          ▼
- true       false
-   │          │
-   │    Create withdrawal directly
-   │    (skip OTP)
-   │          │
-   ▼          ▼
-Call send-withdrawal-otp
-   │
-   ▼
-Generate OTP + Store in DB
-   │
-   ▼
-Send Email via Resend
-   │
-   ▼
-✅ Open OTP Modal
-   │
-   ▼
-User enters 6-digit code
-   │
-   ▼
-Verify OTP + Process withdrawal
+┌─────────────────────────────────────────────────────────────────┐
+│  Dashboard Header (title + date selector + export button)       │
+├────────────┬────────────┬────────────┬────────────┬─────────────┤
+│ Today's    │ Today's    │ Total      │ Returns &  │             │
+│ Orders     │ Sales      │ Balance    │ Refunds    │             │
+│ 65         │ $42,350    │ $2,76,000  │ 16         │             │
+│ ↑ 1.3%     │ ↑ 8.5%     │            │            │             │
+├────────────┴────────────┴────────────┴────────────┴─────────────┤
+│                                                                  │
+│  ┌─────────────────────────────────┐  ┌──────────────────────┐  │
+│  │ Sales Details (AreaChart)       │  │ Quick Stats          │  │
+│  │ - Period selector               │  │ - Marketplace: 01    │  │
+│  │ - Blue line chart               │  │ - Messages: 14       │  │
+│  │                                 │  │ - Buy Box Wins: 80%  │  │
+│  │                                 │  │ - Feedback: ★★★★     │  │
+│  └─────────────────────────────────┘  └──────────────────────┘  │
+│                                                                  │
+│  ┌─────────────────────────────────┐  ┌──────────────────────┐  │
+│  │ Order Details (Table)           │  │ Low Stock Products   │  │
+│  │ - View All | Today | Week       │  │ - Product carousel   │  │
+│  │ - ID, Product, Qty, Date, Status│  │                      │  │
+│  │                                 │  │                      │  │
+│  └─────────────────────────────────┘  └──────────────────────┘  │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ Best Selling Products (Table)                            │   │
+│  │ - ID, Name, Sold, Revenue, Rating                        │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key Changes**:
+- Replace gradient stat cards with **white cards + colored icons**
+- Add **trust score as a subtle badge** (not banner)
+- Move chart to main content area with clean styling
+- Add **Order Details Table** inline on dashboard
+- Add **Low Stock / Out of Stock** product carousel
+- Add **Best Selling Products** table
+
+### 2. SellerOrders.tsx (Orders Section)
+
+**Enhanced Filters**:
+- Today / Yesterday / This Week / This Month / Last 30 Days / Custom Range
+- Status tabs (Pending, Delivered, Completed, Refunded, All)
+- Search by Order ID, Product, Buyer
+- Export to CSV with date range
+- Bulk actions for pending orders
+
+**Table Design**:
+```text
+Order ID  │ Product Name         │ Qty │ Order Date - Time    │ Delivery Date │ Status
+TX56320   │ [img] Apple Watch    │ 01  │ 21.02.2024 - 05:43 PM│ 25.02.2024    │ [Pending]
+TX24167   │ [img] Red Book       │ 02  │ 21.02.2024 - 12:53 PM│ 25.02.2024    │ [Pending]
+TX32485   │ [img] Pink dress     │ 01  │ 16.02.2024 - 10:14 AM│ 20.02.2024    │ [Return]
+TX61573   │ [img] Mobile         │ 04  │ 15.02.2024 - 04:10 PM│ 18.02.2024    │ [Delivered]
+```
+
+### 3. SellerAnalytics.tsx (Analytics Section)
+
+**Layout Following Shopeers Reference**:
+- **Page Views, Visitors, Clicks, Orders** stat cards at top
+- **Total Profit** large AreaChart (2/3 width)
+- **Most Active Days** bar chart (1/3 width)
+- **Customers breakdown** (Retailers, Distributors, Wholesalers)
+- **Repeat Customer Rate** circular progress
+- **Best Selling Products** table
+
+### 4. SellerSettings.tsx (Settings Section - Mobile App Style)
+
+**Following the Orange Gradient Mobile Reference**:
+- **Profile Header** with orange-to-red gradient banner
+- **Stats row**: Wishlist count, Coupons, Points
+- **My Orders section** with status icons (Pending, Processing, Shipped, Review, Preorder)
+- **Services section** with icon grid (Browsing History, Address, Support, About Us)
+- **Settings list** (Account Settings, Address Book, Country, Currency, Language, Notifications, Privacy)
+
+### 5. New Component: Dashboard_Stats_Cards
+
+Reusable stat card matching Amazon design:
+
+```tsx
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  change?: { value: number; direction: 'up' | 'down' };
+  icon: LucideIcon;
+  iconBg: string; // e.g., 'bg-emerald-100'
+  iconColor: string; // e.g., 'text-emerald-600'
+}
+```
+
+### 6. New Component: Dashboard_Sales_Chart
+
+Clean AreaChart with:
+- Period dropdown (January, February, etc.)
+- Blue gradient fill
+- Tooltip on hover
+- Responsive sizing
+
+### 7. New Component: Dashboard_Order_Table
+
+Inline order table with:
+- Column headers: Order ID, Product Name, Qty, Order Date - Time, Delivery Date, Status
+- Row hover effects
+- Status badges (Pending=amber, Delivered=blue, Completed=green, Return=red)
+- Pagination or "View All" link
+
+---
+
+## File Changes
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/components/seller/SellerDashboard.tsx` | **Rewrite** | Complete redesign to Amazon Seller Central layout |
+| `src/components/seller/SellerAnalytics.tsx` | **Modify** | Update to Shopeers-style layout with multiple charts |
+| `src/components/seller/SellerOrders.tsx` | **Modify** | Enhanced table design with more filter options |
+| `src/components/seller/SellerSettings.tsx` | **Modify** | Mobile app-style with gradient header |
+| `src/index.css` | **Add** | Amazon dashboard specific utility classes |
+
+---
+
+## Technical Implementation
+
+### Phase 1: Dashboard Main Page
+1. Create new stat card components (white bg + colored icon)
+2. Build Sales Details AreaChart section
+3. Create Order Details table (inline preview)
+4. Add Quick Stats 2x2 grid
+5. Add Low Stock product carousel
+6. Add Best Selling Products table
+
+### Phase 2: Orders Section Enhancement
+1. Add comprehensive date range filters
+2. Implement table-style order display
+3. Add column sorting
+4. Enhance bulk actions UI
+
+### Phase 3: Analytics Redesign
+1. Update stat cards to match main dashboard
+2. Add "Most Active Days" bar chart
+3. Add customer segmentation display
+4. Add repeat customer rate indicator
+
+### Phase 4: Settings Mobile Style
+1. Create gradient profile header
+2. Add order status icon row
+3. Create services icon grid
+4. Style settings list items
+
+---
+
+## Component Structure
+
+```text
+SellerDashboard/
+├── Dashboard_Header (title + date + export)
+├── Dashboard_Stats_Grid (4 stat cards)
+├── Dashboard_Main_Content
+│   ├── Dashboard_Sales_Chart (2/3 width)
+│   └── Dashboard_Quick_Stats (1/3 width)
+├── Dashboard_Secondary_Content
+│   ├── Dashboard_Order_Table (2/3 width)
+│   └── Dashboard_Low_Stock (1/3 width)
+└── Dashboard_Best_Sellers (full width table)
 ```
 
 ---
 
-## Files to Modify
+## Mobile Responsiveness
 
-| File | Change | Lines |
-|------|--------|-------|
-| `src/contexts/SellerContext.tsx` | Add `two_factor_enabled: boolean` to `SellerProfile` interface | 7-18 |
-| `src/components/seller/SellerWallet.tsx` | Improve 2FA check logic, add debug logging | 415-420 |
-
----
-
-## Why This Will Fix the Issue
-
-1. **Proper Data Flow**: The `two_factor_enabled` field will flow from database → BFF → frontend properly
-2. **Type Safety**: TypeScript will recognize the field, no need for `as any` casting
-3. **Correct Logic**: The check will properly evaluate the boolean value instead of defaulting to `true`
-4. **Valid API Key**: The new Resend key will allow emails to send successfully
-5. **Better Debugging**: Console logs will show the actual 2FA status for troubleshooting
+- **Desktop**: Full grid layout as shown in reference
+- **Tablet**: 2-column grids collapse appropriately
+- **Mobile**: Single column stack with horizontal scrolling for tables
 
 ---
 
-## Testing Checklist
+## Data Integration
 
-After implementing the fix:
+All existing data from `SellerContext` will be used:
+- `profile` - Seller info and trust score
+- `wallet` - Balance and pending amounts
+- `products` - For low stock and best sellers
+- `orders` - For order table and stats
+- `withdrawals` - For financial overview
 
-✅ **Test 1: With 2FA Enabled (Default)**
-- Go to Seller Dashboard → Wallet tab
-- Click "Withdraw" button
-- Select account and amount
-- **Expected**: Console shows "2FA enabled", OTP modal opens, email received
+No backend changes required - this is purely a frontend redesign.
 
-✅ **Test 2: Check Console Logs**
-- Open browser DevTools → Console tab
-- Look for: `[WITHDRAW] Profile 2FA status: { two_factor_enabled: true, is2FAEnabled: true }`
-- Verify edge function logs show: `[OTP] Generated OTP for seller...`
-
-✅ **Test 3: Verify Email Delivery**
-- Check registered email inbox
-- Look for email with subject: "Withdrawal Verification Code: XXXXXX"
-- Verify 6-digit code is visible
-
-✅ **Test 4: Complete Withdrawal**
-- Enter the 6-digit OTP code
-- **Expected**: "Withdrawal submitted successfully!" toast
-- Check withdrawals list for new pending request
-
----
-
-## Security Note
-
-All sellers currently have `two_factor_enabled: true` by default, which is the secure behavior. This fix ensures the frontend properly respects that setting instead of accidentally breaking the OTP flow due to a missing TypeScript field.
