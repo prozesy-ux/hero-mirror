@@ -23,6 +23,11 @@ import SellerSupport from '@/components/seller/SellerSupport';
 import SellerSettings from '@/components/seller/SellerSettings';
 import SellerFeatureRequests from '@/components/seller/SellerFeatureRequests';
 import SellerAnalytics from '@/components/seller/SellerAnalytics';
+import SellerInventory from '@/components/seller/SellerInventory';
+import SellerCustomers from '@/components/seller/SellerCustomers';
+import SellerMarketing from '@/components/seller/SellerMarketing';
+import SellerReports from '@/components/seller/SellerReports';
+import SellerPerformance from '@/components/seller/SellerPerformance';
 import signinBackground from '@/assets/signin-background.webp';
 import promptheroIcon from '@/assets/prompthero-icon.png';
 
@@ -548,6 +553,11 @@ const SellerMainContent = () => {
           <Route path="/products" element={<SellerProducts />} />
           <Route path="/orders" element={<SellerOrders />} />
           <Route path="/analytics" element={<SellerAnalytics />} />
+          <Route path="/inventory" element={<SellerInventory />} />
+          <Route path="/customers" element={<SellerCustomers />} />
+          <Route path="/marketing" element={<SellerMarketing />} />
+          <Route path="/reports" element={<SellerReports />} />
+          <Route path="/performance" element={<SellerPerformance />} />
           <Route path="/chat" element={<SellerChat />} />
           <Route path="/wallet" element={<SellerWallet />} />
           <Route path="/feature-requests" element={<SellerFeatureRequests />} />
