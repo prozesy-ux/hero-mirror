@@ -37,6 +37,7 @@ interface SellerProfile {
   commission_rate: number;
   total_sales: number;
   total_orders: number;
+  two_factor_enabled: boolean;
 }
 
 // Seller Auth Form - Same design as main SignIn page
