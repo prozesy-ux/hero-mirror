@@ -13,6 +13,10 @@ import PaymentSettingsManagement from '@/components/admin/PaymentSettingsManagem
 import UnifiedResellersManagement from '@/components/admin/UnifiedResellersManagement';
 import PushNotificationManagement from '@/components/admin/PushNotificationManagement';
 import EmailManagement from '@/components/admin/EmailManagement';
+import AdminAnalytics from '@/components/admin/AdminAnalytics';
+import AdminAuditLogs from '@/components/admin/AdminAuditLogs';
+import AdminAnnouncements from '@/components/admin/AdminAnnouncements';
+import AdminCoupons from '@/components/admin/AdminCoupons';
 import { AdminDataProvider, useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useState, useEffect } from 'react';
 import { Loader2, Lock, User, ArrowLeft, Eye, EyeOff, FileText, Users as UsersIcon, Crown, DollarSign } from 'lucide-react';
@@ -107,6 +111,7 @@ const AdminContent = () => {
       <div className="p-6 lg:p-8">
         <Routes>
           <Route index element={<AdminDashboard />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="prompts" element={<PromptsManagement />} />
           <Route path="categories" element={<CategoriesManagement />} />
           <Route path="users" element={<UsersManagement />} />
@@ -122,6 +127,9 @@ const AdminContent = () => {
           <Route path="resellers" element={<UnifiedResellersManagement />} />
           <Route path="seller-products" element={<UnifiedResellersManagement />} />
           <Route path="seller-withdrawals" element={<UnifiedResellersManagement />} />
+          <Route path="coupons" element={<AdminCoupons />} />
+          <Route path="announcements" element={<AdminAnnouncements />} />
+          <Route path="audit-logs" element={<AdminAuditLogs />} />
         </Routes>
       </div>
     </main>
