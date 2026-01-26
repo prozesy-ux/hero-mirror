@@ -667,12 +667,19 @@ const SellerWallet = () => {
                 </div>
               </div>
               <button
-                onClick={() => setShowWithdrawDialog(true)}
+                onClick={() => {
+                  // Double-check no pending withdrawal before opening dialog
+                  if (hasPendingWithdrawal) {
+                    toast.error('You already have a pending withdrawal request');
+                    return;
+                  }
+                  setShowWithdrawDialog(true);
+                }}
                 disabled={!wallet?.balance || wallet.balance < 5 || hasPendingWithdrawal || savedAccounts.length === 0}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
               >
                 <ArrowDownCircle size={20} />
-                Withdraw
+                {hasPendingWithdrawal ? 'Pending...' : 'Withdraw'}
               </button>
             </div>
           </div>
