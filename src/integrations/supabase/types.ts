@@ -1492,6 +1492,7 @@ export type Database = {
           account_name: string
           account_number: string
           bank_name: string | null
+          country: string | null
           created_at: string | null
           id: string
           is_primary: boolean | null
@@ -1505,6 +1506,7 @@ export type Database = {
           account_name: string
           account_number: string
           bank_name?: string | null
+          country?: string | null
           created_at?: string | null
           id?: string
           is_primary?: boolean | null
@@ -1518,6 +1520,7 @@ export type Database = {
           account_name?: string
           account_number?: string
           bank_name?: string | null
+          country?: string | null
           created_at?: string | null
           id?: string
           is_primary?: boolean | null
@@ -1634,6 +1637,7 @@ export type Database = {
           banner_height: string | null
           banner_type: string | null
           commission_rate: number | null
+          country: string | null
           created_at: string | null
           deleted_at: string | null
           deletion_reason: string | null
@@ -1664,6 +1668,7 @@ export type Database = {
           banner_height?: string | null
           banner_type?: string | null
           commission_rate?: number | null
+          country?: string | null
           created_at?: string | null
           deleted_at?: string | null
           deletion_reason?: string | null
@@ -1694,6 +1699,7 @@ export type Database = {
           banner_height?: string | null
           banner_type?: string | null
           commission_rate?: number | null
+          country?: string | null
           created_at?: string | null
           deleted_at?: string | null
           deletion_reason?: string | null
