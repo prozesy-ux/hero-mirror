@@ -859,6 +859,60 @@ const ProfileSection = () => {
             </AccordionContent>
           </AccordionItem>
 
+          {/* Two-Factor Authentication */}
+          <AccordionItem value="two-factor" className="border-none">
+            <AccordionTrigger className="px-6 py-4 hover:bg-gray-50 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center">
+                  <Key className="h-4 w-4 text-violet-600" />
+                </div>
+                <div className="text-left">
+                  <span className="text-sm font-medium text-gray-900 block">Two-Factor Authentication</span>
+                  <span className="text-xs text-gray-500">Secure your account with extra verification</span>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <Shield className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-emerald-900">Email Verification Active</h4>
+                      <p className="text-sm text-emerald-700 mt-1">
+                        Important account actions are protected with email verification codes sent to your registered email address.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                  <p className="text-sm font-medium text-gray-700 mb-3">Protected actions include:</p>
+                  <ul className="space-y-2">
+                    <li className="flex items-center gap-2 text-sm text-gray-600">
+                      <CheckCircle className="w-4 h-4 text-emerald-500" />
+                      Password changes
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-gray-600">
+                      <CheckCircle className="w-4 h-4 text-emerald-500" />
+                      Email address updates
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-gray-600">
+                      <CheckCircle className="w-4 h-4 text-emerald-500" />
+                      Account deletion requests
+                    </li>
+                  </ul>
+                </div>
+                
+                <p className="text-xs text-gray-500">
+                  💡 Keep your email address secure to protect your account.
+                </p>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
           {/* Notifications */}
           <AccordionItem value="notifications" className="border-none">
             <AccordionTrigger className="px-6 py-4 hover:bg-gray-50 hover:no-underline">
