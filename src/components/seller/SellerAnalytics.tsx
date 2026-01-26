@@ -1,7 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -35,26 +37,53 @@ import {
   Package,
   ArrowUpRight,
   ArrowDownRight,
-  Download
+  Download,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 import { format, subDays, startOfDay, eachDayOfInterval, isWithinInterval, getDay } from 'date-fns';
-
-const months = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
+import { toast } from 'sonner';
+import { DateRange } from 'react-day-picker';
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const SellerAnalytics = () => {
-  const { orders, products, wallet, loading, refreshAll } = useSellerContext();
-  const [selectedMonth, setSelectedMonth] = useState(months[new Date().getMonth()]);
+  const { orders, products, wallet, loading } = useSellerContext();
+  const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'custom'>('30d');
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: subDays(new Date(), 30),
+    to: new Date()
+  });
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Update date range when period changes
+  useEffect(() => {
+    const now = new Date();
+    switch (period) {
+      case '7d':
+        setDateRange({ from: subDays(now, 7), to: now });
+        break;
+      case '30d':
+        setDateRange({ from: subDays(now, 30), to: now });
+        break;
+      case '90d':
+        setDateRange({ from: subDays(now, 90), to: now });
+        break;
+    }
+  }, [period]);
+
+  // Filter orders by date range
+  const filteredOrders = useMemo(() => {
+    if (!dateRange.from || !dateRange.to) return orders;
+    return orders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      return orderDate >= dateRange.from! && orderDate <= dateRange.to!;
+    });
+  }, [orders, dateRange]);
 
   const analyticsData = useMemo(() => {
     const now = new Date();
     const todayStart = startOfDay(now);
     const yesterdayStart = subDays(todayStart, 1);
-    const last30Days = subDays(now, 30);
     
     // Today's orders
     const todayOrders = orders.filter(order => {
@@ -66,12 +95,6 @@ const SellerAnalytics = () => {
     const yesterdayOrders = orders.filter(order => {
       const orderDate = new Date(order.created_at);
       return orderDate >= yesterdayStart && orderDate < todayStart;
-    });
-
-    // Last 30 days orders
-    const recentOrders = orders.filter(order => {
-      const orderDate = new Date(order.created_at);
-      return orderDate >= last30Days;
     });
 
     // Today's stats
@@ -88,27 +111,28 @@ const SellerAnalytics = () => {
       : (todaySales > 0 ? 100 : 0);
 
     // Returns & Refunds
-    const returnsRefunds = orders.filter(o => o.status === 'refunded').length;
+    const returnsRefunds = filteredOrders.filter(o => o.status === 'refunded').length;
 
-    // Daily data for chart
-    const days = eachDayOfInterval({ start: last30Days, end: now });
-    const dailyData = days.map(day => {
-      const dayStart = startOfDay(day);
-      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
-      
-      const dayOrders = recentOrders.filter(order => {
-        const orderDate = new Date(order.created_at);
-        return isWithinInterval(orderDate, { start: dayStart, end: dayEnd });
-      });
+    // Daily data for chart from filtered orders
+    const dailyData = dateRange.from && dateRange.to 
+      ? eachDayOfInterval({ start: dateRange.from, end: dateRange.to }).map(day => {
+          const dayStart = startOfDay(day);
+          const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+          
+          const dayOrders = filteredOrders.filter(order => {
+            const orderDate = new Date(order.created_at);
+            return isWithinInterval(orderDate, { start: dayStart, end: dayEnd });
+          });
 
-      const revenue = dayOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
+          const revenue = dayOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
 
-      return {
-        date: format(day, 'MMM d'),
-        value: revenue,
-        orders: dayOrders.length
-      };
-    });
+          return {
+            date: format(day, 'MMM d'),
+            value: revenue,
+            orders: dayOrders.length
+          };
+        })
+      : [];
 
     // For percentage-based Y-axis display
     const maxRevenue = Math.max(...dailyData.map(d => d.value), 1);
@@ -119,7 +143,7 @@ const SellerAnalytics = () => {
 
     // Day of week breakdown
     const dayOfWeekData = dayNames.map((name, index) => {
-      const dayOrders = recentOrders.filter(order => getDay(new Date(order.created_at)) === index);
+      const dayOrders = filteredOrders.filter(order => getDay(new Date(order.created_at)) === index);
       return {
         day: name,
         orders: dayOrders.length,
@@ -129,15 +153,15 @@ const SellerAnalytics = () => {
 
     // Order status breakdown
     const statusBreakdown = [
-      { name: 'Completed', value: orders.filter(o => o.status === 'completed').length, color: '#10B981' },
-      { name: 'Delivered', value: orders.filter(o => o.status === 'delivered').length, color: '#3B82F6' },
-      { name: 'Pending', value: orders.filter(o => o.status === 'pending').length, color: '#F59E0B' },
-      { name: 'Refunded', value: orders.filter(o => o.status === 'refunded').length, color: '#EF4444' }
+      { name: 'Completed', value: filteredOrders.filter(o => o.status === 'completed').length, color: '#10B981' },
+      { name: 'Delivered', value: filteredOrders.filter(o => o.status === 'delivered').length, color: '#3B82F6' },
+      { name: 'Pending', value: filteredOrders.filter(o => o.status === 'pending').length, color: '#F59E0B' },
+      { name: 'Refunded', value: filteredOrders.filter(o => o.status === 'refunded').length, color: '#EF4444' }
     ].filter(s => s.value > 0);
 
     // Top products
     const productSales: Record<string, { name: string; sold: number; revenue: number }> = {};
-    recentOrders.forEach(order => {
+    filteredOrders.forEach(order => {
       const productId = order.product_id;
       const productName = order.product?.name || 'Unknown';
       if (!productSales[productId]) {
@@ -179,7 +203,37 @@ const SellerAnalytics = () => {
       avgRating,
       maxRevenue
     };
-  }, [orders, wallet]);
+  }, [orders, wallet, filteredOrders, dateRange]);
+
+  // Export function
+  const handleExport = () => {
+    if (filteredOrders.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+
+    const csvContent = [
+      ['Order ID', 'Product', 'Amount ($)', 'Status', 'Date'].join(','),
+      ...filteredOrders.map(order => [
+        order.id.slice(0, 8),
+        `"${order.product?.name || 'Unknown'}"`,
+        order.seller_earning.toFixed(2),
+        order.status,
+        format(new Date(order.created_at), 'yyyy-MM-dd HH:mm')
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-${format(dateRange.from || new Date(), 'yyyy-MM-dd')}-to-${format(dateRange.to || new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Report exported successfully!');
+  };
 
   if (loading) {
     return (
@@ -262,19 +316,63 @@ const SellerAnalytics = () => {
 
   return (
     <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Analytics</h1>
-          <p className="text-sm text-slate-500">Track your store performance</p>
-        </div>
+      {/* Header - No Title, Just Date Filter + Export (Shopeers Style) */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+        {/* Date Range Picker */}
+        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+          <PopoverTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="bg-white border-slate-200 rounded-xl h-9 px-3 text-sm font-normal text-slate-600 hover:bg-slate-50"
+            >
+              <CalendarIcon className="w-4 h-4 mr-2 text-slate-400" />
+              {dateRange.from && dateRange.to ? (
+                <span>
+                  {format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}
+                </span>
+              ) : (
+                <span>Pick a date range</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 bg-white" align="end">
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onSelect={(range) => {
+                setDateRange(range || { from: undefined, to: undefined });
+                if (range?.from && range?.to) {
+                  setPeriod('custom');
+                  setCalendarOpen(false);
+                }
+              }}
+              numberOfMonths={2}
+              className="pointer-events-auto"
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+
+        {/* Period Dropdown */}
+        <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+          <SelectTrigger className="w-[130px] bg-white border-slate-200 rounded-xl h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-white">
+            <SelectItem value="7d">Last 7 days</SelectItem>
+            <SelectItem value="30d">Last 30 days</SelectItem>
+            <SelectItem value="90d">Last 90 days</SelectItem>
+            <SelectItem value="custom">Custom</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Export Button */}
         <Button 
-          variant="outline" 
-          size="sm"
-          className="bg-white border-slate-200 rounded-xl w-fit"
+          onClick={handleExport}
+          className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl h-9 px-4"
         >
           <Download className="w-4 h-4 mr-2" />
-          Export Report
+          Export
         </Button>
       </div>
 
@@ -310,23 +408,13 @@ const SellerAnalytics = () => {
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-32 h-9 rounded-lg border-slate-200 bg-white">
-                <SelectValue placeholder="January" />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                {months.map(month => (
-                  <SelectItem key={month} value={month}>{month}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
           
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={analyticsData.dailyData}>
                 <defs>
-                  <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="analyticsSalesGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
                     <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                   </linearGradient>
@@ -366,7 +454,7 @@ const SellerAnalytics = () => {
                   dataKey="percentage" 
                   stroke="#3B82F6" 
                   strokeWidth={2.5} 
-                  fill="url(#salesGradient)" 
+                  fill="url(#analyticsSalesGradient)" 
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -480,40 +568,26 @@ const SellerAnalytics = () => {
                     <p className="text-sm font-medium text-slate-800 truncate">{product.name}</p>
                     <p className="text-xs text-slate-500">{product.sold} sold</p>
                   </div>
-                  <span className="text-sm font-semibold text-emerald-600">${product.revenue.toFixed(0)}</span>
+                  <span className="text-sm font-bold text-slate-800">${product.revenue.toFixed(0)}</span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center">
-              <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">No sales data yet</p>
+            <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
+              No sales yet
             </div>
           )}
         </div>
 
-        {/* Revenue by Day of Week */}
+        {/* Revenue by Day */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Revenue by Day</h3>
-          <div className="h-[220px]">
+          <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analyticsData.dayOfWeekData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
-                <XAxis 
-                  type="number" 
-                  tick={{ fontSize: 11, fill: '#64748B' }} 
-                  axisLine={false} 
-                  tickLine={false}
-                  tickFormatter={(v) => `$${v}`}
-                />
-                <YAxis 
-                  dataKey="day" 
-                  type="category" 
-                  tick={{ fontSize: 11, fill: '#64748B' }} 
-                  axisLine={false} 
-                  tickLine={false} 
-                  width={35} 
-                />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="day" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} width={35} />
                 <Tooltip 
                   contentStyle={{ 
                     borderRadius: 12, 
