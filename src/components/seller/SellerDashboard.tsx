@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AnnouncementBanner } from '@/components/ui/announcement-banner';
 import { 
   AreaChart, 
   Area, 
@@ -229,6 +230,8 @@ const SellerDashboard = () => {
 
   return (
     <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen space-y-6 seller-dashboard">
+      {/* Announcements Banner */}
+      <AnnouncementBanner audience="seller" />
       {/* Dashboard Header - Shopeers Style */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">

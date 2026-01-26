@@ -4,6 +4,7 @@ import { TrendingUp, Bot, ArrowRight, Heart, Lock, Star, Check, ImageIcon } from
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { AnnouncementBanner } from '@/components/ui/announcement-banner';
 
 // Import logos and assets
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -182,6 +183,8 @@ const DashboardHome = () => {
 
   return (
     <div className="space-y-8 lg:space-y-10 animate-fade-up">
+      {/* Announcements Banner */}
+      <AnnouncementBanner audience="buyer" />
       <div>
         <div className="flex items-center justify-between mb-4 lg:mb-6">
           <div className="flex items-center gap-2 lg:gap-3 flex-wrap">
