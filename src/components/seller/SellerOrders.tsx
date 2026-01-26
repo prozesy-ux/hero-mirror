@@ -7,10 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { format, isToday, isThisWeek, isThisMonth, startOfDay, startOfWeek, startOfMonth } from 'date-fns';
+import { format, isToday, isYesterday, isThisWeek, isThisMonth, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { 
   Package, 
   Loader2, 
@@ -25,22 +26,25 @@ import {
   Download,
   Mail,
   Copy,
-  Calendar,
-  Filter
+  Calendar as CalendarIcon,
+  ChevronDown,
+  Filter,
+  RefreshCw
 } from 'lucide-react';
 
 const SellerOrders = () => {
-  const { orders, wallet, refreshOrders, refreshWallet, loading, profile } = useSellerContext();
+  const { orders, refreshOrders, loading, profile } = useSellerContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [credentials, setCredentials] = useState('');
   const [delivering, setDelivering] = useState(false);
-  const [activeTab, setActiveTab] = useState('pending');
-  const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>('all');
+  const [activeStatus, setActiveStatus] = useState<'all' | 'pending' | 'delivered' | 'completed' | 'refunded'>('all');
+  const [dateRange, setDateRange] = useState<'today' | 'yesterday' | 'week' | 'month' | '30d' | 'custom' | 'all'>('all');
+  const [customRange, setCustomRange] = useState<{ from: Date; to: Date } | null>(null);
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
   
   // Bulk selection
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
-  const [bulkDelivering, setBulkDelivering] = useState(false);
   
   // Edit credentials state
   const [editingOrder, setEditingOrder] = useState<string | null>(null);
@@ -51,27 +55,37 @@ const SellerOrders = () => {
     return orders.filter(order => {
       const matchesSearch = 
         order.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.buyer?.email?.toLowerCase().includes(searchQuery.toLowerCase());
+        order.buyer?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.id.toLowerCase().includes(searchQuery.toLowerCase());
       
       // Status filter
-      const matchesStatus = activeTab === 'all' || order.status === activeTab;
+      const matchesStatus = activeStatus === 'all' || order.status === activeStatus;
       
       // Date filter
       let matchesDate = true;
-      if (dateRange !== 'all') {
-        const orderDate = new Date(order.created_at);
-        if (dateRange === 'today') {
-          matchesDate = isToday(orderDate);
-        } else if (dateRange === 'week') {
-          matchesDate = isThisWeek(orderDate);
-        } else if (dateRange === 'month') {
-          matchesDate = isThisMonth(orderDate);
-        }
+      const orderDate = new Date(order.created_at);
+      
+      if (dateRange === 'today') {
+        matchesDate = isToday(orderDate);
+      } else if (dateRange === 'yesterday') {
+        matchesDate = isYesterday(orderDate);
+      } else if (dateRange === 'week') {
+        matchesDate = isThisWeek(orderDate);
+      } else if (dateRange === 'month') {
+        matchesDate = isThisMonth(orderDate);
+      } else if (dateRange === '30d') {
+        const thirtyDaysAgo = subDays(new Date(), 30);
+        matchesDate = orderDate >= thirtyDaysAgo;
+      } else if (dateRange === 'custom' && customRange) {
+        matchesDate = isWithinInterval(orderDate, { 
+          start: startOfDay(customRange.from), 
+          end: endOfDay(customRange.to) 
+        });
       }
       
       return matchesSearch && matchesStatus && matchesDate;
     });
-  }, [orders, searchQuery, activeTab, dateRange]);
+  }, [orders, searchQuery, activeStatus, dateRange, customRange]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -137,7 +151,6 @@ const SellerOrders = () => {
       const order = orders.find(o => o.id === selectedOrder);
       if (!order) throw new Error('Order not found');
 
-      // Update order status to delivered (awaiting buyer approval)
       const { error: orderError } = await supabase
         .from('seller_orders')
         .update({
@@ -149,7 +162,6 @@ const SellerOrders = () => {
 
       if (orderError) throw orderError;
 
-      // Create notification for buyer (in notifications table - for buyers)
       await supabase.from('notifications').insert({
         user_id: order.buyer_id,
         type: 'delivery',
@@ -159,7 +171,6 @@ const SellerOrders = () => {
         is_read: false
       });
 
-      // Create seller notification (in seller_notifications table - for seller)
       await supabase.from('seller_notifications').insert({
         seller_id: profile?.id,
         type: 'order_delivered',
@@ -169,7 +180,6 @@ const SellerOrders = () => {
         is_read: false
       });
 
-      // Create system message in seller_chats
       await supabase.from('seller_chats').insert({
         buyer_id: order.buyer_id,
         seller_id: profile?.id,
@@ -200,7 +210,6 @@ const SellerOrders = () => {
       const order = orders.find(o => o.id === editingOrder);
       if (!order) throw new Error('Order not found');
 
-      // Update credentials
       const { error: orderError } = await supabase
         .from('seller_orders')
         .update({
@@ -210,7 +219,6 @@ const SellerOrders = () => {
 
       if (orderError) throw orderError;
 
-      // Create notification for buyer (in notifications table - for buyers)
       await supabase.from('notifications').insert({
         user_id: order.buyer_id,
         type: 'update',
@@ -220,7 +228,6 @@ const SellerOrders = () => {
         is_read: false
       });
 
-      // Create system message in seller_chats
       await supabase.from('seller_chats').insert({
         buyer_id: order.buyer_id,
         seller_id: profile?.id,
@@ -245,312 +252,341 @@ const SellerOrders = () => {
     setEditCredentials(currentCredentials || '');
   };
 
-  const getStatusConfig = (status: string, buyerApproved?: boolean) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
       case 'pending':
-        return {
-          icon: Clock,
-          label: 'Pending Delivery',
-          className: 'bg-amber-50 text-amber-600 border-amber-200',
-          accentColor: 'border-l-amber-400'
-        };
+        return { icon: Clock, label: 'Pending', bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-l-amber-400' };
       case 'delivered':
-        return {
-          icon: Truck,
-          label: 'Awaiting Approval',
-          className: 'bg-blue-50 text-blue-600 border-blue-200',
-          accentColor: 'border-l-blue-400'
-        };
+        return { icon: Truck, label: 'Delivered', bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-l-blue-400' };
       case 'completed':
-        return {
-          icon: CheckCircle,
-          label: buyerApproved ? 'Buyer Approved' : 'Completed',
-          className: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-          accentColor: 'border-l-emerald-400'
-        };
+        return { icon: CheckCircle, label: 'Completed', bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-l-emerald-400' };
       case 'refunded':
-        return {
-          icon: XCircle,
-          label: 'Refunded',
-          className: 'bg-red-50 text-red-600 border-red-200',
-          accentColor: 'border-l-red-400'
-        };
+        return { icon: XCircle, label: 'Refunded', bg: 'bg-red-100', text: 'text-red-700', border: 'border-l-red-400' };
       default:
-        return {
-          icon: AlertCircle,
-          label: status,
-          className: 'bg-slate-50 text-slate-600 border-slate-200',
-          accentColor: 'border-l-slate-400'
-        };
+        return { icon: AlertCircle, label: status, bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-l-slate-400' };
     }
   };
 
   const pendingCount = orders.filter(o => o.status === 'pending').length;
   const deliveredCount = orders.filter(o => o.status === 'delivered').length;
   const completedCount = orders.filter(o => o.status === 'completed').length;
-  const pendingSelectableCount = filteredOrders.filter(o => o.status === 'pending').length;
+  const refundedCount = orders.filter(o => o.status === 'refunded').length;
+
+  const dateLabels: Record<string, string> = {
+    today: 'Today',
+    yesterday: 'Yesterday',
+    week: 'This Week',
+    month: 'This Month',
+    '30d': 'Last 30 Days',
+    custom: customRange ? `${format(customRange.from, 'MMM d')} - ${format(customRange.to, 'MMM d')}` : 'Custom',
+    all: 'All Time'
+  };
 
   if (loading) {
     return (
-      <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
-        <Skeleton className="h-8 w-32 mb-6" />
+      <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen">
+        <Skeleton className="h-8 w-48 mb-6" />
         <div className="space-y-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 bg-slate-50 min-h-screen">
-      {/* Bulk Actions Bar */}
-      {selectedOrders.size > 0 && (
-        <div className="flex items-center gap-2 sm:gap-3 bg-violet-50 border border-violet-200 rounded-xl p-2 sm:p-3 mb-4">
-          <Badge className="bg-violet-500 text-white text-xs">
-            {selectedOrders.size} selected
-          </Badge>
-          <Button
+    <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen seller-dashboard">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 seller-heading">Orders</h1>
+          <p className="text-sm text-slate-500">{filteredOrders.length} orders found</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
             size="sm"
-            variant="ghost"
-            onClick={() => setSelectedOrders(new Set())}
-            className="text-slate-600 hover:bg-slate-100 text-xs sm:text-sm"
+            onClick={() => refreshOrders()}
+            className="bg-white border-slate-200 rounded-xl"
           >
-            Clear
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
           </Button>
-        </div>
-      )}
-
-      {/* Search & Date Filter - Mobile optimized */}
-      <div className="flex flex-col gap-3 mb-4 sm:mb-6">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search orders..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white border-slate-200"
-          />
-        </div>
-        
-        {/* Date Filter - Horizontal scrollable on mobile */}
-        <div className="flex overflow-x-auto hide-scrollbar gap-1 bg-white border border-slate-200 rounded-lg p-1">
-          {[
-            { key: 'today', label: 'Today' },
-            { key: 'week', label: 'Week' },
-            { key: 'month', label: 'Month' },
-            { key: 'all', label: 'All' }
-          ].map((item) => (
-            <Button
-              key={item.key}
-              size="sm"
-              variant={dateRange === item.key ? 'default' : 'ghost'}
-              onClick={() => setDateRange(item.key as typeof dateRange)}
-              className={`flex-shrink-0 text-xs sm:text-sm px-3 ${
-                dateRange === item.key ? 'bg-slate-900 text-white' : 'text-slate-600'
-              }`}
-            >
-              {item.label}
-            </Button>
-          ))}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleExportCSV}
+            className="bg-white border-slate-200 rounded-xl"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
         </div>
       </div>
 
-      {/* Tabs with Export CSV in Tab Bar */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <TabsList className="bg-white border border-slate-200 p-1 flex overflow-x-auto hide-scrollbar w-full sm:w-auto">
-            <TabsTrigger value="pending" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
-              <span className="hidden sm:inline">Pending</span>
-              <span className="sm:hidden">Pend</span>
-              {pendingCount > 0 && (
-                <Badge className="bg-amber-500 text-white text-[10px] h-5 min-w-[18px]">
-                  {pendingCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="delivered" className="flex-shrink-0 gap-1.5 text-xs sm:text-sm data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
-              <span className="hidden sm:inline">Delivered</span>
-              <span className="sm:hidden">Sent</span>
-              {deliveredCount > 0 && (
-                <Badge className="bg-blue-500 text-white text-[10px] h-5 min-w-[18px]">
-                  {deliveredCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="flex-shrink-0 text-xs sm:text-sm data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
-              <span className="hidden sm:inline">Completed ({completedCount})</span>
-              <span className="sm:hidden">Done ({completedCount})</span>
-            </TabsTrigger>
-            <TabsTrigger value="all" className="flex-shrink-0 text-xs sm:text-sm data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600">
-              All
-            </TabsTrigger>
-          </TabsList>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+          <p className="text-xs font-medium text-slate-500 uppercase">Pending</p>
+          <p className="text-2xl font-bold text-amber-600 mt-1">{pendingCount}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+          <p className="text-xs font-medium text-slate-500 uppercase">Delivered</p>
+          <p className="text-2xl font-bold text-blue-600 mt-1">{deliveredCount}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+          <p className="text-xs font-medium text-slate-500 uppercase">Completed</p>
+          <p className="text-2xl font-bold text-emerald-600 mt-1">{completedCount}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+          <p className="text-xs font-medium text-slate-500 uppercase">Refunded</p>
+          <p className="text-2xl font-bold text-red-600 mt-1">{refundedCount}</p>
+        </div>
+      </div>
 
-          {/* Export CSV Button - Right side of tab bar */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportCSV}
-              className="border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg flex-shrink-0"
-            >
-              <Download className="h-4 w-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Export CSV</span>
-            </Button>
-
-            {/* Select All (only for pending) */}
-            {activeTab === 'pending' && pendingSelectableCount > 0 && (
-              <label className="hidden sm:flex items-center gap-2 text-sm text-slate-600 cursor-pointer px-2">
-                <Checkbox
-                  checked={selectedOrders.size === pendingSelectableCount && pendingSelectableCount > 0}
-                  onCheckedChange={handleSelectAll}
-                />
-                <span className="text-xs font-medium">All</span>
-              </label>
-            )}
+      {/* Filters Card */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Search by order ID, product, or buyer..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-slate-50 border-slate-200 rounded-xl"
+            />
           </div>
+
+          {/* Date Range Dropdown */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="min-w-[160px] justify-between bg-slate-50 border-slate-200 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4 text-slate-500" />
+                  <span className="text-slate-700">{dateLabels[dateRange]}</span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-slate-400" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-2" align="end">
+              <div className="space-y-1">
+                {['today', 'yesterday', 'week', 'month', '30d', 'all'].map((key) => (
+                  <Button
+                    key={key}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setDateRange(key as typeof dateRange); setShowCustomPicker(false); }}
+                    className={`w-full justify-start rounded-lg ${dateRange === key ? 'bg-slate-100' : ''}`}
+                  >
+                    {dateLabels[key]}
+                  </Button>
+                ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCustomPicker(true)}
+                  className={`w-full justify-start rounded-lg text-blue-600 ${dateRange === 'custom' ? 'bg-blue-50' : ''}`}
+                >
+                  Custom Range...
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
-        <TabsContent value={activeTab}>
-          {filteredOrders.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-100 p-12 text-center">
-              <Package className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="font-semibold text-slate-900 mb-2">No orders found</h3>
-              <p className="text-slate-500 text-sm">
-                {activeTab === 'pending' ? 'No pending orders' : 'Orders will appear here'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredOrders.map((order) => {
-                const statusConfig = getStatusConfig(order.status, (order as any).buyer_approved);
-                const StatusIcon = statusConfig.icon;
-                const buyerEmailInput = (order as any).buyer_email_input;
+        {/* Status Tabs */}
+        <div className="flex gap-2 mt-4 overflow-x-auto hide-scrollbar pb-1">
+          {[
+            { key: 'all', label: 'All', count: orders.length },
+            { key: 'pending', label: 'Pending', count: pendingCount },
+            { key: 'delivered', label: 'Delivered', count: deliveredCount },
+            { key: 'completed', label: 'Completed', count: completedCount },
+            { key: 'refunded', label: 'Refunded', count: refundedCount }
+          ].map((tab) => (
+            <Button
+              key={tab.key}
+              variant={activeStatus === tab.key ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveStatus(tab.key as typeof activeStatus)}
+              className={`flex-shrink-0 rounded-full px-4 ${
+                activeStatus === tab.key 
+                  ? 'bg-slate-900 text-white hover:bg-slate-800' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {tab.label}
+              <Badge className={`ml-2 text-[10px] ${
+                activeStatus === tab.key 
+                  ? 'bg-white/20 text-white' 
+                  : 'bg-slate-200 text-slate-600'
+              }`}>
+                {tab.count}
+              </Badge>
+            </Button>
+          ))}
+        </div>
 
-                return (
-                  <div 
-                    key={order.id} 
-                    className={`bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-lg hover:border-slate-200 transition-all duration-200 border-l-4 ${statusConfig.accentColor}`}
-                  >
-                    <div className="p-3 sm:p-4">
-                      {/* Mobile-first layout: Stack vertically on mobile */}
-                      <div className="space-y-3 sm:space-y-0 sm:flex sm:items-start sm:justify-between sm:gap-4">
-                        {/* Product Info Row */}
-                        <div className="flex items-start gap-3">
-                          {/* Checkbox for pending orders */}
-                          {order.status === 'pending' && (
-                            <Checkbox
-                              checked={selectedOrders.has(order.id)}
-                              onCheckedChange={(checked) => handleSelectOrder(order.id, !!checked)}
-                              className="mt-1 flex-shrink-0"
-                            />
-                          )}
-                          
-                          <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        {/* Bulk Actions */}
+        {selectedOrders.size > 0 && (
+          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-100">
+            <Badge className="bg-blue-100 text-blue-700">{selectedOrders.size} selected</Badge>
+            <Button size="sm" variant="ghost" onClick={() => setSelectedOrders(new Set())} className="text-slate-600">
+              Clear Selection
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Custom Date Picker Modal */}
+      <Dialog open={showCustomPicker} onOpenChange={setShowCustomPicker}>
+        <DialogContent className="max-w-fit">
+          <DialogHeader>
+            <DialogTitle>Select Date Range</DialogTitle>
+          </DialogHeader>
+          <Calendar
+            mode="range"
+            selected={customRange ? { from: customRange.from, to: customRange.to } : undefined}
+            onSelect={(range) => {
+              if (range?.from && range?.to) {
+                setCustomRange({ from: range.from, to: range.to });
+                setDateRange('custom');
+                setShowCustomPicker(false);
+              }
+            }}
+            numberOfMonths={2}
+            className="pointer-events-auto"
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Orders Table */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        {filteredOrders.length === 0 ? (
+          <div className="p-12 text-center">
+            <Package className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+            <h3 className="font-semibold text-slate-900 mb-2">No orders found</h3>
+            <p className="text-slate-500 text-sm">Try adjusting your filters</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-100">
+                <tr>
+                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4 w-10">
+                    <Checkbox
+                      checked={selectedOrders.size === filteredOrders.filter(o => o.status === 'pending').length && selectedOrders.size > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </th>
+                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4">Order ID</th>
+                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4">Product</th>
+                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4 hidden md:table-cell">Buyer</th>
+                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4 hidden lg:table-cell">Order Date</th>
+                  <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4">Amount</th>
+                  <th className="text-center text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4">Status</th>
+                  <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredOrders.map((order) => {
+                  const statusConfig = getStatusConfig(order.status);
+                  const StatusIcon = statusConfig.icon;
+                  const buyerEmailInput = (order as any).buyer_email_input;
+
+                  return (
+                    <tr key={order.id} className={`hover:bg-slate-50 transition-colors border-l-4 ${statusConfig.border}`}>
+                      <td className="px-5 py-4">
+                        {order.status === 'pending' && (
+                          <Checkbox
+                            checked={selectedOrders.has(order.id)}
+                            onCheckedChange={(checked) => handleSelectOrder(order.id, !!checked)}
+                          />
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm font-mono font-medium text-slate-700">
+                          #{order.id.slice(-6).toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                             {order.product?.icon_url ? (
-                              <img src={order.product.icon_url} alt="" className="h-full w-full object-cover" />
+                              <img src={order.product.icon_url} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <Package className="h-6 w-6 sm:h-7 sm:w-7 text-slate-400" />
+                              <Package className="w-5 h-5 text-slate-400" />
                             )}
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="font-semibold text-slate-900 text-sm sm:text-lg truncate">{order.product?.name || 'Product'}</h3>
-                            <p className="text-xs sm:text-sm text-slate-500 truncate">{order.buyer?.email || 'Unknown buyer'}</p>
-                            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">
-                              {format(new Date(order.created_at), 'MMM d, h:mm a')}
-                            </p>
-                          </div>
+                          <span className="text-sm font-medium text-slate-700 truncate max-w-[150px]">
+                            {order.product?.name || 'Product'}
+                          </span>
                         </div>
-
-                        {/* Price + Actions Row - Full width on mobile */}
-                        <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                          <p className="font-bold text-lg sm:text-xl text-emerald-600">
-                            +${Number(order.seller_earning).toFixed(2)}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className={`text-[10px] sm:text-[11px] font-medium ${statusConfig.className}`}>
-                              <StatusIcon className="h-3 w-3 mr-0.5 sm:mr-1" />
-                              <span className="hidden sm:inline">{statusConfig.label}</span>
-                              <span className="sm:hidden">{statusConfig.label.split(' ')[0]}</span>
-                            </Badge>
-                            {order.status === 'pending' && (
-                              <Button
-                                size="sm"
-                                onClick={() => setSelectedOrder(order.id)}
-                                className="bg-emerald-500 hover:bg-emerald-600 h-8 text-xs sm:text-sm"
-                              >
-                                <Send className="h-3.5 w-3.5 sm:mr-1.5" />
-                                <span className="hidden sm:inline">Deliver</span>
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Buyer Email Input (for email-required products) */}
-                      {buyerEmailInput && (
-                        <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-100">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4 text-blue-600" />
-                              <span className="text-sm font-medium text-blue-700">Buyer Email for Access:</span>
-                            </div>
+                      </td>
+                      <td className="px-5 py-4 hidden md:table-cell">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-slate-600 truncate max-w-[150px]">
+                            {order.buyer?.email?.split('@')[0] || 'Buyer'}
+                          </span>
+                          {buyerEmailInput && (
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => copyToClipboard(buyerEmailInput)}
-                              className="h-7 text-blue-600 hover:bg-blue-100"
+                              className="h-6 w-6 p-0 text-blue-600"
                             >
-                              <Copy className="h-3.5 w-3.5 mr-1" />
-                              Copy
+                              <Copy className="h-3 w-3" />
                             </Button>
-                          </div>
-                          <code className="block mt-2 text-sm bg-white px-3 py-2 rounded border border-blue-200 text-blue-900 font-mono">
-                            {buyerEmailInput}
-                          </code>
+                          )}
                         </div>
-                      )}
-
-                      {order.status === 'delivered' && (
-                        <div className="mt-4 pt-4 border-t border-slate-100">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-blue-600">
-                              <Truck className="h-4 w-4" />
-                              <p className="text-sm font-medium">Delivered - Waiting for buyer to approve</p>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEditCredentials(order.id, order.credentials)}
-                              className="border-slate-200 text-slate-600 hover:bg-slate-50"
-                            >
-                              <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                              Edit Credentials
-                            </Button>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-1">
-                            Balance will be released once buyer approves delivery
-                          </p>
+                      </td>
+                      <td className="px-5 py-4 hidden lg:table-cell">
+                        <div>
+                          <span className="text-sm text-slate-700">{format(new Date(order.created_at), 'MMM d, yyyy')}</span>
+                          <span className="text-xs text-slate-400 block">{format(new Date(order.created_at), 'h:mm a')}</span>
                         </div>
-                      )}
-
-                      {order.status === 'completed' && order.delivered_at && (
-                        <div className="mt-4 pt-4 border-t border-slate-100">
-                          <p className="text-xs text-slate-500">
-                            Completed on {format(new Date(order.delivered_at), 'MMM d, yyyy')}
-                            {(order as any).buyer_approved && ' • Buyer approved'}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="text-sm font-semibold text-emerald-600">
+                          +${Number(order.seller_earning).toFixed(2)}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <Badge className={`${statusConfig.bg} ${statusConfig.text} border-0 text-[10px] font-semibold`}>
+                          <StatusIcon className="w-3 h-3 mr-1" />
+                          {statusConfig.label}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        {order.status === 'pending' && (
+                          <Button
+                            size="sm"
+                            onClick={() => setSelectedOrder(order.id)}
+                            className="bg-emerald-500 hover:bg-emerald-600 rounded-lg text-xs"
+                          >
+                            <Send className="h-3.5 w-3.5 mr-1" />
+                            Deliver
+                          </Button>
+                        )}
+                        {order.status === 'delivered' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEditCredentials(order.id, order.credentials)}
+                            className="border-slate-200 text-slate-600 rounded-lg text-xs"
+                          >
+                            <Pencil className="h-3.5 w-3.5 mr-1" />
+                            Edit
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Delivery Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
@@ -569,7 +605,7 @@ const SellerOrders = () => {
               rows={4}
               className="border-slate-200"
             />
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
               <p className="text-sm text-blue-600">
                 After delivery, the buyer will review and approve. Your earnings will be released upon approval.
               </p>
@@ -578,14 +614,14 @@ const SellerOrders = () => {
               <Button
                 variant="outline"
                 onClick={() => setSelectedOrder(null)}
-                className="flex-1 border-slate-200"
+                className="flex-1 border-slate-200 rounded-xl"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleDeliver}
                 disabled={delivering || !credentials.trim()}
-                className="flex-1 bg-emerald-500 hover:bg-emerald-600"
+                className="flex-1 bg-emerald-500 hover:bg-emerald-600 rounded-xl"
               >
                 {delivering ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -612,29 +648,29 @@ const SellerOrders = () => {
           </DialogHeader>
           <div className="space-y-4">
             <Textarea
-              placeholder="Enter updated account credentials (email, password, etc.)"
+              placeholder="Enter updated account credentials"
               value={editCredentials}
               onChange={(e) => setEditCredentials(e.target.value)}
               rows={4}
               className="border-slate-200"
             />
-            <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
               <p className="text-sm text-amber-600">
-                The buyer will be notified of the credential update and will see the new credentials.
+                The buyer will be notified of the credential update.
               </p>
             </div>
             <div className="flex gap-3">
               <Button
                 variant="outline"
                 onClick={() => setEditingOrder(null)}
-                className="flex-1 border-slate-200"
+                className="flex-1 border-slate-200 rounded-xl"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleUpdateCredentials}
                 disabled={updating || !editCredentials.trim()}
-                className="flex-1 bg-blue-500 hover:bg-blue-600"
+                className="flex-1 bg-blue-500 hover:bg-blue-600 rounded-xl"
               >
                 {updating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

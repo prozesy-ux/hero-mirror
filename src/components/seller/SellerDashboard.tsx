@@ -1,26 +1,43 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Wallet, 
-  Clock, 
-  DollarSign, 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer
+} from 'recharts';
+import { 
   Package,
   ShoppingBag,
-  CheckCircle,
+  DollarSign,
   TrendingUp,
-  Plus,
+  TrendingDown,
   ArrowRight,
   ShieldCheck,
-  Activity,
-  BarChart3,
-  ArrowUpRight
+  MessageSquare,
+  Award,
+  Star,
+  AlertTriangle,
+  ChevronDown,
+  Download,
+  Calendar as CalendarIcon
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, subDays, eachDayOfInterval, isWithinInterval, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface TrustScore {
   trust_score: number;
@@ -32,6 +49,7 @@ interface TrustScore {
 const SellerDashboard = () => {
   const { profile, wallet, products, orders, loading } = useSellerContext();
   const [trustScore, setTrustScore] = useState<TrustScore | null>(null);
+  const [chartPeriod, setChartPeriod] = useState<'7d' | '30d' | '90d'>('30d');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,7 +58,6 @@ const SellerDashboard = () => {
     }
   }, [profile?.id]);
 
-  // Real-time subscription for trust score updates
   useEffect(() => {
     if (!profile?.id) return;
 
@@ -73,309 +90,516 @@ const SellerDashboard = () => {
     }
   };
 
+  // Calculate stats
+  const todayStart = startOfDay(new Date());
+  const todayOrders = orders.filter(o => new Date(o.created_at) >= todayStart);
+  const todaySales = todayOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
-  const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
   const completedOrders = orders.filter(o => o.status === 'completed').length;
-  const totalEarnings = orders
-    .filter(o => o.status === 'completed')
-    .reduce((sum, o) => sum + (Number(o.seller_earning) || 0), 0);
+  const refundedOrders = orders.filter(o => o.status === 'refunded').length;
 
+  // Chart data
+  const chartData = useMemo(() => {
+    const days = chartPeriod === '7d' ? 7 : chartPeriod === '30d' ? 30 : 90;
+    const startDate = subDays(new Date(), days);
+    const dateRange = eachDayOfInterval({ start: startDate, end: new Date() });
+
+    return dateRange.map(day => {
+      const dayStart = startOfDay(day);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+      
+      const dayOrders = orders.filter(order => {
+        const orderDate = new Date(order.created_at);
+        return isWithinInterval(orderDate, { start: dayStart, end: dayEnd });
+      });
+
+      return {
+        date: format(day, 'MMM d'),
+        sales: dayOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0),
+        orders: dayOrders.length
+      };
+    });
+  }, [orders, chartPeriod]);
+
+  // Recent orders for table
   const recentOrders = orders
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5);
 
+  // Low stock products
+  const lowStockProducts = products
+    .filter(p => (p.stock ?? 0) <= 5 && p.is_available)
+    .slice(0, 4);
+
+  // Best selling products
+  const bestSellers = products
+    .filter(p => p.sold_count > 0)
+    .sort((a, b) => b.sold_count - a.sold_count)
+    .slice(0, 5);
+
   if (loading) {
     return (
-      <div className="space-y-6 seller-dashboard">
+      <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-36 rounded-2xl" />
+            <Skeleton key={i} className="h-28 rounded-2xl" />
           ))}
         </div>
-        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-80 rounded-2xl" />
       </div>
     );
   }
 
-  const getTrustScoreColor = (score: number) => {
-    if (score >= 90) return 'text-emerald-500';
-    if (score >= 70) return 'text-blue-500';
-    if (score >= 50) return 'text-amber-500';
-    return 'text-red-500';
-  };
-
-  const getTrustScoreBg = (score: number) => {
-    if (score >= 90) return 'from-emerald-500 to-teal-500';
-    if (score >= 70) return 'from-blue-500 to-indigo-500';
-    if (score >= 50) return 'from-amber-500 to-orange-500';
-    return 'from-red-500 to-rose-500';
-  };
-
-  // Premium gradient stats matching Analytics design
-  const stats = [
-    {
-      label: 'BALANCE',
-      value: `$${(wallet?.balance || 0).toFixed(2)}`,
-      change: 'Available',
-      icon: Wallet,
-      gradient: 'bg-gradient-to-br from-emerald-500 to-teal-600',
-      onClick: () => navigate('/seller/wallet')
-    },
-    {
-      label: 'PENDING',
-      value: `$${Math.max(0, wallet?.pending_balance || 0).toFixed(2)}`,
-      change: 'Processing',
-      icon: Clock,
-      gradient: 'bg-gradient-to-br from-amber-500 to-orange-600',
-      onClick: () => navigate('/seller/wallet')
-    },
-    {
-      label: 'EARNINGS',
-      value: `$${totalEarnings.toFixed(2)}`,
-      change: `${orders.length} orders`,
-      icon: DollarSign,
-      gradient: 'bg-gradient-to-br from-violet-500 to-purple-600',
-      onClick: () => navigate('/seller/orders')
-    },
-    {
-      label: 'PRODUCTS',
-      value: products.length.toString(),
-      change: `${products.filter(p => p.is_approved).length} live`,
-      icon: Package,
-      gradient: 'bg-gradient-to-br from-blue-500 to-indigo-600',
-      onClick: () => navigate('/seller/products')
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge className="bg-amber-100 text-amber-700 border-0 text-[10px] font-semibold">Pending</Badge>;
+      case 'delivered':
+        return <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px] font-semibold">Delivered</Badge>;
+      case 'completed':
+        return <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-semibold">Completed</Badge>;
+      case 'refunded':
+        return <Badge className="bg-red-100 text-red-700 border-0 text-[10px] font-semibold">Refunded</Badge>;
+      default:
+        return <Badge className="bg-slate-100 text-slate-700 border-0 text-[10px] font-semibold">{status}</Badge>;
     }
-  ];
+  };
 
   return (
-    <div className="space-y-6 seller-dashboard">
-      {/* Trust Score Header - TikTok Store Premium Design */}
-      {trustScore && (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-6 text-white shadow-xl">
-          {/* Glass overlay */}
-          <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]" />
-          
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-          
-          <div className="relative z-10">
-            {/* Seller Badge */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+    <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen space-y-6 seller-dashboard">
+      {/* Dashboard Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 seller-heading">Dashboard</h1>
+          <p className="text-sm text-slate-500">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {trustScore && (
+            <Badge className={`px-3 py-1.5 text-xs font-semibold ${
+              trustScore.trust_score >= 90 ? 'bg-emerald-100 text-emerald-700' :
+              trustScore.trust_score >= 70 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+            }`}>
+              <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+              {trustScore.trust_score}% Trust Score
+            </Badge>
+          )}
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="bg-white border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl"
+            onClick={() => navigate('/seller/analytics')}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Cards - 4 Column Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Today's Orders */}
+        <button 
+          onClick={() => navigate('/seller/orders')}
+          className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all text-left"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Today's Orders</p>
+              <p className="text-3xl font-extrabold text-slate-800 mt-1 seller-stat-number">{todayOrders.length}</p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="text-xs font-medium text-emerald-600">+{pendingOrders} pending</span>
+              </div>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center">
+              <ShoppingBag className="h-6 w-6 text-amber-600" />
+            </div>
+          </div>
+        </button>
+
+        {/* Today's Sales */}
+        <button 
+          onClick={() => navigate('/seller/analytics')}
+          className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all text-left"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Today's Sales</p>
+              <p className="text-3xl font-extrabold text-slate-800 mt-1 seller-stat-number">${todaySales.toFixed(0)}</p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="text-xs font-medium text-emerald-600">{completedOrders} completed</span>
+              </div>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <DollarSign className="h-6 w-6 text-emerald-600" />
+            </div>
+          </div>
+        </button>
+
+        {/* Total Balance */}
+        <button 
+          onClick={() => navigate('/seller/wallet')}
+          className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all text-left"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Balance</p>
+              <p className="text-3xl font-extrabold text-slate-800 mt-1 seller-stat-number">${(wallet?.balance || 0).toFixed(0)}</p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className="text-xs font-medium text-slate-500">${(wallet?.pending_balance || 0).toFixed(0)} pending</span>
+              </div>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+        </button>
+
+        {/* Returns & Refunds */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Returns & Refunds</p>
+              <p className="text-3xl font-extrabold text-slate-800 mt-1 seller-stat-number">{refundedOrders}</p>
+              <div className="flex items-center gap-1.5 mt-2">
+                {refundedOrders > 0 ? (
+                  <>
+                    <TrendingDown className="h-3.5 w-3.5 text-red-500" />
+                    <span className="text-xs font-medium text-red-600">Needs attention</span>
+                  </>
+                ) : (
+                  <span className="text-xs font-medium text-emerald-600">All clear!</span>
+                )}
+              </div>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center">
+              <Package className="h-6 w-6 text-red-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Row - Chart + Quick Stats */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Sales Details Chart */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
+              <p className="text-sm text-slate-500">Revenue over time</p>
+            </div>
+            <Select value={chartPeriod} onValueChange={(v) => setChartPeriod(v as typeof chartPeriod)}>
+              <SelectTrigger className="w-[130px] bg-slate-50 border-slate-200 rounded-xl text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="90d">Last 90 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 11, fill: '#64748B' }} 
+                  axisLine={false} 
+                  tickLine={false}
+                  interval="preserveStartEnd"
+                />
+                <YAxis 
+                  tick={{ fontSize: 11, fill: '#64748B' }} 
+                  axisLine={false} 
+                  tickLine={false}
+                  tickFormatter={v => `$${v}`}
+                  width={50}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    borderRadius: 12, 
+                    border: 'none', 
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    fontSize: 12
+                  }}
+                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="sales" 
+                  stroke="#3B82F6" 
+                  strokeWidth={2.5}
+                  fill="url(#salesGradient)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <h3 className="text-base font-semibold text-slate-800 mb-5">Quick Stats</h3>
+          <div className="space-y-4">
+            {/* Products */}
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
-                  <ShieldCheck className="w-6 h-6" />
+                <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                  <Package className="h-5 w-5 text-violet-600" />
                 </div>
                 <div>
-                  <Badge className={`text-xs font-bold px-2.5 py-0.5 ${
-                    trustScore.trust_score >= 90 ? 'bg-emerald-400 text-emerald-900' :
-                    trustScore.trust_score >= 70 ? 'bg-blue-400 text-blue-900' : 'bg-amber-400 text-amber-900'
-                  }`}>
-                    {trustScore.trust_score >= 90 ? '⭐ TOP SELLER' : 
-                     trustScore.trust_score >= 70 ? '✓ TRUSTED' : '📈 GROWING'}
-                  </Badge>
-                  <h3 className="text-2xl sm:text-3xl font-bold mt-1">{trustScore.trust_score}% Trust Score</h3>
+                  <p className="text-sm font-medium text-slate-800">Products</p>
+                  <p className="text-xs text-slate-500">{products.filter(p => p.is_approved).length} live</p>
                 </div>
               </div>
+              <span className="text-xl font-bold text-slate-800">{products.length}</span>
             </div>
-            
-            {/* Progress Bar */}
-            <div className="h-2.5 bg-white/20 rounded-full overflow-hidden mb-5">
-              <div 
-                className="h-full bg-gradient-to-r from-white to-white/80 rounded-full transition-all duration-1000" 
-                style={{ width: `${trustScore.trust_score}%` }} 
-              />
+
+            {/* Messages */}
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <MessageSquare className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800">Messages</p>
+                  <p className="text-xs text-slate-500">Unread chats</p>
+                </div>
+              </div>
+              <span className="text-xl font-bold text-slate-800">0</span>
             </div>
-            
-            {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center p-3 sm:p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-                <p className="text-2xl sm:text-3xl font-bold">{trustScore.successful_orders}</p>
-                <p className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wide">Completed</p>
+
+            {/* Success Rate */}
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <Award className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800">Success Rate</p>
+                  <p className="text-xs text-slate-500">Completion rate</p>
+                </div>
               </div>
-              <div className="text-center p-3 sm:p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-                <p className="text-2xl sm:text-3xl font-bold">{trustScore.buyer_approved_count}</p>
-                <p className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wide">Approved</p>
+              <span className="text-xl font-bold text-emerald-600">
+                {orders.length > 0 ? Math.round((completedOrders / orders.length) * 100) : 100}%
+              </span>
+            </div>
+
+            {/* Rating */}
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <Star className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800">Rating</p>
+                  <p className="text-xs text-slate-500">Avg feedback</p>
+                </div>
               </div>
-              <div className="text-center p-3 sm:p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-                <p className="text-2xl sm:text-3xl font-bold">{trustScore.total_reports}</p>
-                <p className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wide">Reports</p>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4].map(i => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
+                <Star className="h-4 w-4 text-slate-200" />
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Content Row - Orders Table + Low Stock */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Order Details Table */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between p-5 border-b border-slate-100">
+            <div>
+              <h3 className="text-base font-semibold text-slate-800">Order Details</h3>
+              <p className="text-sm text-slate-500">Recent transactions</p>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/seller/orders')}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
+            >
+              View All
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+
+          {recentOrders.length === 0 ? (
+            <div className="p-10 text-center">
+              <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-sm text-slate-500">No orders yet</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Order ID</th>
+                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Product</th>
+                    <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3 hidden sm:table-cell">Date</th>
+                    <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Amount</th>
+                    <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {recentOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-5 py-3">
+                        <span className="text-sm font-medium text-slate-700">#{order.id.slice(-6).toUpperCase()}</span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {order.product?.icon_url ? (
+                              <img src={order.product.icon_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <Package className="w-4 h-4 text-slate-400" />
+                            )}
+                          </div>
+                          <span className="text-sm text-slate-700 truncate max-w-[120px]">
+                            {order.product?.name || 'Product'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 hidden sm:table-cell">
+                        <span className="text-sm text-slate-500">{format(new Date(order.created_at), 'MMM d, h:mm a')}</span>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <span className="text-sm font-semibold text-slate-800">${Number(order.seller_earning).toFixed(2)}</span>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        {getStatusBadge(order.status)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Low Stock / Out of Stock */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-base font-semibold text-slate-800">Low Stock Alert</h3>
+              <p className="text-sm text-slate-500">Products need restocking</p>
+            </div>
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+          </div>
+
+          {lowStockProducts.length === 0 ? (
+            <div className="py-8 text-center">
+              <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm text-slate-500">All products in stock</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {lowStockProducts.map((product) => (
+                <div key={product.id} className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                  <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {product.icon_url ? (
+                      <img src={product.icon_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="w-5 h-5 text-slate-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{product.name}</p>
+                    <p className="text-xs text-amber-600 font-medium">
+                      {(product.stock ?? 0) === 0 ? 'Out of stock' : `${product.stock} left`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Best Selling Products */}
+      {bestSellers.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between p-5 border-b border-slate-100">
+            <div>
+              <h3 className="text-base font-semibold text-slate-800">Best Selling Products</h3>
+              <p className="text-sm text-slate-500">Top performers this month</p>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/seller/products')}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
+            >
+              View All
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">#</th>
+                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Product</th>
+                  <th className="text-center text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Sold</th>
+                  <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3">Revenue</th>
+                  <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-3 hidden sm:table-cell">Rating</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {bestSellers.map((product, index) => (
+                  <tr key={product.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-5 py-3">
+                      <span className="text-sm font-bold text-slate-400">{index + 1}</span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {product.icon_url ? (
+                            <img src={product.icon_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Package className="w-5 h-5 text-slate-400" />
+                          )}
+                        </div>
+                        <span className="text-sm font-medium text-slate-700 truncate max-w-[150px]">
+                          {product.name}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      <span className="text-sm font-semibold text-slate-800">{product.sold_count}</span>
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <span className="text-sm font-semibold text-emerald-600">
+                        ${(product.sold_count * product.price * 0.9).toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right hidden sm:table-cell">
+                      <div className="flex items-center justify-end gap-0.5">
+                        {[1, 2, 3, 4, 5].map(i => (
+                          <Star key={i} className={`h-3.5 w-3.5 ${i <= 4 ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
-
-      {/* Main Stats Grid - Premium Gradient Cards - Mobile Optimized */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {stats.map((stat, index) => (
-          <button
-            key={index}
-            onClick={stat.onClick}
-            className={`relative rounded-xl sm:rounded-2xl p-3 sm:p-5 overflow-hidden text-left transition-all active:scale-[0.98] hover:shadow-xl ${stat.gradient}`}
-          >
-            <div className="flex items-start justify-between relative z-10">
-              <div>
-                <p className="text-white/80 text-[10px] sm:text-xs font-medium uppercase tracking-wide">{stat.label}</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mt-0.5 sm:mt-1">{stat.value}</p>
-                {stat.change && (
-                  <div className="flex items-center gap-1 mt-1 sm:mt-2">
-                    <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white/90" />
-                    <span className="text-[10px] sm:text-xs font-semibold text-white/90">{stat.change}</span>
-                  </div>
-                )}
-              </div>
-              <div className="h-8 w-8 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center">
-                <stat.icon className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Quick Stats Row - Mobile Scrollable */}
-      <div className="flex gap-2 sm:gap-3 overflow-x-auto hide-scrollbar pb-1 -mx-1 px-1">
-        {[
-          { label: 'Completed', value: completedOrders, icon: CheckCircle, color: 'text-emerald-500' },
-          { label: 'Pending', value: pendingOrders, icon: Clock, color: 'text-amber-500' },
-          { label: 'Delivered', value: deliveredOrders, icon: TrendingUp, color: 'text-blue-500' },
-          { label: 'Total', value: orders.length, icon: ShoppingBag, color: 'text-violet-500' }
-        ].map((stat, index) => (
-          <div key={index} className="flex-shrink-0 bg-white rounded-xl p-2.5 sm:p-3 text-center border border-slate-100 shadow-sm min-w-[72px] sm:min-w-[80px]">
-            <stat.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${stat.color} mx-auto mb-0.5 sm:mb-1`} />
-            <p className="seller-stat-number text-base sm:text-lg text-slate-900">{stat.value}</p>
-            <p className="text-[9px] sm:text-[10px] text-slate-600 font-medium">{stat.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Quick Actions - Clean Buttons */}
-      <div className="flex flex-wrap gap-3">
-        <Button
-          onClick={() => navigate('/seller/products')}
-          className="bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 rounded-xl font-semibold"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Product
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/seller/orders')}
-          className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
-        >
-          <ShoppingBag className="w-4 h-4 mr-2" />
-          View Orders
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/seller/analytics')}
-          className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
-        >
-          <BarChart3 className="w-4 h-4 mr-2" />
-          Analytics
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/seller/wallet')}
-          className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
-        >
-          <Wallet className="w-4 h-4 mr-2" />
-          Withdraw
-        </Button>
-      </div>
-
-      {/* Recent Activity - Timeline Style */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
-              <Activity className="w-4 h-4 text-violet-600" />
-            </div>
-            <div>
-              <h3 className="seller-heading text-slate-900">Recent Activity</h3>
-              <p className="text-xs text-slate-500">Your latest orders</p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/seller/orders')}
-            className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 font-medium rounded-lg"
-          >
-            View All
-            <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
-        
-        {recentOrders.length === 0 ? (
-          <div className="p-10 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-              <ShoppingBag className="w-6 h-6 text-slate-400" />
-            </div>
-            <p className="font-semibold text-slate-900 mb-1">No orders yet</p>
-            <p className="text-sm text-slate-500">Your recent orders will appear here</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-50">
-            {recentOrders.map((order, index) => (
-              <div key={order.id} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors group">
-                {/* Timeline Indicator */}
-                <div className="relative flex flex-col items-center">
-                  <div className={`w-3 h-3 rounded-full ${
-                    order.status === 'completed' ? 'bg-emerald-500' :
-                    order.status === 'delivered' ? 'bg-blue-500' : 'bg-amber-500'
-                  }`} />
-                  {index < recentOrders.length - 1 && (
-                    <div className="w-px h-full bg-slate-200 absolute top-4" />
-                  )}
-                </div>
-
-                {/* Product Image */}
-                <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-100">
-                  {order.product?.icon_url ? (
-                    <img 
-                      src={order.product.icon_url} 
-                      alt={order.product?.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="w-5 h-5 text-slate-400" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Order Details */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-900 truncate group-hover:text-violet-700 transition-colors">
-                    {order.product?.name || 'Unknown Product'}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {order.buyer?.email?.split('@')[0] || 'Customer'} • {format(new Date(order.created_at), 'MMM d, h:mm a')}
-                  </p>
-                </div>
-
-                {/* Status & Amount */}
-                <div className="text-right flex-shrink-0">
-                  <p className="seller-stat-number text-lg text-slate-900">${(Number(order.seller_earning) || 0).toFixed(2)}</p>
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] font-semibold ${
-                      order.status === 'completed'
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                        : order.status === 'delivered'
-                        ? 'border-blue-200 bg-blue-50 text-blue-700'
-                        : 'border-amber-200 bg-amber-50 text-amber-700'
-                    }`}
-                  >
-                    {order.status.toUpperCase()}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 };
