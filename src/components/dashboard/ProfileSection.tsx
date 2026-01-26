@@ -91,6 +91,9 @@ const ProfileSection = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  
+  // 2FA toggle loading state
+  const [updating2FA, setUpdating2FA] = useState(false);
 
   // Preferences state - from database
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
@@ -888,19 +891,25 @@ const ProfileSection = () => {
                     checked={(profile as any)?.two_factor_enabled !== false}
                     onCheckedChange={async (checked) => {
                       if (!user) return;
+                      setUpdating2FA(true);
                       try {
+                        console.log('[2FA_TOGGLE] Updating user 2FA:', { checked, user_id: user.id });
                         const { error } = await supabase
                           .from('profiles')
                           .update({ two_factor_enabled: checked })
                           .eq('user_id', user.id);
                         if (error) throw error;
+                        console.log('[2FA_TOGGLE] Update successful');
                         toast.success(checked ? '2FA protection enabled' : '2FA protection disabled');
                         window.location.reload();
                       } catch (err: any) {
+                        console.error('[2FA_TOGGLE] Error:', err);
                         toast.error(err.message || 'Failed to update 2FA setting');
+                      } finally {
+                        setUpdating2FA(false);
                       }
                     }}
-                    disabled={loading}
+                    disabled={loading || updating2FA}
                   />
                 </div>
                 

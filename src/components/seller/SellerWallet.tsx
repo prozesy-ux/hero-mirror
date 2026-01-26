@@ -372,6 +372,8 @@ const SellerWallet = () => {
 
   // Send OTP for withdrawal verification (if 2FA enabled) or process directly
   const handleWithdraw = async () => {
+    console.log('[WITHDRAW] Starting withdrawal process...');
+    
     if (!profile || !withdrawAmount || !selectedAccountForWithdraw) {
       toast.error('Please select an account');
       return;
@@ -411,24 +413,30 @@ const SellerWallet = () => {
 
     // Check if 2FA is enabled (default true if undefined)
     const is2FAEnabled = (profile as any)?.two_factor_enabled !== false;
+    console.log('[WITHDRAW] 2FA Status:', { is2FAEnabled, profile_2fa: (profile as any)?.two_factor_enabled });
 
     if (is2FAEnabled) {
       // Send OTP for verification
+      console.log('[WITHDRAW] 2FA enabled - sending OTP...');
       setOTPSending(true);
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
+          console.error('[WITHDRAW] No session found');
           toast.error('Please log in again');
           return;
         }
 
+        console.log('[WITHDRAW] Calling send-withdrawal-otp edge function...');
         const response = await supabase.functions.invoke('send-withdrawal-otp', {
           body: { 
             amount: withdrawAmount, 
             account_id: selectedAccountForWithdraw 
           }
         });
+
+        console.log('[WITHDRAW] Edge function response:', response);
 
         if (response.error) {
           throw new Error(response.error.message || 'Failed to send OTP');
@@ -449,14 +457,16 @@ const SellerWallet = () => {
 
         setShowWithdrawDialog(false);
         setShowOTPModal(true);
+        console.log('[WITHDRAW] OTP modal opened successfully');
         toast.success('OTP sent to your email');
       } catch (error: any) {
-        console.error('OTP send error:', error);
+        console.error('[WITHDRAW] OTP send error:', error);
         toast.error(error.message || 'Failed to send OTP');
       } finally {
         setOTPSending(false);
       }
     } else {
+      console.log('[WITHDRAW] 2FA disabled - processing direct withdrawal...');
       // 2FA disabled - process withdrawal directly
       setSubmitting(true);
       try {
@@ -498,20 +508,29 @@ const SellerWallet = () => {
 
   // Verify OTP and complete withdrawal
   const handleVerifyOTP = async () => {
-    if (!pendingWithdrawalData || otpValue.length !== 6) return;
+    console.log('[VERIFY_OTP] Starting OTP verification...');
+    
+    if (!pendingWithdrawalData || otpValue.length !== 6) {
+      console.log('[VERIFY_OTP] Invalid state:', { pendingWithdrawalData, otpLength: otpValue.length });
+      return;
+    }
 
     setOTPVerifying(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
+        console.error('[VERIFY_OTP] No session found');
         toast.error('Please log in again');
         return;
       }
 
+      console.log('[VERIFY_OTP] Calling verify-withdrawal-otp edge function...');
       const response = await supabase.functions.invoke('verify-withdrawal-otp', {
         body: { otp_code: otpValue }
       });
+
+      console.log('[VERIFY_OTP] Edge function response:', response);
 
       if (response.error) {
         throw new Error(response.error.message || 'Invalid OTP');
@@ -521,6 +540,7 @@ const SellerWallet = () => {
         throw new Error(response.data?.error || 'Invalid or expired OTP');
       }
 
+      console.log('[VERIFY_OTP] Withdrawal successful:', response.data);
       toast.success(`Withdrawal of $${response.data.amount} submitted successfully!`);
       setShowOTPModal(false);
       setOTPValue('');
@@ -530,7 +550,7 @@ const SellerWallet = () => {
       refreshWallet();
       refreshWithdrawals();
     } catch (error: any) {
-      console.error('OTP verify error:', error);
+      console.error('[VERIFY_OTP] Error:', error);
       toast.error(error.message || 'Invalid or expired OTP');
     } finally {
       setOTPVerifying(false);
