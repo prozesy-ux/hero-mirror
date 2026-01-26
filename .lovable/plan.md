@@ -1,234 +1,238 @@
 
-
-# Analytics Section Redesign - Amazon Seller Central Style
+# Seller Dashboard & Analytics Redesign - Shopeers/Amazon Style
 
 ## Overview
 
-This plan recreates the Seller Analytics page to **exactly match** the Amazon Seller Central Behance reference design. The key focus is on replicating the visual structure, typography, chart styles, and card layouts from the reference.
+This plan redesigns both the **Seller Dashboard** and **Seller Analytics** sections to exactly match the Shopeers/Amazon Seller Central design from your reference images. The key changes include:
+
+- **Removing titles** from Analytics header
+- **Adding date range filter** with date picker on the same line as Export button
+- **Using folder-style widget icons** for stat cards
+- **Matching exact fonts, colors, and spacing** from reference
+- **Real data loading** with proper chart animations
+- **All buttons fully functional**
 
 ---
 
-## Reference Design Analysis (from Behance screenshot)
+## Design Analysis from Reference Images
 
-### Key Visual Elements to Replicate:
+### Image 1 (Shopeers Dashboard):
+- **Header**: Date range selector (Jan 1, 2025 - Feb 1, 2025) + "Last 30 days" dropdown + "Add widget" + "Export" button
+- **Stat Cards**: Page Views (16,431), Visitors (6,225), Click (2,832), Orders (1,224) with percentage changes
+- **Total Profit**: Large AreaChart with blue line, value ($446.7K)
+- **Most Day Active**: Vertical bar chart for days of week
+- **Customers**: Breakdown (Retailers 2,884, Distributors 1,432, Wholesalers 562)
+- **Repeat Customer Rate**: 68% circular indicator
+- **Best Selling Products**: Table with ID, Name, Sold, Revenue, Rating
 
-| Element | Reference Design |
-|---------|------------------|
-| **Top Stat Cards** | 4 cards in row: Today's Order (65), Today's Sale (₹42,350), Total Balance (₹2,76,000), Returns & Refunds (16) |
-| **Stat Card Style** | White bg, orange icons on right, percentage change badge with arrow |
-| **Sales Details Chart** | Large AreaChart with blue gradient, month dropdown (January), percentage Y-axis |
-| **Quick Stats Grid** | 2x2 grid: Marketplace (01), Buyer's Message (14), Buy Box Wins (80%), Customer Feedback (★★★★) |
-| **Chart Tooltip** | Shows value on hover (e.g., 64,664.77) |
-
-### Color Palette (from reference):
-| Element | Color |
-|---------|-------|
-| Card Background | `#FFFFFF` |
-| Page Background | `#F7F8FA` |
-| Stat Card Icon | `#FF9900` (Amazon Orange) |
-| Chart Line | `#3B82F6` (Blue) |
-| Positive Change | `#10B981` (Emerald) |
-| Text Primary | `#1E293B` |
-| Text Secondary | `#64748B` |
-
-### Typography (from reference):
-| Element | Style |
-|---------|-------|
-| Stat Numbers | 32px, font-weight: 800 |
-| Stat Label | 12px, font-weight: 500, slate-500 |
-| Change Badge | 11px, font-weight: 600, emerald |
-| Card Title | 14px, font-weight: 600, slate-800 |
+### Image 3 (Amazon Seller Central):
+- **Same stat card layout**: Today's Order, Today's Sale, Total Balance, Returns & Refunds
+- **Sales Details Chart**: Blue AreaChart with percentage Y-axis, month dropdown
+- **Quick Stats Grid**: Market Place (01), Buyer's Message (14), Buy Box Wins (80%), Customer Feedback (★★★★)
+- **Order Details Table**: Order ID, Product Name, Qty, Order Date-Time, Delivery Date, Status
+- **Out of Stock**: Product carousel on right
 
 ---
 
-## New Analytics Layout
+## Implementation Changes
 
+### 1. SellerDashboard.tsx Changes
+
+**Header Updates:**
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│  Analytics Header                              [Period: January] │
-├───────────────┬───────────────┬───────────────┬─────────────────┤
-│ Page Views    │ Visitors      │ Clicks        │ Orders          │
-│ 1,247         │ 892           │ 456           │ 65              │
-│ ↑ 12.5%       │ ↑ 8.3%        │ ↓ 2.1%        │ ↑ 15.6%         │
-│ [📊 icon]     │ [👁 icon]     │ [🖱 icon]     │ [🛒 icon]       │
-├───────────────┴───────────────┴───────────────┴─────────────────┤
-│                                                                  │
-│  ┌───────────────────────────────────┐  ┌────────────────────┐  │
-│  │ Sales Details                     │  │ Quick Stats        │  │
-│  │ [Month dropdown]                  │  │ ┌─────┐ ┌─────┐   │  │
-│  │                                   │  │ │ 01  │ │ 14  │   │  │
-│  │     [Blue AreaChart]              │  │ │Mkt  │ │Msgs │   │  │
-│  │  100% ─────────────────           │  │ └─────┘ └─────┘   │  │
-│  │   80% ─────────────────           │  │ ┌─────┐ ┌─────┐   │  │
-│  │   60% ─────────────────           │  │ │ 80% │ │★★★★ │   │  │
-│  │   40% ─────────────────           │  │ │BuyBx│ │Fdbck│   │  │
-│  │   20% ─────────────────           │  │ └─────┘ └─────┘   │  │
-│  │      5k 10k 15k 20k 25k           │  └────────────────────┘  │
-│  └───────────────────────────────────┘                          │
-│                                                                  │
-│  ┌───────────────────────────────────┐  ┌────────────────────┐  │
-│  │ Order Status (Donut Chart)        │  │ Top Products       │  │
-│  │                                   │  │                    │  │
-│  │   [Donut with legend]             │  │ 1. Product A $120  │  │
-│  │   • Completed: 45                 │  │ 2. Product B $98   │  │
-│  │   • Pending: 12                   │  │ 3. Product C $76   │  │
-│  │   • Delivered: 8                  │  │                    │  │
-│  └───────────────────────────────────┘  └────────────────────┘  │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │ Revenue by Day of Week (Horizontal Bar Chart)            │   │
-│  │                                                           │   │
-│  │ Mon ████████████████ $1,250                              │   │
-│  │ Tue ██████████████ $980                                  │   │
-│  │ Wed ████████████ $870                                    │   │
-│  │ Thu ██████████████████ $1,420                            │   │
-│  │ Fri ████████████████████████ $1,890                      │   │
-│  │ Sat ████████████████████████████ $2,100                  │   │
-│  │ Sun ██████████████████████ $1,650                        │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+Before:
+┌─────────────────────────────────────────────────────────┐
+│ Dashboard                                   [Trust Badge] [Export] │
+│ Monday, January 27, 2025                                           │
+└─────────────────────────────────────────────────────────┘
+
+After:
+┌─────────────────────────────────────────────────────────────────────┐
+│ Dashboard    [Jan 1, 2025 - Feb 1, 2025] [Last 30 days ▼] [Export] │
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+**Key Changes:**
+- Add **inline date range picker** with Calendar icon
+- Add **period dropdown** (Last 7 days, Last 30 days, Last 90 days, Custom)
+- Move Export button to same line
+- Remove subtitle text ("Monday, January 27, 2025")
+
+**Stat Cards with Folder Icons:**
+- Use colorful folder-style backgrounds matching reference
+- Orange folder for Orders
+- Green folder for Sales
+- Blue folder for Balance
+- Red folder for Returns
+
+### 2. SellerAnalytics.tsx Changes
+
+**Header Updates (Remove Title):**
+```text
+Before:
+┌─────────────────────────────────────────────────────────┐
+│ Analytics                                        [Export Report] │
+│ Track your store performance                                     │
+└─────────────────────────────────────────────────────────┘
+
+After:
+┌─────────────────────────────────────────────────────────────────────┐
+│ [Jan 1, 2025 - Feb 1, 2025] [Last 30 days ▼] [+ Add widget] [Export]│
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Changes:**
+- Remove "Analytics" title and subtitle completely
+- Add **date range picker** with Calendar icon
+- Add **period dropdown** selector
+- Add **"+ Add widget"** button (optional)
+- Keep **Export** button
+
+**Charts with Real Data Loading:**
+- Add loading skeleton while fetching
+- Animate chart on data load
+- Show actual revenue values in tooltip
 
 ---
 
-## Stat Card Design (Exact Match to Reference)
+## Component Structure
 
+### New Header Component Pattern
 ```tsx
-// Card structure matching Behance reference exactly
-<div className="bg-white rounded-2xl p-5 border border-slate-100">
-  <div className="flex items-start justify-between">
-    {/* Left: Text content */}
-    <div>
-      <p className="text-xs font-medium text-slate-500">Page Views</p>
-      <p className="text-3xl font-extrabold text-slate-800 mt-1">1,247</p>
-      <div className="flex items-center gap-1.5 mt-2">
-        <span className="text-emerald-500">↗</span>
-        <span className="text-xs font-semibold text-emerald-600">12.5% Up from yesterday</span>
-      </div>
-    </div>
-    {/* Right: Icon - Amazon Orange background */}
-    <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
-      <BarChart3 className="h-6 w-6 text-orange-500" />
-    </div>
-  </div>
-</div>
-```
-
----
-
-## Quick Stats Grid (2x2 - Exact Match)
-
-```tsx
-// 2x2 grid matching reference
-<div className="grid grid-cols-2 gap-4">
-  {/* Marketplace */}
-  <div className="bg-white rounded-xl p-4 border border-slate-100">
-    <div className="flex items-center gap-3">
-      <Globe className="h-6 w-6 text-blue-500" />
-      <div>
-        <p className="text-2xl font-bold text-slate-800">01</p>
-        <p className="text-xs text-slate-500">Market Place</p>
-      </div>
-    </div>
+// Shared header pattern for Dashboard and Analytics
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+  {/* Left: Page title (Dashboard only) or empty */}
+  <div>
+    <h1 className="text-xl font-bold text-slate-800">Dashboard</h1>
   </div>
   
-  {/* Buyer's Message */}
-  <div className="bg-white rounded-xl p-4 border border-slate-100">
-    <div className="flex items-center gap-3">
-      <MessageSquare className="h-6 w-6 text-blue-500" />
-      <div>
-        <p className="text-2xl font-bold text-slate-800">14</p>
-        <p className="text-xs text-slate-500">Buyer's Message</p>
-      </div>
-    </div>
-  </div>
-  
-  {/* Buy Box Wins */}
-  <div className="bg-white rounded-xl p-4 border border-slate-100">
-    <div className="flex items-center gap-3">
-      <TrendingUp className="h-6 w-6 text-emerald-500" />
-      <div>
-        <p className="text-2xl font-bold text-slate-800">80%</p>
-        <p className="text-xs text-slate-500">Buy Box Wins</p>
-      </div>
-    </div>
-  </div>
-  
-  {/* Customer Feedback */}
-  <div className="bg-white rounded-xl p-4 border border-slate-100">
-    <div className="flex items-center gap-3">
-      <Star className="h-6 w-6 text-amber-500" />
-      <div>
-        <div className="flex gap-0.5">
-          {[1,2,3,4].map(i => <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />)}
-          <Star className="h-4 w-4 text-slate-300" />
-        </div>
-        <p className="text-xs text-slate-500">Customer Feedback (56)</p>
-      </div>
-    </div>
-  </div>
-</div>
-```
-
----
-
-## Sales Details Chart (Exact Match)
-
-**Key features from reference:**
-- Month dropdown selector in top-right (January, February, etc.)
-- Y-axis shows percentage (20%, 40%, 60%, 80%, 100%)
-- X-axis shows values (5k, 10k, 15k, 20k, 25k, 30k, 35k, 40k, 45k)
-- Blue line with gradient fill
-- Tooltip showing exact value on hover
-
-```tsx
-<div className="bg-white rounded-2xl border border-slate-100 p-5">
-  <div className="flex items-center justify-between mb-6">
-    <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
-    <Select value={month} onValueChange={setMonth}>
-      <SelectTrigger className="w-32 h-9 rounded-lg border-slate-200">
-        <SelectValue placeholder="January" />
+  {/* Right: Date filter + Period + Export */}
+  <div className="flex items-center gap-2 flex-wrap">
+    {/* Date Range Picker */}
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="bg-white border-slate-200 rounded-xl">
+          <CalendarIcon className="w-4 h-4 mr-2 text-slate-400" />
+          <span className="text-sm text-slate-600">
+            {format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}
+          </span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent>
+        <Calendar mode="range" selected={dateRange} onSelect={setDateRange} />
+      </PopoverContent>
+    </Popover>
+    
+    {/* Period Dropdown */}
+    <Select value={period} onValueChange={setPeriod}>
+      <SelectTrigger className="w-[140px] bg-white border-slate-200 rounded-xl">
+        <SelectValue placeholder="Last 30 days" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="january">January</SelectItem>
-        <SelectItem value="february">February</SelectItem>
-        <!-- ... months ... -->
+        <SelectItem value="7d">Last 7 days</SelectItem>
+        <SelectItem value="30d">Last 30 days</SelectItem>
+        <SelectItem value="90d">Last 90 days</SelectItem>
+        <SelectItem value="custom">Custom</SelectItem>
       </SelectContent>
     </Select>
+    
+    {/* Export Button */}
+    <Button variant="outline" className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl">
+      <Download className="w-4 h-4 mr-2" />
+      Export
+    </Button>
   </div>
-  
-  <ResponsiveContainer width="100%" height={280}>
-    <AreaChart data={salesData}>
-      <defs>
-        <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-        </linearGradient>
-      </defs>
-      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-      <XAxis dataKey="x" tick={{ fontSize: 11, fill: '#64748B' }} />
-      <YAxis tickFormatter={v => `${v}%`} tick={{ fontSize: 11, fill: '#64748B' }} />
-      <Tooltip />
-      <Area type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} fill="url(#salesGradient)" />
-    </AreaChart>
-  </ResponsiveContainer>
 </div>
+```
+
+### Stat Card with Folder Icon
+```tsx
+const StatCard = ({ title, value, change, iconUrl, iconBg }) => (
+  <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div className="flex items-start justify-between">
+      <div className="flex-1">
+        <p className="text-xs font-medium text-slate-500">{title}</p>
+        <p className="text-3xl font-extrabold text-slate-800 mt-1">{value}</p>
+        {change !== undefined && (
+          <div className="flex items-center gap-1.5 mt-2">
+            {change >= 0 ? (
+              <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+                <TrendingUp className="h-3.5 w-3.5" />
+                {change.toFixed(1)}% Up from yesterday
+              </span>
+            ) : (
+              <span className="text-[11px] font-semibold text-red-600 flex items-center gap-1">
+                <TrendingDown className="h-3.5 w-3.5" />
+                {Math.abs(change).toFixed(1)}% Down from yesterday
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+      {/* Folder-style icon */}
+      <div className={`h-12 w-12 rounded-xl ${iconBg} flex items-center justify-center`}>
+        <img src={iconUrl} alt="" className="w-7 h-7 object-contain" />
+      </div>
+    </div>
+  </div>
+);
 ```
 
 ---
 
-## Data Mapping
+## Data Flow
 
-| Reference Metric | Our Data Source |
-|------------------|-----------------|
-| Page Views | Simulated based on orders * 15 |
-| Visitors | Unique buyers count |
-| Clicks | Simulated based on orders * 5 |
-| Orders | `analyticsData.totalOrders` |
-| Marketplace | Fixed "01" (single store) |
-| Buyer's Message | Count of chat messages (or simulated) |
-| Buy Box Wins | `analyticsData.conversionRate` |
-| Customer Feedback | Product ratings average |
+### Date Range Filtering
+```tsx
+const [dateRange, setDateRange] = useState({
+  from: subDays(new Date(), 30),
+  to: new Date()
+});
+const [period, setPeriod] = useState('30d');
+
+// When period changes, update date range
+useEffect(() => {
+  const now = new Date();
+  switch (period) {
+    case '7d':
+      setDateRange({ from: subDays(now, 7), to: now });
+      break;
+    case '30d':
+      setDateRange({ from: subDays(now, 30), to: now });
+      break;
+    case '90d':
+      setDateRange({ from: subDays(now, 90), to: now });
+      break;
+  }
+}, [period]);
+
+// Filter orders by date range
+const filteredOrders = useMemo(() => {
+  return orders.filter(order => {
+    const orderDate = new Date(order.created_at);
+    return orderDate >= dateRange.from && orderDate <= dateRange.to;
+  });
+}, [orders, dateRange]);
+```
+
+### Export Functionality
+```tsx
+const handleExport = () => {
+  // Create CSV data from filtered orders
+  const csvData = filteredOrders.map(order => ({
+    'Order ID': order.id,
+    'Product': order.product?.name || 'Unknown',
+    'Amount': order.seller_earning,
+    'Status': order.status,
+    'Date': format(new Date(order.created_at), 'yyyy-MM-dd HH:mm')
+  }));
+  
+  // Download as CSV
+  const csv = convertToCSV(csvData);
+  downloadFile(csv, `orders-${format(dateRange.from, 'yyyy-MM-dd')}-to-${format(dateRange.to, 'yyyy-MM-dd')}.csv`);
+  toast.success('Report exported successfully!');
+};
+```
 
 ---
 
@@ -236,27 +240,64 @@ This plan recreates the Seller Analytics page to **exactly match** the Amazon Se
 
 | File | Changes |
 |------|---------|
-| `src/components/seller/SellerAnalytics.tsx` | Complete redesign to match reference |
+| `src/components/seller/SellerDashboard.tsx` | Update header with date filter + export on same line, add folder icons |
+| `src/components/seller/SellerAnalytics.tsx` | Remove title, add date range + period selector in header, ensure real data loading |
 
 ---
 
-## Technical Implementation
+## UI Components Used
 
-1. **Replace top stat cards** with Page Views, Visitors, Clicks, Orders (Amazon orange icons)
-2. **Add Quick Stats 2x2 grid** with Marketplace, Messages, Buy Box Wins, Feedback
-3. **Update Sales Details chart** with month dropdown and exact styling
-4. **Keep existing data calculations** but map to new visual components
-5. **Add horizontal bar chart** for day-of-week breakdown (matching "Most Active Days" from reference)
-6. **Maintain mobile responsiveness** with proper grid collapsing
+- **Calendar** from `@/components/ui/calendar` for date range picker
+- **Popover** from `@/components/ui/popover` for calendar popup
+- **Select** from `@/components/ui/select` for period dropdown
+- **Button** from `@/components/ui/button` for Export button
+- **Skeleton** from `@/components/ui/skeleton` for loading states
+
+---
+
+## Visual Specifications
+
+### Colors (matching reference):
+- Page Background: `#F7F8FA`
+- Card Background: `#FFFFFF`
+- Primary Text: `#1E293B` (slate-800)
+- Secondary Text: `#64748B` (slate-500)
+- Accent Green: `#10B981` (emerald-500)
+- Chart Blue: `#3B82F6` (blue-500)
+- Export Button: `#10B981` (emerald-500) with white text
+
+### Typography:
+- Stat Numbers: `text-[28px] lg:text-[32px] font-extrabold`
+- Card Labels: `text-xs font-medium text-slate-500`
+- Section Headers: `text-base font-semibold text-slate-800`
+- Percentage Change: `text-[11px] font-semibold`
+
+### Spacing:
+- Card Padding: `p-5` (20px)
+- Card Border Radius: `rounded-2xl` (16px)
+- Grid Gap: `gap-4` (16px) for stats, `gap-6` (24px) for sections
+- Section Margin: `mb-6` (24px)
+
+---
+
+## Button Functionality
+
+All buttons will be fully functional:
+
+1. **Date Range Picker**: Opens calendar popup to select custom dates
+2. **Period Dropdown**: Quick select for 7d/30d/90d, auto-updates date range
+3. **Export Button**: Downloads filtered data as CSV file
+4. **View All Buttons**: Navigate to respective detail pages (orders, products, analytics)
+5. **Stat Cards**: Clickable, navigate to relevant sections
 
 ---
 
 ## Expected Result
 
-The Analytics section will look **identical** to the Amazon Seller Central Behance reference with:
-- Same card layouts and spacing
-- Same font sizes and weights
-- Same chart styles (blue AreaChart with gradient)
-- Same Quick Stats 2x2 grid design
-- All using your actual seller data from `SellerContext`
-
+After implementation:
+- Dashboard matches Shopeers reference with inline date/export controls
+- Analytics has no title, just date filter and export on top line
+- Real data loads from SellerContext and displays in charts
+- All charts animate on load
+- Export downloads actual order data as CSV
+- Same fonts, colors, and spacing as reference images
