@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +53,7 @@ interface TrustScore {
 
 const SellerDashboard = () => {
   const { profile, wallet, products, orders, loading } = useSellerContext();
+  const { formatAmountOnly } = useCurrency();
   const [trustScore, setTrustScore] = useState<TrustScore | null>(null);
   const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'custom'>('30d');
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -338,7 +340,7 @@ const SellerDashboard = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Today's Sales</p>
-              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">${todaySales.toFixed(0)}</p>
+              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">{formatAmountOnly(todaySales)}</p>
               <div className="flex items-center gap-1.5 mt-2">
                 <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
                 <span className="text-[11px] font-semibold text-emerald-600">{completedOrders} completed</span>
@@ -358,9 +360,9 @@ const SellerDashboard = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Balance</p>
-              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">${(wallet?.balance || 0).toFixed(0)}</p>
+              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">{formatAmountOnly(wallet?.balance || 0)}</p>
               <div className="flex items-center gap-1.5 mt-2">
-                <span className="text-[11px] font-medium text-slate-500">${(wallet?.pending_balance || 0).toFixed(0)} pending</span>
+                <span className="text-[11px] font-medium text-slate-500">{formatAmountOnly(wallet?.pending_balance || 0)} pending</span>
               </div>
             </div>
             <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
@@ -424,7 +426,7 @@ const SellerDashboard = () => {
                   tick={{ fontSize: 11, fill: '#64748B' }} 
                   axisLine={false} 
                   tickLine={false}
-                  tickFormatter={v => `$${v}`}
+                  tickFormatter={v => formatAmountOnly(v)}
                   width={50}
                 />
                 <Tooltip 
@@ -435,7 +437,7 @@ const SellerDashboard = () => {
                     fontSize: 12,
                     backgroundColor: 'white'
                   }}
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
+                  formatter={(value: number) => [formatAmountOnly(value), 'Revenue']}
                 />
                 <Area 
                   type="monotone" 
@@ -560,7 +562,7 @@ const SellerDashboard = () => {
                       <span className="text-sm text-slate-600 line-clamp-1">{order.product?.name || 'Unknown'}</span>
                     </td>
                     <td className="p-4">
-                      <span className="text-sm font-semibold text-slate-800">${Number(order.seller_earning).toFixed(2)}</span>
+                      <span className="text-sm font-semibold text-slate-800">{formatAmountOnly(Number(order.seller_earning))}</span>
                     </td>
                     <td className="p-4">
                       <span className="text-sm text-slate-500">{format(new Date(order.created_at), 'MMM d, HH:mm')}</span>
@@ -664,7 +666,7 @@ const SellerDashboard = () => {
                       <span className="text-sm font-semibold text-slate-800">{product.sold_count}</span>
                     </td>
                     <td className="p-3">
-                      <span className="text-sm text-slate-600">${product.price}</span>
+                      <span className="text-sm text-slate-600">{formatAmountOnly(product.price)}</span>
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-1">

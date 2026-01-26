@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Loader2, Store, ArrowRight, AlertTriangle, Mail, Lock, User, Clock, Eye, EyeOff, Package, FileText } from 'lucide-react';
 import { SellerProvider } from '@/contexts/SellerContext';
+import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import { SellerSidebarProvider, useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import SellerSidebar from '@/components/seller/SellerSidebar';
 import SellerTopBar from '@/components/seller/SellerTopBar';
@@ -678,9 +679,11 @@ const Seller = () => {
 
   if (sellerProfile) {
     return (
-      <SellerProvider sellerProfile={sellerProfile}>
-        <SellerContent />
-      </SellerProvider>
+      <CurrencyProvider sellerCountry={(sellerProfile as any)?.country}>
+        <SellerProvider sellerProfile={sellerProfile}>
+          <SellerContent />
+        </SellerProvider>
+      </CurrencyProvider>
     );
   }
 

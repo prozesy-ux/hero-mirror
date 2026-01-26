@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,7 @@ import {
 
 const SellerOrders = () => {
   const { orders, refreshOrders, loading, profile } = useSellerContext();
+  const { formatAmountOnly } = useCurrency();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [credentials, setCredentials] = useState('');
@@ -547,7 +549,7 @@ const SellerOrders = () => {
                       </td>
                       <td className="px-5 py-4 text-right">
                         <span className="text-sm font-semibold text-emerald-600">
-                          +${Number(order.seller_earning).toFixed(2)}
+                          +{formatAmountOnly(Number(order.seller_earning))}
                         </span>
                       </td>
                       <td className="px-5 py-4 text-center">
