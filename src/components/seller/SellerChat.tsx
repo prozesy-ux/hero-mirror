@@ -55,6 +55,14 @@ const SellerChat = () => {
     return cleanup;
   }, [profile.id]);
 
+  // Auto-open first chat when loaded
+  useEffect(() => {
+    if (chatUsers.length > 0 && !selectedUser && !loading) {
+      setSelectedUser(chatUsers[0].buyer_id);
+      setShowChatOnMobile(true);
+    }
+  }, [chatUsers, selectedUser, loading]);
+
   useEffect(() => {
     if (selectedUser) {
       fetchMessages(selectedUser);
@@ -431,10 +439,12 @@ const SellerChat = () => {
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full">
-              <MessageSquare className="h-12 w-12 text-slate-300 mb-4" />
+            <div className="flex flex-col items-center justify-center h-full bg-slate-50/50">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-emerald-50 flex items-center justify-center">
+                <MessageSquare className="h-10 w-10 text-emerald-500" />
+              </div>
               <h3 className="font-semibold text-slate-900 mb-2">Select a conversation</h3>
-              <p className="text-slate-500 text-sm">Choose a customer to start chatting</p>
+              <p className="text-slate-500 text-sm text-center px-4">Choose a customer from the list to start messaging</p>
             </div>
           )}
         </div>

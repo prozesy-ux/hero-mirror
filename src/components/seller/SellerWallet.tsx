@@ -864,114 +864,130 @@ const SellerWallet = () => {
                   Enter Account Details
                 </Label>
 
-                {/* Bank Transfer Fields */}
+                {/* Bank Transfer Fields - Premium Floating Labels */}
                 {selectedMethod === 'bank' && (
                   <>
-                    <div>
-                      <Label className="text-gray-500 text-xs">Account Holder Name</Label>
+                    <div className="relative">
                       <Input 
                         value={accountName}
                         onChange={(e) => setAccountName(e.target.value)}
-                        placeholder="Full name as on bank account"
-                        className="mt-1 h-12 rounded-xl"
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
                       />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Account Holder Name
+                      </label>
                     </div>
-                    <div>
-                      <Label className="text-gray-500 text-xs">Account Number</Label>
+                    <div className="relative">
                       <Input 
                         value={accountNumber}
                         onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder="Enter bank account number"
-                        className="mt-1 h-12 rounded-xl"
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
                       />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Account Number
+                      </label>
                     </div>
-                    <div>
-                      <Label className="text-gray-500 text-xs">Bank Name</Label>
+                    <div className="relative">
                       <Input 
                         value={bankName}
                         onChange={(e) => setBankName(e.target.value)}
-                        placeholder={sellerCountry === 'IN' ? 'e.g. State Bank of India' : 'e.g. Dutch Bangla Bank'}
-                        className="mt-1 h-12 rounded-xl"
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
                       />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Bank Name
+                      </label>
                     </div>
-                    <div>
-                      <Label className="text-gray-500 text-xs">
-                        {sellerCountry === 'IN' ? 'IFSC Code' : 'Branch / Routing'}
-                      </Label>
+                    <div className="relative">
                       <Input 
                         value={ifscCode}
                         onChange={(e) => setIfscCode(e.target.value)}
-                        placeholder={sellerCountry === 'IN' ? 'SBIN0000123' : 'Branch code'}
-                        className="mt-1 h-12 rounded-xl"
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
                       />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        {sellerCountry === 'IN' ? 'IFSC Code' : 'Branch / Routing'}
+                      </label>
                     </div>
                   </>
                 )}
 
-                {/* UPI Fields (India only) */}
+                {/* UPI Fields (India only) - Premium Floating Labels */}
                 {selectedMethod === 'upi' && (
                   <>
-                    <div>
-                      <Label className="text-gray-500 text-xs">Account Holder Name</Label>
+                    <div className="relative">
                       <Input 
                         value={accountName}
                         onChange={(e) => setAccountName(e.target.value)}
-                        placeholder="Name on UPI account"
-                        className="mt-1 h-12 rounded-xl"
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
                       />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Account Holder Name
+                      </label>
                     </div>
-                    <div>
-                      <Label className="text-gray-500 text-xs">UPI ID</Label>
+                    <div className="relative">
                       <Input 
                         value={accountNumber}
                         onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder="yourname@upi or 9876543210@paytm"
-                        className="mt-1 h-12 rounded-xl"
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
                       />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        UPI ID (e.g. name@upi)
+                      </label>
                     </div>
                   </>
                 )}
 
-                {/* bKash Fields (Bangladesh only) */}
+                {/* bKash Fields (Bangladesh only) - Premium Floating Labels */}
                 {selectedMethod === 'bkash' && (
                   <>
-                    <div>
-                      <Label className="text-gray-500 text-xs">Account Holder Name</Label>
+                    <div className="relative">
                       <Input 
                         value={accountName}
                         onChange={(e) => setAccountName(e.target.value)}
-                        placeholder="Name registered with bKash"
-                        className="mt-1 h-12 rounded-xl"
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
                       />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Account Holder Name
+                      </label>
                     </div>
-                    <div>
-                      <Label className="text-gray-500 text-xs">bKash Number</Label>
+                    <div className="relative">
                       <Input 
                         value={accountNumber}
                         onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder="01XXXXXXXXX"
-                        className="mt-1 h-12 rounded-xl"
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
                       />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        bKash Number
+                      </label>
                     </div>
                   </>
                 )}
 
-                {/* Crypto Fields */}
+                {/* Crypto Fields - Premium Floating Labels */}
                 {selectedMethod === 'crypto' && (
                   <>
-                    <div>
-                      <Label className="text-gray-500 text-xs">Wallet Name / Label</Label>
+                    <div className="relative">
                       <Input 
                         value={accountName}
                         onChange={(e) => setAccountName(e.target.value)}
-                        placeholder="My USDT Wallet"
-                        className="mt-1 h-12 rounded-xl"
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
                       />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Wallet Name / Label
+                      </label>
                     </div>
-                    <div>
-                      <Label className="text-gray-500 text-xs">Network</Label>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">Network</label>
                       <Select value={cryptoNetwork} onValueChange={setCryptoNetwork}>
-                        <SelectTrigger className="h-12 rounded-xl mt-1">
+                        <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100">
                           <SelectValue placeholder="Select network" />
                         </SelectTrigger>
                         <SelectContent>
@@ -981,14 +997,16 @@ const SellerWallet = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <Label className="text-gray-500 text-xs">Wallet Address</Label>
+                    <div className="relative">
                       <Input 
                         value={accountNumber}
                         onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder="Paste your wallet address"
-                        className="mt-1 h-12 rounded-xl font-mono text-sm"
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer font-mono text-sm"
                       />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Wallet Address
+                      </label>
                     </div>
                   </>
                 )}

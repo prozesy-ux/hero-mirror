@@ -149,58 +149,57 @@ const SellerDashboard = () => {
 
   return (
     <div className="space-y-6 seller-dashboard">
-      {/* Trust Score Header - Premium Design */}
+      {/* Trust Score Header - TikTok Store Premium Design */}
       {trustScore && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className={`h-1 bg-gradient-to-r ${getTrustScoreBg(trustScore.trust_score)}`} />
-          <div className="p-5 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Circular Progress Ring */}
-              <div className="relative w-16 h-16">
-                <svg className="w-16 h-16 transform -rotate-90">
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                    className="text-slate-100"
-                  />
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                    strokeDasharray={`${2 * Math.PI * 28}`}
-                    strokeDashoffset={`${2 * Math.PI * 28 * (1 - trustScore.trust_score / 100)}`}
-                    strokeLinecap="round"
-                    className={getTrustScoreColor(trustScore.trust_score)}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <ShieldCheck className={`w-6 h-6 ${getTrustScoreColor(trustScore.trust_score)}`} />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-6 text-white shadow-xl">
+          {/* Glass overlay */}
+          <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]" />
+          
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+          
+          <div className="relative z-10">
+            {/* Seller Badge */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <Badge className={`text-xs font-bold px-2.5 py-0.5 ${
+                    trustScore.trust_score >= 90 ? 'bg-emerald-400 text-emerald-900' :
+                    trustScore.trust_score >= 70 ? 'bg-blue-400 text-blue-900' : 'bg-amber-400 text-amber-900'
+                  }`}>
+                    {trustScore.trust_score >= 90 ? '⭐ TOP SELLER' : 
+                     trustScore.trust_score >= 70 ? '✓ TRUSTED' : '📈 GROWING'}
+                  </Badge>
+                  <h3 className="text-2xl sm:text-3xl font-bold mt-1">{trustScore.trust_score}% Trust Score</h3>
                 </div>
               </div>
-              <div>
-                <p className="seller-label text-slate-500 mb-0.5">TRUST SCORE</p>
-                <p className="seller-stat-number text-3xl text-slate-900">{trustScore.trust_score}%</p>
-              </div>
             </div>
-            <div className="hidden sm:flex items-center gap-8">
-              <div className="text-center">
-                <p className="seller-stat-number text-xl text-slate-900">{trustScore.successful_orders}</p>
-                <p className="seller-label text-slate-500">ORDERS</p>
+            
+            {/* Progress Bar */}
+            <div className="h-2.5 bg-white/20 rounded-full overflow-hidden mb-5">
+              <div 
+                className="h-full bg-gradient-to-r from-white to-white/80 rounded-full transition-all duration-1000" 
+                style={{ width: `${trustScore.trust_score}%` }} 
+              />
+            </div>
+            
+            {/* Stats Grid */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center p-3 sm:p-4 rounded-xl bg-white/10 backdrop-blur-sm">
+                <p className="text-2xl sm:text-3xl font-bold">{trustScore.successful_orders}</p>
+                <p className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wide">Completed</p>
               </div>
-              <div className="text-center">
-                <p className="seller-stat-number text-xl text-slate-900">{trustScore.buyer_approved_count}</p>
-                <p className="seller-label text-slate-500">APPROVED</p>
+              <div className="text-center p-3 sm:p-4 rounded-xl bg-white/10 backdrop-blur-sm">
+                <p className="text-2xl sm:text-3xl font-bold">{trustScore.buyer_approved_count}</p>
+                <p className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wide">Approved</p>
               </div>
-              <div className="text-center">
-                <p className="seller-stat-number text-xl text-slate-900">{trustScore.total_reports}</p>
-                <p className="seller-label text-slate-500">REPORTS</p>
+              <div className="text-center p-3 sm:p-4 rounded-xl bg-white/10 backdrop-blur-sm">
+                <p className="text-2xl sm:text-3xl font-bold">{trustScore.total_reports}</p>
+                <p className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wide">Reports</p>
               </div>
             </div>
           </div>
