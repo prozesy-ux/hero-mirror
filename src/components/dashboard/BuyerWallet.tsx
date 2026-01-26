@@ -39,9 +39,16 @@ import {
   getWalletByCode, 
   isDigitalWalletCode,
   getCountryName,
+  getSortedCountries,
+  getBanksForCountry,
+  getBankByCode,
+  isBankCode,
   type AccountType,
-  type DigitalWallet
+  type DigitalWallet,
+  type Bank,
+  type AddAccountStep
 } from '@/lib/digital-wallets-config';
+import { Globe } from 'lucide-react';
 
 interface BuyerWithdrawal {
   id: string;
@@ -80,7 +87,6 @@ interface SavedAccount {
 }
 
 type WalletTab = 'wallet' | 'withdrawals' | 'accounts';
-type AddAccountStep = 'type' | 'wallet' | 'details';
 
 const maskAccountNumber = (accountNumber: string): string => {
   if (accountNumber.length <= 4) return accountNumber;
@@ -133,11 +139,13 @@ const BuyerWallet = () => {
   const [withdrawAmount, setWithdrawAmount] = useState<number>(10);
   const [selectedAccountForWithdraw, setSelectedAccountForWithdraw] = useState<string | null>(null);
 
-  // Add account modal state - NEW 3-tier system
+  // Add account modal state - NEW 4-tier system
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
-  const [addAccountStep, setAddAccountStep] = useState<AddAccountStep>('type');
+  const [addAccountStep, setAddAccountStep] = useState<AddAccountStep>('country');
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedAccountType, setSelectedAccountType] = useState<AccountType | null>(null);
   const [selectedDigitalWallet, setSelectedDigitalWallet] = useState<DigitalWallet | null>(null);
+  const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [bankName, setBankName] = useState('');
@@ -155,7 +163,11 @@ const BuyerWallet = () => {
   const quickAmounts = [5, 10, 25, 50, 100];
 
   const getAvailableDigitalWallets = () => {
-    return getDigitalWalletsForCountry(userCountry);
+    return getDigitalWalletsForCountry(selectedCountry || userCountry);
+  };
+
+  const getAvailableBanks = () => {
+    return getBanksForCountry(selectedCountry || userCountry);
   };
 
   // Fetch all data from BFF API
@@ -257,8 +269,15 @@ const BuyerWallet = () => {
 
     // Determine the payment method code
     let methodCode = '';
+    let finalBankName = bankName;
+    
     if (selectedAccountType === 'bank') {
-      methodCode = 'bank';
+      if (selectedBank) {
+        methodCode = selectedBank.code;
+        finalBankName = selectedBank.name;
+      } else {
+        methodCode = 'bank';
+      }
     } else if (selectedAccountType === 'crypto') {
       methodCode = 'crypto';
     } else if (selectedDigitalWallet) {
@@ -293,9 +312,9 @@ const BuyerWallet = () => {
           payment_method_code: methodCode,
           account_name: accountName.trim(),
           account_number: accountNumber.trim(),
-          bank_name: bankName.trim() || null,
+          bank_name: finalBankName.trim() || null,
           is_primary: isPrimary,
-          country: userCountry,
+          country: selectedCountry || userCountry,
           account_details: accountDetails
         });
 
@@ -351,9 +370,11 @@ const BuyerWallet = () => {
   };
 
   const resetAddAccountForm = () => {
-    setAddAccountStep('type');
+    setAddAccountStep('country');
+    setSelectedCountry(null);
     setSelectedAccountType(null);
     setSelectedDigitalWallet(null);
+    setSelectedBank(null);
     setAccountName('');
     setAccountNumber('');
     setBankName('');
@@ -958,26 +979,34 @@ const BuyerWallet = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Account Modal - NEW 3-TIER SYSTEM */}
+      {/* Add Account Modal - NEW 4-TIER SYSTEM */}
       <Dialog open={showAddAccountModal} onOpenChange={(open) => { setShowAddAccountModal(open); if (!open) resetAddAccountForm(); }}>
         <DialogContent className="max-w-md p-0 overflow-hidden">
           {/* Gradient Header */}
           <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-6 text-white">
             <div className="flex items-center gap-3">
-              {addAccountStep !== 'type' && (
+              {addAccountStep !== 'country' && (
                 <button 
                   onClick={() => {
                     if (addAccountStep === 'details') {
                       if (selectedAccountType === 'digital_wallet') {
                         setAddAccountStep('wallet');
                         setSelectedDigitalWallet(null);
+                      } else if (selectedAccountType === 'bank') {
+                        setAddAccountStep('bank');
+                        setSelectedBank(null);
                       } else {
                         setAddAccountStep('type');
                         setSelectedAccountType(null);
                       }
-                    } else if (addAccountStep === 'wallet') {
+                    } else if (addAccountStep === 'wallet' || addAccountStep === 'bank') {
                       setAddAccountStep('type');
                       setSelectedAccountType(null);
+                      setSelectedBank(null);
+                      setSelectedDigitalWallet(null);
+                    } else if (addAccountStep === 'type') {
+                      setAddAccountStep('country');
+                      setSelectedCountry(null);
                     }
                   }}
                   className="p-2 -ml-2 rounded-lg hover:bg-white/20 transition-colors"
@@ -990,17 +1019,55 @@ const BuyerWallet = () => {
               </div>
               <div>
                 <h2 className="text-xl font-bold">Add Payment Account</h2>
-                <p className="text-violet-100 text-sm">{getCountryName(userCountry)} withdrawal methods</p>
+                <p className="text-violet-100 text-sm">{selectedCountry ? getCountryName(selectedCountry) : 'Select your country'}</p>
               </div>
             </div>
           </div>
 
           <div className="p-6 space-y-5">
+            {/* Step 0: Select Country */}
+            {addAccountStep === 'country' && (
+              <div className="animate-fade-up">
+                <Label className="text-gray-600 text-sm font-medium mb-4 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">1</span>
+                  Select Your Country
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {getSortedCountries().map((country) => (
+                    <button
+                      key={country.code}
+                      onClick={() => {
+                        setSelectedCountry(country.code);
+                        setAddAccountStep('type');
+                      }}
+                      className="p-4 rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-all text-center"
+                    >
+                      <div className="h-12 w-12 mx-auto mb-2 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
+                        {country.code === 'DEFAULT' ? (
+                          <Globe className="w-8 h-8 text-gray-500" />
+                        ) : (
+                          <img 
+                            src={country.flag} 
+                            alt={country.name}
+                            className="w-10 h-8 object-cover rounded"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        )}
+                      </div>
+                      <p className="text-gray-900 font-medium text-sm">{country.name}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Step 1: Select Account Type */}
             {addAccountStep === 'type' && (
               <div className="animate-fade-up">
                 <Label className="text-gray-600 text-sm font-medium mb-4 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">1</span>
+                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">2</span>
                   Select Account Type
                 </Label>
                 <div className="grid grid-cols-3 gap-3">
@@ -1011,6 +1078,8 @@ const BuyerWallet = () => {
                         setSelectedAccountType(type.code);
                         if (type.code === 'digital_wallet') {
                           setAddAccountStep('wallet');
+                        } else if (type.code === 'bank') {
+                          setAddAccountStep('bank');
                         } else {
                           setAddAccountStep('details');
                         }
@@ -1033,14 +1102,63 @@ const BuyerWallet = () => {
               </div>
             )}
 
-            {/* Step 2: Select Digital Wallet (only for digital_wallet type) */}
+            {/* Step 2a: Select Bank (for bank type) */}
+            {addAccountStep === 'bank' && (
+              <div className="animate-fade-up">
+                <Label className="text-gray-600 text-sm font-medium mb-4 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">3</span>
+                  Select Bank
+                </Label>
+                <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                  {getAvailableBanks().map((bank) => (
+                    <button
+                      key={bank.code}
+                      onClick={() => {
+                        setSelectedBank(bank);
+                        setBankName(bank.name);
+                        setAddAccountStep('details');
+                      }}
+                      className="p-3 rounded-xl border-2 border-gray-200 hover:border-violet-400 transition-all text-left group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          <img 
+                            src={bank.logo} 
+                            alt={bank.name}
+                            className="w-8 h-8 object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-6 h-6 text-gray-400"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"></path><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3"></path><path d="M3 7h18v14H3z"></path></svg></div>';
+                            }}
+                          />
+                        </div>
+                        <span className="text-gray-900 font-medium text-sm truncate">{bank.name}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {/* Other Bank Option */}
+                <button
+                  onClick={() => {
+                    setSelectedBank(null);
+                    setBankName('');
+                    setAddAccountStep('details');
+                  }}
+                  className="w-full mt-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-violet-400 hover:bg-violet-50 transition-all text-center"
+                >
+                  <span className="text-gray-600 font-medium">+ Other Bank (Enter Manually)</span>
+                </button>
+              </div>
+            )}
+
+            {/* Step 2b: Select Digital Wallet (for digital_wallet type) */}
             {addAccountStep === 'wallet' && (
               <div className="animate-fade-up">
                 <Label className="text-gray-600 text-sm font-medium mb-4 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">2</span>
+                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">3</span>
                   Select Wallet
                 </Label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {getAvailableDigitalWallets().map((wallet) => (
                     <button
                       key={wallet.code}
@@ -1068,15 +1186,24 @@ const BuyerWallet = () => {
               </div>
             )}
 
-            {/* Step 3: Enter Account Details */}
+            {/* Step 4: Enter Account Details */}
             {addAccountStep === 'details' && (
               <div className="space-y-4 animate-fade-up">
                 <Label className="text-gray-600 text-sm font-medium flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">
-                    {selectedAccountType === 'digital_wallet' ? '3' : '2'}
-                  </span>
+                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">4</span>
                   Enter Account Details
                 </Label>
+
+                {/* Show selected bank branding */}
+                {selectedBank && (
+                  <div className="p-4 rounded-xl bg-blue-50 flex items-center gap-3 mb-4">
+                    <img src={selectedBank.logo} alt={selectedBank.name} className="w-10 h-10 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    <div>
+                      <p className="font-semibold text-gray-900">{selectedBank.name}</p>
+                      <p className="text-sm text-gray-500">Enter your account details</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Show selected wallet branding for digital wallets */}
                 {selectedDigitalWallet && (
