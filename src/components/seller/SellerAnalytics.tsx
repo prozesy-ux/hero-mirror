@@ -3,11 +3,18 @@ import { useSellerContext } from '@/contexts/SellerContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   AreaChart, 
   Area, 
-  BarChart, 
-  Bar, 
   PieChart, 
   Pie, 
   Cell,
@@ -25,17 +32,60 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Sparkles,
-  Package
+  Package,
+  CalendarDays,
+  ChevronDown
 } from 'lucide-react';
-import { format, subDays, startOfDay, eachDayOfInterval, isWithinInterval } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, startOfMonth, endOfMonth, subMonths, eachDayOfInterval, isWithinInterval, isToday as isTodayFn, isYesterday } from 'date-fns';
 
-type Period = '7d' | '30d' | 'all';
+type Period = 'today' | 'yesterday' | '7d' | '30d' | 'thisMonth' | 'lastMonth' | 'custom' | 'all';
+
+const periodLabels: Record<Period, string> = {
+  today: 'Today',
+  yesterday: 'Yesterday',
+  '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
+  thisMonth: 'This month',
+  lastMonth: 'Last month',
+  custom: 'Custom range',
+  all: 'All time'
+};
 
 const SellerAnalytics = () => {
   const { orders, products, loading } = useSellerContext();
   const [period, setPeriod] = useState<Period>('30d');
+  const [customRange, setCustomRange] = useState<{ from: Date; to: Date } | null>(null);
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
 
-  const periodDays = period === '7d' ? 7 : period === '30d' ? 30 : 365;
+  // Calculate date range based on period
+  const getDateRange = () => {
+    const now = new Date();
+    switch (period) {
+      case 'today':
+        return { start: startOfDay(now), end: endOfDay(now) };
+      case 'yesterday':
+        const yesterday = subDays(now, 1);
+        return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
+      case '7d':
+        return { start: subDays(now, 7), end: now };
+      case '30d':
+        return { start: subDays(now, 30), end: now };
+      case 'thisMonth':
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      case 'lastMonth':
+        const lastMonth = subMonths(now, 1);
+        return { start: startOfMonth(lastMonth), end: endOfMonth(lastMonth) };
+      case 'custom':
+        if (customRange) {
+          return { start: customRange.from, end: customRange.to };
+        }
+        return { start: subDays(now, 30), end: now };
+      default:
+        return { start: subDays(now, 365), end: now };
+    }
+  };
+
+  const periodDays = period === 'today' || period === 'yesterday' ? 1 : period === '7d' ? 7 : period === '30d' ? 30 : 365;
 
   const analyticsData = useMemo(() => {
     const now = new Date();
@@ -150,21 +200,78 @@ const SellerAnalytics = () => {
 
   return (
     <div className="p-3 sm:p-4 lg:p-6 bg-slate-50 min-h-screen space-y-4 sm:space-y-6 seller-dashboard">
-      {/* Period Selector - Scrollable on mobile */}
+      {/* Period Selector - Extended Dropdown */}
       <div className="flex justify-end">
-        <div className="flex items-center gap-1 bg-white rounded-xl p-1 border border-slate-200 shadow-sm overflow-x-auto hide-scrollbar">
-          {(['7d', '30d', 'all'] as Period[]).map((p) => (
-            <Button
-              key={p}
-              size="sm"
-              variant={period === p ? 'default' : 'ghost'}
-              onClick={() => setPeriod(p)}
-              className={`rounded-lg text-xs flex-shrink-0 px-3 ${period === p ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'}`}
-            >
-              {p === '7d' ? '7D' : p === '30d' ? '30D' : 'All'}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="min-w-[160px] justify-between bg-white border-slate-200 rounded-xl shadow-sm">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-slate-500" />
+                <span className="text-slate-700">{periodLabels[period]}</span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-slate-400" />
             </Button>
-          ))}
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 rounded-xl">
+            <DropdownMenuItem onClick={() => setPeriod('today')} className="rounded-lg">
+              Today
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPeriod('yesterday')} className="rounded-lg">
+              Yesterday
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setPeriod('7d')} className="rounded-lg">
+              Last 7 days
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPeriod('30d')} className="rounded-lg">
+              Last 30 days
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setPeriod('thisMonth')} className="rounded-lg">
+              This month
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPeriod('lastMonth')} className="rounded-lg">
+              Last month
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setPeriod('all')} className="rounded-lg">
+              All time
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => { setPeriod('custom'); setShowCustomPicker(true); }} 
+              className="rounded-lg text-violet-600"
+            >
+              Custom range...
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Custom Date Range Picker */}
+        {period === 'custom' && (
+          <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="ml-2 rounded-xl border-slate-200">
+                {customRange 
+                  ? `${format(customRange.from, 'MMM d')} - ${format(customRange.to, 'MMM d')}`
+                  : 'Select dates'
+                }
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="range"
+                selected={customRange ? { from: customRange.from, to: customRange.to } : undefined}
+                onSelect={(range) => {
+                  if (range?.from && range?.to) {
+                    setCustomRange({ from: range.from, to: range.to });
+                  }
+                }}
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
 
       {/* Stats Grid - 2 columns on mobile */}

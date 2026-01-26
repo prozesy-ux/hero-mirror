@@ -1204,6 +1204,54 @@ export type Database = {
         }
         Relationships: []
       }
+      seller_2fa_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          recovery_codes: string[] | null
+          secret_key: string | null
+          seller_id: string
+          updated_at: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          recovery_codes?: string[] | null
+          secret_key?: string | null
+          seller_id: string
+          updated_at?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          recovery_codes?: string[] | null
+          secret_key?: string | null
+          seller_id?: string
+          updated_at?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_2fa_settings_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: true
+            referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_2fa_settings_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: true
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seller_chat_attachments: {
         Row: {
           created_at: string | null
@@ -1974,6 +2022,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_2fa_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          recovery_codes: string[] | null
+          secret_key: string | null
+          updated_at: string | null
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          recovery_codes?: string[] | null
+          secret_key?: string | null
+          updated_at?: string | null
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          recovery_codes?: string[] | null
+          secret_key?: string | null
+          updated_at?: string | null
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string | null
@@ -2132,6 +2213,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      withdrawal_otps: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          otp_code: string
+          payment_account_id: string
+          seller_id: string
+          verified: boolean | null
+          withdrawal_amount: number
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          otp_code: string
+          payment_account_id: string
+          seller_id: string
+          verified?: boolean | null
+          withdrawal_amount: number
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          payment_account_id?: string
+          seller_id?: string
+          verified?: boolean | null
+          withdrawal_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_otps_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawal_otps_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

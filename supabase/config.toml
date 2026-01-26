@@ -51,3 +51,9 @@ verify_jwt = false
 
 [functions.email-health]
 verify_jwt = false
+
+[functions.send-withdrawal-otp]
+verify_jwt = false
+
+[functions.verify-withdrawal-otp]
+verify_jwt = false
