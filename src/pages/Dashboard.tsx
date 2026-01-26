@@ -12,6 +12,10 @@ import AccountDetailPage from '@/components/dashboard/AccountDetailPage';
 import ProductFullViewPage from '@/components/dashboard/ProductFullViewPage';
 import ChatSection from '@/components/dashboard/ChatSection';
 import BuyerWallet from '@/components/dashboard/BuyerWallet';
+import BuyerOrders from '@/components/dashboard/BuyerOrders';
+import BuyerWishlist from '@/components/dashboard/BuyerWishlist';
+import BuyerAnalytics from '@/components/dashboard/BuyerAnalytics';
+import BuyerNotifications from '@/components/dashboard/BuyerNotifications';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import { SearchProvider } from '@/contexts/SearchContext';
 import { SidebarProvider, useSidebarContext } from '@/contexts/SidebarContext';
@@ -41,6 +45,10 @@ const DashboardContent = () => {
           <Route path="ai-accounts/product/:productId" element={<ProductFullViewPage />} />
           <Route path="billing" element={<BillingSection />} />
           <Route path="wallet" element={<BuyerWallet />} />
+          <Route path="orders" element={<BuyerOrders />} />
+          <Route path="wishlist" element={<BuyerWishlist />} />
+          <Route path="analytics" element={<BuyerAnalytics />} />
+          <Route path="notifications" element={<BuyerNotifications />} />
           <Route path="profile" element={<ProfileSection />} />
           <Route path="chat" element={<ChatSection />} />
         </Routes>

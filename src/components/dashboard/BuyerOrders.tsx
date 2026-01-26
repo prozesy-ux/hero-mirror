@@ -1,0 +1,386 @@
+import { useState, useMemo, useEffect } from 'react';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { ShoppingBag, Package, Clock, CheckCircle, XCircle, Search, Filter, Eye, MessageSquare, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
+
+interface Order {
+  id: string;
+  amount: number;
+  seller_earning: number;
+  status: string;
+  credentials: string | null;
+  delivered_at: string | null;
+  created_at: string;
+  buyer_approved: boolean;
+  product: {
+    id: string;
+    name: string;
+    icon_url: string | null;
+    description: string | null;
+  } | null;
+  seller: {
+    id: string;
+    store_name: string;
+    store_logo_url: string | null;
+  } | null;
+}
+
+const BuyerOrders = () => {
+  const { user } = useAuthContext();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [approving, setApproving] = useState(false);
+
+  useEffect(() => {
+    if (user) fetchOrders();
+  }, [user]);
+
+  const fetchOrders = async () => {
+    const { data, error } = await supabase
+      .from('seller_orders')
+      .select(`
+        *,
+        product:seller_products(id, name, icon_url, description),
+        seller:seller_profiles(id, store_name, store_logo_url)
+      `)
+      .eq('buyer_id', user?.id)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setOrders(data as Order[]);
+    }
+    setLoading(false);
+  };
+
+  // Stats
+  const stats = useMemo(() => ({
+    total: orders.length,
+    pending: orders.filter(o => o.status === 'pending').length,
+    delivered: orders.filter(o => o.status === 'delivered').length,
+    completed: orders.filter(o => o.status === 'completed').length,
+    totalSpent: orders.reduce((sum, o) => sum + o.amount, 0)
+  }), [orders]);
+
+  // Filter orders
+  const filteredOrders = useMemo(() => {
+    return orders.filter(order => {
+      const matchesSearch = order.product?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           order.seller?.store_name.toLowerCase().includes(searchQuery.toLowerCase());
+      if (statusFilter === 'all') return matchesSearch;
+      return matchesSearch && order.status === statusFilter;
+    });
+  }, [orders, searchQuery, statusFilter]);
+
+  const handleApproveDelivery = async (orderId: string) => {
+    setApproving(true);
+    try {
+      const { error } = await supabase.rpc('approve_seller_delivery', {
+        p_order_id: orderId,
+        p_buyer_id: user?.id
+      });
+
+      if (error) throw error;
+      toast.success('Delivery approved! Seller has been paid.');
+      fetchOrders();
+      setSelectedOrder(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to approve delivery');
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>;
+      case 'delivered':
+        return <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50"><Package className="w-3 h-3 mr-1" /> Delivered</Badge>;
+      case 'completed':
+        return <Badge variant="outline" className="text-emerald-600 border-emerald-300 bg-emerald-50"><CheckCircle className="w-3 h-3 mr-1" /> Completed</Badge>;
+      case 'cancelled':
+        return <Badge variant="outline" className="text-red-600 border-red-300 bg-red-50"><XCircle className="w-3 h-3 mr-1" /> Cancelled</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-2xl" />
+          ))}
+        </div>
+        <Skeleton className="h-96 rounded-2xl" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-bold text-slate-800">My Orders</h1>
+        <p className="text-sm text-slate-500">Track and manage your purchases</p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
+              <ShoppingBag className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-500">Total Orders</p>
+              <p className="text-2xl font-bold text-slate-800">{stats.total}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
+              <Clock className="w-6 h-6 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-500">Pending</p>
+              <p className="text-2xl font-bold text-orange-600">{stats.pending}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
+              <Package className="w-6 h-6 text-violet-600" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-500">Delivered</p>
+              <p className="text-2xl font-bold text-violet-600">{stats.delivered}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-500">Completed</p>
+              <p className="text-2xl font-bold text-emerald-600">{stats.completed}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center">
+              <span className="text-green-600 font-bold">₹</span>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-500">Total Spent</p>
+              <p className="text-2xl font-bold text-green-600">₹{stats.totalSpent}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search orders..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 rounded-xl border-slate-200"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-[180px] rounded-xl border-slate-200">
+            <Filter className="w-4 h-4 mr-2 text-slate-400" />
+            <SelectValue placeholder="Filter status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Orders</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="delivered">Delivered</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Orders List */}
+      <div className="space-y-4">
+        {filteredOrders.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 text-center border border-slate-100">
+            <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500">No orders found</p>
+          </div>
+        ) : (
+          filteredOrders.map((order) => (
+            <div key={order.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  {/* Product Info */}
+                  <div className="flex items-center gap-3 flex-1">
+                    {order.product?.icon_url ? (
+                      <img src={order.product.icon_url} alt="" className="w-14 h-14 rounded-xl object-cover" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center">
+                        <Package className="w-6 h-6 text-slate-400" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-slate-800 truncate">{order.product?.name || 'Unknown Product'}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage src={order.seller?.store_logo_url || ''} />
+                          <AvatarFallback className="text-[10px] bg-slate-100">{order.seller?.store_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-slate-500">{order.seller?.store_name}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Order Details */}
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-slate-800">₹{order.amount}</p>
+                      <p className="text-xs text-slate-400">{format(new Date(order.created_at), 'MMM d, yyyy')}</p>
+                    </div>
+                    {getStatusBadge(order.status)}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedOrder(order)}
+                      className="rounded-lg"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Action for delivered orders */}
+                {order.status === 'delivered' && !order.buyer_approved && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-blue-700">Order delivered! Please confirm to release payment to seller.</p>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApproveDelivery(order.id)}
+                        disabled={approving}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        Confirm Delivery
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Order Detail Modal */}
+      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Order Details</DialogTitle>
+          </DialogHeader>
+          
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                {selectedOrder.product?.icon_url ? (
+                  <img src={selectedOrder.product.icon_url} alt="" className="w-16 h-16 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <Package className="w-8 h-8 text-slate-400" />
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-semibold text-lg">{selectedOrder.product?.name}</h3>
+                  <p className="text-sm text-slate-500">{selectedOrder.seller?.store_name}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl">
+                <div>
+                  <p className="text-xs text-slate-500">Order ID</p>
+                  <p className="font-mono text-sm">{selectedOrder.id.slice(0, 8)}...</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Amount</p>
+                  <p className="font-semibold text-emerald-600">₹{selectedOrder.amount}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Order Date</p>
+                  <p className="text-sm">{format(new Date(selectedOrder.created_at), 'PPP')}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Status</p>
+                  {getStatusBadge(selectedOrder.status)}
+                </div>
+              </div>
+
+              {selectedOrder.credentials && selectedOrder.status !== 'pending' && (
+                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                  <p className="text-xs text-emerald-600 font-medium mb-2">Delivery Credentials</p>
+                  <pre className="text-sm whitespace-pre-wrap bg-white p-3 rounded-lg border">
+                    {selectedOrder.credentials}
+                  </pre>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1">
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Contact Seller
+                </Button>
+                {selectedOrder.status === 'completed' && (
+                  <Button variant="outline" className="flex-1">
+                    <Star className="w-4 h-4 mr-2" />
+                    Leave Review
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default BuyerOrders;
