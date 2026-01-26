@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,6 +76,7 @@ const popularTags = ['Digital', 'Premium', 'Instant Delivery', 'Lifetime', 'Subs
 
 const SellerProducts = () => {
   const { profile, products, refreshProducts, loading } = useSellerContext();
+  const { formatAmountOnly } = useCurrency();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -309,7 +311,7 @@ const SellerProducts = () => {
             </div>
             <div>
               <p className="seller-label text-slate-500">REVENUE</p>
-              <p className="seller-stat-number text-xl text-slate-900">${totalRevenue.toFixed(0)}</p>
+              <p className="seller-stat-number text-xl text-slate-900">{formatAmountOnly(totalRevenue)}</p>
             </div>
           </div>
         </div>
@@ -463,7 +465,7 @@ const SellerProducts = () => {
                 {/* Content */}
                 <div className="p-4">
                   <h3 className="seller-heading text-slate-900 truncate mb-1">{product.name}</h3>
-                  <p className="seller-stat-number text-xl text-emerald-600 mb-2">${Number(product.price).toFixed(2)}</p>
+                  <p className="seller-stat-number text-xl text-emerald-600 mb-2">{formatAmountOnly(Number(product.price))}</p>
                   
                   {/* Categories & Tags */}
                   <div className="flex flex-wrap gap-1 mb-3 min-h-[24px]">

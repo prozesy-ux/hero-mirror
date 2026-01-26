@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
 import { BellRing, X, Wallet } from 'lucide-react';
@@ -8,6 +9,7 @@ import theLogo from '@/assets/the-logo.png';
 
 const SellerMobileHeader = () => {
   const { profile, wallet } = useSellerContext();
+  const { formatAmountOnly } = useCurrency();
   const { permission, isSubscribed, isLoading: pushLoading, subscribe, isSupported } = usePushNotifications();
   const [pushBannerDismissed, setPushBannerDismissed] = useState(true);
 
@@ -48,7 +50,7 @@ const SellerMobileHeader = () => {
         >
           <Wallet className="h-4 w-4 text-emerald-600" />
           <span className="text-sm font-bold text-emerald-700">
-            ${Number(wallet?.balance || 0).toFixed(2)}
+            {formatAmountOnly(Number(wallet?.balance || 0))}
           </span>
         </Link>
       </header>

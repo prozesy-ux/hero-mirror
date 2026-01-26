@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -48,6 +49,7 @@ const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const SellerAnalytics = () => {
   const { orders, products, wallet, loading } = useSellerContext();
+  const { formatAmountOnly } = useCurrency();
   const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'custom'>('30d');
   const [dateRange, setDateRange] = useState<DateRange>({
     from: subDays(new Date(), 30),
@@ -386,13 +388,13 @@ const SellerAnalytics = () => {
         />
         <StatCard 
           title="Today's Sale" 
-          value={`$${analyticsData.todaySales.toLocaleString()}`} 
+          value={formatAmountOnly(analyticsData.todaySales)} 
           change={analyticsData.salesChange}
           icon={DollarSign}
         />
         <StatCard 
           title="Total Balance" 
-          value={`$${analyticsData.totalBalance.toLocaleString()}`}
+          value={formatAmountOnly(analyticsData.totalBalance)}
           icon={Wallet}
         />
         <StatCard 
@@ -444,7 +446,7 @@ const SellerAnalytics = () => {
                     backgroundColor: 'white'
                   }} 
                   formatter={(value: number, name: string, props: any) => [
-                    `$${props.payload.value.toFixed(2)}`, 
+                    formatAmountOnly(props.payload.value), 
                     'Revenue'
                   ]}
                   labelFormatter={(label) => label}

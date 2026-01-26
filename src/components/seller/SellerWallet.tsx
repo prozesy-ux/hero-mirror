@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -147,6 +148,7 @@ const getMethodBg = (code: string) => {
 
 const SellerWallet = () => {
   const { profile, wallet, withdrawals, refreshWallet, refreshWithdrawals, loading } = useSellerContext();
+  const { formatAmountOnly, formatAmount } = useCurrency();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
@@ -660,7 +662,7 @@ const SellerWallet = () => {
                 <div>
                   <p className="text-gray-500 text-xs sm:text-sm font-medium">Wallet Balance</p>
                   <h3 className="text-2xl sm:text-4xl font-bold text-gray-900 tracking-tight">
-                    ${(wallet?.balance || 0).toFixed(2)}
+                    {formatAmount(wallet?.balance || 0, true)}
                   </h3>
                 </div>
               </div>
@@ -829,7 +831,7 @@ const SellerWallet = () => {
                           <DollarSign size={18} className="text-violet-600" />
                         </div>
                         <div>
-                          <p className="text-gray-900 font-medium">${Number(withdrawal.amount).toFixed(2)}</p>
+                          <p className="text-gray-900 font-medium">{formatAmount(Number(withdrawal.amount), true)}</p>
                           <p className="text-gray-500 text-sm">
                             {format(new Date(withdrawal.created_at), 'MMM d, yyyy')}
                             <span className="ml-2 text-xs uppercase text-gray-400">

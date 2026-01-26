@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import { useSellerContext } from '@/contexts/SellerContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
+import { CurrencySelector } from '@/components/ui/currency-selector';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +59,7 @@ const navItems = [
 const SellerTopBar = () => {
   const { isCollapsed } = useSellerSidebarContext();
   const { profile, wallet, orders } = useSellerContext();
+  const { formatAmountOnly } = useCurrency();
   const { permission, isSubscribed, isLoading: pushLoading, subscribe, isSupported } = usePushNotifications();
   const location = useLocation();
   const navigate = useNavigate();
@@ -219,6 +222,9 @@ const SellerTopBar = () => {
 
       {/* Right Section - Share, Wallet, Notifications, Profile */}
       <div className="flex items-center gap-4">
+        {/* Currency Selector */}
+        <CurrencySelector variant="minimal" />
+
         {/* Share Store Button */}
         <Button
           variant="outline"
@@ -236,7 +242,7 @@ const SellerTopBar = () => {
         >
           <Wallet className="h-4 w-4 text-emerald-600" />
           <span className="font-semibold text-emerald-700">
-            ${Number(wallet?.balance || 0).toFixed(2)}
+            {formatAmountOnly(Number(wallet?.balance || 0))}
           </span>
         </Link>
 
