@@ -10,14 +10,6 @@ interface VerifyOTPRequest {
   otp_code: string;
 }
 
-// Canonical list of statuses that block new withdrawals
-const BLOCKING_STATUSES = ['pending', 'processing', 'queued', 'in_review', 'awaiting', 'requested'];
-
-function isBlockingStatus(status: string | null | undefined): boolean {
-  if (!status) return false;
-  return BLOCKING_STATUSES.includes(status.toLowerCase().trim());
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -120,21 +112,6 @@ serve(async (req) => {
       );
     }
 
-    // Check for any in-progress withdrawal using normalized status check
-    const { data: existingWithdrawals } = await serviceClient
-      .from("seller_withdrawals")
-      .select("id, status")
-      .eq("seller_id", sellerProfile.id);
-
-    const hasBlockingWithdrawal = existingWithdrawals?.some(w => isBlockingStatus(w.status));
-    
-    if (hasBlockingWithdrawal) {
-      return new Response(
-        JSON.stringify({ error: "You already have a pending withdrawal. Please wait for it to be processed." }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // Create withdrawal request - unique index will prevent duplicates at DB level
     const { error: withdrawalError } = await serviceClient
       .from("seller_withdrawals")
@@ -150,14 +127,6 @@ serve(async (req) => {
 
     if (withdrawalError) {
       console.error("Withdrawal creation error:", withdrawalError);
-      
-      // Check for unique constraint violation (error code 23505)
-      if (withdrawalError.code === "23505") {
-        return new Response(
-          JSON.stringify({ error: "You already have a pending withdrawal. Please wait for it to be processed." }),
-          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       
       return new Response(
         JSON.stringify({ error: "Failed to create withdrawal" }),

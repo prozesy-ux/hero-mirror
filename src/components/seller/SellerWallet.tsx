@@ -419,12 +419,6 @@ const SellerWallet = () => {
       return;
     }
 
-    // Check for pending withdrawal
-    const pendingWithdrawal = withdrawals.find(w => isBlockingWithdrawalStatus(w.status));
-    if (pendingWithdrawal) {
-      toast.error('You already have a pending withdrawal request');
-      return;
-    }
 
     // Check if 2FA is enabled - properly typed now
     const is2FAEnabled = profile.two_factor_enabled === true;
@@ -615,7 +609,7 @@ const SellerWallet = () => {
     }
   };
 
-  const hasPendingWithdrawal = withdrawals.some(w => isBlockingWithdrawalStatus(w.status));
+  
 
   const tabs = [
     { id: 'wallet' as WalletTab, label: 'Wallet', icon: Wallet },
@@ -681,18 +675,13 @@ const SellerWallet = () => {
               </div>
               <button
                 onClick={() => {
-                  // Double-check no pending withdrawal before opening dialog
-                  if (hasPendingWithdrawal) {
-                    toast.error('You already have a pending withdrawal request');
-                    return;
-                  }
                   setShowWithdrawDialog(true);
                 }}
-                disabled={!wallet?.balance || wallet.balance < 5 || hasPendingWithdrawal || savedAccounts.length === 0}
+                disabled={!wallet?.balance || wallet.balance < 5 || savedAccounts.length === 0}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
               >
                 <ArrowDownCircle size={20} />
-                {hasPendingWithdrawal ? 'Pending...' : 'Withdraw'}
+                Withdraw
               </button>
             </div>
           </div>
@@ -712,16 +701,6 @@ const SellerWallet = () => {
               >
                 Add Account
               </Button>
-            </div>
-          )}
-
-          {hasPendingWithdrawal && (
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
-              <AlertCircle className="text-amber-600 flex-shrink-0" size={20} />
-              <div>
-                <p className="text-amber-700 font-medium">Withdrawal Pending</p>
-                <p className="text-amber-600/70 text-sm">Please wait for your current withdrawal to be processed.</p>
-              </div>
             </div>
           )}
 
