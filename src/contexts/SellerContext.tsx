@@ -15,6 +15,7 @@ interface SellerProfile {
   commission_rate: number;
   total_sales: number;
   total_orders: number;
+  two_factor_enabled: boolean;
 }
 
 interface SellerWallet {

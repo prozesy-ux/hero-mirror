@@ -411,9 +411,9 @@ const SellerWallet = () => {
       return;
     }
 
-    // Check if 2FA is enabled (default true if undefined)
-    const is2FAEnabled = (profile as any)?.two_factor_enabled !== false;
-    console.log('[WITHDRAW] 2FA Status:', { is2FAEnabled, profile_2fa: (profile as any)?.two_factor_enabled });
+    // Check if 2FA is enabled - properly typed now
+    const is2FAEnabled = profile.two_factor_enabled === true;
+    console.log('[WITHDRAW] Profile 2FA status:', { two_factor_enabled: profile.two_factor_enabled, is2FAEnabled });
 
     if (is2FAEnabled) {
       // Send OTP for verification
