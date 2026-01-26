@@ -13,7 +13,6 @@ import {
   XCircle, 
   Loader2,
   AlertCircle,
-  TrendingUp,
   CreditCard,
   Plus,
   Trash2,
@@ -22,8 +21,8 @@ import {
   Smartphone,
   Bitcoin,
   History,
-  RefreshCw,
-  ShieldCheck
+  ShieldCheck,
+  DollarSign
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -130,8 +129,7 @@ const getMethodBg = (code: string) => {
 
 const BuyerWallet = () => {
   const { user } = useAuthContext();
-  const { formatAmount, formatAmountOnly, selectedCurrency, currencies } = useCurrency();
-  const currentRate = currencies.find(c => c.code === selectedCurrency)?.rate || 1;
+  const { formatAmount } = useCurrency();
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [withdrawals, setWithdrawals] = useState<BuyerWithdrawal[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -157,7 +155,6 @@ const BuyerWallet = () => {
   const [ifscCode, setIfscCode] = useState('');
   const [cryptoNetwork, setCryptoNetwork] = useState('');
   const [isPrimary, setIsPrimary] = useState(false);
-  const [addStep, setAddStep] = useState<1 | 2>(1);
 
   // OTP verification state
   const [showOTPModal, setShowOTPModal] = useState(false);
@@ -170,7 +167,6 @@ const BuyerWallet = () => {
 
   const isBlockingWithdrawalStatus = (status?: string | null) => {
     const s = (status || '').trim().toLowerCase();
-    // Treat any “not completed yet” state as blocking to prevent double-withdraw.
     return (
       s === 'pending' ||
       s === 'processing' ||
@@ -184,6 +180,11 @@ const BuyerWallet = () => {
   const getAvailableMethods = () => {
     const countryConfig = COUNTRY_PAYMENT_METHODS[userCountry] || COUNTRY_PAYMENT_METHODS.DEFAULT;
     return countryConfig.methods;
+  };
+
+  const getCountryName = () => {
+    const countryConfig = COUNTRY_PAYMENT_METHODS[userCountry] || COUNTRY_PAYMENT_METHODS.DEFAULT;
+    return countryConfig.name;
   };
 
   // Fetch all data from BFF API
@@ -373,7 +374,6 @@ const BuyerWallet = () => {
     setIfscCode('');
     setCryptoNetwork('');
     setIsPrimary(false);
-    setAddStep(1);
   };
 
   // Withdrawal handling with OTP
@@ -406,7 +406,6 @@ const BuyerWallet = () => {
     }
 
     if (twoFactorEnabled) {
-      // Send OTP for verification
       setOTPSending(true);
 
       try {
@@ -435,7 +434,6 @@ const BuyerWallet = () => {
         setOTPSending(false);
       }
     } else {
-      // 2FA disabled - process withdrawal directly
       setSubmitting(true);
       try {
         const { error } = await supabase
@@ -449,7 +447,6 @@ const BuyerWallet = () => {
 
         if (error) throw error;
 
-        // Deduct from balance
         const newBalance = (wallet?.balance || 0) - withdrawAmount;
         await supabase
           .from('user_wallets')
@@ -469,7 +466,6 @@ const BuyerWallet = () => {
     }
   };
 
-  // Verify OTP and complete withdrawal
   const handleVerifyOTP = async () => {
     if (!pendingWithdrawalData || otpValue.length !== 6) return;
 
@@ -528,8 +524,9 @@ const BuyerWallet = () => {
       case 'pending':
         return { icon: Clock, label: 'Pending', className: 'bg-amber-100 text-amber-700' };
       case 'approved':
+        return { icon: CheckCircle, label: 'Approved', className: 'bg-violet-100 text-violet-700' };
       case 'completed':
-        return { icon: CheckCircle, label: status === 'completed' ? 'Completed' : 'Approved', className: 'bg-emerald-100 text-emerald-700' };
+        return { icon: CheckCircle, label: 'Completed', className: 'bg-emerald-100 text-emerald-700' };
       case 'rejected':
         return { icon: XCircle, label: 'Rejected', className: 'bg-red-100 text-red-700' };
       default:
@@ -538,19 +535,17 @@ const BuyerWallet = () => {
   };
 
   const hasPendingWithdrawal = withdrawals.some(w => isBlockingWithdrawalStatus(w.status));
-  const totalWithdrawn = withdrawals.filter(w => w.status === 'completed').reduce((sum, w) => sum + Number(w.amount), 0);
-  const pendingAmount = withdrawals.filter(w => w.status === 'pending').reduce((sum, w) => sum + Number(w.amount), 0);
 
   const tabs = [
     { id: 'wallet' as WalletTab, label: 'Wallet', icon: Wallet },
     { id: 'accounts' as WalletTab, label: 'Accounts', icon: CreditCard },
-    { id: 'withdrawals' as WalletTab, label: 'History', icon: History },
+    { id: 'withdrawals' as WalletTab, label: 'Withdrawals', icon: History },
   ];
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -567,8 +562,8 @@ const BuyerWallet = () => {
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-up px-3 sm:px-0">
-      {/* Tab Navigation */}
-      <div className="bg-card rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-border shadow-md">
+      {/* Tab Navigation - Matching Seller Design */}
+      <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-gray-200 shadow-md">
         <div className="flex gap-1 overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => {
             const TabIcon = tab.icon;
@@ -578,15 +573,15 @@ const BuyerWallet = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
-                    ? 'bg-primary text-primary-foreground shadow-lg'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95'
+                    ? 'bg-gray-900 text-white shadow-lg'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
                 }`}
               >
                 <TabIcon size={14} />
                 <span className="hidden sm:inline">{tab.label}</span>
                 <span className="sm:hidden">{tab.label.slice(0, 4)}</span>
                 {tab.id === 'accounts' && savedAccounts.length > 0 && (
-                  <span className={`text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-primary-foreground/20' : 'bg-muted'}`}>
+                  <span className={`text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-white/20' : 'bg-gray-200'}`}>
                     {savedAccounts.length}
                   </span>
                 )}
@@ -599,23 +594,22 @@ const BuyerWallet = () => {
       {/* Wallet Tab */}
       {activeTab === 'wallet' && (
         <div className="space-y-4 sm:space-y-6">
-          {/* Wallet Card */}
-          <div className="bg-card rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-border">
+          {/* Wallet Card - Matching Seller violet/purple theme */}
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600">
+                <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600">
                   <Wallet size={24} className="sm:w-7 sm:h-7 text-white" />
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-xs sm:text-sm font-medium">Available Balance</p>
-                  <h3 className="text-2xl sm:text-4xl font-bold text-foreground tracking-tight">
+                  <p className="text-gray-500 text-xs sm:text-sm font-medium">Wallet Balance</p>
+                  <h3 className="text-2xl sm:text-4xl font-bold text-gray-900 tracking-tight">
                     {formatAmount(wallet?.balance || 0, true)}
                   </h3>
                 </div>
               </div>
               <button
                 onClick={() => {
-                  // Double-check no pending withdrawal before opening dialog
                   if (hasPendingWithdrawal) {
                     toast.error('You already have a pending withdrawal request');
                     return;
@@ -623,7 +617,7 @@ const BuyerWallet = () => {
                   setShowWithdrawDialog(true);
                 }}
                 disabled={!wallet?.balance || wallet.balance < 5 || hasPendingWithdrawal || savedAccounts.length === 0}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-muted disabled:to-muted disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-500/25"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-500/25"
               >
                 <ArrowDownCircle size={20} />
                 {hasPendingWithdrawal ? 'Pending...' : 'Withdraw'}
@@ -631,45 +625,10 @@ const BuyerWallet = () => {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-card rounded-xl p-4 border border-border">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-50">
-                  <Clock className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Pending</p>
-                  <p className="text-lg font-bold text-foreground">{formatAmountOnly(pendingAmount)}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-card rounded-xl p-4 border border-border">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-50">
-                  <TrendingUp className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Withdrawn</p>
-                  <p className="text-lg font-bold text-foreground">{formatAmountOnly(totalWithdrawn)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Exchange Rate Info */}
-          {selectedCurrency !== 'USD' && (
-            <div className="p-4 bg-muted/50 rounded-xl border border-border">
-              <p className="text-sm text-muted-foreground">
-                Current Rate: <span className="font-semibold text-foreground">1 USD = {currentRate} {selectedCurrency}</span>
-              </p>
-            </div>
-          )}
-
           {savedAccounts.length === 0 && (
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
               <AlertCircle className="text-amber-600 flex-shrink-0" size={20} />
-              <div className="flex-1">
+              <div>
                 <p className="text-amber-700 font-medium">Add Payment Account First</p>
                 <p className="text-amber-600/70 text-sm">You need to add at least one payment account before withdrawing.</p>
               </div>
@@ -677,7 +636,7 @@ const BuyerWallet = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={() => setActiveTab('accounts')}
-                className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                className="ml-auto border-amber-300 text-amber-700 hover:bg-amber-100"
               >
                 Add Account
               </Button>
@@ -693,20 +652,54 @@ const BuyerWallet = () => {
               </div>
             </div>
           )}
+
+          {/* Available Withdrawal Methods - Matching Seller */}
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
+            <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
+              <CreditCard className="text-gray-500" size={20} />
+              Available Withdrawal Methods
+            </h3>
+            {paymentMethods.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No withdrawal methods available. Contact admin.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {paymentMethods.map((method) => (
+                  <div 
+                    key={method.id}
+                    className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
+                  >
+                    {method.icon_url ? (
+                      <img 
+                        src={method.icon_url} 
+                        alt={method.name} 
+                        className="h-8 w-auto mx-auto mb-2 object-contain"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 mx-auto mb-2 rounded-lg bg-gray-200 flex items-center justify-center">
+                        <CreditCard size={16} className="text-gray-500" />
+                      </div>
+                    )}
+                    <p className="text-gray-900 font-medium text-sm">{method.name}</p>
+                    <p className="text-gray-500 text-xs">Min: ${method.min_withdrawal || 5}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Accounts Tab */}
+      {/* Accounts Tab - Matching Seller Design */}
       {activeTab === 'accounts' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {savedAccounts.map(account => (
               <div 
                 key={account.id}
-                className="p-4 rounded-xl border border-border bg-card hover:shadow-md transition-all relative"
+                className="p-4 rounded-xl border border-gray-200 bg-white hover:shadow-md transition-all relative"
               >
                 {account.is_primary && (
-                  <Badge className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px]">
+                  <Badge className="absolute -top-2 -right-2 bg-violet-600 text-white text-[10px]">
                     <Star className="w-3 h-3 mr-0.5" /> Primary
                   </Badge>
                 )}
@@ -716,28 +709,28 @@ const BuyerWallet = () => {
                     {getMethodIcon(account.payment_method_code)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-foreground truncate">{account.account_name}</p>
-                    <p className="text-sm text-muted-foreground font-mono">{maskAccountNumber(account.account_number)}</p>
+                    <p className="font-semibold text-gray-900 truncate">{account.account_name}</p>
+                    <p className="text-sm text-gray-500 font-mono">{maskAccountNumber(account.account_number)}</p>
                     {account.bank_name && (
-                      <p className="text-xs text-muted-foreground mt-1 truncate">{account.bank_name}</p>
+                      <p className="text-xs text-gray-400 mt-1 truncate">{account.bank_name}</p>
                     )}
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-                  <span className="text-xs text-muted-foreground uppercase">{account.payment_method_code}</span>
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                  <span className="text-xs text-gray-400 uppercase">{account.payment_method_code}</span>
                   <div className="flex items-center gap-2">
                     {!account.is_primary && (
                       <button 
                         onClick={() => handleSetPrimary(account.id, account.payment_method_code)}
-                        className="text-xs text-primary hover:text-primary/80 font-medium"
+                        className="text-xs text-violet-600 hover:text-violet-700 font-medium"
                       >
                         Set Primary
                       </button>
                     )}
                     <button 
                       onClick={() => handleDeleteAccount(account.id)}
-                      className="text-xs text-destructive hover:text-destructive/80"
+                      className="text-xs text-red-500 hover:text-red-600"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -746,64 +739,62 @@ const BuyerWallet = () => {
               </div>
             ))}
             
-            {/* Add Account Card */}
+            {/* Add Account Card - Matching Seller violet theme */}
             <button 
               onClick={() => setShowAddAccountModal(true)}
-              className="p-6 rounded-xl border-2 border-dashed border-border hover:border-primary hover:bg-muted/50 transition-all flex flex-col items-center justify-center gap-2 min-h-[140px]"
+              className="p-6 rounded-xl border-2 border-dashed border-violet-200 hover:border-violet-400 hover:bg-violet-50 transition-all flex flex-col items-center justify-center gap-2 min-h-[140px]"
             >
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                <Plus className="w-6 h-6 text-muted-foreground" />
+              <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center">
+                <Plus className="text-violet-600" size={24} />
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Add Account</span>
+              <span className="text-violet-600 font-medium">Add Account</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Withdrawals Tab */}
+      {/* Withdrawals Tab - Matching Seller Design */}
       {activeTab === 'withdrawals' && (
-        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-semibold text-foreground">Withdrawal History</h2>
-            <Button variant="ghost" size="sm" onClick={fetchData}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
+            <History className="text-gray-500" size={20} />
+            Withdrawal History
+          </h3>
           
           {withdrawals.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <ArrowDownCircle className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground">No withdrawals yet</p>
-              <p className="text-muted-foreground/70 text-sm mt-1">Your withdrawal history will appear here</p>
-            </div>
+            <p className="text-gray-500 text-center py-12">No withdrawals yet</p>
           ) : (
-            <div className="divide-y divide-border">
+            <div className="space-y-3">
               {withdrawals.map((withdrawal) => {
                 const statusConfig = getStatusConfig(withdrawal.status);
-                const StatusIcon = statusConfig.icon;
                 return (
-                  <div key={withdrawal.id} className="px-6 py-4 hover:bg-muted/50 transition-colors">
+                  <div
+                    key={withdrawal.id}
+                    className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
+                  >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                          {getMethodIcon(withdrawal.payment_method)}
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-violet-100">
+                          <DollarSign size={18} className="text-violet-600" />
                         </div>
                         <div>
-                          <p className="font-semibold text-foreground">{formatAmountOnly(withdrawal.amount)}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {withdrawal.payment_method} • {format(new Date(withdrawal.created_at), 'MMM d, yyyy')}
+                          <p className="text-gray-900 font-medium">{formatAmount(Number(withdrawal.amount), true)}</p>
+                          <p className="text-gray-500 text-sm">
+                            {format(new Date(withdrawal.created_at), 'MMM d, yyyy')}
+                            <span className="ml-2 text-xs uppercase text-gray-400">
+                              via {withdrawal.payment_method}
+                            </span>
                           </p>
                         </div>
                       </div>
-                      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${statusConfig.className}`}>
-                        <StatusIcon size={12} />
-                        {statusConfig.label}
+                      <div className="text-right">
+                        <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${statusConfig.className}`}>
+                          {statusConfig.label}
+                        </span>
                       </div>
                     </div>
                     {withdrawal.admin_notes && (
-                      <p className="mt-2 text-sm text-muted-foreground bg-muted p-2 rounded-lg">
+                      <p className="mt-3 text-sm text-gray-600 bg-gray-100 p-2 rounded-lg">
                         Note: {withdrawal.admin_notes}
                       </p>
                     )}
@@ -815,114 +806,123 @@ const BuyerWallet = () => {
         </div>
       )}
 
-      {/* Withdraw Dialog */}
+      {/* Withdraw Dialog - Matching Seller Design */}
       <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
-        <DialogContent className="bg-card max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ArrowDownCircle className="text-emerald-600" size={20} />
+              <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg">
+                <Wallet className="text-white" size={20} />
+              </div>
               Withdraw Funds
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 mt-4">
-            {/* Quick Amount Selection */}
+          <div className="space-y-6">
+            {/* Quick Amount Buttons - 5 column grid like Seller */}
             <div>
-              <Label className="text-foreground mb-2 block">Quick Amount (USD)</Label>
-              <div className="flex flex-wrap gap-2">
-                {quickAmounts.map(amt => (
+              <Label className="text-gray-500 text-sm mb-3 block">Select amount (USD)</Label>
+              <div className="grid grid-cols-5 gap-2">
+                {quickAmounts.map((amount) => (
                   <button
-                    key={amt}
-                    onClick={() => setWithdrawAmount(amt)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      withdrawAmount === amt
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    key={amount}
+                    onClick={() => setWithdrawAmount(amount)}
+                    className={`py-3 rounded-xl font-semibold transition-all ${
+                      withdrawAmount === amount
+                        ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    ${amt}
+                    ${amount}
                   </button>
                 ))}
               </div>
+              <Input
+                type="number"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(Math.max(1, parseInt(e.target.value) || 0))}
+                className="mt-3 text-center text-xl font-bold"
+                min="5"
+              />
             </div>
 
-            {/* Custom Amount */}
+            {/* Select Saved Account */}
             <div>
-              <Label className="text-foreground mb-2 block">Custom Amount</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  type="number"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(Number(e.target.value))}
-                  className="pl-8"
-                  min={5}
-                  max={wallet?.balance || 0}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Available: {formatAmountOnly(wallet?.balance || 0)}
-              </p>
-            </div>
-
-            {/* Account Selection */}
-            <div>
-              <Label className="text-foreground mb-2 block">Withdraw To</Label>
-              <Select value={selectedAccountForWithdraw || ''} onValueChange={setSelectedAccountForWithdraw}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {savedAccounts.map((account) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      <div className="flex items-center gap-2">
-                        {getMethodIcon(account.payment_method_code)}
-                        <span>{account.account_name}</span>
-                        <span className="text-muted-foreground">{maskAccountNumber(account.account_number)}</span>
+              <Label className="text-gray-500 text-sm mb-3 block">Select Account</Label>
+              <div className="grid gap-3 max-h-60 overflow-y-auto">
+                {savedAccounts.map(account => {
+                  const method = paymentMethods.find(m => m.code === account.payment_method_code);
+                  return (
+                    <button
+                      key={account.id}
+                      onClick={() => setSelectedAccountForWithdraw(account.id)}
+                      className={`p-4 rounded-xl border text-left transition-all ${
+                        selectedAccountForWithdraw === account.id 
+                          ? 'border-violet-500 bg-violet-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {method?.icon_url ? (
+                            <img src={method.icon_url} className="w-8 h-8 object-contain" alt={method.name} />
+                          ) : (
+                            <CreditCard size={20} className="text-gray-400" />
+                          )}
+                          <div>
+                            <p className="font-medium text-gray-900">{account.account_name}</p>
+                            <p className="text-sm text-gray-500">
+                              {method?.name || account.payment_method_code} - {maskAccountNumber(account.account_number)}
+                            </p>
+                          </div>
+                        </div>
+                        {account.is_primary && <Badge variant="secondary">Primary</Badge>}
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 2FA Notice */}
-            {twoFactorEnabled && (
-              <div className="p-3 bg-blue-50 rounded-xl flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-blue-600" />
-                <p className="text-sm text-blue-700">
-                  OTP verification will be sent to your email
-                </p>
+                    </button>
+                  );
+                })}
               </div>
-            )}
 
-            <Button
-              onClick={handleWithdraw}
-              disabled={submitting || otpSending || !withdrawAmount || !selectedAccountForWithdraw}
-              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
-            >
-              {otpSending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Sending OTP...
-                </>
-              ) : (
-                'Continue'
+              {savedAccounts.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <CreditCard className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>No accounts added yet</p>
+                  <Button 
+                    variant="link" 
+                    onClick={() => { setShowWithdrawDialog(false); setActiveTab('accounts'); }}
+                  >
+                    Add an account first
+                  </Button>
+                </div>
               )}
-            </Button>
+            </div>
           </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowWithdrawDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleWithdraw} 
+              disabled={!selectedAccountForWithdraw || submitting || otpSending || withdrawAmount < 5 || withdrawAmount > (wallet?.balance || 0)}
+              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+            >
+              {otpSending ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
+              Withdraw ${withdrawAmount}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* OTP Verification Modal */}
+      {/* OTP Verification Modal - Matching Seller violet theme */}
       <Dialog open={showOTPModal} onOpenChange={setShowOTPModal}>
-        <DialogContent className="bg-card max-w-sm text-center">
+        <DialogContent className="max-w-sm text-center">
           <DialogHeader className="text-center">
-            <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
-              <ShieldCheck className="w-8 h-8 text-emerald-600" />
+            <div className="mx-auto w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center mb-4">
+              <ShieldCheck className="w-8 h-8 text-violet-600" />
             </div>
             <DialogTitle>Verify Withdrawal</DialogTitle>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-sm text-gray-500 mt-2">
               Enter the 6-digit code sent to your email
             </p>
           </DialogHeader>
@@ -946,7 +946,7 @@ const BuyerWallet = () => {
             <Button
               onClick={handleVerifyOTP}
               disabled={otpVerifying || otpValue.length !== 6}
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
             >
               {otpVerifying ? (
                 <>
@@ -960,7 +960,7 @@ const BuyerWallet = () => {
             <button
               onClick={handleResendOTP}
               disabled={otpSending}
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="text-sm text-gray-500 hover:text-gray-700"
             >
               {otpSending ? 'Sending...' : "Didn't receive code? Resend"}
             </button>
@@ -968,122 +968,232 @@ const BuyerWallet = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Account Modal */}
-      <Dialog open={showAddAccountModal} onOpenChange={(open) => {
-        setShowAddAccountModal(open);
-        if (!open) resetAddAccountForm();
-      }}>
-        <DialogContent className="bg-card max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Payment Account</DialogTitle>
-          </DialogHeader>
+      {/* Add Account Modal - Premium Design matching Seller */}
+      <Dialog open={showAddAccountModal} onOpenChange={(open) => { setShowAddAccountModal(open); if (!open) resetAddAccountForm(); }}>
+        <DialogContent className="max-w-md p-0 overflow-hidden">
+          {/* Gradient Header */}
+          <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-6 text-white">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <CreditCard className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Add Payment Account</h2>
+                <p className="text-violet-100 text-sm">{getCountryName()} withdrawal methods</p>
+              </div>
+            </div>
+          </div>
 
-          {addStep === 1 ? (
-            <div className="space-y-4 mt-4">
-              <Label>Select Payment Method</Label>
-              <div className="grid grid-cols-2 gap-3">
+          <div className="p-6 space-y-5">
+            {/* Step 1: Select Payment Method */}
+            <div>
+              <Label className="text-gray-600 text-sm font-medium mb-3 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">1</span>
+                Select Payment Method
+              </Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {getAvailableMethods().map((method) => (
                   <button
                     key={method.code}
-                    onClick={() => {
-                      setSelectedMethod(method.code);
-                      setAddStep(2);
-                    }}
-                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                    onClick={() => setSelectedMethod(method.code)}
+                    className={`p-4 rounded-xl border-2 text-center transition-all ${
                       selectedMethod === method.code
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
+                        ? 'border-violet-500 bg-violet-50 ring-2 ring-violet-200'
+                        : 'border-gray-200 hover:border-violet-300 hover:bg-gray-50'
                     }`}
                   >
-                    {getMethodIcon(method.code)}
-                    <span className="text-sm font-medium text-foreground">{method.label}</span>
+                    <div className={`h-10 w-10 mx-auto mb-2 rounded-lg ${getMethodBg(method.code)} flex items-center justify-center`}>
+                      {getMethodIcon(method.code)}
+                    </div>
+                    <p className="text-gray-900 font-medium text-sm">{method.label}</p>
                   </button>
                 ))}
               </div>
             </div>
-          ) : (
-            <div className="space-y-4 mt-4">
-              <button
-                onClick={() => setAddStep(1)}
-                className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-              >
-                ← Back to methods
-              </button>
 
-              <div className="space-y-4">
-                <div>
-                  <Label>Account Name</Label>
-                  <Input
-                    value={accountName}
-                    onChange={(e) => setAccountName(e.target.value)}
-                    placeholder="Enter account holder name"
-                  />
-                </div>
+            {/* Step 2: Account Details Form */}
+            {selectedMethod && (
+              <div className="space-y-4 animate-fade-up">
+                <Label className="text-gray-600 text-sm font-medium flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">2</span>
+                  Enter Account Details
+                </Label>
 
-                <div>
-                  <Label>Account Number / Address</Label>
-                  <Input
-                    value={accountNumber}
-                    onChange={(e) => setAccountNumber(e.target.value)}
-                    placeholder={selectedMethod === 'crypto' ? 'Wallet address' : 'Account number'}
-                  />
-                </div>
-
+                {/* Bank Transfer Fields */}
                 {selectedMethod === 'bank' && (
                   <>
-                    <div>
-                      <Label>Bank Name</Label>
-                      <Input
+                    <div className="relative">
+                      <Input 
+                        value={accountName}
+                        onChange={(e) => setAccountName(e.target.value)}
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
+                      />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Account Holder Name
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <Input 
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
+                      />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Account Number
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <Input 
                         value={bankName}
                         onChange={(e) => setBankName(e.target.value)}
-                        placeholder="Enter bank name"
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
                       />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Bank Name
+                      </label>
                     </div>
-                    {userCountry === 'IN' && (
-                      <div>
-                        <Label>IFSC Code</Label>
-                        <Input
-                          value={ifscCode}
-                          onChange={(e) => setIfscCode(e.target.value)}
-                          placeholder="Enter IFSC code"
-                        />
-                      </div>
-                    )}
+                    <div className="relative">
+                      <Input 
+                        value={ifscCode}
+                        onChange={(e) => setIfscCode(e.target.value)}
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
+                      />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        {userCountry === 'IN' ? 'IFSC Code' : 'Branch / Routing'}
+                      </label>
+                    </div>
                   </>
                 )}
 
-                {selectedMethod === 'crypto' && (
-                  <div>
-                    <Label>Network</Label>
-                    <Select value={cryptoNetwork} onValueChange={setCryptoNetwork}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select network" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="erc20">ERC-20 (Ethereum)</SelectItem>
-                        <SelectItem value="trc20">TRC-20 (Tron)</SelectItem>
-                        <SelectItem value="bep20">BEP-20 (BSC)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* UPI Fields */}
+                {selectedMethod === 'upi' && (
+                  <>
+                    <div className="relative">
+                      <Input 
+                        value={accountName}
+                        onChange={(e) => setAccountName(e.target.value)}
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
+                      />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Account Holder Name
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <Input 
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
+                      />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        UPI ID (e.g. name@upi)
+                      </label>
+                    </div>
+                  </>
                 )}
 
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="isPrimary"
+                {/* bKash Fields */}
+                {selectedMethod === 'bkash' && (
+                  <>
+                    <div className="relative">
+                      <Input 
+                        value={accountName}
+                        onChange={(e) => setAccountName(e.target.value)}
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
+                      />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Account Holder Name
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <Input 
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
+                      />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        bKash Number
+                      </label>
+                    </div>
+                  </>
+                )}
+
+                {/* Crypto Fields */}
+                {selectedMethod === 'crypto' && (
+                  <>
+                    <div className="relative">
+                      <Input 
+                        value={accountName}
+                        onChange={(e) => setAccountName(e.target.value)}
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer"
+                      />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Wallet Name / Label
+                      </label>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">Network</label>
+                      <Select value={cryptoNetwork} onValueChange={setCryptoNetwork}>
+                        <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100">
+                          <SelectValue placeholder="Select network" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="TRC20">TRC20 (USDT)</SelectItem>
+                          <SelectItem value="ERC20">ERC20 (USDT/ETH)</SelectItem>
+                          <SelectItem value="BEP20">BEP20 (Binance)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="relative">
+                      <Input 
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                        placeholder=" "
+                        className="h-14 pt-5 rounded-xl border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all peer font-mono text-sm"
+                      />
+                      <label className="absolute left-3 top-2 text-[10px] text-gray-400 uppercase tracking-wide font-medium peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-violet-600 transition-all">
+                        Wallet Address
+                      </label>
+                    </div>
+                  </>
+                )}
+
+                {/* Primary Account Toggle */}
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <Checkbox 
+                    id="primary"
                     checked={isPrimary}
                     onCheckedChange={(checked) => setIsPrimary(checked as boolean)}
                   />
-                  <Label htmlFor="isPrimary" className="text-sm cursor-pointer">
-                    Set as primary account
+                  <Label htmlFor="primary" className="cursor-pointer">
+                    <span className="text-gray-900 font-medium">Set as primary</span>
+                    <span className="text-gray-500 text-sm block">Use this account for all withdrawals</span>
                   </Label>
                 </div>
               </div>
+            )}
 
-              <Button
-                onClick={handleAddAccount}
-                disabled={submitting || !accountName.trim() || !accountNumber.trim()}
-                className="w-full"
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => { setShowAddAccountModal(false); resetAddAccountForm(); }}
+                className="flex-1 h-12 rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddAccount} 
+                disabled={!selectedMethod || !accountName || !accountNumber || submitting}
+                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
               >
                 {submitting ? (
                   <>
@@ -1095,7 +1205,7 @@ const BuyerWallet = () => {
                 )}
               </Button>
             </div>
-          )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

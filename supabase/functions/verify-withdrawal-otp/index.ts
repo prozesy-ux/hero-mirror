@@ -10,6 +10,14 @@ interface VerifyOTPRequest {
   otp_code: string;
 }
 
+// Canonical list of statuses that block new withdrawals
+const BLOCKING_STATUSES = ['pending', 'processing', 'queued', 'in_review', 'awaiting', 'requested'];
+
+function isBlockingStatus(status: string | null | undefined): boolean {
+  if (!status) return false;
+  return BLOCKING_STATUSES.includes(status.toLowerCase().trim());
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -59,7 +67,7 @@ serve(async (req) => {
       .from("seller_profiles")
       .select("id")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (sellerError || !sellerProfile) {
       return new Response(
@@ -76,7 +84,7 @@ serve(async (req) => {
       .eq("otp_code", otp_code)
       .eq("verified", false)
       .gt("expires_at", new Date().toISOString())
-      .single();
+      .maybeSingle();
 
     if (otpError || !otpRecord) {
       return new Response(
@@ -96,14 +104,14 @@ serve(async (req) => {
       .from("seller_payment_accounts")
       .select("account_name, account_number, bank_name, payment_method_code")
       .eq("id", otpRecord.payment_account_id)
-      .single();
+      .maybeSingle();
 
     // Get wallet balance
     const { data: wallet } = await serviceClient
       .from("seller_wallets")
       .select("balance")
       .eq("seller_id", sellerProfile.id)
-      .single();
+      .maybeSingle();
 
     if (!wallet || wallet.balance < otpRecord.withdrawal_amount) {
       return new Response(
@@ -112,22 +120,22 @@ serve(async (req) => {
       );
     }
 
-    // Check for pending withdrawal
-    const { data: pendingWithdrawal } = await serviceClient
+    // Check for any in-progress withdrawal using normalized status check
+    const { data: existingWithdrawals } = await serviceClient
       .from("seller_withdrawals")
-      .select("id")
-      .eq("seller_id", sellerProfile.id)
-      .eq("status", "pending")
-      .single();
+      .select("id, status")
+      .eq("seller_id", sellerProfile.id);
 
-    if (pendingWithdrawal) {
+    const hasBlockingWithdrawal = existingWithdrawals?.some(w => isBlockingStatus(w.status));
+    
+    if (hasBlockingWithdrawal) {
       return new Response(
-        JSON.stringify({ error: "You already have a pending withdrawal" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "You already have a pending withdrawal. Please wait for it to be processed." }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create withdrawal request
+    // Create withdrawal request - unique index will prevent duplicates at DB level
     const { error: withdrawalError } = await serviceClient
       .from("seller_withdrawals")
       .insert({
@@ -142,6 +150,15 @@ serve(async (req) => {
 
     if (withdrawalError) {
       console.error("Withdrawal creation error:", withdrawalError);
+      
+      // Check for unique constraint violation (error code 23505)
+      if (withdrawalError.code === "23505") {
+        return new Response(
+          JSON.stringify({ error: "You already have a pending withdrawal. Please wait for it to be processed." }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ error: "Failed to create withdrawal" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
