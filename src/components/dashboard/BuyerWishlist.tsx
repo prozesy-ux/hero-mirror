@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Heart, Trash2, ShoppingCart, Package, ExternalLink, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ interface WishlistItem {
 }
 
 const BuyerWishlist = () => {
+  const { formatAmountOnly } = useCurrency();
   const { user } = useAuthContext();
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,14 +106,6 @@ const BuyerWishlist = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800">My Wishlist</h1>
-          <p className="text-sm text-slate-500">{wishlist.length} items saved</p>
-        </div>
-      </div>
-
       {/* Wishlist Items */}
       {wishlist.length === 0 ? (
         <div className="bg-white rounded-2xl p-10 text-center border border-slate-100">
@@ -180,7 +174,7 @@ const BuyerWishlist = () => {
 
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-bold text-emerald-600">
-                    ₹{item.product?.price || 0}
+                    {formatAmountOnly(item.product?.price || 0)}
                   </span>
 
                   <div className="flex gap-2">

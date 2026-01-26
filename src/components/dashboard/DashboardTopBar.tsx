@@ -6,11 +6,13 @@ import {
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useSearchContext } from '@/contexts/SearchContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { playSound } from '@/lib/sounds';
 import theLogo from '@/assets/the-logo.png';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { CurrencySelector } from '@/components/ui/currency-selector';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +41,7 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
   const navigate = useNavigate();
   const { profile, signOut, user } = useAuthContext();
   const { searchQuery, setSearchQuery } = useSearchContext();
+  const { formatAmountOnly } = useCurrency();
   const [unreadCount, setUnreadCount] = useState(0);
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -306,8 +309,11 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
         {/* Spacer to push right section to the end */}
         <div className="flex-1" />
 
-        {/* Right Section - Become Seller, Wallet, Notifications, Profile */}
+        {/* Right Section - Currency, Become Seller, Wallet, Notifications, Profile */}
         <div className="flex items-center gap-3 ml-6">
+          {/* Currency Selector */}
+          <CurrencySelector variant="minimal" />
+
           {/* Become a Seller CTA - Clean Violet Design */}
           <Link
             to="/seller"
@@ -324,7 +330,7 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
           >
             <Wallet size={16} className="text-violet-600" />
             <span className="text-violet-700 font-bold text-sm">
-              ${wallet?.balance?.toFixed(2) || '0.00'}
+              {formatAmountOnly(wallet?.balance || 0)}
             </span>
           </button>
 

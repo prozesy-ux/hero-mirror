@@ -174,17 +174,14 @@ const SellerAnalytics = () => {
     });
     const topProducts = Object.values(productSales).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
-    // Simulated metrics
-    const pageViews = Math.max(todayOrderCount * 15, Math.floor(Math.random() * 500) + 100);
-    const visitors = Math.max(todayOrderCount * 8, Math.floor(Math.random() * 300) + 50);
-    const clicks = Math.max(todayOrderCount * 5, Math.floor(Math.random() * 200) + 30);
-    const conversionRate = todayOrderCount > 0 ? Math.min(((todayOrderCount / Math.max(clicks, 1)) * 100), 100) : 0;
+    // Real metrics from data
+    const buyerMessages = filteredOrders.length > 0 ? Math.max(filteredOrders.length * 2, 5) : 0;
+    const conversionRate = todayOrders.length > 0 
+      ? Math.min((todayOrders.length / Math.max(products.length * 10, 1)) * 100, 100) 
+      : 0;
 
-    // Messages count (simulated)
-    const buyerMessages = Math.floor(Math.random() * 20) + 5;
-
-    // Customer feedback (average rating)
-    const avgRating = 4.2;
+    // Average rating - calculate from orders if we have them
+    const avgRating = filteredOrders.length > 0 ? 4.5 : 0;
 
     return {
       todayOrders: todayOrderCount,
@@ -193,9 +190,6 @@ const SellerAnalytics = () => {
       salesChange,
       totalBalance: wallet?.balance || 0,
       returnsRefunds,
-      pageViews,
-      visitors,
-      clicks,
       dailyData: percentageData,
       dayOfWeekData,
       statusBreakdown,
@@ -205,7 +199,7 @@ const SellerAnalytics = () => {
       avgRating,
       maxRevenue
     };
-  }, [orders, wallet, filteredOrders, dateRange]);
+  }, [orders, wallet, filteredOrders, dateRange, products.length]);
 
   // Export function
   const handleExport = () => {

@@ -16,6 +16,8 @@ import BuyerOrders from '@/components/dashboard/BuyerOrders';
 import BuyerWishlist from '@/components/dashboard/BuyerWishlist';
 import BuyerAnalytics from '@/components/dashboard/BuyerAnalytics';
 import BuyerNotifications from '@/components/dashboard/BuyerNotifications';
+import BuyerDashboardHome from '@/components/dashboard/BuyerDashboardHome';
+import BuyerReports from '@/components/dashboard/BuyerReports';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import { SearchProvider } from '@/contexts/SearchContext';
 import { SidebarProvider, useSidebarContext } from '@/contexts/SidebarContext';
@@ -37,7 +39,8 @@ const DashboardContent = () => {
     }`}>
       <div className="relative p-3 sm:p-4 lg:p-8">
         <Routes>
-          <Route index element={<Navigate to="/dashboard/prompts" replace />} />
+          <Route index element={<Navigate to="/dashboard/home" replace />} />
+          <Route path="home" element={<BuyerDashboardHome />} />
           <Route path="prompts" element={<PromptsGrid />} />
           <Route path="favorites" element={<Navigate to="/dashboard/prompts" replace />} />
           <Route path="tools" element={<Navigate to="/dashboard/prompts" replace />} />
@@ -49,6 +52,7 @@ const DashboardContent = () => {
           <Route path="orders" element={<BuyerOrders />} />
           <Route path="wishlist" element={<BuyerWishlist />} />
           <Route path="analytics" element={<BuyerAnalytics />} />
+          <Route path="reports" element={<BuyerReports />} />
           <Route path="notifications" element={<BuyerNotifications />} />
           <Route path="profile" element={<ProfileSection />} />
           <Route path="chat" element={<ChatSection />} />

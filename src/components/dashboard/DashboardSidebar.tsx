@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ExternalLink, Sparkles, ShoppingBag, Wallet, MessageSquare, User, ShoppingCart, Heart, BarChart3, Bell } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Sparkles, ShoppingBag, Wallet, MessageSquare, User, ShoppingCart, Heart, BarChart3, Bell, LayoutDashboard, FileText } from 'lucide-react';
 import { useSidebarContext } from '@/contexts/SidebarContext';
 import metaLogo from '@/assets/meta-logo.png';
 import googleAdsLogo from '@/assets/google-ads-logo.png';
@@ -11,11 +11,13 @@ import {
 } from '@/components/ui/tooltip';
 
 const navItems = [
+  { to: '/dashboard/home', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
   { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Marketplace' },
   { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
   { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
   { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/dashboard/reports', icon: FileText, label: 'Reports' },
   { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
   { to: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
   { to: '/dashboard/chat', icon: MessageSquare, label: 'Support' },

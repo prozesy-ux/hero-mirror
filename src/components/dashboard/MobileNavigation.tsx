@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sparkles, ShoppingBag, Wallet, MessageSquare, User, Bell, Menu, ShoppingCart, Heart, BarChart3, ExternalLink } from 'lucide-react';
+import { Sparkles, ShoppingBag, Wallet, MessageSquare, User, Bell, Menu, ShoppingCart, Heart, BarChart3, ExternalLink, LayoutDashboard, FileText } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -138,11 +138,13 @@ const MobileNavigation = () => {
 
   // Full sidebar nav items
   const sidebarNavItems = [
+    { to: '/dashboard/home', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
     { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Marketplace' },
     { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
     { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
     { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/dashboard/reports', icon: FileText, label: 'Reports' },
     { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
     { to: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'Support' },

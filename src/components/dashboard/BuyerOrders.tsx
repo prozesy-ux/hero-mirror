@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ShoppingBag, Package, Clock, CheckCircle, XCircle, Search, Filter, Eye, MessageSquare, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,7 @@ interface Order {
 }
 
 const BuyerOrders = () => {
+  const { formatAmountOnly } = useCurrency();
   const { user } = useAuthContext();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,12 +145,6 @@ const BuyerOrders = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-slate-800">My Orders</h1>
-        <p className="text-sm text-slate-500">Track and manage your purchases</p>
-      </div>
-
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
@@ -202,11 +198,11 @@ const BuyerOrders = () => {
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center">
-              <span className="text-green-600 font-bold">₹</span>
+              <span className="text-green-600 font-bold text-lg">{formatAmountOnly(1).charAt(0)}</span>
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500">Total Spent</p>
-              <p className="text-2xl font-bold text-green-600">₹{stats.totalSpent}</p>
+              <p className="text-2xl font-bold text-green-600">{formatAmountOnly(stats.totalSpent)}</p>
             </div>
           </div>
         </div>
@@ -274,7 +270,7 @@ const BuyerOrders = () => {
                   {/* Order Details */}
                   <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                     <div className="text-right">
-                      <p className="text-lg font-bold text-slate-800">₹{order.amount}</p>
+                      <p className="text-lg font-bold text-slate-800">{formatAmountOnly(order.amount)}</p>
                       <p className="text-xs text-slate-400">{format(new Date(order.created_at), 'MMM d, yyyy')}</p>
                     </div>
                     {getStatusBadge(order.status)}
@@ -342,7 +338,7 @@ const BuyerOrders = () => {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Amount</p>
-                  <p className="font-semibold text-emerald-600">₹{selectedOrder.amount}</p>
+                  <p className="font-semibold text-emerald-600">{formatAmountOnly(selectedOrder.amount)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Order Date</p>

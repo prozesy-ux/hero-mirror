@@ -12,7 +12,7 @@ const FloatingChatWidget = () => {
   const expandedSessions = sessions.filter(s => !s.isMinimized);
 
   return (
-    <div className="fixed bottom-20 lg:bottom-6 right-4 z-50 flex flex-col items-end gap-3">
+    <div className="fixed bottom-24 lg:bottom-6 right-4 z-[60] flex flex-col items-end gap-3">
       {/* Expanded chat boxes - stack vertically if multiple */}
       <div className="flex flex-col gap-3">
         {expandedSessions.map((session) => (
