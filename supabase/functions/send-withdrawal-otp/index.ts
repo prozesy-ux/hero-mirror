@@ -91,6 +91,7 @@ serve(async (req) => {
     // Generate 6-digit OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    console.log(`[OTP] Generated OTP for seller ${sellerProfile.id}, amount: $${amount}`);
 
     // Delete any existing OTPs for this seller
     await serviceClient
@@ -168,29 +169,65 @@ serve(async (req) => {
 </body>
 </html>`;
 
-      try {
-        const emailRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${resendApiKey}`
-          },
-          body: JSON.stringify({
-            from: emailFrom,
-            to: [userEmail],
-            subject: `Withdrawal Verification Code: ${otpCode}`,
-            html: emailHtml
-          })
-        });
+      console.log(`[OTP] Sending email to ${userEmail} via Resend...`);
+      
+      const emailRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${resendApiKey}`
+        },
+        body: JSON.stringify({
+          from: emailFrom,
+          to: [userEmail],
+          subject: `Withdrawal Verification Code: ${otpCode}`,
+          html: emailHtml
+        })
+      });
 
-        if (!emailRes.ok) {
-          console.error("Email send failed:", await emailRes.text());
-        }
-      } catch (emailError) {
-        console.error("Email error:", emailError);
+      if (!emailRes.ok) {
+        const errorText = await emailRes.text();
+        console.error("[OTP] Email send failed:", errorText);
+        
+        // Delete OTP since email failed
+        await serviceClient
+          .from("withdrawal_otps")
+          .delete()
+          .eq("seller_id", sellerProfile.id)
+          .eq("otp_code", otpCode);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Failed to send verification email. Please try again.",
+            debug: errorText
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
+
+      const emailResult = await emailRes.json();
+      console.log(`[OTP] Email sent successfully:`, emailResult);
+    } else {
+      console.error("[OTP] Missing RESEND_API_KEY or user email");
+      
+      // Delete OTP since we can't send email
+      await serviceClient
+        .from("withdrawal_otps")
+        .delete()
+        .eq("seller_id", sellerProfile.id)
+        .eq("otp_code", otpCode);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Email configuration error. Please contact support."
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
+    console.log(`[OTP] Success - OTP sent to ${userEmail}`);
     return new Response(
       JSON.stringify({ 
         success: true, 
