@@ -1,303 +1,431 @@
 
-# Seller Dashboard & Analytics Redesign - Shopeers/Amazon Style
+
+# Enterprise Dashboard Feature Expansion - Complete Implementation Plan
 
 ## Overview
 
-This plan redesigns both the **Seller Dashboard** and **Seller Analytics** sections to exactly match the Shopeers/Amazon Seller Central design from your reference images. The key changes include:
-
-- **Removing titles** from Analytics header
-- **Adding date range filter** with date picker on the same line as Export button
-- **Using folder-style widget icons** for stat cards
-- **Matching exact fonts, colors, and spacing** from reference
-- **Real data loading** with proper chart animations
-- **All buttons fully functional**
+This plan adds **50+ enterprise-level features** across Seller Dashboard, Buyer Dashboard, and Admin Panel - matching Google, Amazon, and Shopify standards. All features include **live real-time updates** via Supabase subscriptions.
 
 ---
 
-## Design Analysis from Reference Images
+## Current State Summary
 
-### Image 1 (Shopeers Dashboard):
-- **Header**: Date range selector (Jan 1, 2025 - Feb 1, 2025) + "Last 30 days" dropdown + "Add widget" + "Export" button
-- **Stat Cards**: Page Views (16,431), Visitors (6,225), Click (2,832), Orders (1,224) with percentage changes
-- **Total Profit**: Large AreaChart with blue line, value ($446.7K)
-- **Most Day Active**: Vertical bar chart for days of week
-- **Customers**: Breakdown (Retailers 2,884, Distributors 1,432, Wholesalers 562)
-- **Repeat Customer Rate**: 68% circular indicator
-- **Best Selling Products**: Table with ID, Name, Sold, Revenue, Rating
+### Seller Dashboard (7 sections)
+- Dashboard, Analytics, Products, Orders, Wallet, Chat, Settings
 
-### Image 3 (Amazon Seller Central):
-- **Same stat card layout**: Today's Order, Today's Sale, Total Balance, Returns & Refunds
-- **Sales Details Chart**: Blue AreaChart with percentage Y-axis, month dropdown
-- **Quick Stats Grid**: Market Place (01), Buyer's Message (14), Buy Box Wins (80%), Customer Feedback (★★★★)
-- **Order Details Table**: Order ID, Product Name, Qty, Order Date-Time, Delivery Date, Status
-- **Out of Stock**: Product carousel on right
+### Buyer Dashboard (7 sections)  
+- Home, Prompts, AI Accounts, Wallet, Billing, Profile, Chat
+
+### Admin Panel (14 sections)
+- Dashboard, Prompts, Categories, Users, Purchases, Wallets, Payment Settings, AI Accounts, Account Orders, User Requests, Support Chats, Push Notifications, Email, Resellers
 
 ---
 
-## Implementation Changes
+## New Features to Add
 
-### 1. SellerDashboard.tsx Changes
+### PHASE 1: Seller Dashboard Enhancements
 
-**Header Updates:**
-```text
-Before:
-┌─────────────────────────────────────────────────────────┐
-│ Dashboard                                   [Trust Badge] [Export] │
-│ Monday, January 27, 2025                                           │
-└─────────────────────────────────────────────────────────┘
+#### 1.1 Dashboard - New Widgets
+| Widget | Description | Data Source |
+|--------|-------------|-------------|
+| **Traffic Sources** | Pie chart showing Direct/Organic/Referral/Social | New `traffic_analytics` table |
+| **Conversion Funnel** | Views → Cart → Purchase flow | Derived from orders + page views |
+| **Low Stock Alerts** | Products with stock < 5 | `seller_products.stock` |
+| **Inventory Health Score** | 0-100 score based on stock levels | Calculated metric |
+| **Customer Retention Rate** | % repeat customers | Orders analysis |
+| **Recent Activity Feed** | Live feed of orders/messages/reviews | Multiple tables combined |
 
-After:
-┌─────────────────────────────────────────────────────────────────────┐
-│ Dashboard    [Jan 1, 2025 - Feb 1, 2025] [Last 30 days ▼] [Export] │
-└─────────────────────────────────────────────────────────────────────┘
-```
+#### 1.2 Analytics - Advanced Charts
+| Chart | Description |
+|-------|-------------|
+| **Revenue vs Period Comparison** | This month vs Last month overlay |
+| **Geographic Sales Map** | India states/regions heatmap |
+| **Hourly Sales Heatmap** | Best selling hours visualization |
+| **Product Performance Matrix** | Views vs Conversion scatter plot |
+| **Customer Lifetime Value** | Average CLV trends |
+| **Sales Velocity** | Units sold per hour/day trends |
 
-**Key Changes:**
-- Add **inline date range picker** with Calendar icon
-- Add **period dropdown** (Last 7 days, Last 30 days, Last 90 days, Custom)
-- Move Export button to same line
-- Remove subtitle text ("Monday, January 27, 2025")
-
-**Stat Cards with Folder Icons:**
-- Use colorful folder-style backgrounds matching reference
-- Orange folder for Orders
-- Green folder for Sales
-- Blue folder for Balance
-- Red folder for Returns
-
-### 2. SellerAnalytics.tsx Changes
-
-**Header Updates (Remove Title):**
-```text
-Before:
-┌─────────────────────────────────────────────────────────┐
-│ Analytics                                        [Export Report] │
-│ Track your store performance                                     │
-└─────────────────────────────────────────────────────────┘
-
-After:
-┌─────────────────────────────────────────────────────────────────────┐
-│ [Jan 1, 2025 - Feb 1, 2025] [Last 30 days ▼] [+ Add widget] [Export]│
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-**Key Changes:**
-- Remove "Analytics" title and subtitle completely
-- Add **date range picker** with Calendar icon
-- Add **period dropdown** selector
-- Add **"+ Add widget"** button (optional)
-- Keep **Export** button
-
-**Charts with Real Data Loading:**
-- Add loading skeleton while fetching
-- Animate chart on data load
-- Show actual revenue values in tooltip
+#### 1.3 New Sections to Add
+| Section | Features |
+|---------|----------|
+| **Inventory Management** | Stock levels, reorder points, low stock alerts, bulk update |
+| **Customer Insights** | Buyer demographics, repeat rate, top buyers list |
+| **Marketing Tools** | Discount codes, promotions, flash sales scheduler |
+| **Reports Center** | Custom report builder, scheduled exports, PDF generation |
+| **Performance Metrics** | Store health score, response time, delivery speed |
 
 ---
 
-## Component Structure
+### PHASE 2: Buyer Dashboard Enhancements
 
-### New Header Component Pattern
-```tsx
-// Shared header pattern for Dashboard and Analytics
-<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-  {/* Left: Page title (Dashboard only) or empty */}
-  <div>
-    <h1 className="text-xl font-bold text-slate-800">Dashboard</h1>
-  </div>
-  
-  {/* Right: Date filter + Period + Export */}
-  <div className="flex items-center gap-2 flex-wrap">
-    {/* Date Range Picker */}
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="bg-white border-slate-200 rounded-xl">
-          <CalendarIcon className="w-4 h-4 mr-2 text-slate-400" />
-          <span className="text-sm text-slate-600">
-            {format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}
-          </span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent>
-        <Calendar mode="range" selected={dateRange} onSelect={setDateRange} />
-      </PopoverContent>
-    </Popover>
-    
-    {/* Period Dropdown */}
-    <Select value={period} onValueChange={setPeriod}>
-      <SelectTrigger className="w-[140px] bg-white border-slate-200 rounded-xl">
-        <SelectValue placeholder="Last 30 days" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="7d">Last 7 days</SelectItem>
-        <SelectItem value="30d">Last 30 days</SelectItem>
-        <SelectItem value="90d">Last 90 days</SelectItem>
-        <SelectItem value="custom">Custom</SelectItem>
-      </SelectContent>
-    </Select>
-    
-    {/* Export Button */}
-    <Button variant="outline" className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl">
-      <Download className="w-4 h-4 mr-2" />
-      Export
-    </Button>
-  </div>
-</div>
-```
+#### 2.1 New Home Dashboard Design
+| Widget | Description |
+|--------|-------------|
+| **Spending Analytics** | Monthly spending trends AreaChart |
+| **Order Timeline** | Visual timeline of all purchases |
+| **Recommended Products** | AI-powered suggestions based on history |
+| **Recently Viewed** | Products browsed in last 7 days |
+| **Wishlist Quick View** | Top 5 wishlist items with prices |
+| **Budget Tracker** | Monthly budget vs actual spending |
 
-### Stat Card with Folder Icon
-```tsx
-const StatCard = ({ title, value, change, iconUrl, iconBg }) => (
-  <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-    <div className="flex items-start justify-between">
-      <div className="flex-1">
-        <p className="text-xs font-medium text-slate-500">{title}</p>
-        <p className="text-3xl font-extrabold text-slate-800 mt-1">{value}</p>
-        {change !== undefined && (
-          <div className="flex items-center gap-1.5 mt-2">
-            {change >= 0 ? (
-              <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
-                <TrendingUp className="h-3.5 w-3.5" />
-                {change.toFixed(1)}% Up from yesterday
-              </span>
-            ) : (
-              <span className="text-[11px] font-semibold text-red-600 flex items-center gap-1">
-                <TrendingDown className="h-3.5 w-3.5" />
-                {Math.abs(change).toFixed(1)}% Down from yesterday
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-      {/* Folder-style icon */}
-      <div className={`h-12 w-12 rounded-xl ${iconBg} flex items-center justify-center`}>
-        <img src={iconUrl} alt="" className="w-7 h-7 object-contain" />
-      </div>
-    </div>
-  </div>
+#### 2.2 New Sections to Add
+| Section | Features |
+|---------|----------|
+| **My Orders** | Complete order history with tracking, filters, search |
+| **Wishlist** | Save products, price alerts, share lists |
+| **Order Tracking** | Live status updates, delivery estimates |
+| **Purchase History** | Detailed receipts, reorder buttons, reviews |
+| **Notifications Center** | All notifications with filters by type |
+| **Rewards/Points** | Loyalty points, referral bonuses (future) |
+
+#### 2.3 Analytics Tab for Buyers
+| Metric | Description |
+|--------|-------------|
+| **Total Spent** | Lifetime spending |
+| **Orders Count** | Total purchases |
+| **Avg Order Value** | Spending patterns |
+| **Category Breakdown** | Spending by product category (pie chart) |
+| **Monthly Trends** | Spending over time (area chart) |
+
+---
+
+### PHASE 3: Admin Panel Enhancements
+
+#### 3.1 Dashboard Overhaul
+| Widget | Description |
+|--------|-------------|
+| **Real-time Revenue Counter** | Live updating revenue ticker |
+| **Active Users Now** | Live count of online users |
+| **Today's Metrics** | Orders, Revenue, New Users, Chats |
+| **Platform Health** | System status indicators |
+| **Quick Actions Grid** | Common admin tasks buttons |
+| **Alert Center** | Critical issues needing attention |
+
+#### 3.2 New Admin Sections
+| Section | Features |
+|---------|----------|
+| **Analytics Dashboard** | Platform-wide metrics, trends, forecasts |
+| **Reports Hub** | Generate/schedule custom reports |
+| **Audit Logs** | All admin actions tracked with timestamps |
+| **System Settings** | Platform configuration, feature flags |
+| **Announcements** | Create banners/alerts for all users |
+| **Coupons Manager** | Create/manage discount codes platform-wide |
+| **SEO Settings** | Meta tags, sitemap, robots.txt config |
+
+#### 3.3 Design Updates (Match Shopeers Style)
+- Apply same header pattern: Date Range + Period Dropdown + Export
+- Use folder-style stat card icons
+- Remove section titles, use tabs only
+- Match color scheme (#F7F8FA background, white cards)
+
+---
+
+## Database Schema Additions
+
+### New Tables Required
+
+```sql
+-- Traffic analytics for sellers
+CREATE TABLE seller_traffic_analytics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  seller_id UUID REFERENCES seller_profiles(id),
+  date DATE NOT NULL,
+  page_views INTEGER DEFAULT 0,
+  unique_visitors INTEGER DEFAULT 0,
+  source TEXT, -- 'direct', 'organic', 'social', 'referral'
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Buyer analytics
+CREATE TABLE buyer_analytics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id),
+  month DATE NOT NULL,
+  total_spent NUMERIC DEFAULT 0,
+  orders_count INTEGER DEFAULT 0,
+  avg_order_value NUMERIC DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Wishlist for buyers
+CREATE TABLE buyer_wishlist (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  product_id UUID REFERENCES seller_products(id),
+  product_type TEXT DEFAULT 'seller', -- 'seller' or 'ai_account'
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, product_id)
+);
+
+-- Discount codes
+CREATE TABLE discount_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT UNIQUE NOT NULL,
+  type TEXT DEFAULT 'percentage', -- 'percentage' or 'fixed'
+  value NUMERIC NOT NULL,
+  min_order_amount NUMERIC,
+  max_uses INTEGER,
+  used_count INTEGER DEFAULT 0,
+  seller_id UUID REFERENCES seller_profiles(id), -- NULL for platform-wide
+  is_active BOOLEAN DEFAULT true,
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Admin audit logs
+CREATE TABLE admin_audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_id UUID,
+  action TEXT NOT NULL,
+  entity_type TEXT,
+  entity_id UUID,
+  details JSONB,
+  ip_address TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Platform announcements
+CREATE TABLE platform_announcements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  type TEXT DEFAULT 'info', -- 'info', 'warning', 'success', 'error'
+  target_audience TEXT DEFAULT 'all', -- 'all', 'buyers', 'sellers'
+  is_active BOOLEAN DEFAULT true,
+  starts_at TIMESTAMPTZ DEFAULT now(),
+  ends_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Recently viewed products
+CREATE TABLE recently_viewed (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  product_id UUID NOT NULL,
+  product_type TEXT DEFAULT 'seller',
+  viewed_at TIMESTAMPTZ DEFAULT now()
 );
 ```
 
 ---
 
-## Data Flow
+## Files to Create/Modify
 
-### Date Range Filtering
-```tsx
-const [dateRange, setDateRange] = useState({
-  from: subDays(new Date(), 30),
-  to: new Date()
-});
-const [period, setPeriod] = useState('30d');
+### New Files to Create
 
-// When period changes, update date range
-useEffect(() => {
-  const now = new Date();
-  switch (period) {
-    case '7d':
-      setDateRange({ from: subDays(now, 7), to: now });
-      break;
-    case '30d':
-      setDateRange({ from: subDays(now, 30), to: now });
-      break;
-    case '90d':
-      setDateRange({ from: subDays(now, 90), to: now });
-      break;
-  }
-}, [period]);
+#### Seller Dashboard
+| File | Purpose |
+|------|---------|
+| `src/components/seller/SellerInventory.tsx` | Inventory management section |
+| `src/components/seller/SellerCustomers.tsx` | Customer insights section |
+| `src/components/seller/SellerMarketing.tsx` | Marketing tools (discounts, promos) |
+| `src/components/seller/SellerReports.tsx` | Reports center |
+| `src/components/seller/SellerPerformance.tsx` | Store performance metrics |
 
-// Filter orders by date range
-const filteredOrders = useMemo(() => {
-  return orders.filter(order => {
-    const orderDate = new Date(order.created_at);
-    return orderDate >= dateRange.from && orderDate <= dateRange.to;
-  });
-}, [orders, dateRange]);
-```
+#### Buyer Dashboard
+| File | Purpose |
+|------|---------|
+| `src/components/dashboard/BuyerOrders.tsx` | Order history section |
+| `src/components/dashboard/BuyerWishlist.tsx` | Wishlist management |
+| `src/components/dashboard/BuyerAnalytics.tsx` | Spending analytics |
+| `src/components/dashboard/BuyerNotifications.tsx` | Notifications center |
+| `src/components/dashboard/OrderTracking.tsx` | Order tracking page |
 
-### Export Functionality
-```tsx
-const handleExport = () => {
-  // Create CSV data from filtered orders
-  const csvData = filteredOrders.map(order => ({
-    'Order ID': order.id,
-    'Product': order.product?.name || 'Unknown',
-    'Amount': order.seller_earning,
-    'Status': order.status,
-    'Date': format(new Date(order.created_at), 'yyyy-MM-dd HH:mm')
-  }));
-  
-  // Download as CSV
-  const csv = convertToCSV(csvData);
-  downloadFile(csv, `orders-${format(dateRange.from, 'yyyy-MM-dd')}-to-${format(dateRange.to, 'yyyy-MM-dd')}.csv`);
-  toast.success('Report exported successfully!');
-};
-```
+#### Admin Panel
+| File | Purpose |
+|------|---------|
+| `src/components/admin/AdminAnalytics.tsx` | Platform analytics dashboard |
+| `src/components/admin/AdminReports.tsx` | Report generation hub |
+| `src/components/admin/AdminAuditLogs.tsx` | Audit trail viewer |
+| `src/components/admin/AdminAnnouncements.tsx` | Announcement manager |
+| `src/components/admin/AdminCoupons.tsx` | Coupon code manager |
 
----
+#### Shared Components
+| File | Purpose |
+|------|---------|
+| `src/components/shared/TrafficSourcesChart.tsx` | Reusable traffic pie chart |
+| `src/components/shared/ConversionFunnel.tsx` | Funnel visualization |
+| `src/components/shared/LiveActivityFeed.tsx` | Real-time activity stream |
+| `src/components/shared/DateRangeHeader.tsx` | Shared header component |
 
-## Files to Modify
+### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/seller/SellerDashboard.tsx` | Update header with date filter + export on same line, add folder icons |
-| `src/components/seller/SellerAnalytics.tsx` | Remove title, add date range + period selector in header, ensure real data loading |
+| `src/pages/Seller.tsx` | Add routes for new sections |
+| `src/pages/Dashboard.tsx` | Add routes for new buyer sections |
+| `src/pages/Admin.tsx` | Add routes for new admin sections |
+| `src/components/seller/SellerMobileNavigation.tsx` | Add new nav items |
+| `src/components/dashboard/MobileNavigation.tsx` | Add new nav items |
+| `src/components/admin/AdminSidebar.tsx` | Add new nav items |
+| `src/contexts/SellerContext.tsx` | Add new data fields |
+| `src/lib/api-fetch.ts` | Add new BFF endpoints |
 
 ---
 
-## UI Components Used
+## Real-time Updates Implementation
 
-- **Calendar** from `@/components/ui/calendar` for date range picker
-- **Popover** from `@/components/ui/popover` for calendar popup
-- **Select** from `@/components/ui/select` for period dropdown
-- **Button** from `@/components/ui/button` for Export button
-- **Skeleton** from `@/components/ui/skeleton` for loading states
+### Supabase Channels Pattern
+```typescript
+// Example: Live activity feed
+useEffect(() => {
+  const channel = supabase
+    .channel('live-activity')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'seller_orders',
+      filter: `seller_id=eq.${sellerId}`
+    }, (payload) => {
+      addActivityItem({
+        type: 'order',
+        message: `New order #${payload.new.id.slice(0,8)}`,
+        timestamp: new Date()
+      });
+    })
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'seller_chats',
+      filter: `seller_id=eq.${sellerId}`
+    }, (payload) => {
+      addActivityItem({
+        type: 'message',
+        message: 'New message received',
+        timestamp: new Date()
+      });
+    })
+    .subscribe();
 
----
-
-## Visual Specifications
-
-### Colors (matching reference):
-- Page Background: `#F7F8FA`
-- Card Background: `#FFFFFF`
-- Primary Text: `#1E293B` (slate-800)
-- Secondary Text: `#64748B` (slate-500)
-- Accent Green: `#10B981` (emerald-500)
-- Chart Blue: `#3B82F6` (blue-500)
-- Export Button: `#10B981` (emerald-500) with white text
-
-### Typography:
-- Stat Numbers: `text-[28px] lg:text-[32px] font-extrabold`
-- Card Labels: `text-xs font-medium text-slate-500`
-- Section Headers: `text-base font-semibold text-slate-800`
-- Percentage Change: `text-[11px] font-semibold`
-
-### Spacing:
-- Card Padding: `p-5` (20px)
-- Card Border Radius: `rounded-2xl` (16px)
-- Grid Gap: `gap-4` (16px) for stats, `gap-6` (24px) for sections
-- Section Margin: `mb-6` (24px)
-
----
-
-## Button Functionality
-
-All buttons will be fully functional:
-
-1. **Date Range Picker**: Opens calendar popup to select custom dates
-2. **Period Dropdown**: Quick select for 7d/30d/90d, auto-updates date range
-3. **Export Button**: Downloads filtered data as CSV file
-4. **View All Buttons**: Navigate to respective detail pages (orders, products, analytics)
-5. **Stat Cards**: Clickable, navigate to relevant sections
+  return () => supabase.removeChannel(channel);
+}, [sellerId]);
+```
 
 ---
 
-## Expected Result
+## UI/UX Design Specifications
 
-After implementation:
-- Dashboard matches Shopeers reference with inline date/export controls
-- Analytics has no title, just date filter and export on top line
-- Real data loads from SellerContext and displays in charts
-- All charts animate on load
-- Export downloads actual order data as CSV
-- Same fonts, colors, and spacing as reference images
+### Shared Header Component
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ [Title]  [📅 Jan 1 - Feb 1, 2025] [Last 30 days ▼] [Export] │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Stat Card Pattern (Folder Icons)
+```text
+┌─────────────────────────────┐
+│ Page Views                  │
+│ 1,247        [📊 Orange]   │
+│ ↑ 12.5% from yesterday      │
+└─────────────────────────────┘
+```
+
+### Color Coding
+| Element | Color |
+|---------|-------|
+| Orders | Orange `#F97316` |
+| Sales/Revenue | Emerald `#10B981` |
+| Balance | Blue `#3B82F6` |
+| Returns | Red `#EF4444` |
+| Messages | Violet `#8B5CF6` |
+| Visitors | Cyan `#06B6D4` |
+
+---
+
+## Implementation Order
+
+### Week 1: Database + BFF
+1. Create new database tables with migrations
+2. Add RLS policies for all new tables
+3. Create/update BFF endpoints for new data
+4. Enable realtime for new tables
+
+### Week 2: Seller Dashboard
+1. Implement new stat widgets (Traffic, Funnel, Alerts)
+2. Add Inventory Management section
+3. Add Customer Insights section
+4. Update sidebar navigation
+
+### Week 3: Buyer Dashboard
+1. Implement BuyerAnalytics section
+2. Add BuyerOrders section with tracking
+3. Add Wishlist functionality
+4. Update sidebar/navigation
+
+### Week 4: Admin Panel
+1. Implement AdminAnalytics dashboard
+2. Add Audit Logs section
+3. Add Announcements manager
+4. Add Coupons manager
+5. Apply Shopeers design to all sections
+
+---
+
+## Expected Deliverables
+
+### Seller Dashboard: 12 sections total
+1. Dashboard (enhanced with 6 new widgets)
+2. Analytics (enhanced with 6 new charts)
+3. Products
+4. Orders
+5. Wallet
+6. Chat
+7. Settings
+8. **NEW: Inventory**
+9. **NEW: Customers**
+10. **NEW: Marketing**
+11. **NEW: Reports**
+12. **NEW: Performance**
+
+### Buyer Dashboard: 12 sections total
+1. Home (enhanced with analytics widgets)
+2. Prompts
+3. AI Accounts
+4. Wallet
+5. Billing
+6. Profile
+7. Chat
+8. **NEW: My Orders**
+9. **NEW: Wishlist**
+10. **NEW: Analytics**
+11. **NEW: Notifications**
+12. **NEW: Order Tracking**
+
+### Admin Panel: 21 sections total
+1. Dashboard (enhanced)
+2. Prompts
+3. Categories
+4. Users
+5. Purchases
+6. Wallets
+7. Payment Settings
+8. AI Accounts
+9. Account Orders
+10. User Requests
+11. Support Chats
+12. Push Notifications
+13. Email
+14. Resellers
+15. **NEW: Platform Analytics**
+16. **NEW: Reports Hub**
+17. **NEW: Audit Logs**
+18. **NEW: Announcements**
+19. **NEW: Coupons**
+20. **NEW: System Settings**
+21. **NEW: SEO Settings**
+
+---
+
+## Live Update Features Summary
+
+All sections will have real-time updates:
+- **Orders**: Instant notification on new orders
+- **Messages**: Live chat updates
+- **Wallet**: Balance changes in real-time
+- **Analytics**: Charts update every 30 seconds
+- **Inventory**: Stock level changes
+- **Activity Feed**: Live stream of all events
+
+This comprehensive expansion will bring the platform to enterprise-level functionality matching Amazon Seller Central, Google Analytics, and Shopify standards.
+
