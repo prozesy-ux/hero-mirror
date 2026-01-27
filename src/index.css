@@ -528,4 +528,58 @@
     min-height: 44px;
     min-width: 44px;
   }
+
+  /* Store page specific utilities */
+  .store-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  .store-product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  @media (min-width: 768px) {
+    .store-product-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .store-product-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+  }
+
+  /* Mobile compact card styles */
+  .store-card-compact {
+    @apply bg-white rounded-xl overflow-hidden border border-slate-100 shadow-sm;
+  }
+
+  .store-card-compact:active {
+    transform: scale(0.98);
+  }
+
+  /* Mobile category chips scroll */
+  .store-category-chips {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    gap: 8px;
+  }
+
+  .store-category-chip {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
 }

@@ -22,15 +22,23 @@ import {
   Wallet,
   Share2,
   Store as StoreIcon,
-  AlertTriangle
+  AlertTriangle,
+  SlidersHorizontal,
+  Shield,
+  Zap,
+  Clock
 } from 'lucide-react';
 import { Instagram, Twitter, Youtube, Music } from 'lucide-react';
 import StoreSidebar from '@/components/store/StoreSidebar';
 import StoreProductCard from '@/components/store/StoreProductCard';
+import StoreProductCardCompact from '@/components/store/StoreProductCardCompact';
 import ProductDetailModal from '@/components/store/ProductDetailModal';
 import ShareStoreModal from '@/components/seller/ShareStoreModal';
+import MobileStoreHeader from '@/components/store/MobileStoreHeader';
+import StoreCategoryChips from '@/components/store/StoreCategoryChips';
 import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatContext';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SellerProfile {
   id: string;
@@ -92,6 +100,7 @@ const StoreContent = () => {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { openChat } = useFloatingChat();
+  const isMobile = useIsMobile();
   
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [products, setProducts] = useState<SellerProduct[]>([]);
@@ -382,11 +391,19 @@ const StoreContent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
-      {/* Store Banner - Dynamic Height */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 overflow-x-hidden">
+      {/* Mobile Sticky Header */}
+      <MobileStoreHeader
+        storeName={seller.store_name}
+        storeLogoUrl={seller.store_logo_url}
+        isVerified={seller.is_verified}
+        onShare={() => setShowShareModal(true)}
+      />
+
+      {/* Store Banner - Dynamic Height (smaller on mobile) */}
       <div className="relative">
         {seller.store_video_url ? (
-          <div className={`relative ${bannerHeight} overflow-hidden`}>
+          <div className={`relative h-28 md:${bannerHeight} overflow-hidden`}>
             <video
               autoPlay
               muted
@@ -400,7 +417,7 @@ const StoreContent = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
           </div>
         ) : seller.store_banner_url ? (
-          <div className={`relative ${bannerHeight}`}>
+          <div className={`relative h-28 md:${bannerHeight}`}>
             <img 
               src={seller.store_banner_url}
               alt={seller.store_name}
@@ -409,20 +426,20 @@ const StoreContent = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
           </div>
         ) : (
-          <div className={`${bannerHeight} bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500`} />
+          <div className={`h-28 md:${bannerHeight} bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500`} />
         )}
 
-        {/* Store Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end gap-4">
-            <Avatar className="w-20 h-20 md:w-24 md:h-24 border-4 border-white shadow-2xl">
+        {/* Store Info Overlay - Hidden on mobile (shown in sticky header) */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 md:p-6">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-end gap-3 md:gap-4">
+            <Avatar className="w-12 h-12 md:w-24 md:h-24 border-2 md:border-4 border-white shadow-2xl hidden md:flex">
               <AvatarImage src={seller.store_logo_url || ''} />
-              <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-2xl font-bold">
+              <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-lg md:text-2xl font-bold">
                 {seller.store_name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 text-white">
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="hidden md:flex items-center gap-3 flex-wrap">
                 <h1 className="text-xl md:text-3xl font-bold">{seller.store_name}</h1>
                 {seller.is_verified && (
                   <Badge className="bg-emerald-500 text-white border-0">
@@ -432,33 +449,33 @@ const StoreContent = () => {
                 )}
               </div>
               {seller.store_tagline && (
-                <p className="text-sm md:text-base text-white/90 mt-1">{seller.store_tagline}</p>
+                <p className="hidden md:block text-sm md:text-base text-white/90 mt-1">{seller.store_tagline}</p>
               )}
               
-              {/* Stats Row in Banner */}
-              <div className="flex items-center gap-4 mt-3 flex-wrap">
+              {/* Stats Row in Banner - Compact on mobile */}
+              <div className="flex items-center gap-2 md:gap-4 mt-2 md:mt-3 flex-wrap">
                 {showReviews && (
-                  <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    <span className="text-sm font-semibold">4.9</span>
+                  <div className="flex items-center gap-1 md:gap-1.5 bg-white/20 backdrop-blur-sm px-2 md:px-3 py-1 md:py-1.5 rounded-full">
+                    <Star className="w-3 md:w-4 h-3 md:h-4 text-amber-400 fill-amber-400" />
+                    <span className="text-xs md:text-sm font-semibold">4.9</span>
                   </div>
                 )}
                 {showProductCount && (
-                  <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                    <Package className="w-4 h-4" />
-                    <span className="text-sm font-semibold">{products.length} products</span>
+                  <div className="flex items-center gap-1 md:gap-1.5 bg-white/20 backdrop-blur-sm px-2 md:px-3 py-1 md:py-1.5 rounded-full">
+                    <Package className="w-3 md:w-4 h-3 md:h-4" />
+                    <span className="text-xs md:text-sm font-semibold">{products.length}</span>
                   </div>
                 )}
                 {showOrderCount && (
-                  <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                    <Users className="w-4 h-4" />
-                    <span className="text-sm font-semibold">{seller.total_orders || 0} orders</span>
+                  <div className="flex items-center gap-1 md:gap-1.5 bg-white/20 backdrop-blur-sm px-2 md:px-3 py-1 md:py-1.5 rounded-full">
+                    <Users className="w-3 md:w-4 h-3 md:h-4" />
+                    <span className="text-xs md:text-sm font-semibold">{seller.total_orders || 0}</span>
                   </div>
                 )}
               </div>
               
               {/* Social Links */}
-              {showSocialLinks && seller.social_links && Object.keys(seller.social_links).length > 0 && (
+              {showSocialLinks && seller.social_links && Object.keys(seller.social_links).length > 0 && !isMobile && (
                 <div className="flex items-center gap-2 mt-3">
                   {seller.social_links.instagram && (
                     <a 
@@ -507,10 +524,28 @@ const StoreContent = () => {
         </div>
       </div>
 
+      {/* Trust Badges - Mobile only */}
+      <div className="md:hidden overflow-x-auto hide-scrollbar px-3 py-2.5 bg-white/80 backdrop-blur-sm border-b border-slate-100">
+        <div className="flex gap-3 w-max">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-full text-xs font-medium text-emerald-700">
+            <Shield size={12} />
+            <span>Secure Checkout</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 rounded-full text-xs font-medium text-blue-700">
+            <Zap size={12} />
+            <span>Instant Delivery</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 rounded-full text-xs font-medium text-amber-700">
+            <Clock size={12} />
+            <span>24/7 Support</span>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content with Sidebar */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-6">
         <div className="flex gap-6">
-          {/* Sidebar */}
+          {/* Sidebar - Desktop only */}
           <StoreSidebar
             products={products}
             categories={categories}
@@ -523,10 +558,10 @@ const StoreContent = () => {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Search Bar */}
-            <div className="flex gap-3 mb-6">
-              {/* Mobile Filter */}
-              <div className="lg:hidden">
+            {/* Search Bar - Single row on mobile */}
+            <div className="flex gap-2 mb-3 md:mb-6">
+              {/* Mobile Filter Button */}
+              <div className="lg:hidden flex-shrink-0">
                 <StoreSidebar
                   products={products}
                   categories={categories}
@@ -538,17 +573,17 @@ const StoreContent = () => {
                 />
               </div>
 
-              {/* Search Input */}
+              {/* Search Input - Compact on mobile */}
               <div className="relative flex-1">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-100 rounded-lg">
-                  <Search size={18} className="text-gray-500" />
+                <div className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 p-1.5 md:p-2 bg-slate-100 rounded-lg">
+                  <Search size={16} className="text-slate-500" />
                 </div>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products, tags..."
-                  className="w-full bg-white border border-gray-200 rounded-2xl pl-14 pr-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-all font-medium shadow-md"
+                  placeholder="Search..."
+                  className="w-full bg-white border border-slate-200 rounded-xl md:rounded-2xl pl-11 md:pl-14 pr-10 py-3 md:py-4 text-sm md:text-base text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-all font-medium shadow-sm mobile-search-bar"
                 />
                 {(searchQuery || selectedTags.length > 0 || selectedCategory !== 'all') && (
                   <button
@@ -557,46 +592,54 @@ const StoreContent = () => {
                       setSelectedTags([]);
                       setSelectedCategory('all');
                     }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-slate-100 rounded-lg transition-colors tap-feedback"
                   >
-                    <X size={18} className="text-gray-400" />
+                    <X size={16} className="text-slate-400" />
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Active Filters Pills */}
-            {(selectedTags.length > 0 || selectedCategory !== 'all') && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {selectedCategory !== 'all' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full text-xs font-medium">
+            {/* Mobile Category Chips */}
+            <StoreCategoryChips
+              products={products}
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategorySelect={setSelectedCategory}
+            />
+
+            {/* Active Filters Pills - Compact on mobile */}
+            {(selectedTags.length > 0 || (selectedCategory !== 'all' && !isMobile)) && (
+              <div className="flex flex-wrap gap-1.5 md:gap-2 mb-3 md:mb-4">
+                {selectedCategory !== 'all' && !isMobile && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-900 text-white rounded-full text-[10px] md:text-xs font-medium">
                     {categories.find(c => c.id === selectedCategory)?.name || 'Category'}
-                    <button onClick={() => setSelectedCategory('all')} className="hover:bg-white/20 rounded-full p-0.5">
-                      <X size={12} />
+                    <button onClick={() => setSelectedCategory('all')} className="hover:bg-white/20 rounded-full p-0.5 tap-feedback">
+                      <X size={10} />
                     </button>
                   </span>
                 )}
                 {selectedTags.map(tag => (
-                  <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-medium">
+                  <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500 text-white rounded-full text-[10px] md:text-xs font-medium">
                     {tag}
-                    <button onClick={() => handleTagSelect(tag)} className="hover:bg-white/20 rounded-full p-0.5">
-                      <X size={12} />
+                    <button onClick={() => handleTagSelect(tag)} className="hover:bg-white/20 rounded-full p-0.5 tap-feedback">
+                      <X size={10} />
                     </button>
                   </span>
                 ))}
               </div>
             )}
 
-            {/* Store Description - with checkmarks */}
-            {showDescription && seller.store_description && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 shadow-sm">
-                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+            {/* Store Description - Hidden on mobile */}
+            {showDescription && seller.store_description && !isMobile && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6 shadow-sm">
+                <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-emerald-500" />
                   About this store
                 </h3>
                 <div className="space-y-2">
                   {seller.store_description.split('\n').filter(Boolean).map((line, i) => (
-                    <p key={i} className="text-gray-600 flex items-start gap-2">
+                    <p key={i} className="text-slate-600 flex items-start gap-2">
                       <Check className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                       <span>{line}</span>
                     </p>
@@ -605,39 +648,51 @@ const StoreContent = () => {
               </div>
             )}
 
-            {/* Products Grid */}
+            {/* Products Grid - 2 columns on mobile */}
             {filteredProducts.length === 0 ? (
-              <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
-                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
-                  <Package className="w-10 h-10 text-gray-400" />
+              <div className="bg-white rounded-2xl p-8 md:p-16 text-center border border-slate-200 shadow-md">
+                <div className="w-16 md:w-20 h-16 md:h-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4 md:mb-6">
+                  <Package className="w-8 md:w-10 h-8 md:h-10 text-slate-400" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No Products Found</h3>
-                <p className="text-gray-500 mb-4">Try adjusting your search or filters</p>
+                <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-2">No Products Found</h3>
+                <p className="text-slate-500 text-sm md:text-base mb-4">Try adjusting your search or filters</p>
                 <button
                   onClick={() => {
                     setSearchQuery('');
                     setSelectedTags([]);
                     setSelectedCategory('all');
                   }}
-                  className="text-emerald-600 font-medium hover:underline"
+                  className="text-emerald-600 font-medium hover:underline text-sm md:text-base tap-feedback"
                 >
                   Clear all filters
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4 lg:gap-5">
                 {filteredProducts.map(product => (
-                  <StoreProductCard
-                    key={product.id}
-                    product={product}
-                    storeName={seller.store_name}
-                    hasEnoughBalance={hasEnoughBalance(product.price)}
-                    isLoggedIn={!!user}
-                    purchasing={purchasing === product.id}
-                    onChat={() => handleChat(product)}
-                    onView={() => setSelectedProduct(product)}
-                    onBuy={() => handlePurchase(product)}
-                  />
+                  isMobile ? (
+                    <StoreProductCardCompact
+                      key={product.id}
+                      product={product}
+                      hasEnoughBalance={hasEnoughBalance(product.price)}
+                      isLoggedIn={!!user}
+                      purchasing={purchasing === product.id}
+                      onView={() => setSelectedProduct(product)}
+                      onBuy={() => handlePurchase(product)}
+                    />
+                  ) : (
+                    <StoreProductCard
+                      key={product.id}
+                      product={product}
+                      storeName={seller.store_name}
+                      hasEnoughBalance={hasEnoughBalance(product.price)}
+                      isLoggedIn={!!user}
+                      purchasing={purchasing === product.id}
+                      onChat={() => handleChat(product)}
+                      onView={() => setSelectedProduct(product)}
+                      onBuy={() => handlePurchase(product)}
+                    />
+                  )
                 ))}
               </div>
             )}
