@@ -144,6 +144,7 @@ const SellerWallet = () => {
   const { profile, wallet, withdrawals, refreshWallet, refreshWithdrawals, loading } = useSellerContext();
   const { formatAmountOnly, formatAmount } = useCurrency();
   const [withdrawalMethods, setWithdrawalMethods] = useState<WithdrawalMethod[]>([]);
+  const [allWithdrawalMethods, setAllWithdrawalMethods] = useState<WithdrawalMethod[]>([]);
   const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
@@ -188,11 +189,11 @@ const SellerWallet = () => {
   const displayMethods = useMemo(() => {
     const filterCountry = previewCountry || sellerCountry;
     if (!filterCountry) return [];
-    // Include GLOBAL methods + country-specific methods
-    return withdrawalMethods.filter(m => 
+    // Use allWithdrawalMethods for preview (won't be overwritten)
+    return allWithdrawalMethods.filter(m => 
       m.country_code === filterCountry || m.country_code === 'GLOBAL'
     );
-  }, [withdrawalMethods, previewCountry, sellerCountry]);
+  }, [allWithdrawalMethods, previewCountry, sellerCountry]);
 
   // Sync previewCountry with sellerCountry on initial load only
   const previewInitialized = useRef(false);
@@ -212,7 +213,10 @@ const SellerWallet = () => {
       .select('*')
       .eq('is_enabled', true)
       .order('country_code, account_type, method_name');
-    if (data) setWithdrawalMethods(data as WithdrawalMethod[]);
+    if (data) {
+      setAllWithdrawalMethods(data as WithdrawalMethod[]);
+      setWithdrawalMethods(data as WithdrawalMethod[]); // Keep for Add Account merging
+    }
   }, []);
 
   // Merge admin-configured logos with static config

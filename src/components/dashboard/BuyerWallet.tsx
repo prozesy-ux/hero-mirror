@@ -141,6 +141,7 @@ const BuyerWallet = () => {
   const { formatAmount } = useCurrency();
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [withdrawalMethods, setWithdrawalMethods] = useState<WithdrawalMethod[]>([]);
+  const [allWithdrawalMethods, setAllWithdrawalMethods] = useState<WithdrawalMethod[]>([]);
   const [withdrawals, setWithdrawals] = useState<BuyerWithdrawal[]>([]);
   const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -196,11 +197,11 @@ const BuyerWallet = () => {
   const displayMethods = useMemo(() => {
     const filterCountry = previewCountry || userCountry;
     if (!filterCountry) return [];
-    // Include GLOBAL methods + country-specific methods
-    return withdrawalMethods.filter(m => 
+    // Use allWithdrawalMethods for preview (won't be overwritten by BFF)
+    return allWithdrawalMethods.filter(m => 
       m.country_code === filterCountry || m.country_code === 'GLOBAL'
     );
-  }, [withdrawalMethods, previewCountry, userCountry]);
+  }, [allWithdrawalMethods, previewCountry, userCountry]);
 
   // Sync previewCountry with userCountry on initial load only
   const previewInitialized = useRef(false);
@@ -218,7 +219,10 @@ const BuyerWallet = () => {
       .select('*')
       .eq('is_enabled', true)
       .order('country_code, account_type, method_name');
-    if (data) setWithdrawalMethods(data as WithdrawalMethod[]);
+    if (data) {
+      setAllWithdrawalMethods(data as WithdrawalMethod[]);
+      setWithdrawalMethods(data as WithdrawalMethod[]); // Keep for Add Account merging
+    }
   }, []);
 
   const quickAmounts = [5, 10, 25, 50, 100];
@@ -287,7 +291,7 @@ const BuyerWallet = () => {
 
       setWallet(walletData);
       setWithdrawals(withdrawalsData || []);
-      setWithdrawalMethods(methodsData || []);
+      // Don't overwrite withdrawalMethods here - fetchWithdrawalMethods handles it
       if (fetchedCountry) setUserCountry(fetchedCountry);
       
       // Fetch saved accounts separately
