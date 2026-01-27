@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useState } from 'react';
+import { useBuyerDashboardOptional } from '@/contexts/BuyerDashboardContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Heart, Trash2, ShoppingCart, Package, ExternalLink, Loader2 } from 'lucide-react';
+import { Heart, Package, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -28,52 +28,14 @@ interface WishlistItem {
 
 const BuyerWishlist = () => {
   const { formatAmountOnly } = useCurrency();
-  const { user } = useAuthContext();
-  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dashboardContext = useBuyerDashboardOptional();
   const [removing, setRemoving] = useState<string | null>(null);
+  const [locallyRemoved, setLocallyRemoved] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    if (user) fetchWishlist();
-  }, [user]);
-
-  const fetchWishlist = async () => {
-    // Fetch wishlist items
-    const { data: wishlistData, error } = await supabase
-      .from('buyer_wishlist')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching wishlist:', error);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch product details for each item
-    const items: WishlistItem[] = [];
-    for (const item of wishlistData || []) {
-      if (item.product_type === 'seller') {
-        const { data: product } = await supabase
-          .from('seller_products')
-          .select('id, name, price, icon_url, is_available, seller:seller_profiles(store_name, store_slug)')
-          .eq('id', item.product_id)
-          .maybeSingle();
-
-        items.push({
-          ...item,
-          product: product ? {
-            ...product,
-            seller: product.seller as any
-          } : undefined
-        });
-      }
-    }
-
-    setWishlist(items);
-    setLoading(false);
-  };
+  // Use data from context (BFF)
+  const wishlist: WishlistItem[] = (dashboardContext?.data?.wishlist || [])
+    .filter((item: WishlistItem) => !locallyRemoved.has(item.id));
+  const loading = dashboardContext?.loading ?? true;
 
   const removeFromWishlist = async (id: string) => {
     setRemoving(id);
@@ -85,8 +47,11 @@ const BuyerWishlist = () => {
     if (error) {
       toast.error('Failed to remove from wishlist');
     } else {
-      setWishlist(prev => prev.filter(item => item.id !== id));
+      // Optimistic update - mark as locally removed
+      setLocallyRemoved(prev => new Set([...prev, id]));
       toast.success('Removed from wishlist');
+      // Refresh context data
+      dashboardContext?.refresh();
     }
     setRemoving(null);
   };
@@ -100,6 +65,16 @@ const BuyerWishlist = () => {
             <Skeleton key={i} className="h-64 rounded-2xl" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (dashboardContext?.error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+        <p className="text-slate-600 mb-4">{dashboardContext.error}</p>
+        <Button onClick={() => dashboardContext.refresh()} variant="outline">Try Again</Button>
       </div>
     );
   }
