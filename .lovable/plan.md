@@ -1,246 +1,247 @@
 
-# Wallet & Payment System Comprehensive Upgrade Plan
+# Complete Admin Payment Settings & Wallet System Upgrade
 
 ## Overview
-This plan addresses:
-1. Expanding country support to all 27 currencies (matching CurrencyContext)
-2. Adding official logos for all banks, digital wallets, and crypto
-3. Fixing missing/broken logos in the selection UI
-4. Redesigning Admin Payment Settings with separate Deposit/Withdrawal sections
-5. Full database connectivity for all features
+This plan covers:
+1. Redesigning Admin Payment Settings with completely separate Deposit and Withdrawal tabs
+2. Full country and account-type based control in Withdrawal section
+3. Fixing all bank/wallet logos using a hybrid approach (local + external with fallback)
+4. Syncing wallet features with admin configuration (country, enabled types, limits)
 
 ---
 
-## Phase 1: Expand digital-wallets-config.ts
-
-### Current Issue
-Only 4 countries supported: BD, IN, PK, DEFAULT
-
-### Solution
-Expand `SUPPORTED_COUNTRIES` to include all 27 currency countries with official flag images and proper country data.
-
-**File: `src/lib/digital-wallets-config.ts`**
+## Architecture Summary
 
 ```text
-New Countries (27 total):
-┌──────────────────────────────────────────────────────────────┐
-│ TOP TIER (Position 1-6):                                     │
-│ 🇺🇸 USA  🇧🇩 Bangladesh  🇮🇳 India  🇵🇰 Pakistan            │
-│ 🇬🇧 UK   🇨🇦 Canada                                         │
-├──────────────────────────────────────────────────────────────┤
-│ SECOND TIER (Position 7-15):                                 │
-│ 🇪🇺 EU  🇦🇺 Australia  🇦🇪 UAE  🇸🇦 Saudi  🇳🇬 Nigeria     │
-│ 🇵🇭 Philippines  🇮🇩 Indonesia  🇲🇾 Malaysia  🇻🇳 Vietnam    │
-├──────────────────────────────────────────────────────────────┤
-│ THIRD TIER (Position 16-27):                                 │
-│ 🇹🇭 Thailand  🇪🇬 Egypt  🇰🇪 Kenya  🇿🇦 S.Africa  🇧🇷 Brazil│
-│ 🇲🇽 Mexico  🇳🇵 Nepal  🇱🇰 Sri Lanka  🇯🇵 Japan  🇰🇷 Korea │
-│ 🇸🇬 Singapore  🇨🇭 Switzerland  🌍 Other                    │
-└──────────────────────────────────────────────────────────────┘
-```
+ADMIN PAYMENT SETTINGS (Redesigned)
+================================
 
-### Data Structure Updates
++--------------------------------------------------+
+|  [Deposit Methods]    [Withdrawal Methods]       |
++--------------------------------------------------+
 
-**New SUPPORTED_COUNTRIES array** with all 27+ countries:
-- US, BD, IN, PK, GB, CA (Top tier - freelancer countries)
-- EU, AU, AE, SA, NG, PH, ID, MY, VN (Second tier)
-- TH, EG, KE, ZA, BR, MX, NP, LK, JP, KR, SG, CH (Third tier)
-- DEFAULT for others
+DEPOSIT TAB:
+- Add funds/top-up gateways only
+- Stripe, Razorpay, bKash, Manual payments
+- QR codes, account details, API keys
+- Separate from withdrawal completely
 
-**Country-specific Banks & Digital Wallets:**
-| Country | Banks | Digital Wallets |
-|---------|-------|-----------------|
-| US | Chase, Bank of America, Wells Fargo, Citi | Zelle, Venmo, PayPal, CashApp |
-| GB | Barclays, HSBC, Lloyds, NatWest | Monzo, Revolut, Starling |
-| CA | TD Bank, RBC, Scotiabank, BMO | Interac, PayPal CA |
-| AU | CommBank, ANZ, Westpac, NAB | PayID, Osko |
-| AE | Emirates NBD, ADCB, FAB, Mashreq | PayBy, UAE Pass Pay |
-| SA | Al Rajhi, SNB, Riyad Bank, SABB | STC Pay, Apple Pay SA |
-| NG | GTBank, First Bank, Zenith, Access | OPay, Palmpay, Kuda |
-| PH | BDO, BPI, Metrobank, UnionBank | GCash, Maya (PayMaya) |
-| ID | BCA, Mandiri, BNI, BRI | GoPay, OVO, Dana, ShopeePay |
-| MY | Maybank, CIMB, Public Bank | Touch 'n Go, GrabPay MY |
-| VN | Vietcombank, Techcombank, BIDV | MoMo, ZaloPay, VNPay |
-| TH | Bangkok Bank, Kasikorn, SCB | PromptPay, TrueMoney |
-| EG | CIB, NBE, Banque Misr | Fawry, Vodafone Cash |
-| KE | Equity, KCB, Co-op Bank | M-Pesa, Airtel Money |
-| ZA | Standard Bank, FNB, ABSA, Nedbank | SnapScan, Zapper |
-| BR | Itaú, Bradesco, Nubank, Santander | Pix, PicPay |
-| MX | BBVA Mexico, Banamex, Santander MX | SPEI, Mercado Pago |
-| NP | Nepal Bank, NIC Asia, Nabil | Khalti, eSewa, IME Pay |
-| LK | Commercial Bank, People's Bank, HNB | FriMi, eZ Cash |
-| JP | MUFG, Mizuho, SMBC | PayPay, LINE Pay |
-| KR | KB Kookmin, Shinhan, Woori | KakaoPay, Toss, Naver Pay |
-| SG | DBS, OCBC, UOB | PayNow, GrabPay SG |
-| CH | UBS, Credit Suisse, Julius Baer | TWINT |
-
----
-
-## Phase 2: Add Official Logos for All Payment Methods
-
-### Current Issue
-- Some bank logos using clearbit.com (many are broken/returning 404)
-- Digital wallet logos inconsistent (mix of SVG, PNG, some broken)
-- Account type section uses Lucide icons instead of logos
-
-### Solution
-
-**Use reliable logo sources:**
-1. **Primary**: `https://logo.clearbit.com/{domain}` (with fallback)
-2. **Backup**: Official CDN URLs from each service
-3. **Fallback**: High-quality placeholder with brand color
-
-**Logo quality requirements:**
-- Minimum 80x80px resolution
-- PNG or SVG format
-- White/transparent background
-
-**Account Type Icons - Replace with branded visuals:**
-```text
-Current: Building2 icon, Smartphone icon, Bitcoin icon
-New: Actual logos representing each type
-- Bank: Bank building illustration
-- Digital Wallet: Wallet logo with gradient
-- Crypto: Bitcoin/USDT logos
+WITHDRAWAL TAB:
+- Payout methods only (Bank, Digital Wallet, Crypto)
+- Country-based method configuration
+- Per-wallet brand enable/disable (bKash, PayPal, GCash, etc.)
+- Min/max limits, exchange rates
+- Uses new withdrawal_methods table or extended config
 ```
 
 ---
 
-## Phase 3: Redesign Admin Payment Settings
+## Phase 1: Create Comprehensive Logo Assets
 
-### Current Issue
-- Single section manages both Deposit and Withdrawal
-- Combined table making it confusing
-- No clear separation of concerns
+### Files to Create
+- `src/lib/payment-logos.ts` - Central logo registry with fallback colors
 
-### New Architecture
+### Logo Strategy (Hybrid Approach)
+1. **Primary source**: External CDN URLs (Clearbit, official CDNs)
+2. **Fallback**: Styled placeholder with brand initial + color
+3. **Admin upload**: Support storage bucket for custom logos
 
-**Split into 2 tabs/sections:**
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  [Deposit Methods]  [Withdrawal Methods]                    │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  DEPOSIT METHODS TAB:                                       │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ Payment gateways for users to add funds                 ││
-│  │ - Stripe, Razorpay, bKash, Manual                       ││
-│  │ - QR codes, account details for manual payments         ││
-│  │ - API keys for automatic gateways                       ││
-│  └─────────────────────────────────────────────────────────┘│
-│                                                             │
-│  WITHDRAWAL METHODS TAB:                                    │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ Payout methods for sellers/buyers to withdraw           ││
-│  │ - Country-based payment methods                         ││
-│  │ - Min/Max withdrawal limits                             ││
-│  │ - Exchange rates                                        ││
-│  │ - Enabled countries filter                              ││
-│  └─────────────────────────────────────────────────────────┘│
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+### Logo Registry Structure
+```typescript
+export const PAYMENT_LOGOS: Record<string, LogoConfig> = {
+  // Banks - USA
+  'chase': { url: 'https://logo.clearbit.com/chase.com', color: '#117ACA' },
+  'bofa': { url: 'https://logo.clearbit.com/bankofamerica.com', color: '#012169' },
+  
+  // Banks - Bangladesh
+  'brac': { url: 'https://logo.clearbit.com/bracbank.com', color: '#003366' },
+  'dbbl': { url: 'https://logo.clearbit.com/dutchbanglabank.com', color: '#00843D' },
+  
+  // Digital Wallets - Global
+  'bkash': { url: '/logos/bkash.svg', color: '#E2136E' },
+  'paypal': { url: 'https://logo.clearbit.com/paypal.com', color: '#003087' },
+  'venmo': { url: 'https://logo.clearbit.com/venmo.com', color: '#3D95CE' },
+  // ... 100+ more entries
+};
 ```
-
-### Deposit Section Features
-1. **Gateway cards** with:
-   - Logo and name
-   - Enable/disable toggle
-   - API key configuration
-   - QR code upload
-   - Account details for manual
-   
-2. **Stats at top:**
-   - Total gateways
-   - Active gateways
-   - Manual vs Automatic count
-
-### Withdrawal Section Features  
-1. **Country-based filtering:**
-   - Select country to see available methods
-   - Add country-specific payment methods
-   
-2. **Method cards with:**
-   - Official logo
-   - Method name (Bank, Wallet, Crypto)
-   - Enabled countries list
-   - Min/Max limits
-   - Exchange rate
-
-3. **Bulk actions:**
-   - Enable/disable for all
-   - Update limits in batch
 
 ---
 
-## Phase 4: Update Wallet Components
+## Phase 2: Database Schema Enhancement
 
-### BuyerWallet.tsx & SellerWallet.tsx Updates
+### New Table: withdrawal_method_config
+To store admin-configurable withdrawal rules per country and type.
 
-**Country Selection Step - Expanded Grid:**
-```text
-Current: 4 countries (2x2 grid)
-New: 27+ countries (scrollable grid with search)
-
-Layout:
-┌────────────────────────────────────────────┐
-│ 🔍 Search countries...                     │
-├────────────────────────────────────────────┤
-│ TOP COUNTRIES                              │
-│ [🇺🇸 USA] [🇧🇩 BD] [🇮🇳 IN] [🇵🇰 PK]       │
-│ [🇬🇧 UK]  [🇨🇦 CA]                         │
-├────────────────────────────────────────────┤
-│ ALL COUNTRIES (scrollable)                 │
-│ [🇦🇺 AU] [🇦🇪 AE] [🇸🇦 SA] [🇳🇬 NG] ...   │
-└────────────────────────────────────────────┘
-```
-
-**Account Type Selection - With Logos:**
-```text
-Replace Lucide icons with actual logos:
-┌─────────────────────────────────────────────┐
-│ [🏦 Bank]  [📱 Digital]  [₿ Crypto]        │
-│  Account    Wallet                          │
-│                                             │
-│ Each showing relevant country-specific      │
-│ logos as preview (e.g., for India:          │
-│ HDFC, PhonePe, Bitcoin logos)               │
-└─────────────────────────────────────────────┘
-```
-
-**Bank/Wallet Selection - Fixed Logos:**
-- Use proper error handling for broken logos
-- Show fallback with brand initial + color
-- Ensure consistent sizing (40x40px)
-
----
-
-## Phase 5: Database Integration
-
-### Current State
-- Configuration stored in `digital-wallets-config.ts` (static)
-- `payment_methods` table has withdrawal settings
-
-### Enhancement
-
-**Use payment_methods table for dynamic configuration:**
 ```sql
--- Columns already exist:
-- withdrawal_enabled
-- min_withdrawal  
-- max_withdrawal
-- countries (array)
-- currency_code
-- exchange_rate
+CREATE TABLE IF NOT EXISTS withdrawal_method_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  country_code TEXT NOT NULL,  -- 'US', 'BD', 'IN', etc.
+  account_type TEXT NOT NULL,  -- 'bank', 'digital_wallet', 'crypto'
+  method_code TEXT,            -- 'bkash', 'paypal', NULL for type-level
+  is_enabled BOOLEAN DEFAULT true,
+  min_withdrawal NUMERIC DEFAULT 5,
+  max_withdrawal NUMERIC DEFAULT 1000,
+  exchange_rate NUMERIC DEFAULT 1,
+  custom_logo_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(country_code, account_type, method_code)
+);
 
--- Already being fetched in wallet components
+-- Enable RLS
+ALTER TABLE withdrawal_method_config ENABLE ROW LEVEL SECURITY;
+
+-- Policy: No direct access, only through admin edge functions
+CREATE POLICY "No direct access" ON withdrawal_method_config
+  FOR ALL USING (false);
 ```
 
-**Flow:**
-1. Admin configures methods in PaymentSettingsManagement
-2. payment_methods table updated
-3. BFF APIs serve live data to wallets
-4. Wallet components show real-time enabled methods
+### Update admin-fetch-data and admin-mutate-data
+Add `withdrawal_method_config` to the allowed tables whitelist.
+
+---
+
+## Phase 3: Redesign Admin PaymentSettingsManagement.tsx
+
+### New Component Structure
+
+```text
+PaymentSettingsManagement
+├── Tab: "Deposit Methods" (emerald theme)
+│   ├── Stats: Total gateways, Active, Manual count
+│   ├── Gateway Cards Grid:
+│   │   └── For each deposit method:
+│   │       - Logo + Name + Code
+│   │       - Enable/Disable toggle
+│   │       - API Key fields (for automatic)
+│   │       - QR Code + Account details (for manual)
+│   │       - Edit/Delete actions
+│   └── Add Deposit Method button
+│
+└── Tab: "Withdrawal Methods" (violet theme)
+    ├── Stats: Countries configured, Methods enabled, Total limits
+    ├── Country Filter Dropdown (27+ countries)
+    ├── Account Type Tabs: Bank | Digital Wallet | Crypto
+    └── Method Cards Grid (per selected country + type):
+        └── For each wallet/bank:
+            - Official Logo (with fallback)
+            - Name + Code
+            - Enable/Disable toggle
+            - Min/Max withdrawal limits
+            - Exchange rate (if non-USD)
+            - Save changes button
+```
+
+### Key Features
+1. **Separate data sources**: 
+   - Deposit: Uses `payment_methods` table (existing)
+   - Withdrawal: Uses new `withdrawal_method_config` table
+
+2. **Country-based filtering**:
+   - Dropdown to select country (27+ options)
+   - Shows only methods configured for that country
+   - Can add/remove methods per country
+
+3. **Per-wallet brand control**:
+   - For Bangladesh: enable/disable bKash, Nagad, Rocket individually
+   - For USA: enable/disable Venmo, Zelle, PayPal individually
+   - For India: enable/disable PhonePe, Paytm, GooglePay individually
+
+4. **Bulk actions**:
+   - Enable/disable all for a country
+   - Copy settings from one country to another
+   - Update all limits at once
+
+---
+
+## Phase 4: Update BuyerWallet.tsx & SellerWallet.tsx
+
+### Changes Required
+
+1. **Fetch withdrawal configuration from database**:
+```typescript
+// New: Fetch enabled methods for user's country
+const fetchEnabledMethods = async () => {
+  const { data } = await supabase
+    .from('withdrawal_method_config')
+    .select('*')
+    .eq('country_code', userCountry)
+    .eq('is_enabled', true);
+  // Filter available options based on this config
+};
+```
+
+2. **Filter account types based on admin config**:
+   - Only show "Bank Account" if admin enabled banks for user's country
+   - Only show "Digital Wallet" if admin enabled wallets for user's country
+   - Only show specific brands (bKash, PayPal) if individually enabled
+
+3. **Apply limits from admin config**:
+   - Use configured min/max withdrawal amounts
+   - Use configured exchange rates
+
+4. **Logo display improvements**:
+   - Use `LogoWithFallback` component everywhere
+   - Pull logos from central registry
+   - Ensure consistent 40x40px sizing
+
+---
+
+## Phase 5: Fix All Bank/Wallet Logos
+
+### digital-wallets-config.ts Updates
+
+Replace broken/missing logo URLs with verified working URLs:
+
+```typescript
+// Bangladesh Digital Wallets
+BD: [
+  { code: 'bkash', label: 'bKash', logo: '/logos/bkash.png', color: '#E2136E' },
+  { code: 'nagad', label: 'Nagad', logo: '/logos/nagad.png', color: '#FF6A00' },
+  { code: 'rocket', label: 'Rocket', logo: '/logos/rocket.png', color: '#8B2C92' },
+  // ...
+],
+
+// USA Digital Wallets  
+US: [
+  { code: 'venmo', label: 'Venmo', logo: 'https://logo.clearbit.com/venmo.com', color: '#3D95CE' },
+  { code: 'zelle', label: 'Zelle', logo: 'https://logo.clearbit.com/zellepay.com', color: '#6D1ED4' },
+  { code: 'paypal', label: 'PayPal', logo: 'https://logo.clearbit.com/paypal.com', color: '#003087' },
+  // ...
+],
+```
+
+### Local Logo Assets
+Create `/public/logos/` folder with SVG/PNG files for critical brands:
+- bkash.png, nagad.png, rocket.png (Bangladesh)
+- phonepe.png, paytm.png, gpay.png (India)
+- easypaisa.png, jazzcash.png (Pakistan)
+
+---
+
+## Phase 6: Admin Data Context Updates
+
+### AdminDataContext.tsx
+Add `withdrawalMethodConfig` to the context state:
+
+```typescript
+interface AdminDataState {
+  // ... existing fields
+  withdrawalMethodConfig: any[];
+}
+
+// Add to refreshAll():
+const [withdrawalConfigRes] = await fetchData('withdrawal_method_config');
+```
+
+### admin-fetch-data & admin-mutate-data Edge Functions
+Add to allowed tables whitelist:
+```typescript
+const allowedTables = [
+  // ... existing
+  'withdrawal_method_config'
+];
+```
 
 ---
 
@@ -248,95 +249,65 @@ Replace Lucide icons with actual logos:
 
 | File | Changes |
 |------|---------|
-| `src/lib/digital-wallets-config.ts` | Expand to 27+ countries, add all banks/wallets with proper logos |
-| `src/components/dashboard/BuyerWallet.tsx` | Update country grid UI, fix logo display |
+| `src/lib/payment-logos.ts` | NEW: Central logo registry |
+| `src/lib/digital-wallets-config.ts` | Fix broken logos, add more banks/wallets |
+| `src/components/admin/PaymentSettingsManagement.tsx` | Complete redesign with Deposit/Withdrawal tabs |
+| `src/components/dashboard/BuyerWallet.tsx` | Fetch enabled methods, filter by config |
 | `src/components/seller/SellerWallet.tsx` | Same as BuyerWallet |
-| `src/components/admin/PaymentSettingsManagement.tsx` | Redesign with Deposit/Withdrawal tabs |
+| `src/components/ui/logo-with-fallback.tsx` | Enhance with loading states |
+| `src/contexts/AdminDataContext.tsx` | Add withdrawal config to state |
+| `supabase/functions/admin-fetch-data/index.ts` | Add withdrawal_method_config to whitelist |
+| `supabase/functions/admin-mutate-data/index.ts` | Add withdrawal_method_config to whitelist |
+| `public/logos/` | NEW: Local logo assets (bkash, nagad, etc.) |
 
 ---
 
-## Technical Implementation Details
+## Database Migration
 
-### 1. digital-wallets-config.ts Structure
+```sql
+-- Create withdrawal method configuration table
+CREATE TABLE IF NOT EXISTS withdrawal_method_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  country_code TEXT NOT NULL,
+  account_type TEXT NOT NULL CHECK (account_type IN ('bank', 'digital_wallet', 'crypto')),
+  method_code TEXT,
+  is_enabled BOOLEAN DEFAULT true,
+  min_withdrawal NUMERIC DEFAULT 5,
+  max_withdrawal NUMERIC DEFAULT 1000,
+  exchange_rate NUMERIC DEFAULT 1,
+  custom_logo_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(country_code, account_type, COALESCE(method_code, ''))
+);
 
-```typescript
-// Expanded SUPPORTED_COUNTRIES with priority
-export const SUPPORTED_COUNTRIES: Country[] = [
-  // TOP 6 (priority 1-6) - Freelancer countries
-  { code: 'US', name: 'United States', flag: 'https://flagcdn.com/w80/us.png', position: 1 },
-  { code: 'BD', name: 'Bangladesh', flag: 'https://flagcdn.com/w80/bd.png', position: 2 },
-  // ... 25 more countries
-];
+-- Enable RLS
+ALTER TABLE withdrawal_method_config ENABLE ROW LEVEL SECURITY;
 
-// Country-specific banks with reliable logo URLs
-export const COUNTRY_BANKS: Record<string, Bank[]> = {
-  US: [
-    { code: 'chase', name: 'Chase', logo: 'https://logo.clearbit.com/chase.com', color: '#117ACA' },
-    { code: 'bofa', name: 'Bank of America', logo: 'https://logo.clearbit.com/bankofamerica.com', color: '#012169' },
-    // ...
-  ],
-  // ... other countries
-};
+-- Policy: Only through admin edge functions
+CREATE POLICY "No direct access" ON withdrawal_method_config
+  FOR ALL USING (false);
 
-// Country-specific digital wallets
-export const DIGITAL_WALLETS: Record<string, DigitalWallet[]> = {
-  US: [
-    { code: 'venmo', label: 'Venmo', logo: 'https://images.ctfassets.net/.../venmo-logo.png', ... },
-    { code: 'cashapp', label: 'Cash App', logo: 'https://logo.clearbit.com/cash.app', ... },
-    // ...
-  ],
-  // ... other countries
-};
-```
-
-### 2. Logo Fallback Component
-
-```typescript
-const LogoWithFallback = ({ src, alt, color }: { src: string; alt: string; color?: string }) => {
-  const [error, setError] = useState(false);
-  
-  if (error || !src) {
-    return (
-      <div 
-        className="w-full h-full rounded-lg flex items-center justify-center text-white font-bold"
-        style={{ backgroundColor: color || '#6366f1' }}
-      >
-        {alt.charAt(0)}
-      </div>
-    );
-  }
-  
-  return (
-    <img 
-      src={src} 
-      alt={alt} 
-      className="w-full h-full object-contain"
-      onError={() => setError(true)}
-    />
-  );
-};
-```
-
-### 3. Admin Payment Tabs Structure
-
-```typescript
-type PaymentTab = 'deposit' | 'withdrawal';
-
-// Tab navigation
-<div className="flex gap-2 mb-6">
-  <button onClick={() => setActiveTab('deposit')} 
-    className={activeTab === 'deposit' ? 'bg-emerald-500' : 'bg-white/10'}>
-    <ArrowUpCircle /> Deposit Methods
-  </button>
-  <button onClick={() => setActiveTab('withdrawal')}
-    className={activeTab === 'withdrawal' ? 'bg-violet-500' : 'bg-white/10'}>
-    <ArrowDownCircle /> Withdrawal Methods
-  </button>
-</div>
-
-// Conditional rendering based on tab
-{activeTab === 'deposit' && <DepositMethodsSection />}
-{activeTab === 'withdrawal' && <WithdrawalMethodsSection />}
+-- Seed initial data for popular countries
+INSERT INTO withdrawal_method_config (country_code, account_type, method_code, is_enabled, min_withdrawal, max_withdrawal)
+VALUES 
+  ('BD', 'bank', NULL, true, 5, 1000),
+  ('BD', 'digital_wallet', 'bkash', true, 5, 500),
+  ('BD', 'digital_wallet', 'nagad', true, 5, 500),
+  ('BD', 'digital_wallet', 'rocket', true, 5, 500),
+  ('IN', 'bank', NULL, true, 5, 1000),
+  ('IN', 'digital_wallet', 'phonepe', true, 5, 500),
+  ('IN', 'digital_wallet', 'paytm', true, 5, 500),
+  ('IN', 'digital_wallet', 'gpay', true, 5, 500),
+  ('US', 'bank', NULL, true, 10, 5000),
+  ('US', 'digital_wallet', 'venmo', true, 5, 1000),
+  ('US', 'digital_wallet', 'paypal', true, 5, 1000),
+  ('US', 'digital_wallet', 'zelle', true, 5, 2000),
+  ('US', 'crypto', NULL, true, 20, 10000),
+  ('PK', 'bank', NULL, true, 5, 1000),
+  ('PK', 'digital_wallet', 'easypaisa', true, 5, 500),
+  ('PK', 'digital_wallet', 'jazzcash', true, 5, 500)
+ON CONFLICT DO NOTHING;
 ```
 
 ---
@@ -344,9 +315,20 @@ type PaymentTab = 'deposit' | 'withdrawal';
 ## Expected Outcome
 
 After implementation:
-- 27+ countries selectable when adding payment account
-- All banks and digital wallets have official logos
-- Broken logos replaced with styled fallbacks
-- Admin panel has clear Deposit vs Withdrawal sections
-- Everything synced with database in real-time
-- Consistent styling across Buyer and Seller dashboards
+
+1. **Admin Panel**:
+   - Clear Deposit vs Withdrawal separation
+   - Country-based withdrawal method management
+   - Individual wallet brand enable/disable
+   - All logos display correctly with fallbacks
+
+2. **Buyer/Seller Wallets**:
+   - Only show methods enabled by admin for their country
+   - Respect min/max limits from admin config
+   - All bank/wallet logos load properly
+   - Consistent premium UI across both dashboards
+
+3. **Database**:
+   - New `withdrawal_method_config` table for granular control
+   - Full audit trail through admin edge functions
+   - Real-time sync between admin changes and user views
