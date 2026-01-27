@@ -527,7 +527,6 @@ const PaymentSettingsManagement = () => {
                       >
                         <Trash2 size={18} />
                       </button>
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -1013,6 +1012,18 @@ const PaymentSettingsManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ open, id: open ? deleteConfirm.id : null })}
+        title="Delete Payment Method"
+        description="Are you sure you want to delete this payment method? This action cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        variant="destructive"
+        loading={deleting}
+      />
     </div>
   );
 };
