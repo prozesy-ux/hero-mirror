@@ -533,10 +533,36 @@ export const PAYMENT_LOGOS: Record<string, LogoConfig> = {
 /**
  * Get logo config for a payment method code
  * Falls back to a generic config if not found
+ * Case-insensitive matching with multiple fallback strategies
  */
-export const getPaymentLogo = (code: string): LogoConfig => {
-  const lowerCode = code.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return PAYMENT_LOGOS[lowerCode] || {
+export const getPaymentLogo = (code: string | null | undefined): LogoConfig => {
+  if (!code) return { url: '', color: '#6366F1', name: '' };
+  
+  // Normalize the code: lowercase, remove special chars
+  const normalizedCode = code.toLowerCase().replace(/[^a-z0-9]/g, '');
+  
+  // Try direct match first
+  if (PAYMENT_LOGOS[normalizedCode]) {
+    return PAYMENT_LOGOS[normalizedCode];
+  }
+  
+  // Try matching with original lowercase (preserving structure)
+  const lowerCode = code.toLowerCase().trim();
+  if (PAYMENT_LOGOS[lowerCode]) {
+    return PAYMENT_LOGOS[lowerCode];
+  }
+  
+  // Try finding a key that matches when both are normalized
+  const matchKey = Object.keys(PAYMENT_LOGOS).find(key => 
+    key.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedCode
+  );
+  
+  if (matchKey) {
+    return PAYMENT_LOGOS[matchKey];
+  }
+  
+  // Return fallback with the original code as name
+  return {
     url: '',
     color: '#6366F1',
     name: code
