@@ -33,6 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { 
   ACCOUNT_TYPES, 
   getDigitalWalletsForCountry, 
@@ -159,6 +160,10 @@ const BuyerWallet = () => {
   const [otpSending, setOTPSending] = useState(false);
   const [otpVerifying, setOTPVerifying] = useState(false);
   const [pendingWithdrawalData, setPendingWithdrawalData] = useState<{amount: number; accountId: string} | null>(null);
+  
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const [deleting, setDeleting] = useState(false);
 
   const quickAmounts = [5, 10, 25, 50, 100];
 
@@ -331,20 +336,28 @@ const BuyerWallet = () => {
     }
   };
 
-  const handleDeleteAccount = async (accountId: string) => {
-    if (!confirm('Are you sure you want to delete this account?')) return;
+  const handleDeleteClick = (accountId: string) => {
+    setDeleteConfirm({ open: true, id: accountId });
+  };
 
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.id) return;
+    
+    setDeleting(true);
     try {
       const { error } = await supabase
         .from('buyer_payment_accounts')
         .delete()
-        .eq('id', accountId);
+        .eq('id', deleteConfirm.id);
 
       if (error) throw error;
       toast.success('Account deleted');
       fetchData();
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete account');
+    } finally {
+      setDeleting(false);
+      setDeleteConfirm({ open: false, id: null });
     }
   };
 
@@ -730,7 +743,7 @@ const BuyerWallet = () => {
                         </button>
                       )}
                       <button 
-                        onClick={() => handleDeleteAccount(account.id)}
+                        onClick={() => handleDeleteClick(account.id)}
                         className="text-xs text-red-500 hover:text-red-600"
                       >
                         <Trash2 size={14} />
@@ -1355,6 +1368,18 @@ const BuyerWallet = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Account Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ open, id: open ? deleteConfirm.id : null })}
+        title="Delete Account"
+        description="Are you sure you want to delete this payment account? This action cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        variant="destructive"
+        loading={deleting}
+      />
     </div>
   );
 };

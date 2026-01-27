@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface AIAccount {
   id: string;
@@ -45,6 +46,10 @@ const AIAccountsManagement = () => {
   const [tagInput, setTagInput] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const [deleting, setDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -167,13 +172,18 @@ const AIAccountsManagement = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this account?')) return;
+  const handleDeleteClick = (id: string) => {
+    setDeleteConfirm({ open: true, id });
+  };
 
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.id) return;
+
+    setDeleting(true);
     const { error } = await supabase
       .from('ai_accounts')
       .delete()
-      .eq('id', id);
+      .eq('id', deleteConfirm.id);
 
     if (error) {
       toast.error('Failed to delete account');
@@ -181,6 +191,8 @@ const AIAccountsManagement = () => {
       toast.success('Account deleted');
       refreshTable('ai_accounts');
     }
+    setDeleting(false);
+    setDeleteConfirm({ open: false, id: null });
   };
 
   const handleQuickToggle = async (account: AIAccount, field: 'is_trending' | 'is_featured' | 'is_available') => {
@@ -433,7 +445,7 @@ const AIAccountsManagement = () => {
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(account.id)}
+                        onClick={() => handleDeleteClick(account.id)}
                         className="p-2 bg-red-500/80 text-white rounded-lg hover:bg-red-600"
                       >
                         <Trash2 className="h-4 w-4" />

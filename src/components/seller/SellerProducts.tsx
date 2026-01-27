@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { 
   Plus, 
   Package, 
@@ -82,9 +83,12 @@ const SellerProducts = () => {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [tagInput, setTagInput] = useState('');
+  
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -178,22 +182,27 @@ const SellerProducts = () => {
     }
   };
 
-  const handleDelete = async (productId: string) => {
-    if (!confirm('Delete this product?')) return;
+  const handleDeleteClick = (productId: string) => {
+    setDeleteConfirm({ open: true, id: productId });
+  };
 
-    setDeleting(productId);
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.id) return;
+
+    setDeleting(true);
     try {
       const { error } = await supabase
         .from('seller_products')
         .delete()
-        .eq('id', productId);
+        .eq('id', deleteConfirm.id);
       if (error) throw error;
       toast.success('Product deleted');
       refreshProducts();
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete');
     } finally {
-      setDeleting(null);
+      setDeleting(false);
+      setDeleteConfirm({ open: false, id: null });
     }
   };
 
@@ -450,9 +459,9 @@ const SellerProducts = () => {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
-                          onClick={() => handleDelete(product.id)}
+                          onClick={() => handleDeleteClick(product.id)}
                           className="text-red-600 focus:text-red-600 rounded-lg"
-                          disabled={deleting === product.id}
+                          disabled={deleting}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
@@ -683,6 +692,18 @@ const SellerProducts = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ open, id: open ? deleteConfirm.id : null })}
+        title="Delete Product"
+        description="Are you sure you want to delete this product? This action cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        variant="destructive"
+        loading={deleting}
+      />
     </div>
   );
 };

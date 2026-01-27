@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface UserProfile {
   id: string;
@@ -66,8 +67,11 @@ const UsersManagement = () => {
   const { fetchData } = useAdminData();
   const { updateData, deleteData, insertData, deleteWithFilters } = useAdminMutate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null; userId: string | null }>({ open: false, id: null, userId: null });
+  const [deleting, setDeleting] = useState(false);
   
   // User detail modal state
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -162,17 +166,21 @@ const UsersManagement = () => {
     setLoadingDetail(false);
   };
 
-  const handleDeleteUser = async (userId: string, userIdAuth: string) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+  const handleDeleteClick = (userId: string, userIdAuth: string) => {
+    setDeleteConfirm({ open: true, id: userId, userId: userIdAuth });
+  };
 
-    setDeletingId(userId);
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.id || !deleteConfirm.userId) return;
+
+    setDeleting(true);
     
     try {
       // Delete user roles using admin edge function
-      await deleteWithFilters('user_roles', [{ column: 'user_id', value: userIdAuth }]);
+      await deleteWithFilters('user_roles', [{ column: 'user_id', value: deleteConfirm.userId }]);
       
       // Delete profile using admin edge function
-      const result = await deleteData('profiles', userId);
+      const result = await deleteData('profiles', deleteConfirm.id);
       
       if (!result.success) {
         toast.error('Failed to delete user');
@@ -184,7 +192,8 @@ const UsersManagement = () => {
     } catch (err) {
       toast.error('An error occurred');
     } finally {
-      setDeletingId(null);
+      setDeleting(false);
+      setDeleteConfirm({ open: false, id: null, userId: null });
     }
   };
 
@@ -389,16 +398,13 @@ const UsersManagement = () => {
                         )}
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(user.id, user.user_id)}
-                        disabled={deletingId === user.id}
+                        onClick={() => handleDeleteClick(user.id, user.user_id)}
+                        disabled={deleting}
                         className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
                         title="Delete User"
                       >
-                        {deletingId === user.id ? (
-                          <Loader2 size={18} className="animate-spin" />
-                        ) : (
-                          <Trash2 size={18} />
-                        )}
+                        <Trash2 size={18} />
+                      </button>
                       </button>
                     </div>
                   </td>
