@@ -785,11 +785,11 @@ const BuyerWallet = () => {
                 <SelectTrigger className="w-[180px] h-9 text-sm">
                   <SelectValue placeholder="Select country" />
                 </SelectTrigger>
-                <SelectContent className="bg-white z-50">
+                <SelectContent className="bg-white z-50 max-h-[300px]">
                   <SelectItem value={userCountry}>
                     {COUNTRY_CONFIG[userCountry]?.flag || '🌍'} {COUNTRY_CONFIG[userCountry]?.name || userCountry} (Your Country)
                   </SelectItem>
-                  {availableCountries.filter(c => c !== userCountry).map(code => (
+                  {Object.keys(COUNTRY_CONFIG).filter(c => c !== userCountry && c !== 'GLOBAL').map(code => (
                     <SelectItem key={code} value={code}>
                       {COUNTRY_CONFIG[code]?.flag || '🌍'} {COUNTRY_CONFIG[code]?.name || code}
                     </SelectItem>
@@ -800,7 +800,7 @@ const BuyerWallet = () => {
             {displayMethods.length === 0 ? (
               <p className="text-gray-500 text-center py-8">No withdrawal methods available for this region.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="flex flex-wrap gap-3">
                 {displayMethods.map((method) => {
                   const logoConfig = getPaymentLogo(method.method_code || method.account_type);
                   const logoUrl = method.custom_logo_url || logoConfig.url;
@@ -809,25 +809,28 @@ const BuyerWallet = () => {
                   return (
                     <div 
                       key={method.id}
-                      className="p-4 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-200 text-center hover:shadow-md hover:border-violet-200 transition-all"
+                      className="p-3 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 hover:border-gray-300 transition-all"
+                      title={method.method_name}
                     >
-                      <LogoWithFallback
-                        src={logoUrl}
-                        alt={method.method_name}
-                        color={brandColor}
-                        className="h-10 w-10 mx-auto mb-3"
-                      />
-                      <p className="text-gray-900 font-semibold text-sm">
-                        {method.method_name}
-                      </p>
-                      <Badge 
-                        variant="secondary" 
-                        className="mt-2 text-[10px]"
-                        style={{ backgroundColor: `${brandColor}15`, color: brandColor }}
+                      {logoUrl ? (
+                        <img 
+                          src={logoUrl}
+                          alt={method.method_name}
+                          className="h-8 w-auto object-contain"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const fallback = target.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div 
+                        className={`h-8 w-8 rounded-lg items-center justify-center text-white font-bold text-sm ${logoUrl ? 'hidden' : 'flex'}`}
+                        style={{ backgroundColor: brandColor }}
                       >
-                        {method.account_type === 'bank' ? 'Bank' : 
-                         method.account_type === 'digital_wallet' ? 'Wallet' : 'Crypto'}
-                      </Badge>
+                        {method.method_name.charAt(0).toUpperCase()}
+                      </div>
                     </div>
                   );
                 })}
