@@ -86,7 +86,8 @@ serve(async (req) => {
       'admin_audit_logs',
       'platform_announcements',
       'buyer_payment_accounts',
-      'buyer_withdrawals'
+      'buyer_withdrawals',
+      'withdrawal_method_config'
     ];
 
     if (!allowedTables.includes(table)) {
