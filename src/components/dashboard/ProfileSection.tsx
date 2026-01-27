@@ -492,21 +492,27 @@ const ProfileSection = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-4 lg:space-y-6 animate-fade-up">
-      {/* Compact Profile Header - Stack on mobile */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-5">
-          {/* Avatar with change button */}
+      {/* Modern Profile Header */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-7">
+        <div className="flex flex-col sm:flex-row items-center sm:items-center gap-5 sm:gap-6">
+          {/* Avatar with change button - High Quality */}
           <div className="relative group">
-            <Avatar className="h-16 w-16 border-2 border-gray-100">
-              <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || 'User'} />
-              <AvatarFallback className="bg-gray-900 text-white text-base font-semibold">
+            <Avatar className="h-20 w-20 border-3 border-slate-100 shadow-md">
+              <AvatarImage 
+                src={profile?.avatar_url || ''} 
+                alt={profile?.full_name || 'User'} 
+                className="object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+              <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-lg font-bold tracking-tight">
                 {getInitials(profile?.full_name)}
               </AvatarFallback>
             </Avatar>
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarLoading}
-              className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
+              className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity duration-200"
             >
               {avatarLoading ? (
                 <Loader2 className="h-5 w-5 text-white animate-spin" />
@@ -523,20 +529,20 @@ const ProfileSection = () => {
             />
           </div>
 
-          {/* User info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-gray-900 truncate">
+          {/* User info - Enhanced Typography */}
+          <div className="flex-1 min-w-0 text-center sm:text-left">
+            <div className="flex items-center justify-center sm:justify-start gap-2.5">
+              <h2 className="text-xl font-bold tracking-tight text-slate-900 truncate">
                 {profile?.full_name || 'User'}
               </h2>
               {profile?.is_pro && (
-                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold">
+                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
                   PRO
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-gray-500 truncate">{user?.email}</p>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-sm font-medium text-slate-600 truncate mt-1">{user?.email}</p>
+            <p className="text-xs text-slate-400 mt-1 tracking-wide">
               Member since {formatDate(profile?.created_at)}
             </p>
           </div>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, FileText, Bot, CreditCard, MessageCircle, 
-  Crown, LogOut, User, ChevronDown, Wallet, X, Check, ExternalLink, Store
+  Crown, LogOut, User, ChevronDown, Wallet, X, Check, ExternalLink
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useSearchContext } from '@/contexts/SearchContext';
@@ -314,13 +314,12 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
           {/* Currency Selector */}
           <CurrencySelector variant="minimal" />
 
-          {/* Become a Seller CTA - Clean Violet Design */}
+          {/* Become a Seller CTA - Fiverr/Upwork Style (Text-only, No Icon) */}
           <Link
             to="/seller"
-            className="flex items-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium text-sm transition-all duration-200"
+            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold text-sm tracking-wide transition-all duration-200"
           >
-            <Store size={16} />
-            <span>Become a Seller</span>
+            Become a Seller
           </Link>
 
           {/* Wallet Balance */}

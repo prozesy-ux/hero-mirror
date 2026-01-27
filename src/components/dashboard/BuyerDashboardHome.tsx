@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Wallet, ShoppingBag, TrendingUp, Clock, Package, ArrowRight, Plus, Heart, Store } from 'lucide-react';
+import { Wallet, ShoppingBag, TrendingUp, Clock, Package, ArrowRight, Plus, Heart, Store, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -26,7 +26,8 @@ const BuyerDashboardHome = () => {
   const { user } = useAuthContext();
   const { formatAmountOnly } = useCurrency();
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -44,8 +45,16 @@ const BuyerDashboardHome = () => {
     
     if (walletData) setWallet(walletData);
 
-    // Fetch recent orders
-    const { data: ordersData } = await supabase
+    // Fetch ALL orders for accurate stats
+    const { data: allOrdersData } = await supabase
+      .from('seller_orders')
+      .select(`id, amount, status, created_at`)
+      .eq('buyer_id', user?.id);
+
+    if (allOrdersData) setAllOrders(allOrdersData as Order[]);
+
+    // Fetch recent 5 orders with product details for display
+    const { data: recentOrdersData } = await supabase
       .from('seller_orders')
       .select(`
         id, amount, status, created_at,
@@ -56,7 +65,7 @@ const BuyerDashboardHome = () => {
       .order('created_at', { ascending: false })
       .limit(5);
 
-    if (ordersData) setOrders(ordersData as Order[]);
+    if (recentOrdersData) setRecentOrders(recentOrdersData as Order[]);
 
     // Fetch wishlist count
     const { count } = await supabase
@@ -68,12 +77,15 @@ const BuyerDashboardHome = () => {
     setLoading(false);
   };
 
+  // Calculate stats from ALL orders
   const stats = useMemo(() => {
-    const totalSpent = orders.reduce((sum, o) => sum + o.amount, 0);
-    const totalOrders = orders.length;
-    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'delivered').length;
-    return { totalSpent, totalOrders, pendingOrders };
-  }, [orders]);
+    const totalSpent = allOrders.reduce((sum, o) => sum + o.amount, 0);
+    const totalOrders = allOrders.length;
+    const pendingOrders = allOrders.filter(o => o.status === 'pending').length;
+    const deliveredOrders = allOrders.filter(o => o.status === 'delivered').length;
+    const completedOrders = allOrders.filter(o => o.status === 'completed').length;
+    return { totalSpent, totalOrders, pendingOrders, deliveredOrders, completedOrders };
+  }, [allOrders]);
 
   if (loading) {
     return (
@@ -90,19 +102,21 @@ const BuyerDashboardHome = () => {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
+      {/* Stats Cards - Real Data */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500">Wallet Balance</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(wallet?.balance || 0)}</p>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
-              <Wallet className="w-6 h-6 text-violet-600" />
+        <Link to="/dashboard/wallet">
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-slate-500">Wallet Balance</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(wallet?.balance || 0)}</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
+                <Wallet className="w-6 h-6 text-violet-600" />
+              </div>
             </div>
           </div>
-        </div>
+        </Link>
 
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
           <div className="flex items-start justify-between">
@@ -116,26 +130,85 @@ const BuyerDashboardHome = () => {
           </div>
         </div>
 
+        <Link to="/dashboard/orders">
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-slate-500">Total Orders</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{stats.totalOrders}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{stats.completedOrders} completed</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                <ShoppingBag className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+        </Link>
+
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-medium text-slate-500">Total Orders</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{stats.totalOrders}</p>
+              <p className="text-xs font-medium text-slate-500">Pending Delivery</p>
+              <p className="text-2xl font-bold text-orange-600 mt-1">{stats.pendingOrders + stats.deliveredOrders}</p>
+              {stats.deliveredOrders > 0 && (
+                <p className="text-xs text-blue-500 mt-0.5">{stats.deliveredOrders} awaiting approval</p>
+              )}
             </div>
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-blue-600" />
+            <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
+              <Clock className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Stats Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link to="/dashboard/wishlist">
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-pink-100 flex items-center justify-center">
+                <Heart className="w-5 h-5 text-pink-600" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500">Wishlist</p>
+                <p className="text-xl font-bold text-slate-800">{wishlistCount} items</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-500">Completed</p>
+              <p className="text-xl font-bold text-emerald-600">{stats.completedOrders}</p>
             </div>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500">Wishlist Items</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{wishlistCount}</p>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
+              <Package className="w-5 h-5 text-blue-600" />
             </div>
-            <div className="h-12 w-12 rounded-xl bg-pink-100 flex items-center justify-center">
-              <Heart className="w-6 h-6 text-pink-600" />
+            <div>
+              <p className="text-xs font-medium text-slate-500">Delivered</p>
+              <p className="text-xl font-bold text-blue-600">{stats.deliveredOrders}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-500">Pending</p>
+              <p className="text-xl font-bold text-amber-600">{stats.pendingOrders}</p>
             </div>
           </div>
         </div>
@@ -197,18 +270,24 @@ const BuyerDashboardHome = () => {
           </Link>
         </div>
 
-        {orders.length === 0 ? (
+        {recentOrders.length === 0 ? (
           <div className="p-10 text-center">
             <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500">No orders yet</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {orders.slice(0, 5).map((order) => (
+            {recentOrders.map((order) => (
               <div key={order.id} className="p-4 hover:bg-slate-50 transition-colors">
                 <div className="flex items-center gap-4">
                   {order.product?.icon_url ? (
-                    <img src={order.product.icon_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
+                    <img 
+                      src={order.product.icon_url} 
+                      alt="" 
+                      className="w-12 h-12 rounded-xl object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
                       <Package className="w-5 h-5 text-slate-400" />
