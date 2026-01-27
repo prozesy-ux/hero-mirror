@@ -73,6 +73,25 @@ serve(async (req) => {
       );
     }
 
+    // Layer 2: Check for existing pending withdrawal BEFORE creating OTP
+    const { data: existingWithdrawal } = await serviceClient
+      .from("seller_withdrawals")
+      .select("id, amount, status")
+      .eq("seller_id", sellerProfile.id)
+      .in("status", ["pending", "processing", "queued", "in_review"])
+      .maybeSingle();
+
+    if (existingWithdrawal) {
+      console.log(`[OTP] Seller ${sellerProfile.id} already has pending withdrawal: $${existingWithdrawal.amount}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "You already have a pending withdrawal. Please wait for it to be processed.",
+          existing_amount: existingWithdrawal.amount
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get account details
     const { data: account, error: accountError } = await serviceClient
       .from("seller_payment_accounts")

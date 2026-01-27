@@ -114,6 +114,16 @@ serve(async (req) => {
     if (withdrawalError) {
       console.error("Withdrawal creation error:", withdrawalError);
       
+      // Layer 3: Handle duplicate constraint violation gracefully
+      if (withdrawalError.code === '23505') {
+        return new Response(
+          JSON.stringify({ 
+            error: "You already have a pending withdrawal. Please wait for it to be processed." 
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ error: "Failed to create withdrawal" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
