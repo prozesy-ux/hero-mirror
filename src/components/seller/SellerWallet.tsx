@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -194,12 +194,14 @@ const SellerWallet = () => {
     );
   }, [withdrawalMethods, previewCountry, sellerCountry]);
 
-  // Sync previewCountry with sellerCountry on load
+  // Sync previewCountry with sellerCountry on initial load only
+  const previewInitialized = useRef(false);
   useEffect(() => {
-    if (sellerCountry && !previewCountry) {
+    if (sellerCountry && !previewInitialized.current) {
       setPreviewCountry(sellerCountry);
+      previewInitialized.current = true;
     }
-  }, [sellerCountry, previewCountry]);
+  }, [sellerCountry]);
 
   const quickAmounts = [5, 10, 25, 50, 100];
 

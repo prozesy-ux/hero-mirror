@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -202,12 +202,14 @@ const BuyerWallet = () => {
     );
   }, [withdrawalMethods, previewCountry, userCountry]);
 
-  // Sync previewCountry with userCountry on load
+  // Sync previewCountry with userCountry on initial load only
+  const previewInitialized = useRef(false);
   useEffect(() => {
-    if (userCountry && !previewCountry) {
+    if (userCountry && !previewInitialized.current) {
       setPreviewCountry(userCountry);
+      previewInitialized.current = true;
     }
-  }, [userCountry, previewCountry]);
+  }, [userCountry]);
 
   // Fetch ALL enabled withdrawal methods (for cross-country preview)
   const fetchWithdrawalMethods = useCallback(async () => {
