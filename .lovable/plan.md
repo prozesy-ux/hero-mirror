@@ -1,298 +1,315 @@
 
 
-# Quick Stats Section - Real Data & Click Functions
+# Server-Side Session Handling - Comprehensive Fix
 
-## Current State Analysis
+## Problem Analysis
 
-### Seller Dashboard Quick Stats (lines 455-521)
-The Seller Dashboard has a "Quick Stats" sidebar panel with 4 items:
-1. **Products** - Shows real data (`products.length` and approved count)
-2. **Messages** - Shows hardcoded `0` (not real data)
-3. **Success Rate** - Shows real calculated data from orders
-4. **Rating** - Shows hardcoded 4 stars (not real data)
+After reviewing the codebase, I identified several issues causing session logout problems:
 
-**Issues:**
-- Messages count is hardcoded to `0`
-- Rating is hardcoded to 4 stars (no real data)
-- No click navigation to relevant sections
+### Current Architecture Issues
 
-### Buyer Dashboard Home
-The Buyer Dashboard does NOT have a "Quick Stats" sidebar section matching the seller's design. It has stat cards but not in the same sidebar format.
+1. **Client-Side Session Validation Gaps**
+   - `useAuth.ts` uses `getSession()` which reads from localStorage but doesn't validate the token server-side
+   - If the token is expired/invalid but still in localStorage, the user appears "logged in" until an API call fails
+   - No proactive session health check
+
+2. **Race Conditions in Auth State**
+   - `onAuthStateChange` listener and `getSession()` can both trigger state updates
+   - Profile and admin role checks happen in parallel without proper coordination
+   - Loading state can finish before all data is fetched
+
+3. **Token Refresh Issues**
+   - `autoRefreshToken: true` in client config should work, but network issues can cause silent failures
+   - No heartbeat to detect stale sessions before user actions fail
+   - `refreshSession()` in `api-fetch.ts` only triggers on 401 responses (reactive, not proactive)
+
+4. **Protected Route Timeout Logic**
+   - 10-second timeout with `window.location.reload()` can cause infinite loops
+   - Recovery attempt uses `getSession()` (still client-side, not server-validated)
+
+5. **Session Storage Caching**
+   - Admin role cached in `sessionStorage` persists even if session is invalidated
+   - No cache invalidation on session refresh
 
 ---
 
-## Implementation Plan
+## Solution: Server-Side Session Validation
 
-### Part 1: Fix Seller Dashboard Quick Stats with Real Data
+### Part 1: Create Session Validation Edge Function
 
-**File: `src/components/seller/SellerDashboard.tsx`**
+A new edge function that validates the JWT and returns session health status:
 
-#### Change 1: Add state and fetch for unread messages count
+**File: `supabase/functions/validate-session/index.ts`**
 
 ```typescript
-// Add state for messages and ratings
-const [unreadMessages, setUnreadMessages] = useState(0);
-const [averageRating, setAverageRating] = useState<number | null>(null);
-const [reviewCount, setReviewCount] = useState(0);
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { 
+  verifyAuth, 
+  corsHeaders, 
+  errorResponse, 
+  successResponse,
+  createServiceClient
+} from '../_shared/auth-verify.ts';
 
-// Add fetch function
-const fetchQuickStats = async () => {
-  if (!profile?.id) return;
-  
-  // Fetch unread messages count
-  const { count: msgCount } = await supabase
-    .from('seller_chats')
-    .select('*', { count: 'exact', head: true })
-    .eq('seller_id', profile.id)
-    .eq('is_read', false)
-    .eq('sender_type', 'buyer');
-  
-  setUnreadMessages(msgCount || 0);
-  
-  // Fetch average rating from product reviews
-  const { data: ratingData } = await supabase
-    .from('product_reviews')
-    .select('rating, seller_products!inner(seller_id)')
-    .eq('seller_products.seller_id', profile.id);
-  
-  if (ratingData && ratingData.length > 0) {
-    const avg = ratingData.reduce((sum, r) => sum + r.rating, 0) / ratingData.length;
-    setAverageRating(avg);
-    setReviewCount(ratingData.length);
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get('Authorization');
+    const authResult = await verifyAuth(authHeader);
+
+    if (!authResult.success || !authResult.userId) {
+      return new Response(
+        JSON.stringify({ 
+          valid: false, 
+          error: authResult.error,
+          code: 'INVALID_SESSION'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Fetch minimal profile data to confirm user exists
+    const supabase = createServiceClient();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('user_id, email')
+      .eq('user_id', authResult.userId)
+      .maybeSingle();
+
+    // Check admin role server-side
+    const { data: hasAdmin } = await supabase
+      .rpc('has_role', { _user_id: authResult.userId, _role: 'admin' });
+
+    return successResponse({
+      valid: true,
+      userId: authResult.userId,
+      email: authResult.email,
+      isAdmin: hasAdmin === true,
+      profileExists: !!profile,
+      validatedAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[ValidateSession] Error:', error);
+    return errorResponse('Validation failed', 500);
+  }
+});
+```
+
+---
+
+### Part 2: Update `useAuth.ts` with Server-Side Validation
+
+**Key Changes:**
+
+1. Add a `validateSessionServer()` function that calls the edge function
+2. Run server validation on initial mount and after token refresh
+3. Clear stale cache if server says session is invalid
+4. Add a periodic heartbeat (every 5 minutes) to detect stale sessions proactively
+
+```typescript
+// New function to validate session server-side
+const validateSessionServer = async (accessToken: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/validate-session`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'apikey': SUPABASE_ANON_KEY
+      }
+    });
+
+    const result = await response.json();
+    
+    if (!result.data?.valid) {
+      console.warn('[Auth] Server validation failed:', result.data?.error);
+      // Clear stale session
+      await supabase.auth.signOut();
+      return false;
+    }
+
+    // Update admin status from server (source of truth)
+    setIsAdmin(result.data.isAdmin);
+    return true;
+  } catch (error) {
+    console.error('[Auth] Server validation error:', error);
+    return false; // Assume invalid on network error
   }
 };
 ```
 
-#### Change 2: Add useEffect to call fetchQuickStats
+---
+
+### Part 3: Update `ProtectedRoute.tsx`
+
+**Key Changes:**
+
+1. Remove the `window.location.reload()` recovery (causes loops)
+2. Use server-side validation instead of client-side `getSession()`
+3. Clear redirect to signin on any validation failure
 
 ```typescript
-useEffect(() => {
-  if (profile?.id) {
-    fetchQuickStats();
+// In timeout handler:
+const validateResult = await validateSessionServer();
+if (!validateResult) {
+  // Server confirmed session is invalid
+  setTimedOut(true);
+} else {
+  // Session is valid, just slow - continue waiting
+  setIsRecovering(false);
+}
+```
+
+---
+
+### Part 4: Update `api-fetch.ts` with Proactive Validation
+
+**Key Changes:**
+
+1. Before making requests, check if token is near expiry (within 5 minutes)
+2. If near expiry, proactively refresh before the request
+3. Add structured error codes for better handling
+
+```typescript
+// Check token expiry before request
+const session = await supabase.auth.getSession();
+if (session.data.session) {
+  const exp = session.data.session.expires_at;
+  const now = Math.floor(Date.now() / 1000);
+  const fiveMinutes = 5 * 60;
+  
+  if (exp && (exp - now) < fiveMinutes) {
+    console.log('[ApiFetch] Token near expiry, refreshing proactively');
+    await supabase.auth.refreshSession();
   }
-}, [profile?.id]);
-```
-
-#### Change 3: Update Quick Stats UI with real data and click navigation
-
-```tsx
-{/* Quick Stats */}
-<div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-  <h3 className="text-base font-semibold text-slate-800 mb-5">Quick Stats</h3>
-  <div className="space-y-4">
-    {/* Products - Click to navigate */}
-    <button 
-      onClick={() => navigate('/seller/products')}
-      className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
-    >
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center">
-          <Package className="h-5 w-5 text-violet-600" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-slate-800">Products</p>
-          <p className="text-xs text-slate-500">{products.filter(p => p.is_approved).length} live</p>
-        </div>
-      </div>
-      <span className="text-xl font-bold text-slate-800">{products.length}</span>
-    </button>
-
-    {/* Messages - Real unread count + click navigation */}
-    <button 
-      onClick={() => navigate('/seller/chat')}
-      className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
-    >
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-          <MessageSquare className="h-5 w-5 text-blue-600" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-slate-800">Messages</p>
-          <p className="text-xs text-slate-500">Unread chats</p>
-        </div>
-      </div>
-      <span className={`text-xl font-bold ${unreadMessages > 0 ? 'text-blue-600' : 'text-slate-800'}`}>
-        {unreadMessages}
-      </span>
-    </button>
-
-    {/* Success Rate - Click to analytics */}
-    <button 
-      onClick={() => navigate('/seller/analytics')}
-      className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
-    >
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-          <Award className="h-5 w-5 text-emerald-600" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-slate-800">Success Rate</p>
-          <p className="text-xs text-slate-500">Completion rate</p>
-        </div>
-      </div>
-      <span className="text-xl font-bold text-emerald-600">
-        {orders.length > 0 ? Math.round((completedOrders / orders.length) * 100) : 100}%
-      </span>
-    </button>
-
-    {/* Rating - Real average from reviews */}
-    <button 
-      onClick={() => navigate('/seller/products')}
-      className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
-    >
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-          <Star className="h-5 w-5 text-amber-600" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-slate-800">Rating</p>
-          <p className="text-xs text-slate-500">{reviewCount} reviews</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-1">
-        {averageRating ? (
-          <>
-            {[1, 2, 3, 4, 5].map(i => (
-              <Star 
-                key={i} 
-                className={`h-4 w-4 ${i <= Math.round(averageRating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} 
-              />
-            ))}
-          </>
-        ) : (
-          <span className="text-sm text-slate-500">No reviews</span>
-        )}
-      </div>
-    </button>
-  </div>
-</div>
+}
 ```
 
 ---
 
-### Part 2: Add Quick Stats Section to Buyer Dashboard
+### Part 5: Add Session Heartbeat System
 
-**File: `src/components/dashboard/BuyerDashboardHome.tsx`**
+**File: `src/hooks/useSessionHeartbeat.ts`**
 
-Create a matching "Quick Stats" sidebar panel for buyers with real data:
+A hook that runs in the background to:
+1. Check session health every 5 minutes
+2. Proactively refresh if token is expiring
+3. Redirect to signin if session becomes invalid
 
-#### Change 1: Add Quick Stats sidebar after the main chart area (matching seller layout)
+```typescript
+const HEARTBEAT_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
-The buyer's Quick Stats will show:
-1. **Orders** - Total orders count, click to `/dashboard/orders`
-2. **Messages** - Unread support messages (if applicable)
-3. **Wishlist** - Saved items count, click to `/dashboard/wishlist`
-4. **Completion Rate** - Percentage of completed orders
+export const useSessionHeartbeat = () => {
+  const { isAuthenticated, signOut } = useAuthContext();
 
-```tsx
-{/* Quick Stats - Matching Seller Design */}
-<div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-  <h3 className="text-base font-semibold text-slate-800 mb-5">Quick Stats</h3>
-  <div className="space-y-4">
-    {/* Total Orders */}
-    <Link to="/dashboard/orders">
-      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-            <ShoppingBag className="h-5 w-5 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-800">Orders</p>
-            <p className="text-xs text-slate-500">{stats.completedOrders} completed</p>
-          </div>
-        </div>
-        <span className="text-xl font-bold text-slate-800">{stats.totalOrders}</span>
-      </div>
-    </Link>
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-    {/* Wishlist */}
-    <Link to="/dashboard/wishlist">
-      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-pink-100 flex items-center justify-center">
-            <Heart className="h-5 w-5 text-pink-600" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-800">Wishlist</p>
-            <p className="text-xs text-slate-500">Saved items</p>
-          </div>
-        </div>
-        <span className="text-xl font-bold text-slate-800">{wishlistCount}</span>
-      </div>
-    </Link>
+    const heartbeat = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          console.warn('[Heartbeat] No session found - signing out');
+          await signOut();
+          window.location.href = '/signin';
+          return;
+        }
 
-    {/* Pending Orders */}
-    <Link to="/dashboard/orders">
-      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center">
-            <Clock className="h-5 w-5 text-orange-600" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-800">Pending</p>
-            <p className="text-xs text-slate-500">Awaiting delivery</p>
-          </div>
-        </div>
-        <span className={`text-xl font-bold ${stats.pendingOrders > 0 ? 'text-orange-600' : 'text-slate-800'}`}>
-          {stats.pendingOrders}
-        </span>
-      </div>
-    </Link>
+        // Check if token is near expiry
+        const exp = session.expires_at;
+        const now = Math.floor(Date.now() / 1000);
+        const tenMinutes = 10 * 60;
 
-    {/* Completion Rate */}
-    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-          <CheckCircle className="h-5 w-5 text-emerald-600" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-slate-800">Completion</p>
-          <p className="text-xs text-slate-500">Order success</p>
-        </div>
-      </div>
-      <span className="text-xl font-bold text-emerald-600">
-        {stats.totalOrders > 0 ? Math.round((stats.completedOrders / stats.totalOrders) * 100) : 100}%
-      </span>
-    </div>
-  </div>
-</div>
+        if (exp && (exp - now) < tenMinutes) {
+          console.log('[Heartbeat] Token expiring soon, refreshing...');
+          const { error } = await supabase.auth.refreshSession();
+          if (error) {
+            console.error('[Heartbeat] Refresh failed:', error);
+            await signOut();
+            window.location.href = '/signin';
+          }
+        }
+      } catch (error) {
+        console.error('[Heartbeat] Error:', error);
+      }
+    };
+
+    // Run immediately, then every 5 minutes
+    heartbeat();
+    const interval = setInterval(heartbeat, HEARTBEAT_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, signOut]);
+};
 ```
 
 ---
 
-## Files to Modify
+### Part 6: Integrate Heartbeat in Dashboard Pages
 
-| File | Changes |
-|------|---------|
-| `src/components/seller/SellerDashboard.tsx` | Add real messages/rating fetch, make all stats clickable |
-| `src/components/dashboard/BuyerDashboardHome.tsx` | Add matching Quick Stats section with real data |
+Add the heartbeat hook to both buyer and seller dashboard wrappers:
+
+```typescript
+// In Dashboard.tsx and Seller.tsx
+import { useSessionHeartbeat } from '@/hooks/useSessionHeartbeat';
+
+const Dashboard = () => {
+  useSessionHeartbeat(); // Starts background session monitoring
+  // ... rest of component
+};
+```
 
 ---
 
-## Data Sources
+### Part 7: Clear Stale Admin Cache
 
-### Seller Quick Stats
-| Stat | Source | Query |
-|------|--------|-------|
-| Products | `products.length` from context | Already available |
-| Messages | `seller_chats` table | Count where `is_read=false`, `sender_type='buyer'` |
-| Success Rate | `orders` from context | Calculate `completed / total * 100` |
-| Rating | `product_reviews` joined with `seller_products` | Average rating for seller's products |
+Update `useAuth.ts` to clear admin cache on session change:
 
-### Buyer Quick Stats
-| Stat | Source | Query |
-|------|--------|-------|
-| Orders | `seller_orders` table | Already fetched as `allOrders` |
-| Wishlist | `buyer_wishlist` table | Already fetched as `wishlistCount` |
-| Pending | `allOrders.filter(status='pending')` | Already calculated |
-| Completion | `allOrders.filter(status='completed')` | Calculate percentage |
+```typescript
+// In onAuthStateChange handler
+if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+  // Clear admin cache to force re-check
+  sessionStorage.removeItem(`admin_${session?.user?.id || 'unknown'}`);
+}
+```
+
+---
+
+## Implementation Files
+
+| File | Action |
+|------|--------|
+| `supabase/functions/validate-session/index.ts` | **Create** - Server-side session validator |
+| `src/hooks/useAuth.ts` | **Update** - Add server validation, clear stale cache |
+| `src/hooks/useSessionHeartbeat.ts` | **Create** - Background session health monitor |
+| `src/components/auth/ProtectedRoute.tsx` | **Update** - Use server validation, remove reload loop |
+| `src/lib/api-fetch.ts` | **Update** - Proactive token refresh before expiry |
+| `src/pages/Dashboard.tsx` | **Update** - Add heartbeat hook |
+| `src/pages/Seller.tsx` | **Update** - Add heartbeat hook |
+| `supabase/config.toml` | **Update** - Add validate-session function config |
 
 ---
 
 ## Expected Results
 
-1. **Seller Quick Stats**: Real unread message count, real average rating from reviews, all items clickable to relevant pages
-2. **Buyer Quick Stats**: Matching design with orders, wishlist, pending, and completion stats
-3. **Click Navigation**: Each stat card navigates to the relevant detail page
-4. **Real-time Updates**: Data refreshes automatically via existing Supabase subscriptions
+| Issue | Before | After |
+|-------|--------|-------|
+| Stale session in localStorage | User appears logged in, API calls fail | Session validated server-side, redirect to signin |
+| Token expiry during use | 401 error on next API call | Proactive refresh 5 min before expiry |
+| Admin role cached incorrectly | Stale admin status persists | Cache cleared on token refresh |
+| Infinite reload loop | `window.location.reload()` loops | Clean redirect to signin |
+| No health monitoring | Issues discovered only on user action | Background heartbeat every 5 min |
+
+---
+
+## Security Improvements
+
+1. **Server-Side Source of Truth** - All session validation happens in edge function using `verifyAuth()`
+2. **No Client-Side Trust** - Admin status fetched from server, not cached localStorage
+3. **Proactive Refresh** - Tokens refreshed before expiry, reducing window for stale sessions
+4. **Clean Signout** - Invalid sessions are fully cleared, including all cached data
 
