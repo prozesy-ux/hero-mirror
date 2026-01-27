@@ -1,11 +1,5 @@
 // App version - update this with each deployment to trigger cache clear
-// In development, use timestamp to auto-bust cache on every page load
-const isDev = typeof window !== 'undefined' && 
-  (window.location.hostname === 'localhost' || 
-   window.location.hostname.includes('preview') ||
-   window.location.hostname.includes('lovable.app'));
-
-export const APP_VERSION = isDev ? `dev-${Date.now()}` : '1.0.2';
+export const APP_VERSION = '1.0.1';
 
 const VERSION_KEY = 'app_version';
 const CACHE_CLEARED_KEY = 'cache_cleared_at';

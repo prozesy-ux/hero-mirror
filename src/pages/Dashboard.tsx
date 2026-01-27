@@ -23,7 +23,6 @@ import { SearchProvider } from '@/contexts/SearchContext';
 import { SidebarProvider, useSidebarContext } from '@/contexts/SidebarContext';
 import { FloatingChatProvider } from '@/contexts/FloatingChatContext';
 import { CurrencyProvider } from '@/contexts/CurrencyContext';
-import { BuyerDashboardProvider } from '@/contexts/BuyerDashboardContext';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useSessionHeartbeat } from '@/hooks/useSessionHeartbeat';
@@ -98,9 +97,7 @@ const Dashboard = () => {
       <SidebarProvider>
         <SearchProvider>
           <FloatingChatProvider>
-            <BuyerDashboardProvider>
-              <DashboardLayout />
-            </BuyerDashboardProvider>
+            <DashboardLayout />
           </FloatingChatProvider>
         </SearchProvider>
       </SidebarProvider>

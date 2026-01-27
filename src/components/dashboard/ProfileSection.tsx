@@ -1168,30 +1168,6 @@ const ProfileSection = () => {
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
               <div className="space-y-4">
-                {/* Clear Cache */}
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <Trash2 className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Clear App Cache</p>
-                      <p className="text-xs text-gray-500">Fix display issues by clearing cached data</p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      const { forceClearAllCaches } = await import('@/lib/cache-utils');
-                      toast.success('Clearing cache...');
-                      await forceClearAllCaches();
-                    }}
-                    className="text-gray-600 border-gray-200 hover:bg-gray-50 text-xs"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear Cache
-                  </Button>
-                </div>
-
                 {/* Export Data */}
                 <div className="flex items-center justify-between py-3 border-b border-gray-100">
                   <div className="flex items-center gap-3">

@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useBuyerDashboardOptional } from '@/contexts/BuyerDashboardContext';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { DollarSign, ShoppingBag, TrendingUp, Calendar, Download, ArrowUpRight, ArrowDownRight, AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { DollarSign, ShoppingBag, TrendingUp, TrendingDown, Calendar, Download, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, subDays, startOfMonth } from 'date-fns';
@@ -35,29 +36,29 @@ interface Order {
 
 const BuyerAnalytics = () => {
   const { formatAmountOnly } = useCurrency();
-  const dashboardContext = useBuyerDashboardOptional();
-  
-  // Use data from context (BFF) - no more direct supabase calls
-  const orders: Order[] = useMemo(() => {
-    return (dashboardContext?.data?.sellerOrders || []).map(order => ({
-      id: order.id,
-      amount: order.amount,
-      status: order.status,
-      created_at: order.created_at,
-      product: order.product ? {
-        name: order.product.name,
-        category_id: order.product.category_id || null
-      } : undefined
-    }));
-  }, [dashboardContext?.data?.sellerOrders]);
-
-  const loading = dashboardContext?.loading ?? true;
-  
+  const { user } = useAuthContext();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>({
     from: subDays(new Date(), 30),
     to: new Date()
   });
   const [period, setPeriod] = useState('30d');
+
+  useEffect(() => {
+    if (user) fetchOrders();
+  }, [user]);
+
+  const fetchOrders = async () => {
+    const { data } = await supabase
+      .from('seller_orders')
+      .select('id, amount, status, created_at, product:seller_products(name, category_id)')
+      .eq('buyer_id', user?.id)
+      .order('created_at', { ascending: false });
+
+    if (data) setOrders(data as Order[]);
+    setLoading(false);
+  };
 
   // Handle period change
   const handlePeriodChange = (value: string) => {
@@ -190,16 +191,6 @@ const BuyerAnalytics = () => {
           ))}
         </div>
         <Skeleton className="h-80 rounded-2xl" />
-      </div>
-    );
-  }
-
-  if (dashboardContext?.error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-        <p className="text-slate-600 mb-4">{dashboardContext.error}</p>
-        <Button onClick={() => dashboardContext.refresh()} variant="outline">Try Again</Button>
       </div>
     );
   }

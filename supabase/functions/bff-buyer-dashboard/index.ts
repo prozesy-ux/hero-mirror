@@ -41,7 +41,7 @@ serve(async (req) => {
       purchasesResult,
       sellerOrdersResult,
       favoritesResult,
-      wishlistItemsResult
+      wishlistResult
     ] = await Promise.all([
       // Wallet
       supabase
@@ -73,8 +73,8 @@ serve(async (req) => {
         .from('seller_orders')
         .select(`
           *,
-          product:seller_products(id, name, icon_url, description, category_id),
-          seller:seller_profiles!seller_orders_seller_id_fkey(id, store_name, store_logo_url, store_slug)
+          product:seller_products(id, name, icon_url, description),
+          seller:seller_profiles!seller_orders_seller_id_fkey(id, store_name, store_logo_url)
         `)
         .eq('buyer_id', userId)
         .order('created_at', { ascending: false }),
@@ -85,41 +85,12 @@ serve(async (req) => {
         .select('prompt_id')
         .eq('user_id', userId),
 
-      // Wishlist items with full product details
+      // Wishlist count
       supabase
         .from('buyer_wishlist')
-        .select('id, product_id, product_type, created_at')
+        .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
-        .order('created_at', { ascending: false })
     ]);
-
-    // Fetch product details for wishlist items
-    const wishlistItems = wishlistItemsResult.data || [];
-    const wishlistWithProducts: any[] = [];
-    
-    if (wishlistItems.length > 0) {
-      const sellerProductIds = wishlistItems
-        .filter((item: any) => item.product_type === 'seller')
-        .map((item: any) => item.product_id);
-      
-      if (sellerProductIds.length > 0) {
-        const { data: products } = await supabase
-          .from('seller_products')
-          .select('id, name, price, icon_url, is_available, seller:seller_profiles(store_name, store_slug)')
-          .in('id', sellerProductIds);
-        
-        const productMap = new Map((products || []).map((p: any) => [p.id, p]));
-        
-        for (const item of wishlistItems) {
-          wishlistWithProducts.push({
-            ...item,
-            product: productMap.get(item.product_id) || null
-          });
-        }
-      } else {
-        wishlistWithProducts.push(...wishlistItems);
-      }
-    }
 
     // Create wallet if not exists
     let wallet = walletResult.data;
@@ -150,8 +121,7 @@ serve(async (req) => {
       purchases: purchasesResult.data || [],
       sellerOrders: allOrders,
       favorites: (favoritesResult.data || []).map((f: any) => f.prompt_id),
-      wishlist: wishlistWithProducts,
-      wishlistCount: wishlistWithProducts.length,
+      wishlistCount: wishlistResult.count || 0,
       orderStats,
       _meta: {
         fetchedAt: new Date().toISOString(),
