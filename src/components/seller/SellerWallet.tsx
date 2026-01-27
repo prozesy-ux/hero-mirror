@@ -41,16 +41,20 @@ import {
   getWalletByCode, 
   isDigitalWalletCode,
   getCountryName,
-  getSortedCountries,
+  getTopCountries,
+  getOtherCountries,
+  searchCountries,
   getBanksForCountry,
   getBankByCode,
   isBankCode,
+  CRYPTO_WALLETS,
   type AccountType,
   type DigitalWallet,
   type Bank,
   type AddAccountStep
 } from '@/lib/digital-wallets-config';
-import { Globe } from 'lucide-react';
+import { LogoWithFallback } from '@/components/ui/logo-with-fallback';
+import { Globe, Search } from 'lucide-react';
 
 interface PaymentMethod {
   id: string;
@@ -1046,24 +1050,33 @@ const SellerWallet = () => {
                   <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">1</span>
                   Select Your Country
                 </Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {getSortedCountries().map((country) => (
+                
+                {/* Top Countries */}
+                <p className="text-xs text-gray-500 mb-2 font-medium">Popular Countries</p>
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {getTopCountries().map((country) => (
                     <button
                       key={country.code}
-                      onClick={() => {
-                        setSelectedCountry(country.code);
-                        setAddAccountStep('type');
-                      }}
-                      className="p-4 rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-all text-center"
+                      onClick={() => { setSelectedCountry(country.code); setAddAccountStep('type'); }}
+                      className="p-3 rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-all text-center"
                     >
-                      <div className="h-12 w-12 mx-auto mb-2 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
-                        {country.code === 'DEFAULT' ? (
-                          <Globe className="w-8 h-8 text-gray-500" />
-                        ) : (
-                          <img src={country.flag} alt={country.name} className="w-10 h-8 object-cover rounded" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                        )}
-                      </div>
-                      <p className="text-gray-900 font-medium text-sm">{country.name}</p>
+                      <img src={country.flag} alt={country.name} className="w-8 h-6 mx-auto mb-1 object-cover rounded" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w80/un.png'; }} />
+                      <p className="text-gray-900 font-medium text-xs">{country.code}</p>
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Other Countries */}
+                <p className="text-xs text-gray-500 mb-2 font-medium">All Countries</p>
+                <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                  {getOtherCountries().map((country) => (
+                    <button
+                      key={country.code}
+                      onClick={() => { setSelectedCountry(country.code); setAddAccountStep('type'); }}
+                      className="p-2 rounded-lg border border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-all text-center"
+                    >
+                      <img src={country.flag} alt={country.name} className="w-6 h-4 mx-auto mb-1 object-cover rounded" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w80/un.png'; }} />
+                      <p className="text-gray-700 text-[10px]">{country.name}</p>
                     </button>
                   ))}
                 </div>
