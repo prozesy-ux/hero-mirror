@@ -123,6 +123,16 @@ export function getSampleVariables(templateId: string): Record<string, string> {
       account_details: '****1234',
       transaction_id: 'WTH-TEST-001',
     },
+    withdrawal_rejected: {
+      amount: '1,000',
+      reason: 'Invalid bank account details',
+      new_balance: '1,500',
+    },
+    withdrawal_submitted: {
+      amount: '1,000',
+      payment_method: 'Bank Transfer',
+      account_details: '****1234',
+    },
     
     // Marketing templates
     welcome_email: {

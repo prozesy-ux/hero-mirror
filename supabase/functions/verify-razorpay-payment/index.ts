@@ -156,6 +156,46 @@ serve(async (req) => {
 
     console.log(`Wallet credited: $${amount} for user ${user.id}. New balance: $${newBalance}`);
 
+    // Send wallet top-up confirmation email (non-blocking)
+    try {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profile?.email) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+        
+        await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${serviceKey}`
+          },
+          body: JSON.stringify({
+            template_id: 'wallet_topup',
+            to: profile.email,
+            subject: `Wallet credited - ₹${amount}`,
+            html: `<p>Your wallet has been credited with ₹${amount}. New balance: ₹${newBalance.toFixed(2)}</p>`,
+            category: 'wallet',
+            user_id: user.id,
+            variables: {
+              user_name: profile.email.split('@')[0],
+              amount: amount.toString(),
+              new_balance: newBalance.toFixed(2),
+              payment_method: 'Razorpay',
+              transaction_id: razorpay_payment_id.slice(0, 16),
+            }
+          })
+        });
+        console.log(`Top-up email sent to ${profile.email}`);
+      }
+    } catch (emailError) {
+      console.error("Email send error (non-blocking):", emailError);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 

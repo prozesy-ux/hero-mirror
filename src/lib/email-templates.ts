@@ -494,6 +494,117 @@ const refundProcessedTemplate: EmailTemplate = {
   `)
 };
 
+const withdrawalSuccessTemplate: EmailTemplate = {
+  id: 'withdrawal_success',
+  name: 'Withdrawal Success',
+  description: 'Confirmation when withdrawal is approved',
+  category: 'wallet',
+  subject: 'Withdrawal approved - ₹{{amount}}',
+  variables: ['{{amount}}', '{{payment_method}}', '{{account_details}}', '{{transaction_id}}'],
+  icon: 'check-circle',
+  buttonColor: 'emerald',
+  html: wrapTemplate(`
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #ecfdf5; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Withdrawal Approved</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        Your withdrawal request has been approved and is being processed.
+      </p>
+      <div style="background: #ecfdf5; border-radius: 8px; padding: 24px; margin-bottom: 24px; text-align: center;">
+        <p style="margin: 0 0 4px 0; font-size: 13px; color: #059669;">Amount Withdrawn</p>
+        <p style="margin: 0; font-size: 32px; font-weight: 600; color: #10b981;">₹{{amount}}</p>
+      </div>
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          ${infoRow('Payment Method', '{{payment_method}}')}
+          ${infoRow('Account', '{{account_details}}')}
+          ${infoRow('Reference', '{{transaction_id}}')}
+        </table>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+        Funds will be credited to your account within 1-3 business days.
+      </p>
+    </div>
+  `)
+};
+
+const withdrawalRejectedTemplate: EmailTemplate = {
+  id: 'withdrawal_rejected',
+  name: 'Withdrawal Rejected',
+  description: 'Notification when withdrawal is rejected',
+  category: 'wallet',
+  subject: 'Withdrawal request rejected',
+  variables: ['{{amount}}', '{{reason}}', '{{new_balance}}'],
+  icon: 'x-circle',
+  buttonColor: 'red',
+  html: wrapTemplate(`
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #fef2f2; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Withdrawal Rejected</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        Your withdrawal request for ₹{{amount}} has been rejected.
+      </p>
+      <div style="background: #fef2f2; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 500; color: #991b1b;">Reason:</p>
+        <p style="margin: 0; font-size: 14px; color: #7f1d1d;">{{reason}}</p>
+      </div>
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          ${infoRow('Requested Amount', '₹{{amount}}')}
+          ${infoRow('Wallet Balance', '₹{{new_balance}}')}
+        </table>
+      </div>
+      ${ctaButton('Contact Support', '{{site_url}}/dashboard/chat', '#ef4444')}
+    </div>
+  `)
+};
+
+const withdrawalSubmittedTemplate: EmailTemplate = {
+  id: 'withdrawal_submitted',
+  name: 'Withdrawal Submitted',
+  description: 'Confirmation when withdrawal request is submitted',
+  category: 'wallet',
+  subject: 'Withdrawal request submitted - ₹{{amount}}',
+  variables: ['{{amount}}', '{{payment_method}}', '{{account_details}}'],
+  icon: 'clock',
+  buttonColor: 'amber',
+  html: wrapTemplate(`
+    <div style="padding: 40px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #fffbeb; border-radius: 12px; line-height: 48px;">
+          <svg style="width: 24px; height: 24px; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+      </div>
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">Withdrawal Submitted</h2>
+      <p style="margin: 0 0 24px 0; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+        Your withdrawal request is pending review by our team.
+      </p>
+      <div style="background: #fffbeb; border-radius: 8px; padding: 24px; margin-bottom: 24px; text-align: center;">
+        <p style="margin: 0 0 4px 0; font-size: 13px; color: #92400e;">Pending Amount</p>
+        <p style="margin: 0; font-size: 32px; font-weight: 600; color: #f59e0b;">₹{{amount}}</p>
+      </div>
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          ${infoRow('Payment Method', '{{payment_method}}')}
+          ${infoRow('Account', '{{account_details}}')}
+          ${infoRow('Status', '<span style="color: #f59e0b;">Pending Review</span>')}
+        </table>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+        You will receive an email once your request is processed.
+      </p>
+    </div>
+  `)
+};
+
 // ============================================
 // MARKETING TEMPLATES
 // ============================================
@@ -585,6 +696,9 @@ export const emailTemplates: EmailTemplate[] = [
   walletTopupTemplate,
   lowBalanceAlertTemplate,
   refundProcessedTemplate,
+  withdrawalSuccessTemplate,
+  withdrawalRejectedTemplate,
+  withdrawalSubmittedTemplate,
   // Marketing
   welcomeEmailTemplate,
   proUpgradeTemplate,
