@@ -148,7 +148,7 @@ const BuyerWallet = () => {
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<WalletTab>('wallet');
   const [userCountry, setUserCountry] = useState<string>('BD');
-  const [previewCountry, setPreviewCountry] = useState<string>('BD');
+  const [previewCountry, setPreviewCountry] = useState<string>('');
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
 
   // Withdrawal filters
@@ -194,13 +194,14 @@ const BuyerWallet = () => {
   }, [withdrawalMethods]);
 
   const displayMethods = useMemo(() => {
-    if (!previewCountry) return withdrawalMethods;
-    return withdrawalMethods.filter(m => m.country_code === previewCountry);
-  }, [withdrawalMethods, previewCountry]);
+    const filterCountry = previewCountry || userCountry;
+    if (!filterCountry) return [];
+    return withdrawalMethods.filter(m => m.country_code === filterCountry);
+  }, [withdrawalMethods, previewCountry, userCountry]);
 
   // Sync previewCountry with userCountry on load
   useEffect(() => {
-    if (userCountry && previewCountry === 'BD' && userCountry !== 'BD') {
+    if (userCountry) {
       setPreviewCountry(userCountry);
     }
   }, [userCountry]);
@@ -781,7 +782,7 @@ const BuyerWallet = () => {
                 <CreditCard className="text-violet-500" size={20} />
                 Available Withdrawal Methods
               </h3>
-              <Select value={previewCountry} onValueChange={setPreviewCountry}>
+              <Select value={previewCountry || userCountry} onValueChange={setPreviewCountry}>
                 <SelectTrigger className="w-[180px] h-9 text-sm">
                   <SelectValue placeholder="Select country" />
                 </SelectTrigger>
