@@ -1035,6 +1035,41 @@ export type Database = {
         }
         Relationships: []
       }
+      popular_searches: {
+        Row: {
+          category_id: string | null
+          id: string
+          is_trending: boolean | null
+          last_searched_at: string | null
+          query: string
+          search_count: number | null
+        }
+        Insert: {
+          category_id?: string | null
+          id?: string
+          is_trending?: boolean | null
+          last_searched_at?: string | null
+          query: string
+          search_count?: number | null
+        }
+        Update: {
+          category_id?: string | null
+          id?: string
+          is_trending?: boolean | null
+          last_searched_at?: string | null
+          query?: string
+          search_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "popular_searches_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_reviews: {
         Row: {
           buyer_id: string
@@ -1452,6 +1487,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      search_history: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          id: string
+          query: string
+          result_count: number | null
+          user_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          query: string
+          result_count?: number | null
+          user_id: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          query?: string
+          result_count?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_history_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_logs: {
         Row: {
@@ -2841,6 +2911,10 @@ export type Database = {
       }
       update_seller_trust_score: {
         Args: { p_seller_id: string }
+        Returns: undefined
+      }
+      upsert_popular_search: {
+        Args: { p_category_id?: string; p_query: string }
         Returns: undefined
       }
       verify_admin_password: {

@@ -66,3 +66,6 @@ verify_jwt = false
 
 [functions.validate-session]
 verify_jwt = false
+
+[functions.bff-marketplace-search]
+verify_jwt = false
