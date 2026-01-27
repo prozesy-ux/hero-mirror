@@ -47,10 +47,13 @@ serve(async (req) => {
       return errorResponse('Seller profile not found', 404);
     }
 
+    // Get seller's country for withdrawal methods
+    const sellerCountry = profile.country || 'GLOBAL';
+
     const sellerId = profile.id;
 
     // 4. Fetch all seller data in parallel
-    const [walletResult, productsResult, ordersResult, withdrawalsResult] = await Promise.all([
+    const [walletResult, productsResult, ordersResult, withdrawalsResult, withdrawalConfigResult] = await Promise.all([
       // Wallet
       supabase
         .from('seller_wallets')
@@ -80,7 +83,15 @@ serve(async (req) => {
         .from('seller_withdrawals')
         .select('*')
         .eq('seller_id', sellerId)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false }),
+      
+      // Withdrawal methods from admin config (for seller's country + GLOBAL)
+      supabase
+        .from('withdrawal_method_config')
+        .select('*')
+        .in('country_code', [sellerCountry, 'GLOBAL'])
+        .eq('is_enabled', true)
+        .order('account_type, method_name')
     ]);
 
     // 5. Fetch buyer info for orders (batch to avoid N+1)
@@ -108,6 +119,8 @@ serve(async (req) => {
       products: productsResult.data || [],
       orders: ordersWithBuyers,
       withdrawals: withdrawalsResult.data || [],
+      withdrawalMethods: withdrawalConfigResult.data || [],
+      sellerCountry,
       _meta: {
         fetchedAt: new Date().toISOString(),
         userId,

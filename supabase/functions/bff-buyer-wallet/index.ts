@@ -34,8 +34,17 @@ serve(async (req) => {
     // 2. Create service client for trusted queries
     const supabase = createServiceClient();
 
-    // 3. Fetch wallet and withdrawals in parallel
-    const [walletResult, withdrawalsResult, paymentMethodsResult] = await Promise.all([
+    // 3. Get user's country from profile
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('country')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    const userCountry = profileData?.country || 'GLOBAL';
+
+    // 4. Fetch wallet, withdrawals, and withdrawal config in parallel
+    const [walletResult, withdrawalsResult, withdrawalConfigResult] = await Promise.all([
       // Wallet
       supabase
         .from('user_wallets')
@@ -50,13 +59,13 @@ serve(async (req) => {
         .eq('user_id', userId)
         .order('created_at', { ascending: false }),
       
-      // Payment methods (for withdrawal options)
+      // Withdrawal methods from admin config (for user's country + GLOBAL)
       supabase
-        .from('payment_methods')
-        .select('id, name, code, currency_code, exchange_rate, min_withdrawal, max_withdrawal, withdrawal_enabled')
+        .from('withdrawal_method_config')
+        .select('*')
+        .in('country_code', [userCountry, 'GLOBAL'])
         .eq('is_enabled', true)
-        .eq('withdrawal_enabled', true)
-        .order('name')
+        .order('account_type, method_name')
     ]);
 
     // Create wallet if not exists
@@ -70,11 +79,12 @@ serve(async (req) => {
       wallet = newWallet;
     }
 
-    // 4. Return clean response
+    // 5. Return clean response
     return successResponse({
       wallet: wallet || { balance: 0 },
       withdrawals: withdrawalsResult.data || [],
-      paymentMethods: paymentMethodsResult.data || [],
+      withdrawalMethods: withdrawalConfigResult.data || [],
+      userCountry,
       _meta: {
         fetchedAt: new Date().toISOString(),
         userId
