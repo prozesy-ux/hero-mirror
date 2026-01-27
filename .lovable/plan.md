@@ -1,103 +1,119 @@
 
-Goal
-- Fix “Available Withdrawal Methods” so:
-  1) Default country preview always shows correctly (Buyer + Seller)
-  2) Switching country shows that country’s withdrawal methods (Buyer + Seller)
-  3) Preview includes GLOBAL methods (if your admin config uses GLOBAL rows)
-  4) Preview image sizing matches Billing → “Available Payment Methods” (h-8 w-auto)
+# Fix Available Withdrawal Methods - Complete Solution
 
-What’s causing the bug (based on the code + your diff)
-- The dropdown now lets users choose ANY country (from COUNTRY_CONFIG), but the data loaded into `withdrawalMethods` is not guaranteed to contain methods for those countries.
-  - SellerWallet currently fetches only `[sellerCountry, 'GLOBAL']`. So if you select another country, `displayMethods` will be empty.
-  - BuyerWallet gets `withdrawalMethods` from `bffApi.getBuyerWallet()` and it appears to be scoped to the user’s country (same outcome: switching to other countries shows nothing).
-- The preview filter currently uses:
-  - `withdrawalMethods.filter(m => m.country_code === selectedCountry)`
-  This excludes GLOBAL methods (which are supposed to apply everywhere), so you can end up seeing only 1 method (or none).
+## Root Cause Identified
 
-High-confidence fixes
-A) Load “all enabled withdrawal methods” for preview (or cache per-country)
-- Buyer + Seller wallet should have access to enabled withdrawal methods for any country if we want the dropdown to preview any country.
-- Implementation approach (recommended for reliability):
-  - Fetch all enabled rows from `withdrawal_method_config` (ordered), store in state.
-  - Use the dropdown country purely as a filter over that already-fetched dataset.
-  - Keep realtime subscription so any admin changes instantly update wallets.
+The code currently has a **state overwrite bug**:
+1. `fetchWithdrawalMethods()` correctly fetches ALL enabled methods from database
+2. `fetchData()` (BFF call) then **overwrites** `withdrawalMethods` state with only the user's country + GLOBAL methods
+3. Since both run in parallel on mount, the BFF response arrives and replaces the full dataset
 
-B) Fix filtering to include GLOBAL
-- When previewing country “BD”, display should include:
-  - rows where `country_code === 'BD'` OR `country_code === 'GLOBAL'`
-- This solves “only one preview method” when most methods are configured as GLOBAL in admin.
+This explains why:
+- Default country preview sometimes works (if BFF finishes first)
+- Switching to other countries shows nothing (those methods were overwritten)
+- The fix attempts haven't worked because the state keeps getting replaced
 
-C) Make Seller default preview consistent
-- Ensure the seller wallet sets preview country from sellerCountry and fetches withdrawal methods after sellerCountry is known.
-- With approach (A), default preview will work even if sellerCountry arrives later, because we will:
-  - set previewCountry in an effect when sellerCountry is loaded
-  - compute display methods using `previewCountry || sellerCountry`
-  - and withdrawal methods data is global (not limited to sellerCountry only)
+## Solution: Separate State for Preview Methods
 
-D) Image size
-- Confirm preview uses: `className="h-8 w-auto object-contain"`
-- Ensure the wrapper layout mirrors BillingSection style (spacing/alignment). If needed:
-  - add `mx-auto` to match Billing’s centered behavior, and keep consistent padding.
+Create two distinct states:
+- `userWithdrawalMethods` - From BFF, for Add Account flows (user's country only)
+- `allWithdrawalMethods` - From direct DB query, for preview section (all countries)
 
-Files to update
-1) src/components/dashboard/BuyerWallet.tsx
-Changes:
-- Add a dedicated fetch function for withdrawal method config:
-  - Query `withdrawal_method_config`
-  - Filter `is_enabled = true`
-  - Order for consistency
-  - Store in `withdrawalMethods` (or new state `allWithdrawalMethods` if we want to keep the BFF-returned methods separate)
-- Stop relying on the BFF payload for cross-country preview.
-  - Keep BFF for wallet balance/withdrawals.
-  - Use DB query for “Available Withdrawal Methods” + Add Account logo merge.
-- Update `displayMethods` filter to include GLOBAL:
-  - `m.country_code === filterCountry || m.country_code === 'GLOBAL'`
-- Ensure realtime subscription triggers the new withdrawal-method fetch (not only `fetchData()`).
-  - Currently BuyerWallet’s realtime for withdrawal_method_config calls `fetchData()` which likely won’t refresh other-country methods.
-  - We will update it to call the new `fetchWithdrawalMethods()` (and keep `fetchData()` for wallet/withdrawals).
+---
 
-2) src/components/seller/SellerWallet.tsx
-Changes:
-- Replace current `fetchWithdrawalMethods()` query:
-  - From: `.in('country_code', [sellerCountry, 'GLOBAL'])`
-  - To: fetch all enabled methods (or implement a cache keyed by country)
-- Update `displayMethods` filter to include GLOBAL (same as Buyer).
-- Ensure the realtime channel for withdrawal_method_config calls the correct fetch method.
-- Keep existing “sync previewCountry with sellerCountry” effect, but make sure withdrawal methods fetch runs regardless of sellerCountry value.
+## File Changes
 
-Implementation detail (technical)
-- Add shared logic inside each wallet component:
-  - `const fetchWithdrawalMethodConfig = useCallback(async () => { ... })`
-  - Called:
-    - on initial load
-    - on realtime config changes
-    - optionally after profile country load (seller) though not required if we fetch all
-- Update filters:
-  - displayMethods uses:
-    - filterCountry = previewCountry || userCountry/sellerCountry
-    - return methods where country matches OR GLOBAL
+### 1. BuyerWallet.tsx
 
-Edge cases to handle
-- If a user selects a country with no methods and no GLOBAL methods, show “No withdrawal methods available for this region.”
-- If method has `custom_logo_url` broken, fallback should show brand-colored letter (already implemented in the preview card).
-- If admin disables all methods for a country, preview should show empty state.
+**Add new state (around line 145):**
+```typescript
+const [allWithdrawalMethods, setAllWithdrawalMethods] = useState<WithdrawalMethod[]>([]);
+```
 
-How we’ll verify (quick checklist)
-- Buyer wallet:
-  - On first load, default country preview shows multiple logos (country + GLOBAL).
-  - Switching to IN/PK/US shows correct methods immediately (no refresh needed).
-- Seller wallet:
-  - On first load, default country preview shows same behavior as buyer.
-  - Switching countries works.
-- Confirm preview logo size matches BillingSection payment method images (h-8 w-auto). If needed, add `mx-auto` to align perfectly.
+**Update fetchData() (line 290):**
+```typescript
+// Keep user-specific methods separate - don't overwrite allWithdrawalMethods
+// setWithdrawalMethods(methodsData || []); -- REMOVE THIS LINE
+// Use methodsData for Add Account if needed, but allWithdrawalMethods for preview
+```
 
-Notes about “database fault”
-- This issue is not a database problem; it’s the frontend filtering + not loading data for the newly selected country. Once we fetch all enabled methods (or fetch on selection change) and include GLOBAL in filtering, the preview will work consistently.
+**Update displayMethods (lines 196-203):**
+```typescript
+const displayMethods = useMemo(() => {
+  const filterCountry = previewCountry || userCountry;
+  if (!filterCountry) return [];
+  // Use allWithdrawalMethods for preview (not user-scoped)
+  return allWithdrawalMethods.filter(m => 
+    m.country_code === filterCountry || m.country_code === 'GLOBAL'
+  );
+}, [allWithdrawalMethods, previewCountry, userCountry]);
+```
 
-Deliverables
-- Updated BuyerWallet and SellerWallet logic so “Available Withdrawal Methods”:
-  - always shows default country preview
-  - correctly shows other countries after selection
-  - uses admin-updated logos
-  - includes GLOBAL methods
-  - keeps consistent image sizing with deposit/payment section
+**Update fetchWithdrawalMethods (lines 215-222):**
+```typescript
+const fetchWithdrawalMethods = useCallback(async () => {
+  const { data } = await supabase
+    .from('withdrawal_method_config')
+    .select('*')
+    .eq('is_enabled', true)
+    .order('country_code, account_type, method_name');
+  if (data) {
+    setAllWithdrawalMethods(data as WithdrawalMethod[]);
+    setWithdrawalMethods(data as WithdrawalMethod[]); // Keep for Add Account merging
+  }
+}, []);
+```
+
+**Remove BFF overwrite in fetchData (line 290):**
+```typescript
+// REMOVE: setWithdrawalMethods(methodsData || []);
+// The fetchWithdrawalMethods call will populate both states
+```
+
+---
+
+### 2. SellerWallet.tsx
+
+Apply identical changes:
+- Add `allWithdrawalMethods` state
+- Update `displayMethods` to use `allWithdrawalMethods`
+- Update `fetchWithdrawalMethods` to set both states
+- Keep existing code for Add Account which uses `withdrawalMethods`
+
+---
+
+## Why This Fixes All Issues
+
+| Issue | Solution |
+|-------|----------|
+| Default country not showing | `allWithdrawalMethods` won't be overwritten by BFF |
+| Switching country shows nothing | All countries' methods are in `allWithdrawalMethods` |
+| GLOBAL methods missing | Filter includes `country_code === 'GLOBAL'` already working |
+| Image sizing | Already set to `h-8 w-auto` - no change needed |
+| Seller wallet same issues | Same fixes applied |
+
+---
+
+## Data Flow After Fix
+
+```text
+On Mount:
+  fetchData()        → wallet balance, withdrawals, userCountry
+  fetchWithdrawalMethods() → allWithdrawalMethods (all countries)
+
+Preview Section:
+  displayMethods = allWithdrawalMethods.filter(country OR GLOBAL)
+
+Add Account Section:
+  getAvailableBanks/Wallets → uses withdrawalMethods for logo merging
+```
+
+---
+
+## Expected Behavior
+
+1. **Buyer Dashboard Wallet**: Default country (BD) shows 6 methods immediately
+2. **Switch to India**: Shows 5 IN methods + any GLOBAL methods
+3. **Switch to US**: Shows 8 US methods + any GLOBAL methods
+4. **Seller Dashboard Wallet**: Same behavior based on seller's country
+5. **Image sizing**: Already correct at `h-8 w-auto`
