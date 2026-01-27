@@ -34,14 +34,28 @@ serve(async (req) => {
     // 2. Create service client for trusted queries
     const supabase = createServiceClient();
 
-    // 3. Get user's country from profile
+    // 3. Get user's country from profile with fallback to buyer_payment_accounts
     const { data: profileData } = await supabase
       .from('profiles')
       .select('country')
       .eq('user_id', userId)
       .maybeSingle();
     
-    const userCountry = profileData?.country || 'GLOBAL';
+    let userCountry = profileData?.country;
+
+    // Fallback: check buyer's saved payment accounts for country if profile doesn't have one
+    if (!userCountry) {
+      const { data: accountData } = await supabase
+        .from('buyer_payment_accounts')
+        .select('country')
+        .eq('user_id', userId)
+        .not('country', 'is', null)
+        .limit(1)
+        .maybeSingle();
+      userCountry = accountData?.country;
+    }
+
+    userCountry = userCountry || 'GLOBAL';
 
     // 4. Fetch wallet, withdrawals, and withdrawal config in parallel
     const [walletResult, withdrawalsResult, withdrawalConfigResult] = await Promise.all([
