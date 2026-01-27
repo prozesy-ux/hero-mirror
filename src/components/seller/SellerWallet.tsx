@@ -55,20 +55,20 @@ import {
 } from '@/lib/digital-wallets-config';
 import { LogoWithFallback } from '@/components/ui/logo-with-fallback';
 import { Globe, Search } from 'lucide-react';
+import { getPaymentLogo, COUNTRY_CONFIG } from '@/lib/payment-logos';
 
-interface PaymentMethod {
+interface WithdrawalMethod {
   id: string;
-  name: string;
-  code: string;
-  currency_code: string | null;
-  exchange_rate: number | null;
-  icon_url: string | null;
-  is_automatic: boolean;
-  account_number: string | null;
-  account_name: string | null;
-  withdrawal_enabled: boolean;
+  country_code: string;
+  account_type: 'bank' | 'digital_wallet' | 'crypto';
+  method_code: string | null;
+  method_name: string;
+  is_enabled: boolean;
   min_withdrawal: number;
   max_withdrawal: number;
+  custom_logo_url: string | null;
+  brand_color: string | null;
+  exchange_rate: number;
 }
 
 interface SavedAccount {
@@ -97,13 +97,14 @@ const getCurrencySymbol = (code: string | null): string => {
   }
 };
 
-const formatLocalAmount = (usdAmount: number, method: PaymentMethod | undefined): string => {
-  if (!method || method.currency_code === 'USD' || !method.currency_code) {
+const formatLocalAmount = (usdAmount: number, method: WithdrawalMethod | undefined): string => {
+  if (!method || !method.exchange_rate) {
     return `$${usdAmount}`;
   }
   const rate = method.exchange_rate || 1;
   const localAmount = usdAmount * rate;
-  const symbol = getCurrencySymbol(method.currency_code);
+  const countryConfig = COUNTRY_CONFIG[method.country_code];
+  const symbol = countryConfig?.currencySymbol || '$';
   return `${symbol}${localAmount.toFixed(0)}`;
 };
 
@@ -142,7 +143,7 @@ const getMethodBg = (code: string) => {
 const SellerWallet = () => {
   const { profile, wallet, withdrawals, refreshWallet, refreshWithdrawals, loading } = useSellerContext();
   const { formatAmountOnly, formatAmount } = useCurrency();
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [withdrawalMethods, setWithdrawalMethods] = useState<WithdrawalMethod[]>([]);
   const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
@@ -188,10 +189,10 @@ const SellerWallet = () => {
   };
 
   useEffect(() => {
-    fetchPaymentMethods();
     if (profile?.id) {
       fetchSavedAccounts();
       fetchSellerCountry();
+      fetchWithdrawalMethods();
     }
   }, [profile?.id]);
 
@@ -224,20 +225,34 @@ const SellerWallet = () => {
       })
       .subscribe();
 
+    // Subscribe to withdrawal config changes from admin
+    const configChannel = supabase
+      .channel('withdrawal-config-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'withdrawal_method_config'
+      }, () => {
+        fetchWithdrawalMethods();
+      })
+      .subscribe();
+
     return () => { 
       supabase.removeChannel(channel); 
       supabase.removeChannel(accountsChannel);
+      supabase.removeChannel(configChannel);
     };
   }, [profile?.id, refreshWithdrawals, refreshWallet]);
 
-  const fetchPaymentMethods = async () => {
+  const fetchWithdrawalMethods = async () => {
+    if (!sellerCountry) return;
     const { data } = await supabase
-      .from('payment_methods')
-      .select('id, name, code, currency_code, exchange_rate, icon_url, is_automatic, account_number, account_name, withdrawal_enabled, min_withdrawal, max_withdrawal')
+      .from('withdrawal_method_config')
+      .select('*')
+      .in('country_code', [sellerCountry, 'GLOBAL'])
       .eq('is_enabled', true)
-      .eq('withdrawal_enabled', true)
-      .order('display_order');
-    if (data) setPaymentMethods(data as PaymentMethod[]);
+      .order('account_type, method_name');
+    if (data) setWithdrawalMethods(data as WithdrawalMethod[]);
   };
 
   const fetchSavedAccounts = async () => {
@@ -415,7 +430,7 @@ const SellerWallet = () => {
       return;
     }
 
-    const selectedMethodObj = paymentMethods.find(m => m.code === selectedAccount.payment_method_code);
+    const selectedMethodObj = withdrawalMethods.find(m => m.method_code === selectedAccount.payment_method_code);
     const minWithdrawal = selectedMethodObj?.min_withdrawal || 5;
     const maxWithdrawal = selectedMethodObj?.max_withdrawal || 1000;
 
@@ -726,36 +741,52 @@ const SellerWallet = () => {
             </div>
           )}
 
-          {/* Payment Methods */}
+          {/* Available Withdrawal Methods - from Admin Config */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
             <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
-              <CreditCard className="text-gray-500" size={20} />
+              <CreditCard className="text-violet-500" size={20} />
               Available Withdrawal Methods
+              <Badge variant="outline" className="ml-2 text-xs">
+                {COUNTRY_CONFIG[sellerCountry]?.flag || '🌍'} {COUNTRY_CONFIG[sellerCountry]?.name || sellerCountry}
+              </Badge>
             </h3>
-            {paymentMethods.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No withdrawal methods available. Contact admin.</p>
+            {withdrawalMethods.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No withdrawal methods available for your region. Contact admin.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {paymentMethods.map((method) => (
-                  <div 
-                    key={method.id}
-                    className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
-                  >
-                    {method.icon_url ? (
-                      <img 
-                        src={method.icon_url} 
-                        alt={method.name} 
-                        className="h-8 w-auto mx-auto mb-2 object-contain"
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {withdrawalMethods.map((method) => {
+                  const logoConfig = getPaymentLogo(method.method_code || method.account_type);
+                  const logoUrl = method.custom_logo_url || logoConfig.url;
+                  const brandColor = method.brand_color || logoConfig.color;
+                  
+                  return (
+                    <div 
+                      key={method.id}
+                      className="p-4 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-200 text-center hover:shadow-md hover:border-violet-200 transition-all"
+                    >
+                      <LogoWithFallback
+                        src={logoUrl}
+                        alt={method.method_name}
+                        color={brandColor}
+                        className="h-10 w-10 mx-auto mb-3"
                       />
-                    ) : (
-                      <div className="h-8 w-8 mx-auto mb-2 rounded-lg bg-gray-200 flex items-center justify-center">
-                        <CreditCard size={16} className="text-gray-500" />
-                      </div>
-                    )}
-                    <p className="text-gray-900 font-medium text-sm">{method.name}</p>
-                    <p className="text-gray-500 text-xs">Min: ${method.min_withdrawal}</p>
-                  </div>
-                ))}
+                      <p className="text-gray-900 font-semibold text-sm">
+                        {method.method_name}
+                      </p>
+                      <p className="text-gray-500 text-xs mt-1">
+                        Min: ${method.min_withdrawal}
+                      </p>
+                      <Badge 
+                        variant="secondary" 
+                        className="mt-2 text-[10px]"
+                        style={{ backgroundColor: `${brandColor}15`, color: brandColor }}
+                      >
+                        {method.account_type === 'bank' ? 'Bank' : 
+                         method.account_type === 'digital_wallet' ? 'Wallet' : 'Crypto'}
+                      </Badge>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -933,7 +964,6 @@ const SellerWallet = () => {
               <Label className="text-gray-500 text-sm mb-3 block">Select Account</Label>
               <div className="grid gap-3 max-h-60 overflow-y-auto">
                 {savedAccounts.map(account => {
-                  const method = paymentMethods.find(m => m.code === account.payment_method_code);
                   const walletInfo = getWalletByCode(account.payment_method_code);
                   return (
                     <button
@@ -949,15 +979,15 @@ const SellerWallet = () => {
                         <div className="flex items-center gap-3">
                           {walletInfo?.logo ? (
                             <img src={walletInfo.logo} className="w-8 h-8 object-contain" alt={walletInfo.label} />
-                          ) : method?.icon_url ? (
-                            <img src={method.icon_url} className="w-8 h-8 object-contain" alt={method.name} />
                           ) : (
-                            <CreditCard size={20} className="text-gray-400" />
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                              <CreditCard size={16} className="text-gray-400" />
+                            </div>
                           )}
                           <div>
                             <p className="font-medium text-gray-900">{account.account_name}</p>
                             <p className="text-sm text-gray-500">
-                              {walletInfo?.label || method?.name || account.payment_method_code} - {maskAccountNumber(account.account_number)}
+                              {walletInfo?.label || account.payment_method_code} - {maskAccountNumber(account.account_number)}
                             </p>
                           </div>
                         </div>

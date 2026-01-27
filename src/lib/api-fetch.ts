@@ -172,6 +172,8 @@ export const bffApi = {
     products: any[];
     orders: any[];
     withdrawals: any[];
+    withdrawalMethods: any[];
+    sellerCountry: string;
     _meta: { fetchedAt: string; userId: string; sellerId: string };
   }>('bff-seller-dashboard'),
 
@@ -179,7 +181,8 @@ export const bffApi = {
   getBuyerWallet: () => apiFetch<{
     wallet: { balance: number };
     withdrawals: any[];
-    paymentMethods: any[];
+    withdrawalMethods: any[];
+    userCountry: string;
     _meta: { fetchedAt: string; userId: string };
   }>('bff-buyer-wallet'),
 
