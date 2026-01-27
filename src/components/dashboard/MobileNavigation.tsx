@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Sparkles, ShoppingBag, Wallet, MessageSquare, User, Bell, Menu, ShoppingCart, Heart, BarChart3, ExternalLink, LayoutDashboard, FileText } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Sparkles, ShoppingBag, Wallet, MessageSquare, Bell, Menu, ShoppingCart, Heart, BarChart3, ExternalLink, LayoutDashboard, FileText, User } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -28,6 +28,7 @@ interface Notification {
 
 const MobileNavigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuthContext();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -197,8 +198,20 @@ const MobileNavigation = () => {
                 })}
               </nav>
               
-              {/* Ads Agency Card */}
-              <div className="p-3 mt-auto absolute bottom-0 left-0 right-0">
+              {/* Bottom Section: Become a Seller + Ads Agency */}
+              <div className="p-3 mt-auto absolute bottom-0 left-0 right-0 space-y-3">
+                {/* Become a Seller Button - Text only, Fiverr/Upwork style */}
+                <button
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    navigate('/seller');
+                  }}
+                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm tracking-wide rounded-xl transition-all shadow-lg shadow-emerald-500/25"
+                >
+                  Become a Seller
+                </button>
+                
+                {/* Ads Agency Card */}
                 <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
                   {/* Logos Row */}
                   <div className="flex items-center justify-center gap-4 mb-3">

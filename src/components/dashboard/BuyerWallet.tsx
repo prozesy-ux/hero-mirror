@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { 
   Wallet, 
   ArrowDownCircle, 
@@ -23,7 +23,10 @@ import {
   History,
   ShieldCheck,
   DollarSign,
-  ChevronLeft
+  ChevronLeft,
+  Calendar,
+  Filter,
+  SlidersHorizontal
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -34,6 +37,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { 
   ACCOUNT_TYPES, 
   getDigitalWalletsForCountry, 
@@ -88,6 +93,8 @@ interface SavedAccount {
 }
 
 type WalletTab = 'wallet' | 'withdrawals' | 'accounts';
+type WithdrawalStatus = 'all' | 'pending' | 'approved' | 'completed' | 'rejected';
+type DatePreset = 'all' | 'today' | 'week' | 'month' | 'custom';
 
 const maskAccountNumber = (accountNumber: string): string => {
   if (accountNumber.length <= 4) return accountNumber;
@@ -134,6 +141,12 @@ const BuyerWallet = () => {
   const [activeTab, setActiveTab] = useState<WalletTab>('wallet');
   const [userCountry, setUserCountry] = useState<string>('BD');
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
+
+  // Withdrawal filters
+  const [withdrawalStatusFilter, setWithdrawalStatusFilter] = useState<WithdrawalStatus>('all');
+  const [withdrawalDatePreset, setWithdrawalDatePreset] = useState<DatePreset>('all');
+  const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Withdraw dialog state
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
@@ -533,6 +546,41 @@ const BuyerWallet = () => {
     }
   };
 
+  // Filter withdrawals
+  const filteredWithdrawals = useMemo(() => {
+    return withdrawals.filter(withdrawal => {
+      // Status filter
+      if (withdrawalStatusFilter !== 'all' && withdrawal.status !== withdrawalStatusFilter) {
+        return false;
+      }
+      
+      // Date filter
+      if (withdrawalDatePreset !== 'all' && withdrawal.created_at) {
+        const withdrawalDate = new Date(withdrawal.created_at);
+        const today = new Date();
+        
+        switch (withdrawalDatePreset) {
+          case 'today':
+            if (!isWithinInterval(withdrawalDate, { start: startOfDay(today), end: endOfDay(today) })) return false;
+            break;
+          case 'week':
+            if (!isWithinInterval(withdrawalDate, { start: startOfDay(subDays(today, 7)), end: endOfDay(today) })) return false;
+            break;
+          case 'month':
+            if (!isWithinInterval(withdrawalDate, { start: startOfDay(subDays(today, 30)), end: endOfDay(today) })) return false;
+            break;
+          case 'custom':
+            if (customDateRange.from && customDateRange.to) {
+              if (!isWithinInterval(withdrawalDate, { start: startOfDay(customDateRange.from), end: endOfDay(customDateRange.to) })) return false;
+            }
+            break;
+        }
+      }
+      
+      return true;
+    });
+  }, [withdrawals, withdrawalStatusFilter, withdrawalDatePreset, customDateRange]);
+
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'pending':
@@ -771,16 +819,146 @@ const BuyerWallet = () => {
       {/* Withdrawals Tab */}
       {activeTab === 'withdrawals' && (
         <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
-          <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
-            <History className="text-gray-500" size={20} />
-            Withdrawal History
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h3 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+              <History className="text-gray-500" size={20} />
+              Withdrawal History
+              {filteredWithdrawals.length !== withdrawals.length && (
+                <Badge variant="secondary" className="ml-2">
+                  {filteredWithdrawals.length} of {withdrawals.length}
+                </Badge>
+              )}
+            </h3>
+            
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Date Filter */}
+              <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Calendar size={14} />
+                    {withdrawalDatePreset === 'all' ? 'All Time' : 
+                     withdrawalDatePreset === 'today' ? 'Today' :
+                     withdrawalDatePreset === 'week' ? 'This Week' :
+                     withdrawalDatePreset === 'month' ? 'This Month' :
+                     customDateRange.from && customDateRange.to ? 
+                       `${format(customDateRange.from, 'MMM d')} - ${format(customDateRange.to, 'MMM d')}` : 'Custom'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <div className="p-2 border-b border-gray-100">
+                    <div className="grid grid-cols-2 gap-1">
+                      {(['all', 'today', 'week', 'month'] as DatePreset[]).map((preset) => (
+                        <button
+                          key={preset}
+                          onClick={() => {
+                            setWithdrawalDatePreset(preset);
+                            if (preset !== 'custom') setShowDatePicker(false);
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                            withdrawalDatePreset === preset
+                              ? 'bg-violet-100 text-violet-700'
+                              : 'hover:bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {preset === 'all' ? 'All Time' : 
+                           preset === 'today' ? 'Today' :
+                           preset === 'week' ? 'This Week' : 'This Month'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="p-2 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Custom Range</p>
+                    <CalendarComponent
+                      mode="range"
+                      selected={{ from: customDateRange.from, to: customDateRange.to }}
+                      onSelect={(range) => {
+                        setCustomDateRange({ from: range?.from, to: range?.to });
+                        if (range?.from && range?.to) {
+                          setWithdrawalDatePreset('custom');
+                          setShowDatePicker(false);
+                        }
+                      }}
+                      numberOfMonths={1}
+                      className="rounded-lg"
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              {/* Status Filter */}
+              <Select value={withdrawalStatusFilter} onValueChange={(v) => setWithdrawalStatusFilter(v as WithdrawalStatus)}>
+                <SelectTrigger className="w-[130px] h-9">
+                  <Filter size={14} className="mr-1.5" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Clear Filters */}
+              {(withdrawalStatusFilter !== 'all' || withdrawalDatePreset !== 'all') && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setWithdrawalStatusFilter('all');
+                    setWithdrawalDatePreset('all');
+                    setCustomDateRange({ from: undefined, to: undefined });
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
           
-          {withdrawals.length === 0 ? (
-            <p className="text-gray-500 text-center py-12">No withdrawals yet</p>
+          {/* Status Pills */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {(['all', 'pending', 'approved', 'completed', 'rejected'] as WithdrawalStatus[]).map((status) => {
+              const count = status === 'all' ? withdrawals.length : withdrawals.filter(w => w.status === status).length;
+              return (
+                <button
+                  key={status}
+                  onClick={() => setWithdrawalStatusFilter(status)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    withdrawalStatusFilter === status
+                      ? status === 'pending' ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-200' :
+                        status === 'approved' ? 'bg-violet-100 text-violet-700 ring-2 ring-violet-200' :
+                        status === 'completed' ? 'bg-emerald-100 text-emerald-700 ring-2 ring-emerald-200' :
+                        status === 'rejected' ? 'bg-red-100 text-red-700 ring-2 ring-red-200' :
+                        'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)} {count > 0 && `(${count})`}
+                </button>
+              );
+            })}
+          </div>
+          
+          {filteredWithdrawals.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
+                <History className="text-gray-400" size={24} />
+              </div>
+              <p className="text-gray-500 font-medium">No withdrawals found</p>
+              <p className="text-gray-400 text-sm mt-1">
+                {withdrawalStatusFilter !== 'all' || withdrawalDatePreset !== 'all' 
+                  ? 'Try adjusting your filters' 
+                  : 'Make your first withdrawal'}
+              </p>
+            </div>
           ) : (
             <div className="space-y-3">
-              {withdrawals.map((withdrawal) => {
+              {filteredWithdrawals.map((withdrawal) => {
                 const statusConfig = getStatusConfig(withdrawal.status);
                 const walletInfo = getWalletByCode(withdrawal.payment_method);
                 return (

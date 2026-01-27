@@ -663,7 +663,7 @@ const ChatSection = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] bg-background rounded-xl border border-border overflow-hidden">
+    <div className="flex h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] bg-background rounded-2xl border border-border/50 overflow-hidden shadow-xl">
       {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
@@ -689,63 +689,72 @@ const ChatSection = () => {
         onChange={handleFileSelect}
       />
 
-      {/* Conversations List Panel */}
+      {/* Conversations List Panel - Modern Design */}
       <div className={cn(
-        "w-full lg:w-80 border-r border-border flex flex-col bg-card",
+        "w-full lg:w-80 border-r border-border/50 flex flex-col bg-gradient-to-b from-card to-card/95",
         showChatOnMobile && "hidden lg:flex"
       )}>
-        {/* Header */}
-        <div className="p-4 border-b border-border">
-          <h2 className="text-lg font-semibold mb-3">Messages</h2>
+        {/* Header with gradient */}
+        <div className="p-4 border-b border-border/50 bg-gradient-to-r from-violet-50/50 to-purple-50/50 dark:from-violet-950/20 dark:to-purple-950/20">
+          <h2 className="text-xl font-bold tracking-tight mb-3 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Messages</h2>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search conversations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-white/80 dark:bg-gray-900/80 border-0 shadow-sm focus-visible:ring-violet-500/30"
             />
           </div>
         </div>
         
         {/* Conversations List */}
         <div className="flex-1 overflow-y-auto">
-          {filteredConversations.map((conv) => (
+          {filteredConversations.map((conv, index) => (
             <button
               key={conv.id}
               onClick={() => handleConversationSelect(conv)}
               className={cn(
-                "w-full p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors text-left border-b border-border/50",
-                selectedConversation?.id === conv.id && "bg-muted"
+                "w-full p-4 flex items-start gap-3 transition-all duration-200 text-left border-b border-border/30 group",
+                "hover:bg-gradient-to-r hover:from-violet-50/50 hover:to-transparent dark:hover:from-violet-950/20",
+                selectedConversation?.id === conv.id && "bg-gradient-to-r from-violet-100/80 to-purple-50/50 dark:from-violet-950/40 dark:to-purple-950/20",
+                index === 0 && "animate-fade-up"
               )}
+              style={{ animationDelay: `${index * 50}ms` }}
             >
-              {/* Avatar */}
-              <div className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0",
-                conv.type === 'support' 
-                  ? "bg-violet-100 dark:bg-violet-900/30" 
-                  : "bg-emerald-100 dark:bg-emerald-900/30"
-              )}>
-                {conv.type === 'support' ? (
-                  <Headphones className="w-6 h-6 text-violet-600 dark:text-violet-400" />
-                ) : conv.avatar ? (
-                  <Avatar className="w-12 h-12">
-                    <AvatarImage src={conv.avatar} alt={conv.name} />
-                    <AvatarFallback className="bg-emerald-100 text-emerald-700">
-                      <Store className="w-5 h-5" />
-                    </AvatarFallback>
-                  </Avatar>
-                ) : (
-                  <Store className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              {/* Avatar with online indicator */}
+              <div className="relative">
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-md transition-transform group-hover:scale-105",
+                  conv.type === 'support' 
+                    ? "bg-gradient-to-br from-violet-500 to-purple-600" 
+                    : "bg-gradient-to-br from-emerald-500 to-teal-600"
+                )}>
+                  {conv.type === 'support' ? (
+                    <Headphones className="w-6 h-6 text-white" />
+                  ) : conv.avatar ? (
+                    <Avatar className="w-12 h-12">
+                      <AvatarImage src={conv.avatar} alt={conv.name} className="object-cover" />
+                      <AvatarFallback className="bg-emerald-100 text-emerald-700">
+                        <Store className="w-5 h-5" />
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <Store className="w-6 h-6 text-white" />
+                  )}
+                </div>
+                {/* Online indicator */}
+                {conv.type === 'support' && (
+                  <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-gray-900 rounded-full" />
                 )}
               </div>
               
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium truncate">{conv.name}</span>
+                  <span className="font-semibold truncate text-foreground">{conv.name}</span>
                   {conv.lastMessageTime && (
-                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                    <span className="text-[10px] text-muted-foreground flex-shrink-0 font-medium">
                       {format(new Date(conv.lastMessageTime), 'MMM d')}
                     </span>
                   )}
@@ -758,10 +767,10 @@ const ChatSection = () => {
                     <Badge 
                       variant="default"
                       className={cn(
-                        "flex-shrink-0 h-5 min-w-[20px] flex items-center justify-center text-xs",
+                        "flex-shrink-0 h-5 min-w-[20px] flex items-center justify-center text-[10px] font-bold shadow-lg animate-pulse",
                         conv.type === 'support' 
-                          ? "bg-violet-500 hover:bg-violet-500" 
-                          : "bg-emerald-500 hover:bg-emerald-500"
+                          ? "bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700" 
+                          : "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
                       )}
                     >
                       {conv.unreadCount}
@@ -774,8 +783,11 @@ const ChatSection = () => {
           
           {filteredConversations.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
-              <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No conversations found</p>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
+                <MessageCircle className="w-8 h-8 opacity-50" />
+              </div>
+              <p className="font-medium">No conversations found</p>
+              <p className="text-sm mt-1">Start a new conversation</p>
             </div>
           )}
         </div>
@@ -852,56 +864,79 @@ const ChatSection = () => {
               )}
             </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Messages Area - Modern Design */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-950/50 dark:to-gray-900">
               {currentMessages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                  <MessageCircle className="w-16 h-16 mb-4 opacity-30" />
-                  <p className="text-lg">No messages yet</p>
-                  <p className="text-sm">Start the conversation!</p>
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 flex items-center justify-center mb-4">
+                    <MessageCircle className="w-10 h-10 text-violet-500 opacity-60" />
+                  </div>
+                  <p className="text-lg font-semibold">No messages yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">Start the conversation!</p>
                 </div>
               ) : (
                 selectedConversation.type === 'support' ? (
-                  // Support messages
-                  supportMessages.map((msg) => {
+                  // Support messages with modern bubbles
+                  supportMessages.map((msg, index) => {
                     const isUser = msg.sender_type === 'user';
                     const messageAttachments = attachments.get(msg.id) || [];
-                    
-                    // Sender label for support chat
                     const senderLabel = isUser ? 'You' : '🛡️ Uptoza Support';
+                    const showTimeDivider = index === 0 || (
+                      msg.created_at && supportMessages[index - 1]?.created_at &&
+                      format(new Date(msg.created_at), 'MMM d') !== format(new Date(supportMessages[index - 1].created_at!), 'MMM d')
+                    );
                     
                     return (
-                      <div key={msg.id} className={cn("flex", isUser ? "justify-end" : "justify-start")}>
-                        <div className="max-w-[80%]">
-                          {/* Sender Label */}
-                          <p className={cn(
-                            "text-[10px] text-muted-foreground mb-1 px-2",
-                            isUser ? "text-right" : "text-left"
-                          )}>
-                            {senderLabel}
-                          </p>
-                          <div className={cn(
-                            "rounded-2xl px-4 py-2.5",
-                            isUser 
-                              ? "bg-violet-500 text-white rounded-br-md" 
-                              : "bg-muted rounded-bl-md"
-                          )}>
-                            <p className="whitespace-pre-wrap break-words">{msg.message}</p>
-                            
-                            {messageAttachments.length > 0 && (
-                              <div className="mt-2 space-y-2">
-                                {messageAttachments.map(att => (
-                                  <div key={att.id}>{renderAttachment(att)}</div>
-                                ))}
-                              </div>
-                            )}
-                            
+                      <div key={msg.id}>
+                        {/* Date divider */}
+                        {showTimeDivider && msg.created_at && (
+                          <div className="flex items-center justify-center my-4">
+                            <span className="px-3 py-1 bg-muted/80 rounded-full text-xs text-muted-foreground font-medium">
+                              {format(new Date(msg.created_at), 'MMMM d, yyyy')}
+                            </span>
+                          </div>
+                        )}
+                        <div className={cn("flex animate-fade-up", isUser ? "justify-end" : "justify-start")} style={{ animationDelay: `${index * 20}ms` }}>
+                          <div className="max-w-[80%]">
+                            {/* Sender Label */}
                             <p className={cn(
-                              "text-[10px] mt-1",
-                              isUser ? "text-violet-200" : "text-muted-foreground"
+                              "text-[10px] text-muted-foreground mb-1.5 px-2 font-medium",
+                              isUser ? "text-right" : "text-left"
                             )}>
-                              {msg.created_at && format(new Date(msg.created_at), 'h:mm a')}
+                              {senderLabel}
                             </p>
+                            <div className={cn(
+                              "rounded-2xl px-4 py-3 shadow-sm",
+                              isUser 
+                                ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white rounded-br-md" 
+                                : "bg-white dark:bg-gray-800 rounded-bl-md border border-border/50"
+                            )}>
+                              <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.message}</p>
+                              
+                              {messageAttachments.length > 0 && (
+                                <div className="mt-3 space-y-2">
+                                  {messageAttachments.map(att => (
+                                    <div key={att.id}>{renderAttachment(att)}</div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              <div className={cn(
+                                "flex items-center gap-1.5 mt-2",
+                                isUser ? "justify-end" : "justify-start"
+                              )}>
+                                <p className={cn(
+                                  "text-[10px]",
+                                  isUser ? "text-violet-200" : "text-muted-foreground"
+                                )}>
+                                  {msg.created_at && format(new Date(msg.created_at), 'h:mm a')}
+                                </p>
+                                {/* Read receipt for user messages */}
+                                {isUser && msg.is_read && (
+                                  <span className="text-violet-200 text-[10px]">✓✓</span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
