@@ -13,6 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { format, isToday, isYesterday, isThisWeek, isThisMonth, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
+import { sendEmail } from '@/lib/email-sender';
 import { 
   Package, 
   Loader2, 
@@ -189,6 +190,25 @@ const SellerOrders = () => {
         sender_type: 'system',
         product_id: order.product_id
       });
+
+      // Send order delivered email to buyer (background, non-blocking)
+      const { data: buyerProfile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('user_id', order.buyer_id)
+        .single();
+      
+      if (buyerProfile?.email) {
+        sendEmail({
+          templateId: 'order_delivered',
+          to: buyerProfile.email,
+          variables: {
+            user_name: buyerProfile.email.split('@')[0],
+            order_id: order.id.slice(0, 8).toUpperCase(),
+            product_name: order.product?.name || 'Product',
+          }
+        }).catch(err => console.error('Delivery email error:', err));
+      }
 
       toast.success('Order delivered! Awaiting buyer approval.');
       setSelectedOrder(null);

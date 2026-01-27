@@ -10,6 +10,7 @@ import MarketplaceSidebar from './MarketplaceSidebar';
 import { useFloatingChat } from '@/contexts/FloatingChatContext';
 import { SearchSuggestions } from '@/components/marketplace/SearchSuggestions';
 import { useSearchSuggestions, SearchSuggestion } from '@/hooks/useSearchSuggestions';
+import { sendEmail } from '@/lib/email-sender';
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -629,6 +630,44 @@ const AIAccountsSection = () => {
         is_read: false
       });
 
+      // 7. Send order confirmation email to buyer (background, non-blocking)
+      sendEmail({
+        templateId: 'order_placed',
+        to: user.email || '',
+        variables: {
+          user_name: user.email?.split('@')[0] || 'Customer',
+          order_id: product.id.slice(0, 8).toUpperCase(),
+          product_name: product.name,
+          amount: product.price.toString(),
+          order_date: new Date().toLocaleDateString(),
+        }
+      }).catch(err => console.error('Order email error:', err));
+
+      // 8. Send new order notification email to seller (background, non-blocking)
+      const { data: sellerProfile } = await supabase
+        .from('seller_profiles')
+        .select('user_id')
+        .eq('id', product.seller_id)
+        .single();
+      
+      if (sellerProfile?.user_id) {
+        const { data: sellerAuth } = await supabase.auth.admin.getUserById(sellerProfile.user_id).catch(() => ({ data: null }));
+        const sellerEmail = sellerAuth?.user?.email;
+        if (sellerEmail) {
+          sendEmail({
+            templateId: 'seller_new_order',
+            to: sellerEmail,
+            variables: {
+              seller_name: product.seller_profiles?.store_name || 'Seller',
+              order_id: product.id.slice(0, 8).toUpperCase(),
+              product_name: product.name,
+              buyer_name: user.email?.split('@')[0] || 'Buyer',
+              amount: product.price.toString(),
+            }
+          }).catch(err => console.error('Seller order email error:', err));
+        }
+      }
+
       // Close email modal if open
       setEmailRequiredModal({
         show: false,
@@ -802,6 +841,26 @@ const AIAccountsSection = () => {
         sender_type: 'system',
         product_id: order.product_id
       });
+
+      // Send payment released email to seller (background, non-blocking)
+      if (order.seller_profiles?.user_id) {
+        const { data: sellerAuth } = await supabase.auth.admin.getUserById(order.seller_profiles.user_id).catch(() => ({ data: null }));
+        const sellerEmail = sellerAuth?.user?.email;
+        if (sellerEmail) {
+          sendEmail({
+            templateId: 'order_approved',
+            to: sellerEmail,
+            variables: {
+              seller_name: order.seller_profiles?.store_name || 'Seller',
+              order_id: order.id.slice(0, 8).toUpperCase(),
+              product_name: order.seller_products?.name || 'Product',
+              buyer_name: user.email?.split('@')[0] || 'Buyer',
+              amount: Number(order.seller_earning).toFixed(2),
+            }
+          }).catch(err => console.error('Approval email error:', err));
+        }
+      }
+
       toast.success('Delivery approved! Thank you for your purchase.');
       fetchSellerOrders();
     } catch (error: any) {
