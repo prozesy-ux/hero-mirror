@@ -148,6 +148,7 @@ const BuyerWallet = () => {
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<WalletTab>('wallet');
   const [userCountry, setUserCountry] = useState<string>('BD');
+  const [previewCountry, setPreviewCountry] = useState<string>('BD');
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
 
   // Withdrawal filters
@@ -185,6 +186,24 @@ const BuyerWallet = () => {
   // Delete confirmation state
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   const [deleting, setDeleting] = useState(false);
+
+  // Derived state for country preview
+  const availableCountries = useMemo(() => {
+    const countries = [...new Set(withdrawalMethods.map(m => m.country_code))];
+    return countries.filter(c => c); // Filter out empty/null values
+  }, [withdrawalMethods]);
+
+  const displayMethods = useMemo(() => {
+    if (!previewCountry) return withdrawalMethods;
+    return withdrawalMethods.filter(m => m.country_code === previewCountry);
+  }, [withdrawalMethods, previewCountry]);
+
+  // Sync previewCountry with userCountry on load
+  useEffect(() => {
+    if (userCountry && previewCountry === 'BD' && userCountry !== 'BD') {
+      setPreviewCountry(userCountry);
+    }
+  }, [userCountry]);
 
   const quickAmounts = [5, 10, 25, 50, 100];
 
@@ -725,21 +744,35 @@ const BuyerWallet = () => {
 
           {/* Available Withdrawal Methods - from Admin Config */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
-            <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
-              <CreditCard className="text-violet-500" size={20} />
-              Available Withdrawal Methods
-              <Badge variant="outline" className="ml-2 text-xs">
-                {COUNTRY_CONFIG[userCountry]?.flag || '🌍'} {COUNTRY_CONFIG[userCountry]?.name || userCountry}
-              </Badge>
-            </h3>
-            {withdrawalMethods.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No withdrawal methods available for your region. Contact admin.</p>
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <h3 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                <CreditCard className="text-violet-500" size={20} />
+                Available Withdrawal Methods
+              </h3>
+              <Select value={previewCountry} onValueChange={setPreviewCountry}>
+                <SelectTrigger className="w-[180px] h-9 text-sm">
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent className="bg-white z-50">
+                  <SelectItem value={userCountry}>
+                    {COUNTRY_CONFIG[userCountry]?.flag || '🌍'} {COUNTRY_CONFIG[userCountry]?.name || userCountry} (Your Country)
+                  </SelectItem>
+                  {availableCountries.filter(c => c !== userCountry).map(code => (
+                    <SelectItem key={code} value={code}>
+                      {COUNTRY_CONFIG[code]?.flag || '🌍'} {COUNTRY_CONFIG[code]?.name || code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {displayMethods.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No withdrawal methods available for this region.</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {withdrawalMethods.map((method) => {
+                {displayMethods.map((method) => {
                   const logoConfig = getPaymentLogo(method.method_code || method.account_type);
                   const logoUrl = method.custom_logo_url || logoConfig.url;
-                  const brandColor = method.brand_color || logoConfig.color;
+                  const brandColor = method.brand_color || logoConfig.color || '#6366f1';
                   
                   return (
                     <div 
@@ -754,9 +787,6 @@ const BuyerWallet = () => {
                       />
                       <p className="text-gray-900 font-semibold text-sm">
                         {method.method_name}
-                      </p>
-                      <p className="text-gray-500 text-xs mt-1">
-                        Min: ${method.min_withdrawal}
                       </p>
                       <Badge 
                         variant="secondary" 
