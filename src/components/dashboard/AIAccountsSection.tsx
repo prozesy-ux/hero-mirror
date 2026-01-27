@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { ShoppingCart, Loader2, Search, TrendingUp, Check, Eye, Users, Package, BarChart3, Clock, CheckCircle, Copy, EyeOff, Wallet, AlertTriangle, X, MessageCircle, Send, Star, ChevronRight, ExternalLink, ArrowRight, Filter, Store, Truck, ThumbsUp, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import MarketplaceSidebar from './MarketplaceSidebar';
 import { useFloatingChat } from '@/contexts/FloatingChatContext';
+import { SearchSuggestions } from '@/components/marketplace/SearchSuggestions';
+import { useSearchSuggestions, SearchSuggestion } from '@/hooks/useSearchSuggestions';
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -202,6 +204,68 @@ const AIAccountsSection = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Search suggestions hook
+  const {
+    suggestions,
+    isLoading: suggestionsLoading,
+    isOpen: suggestionsOpen,
+    open: openSuggestions,
+    close: closeSuggestions,
+    logSearch,
+    clearRecentSearches,
+    setQuery: setSuggestionsQuery,
+  } = useSearchSuggestions();
+
+  // Handle search suggestion selection
+  const handleSuggestionSelect = useCallback((suggestion: SearchSuggestion) => {
+    closeSuggestions();
+    
+    switch (suggestion.type) {
+      case 'recent':
+      case 'trending':
+        setSearchQuery(suggestion.text);
+        logSearch(suggestion.text, categoryFilter);
+        break;
+      case 'product':
+        // Find and open the product
+        const aiAccount = accounts.find(a => a.id === suggestion.id);
+        const sellerProduct = sellerProducts.find(p => p.id === suggestion.id);
+        
+        if (aiAccount) {
+          setSelectedAccount(aiAccount);
+          setShowDetailsModal(true);
+        } else if (sellerProduct) {
+          setSelectedSellerProduct(sellerProduct);
+          setShowSellerDetailsModal(true);
+        } else {
+          // Fallback to search
+          setSearchQuery(suggestion.text);
+        }
+        break;
+      case 'category':
+        setCategoryFilter(suggestion.id);
+        setSearchQuery('');
+        break;
+      case 'tag':
+        const tag = suggestion.text.replace('#', '');
+        if (!selectedTags.includes(tag)) {
+          setSelectedTags(prev => [...prev, tag]);
+        }
+        setSearchQuery('');
+        break;
+      case 'seller':
+        // Navigate to seller store
+        navigate(`/store/${suggestion.id}`);
+        break;
+    }
+  }, [accounts, sellerProducts, categoryFilter, selectedTags, logSearch, closeSuggestions, navigate]);
+
+  // Sync search query with suggestions hook
+  useEffect(() => {
+    setSuggestionsQuery(searchQuery);
+  }, [searchQuery, setSuggestionsQuery]);
 
   // Pending purchase state (for post-auth flow from store)
   const [pendingPurchaseData, setPendingPurchaseData] = useState<PendingPurchase | null>(null);
@@ -973,11 +1037,18 @@ const AIAccountsSection = () => {
         <div className="lg:hidden sticky top-0 z-10 bg-white/95 backdrop-blur-md pb-3 pt-3 -mx-3 px-3 border-b border-gray-100 mb-4">
           <div className="grid grid-cols-[1fr,auto] gap-2">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
               <input 
                 type="text" 
                 value={searchQuery} 
                 onChange={e => setSearchQuery(e.target.value)} 
+                onFocus={openSuggestions}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.length >= 2) {
+                    logSearch(searchQuery, categoryFilter);
+                    closeSuggestions();
+                  }
+                }}
                 placeholder="Search..." 
                 className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-8 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-300 transition-all shadow-sm" 
               />
@@ -987,12 +1058,25 @@ const AIAccountsSection = () => {
                     setSearchQuery('');
                     setSelectedTags([]);
                     setCategoryFilter('all');
+                    closeSuggestions();
                   }} 
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-md transition-colors"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-md transition-colors z-10"
                 >
                   <X size={14} className="text-gray-400" />
                 </button>
               )}
+              
+              {/* Mobile Search Suggestions */}
+              <SearchSuggestions
+                query={searchQuery}
+                suggestions={suggestions}
+                isLoading={suggestionsLoading}
+                isOpen={suggestionsOpen}
+                onClose={closeSuggestions}
+                onSelect={handleSuggestionSelect}
+                onClearRecent={clearRecentSearches}
+                className="left-0 right-0"
+              />
             </div>
             {/* Filter Button - Mobile only */}
             <MarketplaceSidebar 
@@ -1027,11 +1111,19 @@ const AIAccountsSection = () => {
             {/* Desktop Search Bar - Full width inside content area */}
             <div className="hidden lg:block mb-6">
               <div className="relative w-full">
-                <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
                 <input 
+                  ref={searchInputRef}
                   type="text" 
                   value={searchQuery} 
                   onChange={e => setSearchQuery(e.target.value)} 
+                  onFocus={openSuggestions}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchQuery.length >= 2) {
+                      logSearch(searchQuery, categoryFilter);
+                      closeSuggestions();
+                    }
+                  }}
                   placeholder="Search products, categories, tags..." 
                   className="w-full pl-12 pr-12 py-3.5 bg-white border border-gray-200 rounded-2xl text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-300 transition-all shadow-sm" 
                 />
@@ -1041,12 +1133,24 @@ const AIAccountsSection = () => {
                       setSearchQuery('');
                       setSelectedTags([]);
                       setCategoryFilter('all');
+                      closeSuggestions();
                     }} 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded-lg transition-colors z-10"
                   >
                     <X size={18} className="text-gray-400" />
                   </button>
                 )}
+                
+                {/* Search Suggestions Dropdown */}
+                <SearchSuggestions
+                  query={searchQuery}
+                  suggestions={suggestions}
+                  isLoading={suggestionsLoading}
+                  isOpen={suggestionsOpen}
+                  onClose={closeSuggestions}
+                  onSelect={handleSuggestionSelect}
+                  onClearRecent={clearRecentSearches}
+                />
               </div>
             </div>
 
