@@ -40,7 +40,8 @@ serve(async (req) => {
       profileResult,
       purchasesResult,
       sellerOrdersResult,
-      favoritesResult
+      favoritesResult,
+      wishlistResult
     ] = await Promise.all([
       // Wallet
       supabase
@@ -67,22 +68,27 @@ serve(async (req) => {
         .order('purchased_at', { ascending: false })
         .limit(50),
       
-      // Seller product orders
+      // Seller product orders - fetch all for accurate stats
       supabase
         .from('seller_orders')
         .select(`
           *,
-          product:seller_products(name, icon_url, seller_id),
-          seller:seller_profiles!seller_orders_seller_id_fkey(store_name, store_logo_url)
+          product:seller_products(id, name, icon_url, description),
+          seller:seller_profiles!seller_orders_seller_id_fkey(id, store_name, store_logo_url)
         `)
         .eq('buyer_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(50),
+        .order('created_at', { ascending: false }),
       
-      // Favorites
+      // Favorites (prompts)
       supabase
         .from('favorites')
         .select('prompt_id')
+        .eq('user_id', userId),
+
+      // Wishlist count
+      supabase
+        .from('buyer_wishlist')
+        .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
     ]);
 
@@ -97,13 +103,26 @@ serve(async (req) => {
       wallet = newWallet;
     }
 
+    // Calculate order stats from all orders
+    const allOrders = sellerOrdersResult.data || [];
+    const orderStats = {
+      total: allOrders.length,
+      pending: allOrders.filter((o: any) => o.status === 'pending').length,
+      delivered: allOrders.filter((o: any) => o.status === 'delivered').length,
+      completed: allOrders.filter((o: any) => o.status === 'completed').length,
+      cancelled: allOrders.filter((o: any) => o.status === 'cancelled').length,
+      totalSpent: allOrders.reduce((sum: number, o: any) => sum + (o.amount || 0), 0)
+    };
+
     // 4. Return clean response
     return successResponse({
       profile: profileResult.data || null,
       wallet: wallet || { balance: 0 },
       purchases: purchasesResult.data || [],
-      sellerOrders: sellerOrdersResult.data || [],
-      favorites: (favoritesResult.data || []).map(f => f.prompt_id),
+      sellerOrders: allOrders,
+      favorites: (favoritesResult.data || []).map((f: any) => f.prompt_id),
+      wishlistCount: wishlistResult.count || 0,
+      orderStats,
       _meta: {
         fetchedAt: new Date().toISOString(),
         userId

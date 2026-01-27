@@ -216,6 +216,15 @@ export const bffApi = {
     purchases: any[];
     sellerOrders: any[];
     favorites: string[];
+    wishlistCount: number;
+    orderStats: {
+      total: number;
+      pending: number;
+      delivered: number;
+      completed: number;
+      cancelled: number;
+      totalSpent: number;
+    };
     _meta: { fetchedAt: string; userId: string };
   }>('bff-buyer-dashboard'),
 };
