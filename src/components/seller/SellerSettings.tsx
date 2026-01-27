@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
-import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -10,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,11 +19,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +37,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   Store, 
-  Save, 
   Upload, 
   Loader2, 
   CheckCircle, 
@@ -64,9 +60,14 @@ import {
   Video,
   AlertTriangle,
   Bell,
-  BellRing
+  BellRing,
+  ChevronLeft
 } from 'lucide-react';
 import VideoUploader from './VideoUploader';
+import ProfileHeader from '@/components/profile/ProfileHeader';
+import MenuListItem from '@/components/profile/MenuListItem';
+import SectionHeader from '@/components/profile/SectionHeader';
+import StatusToggleCard from '@/components/profile/StatusToggleCard';
 
 type BannerHeight = 'small' | 'medium' | 'large';
 type BannerType = 'image' | 'video';
@@ -81,9 +82,7 @@ interface DisplaySettings {
 }
 
 const SellerSettings = () => {
-  const navigate = useNavigate();
   const { profile, orders, loading, refreshProfile } = useSellerContext();
-  const { isCollapsed } = useSellerSidebarContext();
   const { permission, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe, isSupported } = usePushNotifications();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -92,6 +91,13 @@ const SellerSettings = () => {
   const [deleting, setDeleting] = useState(false);
   const [bannerType, setBannerType] = useState<BannerType>('image');
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  
+  // Sheet states for sub-views
+  const [activeSheet, setActiveSheet] = useState<string | null>(null);
+  
+  // Online status
+  const [isOnline, setIsOnline] = useState(true);
   
   const [formData, setFormData] = useState({
     store_name: '',
@@ -188,7 +194,7 @@ const SellerSettings = () => {
     if (error) {
       toast.error('Failed to save settings');
     } else {
-      toast.success('Changes saved automatically');
+      toast.success('Changes saved');
       setHasChanges(false);
       refreshProfile();
     }
@@ -299,12 +305,12 @@ const SellerSettings = () => {
 
     updateFormData({ store_logo_url: publicUrl });
     setUploading(false);
+    setActiveSheet(null);
   };
 
   const handleDeleteStore = async () => {
     if (!profile?.id) return;
     
-    // Check wallet balance - must be under $5 to delete
     const { data: walletData } = await supabase
       .from('seller_wallets')
       .select('balance, pending_balance')
@@ -314,13 +320,12 @@ const SellerSettings = () => {
     const totalBalance = (walletData?.balance || 0) + (walletData?.pending_balance || 0);
     
     if (totalBalance >= 5) {
-      toast.error(`You have $${totalBalance.toFixed(2)} in your wallet. Please withdraw funds before deleting. Balance must be under $5.`);
+      toast.error(`You have $${totalBalance.toFixed(2)} in your wallet. Please withdraw funds before deleting.`);
       return;
     }
     
     setDeleting(true);
     try {
-      // Soft delete - mark as deleted instead of permanent delete
       const { error } = await supabase
         .from('seller_profiles')
         .update({ 
@@ -343,13 +348,12 @@ const SellerSettings = () => {
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Unknown';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    });
   };
 
   const bannerHeightPx: Record<BannerHeight, string> = {
@@ -368,280 +372,256 @@ const SellerSettings = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-6 pb-24 space-y-4 sm:space-y-6 seller-dashboard">
-      {/* Profile Header - Banner First Design - Mobile Optimized */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative">
-        {/* Dynamic Banner */}
-        <div className="relative">
-          {formData.store_banner_url ? (
-            <div className="relative">
-              <img 
-                src={formData.store_banner_url} 
-                alt="Store banner"
-                className="w-full h-24 sm:h-32 object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-            </div>
+    <div className="max-w-2xl mx-auto px-3 sm:px-0 pb-24 space-y-4 seller-dashboard">
+      {/* Hidden file inputs */}
+      <input
+        ref={logoInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleLogoUpload}
+        className="hidden"
+      />
+
+      {/* Profile Header */}
+      <ProfileHeader
+        avatarUrl={formData.store_logo_url}
+        name={formData.store_name || 'Your Store'}
+        subtitle={`Seller since ${formatDate((profile as any)?.created_at)}`}
+        isOnline={isOnline}
+        isVerified={profile?.is_verified}
+        gradient="emerald"
+        avatarLoading={uploading}
+        onAvatarClick={() => setActiveSheet('store-logo')}
+      />
+
+      {/* Unsaved changes indicator */}
+      {(hasChanges || saving) && (
+        <div className="flex items-center justify-center gap-2 text-sm">
+          {saving ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+              <span className="text-emerald-600">Saving...</span>
+            </>
           ) : (
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 h-24 sm:h-32" />
+            <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 animate-pulse">
+              Unsaved changes
+            </Badge>
           )}
         </div>
+      )}
+
+      {/* STORE Section */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <SectionHeader title="Store" />
         
-        {/* Content Area - Mobile Stack */}
-        <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
-            {/* Logo with upload */}
-            <div className="relative -mt-10 sm:-mt-14 z-20 flex-shrink-0 mx-auto sm:mx-0">
-              <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-white shadow-lg ring-2 ring-slate-100">
-                <AvatarImage src={formData.store_logo_url} />
-                <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-lg sm:text-xl font-bold">
-                  {getInitials(formData.store_name || 'Store')}
-                </AvatarFallback>
-              </Avatar>
-              <label className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full border border-slate-200 shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors z-30">
-                {uploading ? (
-                  <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin text-slate-400" />
-                ) : (
-                  <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  className="hidden"
-                  disabled={uploading}
-                />
-              </label>
-            </div>
-            
-            {/* Store Info - Centered on mobile, left on desktop */}
-            <div className="flex-1 min-w-0 pt-1 text-center sm:text-left">
-              {/* Store Name */}
-              <h2 className="seller-heading text-xl sm:text-2xl font-bold text-slate-900 truncate leading-tight">
-                {formData.store_name || 'Your Store'}
-              </h2>
-              
-              {/* Badges - Centered on mobile */}
-              <div className="flex items-center justify-center sm:justify-start gap-2 mt-2 flex-wrap">
-                {profile?.is_verified ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 border-0 text-xs px-2 py-0.5">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Verified
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 text-xs px-2 py-0.5">
-                    Pending Verification
-                  </Badge>
-                )}
-                {hasChanges && (
-                  <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 animate-pulse text-xs px-2 py-0.5">
-                    Unsaved
-                  </Badge>
-                )}
-              </div>
-              
-              {/* Seller since */}
-              <p className="text-xs sm:text-sm text-slate-500 mt-2">
-                Seller since {(profile as any)?.created_at ? new Date((profile as any).created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
-              </p>
-            </div>
-            
-            {/* Saving indicator - Desktop only */}
-            {saving && (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-emerald-600 flex-shrink-0">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Saving...</span>
-              </div>
-            )}
-          </div>
-          
-          {/* Mobile Saving indicator */}
-          {saving && (
-            <div className="sm:hidden flex items-center justify-center gap-2 text-sm text-emerald-600 mt-3">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Saving...</span>
-            </div>
-          )}
-        </div>
+        <MenuListItem
+          icon={Store}
+          label="Store Information"
+          description="Name, tagline, and description"
+          onClick={() => setActiveSheet('store-info')}
+          iconColor="text-emerald-500"
+        />
+        
+        <MenuListItem
+          icon={Palette}
+          label="Display Settings"
+          description="Control what's visible on your store"
+          onClick={() => setActiveSheet('display-settings')}
+          iconColor="text-violet-500"
+        />
+        
+        <MenuListItem
+          icon={Image}
+          label="Banner & Media"
+          description="Store banner image or video"
+          onClick={() => setActiveSheet('banner-media')}
+          iconColor="text-pink-500"
+        />
+        
+        <MenuListItem
+          icon={Link2}
+          label="Social Media Links"
+          description="Instagram, Twitter, TikTok, YouTube"
+          onClick={() => setActiveSheet('social-links')}
+          iconColor="text-blue-500"
+        />
       </div>
 
-      {/* Settings Accordion - Mobile Optimized */}
-      <Accordion type="multiple" defaultValue={['store-info', 'display-settings']} className="space-y-3 sm:space-y-4">
-        {/* Store Information */}
-        <AccordionItem value="store-info" className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm px-4 sm:px-6 overflow-hidden">
-          <AccordionTrigger className="py-4 sm:py-5 hover:no-underline">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
-                <Store className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-slate-900 text-sm sm:text-base">Store Information</p>
-                <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">Manage your store name, description, and branding</p>
-              </div>
+      {/* SETTINGS Section */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <SectionHeader title="Settings" />
+        
+        {isSupported && (
+          <MenuListItem
+            icon={Bell}
+            label="Notifications"
+            description={isSubscribed ? 'Push notifications enabled' : 'Enable push notifications'}
+            onClick={() => setActiveSheet('notifications')}
+            iconColor="text-purple-500"
+          />
+        )}
+        
+        <MenuListItem
+          icon={Shield}
+          label="Two-Factor Authentication"
+          value={(profile as any)?.two_factor_enabled !== false ? 'ON' : 'OFF'}
+          onClick={() => setActiveSheet('two-factor')}
+          iconColor="text-emerald-500"
+        />
+        
+        <MenuListItem
+          icon={Settings}
+          label="Account Details"
+          description="Status, commission, and stats"
+          onClick={() => setActiveSheet('account-details')}
+          iconColor="text-gray-600"
+        />
+      </div>
+
+      {/* Status Toggle */}
+      <StatusToggleCard
+        isOnline={isOnline}
+        onToggle={setIsOnline}
+      />
+
+      {/* DANGER ZONE Section */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <SectionHeader title="Danger Zone" className="bg-red-50" />
+        
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <div>
+              <MenuListItem
+                icon={Trash2}
+                label="Delete Store"
+                description="Permanently delete your store and data"
+                variant="danger"
+              />
             </div>
-          </AccordionTrigger>
-          <AccordionContent className="pb-5 sm:pb-6 space-y-4 sm:space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="store_name" className="text-xs sm:text-sm font-medium text-slate-700">
-                Store Name
-              </Label>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="bg-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-red-600">Delete Store?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your store "{formData.store_name}" and remove all associated products, orders, and data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteStore}
+                disabled={deleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Store'
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      {/* Store Logo Sheet */}
+      <Sheet open={activeSheet === 'store-logo'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader className="text-center pb-4">
+            <SheetTitle>Store Logo</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 pb-safe">
+            <Button
+              variant="ghost"
+              className="w-full justify-start h-14 text-base"
+              onClick={() => logoInputRef.current?.click()}
+              disabled={uploading}
+            >
+              <Upload className="w-5 h-5 mr-3 text-gray-600" />
+              {uploading ? 'Uploading...' : 'Choose from Library'}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Store Information Sheet */}
+      <Sheet open={activeSheet === 'store-info'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Store Information</SheetTitle>
+          </SheetHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label>Store Name</Label>
               <Input
-                id="store_name"
                 value={formData.store_name}
                 onChange={(e) => updateFormData({ store_name: e.target.value })}
                 placeholder="Enter your store name"
-                className="h-10 sm:h-11 rounded-lg sm:rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20"
+                className="mt-2"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="store_tagline" className="text-xs sm:text-sm font-medium text-slate-700">
-                Store Tagline
-              </Label>
+            
+            <div>
+              <Label>Store Tagline</Label>
               <Input
-                id="store_tagline"
                 value={formData.store_tagline}
                 onChange={(e) => updateFormData({ store_tagline: e.target.value })}
                 placeholder="e.g., Premium AI accounts at unbeatable prices"
-                className="h-10 sm:h-11 rounded-lg sm:rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20"
+                className="mt-2"
                 maxLength={100}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="store_description" className="text-xs sm:text-sm font-medium text-slate-700">
-                Store Description
-              </Label>
+            
+            <div>
+              <Label>Store Description</Label>
               <Textarea
-                id="store_description"
                 value={formData.store_description}
                 onChange={(e) => updateFormData({ store_description: e.target.value })}
                 placeholder="Tell customers about your store..."
+                className="mt-2"
                 rows={4}
-                className="rounded-lg sm:rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 resize-none"
               />
             </div>
-
-            {/* Store URL */}
-            <div className="space-y-2">
-              <Label className="text-xs sm:text-sm font-medium text-slate-700 flex items-center gap-2">
+            
+            <div>
+              <Label className="flex items-center gap-2">
                 <Globe className="w-4 h-4" />
                 Store URL
               </Label>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 p-3 bg-slate-50 rounded-lg sm:rounded-xl border border-slate-200">
-                <span className="text-xs sm:text-sm text-slate-500 truncate">{window.location.origin}/store/</span>
-                <span className="text-xs sm:text-sm font-medium text-emerald-700">{formData.store_slug || 'your-store'}</span>
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg mt-2">
+                <span className="text-sm text-gray-500 truncate">{window.location.origin}/store/</span>
+                <span className="text-sm font-medium text-emerald-700">{formData.store_slug || 'your-store'}</span>
               </div>
             </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
-            {/* Logo Upload */}
-            <div className="space-y-2">
-              <Label className="text-xs sm:text-sm font-medium text-slate-700">Logo URL</Label>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                <Input
-                  value={formData.store_logo_url}
-                  onChange={(e) => updateFormData({ store_logo_url: e.target.value })}
-                  placeholder="https://example.com/logo.png"
-                  className="h-10 sm:h-11 rounded-lg sm:rounded-xl border-slate-200"
-                />
-                <label className="flex-shrink-0">
-                  <Button type="button" variant="outline" className="h-10 sm:h-11 rounded-lg sm:rounded-xl border-slate-200 w-full sm:w-auto" disabled={uploading} asChild>
-                    <span>
-                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Image className="w-4 h-4 mr-2" />Upload</>}
-                    </span>
-                  </Button>
-                  <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" disabled={uploading} />
-                </label>
-              </div>
-            </div>
-
-            {/* Banner Type Selector */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium text-slate-700">Store Banner</Label>
-              <Tabs value={bannerType} onValueChange={(v) => { setBannerType(v as BannerType); setHasChanges(true); }} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="image" className="flex items-center gap-2">
-                    <Image className="w-4 h-4" />
-                    Image
-                  </TabsTrigger>
-                  <TabsTrigger value="video" className="flex items-center gap-2">
-                    <Video className="w-4 h-4" />
-                    Video
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="image" className="mt-4 space-y-3">
-                  {/* Image URL Input */}
-                  <div className="space-y-2">
-                    <Label className="text-xs text-slate-500">Image URL or Upload</Label>
-                    <div className="flex gap-3">
-                      <Input
-                        value={formData.store_banner_url}
-                        onChange={(e) => updateFormData({ store_banner_url: e.target.value })}
-                        placeholder="https://example.com/banner.jpg"
-                        className="h-10 rounded-xl border-slate-200"
-                      />
-                      <label className="flex-shrink-0">
-                        <Button type="button" variant="outline" className="h-10 rounded-xl border-slate-200" disabled={bannerUploading} asChild>
-                          <span>
-                            {bannerUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                          </span>
-                        </Button>
-                        <input type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" disabled={bannerUploading} />
-                      </label>
-                    </div>
-                  </div>
-                  
-                  {/* Banner Preview */}
-                  {formData.store_banner_url && (
-                    <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                      <img src={formData.store_banner_url} alt="Store banner" className={`w-full object-cover ${bannerHeightPx[displaySettings.banner_height]}`} />
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2"
-                        onClick={() => updateFormData({ store_banner_url: '' })}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="video" className="mt-4">
-                  <VideoUploader
-                    currentVideoUrl={formData.store_video_url}
-                    onVideoChange={(url) => updateFormData({ store_video_url: url })}
-                    sellerId={profile?.id || ''}
-                  />
-                </TabsContent>
-              </Tabs>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Display Settings */}
-        <AccordionItem value="display-settings" className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 overflow-hidden">
-          <AccordionTrigger className="py-5 hover:no-underline">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
-                <Palette className="w-5 h-5 text-violet-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-slate-900">Display Settings</p>
-                <p className="text-sm text-slate-500">Control what's visible on your public store</p>
-              </div>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="pb-6 space-y-5">
-            {/* Banner Height */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Banner Height</Label>
+      {/* Display Settings Sheet */}
+      <Sheet open={activeSheet === 'display-settings'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Display Settings</SheetTitle>
+          </SheetHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label>Banner Height</Label>
               <Select
                 value={displaySettings.banner_height}
                 onValueChange={(value: BannerHeight) => updateDisplaySettings({ banner_height: value })}
               >
-                <SelectTrigger className="h-11 rounded-xl border-slate-200">
+                <SelectTrigger className="mt-2">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -651,25 +631,19 @@ const SellerSettings = () => {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Toggle Switches */}
-            <div className="space-y-4 pt-2">
+            
+            <div className="space-y-3 pt-4">
               {[
-                { key: 'show_reviews', label: 'Show Reviews', desc: 'Display rating stars on your store', icon: Star, color: 'amber' },
-                { key: 'show_product_count', label: 'Show Product Count', desc: 'Display total products on your store', icon: Package, color: 'blue' },
-                { key: 'show_order_count', label: 'Show Order Count', desc: 'Display total orders on your store', icon: Users, color: 'emerald' },
-                { key: 'show_description', label: 'Show Description', desc: 'Display store description on your page', icon: displaySettings.show_description ? Eye : EyeOff, color: 'slate' },
-                { key: 'show_social_links', label: 'Show Social Links', desc: 'Display your social media on store', icon: Link2, color: 'pink' },
-              ].map(({ key, label, desc, icon: Icon, color }) => (
-                <div key={key} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
+                { key: 'show_reviews', label: 'Show Reviews', icon: Star },
+                { key: 'show_product_count', label: 'Show Product Count', icon: Package },
+                { key: 'show_order_count', label: 'Show Order Count', icon: Users },
+                { key: 'show_description', label: 'Show Description', icon: Eye },
+                { key: 'show_social_links', label: 'Show Social Links', icon: Link2 },
+              ].map(({ key, label, icon: Icon }) => (
+                <div key={key} className="flex items-center justify-between py-3 border-b last:border-0">
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg bg-${color}-100 flex items-center justify-center`}>
-                      <Icon className={`w-4 h-4 text-${color}-600`} />
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">{label}</p>
-                      <p className="text-xs text-slate-500">{desc}</p>
-                    </div>
+                    <Icon className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium">{label}</span>
                   </div>
                   <Switch
                     checked={displaySettings[key as keyof DisplaySettings] as boolean}
@@ -678,101 +652,180 @@ const SellerSettings = () => {
                 </div>
               ))}
             </div>
-          </AccordionContent>
-        </AccordionItem>
+          </div>
+        </SheetContent>
+      </Sheet>
 
-        {/* Notifications Settings */}
-        {isSupported && (
-          <AccordionItem value="notifications" className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 overflow-hidden">
-            <AccordionTrigger className="py-5 hover:no-underline">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-violet-600" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-slate-900">Notifications</p>
-                  <p className="text-sm text-slate-500">Manage push notification preferences</p>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6 space-y-4">
-              <div className="flex items-center justify-between py-4 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                    <BellRing className="w-4 h-4 text-emerald-600" />
+      {/* Banner & Media Sheet */}
+      <Sheet open={activeSheet === 'banner-media'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Banner & Media</SheetTitle>
+          </SheetHeader>
+          
+          <div className="space-y-4">
+            <Tabs value={bannerType} onValueChange={(v) => { setBannerType(v as BannerType); setHasChanges(true); }} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="image" className="flex items-center gap-2">
+                  <Image className="w-4 h-4" />
+                  Image
+                </TabsTrigger>
+                <TabsTrigger value="video" className="flex items-center gap-2">
+                  <Video className="w-4 h-4" />
+                  Video
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="image" className="mt-4 space-y-3">
+                <div>
+                  <Label>Image URL or Upload</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      value={formData.store_banner_url}
+                      onChange={(e) => updateFormData({ store_banner_url: e.target.value })}
+                      placeholder="https://example.com/banner.jpg"
+                    />
+                    <label>
+                      <Button type="button" variant="outline" disabled={bannerUploading} asChild>
+                        <span>
+                          {bannerUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        </span>
+                      </Button>
+                      <input type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" disabled={bannerUploading} />
+                    </label>
                   </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Push Notifications</p>
-                    <p className="text-xs text-slate-500">
-                      {permission === 'denied' 
-                        ? 'Blocked in browser settings' 
-                        : 'Get notified about new orders, messages & payments'}
-                    </p>
-                  </div>
                 </div>
-                <Switch
-                  checked={isSubscribed}
-                  onCheckedChange={isSubscribed ? unsubscribe : subscribe}
-                  disabled={pushLoading || permission === 'denied'}
+                
+                {formData.store_banner_url && (
+                  <div className="relative rounded-xl overflow-hidden border">
+                    <img src={formData.store_banner_url} alt="Store banner" className={`w-full object-cover ${bannerHeightPx[displaySettings.banner_height]}`} />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => updateFormData({ store_banner_url: '' })}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="video" className="mt-4">
+                <VideoUploader
+                  currentVideoUrl={formData.store_video_url}
+                  onVideoChange={(url) => updateFormData({ store_video_url: url })}
+                  sellerId={profile?.id || ''}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Social Links Sheet */}
+      <Sheet open={activeSheet === 'social-links'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Social Media Links</SheetTitle>
+          </SheetHeader>
+          
+          <div className="space-y-4">
+            {['instagram', 'twitter', 'tiktok', 'youtube'].map((platform) => (
+              <div key={platform}>
+                <Label className="capitalize">{platform === 'twitter' ? 'Twitter / X' : platform}</Label>
+                <Input
+                  value={socialLinks[platform as keyof typeof socialLinks]}
+                  onChange={(e) => updateSocialLinks({ [platform]: e.target.value })}
+                  placeholder={platform === 'youtube' ? 'channel name or full URL' : 'username (without @)'}
+                  className="mt-2"
                 />
               </div>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
 
-              {permission === 'denied' && (
-                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
-                  <p className="text-sm text-amber-700 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    Push notifications are blocked. Enable them in your browser settings.
+      {/* Notifications Sheet */}
+      <Sheet open={activeSheet === 'notifications'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Notifications</SheetTitle>
+          </SheetHeader>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between py-4 border-b">
+              <div className="flex items-center gap-3">
+                <BellRing className="w-4 h-4 text-emerald-500" />
+                <div>
+                  <p className="text-sm font-medium">Push Notifications</p>
+                  <p className="text-xs text-gray-500">
+                    {permission === 'denied' ? 'Blocked in browser' : 'New orders, messages & payments'}
                   </p>
                 </div>
-              )}
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <p className="text-sm font-medium text-slate-700 mb-2">When enabled, you'll receive alerts for:</p>
-                <ul className="text-sm text-slate-600 space-y-1">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-emerald-500" />
-                    New orders from buyers
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-emerald-500" />
-                    New chat messages
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-emerald-500" />
-                    Funds released to wallet
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-emerald-500" />
-                    New product reviews
-                  </li>
-                </ul>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        )}
+              <Switch
+                checked={isSubscribed}
+                onCheckedChange={isSubscribed ? unsubscribe : subscribe}
+                disabled={pushLoading || permission === 'denied'}
+              />
+            </div>
 
-        {/* Two-Factor Authentication */}
-        <AccordionItem value="security-2fa" className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm px-4 sm:px-6 overflow-hidden">
-          <AccordionTrigger className="py-4 sm:py-5 hover:no-underline">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
-                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-slate-900 text-sm sm:text-base">Two-Factor Authentication</p>
-                <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">
-                  {(profile as any)?.two_factor_enabled !== false ? 'Enabled - OTP required for withdrawals' : 'Disabled - Withdrawals without OTP'}
+            {permission === 'denied' && (
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                <p className="text-sm text-amber-700 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  Notifications blocked. Enable in browser settings.
                 </p>
               </div>
+            )}
+
+            <div className="p-4 rounded-xl bg-gray-50 border">
+              <p className="text-sm font-medium mb-2">When enabled, you'll receive:</p>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  New orders from buyers
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  Chat messages
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  Funds released to wallet
+                </li>
+              </ul>
             </div>
-          </AccordionTrigger>
-          <AccordionContent className="pb-5 sm:pb-6 space-y-4">
-            {/* Toggle Switch */}
-            <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <div className="flex-1">
-                <p className="font-medium text-slate-900 text-sm sm:text-base">Enable 2FA Protection</p>
-                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                  When enabled, all withdrawals require email OTP verification
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Two-Factor Sheet */}
+      <Sheet open={activeSheet === 'two-factor'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Two-Factor Authentication</SheetTitle>
+          </SheetHeader>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border">
+              <div>
+                <p className="font-medium text-sm">Enable 2FA Protection</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  OTP required for withdrawals
                 </p>
               </div>
               <Switch 
@@ -781,18 +834,15 @@ const SellerSettings = () => {
                   if (!profile?.id) return;
                   setSaving(true);
                   try {
-                    console.log('[2FA_TOGGLE] Updating seller 2FA:', { checked, profile_id: profile.id });
                     const { error } = await supabase
                       .from('seller_profiles')
                       .update({ two_factor_enabled: checked })
                       .eq('id', profile.id);
                     if (error) throw error;
-                    console.log('[2FA_TOGGLE] Update successful');
                     await refreshProfile();
-                    toast.success(checked ? '2FA protection enabled' : '2FA protection disabled');
+                    toast.success(checked ? '2FA enabled' : '2FA disabled');
                   } catch (err: any) {
-                    console.error('[2FA_TOGGLE] Error:', err);
-                    toast.error(err.message || 'Failed to update 2FA setting');
+                    toast.error(err.message || 'Failed to update 2FA');
                   } finally {
                     setSaving(false);
                   }
@@ -801,17 +851,14 @@ const SellerSettings = () => {
               />
             </div>
             
-            {/* Status Info */}
             {(profile as any)?.two_factor_enabled !== false ? (
               <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-emerald-100 rounded-lg">
-                    <CheckCircle className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <div className="flex-1">
+                  <Shield className="w-5 h-5 text-emerald-600 mt-0.5" />
+                  <div>
                     <h4 className="font-semibold text-emerald-900">Protection Active</h4>
                     <p className="text-sm text-emerald-700 mt-1">
-                      A 6-digit OTP code will be sent to your email before any withdrawal can be processed.
+                      OTP code required for all withdrawals.
                     </p>
                   </div>
                 </div>
@@ -819,206 +866,99 @@ const SellerSettings = () => {
             ) : (
               <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-amber-100 rounded-lg">
-                    <AlertTriangle className="w-5 h-5 text-amber-600" />
-                  </div>
-                  <div className="flex-1">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                  <div>
                     <h4 className="font-semibold text-amber-900">Protection Disabled</h4>
                     <p className="text-sm text-amber-700 mt-1">
-                      Warning: Withdrawals will process without OTP verification. We recommend keeping 2FA enabled for security.
+                      Withdrawals process without OTP verification.
                     </p>
                   </div>
                 </div>
               </div>
             )}
-            
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <p className="text-sm font-medium text-slate-700 mb-3">Security features when 2FA is enabled:</p>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-sm text-slate-600">
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Account Details Sheet */}
+      <Sheet open={activeSheet === 'account-details'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Account Details</SheetTitle>
+          </SheetHeader>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-4 rounded-xl bg-gray-50 border">
+              <div className="flex items-center gap-2 mb-2">
+                {profile?.is_active ? (
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  Email OTP for all withdrawal requests
-                </li>
-                <li className="flex items-center gap-2 text-sm text-slate-600">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  10-minute code expiration
-                </li>
-                <li className="flex items-center gap-2 text-sm text-slate-600">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  One active code at a time
-                </li>
-                <li className="flex items-center gap-2 text-sm text-slate-600">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  Single-use verification codes
-                </li>
-              </ul>
-            </div>
-            
-            <p className="text-xs text-slate-500">
-              💡 Tip: Keep your email secure to protect your funds. Never share OTP codes with anyone.
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Social Media Links */}
-        <AccordionItem value="social-links" className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 overflow-hidden">
-          <AccordionTrigger className="py-5 hover:no-underline">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center">
-                <Link2 className="w-5 h-5 text-pink-600" />
+                ) : (
+                  <XCircle className="w-4 h-4 text-red-500" />
+                )}
+                <span className="text-xs text-gray-500">Status</span>
               </div>
-              <div className="text-left">
-                <p className="font-semibold text-slate-900">Social Media Links</p>
-                <p className="text-sm text-slate-500">Add your social profiles to display on your store</p>
-              </div>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="pb-6 space-y-4">
-            {['instagram', 'twitter', 'tiktok', 'youtube'].map((platform) => (
-              <div key={platform} className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700 capitalize">{platform === 'twitter' ? 'Twitter / X' : platform}</Label>
-                <Input
-                  value={socialLinks[platform as keyof typeof socialLinks]}
-                  onChange={(e) => updateSocialLinks({ [platform]: e.target.value })}
-                  placeholder={platform === 'youtube' ? 'channel name or full URL' : 'username (without @)'}
-                  className="h-11 rounded-xl border-slate-200"
-                />
-              </div>
-            ))}
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Account Details */}
-        <AccordionItem value="account-details" className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 overflow-hidden">
-          <AccordionTrigger className="py-5 hover:no-underline">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
-                <Settings className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-slate-900">Account Details</p>
-                <p className="text-sm text-slate-500">View your account status and commission settings</p>
-              </div>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="pb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-3 mb-2">
-                  {profile?.is_active ? (
-                    <CheckCircle className="w-5 h-5 text-emerald-500" />
-                  ) : (
-                    <XCircle className="w-5 h-5 text-red-500" />
-                  )}
-                  <span className="text-sm font-medium text-slate-600">Account Status</span>
-                </div>
-                <p className="text-lg font-semibold text-slate-900">
-                  {profile?.is_active ? 'Active' : 'Inactive'}
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-3 mb-2">
-                  <Shield className="w-5 h-5 text-blue-500" />
-                  <span className="text-sm font-medium text-slate-600">Verification</span>
-                </div>
-                <p className="text-lg font-semibold text-slate-900">
-                  {profile?.is_verified ? 'Verified' : 'Unverified'}
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-3 mb-2">
-                  <Percent className="w-5 h-5 text-violet-500" />
-                  <span className="text-sm font-medium text-slate-600">Commission Rate</span>
-                </div>
-                <p className="text-lg font-semibold text-slate-900">
-                  {profile?.commission_rate || 0}%
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-3 mb-2">
-                  <DollarSign className="w-5 h-5 text-emerald-500" />
-                  <span className="text-sm font-medium text-slate-600">Total Sales</span>
-                </div>
-                <p className="text-lg font-semibold text-slate-900">
-                  ${(Number(profile?.total_sales) || 0).toFixed(2)}
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-3 mb-2">
-                  <ShoppingBag className="w-5 h-5 text-amber-500" />
-                  <span className="text-sm font-medium text-slate-600">Total Sales Count</span>
-                </div>
-                <p className="text-lg font-semibold text-slate-900">
-                  {totalSalesCount}
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-3 mb-2">
-                  <Package className="w-5 h-5 text-blue-500" />
-                  <span className="text-sm font-medium text-slate-600">Total Orders</span>
-                </div>
-                <p className="text-lg font-semibold text-slate-900">
-                  {totalOrdersCount}
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-3 mb-2">
-                  <Calendar className="w-5 h-5 text-slate-500" />
-                  <span className="text-sm font-medium text-slate-600">Member Since</span>
-                </div>
-                <p className="text-lg font-semibold text-slate-900">
-                  {(profile as any)?.created_at ? new Date((profile as any).created_at).toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric',
-                    year: 'numeric'
-                  }) : 'N/A'}
-                </p>
-              </div>
+              <p className="font-semibold">{profile?.is_active ? 'Active' : 'Inactive'}</p>
             </div>
 
-            {/* Delete Store */}
-            <div className="mt-6 p-4 rounded-xl bg-red-50 border border-red-100">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="font-medium text-red-900">Danger Zone</h4>
-                  <p className="text-sm text-red-700 mt-1">
-                    Deleting your store will permanently remove all your products, orders, and data. This action cannot be undone.
-                  </p>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" className="mt-3" disabled={deleting}>
-                        {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                        Delete Store
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete your store "{formData.store_name}" and remove all associated products, orders, and data.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteStore} className="bg-red-600 hover:bg-red-700">
-                          Delete Store
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+            <div className="p-4 rounded-xl bg-gray-50 border">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="w-4 h-4 text-blue-500" />
+                <span className="text-xs text-gray-500">Verification</span>
               </div>
+              <p className="font-semibold">{profile?.is_verified ? 'Verified' : 'Unverified'}</p>
             </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+
+            <div className="p-4 rounded-xl bg-gray-50 border">
+              <div className="flex items-center gap-2 mb-2">
+                <Percent className="w-4 h-4 text-violet-500" />
+                <span className="text-xs text-gray-500">Commission</span>
+              </div>
+              <p className="font-semibold">{profile?.commission_rate || 0}%</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-gray-50 border">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="w-4 h-4 text-emerald-500" />
+                <span className="text-xs text-gray-500">Total Sales</span>
+              </div>
+              <p className="font-semibold">${(Number(profile?.total_sales) || 0).toFixed(2)}</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-gray-50 border">
+              <div className="flex items-center gap-2 mb-2">
+                <ShoppingBag className="w-4 h-4 text-amber-500" />
+                <span className="text-xs text-gray-500">Completed</span>
+              </div>
+              <p className="font-semibold">{totalSalesCount}</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-gray-50 border">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="w-4 h-4 text-blue-500" />
+                <span className="text-xs text-gray-500">Orders</span>
+              </div>
+              <p className="font-semibold">{totalOrdersCount}</p>
+            </div>
+
+            <div className="col-span-2 p-4 rounded-xl bg-gray-50 border">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <span className="text-xs text-gray-500">Member Since</span>
+              </div>
+              <p className="font-semibold">
+                {(profile as any)?.created_at ? new Date((profile as any).created_at).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric',
+                  year: 'numeric'
+                }) : 'N/A'}
+              </p>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

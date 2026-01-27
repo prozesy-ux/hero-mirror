@@ -6,16 +6,15 @@ import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,8 +46,18 @@ import {
   AlertTriangle,
   CheckCircle,
   Globe,
-  BellRing
+  BellRing,
+  ChevronLeft,
+  Palette,
+  Languages,
+  Wallet,
+  Image as ImageIcon
 } from 'lucide-react';
+
+import ProfileHeader from '@/components/profile/ProfileHeader';
+import MenuListItem from '@/components/profile/MenuListItem';
+import SectionHeader from '@/components/profile/SectionHeader';
+import StatusToggleCard from '@/components/profile/StatusToggleCard';
 
 interface UserPreferences {
   id: string;
@@ -80,12 +89,13 @@ const ProfileSection = () => {
   const { permission, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe, isSupported } = usePushNotifications();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || '');
-  const [isEditingName, setIsEditingName] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Sheet states for sub-views
+  const [activeSheet, setActiveSheet] = useState<string | null>(null);
+  
   // Password states
-  const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -109,6 +119,9 @@ const ProfileSection = () => {
   const [isSigningOutAll, setIsSigningOutAll] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Online status
+  const [isOnline, setIsOnline] = useState(true);
 
   // Push notification toggle handler
   const handlePushToggle = async () => {
@@ -148,7 +161,6 @@ const ProfileSection = () => {
       if (error) throw error;
       
       if (!data) {
-        // Create default preferences if none exist
         const { data: newPrefs, error: insertError } = await supabase
           .from('user_preferences')
           .insert({ user_id: user.id })
@@ -227,7 +239,6 @@ const ProfileSection = () => {
       else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browser = 'Safari';
       else if (userAgent.includes('Edge')) browser = 'Edge';
       
-      // Check for existing current session
       const { data: existingSessions } = await supabase
         .from('user_sessions')
         .select('id')
@@ -279,11 +290,6 @@ const ProfileSection = () => {
     }
   };
 
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return user?.email?.charAt(0).toUpperCase() || 'U';
-    return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
-  };
-
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'Unknown';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -330,6 +336,7 @@ const ProfileSection = () => {
       if (updateError) throw updateError;
 
       toast.success('Avatar updated successfully');
+      setActiveSheet(null);
       window.location.reload();
     } catch (error: any) {
       console.error('Upload error:', error);
@@ -354,7 +361,7 @@ const ProfileSection = () => {
       toast.error('Failed to update name');
     } else {
       toast.success('Name updated successfully');
-      setIsEditingName(false);
+      setActiveSheet(null);
     }
   };
 
@@ -381,7 +388,6 @@ const ProfileSection = () => {
       toast.error(error.message || 'Failed to update password');
     } else {
       toast.success('Password updated successfully');
-      setShowPasswordChange(false);
       setNewPassword('');
       setConfirmPassword('');
     }
@@ -491,777 +497,607 @@ const ProfileSection = () => {
   const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4 lg:space-y-6 animate-fade-up">
-      {/* Modern Profile Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-7">
-        <div className="flex flex-col sm:flex-row items-center sm:items-center gap-5 sm:gap-6">
-          {/* Avatar with change button - High Quality */}
-          <div className="relative group">
-            <Avatar className="h-20 w-20 border-3 border-slate-100 shadow-md">
-              <AvatarImage 
-                src={profile?.avatar_url || ''} 
-                alt={profile?.full_name || 'User'} 
-                className="object-cover"
-                loading="lazy"
-                decoding="async"
-              />
-              <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-lg font-bold tracking-tight">
-                {getInitials(profile?.full_name)}
-              </AvatarFallback>
-            </Avatar>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={avatarLoading}
-              className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity duration-200"
-            >
-              {avatarLoading ? (
-                <Loader2 className="h-5 w-5 text-white animate-spin" />
-              ) : (
-                <Camera className="h-5 w-5 text-white" />
-              )}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarUpload}
-              className="hidden"
-            />
-          </div>
+    <div className="max-w-2xl mx-auto space-y-4 pb-8 animate-fade-up">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleAvatarUpload}
+        className="hidden"
+      />
 
-          {/* User info - Enhanced Typography */}
-          <div className="flex-1 min-w-0 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-2.5">
-              <h2 className="text-xl font-bold tracking-tight text-slate-900 truncate">
-                {profile?.full_name || 'User'}
-              </h2>
-              {profile?.is_pro && (
-                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
-                  PRO
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm font-medium text-slate-600 truncate mt-1">{user?.email}</p>
-            <p className="text-xs text-slate-400 mt-1 tracking-wide">
-              Member since {formatDate(profile?.created_at)}
-            </p>
-          </div>
-        </div>
+      {/* Profile Header */}
+      <ProfileHeader
+        avatarUrl={profile?.avatar_url}
+        name={profile?.full_name || 'User'}
+        subtitle={`Member since ${formatDate(profile?.created_at)}`}
+        isOnline={isOnline}
+        isPro={profile?.is_pro}
+        gradient="violet"
+        avatarLoading={avatarLoading}
+        onAvatarClick={() => setActiveSheet('profile-image')}
+      />
+
+      {/* PROFILE Section */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <SectionHeader title="Profile" />
+        
+        <MenuListItem
+          icon={ImageIcon}
+          label="Profile Image"
+          description="Change your profile photo"
+          onClick={() => setActiveSheet('profile-image')}
+          iconColor="text-violet-500"
+        />
+        
+        <MenuListItem
+          icon={User}
+          label="Edit Name"
+          value={profile?.full_name || 'Not set'}
+          onClick={() => setActiveSheet('edit-name')}
+          iconColor="text-blue-500"
+        />
+        
+        <MenuListItem
+          icon={Mail}
+          label="Email Address"
+          value={
+            <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-200 bg-emerald-50">
+              Verified
+            </Badge>
+          }
+          hasChevron={false}
+          iconColor="text-gray-500"
+        />
       </div>
 
-      {/* Settings Accordion */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <Accordion type="multiple" defaultValue={['personal']} className="divide-y divide-gray-100">
+      {/* SETTINGS Section */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <SectionHeader title="Settings" />
+        
+        <MenuListItem
+          icon={Bell}
+          label="Notifications"
+          description="Email and push preferences"
+          onClick={() => setActiveSheet('notifications')}
+          iconColor="text-purple-500"
+        />
+        
+        <MenuListItem
+          icon={Shield}
+          label="Security"
+          description="Password and sessions"
+          onClick={() => setActiveSheet('security')}
+          iconColor="text-emerald-500"
+        />
+        
+        <MenuListItem
+          icon={Key}
+          label="Two-Factor Authentication"
+          value={(profile as any)?.two_factor_enabled !== false ? 'ON' : 'OFF'}
+          onClick={() => setActiveSheet('two-factor')}
+          iconColor="text-violet-500"
+        />
+        
+        <MenuListItem
+          icon={Languages}
+          label="Language"
+          value="English"
+          hasChevron={false}
+          iconColor="text-gray-500"
+        />
+        
+        <MenuListItem
+          icon={Palette}
+          label="Appearance"
+          value="System"
+          hasChevron={false}
+          iconColor="text-pink-500"
+        />
+        
+        <MenuListItem
+          icon={Wallet}
+          label="Currency"
+          value="USD"
+          hasChevron={false}
+          iconColor="text-amber-500"
+        />
+      </div>
+
+      {/* Status Toggle */}
+      <StatusToggleCard
+        isOnline={isOnline}
+        onToggle={setIsOnline}
+      />
+
+      {/* DANGER ZONE Section */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <SectionHeader title="Danger Zone" className="bg-red-50" />
+        
+        <MenuListItem
+          icon={Download}
+          label="Export Data"
+          description="Download all your data"
+          onClick={handleExportData}
+          iconColor="text-gray-600"
+        />
+        
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <div>
+              <MenuListItem
+                icon={Trash2}
+                label="Delete Account"
+                description="Permanently delete your account"
+                variant="danger"
+              />
+            </div>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="bg-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-red-600">Delete Account?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. Your account will be permanently deleted within 48 hours.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="py-4">
+              <Label className="text-sm font-medium text-gray-700">
+                Why are you leaving? (optional)
+              </Label>
+              <Textarea
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="Help us improve by sharing your reason..."
+                className="mt-2"
+                rows={3}
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Account'
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      {/* Profile Image Sheet */}
+      <Sheet open={activeSheet === 'profile-image'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader className="text-center pb-4">
+            <SheetTitle>Profile Image</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 pb-safe">
+            <Button
+              variant="ghost"
+              className="w-full justify-start h-14 text-base"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarLoading}
+            >
+              <Camera className="w-5 h-5 mr-3 text-gray-600" />
+              {avatarLoading ? 'Uploading...' : 'Choose from Library'}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Name Sheet */}
+      <Sheet open={activeSheet === 'edit-name'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Edit Name</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Full Name</Label>
+              <Input
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your name"
+                className="mt-2"
+              />
+            </div>
+            <Button
+              onClick={handleSaveName}
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+              Save Changes
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Notifications Sheet */}
+      <Sheet open={activeSheet === 'notifications'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Notifications</SheetTitle>
+          </SheetHeader>
           
-          {/* Personal Information */}
-          <AccordionItem value="personal" className="border-none">
-            <AccordionTrigger className="px-6 py-4 hover:bg-gray-50 hover:no-underline">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <User className="h-4 w-4 text-blue-600" />
-                </div>
-                <div className="text-left">
-                  <span className="text-sm font-medium text-gray-900 block">Personal Information</span>
-                  <span className="text-xs text-gray-500">Manage your name and contact details</span>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              <div className="space-y-4">
-                {/* Full Name */}
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <div className="flex-1">
-                    <Label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Full Name</Label>
-                    {isEditingName ? (
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <Input
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          className="h-9 text-sm bg-white border-gray-200 flex-1"
-                          placeholder="Enter your name"
-                        />
-                        <Button
-                          size="sm"
-                          onClick={handleSaveName}
-                          disabled={loading}
-                          className="h-9 w-9 p-0 bg-gray-900 hover:bg-gray-800"
-                        >
-                          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setIsEditingName(false);
-                            setFullName(profile?.full_name || '');
-                          }}
-                          className="h-9 w-9 p-0"
-                        >
-                          <X className="h-4 w-4 text-gray-400" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-900 mt-1">{profile?.full_name || 'Not set'}</p>
-                    )}
-                  </div>
-                  {!isEditingName && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsEditingName(true)}
-                      className="text-gray-600 hover:text-gray-900 text-xs"
-                    >
-                      Edit
-                    </Button>
-                  )}
-                </div>
-
-                {/* Email */}
-                <div className="flex items-center justify-between py-3">
+          {preferencesLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Push Notifications */}
+              {isSupported && (
+                <div className="flex items-center justify-between py-3 border-b">
                   <div>
-                    <Label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Address</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-sm text-gray-900">{user?.email}</p>
-                      <Badge variant="outline" className="text-xs text-green-600 border-green-200 bg-green-50">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Verified
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Security */}
-          <AccordionItem value="security" className="border-none">
-            <AccordionTrigger className="px-6 py-4 hover:bg-gray-50 hover:no-underline">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <Shield className="h-4 w-4 text-emerald-600" />
-                </div>
-                <div className="text-left">
-                  <span className="text-sm font-medium text-gray-900 block">Security</span>
-                  <span className="text-xs text-gray-500">Password and session management</span>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              <div className="space-y-4">
-                {/* Password */}
-                <div className="py-3 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Key className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Password</p>
-                        <p className="text-xs text-gray-500">••••••••</p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowPasswordChange(!showPasswordChange)}
-                      className="text-gray-600 hover:text-gray-900 text-xs"
-                    >
-                      {showPasswordChange ? 'Cancel' : 'Change'}
-                    </Button>
-                  </div>
-
-                  {showPasswordChange && (
-                    <div className="mt-4 space-y-3 p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <label className="text-xs font-medium text-gray-600">New Password</label>
-                        <div className="relative mt-1">
-                          <Input
-                            type={showNewPassword ? 'text' : 'password'}
-                            placeholder="Enter new password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            className="h-9 text-sm bg-white border-gray-200 pr-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowNewPassword(!showNewPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          >
-                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                        
-                        {newPassword && (
-                          <div className="mt-2">
-                            <div className="flex gap-1 mb-1">
-                              {[...Array(5)].map((_, i) => (
-                                <div
-                                  key={i}
-                                  className={`h-1 flex-1 rounded-full transition-all ${
-                                    i < passwordStrength ? strengthColors[passwordStrength - 1] : 'bg-gray-200'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            <span className={`text-xs font-medium ${passwordStrength >= 4 ? 'text-green-600' : passwordStrength >= 3 ? 'text-yellow-600' : 'text-red-600'}`}>
-                              {strengthLabels[passwordStrength - 1] || 'Too Short'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <label className="text-xs font-medium text-gray-600">Confirm Password</label>
-                        <div className="relative mt-1">
-                          <Input
-                            type={showConfirmPassword ? 'text' : 'password'}
-                            placeholder="Confirm new password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="h-9 text-sm bg-white border-gray-200 pr-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          >
-                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                        {confirmPassword && (
-                          <div className="flex items-center gap-1.5 mt-1.5">
-                            {passwordsMatch ? (
-                              <>
-                                <CheckCircle className="h-3.5 w-3.5 text-green-600" />
-                                <span className="text-xs text-green-600 font-medium">Passwords match</span>
-                              </>
-                            ) : (
-                              <>
-                                <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
-                                <span className="text-xs text-red-600 font-medium">Passwords do not match</span>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <Button
-                        onClick={handlePasswordChange}
-                        disabled={passwordLoading || newPassword.length < 8 || !passwordsMatch}
-                        className="h-9 w-full bg-gray-900 hover:bg-gray-800 text-sm"
-                      >
-                        {passwordLoading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Updating...
-                          </>
-                        ) : (
-                          'Update Password'
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Active Sessions */}
-                <div className="py-3">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <Monitor className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Active Sessions</p>
-                        <p className="text-xs text-gray-500">
-                          {sessionsLoading ? 'Loading...' : `${sessions.length} device${sessions.length !== 1 ? 's' : ''} logged in`}
-                        </p>
-                      </div>
-                    </div>
-                    {sessions.length > 1 && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-amber-600 border-amber-200 hover:bg-amber-50 text-xs"
-                          >
-                            <LogOut className="h-3 w-3 mr-1" />
-                            Sign Out All
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-white border border-gray-200">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Sign out from all devices?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will log you out from all devices, including this one. You'll need to sign in again.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={handleSignOutAll}
-                              disabled={isSigningOutAll}
-                              className="bg-amber-600 hover:bg-amber-700"
-                            >
-                              {isSigningOutAll ? 'Signing out...' : 'Sign Out All'}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
-                  
-                  {sessionsLoading ? (
-                    <div className="flex items-center justify-center py-4">
-                      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                    </div>
-                  ) : sessions.length === 0 ? (
-                    <p className="text-sm text-gray-500 py-2 ml-7">No active sessions</p>
-                  ) : (
-                    <div className="space-y-2 ml-7">
-                      {sessions.map((session) => (
-                        <div
-                          key={session.id}
-                          className={`flex items-center justify-between p-3 rounded-lg ${
-                            session.is_current ? 'bg-green-50 border border-green-100' : 'bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            {session.device_name?.includes('Mobile') ? (
-                              <Smartphone className="h-4 w-4 text-gray-500" />
-                            ) : (
-                              <Monitor className="h-4 w-4 text-gray-500" />
-                            )}
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium text-gray-900">
-                                  {session.browser || 'Unknown'} on {session.device_name || 'Unknown'}
-                                </p>
-                                {session.is_current && (
-                                  <Badge className="text-xs bg-green-100 text-green-700 hover:bg-green-100">
-                                    Current
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-gray-500">
-                                <Globe className="h-3 w-3" />
-                                <span>{session.ip_address || 'Unknown IP'}</span>
-                                <span>•</span>
-                                <span>{session.location || 'Unknown Location'}</span>
-                                <span>•</span>
-                                <span>{new Date(session.last_active).toLocaleDateString()}</span>
-                              </div>
-                            </div>
-                          </div>
-                          {!session.is_current && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleTerminateSession(session.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-                            >
-                              <LogOut className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Two-Factor Authentication */}
-          <AccordionItem value="two-factor" className="border-none">
-            <AccordionTrigger className="px-6 py-4 hover:bg-gray-50 hover:no-underline">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center">
-                  <Key className="h-4 w-4 text-violet-600" />
-                </div>
-                <div className="text-left">
-                  <span className="text-sm font-medium text-gray-900 block">Two-Factor Authentication</span>
-                  <span className="text-xs text-gray-500">
-                    {(profile as any)?.two_factor_enabled !== false ? 'Enabled - Extra verification for sensitive actions' : 'Disabled'}
-                  </span>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              <div className="space-y-4">
-                {/* Toggle Switch */}
-                <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100">
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 text-sm">Enable 2FA Protection</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      When enabled, sensitive actions require email OTP verification
+                    <p className="text-sm font-medium">Push Notifications</p>
+                    <p className="text-xs text-gray-500">
+                      {permission === 'denied' ? 'Blocked in browser' : 'Get instant alerts'}
                     </p>
                   </div>
-                  <Switch 
-                    checked={(profile as any)?.two_factor_enabled !== false}
-                    onCheckedChange={async (checked) => {
-                      if (!user) return;
-                      setUpdating2FA(true);
-                      try {
-                        console.log('[2FA_TOGGLE] Updating user 2FA:', { checked, user_id: user.id });
-                        const { error } = await supabase
-                          .from('profiles')
-                          .update({ two_factor_enabled: checked })
-                          .eq('user_id', user.id);
-                        if (error) throw error;
-                        console.log('[2FA_TOGGLE] Update successful');
-                        toast.success(checked ? '2FA protection enabled' : '2FA protection disabled');
-                        window.location.reload();
-                      } catch (err: any) {
-                        console.error('[2FA_TOGGLE] Error:', err);
-                        toast.error(err.message || 'Failed to update 2FA setting');
-                      } finally {
-                        setUpdating2FA(false);
-                      }
-                    }}
-                    disabled={loading || updating2FA}
+                  <Switch
+                    checked={isSubscribed}
+                    onCheckedChange={handlePushToggle}
+                    disabled={pushLoading || permission === 'denied'}
                   />
                 </div>
+              )}
+
+              <div className="flex items-center justify-between py-3 border-b">
+                <div>
+                  <p className="text-sm font-medium">Email Notifications</p>
+                  <p className="text-xs text-gray-500">Account updates</p>
+                </div>
+                <Switch
+                  checked={preferences?.email_notifications ?? true}
+                  onCheckedChange={(checked) => updatePreference('email_notifications', checked)}
+                  disabled={updatingPreference === 'email_notifications'}
+                />
+              </div>
+
+              <div className="flex items-center justify-between py-3 border-b">
+                <div>
+                  <p className="text-sm font-medium">Marketing Emails</p>
+                  <p className="text-xs text-gray-500">Tips and offers</p>
+                </div>
+                <Switch
+                  checked={preferences?.marketing_emails ?? false}
+                  onCheckedChange={(checked) => updatePreference('marketing_emails', checked)}
+                  disabled={updatingPreference === 'marketing_emails'}
+                />
+              </div>
+
+              <div className="flex items-center justify-between py-3 border-b">
+                <div>
+                  <p className="text-sm font-medium">Security Alerts</p>
+                  <p className="text-xs text-gray-500">Suspicious activity</p>
+                </div>
+                <Switch
+                  checked={preferences?.security_alerts ?? true}
+                  onCheckedChange={(checked) => updatePreference('security_alerts', checked)}
+                  disabled={updatingPreference === 'security_alerts'}
+                />
+              </div>
+
+              <div className="flex items-center justify-between py-3 border-b">
+                <div>
+                  <p className="text-sm font-medium">Order Updates</p>
+                  <p className="text-xs text-gray-500">Confirmations & status</p>
+                </div>
+                <Switch
+                  checked={preferences?.order_emails ?? true}
+                  onCheckedChange={(checked) => updatePreference('order_emails' as keyof UserPreferences, checked)}
+                  disabled={updatingPreference === 'order_emails'}
+                />
+              </div>
+
+              <div className="flex items-center justify-between py-3">
+                <div>
+                  <p className="text-sm font-medium">Wallet Notifications</p>
+                  <p className="text-xs text-gray-500">Top-ups & refunds</p>
+                </div>
+                <Switch
+                  checked={preferences?.wallet_emails ?? true}
+                  onCheckedChange={(checked) => updatePreference('wallet_emails' as keyof UserPreferences, checked)}
+                  disabled={updatingPreference === 'wallet_emails'}
+                />
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Security Sheet */}
+      <Sheet open={activeSheet === 'security'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Security</SheetTitle>
+          </SheetHeader>
+          
+          <div className="space-y-6">
+            {/* Password Change */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-sm">Change Password</h4>
+              <div>
+                <Label className="text-xs">New Password</Label>
+                <div className="relative mt-1">
+                  <Input
+                    type={showNewPassword ? 'text' : 'password'}
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 
-                {/* Status Info */}
-                {(profile as any)?.two_factor_enabled !== false ? (
-                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-emerald-100 rounded-lg">
-                        <Shield className="w-5 h-5 text-emerald-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-emerald-900">Email Verification Active</h4>
-                        <p className="text-sm text-emerald-700 mt-1">
-                          Important account actions are protected with email verification codes sent to your registered email address.
-                        </p>
-                      </div>
+                {newPassword && (
+                  <div className="mt-2">
+                    <div className="flex gap-1 mb-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`h-1 flex-1 rounded-full transition-all ${
+                            i < passwordStrength ? strengthColors[passwordStrength - 1] : 'bg-gray-200'
+                          }`}
+                        />
+                      ))}
                     </div>
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-amber-100 rounded-lg">
-                        <AlertTriangle className="w-5 h-5 text-amber-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-amber-900">Protection Disabled</h4>
-                        <p className="text-sm text-amber-700 mt-1">
-                          Warning: Sensitive actions will proceed without OTP verification. We recommend keeping 2FA enabled.
-                        </p>
-                      </div>
-                    </div>
+                    <span className={`text-xs font-medium ${passwordStrength >= 4 ? 'text-green-600' : passwordStrength >= 3 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {strengthLabels[passwordStrength - 1] || 'Too Short'}
+                    </span>
                   </div>
                 )}
-                
-                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                  <p className="text-sm font-medium text-gray-700 mb-3">Protected actions include:</p>
-                  <ul className="space-y-2">
-                    <li className="flex items-center gap-2 text-sm text-gray-600">
-                      <CheckCircle className="w-4 h-4 text-emerald-500" />
-                      Password changes
-                    </li>
-                    <li className="flex items-center gap-2 text-sm text-gray-600">
-                      <CheckCircle className="w-4 h-4 text-emerald-500" />
-                      Email address updates
-                    </li>
-                    <li className="flex items-center gap-2 text-sm text-gray-600">
-                      <CheckCircle className="w-4 h-4 text-emerald-500" />
-                      Account deletion requests
-                    </li>
-                  </ul>
-                </div>
-                
-                <p className="text-xs text-gray-500">
-                  💡 Keep your email address secure to protect your account.
-                </p>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Notifications */}
-          <AccordionItem value="notifications" className="border-none">
-            <AccordionTrigger className="px-6 py-4 hover:bg-gray-50 hover:no-underline">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center">
-                  <Bell className="h-4 w-4 text-purple-600" />
-                </div>
-                <div className="text-left">
-                  <span className="text-sm font-medium text-gray-900 block">Notifications</span>
-                  <span className="text-xs text-gray-500">Manage your email preferences</span>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              {preferencesLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Push Notifications Toggle */}
-                  {isSupported && (
-                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                      <div className="flex items-center gap-3">
-                        <BellRing className="h-4 w-4 text-violet-500" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Push Notifications</p>
-                          <p className="text-xs text-gray-500">
-                            {permission === 'denied' 
-                              ? 'Blocked in browser settings' 
-                              : 'Receive instant alerts even when not on the site'}
-                          </p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={isSubscribed}
-                        onCheckedChange={handlePushToggle}
-                        disabled={pushLoading || permission === 'denied'}
-                      />
-                    </div>
-                  )}
-
-                  {permission === 'denied' && (
-                    <div className="ml-7 p-3 rounded-lg bg-amber-50 border border-amber-200">
-                      <p className="text-xs text-amber-700 flex items-center gap-2">
-                        <AlertTriangle className="h-3 w-3" />
-                        Push notifications are blocked. Enable them in your browser settings.
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <Mail className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Email Notifications</p>
-                        <p className="text-xs text-gray-500">Receive updates about your account</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={preferences?.email_notifications ?? true}
-                      onCheckedChange={(checked) => updatePreference('email_notifications', checked)}
-                      disabled={updatingPreference === 'email_notifications'}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <Bell className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Marketing Emails</p>
-                        <p className="text-xs text-gray-500">Receive tips, updates and offers</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={preferences?.marketing_emails ?? false}
-                      onCheckedChange={(checked) => updatePreference('marketing_emails', checked)}
-                      disabled={updatingPreference === 'marketing_emails'}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <Shield className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Security Alerts</p>
-                        <p className="text-xs text-gray-500">Get notified about suspicious activity</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={preferences?.security_alerts ?? true}
-                      onCheckedChange={(checked) => updatePreference('security_alerts', checked)}
-                      disabled={updatingPreference === 'security_alerts'}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <Key className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Security Emails</p>
-                        <p className="text-xs text-gray-500">Password changes, account recovery</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={preferences?.security_emails ?? true}
-                      onCheckedChange={(checked) => updatePreference('security_emails' as keyof UserPreferences, checked)}
-                      disabled={updatingPreference === 'security_emails'}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <Globe className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Login Notifications</p>
-                        <p className="text-xs text-gray-500">Email when you sign in from new device</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={preferences?.login_alerts ?? true}
-                      onCheckedChange={(checked) => updatePreference('login_alerts' as keyof UserPreferences, checked)}
-                      disabled={updatingPreference === 'login_alerts'}
-                    />
-                  </div>
-
-                  {/* Order Emails */}
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <Bell className="h-4 w-4 text-blue-500" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Order Updates</p>
-                        <p className="text-xs text-gray-500">Order confirmations, delivery status</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={preferences?.order_emails ?? true}
-                      onCheckedChange={(checked) => updatePreference('order_emails' as keyof UserPreferences, checked)}
-                      disabled={updatingPreference === 'order_emails'}
-                    />
-                  </div>
-
-                  {/* Wallet Emails */}
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <Bell className="h-4 w-4 text-emerald-500" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Wallet Notifications</p>
-                        <p className="text-xs text-gray-500">Top-ups, refunds, low balance alerts</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={preferences?.wallet_emails ?? true}
-                      onCheckedChange={(checked) => updatePreference('wallet_emails' as keyof UserPreferences, checked)}
-                      disabled={updatingPreference === 'wallet_emails'}
-                    />
-                  </div>
-
-                  {/* Product Emails */}
-                  <div className="flex items-center justify-between py-3">
-                    <div className="flex items-center gap-3">
-                      <Bell className="h-4 w-4 text-amber-500" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Product Updates</p>
-                        <p className="text-xs text-gray-500">New products, price changes</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={preferences?.product_emails ?? false}
-                      onCheckedChange={(checked) => updatePreference('product_emails' as keyof UserPreferences, checked)}
-                      disabled={updatingPreference === 'product_emails'}
-                    />
-                  </div>
-                </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Danger Zone */}
-          <AccordionItem value="danger" className="border-none">
-            <AccordionTrigger className="px-6 py-4 hover:bg-red-50 hover:no-underline">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center">
-                  <Trash2 className="h-4 w-4 text-red-600" />
-                </div>
-                <div className="text-left">
-                  <span className="text-sm font-medium text-red-600 block">Danger Zone</span>
-                  <span className="text-xs text-gray-500">Irreversible account actions</span>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              <div className="space-y-4">
-                {/* Export Data */}
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <Download className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Export Your Data</p>
-                      <p className="text-xs text-gray-500">Download all your data in JSON format</p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExportData}
-                    disabled={isExporting}
-                    className="text-gray-600 border-gray-200 hover:bg-gray-50 text-xs"
+              
+              <div>
+                <Label className="text-xs">Confirm Password</Label>
+                <div className="relative mt-1">
+                  <Input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                   >
-                    {isExporting ? (
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {confirmPassword && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    {passwordsMatch ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Exporting...
+                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                        <span className="text-xs text-green-600">Passwords match</span>
                       </>
                     ) : (
                       <>
-                        <Download className="h-4 w-4 mr-2" />
-                        Export
+                        <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+                        <span className="text-xs text-red-600">Passwords do not match</span>
                       </>
                     )}
-                  </Button>
-                </div>
-
-                {/* Delete Account */}
-                <div className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-3">
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                    <div>
-                      <p className="text-sm font-medium text-red-600">Delete Account</p>
-                      <p className="text-xs text-gray-500">Permanently delete your account and data</p>
-                    </div>
                   </div>
+                )}
+              </div>
+              
+              <Button
+                onClick={handlePasswordChange}
+                disabled={passwordLoading || newPassword.length < 8 || !passwordsMatch}
+                className="w-full"
+              >
+                {passwordLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Update Password
+              </Button>
+            </div>
+
+            {/* Active Sessions */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-sm">Active Sessions</h4>
+                {sessions.length > 1 && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 border-red-200 hover:bg-red-50 text-xs"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
+                      <Button variant="outline" size="sm" className="text-amber-600 border-amber-200 text-xs">
+                        <LogOut className="h-3 w-3 mr-1" />
+                        Sign Out All
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-white border border-gray-200">
+                    <AlertDialogContent className="bg-white">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="text-red-600">Delete Account?</AlertDialogTitle>
+                        <AlertDialogTitle>Sign out from all devices?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This action cannot be undone. Your account will be permanently deleted within 48 hours.
+                          This will log you out from all devices, including this one.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
-                      <div className="py-4">
-                        <label className="text-sm font-medium text-gray-700">
-                          Why are you leaving? (optional)
-                        </label>
-                        <Textarea
-                          value={deleteReason}
-                          onChange={(e) => setDeleteReason(e.target.value)}
-                          placeholder="Help us improve by sharing your reason..."
-                          className="mt-2"
-                          rows={3}
-                        />
-                      </div>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={handleDeleteAccount}
-                          disabled={isDeleting}
-                          className="bg-red-600 hover:bg-red-700"
+                          onClick={handleSignOutAll}
+                          disabled={isSigningOutAll}
+                          className="bg-amber-600 hover:bg-amber-700"
                         >
-                          {isDeleting ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Deleting...
-                            </>
-                          ) : (
-                            'Delete Account'
-                          )}
+                          {isSigningOutAll ? 'Signing out...' : 'Sign Out All'}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
+                )}
+              </div>
+              
+              {sessionsLoading ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                </div>
+              ) : sessions.length === 0 ? (
+                <p className="text-sm text-gray-500 py-2">No active sessions</p>
+              ) : (
+                <div className="space-y-2">
+                  {sessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className={`flex items-center justify-between p-3 rounded-lg ${
+                        session.is_current ? 'bg-emerald-50 border border-emerald-100' : 'bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {session.device_name?.includes('Mobile') ? (
+                          <Smartphone className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <Monitor className="h-4 w-4 text-gray-500" />
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-gray-900">
+                              {session.browser || 'Unknown'} on {session.device_name || 'Unknown'}
+                            </p>
+                            {session.is_current && (
+                              <Badge className="text-xs bg-emerald-100 text-emerald-700">
+                                Current
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {new Date(session.last_active).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      {!session.is_current && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleTerminateSession(session.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                        >
+                          <LogOut className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Two-Factor Sheet */}
+      <Sheet open={activeSheet === 'two-factor'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Two-Factor Authentication</SheetTitle>
+          </SheetHeader>
+          
+          <div className="space-y-4">
+            {/* Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border">
+              <div>
+                <p className="font-medium text-sm">Enable 2FA Protection</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Require email OTP for sensitive actions
+                </p>
+              </div>
+              <Switch 
+                checked={(profile as any)?.two_factor_enabled !== false}
+                onCheckedChange={async (checked) => {
+                  if (!user) return;
+                  setUpdating2FA(true);
+                  try {
+                    const { error } = await supabase
+                      .from('profiles')
+                      .update({ two_factor_enabled: checked })
+                      .eq('user_id', user.id);
+                    if (error) throw error;
+                    toast.success(checked ? '2FA enabled' : '2FA disabled');
+                    window.location.reload();
+                  } catch (err: any) {
+                    toast.error(err.message || 'Failed to update 2FA');
+                  } finally {
+                    setUpdating2FA(false);
+                  }
+                }}
+                disabled={updating2FA}
+              />
+            </div>
+            
+            {/* Status */}
+            {(profile as any)?.two_factor_enabled !== false ? (
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                <div className="flex items-start gap-3">
+                  <Shield className="w-5 h-5 text-emerald-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-emerald-900">Protection Active</h4>
+                    <p className="text-sm text-emerald-700 mt-1">
+                      Sensitive actions require email verification.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-amber-900">Protection Disabled</h4>
+                    <p className="text-sm text-amber-700 mt-1">
+                      We recommend enabling 2FA for security.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="p-4 rounded-xl bg-gray-50 border">
+              <p className="text-sm font-medium text-gray-700 mb-3">Protected actions:</p>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-sm text-gray-600">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  Password changes
+                </li>
+                <li className="flex items-center gap-2 text-sm text-gray-600">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  Email address updates
+                </li>
+                <li className="flex items-center gap-2 text-sm text-gray-600">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  Account deletion
+                </li>
+              </ul>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
