@@ -1,135 +1,141 @@
 
-# Fix Wallet Section Logos and Admin Panel Synchronization
+# Fix Wallet Logos from Admin Panel Synchronization
 
-## Issues Identified
+## Problem Summary
 
-### Issue 1: Available Withdrawal Methods - Logos Not Showing Properly
-The "Available Withdrawal Methods" section in Buyer and Seller wallets shows logos based on `getPaymentLogo(method.method_code)`, but:
-- The `method_code` stored in `withdrawal_method_config` may not match the keys in `PAYMENT_LOGOS` registry
-- When no match is found, `getPaymentLogo()` returns an empty URL
-- The `LogoWithFallback` component correctly falls back to a colored letter, but the expected official logos from admin panel aren't syncing
+The user has identified three key issues with the wallet sections:
 
-**Root Cause**: The logo URL stored in `custom_logo_url` from admin panel is NOT being prioritized correctly, and the registry lookup is case-sensitive
-
-### Issue 2: Add Account Steps 2 & 3 - Wallet/Bank Selection Images
-The "Select Bank" (Step 3) and "Select Wallet" (Step 3) sections use images from `digital-wallets-config.ts`:
-- `bank.logo` from `COUNTRY_BANKS` array
-- `wallet.logo` from `DIGITAL_WALLETS` array
-
-These are hardcoded in the config file and are NOT connected to admin panel `withdrawal_method_config`. When admin updates logos via `custom_logo_url`, these steps don't reflect the changes.
-
-### Issue 3: Admin Panel Preview Section Logos
-The admin panel "AVAILABLE WITHDRAWAL METHODS" preview section at line 936-961 shows logos using `getMethodLogo()` which works correctly, but the cards in the grid (lines 996-1070) may have inconsistent logo display.
+1. **Available Withdrawal Methods preview** - Should show ONLY images from admin panel (no text names), with image sizes matching the deposit section
+2. **Add Account Steps 2 & 3** - Bank/wallet selection should use logos updated in admin panel
+3. **Country filter** - Should show ALL countries, not just those with configured methods
 
 ---
 
 ## Implementation Plan
 
-### Step 1: Create a Unified Logo Helper Function
-Create a helper that:
-1. First checks `withdrawal_method_config.custom_logo_url` (admin uploaded)
-2. Then checks `PAYMENT_LOGOS` registry by `method_code` (case-insensitive)
-3. Finally falls back to brand color with first letter
+### Part 1: Fix "Available Withdrawal Methods" Preview Section
 
-**Location**: `src/lib/payment-logos.ts`
+**Current State (BuyerWallet.tsx lines 803-834):**
+- Shows logo + method name text + badge
+- Image size: `h-10 w-10`
 
+**Required Changes:**
+- Remove method name text and badge - show ONLY the logo image
+- Change image size to match deposit section: `h-8 w-auto` (like BillingSection line 703)
+- Clean, minimal layout showing just the official logos
+
+**Files:** `BuyerWallet.tsx`, `SellerWallet.tsx`
+
+---
+
+### Part 2: Fix Country Dropdown to Show All Countries
+
+**Current State:**
 ```typescript
-// Enhanced getPaymentLogo with case-insensitive matching
-export const getPaymentLogo = (code: string | null): LogoConfig => {
-  if (!code) return { url: '', color: '#6366f1' };
-  
-  // Case-insensitive lookup
-  const normalizedCode = code.toLowerCase().trim();
-  const match = PAYMENT_LOGOS[normalizedCode];
-  
-  return match || { url: '', color: '#6366f1' };
-};
+const availableCountries = useMemo(() => {
+  const countries = [...new Set(withdrawalMethods.map(m => m.country_code))];
+  return countries.filter(c => c);
+}, [withdrawalMethods]);
 ```
+This only shows countries that have configured withdrawal methods.
 
-### Step 2: Fix BuyerWallet.tsx "Available Withdrawal Methods" Section
+**Required Changes:**
+- Import `COUNTRY_CONFIG` from payment-logos
+- Show ALL countries from `COUNTRY_CONFIG` in the dropdown
+- Indicate which have configured methods (optional badge/count)
 
-**Current (Line 772-787)**:
-```tsx
-{displayMethods.map((method) => {
-  const logoConfig = getPaymentLogo(method.method_code || method.account_type);
-  const logoUrl = method.custom_logo_url || logoConfig.url;
-  const brandColor = method.brand_color || logoConfig.color || '#6366f1';
-```
+---
 
-This is correct, but we need to ensure `method.custom_logo_url` and `method.brand_color` are properly fetched from the database. The issue may be that the BFF endpoint isn't returning these fields.
+### Part 3: Fix Add Account Step 3 Logos
 
-**Check**: Verify `bff-buyer-wallet` returns `custom_logo_url` and `brand_color` from `withdrawal_method_config`.
+**Current State (lines 1397-1467):**
+- Banks: Uses `bank.logo` directly from `getAvailableBanks()` result
+- Wallets: Uses `wallet.logo` directly from `getAvailableDigitalWallets()` result
 
-### Step 3: Update Add Account Steps 2 & 3 to Use Admin-Configured Logos
+The merge functions (lines 211-248) ARE working correctly - they already override with `custom_logo_url` when available. However, the image rendering in Step 3 needs to use the merged logo consistently.
 
-**Problem**: The `getAvailableBanks()` and `getAvailableDigitalWallets()` functions return data from static `digital-wallets-config.ts`, NOT from admin panel.
+**Verification Needed:**
+- Confirm the `getAvailableBanks()` and `getAvailableDigitalWallets()` functions return the admin-configured logos
+- The returned `bank.logo` and `wallet.logo` should already contain the merged value
 
-**Solution**: Modify these functions to merge admin-configured logos with the static registry:
+**No changes needed if merge is working** - just verify the data flow is correct.
 
+---
+
+## Technical Changes
+
+### File: `src/components/dashboard/BuyerWallet.tsx`
+
+**Change 1: Update Country Dropdown (lines 784-797)**
 ```typescript
-const getAvailableBanks = useCallback(() => {
-  if (!selectedCountry) return [];
-  const staticBanks = getBanksForCountry(selectedCountry);
-  
-  // Merge with admin-configured withdrawal methods for this country/type
-  return staticBanks.map(bank => {
-    const adminConfig = withdrawalMethods.find(
-      m => m.country_code === selectedCountry && 
-           m.account_type === 'bank' && 
-           m.method_code?.toLowerCase() === bank.code.toLowerCase()
-    );
-    return {
-      ...bank,
-      logo: adminConfig?.custom_logo_url || bank.logo,
-      color: adminConfig?.brand_color || bank.color,
-    };
-  });
-}, [selectedCountry, withdrawalMethods]);
+// Before: Only shows countries with configured methods
+{availableCountries.filter(c => c !== userCountry).map(code => (
+
+// After: Show ALL countries from COUNTRY_CONFIG
+{Object.keys(COUNTRY_CONFIG).filter(c => c !== userCountry).map(code => (
 ```
 
-Same pattern for `getAvailableDigitalWallets()`.
-
-### Step 4: Ensure Admin Panel Logo Preview Works
-
-**Current Implementation (Line 296-303)**:
-```tsx
-const getMethodLogo = (method: WithdrawalMethod) => {
-  const logoConfig = getPaymentLogo(method.method_code || method.account_type);
-  return {
-    url: method.custom_logo_url || logoConfig.url,
-    color: method.brand_color || logoConfig.color,
-    name: method.method_name || logoConfig.name,
-  };
-};
-```
-
-This is correct. The issue may be case sensitivity in `method_code` lookup.
-
-### Step 5: Fix Case-Insensitive Logo Lookup in payment-logos.ts
-
-**Current `getPaymentLogo` function needs enhancement**:
+**Change 2: Update Preview Grid (lines 803-834)**
 ```typescript
-export const getPaymentLogo = (code: string): LogoConfig => {
-  // Current: Direct lookup (case sensitive)
-  return PAYMENT_LOGOS[code] || { url: '', color: '#6366f1' };
-};
+// Before: Shows logo + name + badge
+<div className="p-4 rounded-xl ...">
+  <LogoWithFallback
+    src={logoUrl}
+    alt={method.method_name}
+    color={brandColor}
+    className="h-10 w-10 mx-auto mb-3"
+  />
+  <p className="text-gray-900 font-semibold text-sm">
+    {method.method_name}
+  </p>
+  <Badge ...>...</Badge>
+</div>
+
+// After: Shows ONLY logo (matching deposit section style)
+<div className="p-3 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-all">
+  <img 
+    src={logoUrl}
+    alt={method.method_name}
+    className="h-8 w-auto object-contain"
+    onError={(e) => {
+      // Fallback to LogoWithFallback on error
+      (e.target as HTMLImageElement).style.display = 'none';
+    }}
+  />
+</div>
 ```
 
-**Enhanced version**:
-```typescript
-export const getPaymentLogo = (code: string | null): LogoConfig => {
-  if (!code) return { url: '', color: '#6366f1', name: '' };
-  
-  // Try exact match first
-  if (PAYMENT_LOGOS[code]) return PAYMENT_LOGOS[code];
-  
-  // Try case-insensitive match
-  const lowerCode = code.toLowerCase();
-  const matchKey = Object.keys(PAYMENT_LOGOS).find(k => k.toLowerCase() === lowerCode);
-  
-  return matchKey ? PAYMENT_LOGOS[matchKey] : { url: '', color: '#6366f1', name: '' };
-};
+### File: `src/components/seller/SellerWallet.tsx`
+
+Apply the same changes as BuyerWallet.tsx.
+
+---
+
+## Visual Before/After
+
+### Available Withdrawal Methods Preview
+
+**Before:**
+```text
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│   [logo]    │ │   [logo]    │ │   [logo]    │
+│   bKash     │ │   Nagad     │ │   Rocket    │
+│  [Wallet]   │ │  [Wallet]   │ │  [Wallet]   │
+└─────────────┘ └─────────────┘ └─────────────┘
 ```
+
+**After (matching deposit section):**
+```text
+┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
+│[logo] │ │[logo] │ │[logo] │ │[logo] │
+└───────┘ └───────┘ └───────┘ └───────┘
+```
+
+### Country Dropdown
+
+**Before:** Only BD, IN, PK (configured countries)
+
+**After:** All countries from COUNTRY_CONFIG (BD, IN, PK, US, UK, CA, AU, etc.)
 
 ---
 
@@ -137,51 +143,14 @@ export const getPaymentLogo = (code: string | null): LogoConfig => {
 
 | File | Changes |
 |------|---------|
-| `src/lib/payment-logos.ts` | Add case-insensitive matching to `getPaymentLogo()` |
-| `src/components/dashboard/BuyerWallet.tsx` | Update `getAvailableBanks()` and `getAvailableDigitalWallets()` to merge admin logos |
+| `src/components/dashboard/BuyerWallet.tsx` | Update preview grid (images only, proper sizing), expand country dropdown |
 | `src/components/seller/SellerWallet.tsx` | Same changes as BuyerWallet |
-| `supabase/functions/bff-buyer-wallet/index.ts` | Verify `custom_logo_url` and `brand_color` are returned |
 
 ---
 
-## Technical Details
+## Expected Behavior After Fix
 
-### Logo Priority System (Final)
-```
-1. withdrawal_method_config.custom_logo_url (admin uploaded)
-2. PAYMENT_LOGOS[method_code] (registry with case-insensitive match)
-3. DIGITAL_WALLETS[country][wallet.code].logo (static config)
-4. Colored fallback with first letter of method name
-```
-
-### Data Flow After Fix
-```
-ADMIN PANEL
-    │
-    ├── Updates withdrawal_method_config.custom_logo_url
-    ├── Updates withdrawal_method_config.brand_color
-    │
-    ▼
-REALTIME SUBSCRIPTION
-    │
-    ▼
-┌─────────────────────────────────┐
-│  BuyerWallet / SellerWallet     │
-│  ─────────────────────────────  │
-│  Available Withdrawal Methods   │  ← Uses admin logo via priority system
-│  ─────────────────────────────  │
-│  Add Account → Step 2 (Type)    │  ← Static icons (Bank/Wallet/Crypto)
-│  Add Account → Step 3 (Select)  │  ← Merges admin logos with static config
-│  Add Account → Step 4 (Details) │  ← Shows selected method branding
-└─────────────────────────────────┘
-```
-
----
-
-## Expected Behavior After Implementation
-
-1. **Admin uploads bKash logo** → Wallet sections show the uploaded logo immediately
-2. **Admin sets brand color #E2136E** → Fallback placeholders use this color
-3. **Steps 2 & 3 in Add Account** → Show official images from config, overridden by admin uploads if set
-4. **Country filter works** → Switching preview country shows correct methods with logos
-5. **Case insensitivity** → method_code "bKash", "BKASH", "bkash" all match the same logo
+1. **Admin uploads bKash logo** → Preview shows ONLY the logo image (no text)
+2. **Image sizing** → Matches deposit section (`h-8 w-auto`)
+3. **Country dropdown** → Shows ALL countries, user can preview methods for any country
+4. **Add Account Step 3** → Uses admin-configured logos via the existing merge logic
