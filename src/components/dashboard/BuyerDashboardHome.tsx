@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
+import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
 import { Wallet, ShoppingBag, TrendingUp, Clock, Package, ArrowRight, Plus, Heart, Store, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,70 +23,88 @@ interface Order {
   };
 }
 
+interface DashboardData {
+  wallet: { balance: number };
+  sellerOrders: Order[];
+  wishlistCount: number;
+  orderStats: {
+    total: number;
+    pending: number;
+    delivered: number;
+    completed: number;
+    cancelled: number;
+    totalSpent: number;
+  };
+}
+
 const BuyerDashboardHome = () => {
   const { user } = useAuthContext();
   const { formatAmountOnly } = useCurrency();
-  const [wallet, setWallet] = useState<{ balance: number } | null>(null);
-  const [allOrders, setAllOrders] = useState<Order[]>([]);
-  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-  const [wishlistCount, setWishlistCount] = useState(0);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    const result = await bffApi.getBuyerDashboard();
+    
+    if (result.isUnauthorized) {
+      handleUnauthorized();
+      return;
+    }
+    
+    if (result.error) {
+      setError(result.error);
+      setLoading(false);
+      return;
+    }
+    
+    if (result.data) {
+      setData({
+        wallet: result.data.wallet,
+        sellerOrders: result.data.sellerOrders,
+        wishlistCount: result.data.wishlistCount,
+        orderStats: result.data.orderStats
+      });
+    }
+    setLoading(false);
+  };
+
+  // Initial load from BFF
   useEffect(() => {
     if (user) fetchData();
   }, [user]);
 
-  const fetchData = async () => {
-    // Fetch wallet
-    const { data: walletData } = await supabase
-      .from('user_wallets')
-      .select('balance')
-      .eq('user_id', user?.id)
-      .single();
+  // Realtime for instant updates
+  useEffect(() => {
+    if (!user) return;
     
-    if (walletData) setWallet(walletData);
+    const channel = supabase
+      .channel('buyer-dashboard-home')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'seller_orders',
+        filter: `buyer_id=eq.${user.id}`
+      }, fetchData)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'user_wallets',
+        filter: `user_id=eq.${user.id}`
+      }, fetchData)
+      .subscribe();
+      
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
-    // Fetch ALL orders for accurate stats
-    const { data: allOrdersData } = await supabase
-      .from('seller_orders')
-      .select(`id, amount, status, created_at`)
-      .eq('buyer_id', user?.id);
-
-    if (allOrdersData) setAllOrders(allOrdersData as Order[]);
-
-    // Fetch recent 5 orders with product details for display
-    const { data: recentOrdersData } = await supabase
-      .from('seller_orders')
-      .select(`
-        id, amount, status, created_at,
-        product:seller_products(name, icon_url),
-        seller:seller_profiles(store_name)
-      `)
-      .eq('buyer_id', user?.id)
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    if (recentOrdersData) setRecentOrders(recentOrdersData as Order[]);
-
-    // Fetch wishlist count
-    const { count } = await supabase
-      .from('buyer_wishlist')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user?.id);
-
-    setWishlistCount(count || 0);
-    setLoading(false);
-  };
-
-  // Calculate stats from ALL orders
-  const stats = useMemo(() => {
-    const totalSpent = allOrders.reduce((sum, o) => sum + o.amount, 0);
-    const totalOrders = allOrders.length;
-    const pendingOrders = allOrders.filter(o => o.status === 'pending').length;
-    const deliveredOrders = allOrders.filter(o => o.status === 'delivered').length;
-    const completedOrders = allOrders.filter(o => o.status === 'completed').length;
-    return { totalSpent, totalOrders, pendingOrders, deliveredOrders, completedOrders };
-  }, [allOrders]);
+  // Get recent 5 orders for display
+  const recentOrders = data?.sellerOrders?.slice(0, 5) || [];
+  const stats = data?.orderStats || { total: 0, pending: 0, delivered: 0, completed: 0, totalSpent: 0 };
+  const wishlistCount = data?.wishlistCount || 0;
+  const wallet = data?.wallet || { balance: 0 };
 
   if (loading) {
     return (
@@ -100,6 +119,16 @@ const BuyerDashboardHome = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+        <p className="text-slate-600 mb-4">{error}</p>
+        <Button onClick={fetchData} variant="outline">Try Again</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Stats Cards - Real Data */}
@@ -109,7 +138,7 @@ const BuyerDashboardHome = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-slate-500">Wallet Balance</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(wallet?.balance || 0)}</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(wallet.balance)}</p>
               </div>
               <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
                 <Wallet className="w-6 h-6 text-violet-600" />
@@ -135,8 +164,8 @@ const BuyerDashboardHome = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-slate-500">Total Orders</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">{stats.totalOrders}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{stats.completedOrders} completed</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{stats.total}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{stats.completed} completed</p>
               </div>
               <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
                 <ShoppingBag className="w-6 h-6 text-blue-600" />
@@ -149,9 +178,9 @@ const BuyerDashboardHome = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500">Pending Delivery</p>
-              <p className="text-2xl font-bold text-orange-600 mt-1">{stats.pendingOrders + stats.deliveredOrders}</p>
-              {stats.deliveredOrders > 0 && (
-                <p className="text-xs text-blue-500 mt-0.5">{stats.deliveredOrders} awaiting approval</p>
+              <p className="text-2xl font-bold text-orange-600 mt-1">{stats.pending + stats.delivered}</p>
+              {stats.delivered > 0 && (
+                <p className="text-xs text-blue-500 mt-0.5">{stats.delivered} awaiting approval</p>
               )}
             </div>
             <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
@@ -184,7 +213,7 @@ const BuyerDashboardHome = () => {
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500">Completed</p>
-              <p className="text-xl font-bold text-emerald-600">{stats.completedOrders}</p>
+              <p className="text-xl font-bold text-emerald-600">{stats.completed}</p>
             </div>
           </div>
         </div>
@@ -196,7 +225,7 @@ const BuyerDashboardHome = () => {
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500">Delivered</p>
-              <p className="text-xl font-bold text-blue-600">{stats.deliveredOrders}</p>
+              <p className="text-xl font-bold text-blue-600">{stats.delivered}</p>
             </div>
           </div>
         </div>
@@ -208,7 +237,7 @@ const BuyerDashboardHome = () => {
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500">Pending</p>
-              <p className="text-xl font-bold text-amber-600">{stats.pendingOrders}</p>
+              <p className="text-xl font-bold text-amber-600">{stats.pending}</p>
             </div>
           </div>
         </div>
@@ -272,10 +301,10 @@ const BuyerDashboardHome = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-slate-800">Orders</p>
-                  <p className="text-xs text-slate-500">{stats.completedOrders} completed</p>
+                  <p className="text-xs text-slate-500">{stats.completed} completed</p>
                 </div>
               </div>
-              <span className="text-xl font-bold text-slate-800">{stats.totalOrders}</span>
+              <span className="text-xl font-bold text-slate-800">{stats.total}</span>
             </div>
           </Link>
 
@@ -307,8 +336,8 @@ const BuyerDashboardHome = () => {
                   <p className="text-xs text-slate-500">Awaiting delivery</p>
                 </div>
               </div>
-              <span className={`text-xl font-bold ${stats.pendingOrders > 0 ? 'text-orange-600' : 'text-slate-800'}`}>
-                {stats.pendingOrders}
+              <span className={`text-xl font-bold ${stats.pending > 0 ? 'text-orange-600' : 'text-slate-800'}`}>
+                {stats.pending}
               </span>
             </div>
           </Link>
@@ -325,7 +354,7 @@ const BuyerDashboardHome = () => {
               </div>
             </div>
             <span className="text-xl font-bold text-emerald-600">
-              {stats.totalOrders > 0 ? Math.round((stats.completedOrders / stats.totalOrders) * 100) : 100}%
+              {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 100}%
             </span>
           </div>
         </div>

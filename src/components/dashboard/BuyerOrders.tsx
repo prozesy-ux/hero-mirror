@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
-import { ShoppingBag, Package, Clock, CheckCircle, XCircle, Search, Eye, MessageSquare, Star, Calendar, ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react';
+import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
+import { ShoppingBag, Package, Clock, CheckCircle, XCircle, Search, Eye, MessageSquare, Star, Calendar, ArrowUpDown, ArrowDown, ArrowUp, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +62,7 @@ const BuyerOrders = () => {
   const { user } = useAuthContext();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -72,26 +74,50 @@ const BuyerOrders = () => {
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  const fetchOrders = async () => {
+    setLoading(true);
+    setError(null);
+    
+    const result = await bffApi.getBuyerDashboard();
+    
+    if (result.isUnauthorized) {
+      handleUnauthorized();
+      return;
+    }
+    
+    if (result.error) {
+      setError(result.error);
+      setLoading(false);
+      return;
+    }
+    
+    if (result.data) {
+      setOrders(result.data.sellerOrders as Order[]);
+    }
+    setLoading(false);
+  };
+
+  // Initial load from BFF
   useEffect(() => {
     if (user) fetchOrders();
   }, [user]);
 
-  const fetchOrders = async () => {
-    const { data, error } = await supabase
-      .from('seller_orders')
-      .select(`
-        *,
-        product:seller_products(id, name, icon_url, description),
-        seller:seller_profiles(id, store_name, store_logo_url)
-      `)
-      .eq('buyer_id', user?.id)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setOrders(data as Order[]);
-    }
-    setLoading(false);
-  };
+  // Realtime for instant updates
+  useEffect(() => {
+    if (!user) return;
+    
+    const channel = supabase
+      .channel('buyer-orders')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'seller_orders',
+        filter: `buyer_id=eq.${user.id}`
+      }, fetchOrders)
+      .subscribe();
+      
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   // Stats
   const stats = useMemo(() => ({
@@ -223,6 +249,16 @@ const BuyerOrders = () => {
           ))}
         </div>
         <Skeleton className="h-96 rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+        <p className="text-slate-600 mb-4">{error}</p>
+        <Button onClick={fetchOrders} variant="outline">Try Again</Button>
       </div>
     );
   }
