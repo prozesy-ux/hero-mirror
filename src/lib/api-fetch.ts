@@ -24,11 +24,35 @@ export interface ApiFetchResult<T> {
 
 /**
  * Get the current access token from Supabase session
+ * Proactively refreshes if token is near expiry
  */
 async function getAccessToken(): Promise<string | null> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || null;
+    
+    if (!session) {
+      return null;
+    }
+    
+    // Check if token is near expiry (within 5 minutes)
+    const exp = session.expires_at;
+    const now = Math.floor(Date.now() / 1000);
+    const fiveMinutes = 5 * 60;
+    
+    if (exp && (exp - now) < fiveMinutes) {
+      console.log('[ApiFetch] Token near expiry, refreshing proactively');
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !refreshData.session) {
+        console.warn('[ApiFetch] Proactive refresh failed:', refreshError?.message);
+        return session.access_token; // Return existing token, let the request try
+      }
+      
+      console.log('[ApiFetch] Token refreshed proactively');
+      return refreshData.session.access_token;
+    }
+    
+    return session.access_token;
   } catch (error) {
     console.error('[ApiFetch] Failed to get session:', error);
     return null;

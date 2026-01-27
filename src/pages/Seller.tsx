@@ -11,6 +11,7 @@ import { Loader2, Store, ArrowRight, AlertTriangle, Mail, Lock, User, Clock, Eye
 import { SellerProvider } from '@/contexts/SellerContext';
 import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import { SellerSidebarProvider, useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
+import { useSessionHeartbeat } from '@/hooks/useSessionHeartbeat';
 import SellerSidebar from '@/components/seller/SellerSidebar';
 import SellerTopBar from '@/components/seller/SellerTopBar';
 import SellerMobileHeader from '@/components/seller/SellerMobileHeader';
@@ -601,6 +602,9 @@ const Seller = () => {
   const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsRegistration, setNeedsRegistration] = useState(false);
+
+  // Start background session monitoring
+  useSessionHeartbeat();
 
   useEffect(() => {
     // Don't redirect - we show auth form inline
