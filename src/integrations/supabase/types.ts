@@ -2583,6 +2583,54 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_method_config: {
+        Row: {
+          account_type: string
+          brand_color: string | null
+          country_code: string
+          created_at: string | null
+          custom_logo_url: string | null
+          exchange_rate: number | null
+          id: string
+          is_enabled: boolean | null
+          max_withdrawal: number | null
+          method_code: string | null
+          method_name: string | null
+          min_withdrawal: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_type: string
+          brand_color?: string | null
+          country_code: string
+          created_at?: string | null
+          custom_logo_url?: string | null
+          exchange_rate?: number | null
+          id?: string
+          is_enabled?: boolean | null
+          max_withdrawal?: number | null
+          method_code?: string | null
+          method_name?: string | null
+          min_withdrawal?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_type?: string
+          brand_color?: string | null
+          country_code?: string
+          created_at?: string | null
+          custom_logo_url?: string | null
+          exchange_rate?: number | null
+          id?: string
+          is_enabled?: boolean | null
+          max_withdrawal?: number | null
+          method_code?: string | null
+          method_name?: string | null
+          min_withdrawal?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       withdrawal_otps: {
         Row: {
           created_at: string | null
