@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import RichTextEditor from './RichTextEditor';
 import ImageUploader from './ImageUploader';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Prompt {
   id: string;
@@ -29,11 +30,14 @@ const PromptsManagement = () => {
   const { prompts, categories, isLoading, refreshTable } = useAdminDataContext();
   const { insertData, updateData, deleteData } = useAdminMutate();
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewPrompt, setPreviewPrompt] = useState<Prompt | null>(null);
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
+  
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const [deleting, setDeleting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -111,13 +115,17 @@ const PromptsManagement = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this prompt?')) return;
+  const handleDeleteClick = (id: string) => {
+    setDeleteConfirm({ open: true, id });
+  };
 
-    setDeleting(id);
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.id) return;
+
+    setDeleting(true);
 
     try {
-      const result = await deleteData('prompts', id);
+      const result = await deleteData('prompts', deleteConfirm.id);
       if (!result.success) {
         toast.error(`Failed to delete: ${result.error}`);
       } else {
@@ -127,7 +135,8 @@ const PromptsManagement = () => {
     } catch (error: any) {
       toast.error(error?.message || 'Failed to delete prompt');
     } finally {
-      setDeleting(null);
+      setDeleting(false);
+      setDeleteConfirm({ open: false, id: null });
     }
   };
 
@@ -477,16 +486,12 @@ const PromptsManagement = () => {
                             <Edit size={18} />
                           </button>
                           <button
-                            onClick={() => handleDelete(prompt.id)}
-                            disabled={deleting === prompt.id}
+                            onClick={() => handleDeleteClick(prompt.id)}
+                            disabled={deleting}
                             className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                             title="Delete"
                           >
-                            {deleting === prompt.id ? (
-                              <Loader2 size={18} className="animate-spin" />
-                            ) : (
-                              <Trash2 size={18} />
-                            )}
+                            <Trash2 size={18} />
                           </button>
                         </div>
                       </td>
@@ -528,6 +533,18 @@ const PromptsManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ open, id: open ? deleteConfirm.id : null })}
+        title="Delete Prompt"
+        description="Are you sure you want to delete this prompt? This action cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        variant="destructive"
+        loading={deleting}
+      />
     </div>
   );
 };

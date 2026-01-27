@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import ImageUploader from './ImageUploader';
 import { Switch } from '@/components/ui/switch';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Category {
   id: string;
@@ -37,6 +38,10 @@ const CategoriesManagement = () => {
   const { categories, isLoading, refreshTable, aiAccounts } = useAdminDataContext();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const [deleting, setDeleting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     icon: '',
@@ -112,14 +117,21 @@ const CategoriesManagement = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return;
+  const handleDeleteClick = (id: string) => {
+    setDeleteConfirm({ open: true, id });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.id) return;
 
     const token = localStorage.getItem('admin_session_token');
     if (!token) {
       toast.error('Admin session expired. Please login again.');
+      setDeleteConfirm({ open: false, id: null });
       return;
     }
+
+    setDeleting(true);
 
     try {
       const { data, error } = await supabase.functions.invoke('admin-mutate-data', {
@@ -127,7 +139,7 @@ const CategoriesManagement = () => {
           token,
           table: 'categories',
           operation: 'delete',
-          id
+          id: deleteConfirm.id
         }
       });
 
@@ -142,6 +154,9 @@ const CategoriesManagement = () => {
     } catch (err) {
       console.error('Category delete exception:', err);
       toast.error('Failed to delete category');
+    } finally {
+      setDeleting(false);
+      setDeleteConfirm({ open: false, id: null });
     }
   };
 
@@ -492,7 +507,7 @@ const CategoriesManagement = () => {
                         <Edit size={18} />
                       </button>
                       <button
-                        onClick={() => handleDelete(category.id)}
+                        onClick={() => handleDeleteClick(category.id)}
                         className="p-2 text-red-400 hover:bg-gray-700 rounded"
                       >
                         <Trash2 size={18} />
@@ -505,6 +520,18 @@ const CategoriesManagement = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ open, id: open ? deleteConfirm.id : null })}
+        title="Delete Category"
+        description="Are you sure you want to delete this category? This action cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        variant="destructive"
+        loading={deleting}
+      />
     </div>
   );
 };

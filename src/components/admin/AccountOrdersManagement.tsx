@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface AccountOrder {
   id: string;
@@ -39,9 +40,13 @@ const AccountOrdersManagement = () => {
     amount: 0
   });
   const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<StatusFilter>('all');
+  
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<StatusFilter>('all');
 
   const enrichedOrders = useMemo(() => {
@@ -155,17 +160,22 @@ const AccountOrdersManagement = () => {
     }
   };
 
-  const handleDelete = async (orderId: string) => {
-    if (!confirm('Are you sure you want to delete this order?')) return;
+  const handleDeleteClick = (orderId: string) => {
+    setDeleteConfirm({ open: true, id: orderId });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.id) return;
     
-    setDeletingId(orderId);
+    setDeleting(true);
     
     const { error } = await supabase
       .from('ai_account_purchases')
       .delete()
-      .eq('id', orderId);
+      .eq('id', deleteConfirm.id);
     
-    setDeletingId(null);
+    setDeleting(false);
+    setDeleteConfirm({ open: false, id: null });
     
     if (error) {
       toast.error('Failed to delete order');
@@ -408,14 +418,12 @@ const AccountOrdersManagement = () => {
                           <Edit size={16} />
                         </button>
                         <button
-                          onClick={() => handleDelete(order.id)}
-                          disabled={deletingId === order.id}
+                          onClick={() => handleDeleteClick(order.id)}
+                          disabled={deleting}
                           className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 disabled:opacity-50"
                         >
-                          {deletingId === order.id ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={16} />
+                          <Trash2 size={16} />
+                        </button>
                           )}
                         </button>
                       </div>

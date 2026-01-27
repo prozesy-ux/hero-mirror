@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner';
 import ImageUploader from './ImageUploader';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface PaymentMethod {
   id: string;
@@ -51,8 +52,11 @@ const PaymentSettingsManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
   const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingWithdrawal, setUpdatingWithdrawal] = useState<string | null>(null);
+  
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const [deleting, setDeleting] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -198,15 +202,20 @@ const PaymentSettingsManagement = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this payment method?')) return;
+  const handleDeleteClick = (id: string) => {
+    setDeleteConfirm({ open: true, id });
+  };
 
-    setDeletingId(id);
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.id) return;
+
+    setDeleting(true);
 
     const token = localStorage.getItem('admin_session_token');
     if (!token) {
       toast.error('Admin session expired');
-      setDeletingId(null);
+      setDeleting(false);
+      setDeleteConfirm({ open: false, id: null });
       return;
     }
 
@@ -216,11 +225,9 @@ const PaymentSettingsManagement = () => {
           token,
           table: 'payment_methods',
           operation: 'delete',
-          id
+          id: deleteConfirm.id
         }
       });
-
-      setDeletingId(null);
 
       if (error || data?.error) {
         toast.error(data?.error || 'Failed to delete payment method');
@@ -229,9 +236,11 @@ const PaymentSettingsManagement = () => {
         refreshTable('payment_methods');
       }
     } catch (err) {
-      setDeletingId(null);
       toast.error('Failed to delete payment method');
       console.error(err);
+    } finally {
+      setDeleting(false);
+      setDeleteConfirm({ open: false, id: null });
     }
   };
 
@@ -511,16 +520,13 @@ const PaymentSettingsManagement = () => {
                         <Edit size={18} />
                       </button>
                       <button
-                        onClick={() => handleDelete(method.id)}
-                        disabled={deletingId === method.id}
+                        onClick={() => handleDeleteClick(method.id)}
+                        disabled={deleting}
                         className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
                         title="Delete"
                       >
-                        {deletingId === method.id ? (
-                          <Loader2 size={18} className="animate-spin" />
-                        ) : (
-                          <Trash2 size={18} />
-                        )}
+                        <Trash2 size={18} />
+                      </button>
                       </button>
                     </div>
                   </td>
