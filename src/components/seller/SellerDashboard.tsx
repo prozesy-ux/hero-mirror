@@ -61,6 +61,9 @@ const SellerDashboard = () => {
     to: new Date()
   });
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [averageRating, setAverageRating] = useState<number | null>(null);
+  const [reviewCount, setReviewCount] = useState(0);
   const navigate = useNavigate();
 
   // Update date range when period changes
@@ -82,8 +85,35 @@ const SellerDashboard = () => {
   useEffect(() => {
     if (profile?.id) {
       fetchTrustScore();
+      fetchQuickStats();
     }
   }, [profile?.id]);
+
+  const fetchQuickStats = async () => {
+    if (!profile?.id) return;
+    
+    // Fetch unread messages count
+    const { count: msgCount } = await supabase
+      .from('seller_chats')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', profile.id)
+      .eq('is_read', false)
+      .eq('sender_type', 'buyer');
+    
+    setUnreadMessages(msgCount || 0);
+    
+    // Fetch average rating from product reviews
+    const { data: ratingData } = await supabase
+      .from('product_reviews')
+      .select('rating, seller_products!inner(seller_id)')
+      .eq('seller_products.seller_id', profile.id);
+    
+    if (ratingData && ratingData.length > 0) {
+      const avg = ratingData.reduce((sum, r) => sum + r.rating, 0) / ratingData.length;
+      setAverageRating(avg);
+      setReviewCount(ratingData.length);
+    }
+  };
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -455,8 +485,11 @@ const SellerDashboard = () => {
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-5">Quick Stats</h3>
           <div className="space-y-4">
-            {/* Products */}
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            {/* Products - Click to navigate */}
+            <button 
+              onClick={() => navigate('/seller/products')}
+              className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
+            >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center">
                   <Package className="h-5 w-5 text-violet-600" />
@@ -467,10 +500,13 @@ const SellerDashboard = () => {
                 </div>
               </div>
               <span className="text-xl font-bold text-slate-800">{products.length}</span>
-            </div>
+            </button>
 
-            {/* Messages */}
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            {/* Messages - Real unread count + click navigation */}
+            <button 
+              onClick={() => navigate('/seller/chat')}
+              className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
+            >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
                   <MessageSquare className="h-5 w-5 text-blue-600" />
@@ -480,11 +516,16 @@ const SellerDashboard = () => {
                   <p className="text-xs text-slate-500">Unread chats</p>
                 </div>
               </div>
-              <span className="text-xl font-bold text-slate-800">0</span>
-            </div>
+              <span className={`text-xl font-bold ${unreadMessages > 0 ? 'text-blue-600' : 'text-slate-800'}`}>
+                {unreadMessages}
+              </span>
+            </button>
 
-            {/* Success Rate */}
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            {/* Success Rate - Click to analytics */}
+            <button 
+              onClick={() => navigate('/seller/analytics')}
+              className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
+            >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
                   <Award className="h-5 w-5 text-emerald-600" />
@@ -497,26 +538,37 @@ const SellerDashboard = () => {
               <span className="text-xl font-bold text-emerald-600">
                 {orders.length > 0 ? Math.round((completedOrders / orders.length) * 100) : 100}%
               </span>
-            </div>
+            </button>
 
-            {/* Rating */}
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            {/* Rating - Real average from reviews */}
+            <button 
+              onClick={() => navigate('/seller/products')}
+              className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
+            >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
                   <Star className="h-5 w-5 text-amber-600" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-slate-800">Rating</p>
-                  <p className="text-xs text-slate-500">Avg feedback</p>
+                  <p className="text-xs text-slate-500">{reviewCount} reviews</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                {[1, 2, 3, 4].map(i => (
-                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                ))}
-                <Star className="h-4 w-4 text-slate-200" />
+                {averageRating ? (
+                  <>
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <Star 
+                        key={i} 
+                        className={`h-4 w-4 ${i <= Math.round(averageRating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} 
+                      />
+                    ))}
+                  </>
+                ) : (
+                  <span className="text-sm text-slate-500">No reviews</span>
+                )}
               </div>
-            </div>
+            </button>
           </div>
         </div>
       </div>
