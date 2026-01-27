@@ -1,153 +1,164 @@
 
-# Store Page Mobile Layout Fix
+# Replace Native Browser Confirm with Modern Dialog
 
-## Issues Identified
-
-### 1. Search Bar & Filter Not in Same Row
-The current layout has the filter button rendered separately from the search input, causing alignment issues.
-
-### 2. Product Cards Not Filling Full Width
-The `flex gap-6` layout used for desktop sidebar is causing large left-side spacing on mobile because:
-- The sidebar still occupies space even when hidden on mobile
-- The `gap-6` (24px) spacing is excessive for mobile
-- The container padding `px-3` adds to the issue
-
-### 3. Layout Structure Problem
-```text
-Current Layout (Mobile):
-┌────────────────────────────────────────────┐
-│  [px-3 padding]                            │
-│    ┌──────────────────────────────────┐   │
-│    │ flex gap-6                       │   │
-│    │  ┌───────┐ ┌────────────────────┐│   │
-│    │  │Sidebar│ │ Content (min-w-0)  ││   │
-│    │  │(hidden│ │   [Search][Filter] ││   │ ← Gap still applies!
-│    │  │on mob)│ │   [Grid cols-2]    ││   │
-│    │  └───────┘ └────────────────────┘│   │
-│    └──────────────────────────────────┘   │
-└────────────────────────────────────────────┘
-```
-
----
+## Problem
+The current codebase uses native `window.confirm()` dialogs which show ugly browser-default prompts. This needs to be replaced with a modern, styled confirmation dialog like Fiverr/Upwork uses.
 
 ## Solution
-
-### Phase 1: Fix Main Container Layout for Mobile
-
-**File: `src/pages/Store.tsx`**
-
-Change the layout structure to:
-- Remove the `gap-6` on mobile (keep for desktop)
-- Ensure the main content area fills full width on mobile
-- Move sidebar render logic to only desktop
-
-```text
-Fixed Layout (Mobile):
-┌──────────────────────────────────┐
-│ [px-3 padding - reduced to px-2] │
-│ ┌──────────────────────────────┐ │
-│ │ [Filter] [Search bar-----]   │ │  ← Single row
-│ └──────────────────────────────┘ │
-│ [Category chips horizontal]      │
-│ ┌──────────────────────────────┐ │
-│ │ [Card] [Card]                │ │  ← Full width grid
-│ │ [Card] [Card]                │ │
-│ │ [Card] [Card]                │ │
-│ └──────────────────────────────┘ │
-└──────────────────────────────────┘
-```
-
-### Phase 2: Single-Row Search & Filter Bar
-
-Change the search/filter section structure:
-- Put filter button BEFORE search input (consistent with other pages)
-- Use `grid grid-cols-[auto_1fr]` for precise control
-- Both elements in single row with minimal gap
-
-### Phase 3: Full-Width Product Grid
-
-**Files: `src/pages/Store.tsx` and `src/index.css`**
-
-- Change container from `flex gap-6` to `lg:flex lg:gap-6`
-- On mobile: no flex, full-width content
-- Reduce horizontal padding from `px-3` to `px-2` on mobile
-- Product grid uses `gap-2` (8px) on mobile for tighter spacing
-- Cards expand to fill available width
-
-### Phase 4: Compact Product Cards
-
-**File: `src/components/store/StoreProductCardCompact.tsx`**
-
-Ensure cards fill their grid cells:
-- Use `w-full` on card container
-- Remove any fixed widths
-- Ensure image covers full card width
+Create a reusable `ConfirmDialog` component and replace all 12+ instances of `confirm()` across the app.
 
 ---
 
-## Files to Modify
+## Implementation Plan
 
-| File | Changes |
-|------|---------|
-| `src/pages/Store.tsx` | Fix main layout container, search/filter row, padding |
-| `src/components/store/StoreProductCardCompact.tsx` | Ensure full-width sizing |
-| `src/index.css` | Update store grid CSS if needed |
+### Phase 1: Create Reusable ConfirmDialog Component
+
+**New File: `src/components/ui/confirm-dialog.tsx`**
+
+A modern confirmation dialog with:
+- Clean, minimal design matching app theme
+- Warning icon for destructive actions
+- Customizable title and description
+- Cancel and Confirm buttons with proper styling
+- Loading state support
+- Smooth animations
+
+**Design (Fiverr/Upwork inspired):**
+```text
+┌───────────────────────────────────────┐
+│                                       │
+│         ⚠️ Warning Icon               │
+│                                       │
+│      Delete this account?             │
+│                                       │
+│   This action cannot be undone.       │
+│                                       │
+│   ┌─────────┐     ┌─────────────────┐ │
+│   │ Cancel  │     │ Yes, Delete     │ │
+│   └─────────┘     └─────────────────┘ │
+│                                       │
+└───────────────────────────────────────┘
+```
+
+---
+
+### Phase 2: Update All Components Using confirm()
+
+**Files to update (10 files, 12+ instances):**
+
+| File | Function | Message |
+|------|----------|---------|
+| `BuyerWallet.tsx` | handleDeleteAccount | "Delete this account?" |
+| `SellerWallet.tsx` | handleDeleteAccount | "Delete this account?" |
+| `SellerProducts.tsx` | handleDelete | "Delete this product?" |
+| `PromptsManagement.tsx` | handleDelete | "Delete this prompt?" |
+| `CategoriesManagement.tsx` | handleDelete | "Delete this category?" |
+| `AccountOrdersManagement.tsx` | handleDelete | "Delete this order?" |
+| `AIAccountsManagement.tsx` | handleDelete | "Delete this account?" |
+| `ChatManagement.tsx` | handleDeleteMessage (x3) | "Delete this message?" |
+| `ChatManagement.tsx` | handleDeleteAllUserChat | "Delete entire chat history?" |
+| `ChatManagement.tsx` | handleDeleteAllSellerChat | "Delete entire chat history?" |
+| `UsersManagement.tsx` | handleDeleteUser | "Delete this user?" |
+| `PaymentSettingsManagement.tsx` | handleDelete | "Delete this payment method?" |
+
+---
+
+### Phase 3: Pattern for Each Component
+
+**Before (native confirm):**
+```typescript
+const handleDelete = async (id: string) => {
+  if (!confirm('Are you sure?')) return;
+  // delete logic
+};
+```
+
+**After (modern dialog):**
+```typescript
+const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ 
+  open: false, 
+  id: null 
+});
+
+const handleDeleteClick = (id: string) => {
+  setDeleteConfirm({ open: true, id });
+};
+
+const handleDeleteConfirm = async () => {
+  if (!deleteConfirm.id) return;
+  // delete logic
+  setDeleteConfirm({ open: false, id: null });
+};
+
+// In JSX:
+<ConfirmDialog
+  open={deleteConfirm.open}
+  onOpenChange={(open) => setDeleteConfirm({ open, id: null })}
+  title="Delete Account"
+  description="Are you sure you want to delete this account? This action cannot be undone."
+  onConfirm={handleDeleteConfirm}
+  confirmText="Delete"
+  variant="destructive"
+  loading={deleting}
+/>
+```
 
 ---
 
 ## Technical Details
 
-### Store.tsx Layout Changes
+### ConfirmDialog Props
 
 ```typescript
-// Current problematic structure (line 546-547):
-<main className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-6">
-  <div className="flex gap-6">  // ← This gap applies on mobile too!
-
-// Fixed structure:
-<main className="max-w-7xl mx-auto px-2 md:px-4 py-3 md:py-6">
-  <div className="lg:flex lg:gap-6">  // ← Only flex on desktop
+interface ConfirmDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  onConfirm: () => void;
+  confirmText?: string;       // Default: "Confirm"
+  cancelText?: string;        // Default: "Cancel"
+  variant?: 'default' | 'destructive';  // Default: 'destructive'
+  loading?: boolean;          // Shows spinner on confirm button
+  icon?: React.ReactNode;     // Custom icon (default: AlertTriangle for destructive)
+}
 ```
 
-### Search & Filter Row Fix
+### Styling (matching app theme)
 
-```typescript
-// Current (separate elements):
-<div className="flex gap-2 mb-3 md:mb-6">
-  <div className="lg:hidden flex-shrink-0">
-    <StoreSidebar ... />  // Filter button inside
-  </div>
-  <div className="relative flex-1">
-    <input ... />  // Search
-  </div>
-</div>
+- **Overlay**: `bg-black/60` with blur
+- **Dialog**: `bg-slate-900` with rounded corners for admin, `bg-white` for buyer/seller
+- **Title**: Bold, centered with icon
+- **Description**: Muted text, centered
+- **Cancel Button**: Outline/ghost style
+- **Confirm Button**: Red/destructive for delete actions
+- **Loading**: Spinner icon when processing
 
-// Fixed (true single row):
-<div className="grid grid-cols-[auto_1fr] gap-2 mb-3 md:mb-6 lg:block">
-  <StoreSidebar ... />  // Filter button (mobile only)
-  <div className="relative">
-    <input ... />  // Search fills remaining width
-  </div>
-</div>
-```
+---
 
-### Product Grid Fix
+## Files to Create/Modify
 
-```typescript
-// Current grid:
-<div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4 lg:gap-5">
-
-// This is correct, but the parent container limits it
-// Fix by ensuring parent has no extra constraints on mobile
-```
+| File | Action |
+|------|--------|
+| `src/components/ui/confirm-dialog.tsx` | CREATE - New reusable component |
+| `src/components/dashboard/BuyerWallet.tsx` | MODIFY - Replace confirm() |
+| `src/components/seller/SellerWallet.tsx` | MODIFY - Replace confirm() |
+| `src/components/seller/SellerProducts.tsx` | MODIFY - Replace confirm() |
+| `src/components/admin/PromptsManagement.tsx` | MODIFY - Replace confirm() |
+| `src/components/admin/CategoriesManagement.tsx` | MODIFY - Replace confirm() |
+| `src/components/admin/AccountOrdersManagement.tsx` | MODIFY - Replace confirm() |
+| `src/components/admin/AIAccountsManagement.tsx` | MODIFY - Replace confirm() |
+| `src/components/admin/ChatManagement.tsx` | MODIFY - Replace 4 confirm() calls |
+| `src/components/admin/UsersManagement.tsx` | MODIFY - Replace confirm() |
+| `src/components/admin/PaymentSettingsManagement.tsx` | MODIFY - Replace confirm() |
 
 ---
 
 ## Expected Result
 
-After fix:
-- Filter button + Search in single compact row
-- 2-column product grid fills full mobile width
-- No large empty space on left side
-- Cards have minimal gap (8px) for space efficiency
-- Smooth transition to desktop layout with sidebar
+- All confirmation dialogs show modern, styled UI
+- Consistent look across all dashboards (Admin, Seller, Buyer)
+- Better UX with clear action buttons
+- Loading states during operations
+- Smooth open/close animations
+- Accessible (keyboard navigation, focus management)
