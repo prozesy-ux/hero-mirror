@@ -259,6 +259,78 @@ const BuyerDashboardHome = () => {
         </Link>
       </div>
 
+      {/* Quick Stats - Matching Seller Design */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <h3 className="text-base font-semibold text-slate-800 mb-5">Quick Stats</h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Total Orders */}
+          <Link to="/dashboard/orders">
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <ShoppingBag className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800">Orders</p>
+                  <p className="text-xs text-slate-500">{stats.completedOrders} completed</p>
+                </div>
+              </div>
+              <span className="text-xl font-bold text-slate-800">{stats.totalOrders}</span>
+            </div>
+          </Link>
+
+          {/* Wishlist */}
+          <Link to="/dashboard/wishlist">
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-pink-100 flex items-center justify-center">
+                  <Heart className="h-5 w-5 text-pink-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800">Wishlist</p>
+                  <p className="text-xs text-slate-500">Saved items</p>
+                </div>
+              </div>
+              <span className="text-xl font-bold text-slate-800">{wishlistCount}</span>
+            </div>
+          </Link>
+
+          {/* Pending Orders */}
+          <Link to="/dashboard/orders">
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800">Pending</p>
+                  <p className="text-xs text-slate-500">Awaiting delivery</p>
+                </div>
+              </div>
+              <span className={`text-xl font-bold ${stats.pendingOrders > 0 ? 'text-orange-600' : 'text-slate-800'}`}>
+                {stats.pendingOrders}
+              </span>
+            </div>
+          </Link>
+
+          {/* Completion Rate */}
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-800">Completion</p>
+                <p className="text-xs text-slate-500">Order success</p>
+              </div>
+            </div>
+            <span className="text-xl font-bold text-emerald-600">
+              {stats.totalOrders > 0 ? Math.round((stats.completedOrders / stats.totalOrders) * 100) : 100}%
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Recent Orders */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-slate-100">
