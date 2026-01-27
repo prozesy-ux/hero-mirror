@@ -1,221 +1,307 @@
 
-# Enhanced Payment Account System with Country-Based Withdrawal Methods
+# Store Page Mobile Design Enhancement Plan
 
-## Overview
-Transform the "Add Payment Account" flow to include:
-1. **Country Selection First** - Users select their country (with country flag logos, sorted by position)
-2. **Country-Specific Withdrawal Methods** - Show Bank Account, Digital Wallet, Crypto based on selected country
-3. **Comprehensive Bank Lists** - All major banks per country with official logos
-4. **Enhanced Digital Wallet UI** - Updated number field overlays with wallet-specific formatting
-5. **Admin Panel Integration** - Manage all banks, wallets, and countries from Payment Settings
+## Current Issues Identified
+
+### 1. Search Bar & Filter Layout Problems
+- **Current**: Search bar and Filter button are stacked separately, taking up too much vertical space
+- **Problem**: Not in a single row, wastes precious mobile screen real estate
+- **Fix**: Compact single-row layout with search + filter button in one unified bar
+
+### 2. Product Grid Layout Issues
+- **Current**: `grid-cols-1 sm:grid-cols-2` - single column on mobile is wasteful
+- **Problem**: Large cards show too much empty space, users must scroll excessively
+- **Fix**: 2-column grid on mobile for compact product browsing (like Instagram shopping)
+
+### 3. Mobile Navigation & UX
+- **Current**: No sticky header on mobile, hard to navigate back
+- **Problem**: Users lose context when scrolling
+- **Fix**: Add sticky mobile header with back button, store name, and share action
+
+### 4. Product Card Optimization
+- **Current**: Cards are too tall with excessive padding
+- **Problem**: Shows only 1-2 products at a time
+- **Fix**: Compact cards with smaller images, tighter padding, essential info only
+
+### 5. Missing Mobile-First Features
+- **Current**: No quick actions, no horizontal scroll categories
+- **Problem**: Desktop-first design doesn't work well on mobile
+- **Fix**: Add mobile-specific enhancements like horizontal category chips, sticky CTA
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Enhance Digital Wallets Config
+### Phase 1: Mobile-Optimized Search & Filter Bar
 
-**File: `src/lib/digital-wallets-config.ts`**
+**File: `src/pages/Store.tsx`**
 
-Add new exports:
-- `SUPPORTED_COUNTRIES` - List of countries with flags, codes, and sort position
-- `COUNTRY_BANKS` - Comprehensive bank lists per country with official logos
-- Country flag URLs for Bangladesh, India, Pakistan, and global option
+Replace current search + filter layout with single-row compact design:
 
 ```text
-SUPPORTED_COUNTRIES:
-┌─────────────────────────────────────────────────────────┐
-│  Position │  Code │  Name        │  Flag Logo         │
-├─────────────────────────────────────────────────────────┤
-│     1     │  BD   │  Bangladesh  │  [BD Flag]         │
-│     2     │  IN   │  India       │  [IN Flag]         │
-│     3     │  PK   │  Pakistan    │  [PK Flag]         │
-│     4     │  DEFAULT │ Global    │  [Globe Icon]      │
-└─────────────────────────────────────────────────────────┘
-
-COUNTRY_BANKS (per country - minimum 10-15 major banks each):
-Bangladesh: Sonali Bank, Janata Bank, Agrani Bank, BRAC Bank, Dutch Bangla Bank, Eastern Bank, Prime Bank, City Bank, Islami Bank, Pubali Bank, etc.
-India: SBI, HDFC, ICICI, Axis, Kotak, Punjab National, Bank of Baroda, Canara Bank, etc.
-Pakistan: HBL, UBL, MCB, Allied Bank, Bank Alfalah, National Bank of Pakistan, etc.
+Mobile Search Bar (Single Row):
+┌──────────────────────────────────────────────────┐
+│ [🔍 Search products...          ] [≡ Filter (2)] │
+└──────────────────────────────────────────────────┘
 ```
+
+- Search input takes ~70% width
+- Filter button shows active filter count badge
+- Both in same row, `flex gap-2`
+- Height: 44px (touch-friendly)
+- Sticky below mobile header
 
 ---
 
-### Phase 2: Update Add Account Modal Flow
+### Phase 2: Add Mobile Sticky Header
 
-**Files: `BuyerWallet.tsx` and `SellerWallet.tsx`**
+**File: `src/pages/Store.tsx`**
 
-Change the flow to a 4-tier system:
+Add new mobile-only header component that appears on scroll:
 
-**Step 0: Select Country (NEW STEP)**
 ```text
-┌─────────────────────────────────────────────────────────┐
-│  Select Your Country                                    │
-├─────────────────────────────────────────────────────────┤
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐       │
-│  │ [BD Flag]  │  │ [IN Flag]  │  │ [PK Flag]  │       │
-│  │ Bangladesh │  │   India    │  │  Pakistan  │       │
-│  └────────────┘  └────────────┘  └────────────┘       │
-│                  ┌────────────┐                        │
-│                  │ [Globe]    │                        │
-│                  │   Other    │                        │
-│                  └────────────┘                        │
-└─────────────────────────────────────────────────────────┘
+Mobile Sticky Header:
+┌──────────────────────────────────────────────────┐
+│ [←]  Store Name  [Verified]              [Share] │
+└──────────────────────────────────────────────────┘
 ```
 
-**Step 1: Select Account Type (existing)**
-- Bank Account (with country-specific bank logo)
-- Digital Wallet (with wallet icon)
-- Crypto (with crypto icon)
+Features:
+- Back button to return home
+- Store name (truncated)
+- Verified badge
+- Share button
+- Appears with blur backdrop on scroll
+- `position: sticky; top: 0; z-index: 50;`
 
-**Step 2: If Bank Account selected - Show Country Banks**
+---
+
+### Phase 3: Horizontal Category Chips (Mobile)
+
+**File: `src/pages/Store.tsx`**
+
+Add horizontally scrollable category chips below search:
+
 ```text
-┌─────────────────────────────────────────────────────────┐
-│  Select Bank (Bangladesh)                               │
-├─────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
-│  │ [Logo]      │  │ [Logo]      │  │ [Logo]      │    │
-│  │ BRAC Bank   │  │ Dutch Bangla│  │ Eastern Bank│    │
-│  └─────────────┘  └─────────────┘  └─────────────┘    │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
-│  │ [Logo]      │  │ [Logo]      │  │ [Logo]      │    │
-│  │ City Bank   │  │ Prime Bank  │  │ Islami Bank │    │
-│  └─────────────┘  └─────────────┘  └─────────────┘    │
-│  ... more banks ...                                    │
-│  ┌──────────────────────────────────────────────────┐ │
-│  │ [+] Other Bank (enter manually)                  │ │
-│  └──────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────┘
+Category Chips (Horizontal Scroll):
+┌──────────────────────────────────────────────────┐
+│ [All] [ChatGPT] [Midjourney] [Gemini] [...] →    │
+└──────────────────────────────────────────────────┘
 ```
 
-**Step 3: If Digital Wallet selected - Show Country Wallets (existing)**
-
-**Step 4: Enter Account Details (existing but enhanced)**
-- Digital wallet number field shows formatted overlay like "bKash Number (01XXXXXXXXX)"
-- Bank account shows selected bank logo and name
-
----
-
-### Phase 3: Bank Configuration
-
-Add comprehensive bank data to config file:
-
-**Bangladesh Banks (15+ banks):**
-- Sonali Bank, Janata Bank, Agrani Bank, Rupali Bank
-- BRAC Bank, Dutch-Bangla Bank, Eastern Bank, City Bank
-- Prime Bank, Islami Bank Bangladesh, Pubali Bank
-- Mutual Trust Bank, Standard Chartered BD, HSBC BD
-- Bank Asia, ONE Bank, Dhaka Bank
-
-**India Banks (15+ banks):**
-- State Bank of India, HDFC Bank, ICICI Bank, Axis Bank
-- Kotak Mahindra, Punjab National Bank, Bank of Baroda
-- Canara Bank, Union Bank, Indian Bank, Central Bank
-- Bank of India, Indian Overseas Bank, IDBI Bank, Yes Bank
-
-**Pakistan Banks (12+ banks):**
-- Habib Bank Limited (HBL), United Bank Limited (UBL)
-- MCB Bank, Allied Bank, Bank Alfalah
-- National Bank of Pakistan, Standard Chartered PK
-- Meezan Bank, Faysal Bank, Askari Bank
-- Bank Al Habib, Habib Metropolitan Bank
-
-**Global Banks:**
-- Wise, Payoneer (for international transfers)
-- Wells Fargo, Chase, Bank of America (US)
-- Barclays, HSBC (UK)
+- Horizontal scroll with snap
+- Active chip highlighted
+- Shows "All" first + categories with products
+- Hidden on desktop (uses sidebar instead)
+- Touch-optimized with padding
 
 ---
 
-### Phase 4: Digital Wallet Number Field Enhancement
+### Phase 4: Compact 2-Column Product Grid (Mobile)
 
-Update the digital wallet input fields to show contextual overlays:
+**Files: `src/pages/Store.tsx` & `src/components/store/StoreProductCard.tsx`**
 
-| Wallet | Input Label | Placeholder |
-|--------|-------------|-------------|
-| bKash | bKash Number | 01XXXXXXXXX |
-| Nagad | Nagad Number | 01XXXXXXXXX |
-| Rocket | Rocket Number | 01XXXXXXXXX |
-| PhonePe | PhonePe UPI ID | name@ybl |
-| Google Pay | UPI ID / Phone | name@okaxis |
-| Paytm | Paytm UPI ID | name@paytm |
-| JazzCash | JazzCash Number | 03XXXXXXXXX |
-| Easypaisa | Easypaisa Number | 03XXXXXXXXX |
+Change grid to 2 columns on mobile:
 
----
-
-### Phase 5: Admin Panel Enhancement
-
-**File: `PaymentSettingsManagement.tsx`**
-
-Add new sections:
-
-1. **Country Management Tab**
-   - Enable/disable countries
-   - Set country display order
-   - Upload country flag logos
-
-2. **Banks Management Section**
-   - Add/edit banks per country
-   - Upload bank logos
-   - Set bank display order
-   - Enable/disable specific banks
-
-3. **Digital Wallets Section** (rename from "bKash/UPI")
-   - Manage wallet display per country
-   - Upload wallet logos
-   - Configure wallet-specific number formats
-
----
-
-### Phase 6: Database Considerations
-
-Create new database table for country-specific banks (optional future enhancement):
-
-```sql
--- For now, use static config in TypeScript
--- Future: Create admin_bank_configs table
--- This allows admin to manage banks without code changes
+```text
+Current: grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3
+New:     grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4
 ```
 
-For MVP, we use static TypeScript configuration which is:
-- Faster to implement
-- No database overhead
-- Easy to maintain
-- Can be migrated to database later
+Product Card Mobile Optimization:
+- Reduce `aspect-[4/3]` to `aspect-square` on mobile
+- Smaller padding: `p-2` instead of `p-3`
+- Smaller text: `text-xs` for title (line-clamp-1)
+- Price inline with rating
+- Single Buy button (hide Chat/View on mobile)
+- Store badge hidden on mobile (redundant)
+
+```text
+Compact Mobile Card:
+┌─────────────┐
+│  [Image]    │
+│  ───────    │
+│ Product Na..│
+│ $5.99  ★4.8 │
+│ [  Buy  ]   │
+└─────────────┘
+```
 
 ---
 
-### Files to Create/Modify
+### Phase 5: Mobile Store Banner Optimization
 
-| File | Action | Description |
-|------|--------|-------------|
-| `src/lib/digital-wallets-config.ts` | MODIFY | Add SUPPORTED_COUNTRIES, COUNTRY_BANKS with logos |
-| `src/components/dashboard/BuyerWallet.tsx` | MODIFY | Add country selection step, bank selection, enhanced UI |
-| `src/components/seller/SellerWallet.tsx` | MODIFY | Same changes as BuyerWallet |
-| `src/components/admin/PaymentSettingsManagement.tsx` | MODIFY | Add banks/wallets/countries management section |
+**File: `src/pages/Store.tsx`**
 
----
-
-### Technical Notes
-
-1. **Country Flags**: Use high-quality flag icons from CDN (flagcdn.com or similar)
-2. **Bank Logos**: Use official logo URLs from bank websites or logo databases
-3. **Sorting**: Countries and banks sorted by `position` field for admin control
-4. **"Other Bank" Option**: Always available for custom bank entry
-5. **Backwards Compatibility**: Existing saved accounts continue to work
-6. **Mobile Responsive**: Grid layouts adjust for mobile (2 cols) vs desktop (3+ cols)
+- Reduce banner height on mobile: `h-32` instead of `h-48`
+- Smaller avatar: `w-14 h-14` instead of `w-20 h-20`
+- Compact stats pills
+- Hide description on mobile, show only on expand
 
 ---
 
-### Testing Checklist
+### Phase 6: StoreProductCard Mobile Overhaul
 
-- Country selection shows flags sorted by position
-- Selecting Bangladesh shows BD banks and digital wallets
-- Selecting India shows IN banks and digital wallets  
-- Selecting Pakistan shows PK banks and digital wallets
-- Selecting Other/Global shows international options
-- Bank selection shows official logos
-- Digital wallet number fields show correct format overlays
-- Admin can manage countries, banks, and wallets from settings
-- Existing saved accounts display correctly
+**File: `src/components/store/StoreProductCard.tsx`**
+
+Create responsive variant for mobile:
+
+```typescript
+// Mobile-specific classes
+const mobileClasses = {
+  image: "aspect-square",           // Square images
+  content: "p-2",                   // Tighter padding
+  title: "text-xs line-clamp-1",    // Single line title
+  price: "text-sm",                 // Smaller price
+  buttons: "grid grid-cols-1"       // Single Buy button
+};
+```
+
+Hide on mobile:
+- Store badge (redundant - user is already on store page)
+- Tags section
+- Chat and View buttons (use tap to view instead)
+- Hot badge (reduce visual noise)
+
+Show on mobile:
+- Product image
+- Product name (1 line)
+- Price + sold count (compact)
+- Buy button (full width)
+
+---
+
+### Phase 7: Quick View Bottom Sheet (Mobile)
+
+**File: `src/components/store/ProductDetailModal.tsx`**
+
+Transform modal into bottom sheet on mobile:
+
+```text
+Bottom Sheet View:
+┌──────────────────────────────────────────────────┐
+│ ─────────────────  (drag handle)                 │
+│                                                  │
+│ [Image Gallery]                                  │
+│                                                  │
+│ Product Title                                    │
+│ $19.99  ★★★★★ (42 reviews)                      │
+│                                                  │
+│ Description text here...                         │
+│                                                  │
+│ ┌──────────────────────────────────────────────┐│
+│ │ [Chat Seller]           [Buy Now - $19.99]   ││
+│ └──────────────────────────────────────────────┘│
+└──────────────────────────────────────────────────┘
+```
+
+Mobile bottom sheet features:
+- Rounded top corners
+- Drag handle
+- Swipe to dismiss
+- Action buttons fixed at bottom with safe area padding
+
+---
+
+### Phase 8: Add Store Page Upgrades
+
+**New Features to Add:**
+
+1. **Trust Badges Section**
+   - "Secure Checkout"
+   - "Instant Delivery"
+   - "Money-Back Guarantee"
+   - Horizontal scroll on mobile
+
+2. **Featured Product Highlight**
+   - If seller has a featured product, show hero card at top
+   - Full width, larger image, prominent CTA
+
+3. **Recent Buyers Social Proof**
+   - "23 people bought from this store today"
+   - Shows buyer avatars (anonymized)
+
+4. **Store Activity Indicator**
+   - "Seller typically responds within 1 hour"
+   - Last active indicator
+
+5. **Quick Actions Bar (Mobile)**
+   - Fixed bottom bar with main actions
+   - "Contact Seller" | "View All Products" | "Share"
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/Store.tsx` | Add mobile header, horizontal categories, update grid, optimize banner |
+| `src/components/store/StoreProductCard.tsx` | Create compact mobile variant with responsive classes |
+| `src/components/store/StoreSidebar.tsx` | Update mobile filter sheet to match marketplace |
+| `src/components/store/ProductDetailModal.tsx` | Convert to bottom sheet on mobile |
+| `src/index.css` | Add store-specific mobile utilities |
+
+---
+
+## CSS Utilities to Add
+
+```css
+/* Store mobile optimizations */
+.store-mobile-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.store-mobile-search {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.store-product-grid-mobile {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.store-category-scroll {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+.store-category-chip {
+  scroll-snap-align: start;
+  white-space: nowrap;
+}
+```
+
+---
+
+## Responsive Breakpoints
+
+| Breakpoint | Grid | Card Style | Header |
+|------------|------|------------|--------|
+| < 640px (mobile) | 2 cols | Compact | Sticky mobile header |
+| 640-1024px (tablet) | 2-3 cols | Standard | Banner visible |
+| > 1024px (desktop) | 3-4 cols | Full | Full banner + sidebar |
+
+---
+
+## Testing Checklist
+
+- Search and filter in single row on mobile
+- Horizontal category scroll works with snap
+- 2-column grid shows 4+ products on screen
+- Product cards are compact and touch-friendly
+- Quick view opens as bottom sheet on mobile
+- Sticky header appears on scroll
+- Buy button has 44px minimum touch target
+- No horizontal overflow/scroll issues
+- Fast scrolling performance (no jank)
+- Store banner is proportionally smaller on mobile
