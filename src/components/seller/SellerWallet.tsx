@@ -153,7 +153,7 @@ const SellerWallet = () => {
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<WalletTab>('wallet');
   const [sellerCountry, setSellerCountry] = useState<string>('BD');
-  const [previewCountry, setPreviewCountry] = useState<string>('');
+  const [previewCountry, setPreviewCountry] = useState<string>('BD');
   
   // Add account form state - NEW 4-tier system
   const [addAccountStep, setAddAccountStep] = useState<AddAccountStep>('country');
@@ -187,8 +187,7 @@ const SellerWallet = () => {
   }, [withdrawalMethods]);
 
   const displayMethods = useMemo(() => {
-    const filterCountry = previewCountry || sellerCountry;
-    if (!filterCountry) return [];
+    const filterCountry = previewCountry || sellerCountry || 'BD';
     // Use allWithdrawalMethods for preview (won't be overwritten)
     return allWithdrawalMethods.filter(m => 
       m.country_code === filterCountry || m.country_code === 'GLOBAL'
@@ -225,11 +224,15 @@ const SellerWallet = () => {
     const staticWallets = getDigitalWalletsForCountry(country);
     
     // Merge with admin-configured withdrawal methods for this country/type
+    // Match by method_code first, then by method_name as fallback
     return staticWallets.map(wallet => {
       const adminConfig = withdrawalMethods.find(
         m => m.country_code === country && 
              m.account_type === 'digital_wallet' && 
-             m.method_code?.toLowerCase() === wallet.code.toLowerCase()
+             (
+               (m.method_code && m.method_code.toLowerCase() === wallet.code.toLowerCase()) ||
+               m.method_name.toLowerCase() === wallet.label.toLowerCase()
+             )
       );
       return {
         ...wallet,
@@ -245,11 +248,15 @@ const SellerWallet = () => {
     const staticBanks = getBanksForCountry(country);
     
     // Merge with admin-configured withdrawal methods for this country/type
+    // Match by method_code first, then by method_name as fallback
     return staticBanks.map(bank => {
       const adminConfig = withdrawalMethods.find(
         m => m.country_code === country && 
              m.account_type === 'bank' && 
-             m.method_code?.toLowerCase() === bank.code.toLowerCase()
+             (
+               (m.method_code && m.method_code.toLowerCase() === bank.code.toLowerCase()) ||
+               m.method_name.toLowerCase() === bank.name.toLowerCase()
+             )
       );
       return {
         ...bank,
@@ -334,6 +341,11 @@ const SellerWallet = () => {
       .single();
     if (data?.country) {
       setSellerCountry(data.country);
+      // Immediately sync preview country if not already set by user
+      if (!previewInitialized.current) {
+        setPreviewCountry(data.country);
+        previewInitialized.current = true;
+      }
     }
   };
 
@@ -827,7 +839,7 @@ const SellerWallet = () => {
             {displayMethods.length === 0 ? (
               <p className="text-gray-500 text-center py-8">No withdrawal methods available for this region.</p>
             ) : (
-              <div className="flex flex-wrap gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {displayMethods.map((method) => {
                   const logoConfig = getPaymentLogo(method.method_code || method.account_type);
                   const logoUrl = method.custom_logo_url || logoConfig.url;
@@ -836,14 +848,13 @@ const SellerWallet = () => {
                   return (
                     <div 
                       key={method.id}
-                      className="p-3 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 hover:border-gray-300 transition-all"
-                      title={method.method_name}
+                      className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
                     >
                       {logoUrl ? (
                         <img 
                           src={logoUrl}
                           alt={method.method_name}
-                          className="h-8 w-auto object-contain"
+                          className="h-8 w-auto mx-auto mb-2 object-contain"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
@@ -853,11 +864,13 @@ const SellerWallet = () => {
                         />
                       ) : null}
                       <div 
-                        className={`h-8 w-8 rounded-lg items-center justify-center text-white font-bold text-sm ${logoUrl ? 'hidden' : 'flex'}`}
+                        className={`h-8 w-8 mx-auto mb-2 rounded-lg items-center justify-center text-white font-bold text-sm ${logoUrl ? 'hidden' : 'flex'}`}
                         style={{ backgroundColor: brandColor }}
                       >
                         {method.method_name.charAt(0).toUpperCase()}
                       </div>
+                      <p className="text-gray-900 font-medium text-sm">{method.method_name}</p>
+                      <p className="text-gray-500 text-xs capitalize">{method.account_type.replace('_', ' ')}</p>
                     </div>
                   );
                 })}
