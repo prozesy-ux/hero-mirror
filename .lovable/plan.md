@@ -1,312 +1,262 @@
 
+# Premium Profile Section Redesign (Buyer & Seller Dashboards)
 
-# Complete Email System Analysis & Automation Implementation Plan
+## Design Reference Analysis
 
-## Current State Summary
+Based on the uploaded images, the target UX design features:
 
-### What's Already Working (OTP Emails Only)
+1. **Header Section**
+   - Green/emerald gradient header with avatar
+   - Camera icon overlay on avatar for photo change
+   - Online status indicator (green dot)
+   - Username prominently displayed
+   - Notification bell icon in header
+   - Clean, minimal spacing
 
-| Edge Function | Email Type | Status |
-|--------------|------------|--------|
-| `send-withdrawal-otp` | Seller withdrawal verification OTP | ✅ Working |
-| `send-buyer-withdrawal-otp` | Buyer withdrawal verification OTP | ✅ Working |
-| `send-email` | Generic email sender (via Resend) | ✅ Working |
-| `email-health` | Health check for Resend API | ✅ Working |
+2. **Menu List Structure**
+   - Clean white background
+   - Icon + Label + Chevron pattern for each row
+   - Subtle bottom border separators
+   - Section headers ("Settings") in bold
+   - No complex accordions on main view - single-tap navigation
 
-### What's NOT Working (Missing Automatic Triggers)
+3. **Bottom Sheet Pattern**
+   - Profile image options (Take a photo, Choose from library)
+   - Set status with Online toggle
+   - Clean modal presentation
 
-**Critical Finding: The email templates exist, the send-email function works, but NOBODY IS CALLING IT for transactional events!**
-
-The helper functions in `src/lib/email-sender.ts` are defined but **never imported or used** anywhere:
-- `sendOrderConfirmationEmail()` - DEFINED but NOT CALLED
-- `sendSellerOrderNotification()` - DEFINED but NOT CALLED
-- `sendWalletTopupEmail()` - DEFINED but NOT CALLED
-
----
-
-## Complete Email Trigger Map
-
-### Current Implementation Status
-
-| Event | Template ID | Buyer Email | Seller Email | Current Status |
-|-------|-------------|-------------|--------------|----------------|
-| **ORDER FLOW** |
-| Order placed by buyer | `order_placed` | Should receive | - | ❌ NOT IMPLEMENTED |
-| New order received | `seller_new_order` | - | Should receive | ❌ NOT IMPLEMENTED |
-| Order delivered | `order_delivered` | Should receive | - | ❌ NOT IMPLEMENTED |
-| Order approved | `order_approved` | - | Should receive | ❌ NOT IMPLEMENTED |
-| **WALLET FLOW** |
-| Wallet top-up success | `wallet_topup` | Should receive | - | ❌ NOT IMPLEMENTED |
-| Low balance alert | `low_balance_alert` | Should receive | - | ❌ NOT IMPLEMENTED |
-| Refund processed | `refund_processed` | Should receive | - | ❌ NOT IMPLEMENTED |
-| **WITHDRAWAL FLOW** |
-| Withdrawal OTP | Custom inline HTML | ✅ Working | ✅ Working | ✅ WORKING |
-| Withdrawal approved | `withdrawal_success` | Should receive | Should receive | ❌ NOT IMPLEMENTED (template missing) |
-| Withdrawal rejected | - | Should receive | Should receive | ❌ NOT IMPLEMENTED |
-| **SECURITY FLOW** |
-| Password reset | `password_reset` | Should be Supabase auth | - | Supabase handles |
-| Email confirmation | `email_confirmation` | Should be Supabase auth | - | Supabase handles |
-| New login detected | `new_login_detected` | Should receive | - | ❌ NOT IMPLEMENTED |
-| **MARKETING FLOW** |
-| Welcome email | `welcome_email` | Should receive on signup | - | ❌ NOT IMPLEMENTED |
-| Pro upgrade | `pro_upgrade` | Should receive | - | ❌ NOT IMPLEMENTED |
+4. **Preferences Sub-page**
+   - Back arrow + centered title header
+   - Simple list items: Notifications, Security, Language, Appearance, Currency
+   - Each row has right chevron indicating drill-down
+   - Online status toggle at bottom
 
 ---
 
-## Where to Add Automatic Email Triggers
+## Current vs Target Comparison
 
-### Location 1: Purchase Flow (AIAccountsSection.tsx)
-
-**Current code (lines 612-631):**
-```typescript
-// 5. Create notification for buyer
-await supabase.from('notifications').insert({...});
-
-// 6. Create notification for seller
-await supabase.from('seller_notifications').insert({...});
-```
-
-**Missing:** Email sending after notifications!
-
-**Should add:**
-```typescript
-// 7. Send order confirmation email to buyer
-await sendOrderConfirmationEmail(user.email, {
-  orderId: orderId,
-  productName: product.name,
-  amount: product.price.toString(),
-  sellerName: product.seller_profiles?.store_name || 'Seller'
-});
-
-// 8. Send new order notification to seller
-const sellerEmail = await getSellerEmail(product.seller_id);
-await sendSellerOrderNotification(sellerEmail, {...});
-```
-
-### Location 2: Order Delivery (SellerOrders.tsx)
-
-**Current code (lines 167-174):**
-```typescript
-await supabase.from('notifications').insert({
-  user_id: order.buyer_id,
-  type: 'delivery',
-  ...
-});
-```
-
-**Missing:** Email to buyer when order is delivered!
-
-**Should add:**
-```typescript
-// Send delivery email to buyer
-await sendEmail({
-  templateId: 'order_delivered',
-  to: buyerEmail,
-  variables: { order_id: orderId, product_name: productName }
-});
-```
-
-### Location 3: Order Approval (AIAccountsSection.tsx - handleApproveDelivery)
-
-**Current code (lines 776-795):**
-```typescript
-await supabase.from('notifications').insert({...});
-await supabase.from('seller_notifications').insert({...});
-```
-
-**Missing:** Email to seller when order is approved!
-
-**Should add:**
-```typescript
-// Send payment released email to seller
-await sendEmail({
-  templateId: 'order_approved',
-  to: sellerEmail,
-  variables: { order_id, product_name, amount: sellerEarning }
-});
-```
-
-### Location 4: Wallet Top-up (verify-topup Edge Function)
-
-**Current code (lines 97-108):**
-```typescript
-await supabaseClient.from('wallet_transactions').insert({...});
-```
-
-**Missing:** Email confirmation after successful top-up!
-
-**Should add server-side email call in Edge Function:**
-```typescript
-// Send wallet top-up email via internal call
-await sendWalletTopupEmailFromEdge(userEmail, amount, newBalance, session_id);
-```
-
-### Location 5: Withdrawal Processing (UnifiedResellersManagement.tsx)
-
-**Current code (lines 378-396):**
-```typescript
-const handleProcessWithdrawal = async (status: 'completed' | 'rejected') => {
-  const result = await mutateData('seller_withdrawals', 'update', {...});
-  if (result.success) {
-    toast.success(`Withdrawal ${status}`);
-  }
-};
-```
-
-**Missing:** Email to seller/buyer when withdrawal is processed!
-
-### Location 6: User Signup (AuthContext.tsx or handle_new_user trigger)
-
-**Missing:** Welcome email on new user registration!
+| Element | Current Design | Target Design |
+|---------|----------------|---------------|
+| Layout | Accordion-based sections | List-based menu navigation |
+| Header | Card with inline avatar | Full-width colored banner |
+| Avatar | Static with hover overlay | Camera icon always visible + online dot |
+| Sections | Nested accordions | Flat list with chevrons |
+| Navigation | Expand/collapse | Tap to navigate (sub-views) |
+| Typography | Multiple sizes | Consistent 16px list items |
+| Spacing | Variable | Uniform 16px padding |
 
 ---
 
-## Implementation Strategy
+## Implementation Plan
 
-### Option A: Frontend-Triggered Emails (Simpler)
-
-Add email calls directly after successful database operations in React components.
-
-**Pros:**
-- Quick to implement
-- Uses existing `sendEmail()` helper
-- No new edge functions needed
-
-**Cons:**
-- If user closes browser before email sends, email is lost
-- Can be bypassed (less reliable)
-- Adds latency to user actions
-
-### Option B: Server-Side Triggered Emails (Recommended)
-
-Move email sending to Edge Functions or database triggers.
-
-**Pros:**
-- Guaranteed delivery
-- Cannot be bypassed
-- Atomic with database operations
-- Better for transactional emails
-
-**Cons:**
-- Requires modifying edge functions
-- More complex implementation
-
-### Recommended Hybrid Approach
-
-1. **Edge Functions** for critical emails:
-   - Wallet top-up confirmation (in `verify-topup`)
-   - Withdrawal processed (new edge function or in admin-mutate-data)
-   
-2. **Frontend** for order flow emails:
-   - Order placed (in purchase functions)
-   - Order delivered (in SellerOrders)
-   - Order approved (in handleApproveDelivery)
-
-3. **Database Trigger** for signup:
-   - Welcome email (new trigger on profiles insert)
-
----
-
-## Files to Modify
-
-### Part 1: Add Order Flow Emails (Frontend)
+### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/dashboard/AIAccountsSection.tsx` | Import `sendOrderConfirmationEmail`, `sendSellerOrderNotification` and call after purchase + call `order_approved` email after approval |
-| `src/components/seller/SellerOrders.tsx` | Import `sendEmail` and call `order_delivered` template after delivery |
+| `src/components/dashboard/ProfileSection.tsx` | Complete redesign to match reference UX |
+| `src/components/seller/SellerSettings.tsx` | Complete redesign to match reference UX |
 
-### Part 2: Add Wallet Emails (Edge Functions)
+---
 
-| File | Changes |
-|------|---------|
-| `supabase/functions/verify-topup/index.ts` | Add email sending after wallet credit |
-| `supabase/functions/verify-razorpay-payment/index.ts` | Add email sending after wallet credit |
+## Part 1: Buyer ProfileSection Redesign
 
-### Part 3: Add Withdrawal Emails (Edge Functions)
+### Structure
 
-| File | Changes |
-|------|---------|
-| `supabase/functions/verify-withdrawal-otp/index.ts` | Add "withdrawal submitted" email |
-| `supabase/functions/verify-buyer-withdrawal-otp/index.ts` | Add "withdrawal submitted" email |
-| Create new: `supabase/functions/process-withdrawal/index.ts` | Handle admin approval/rejection with email |
+```text
++------------------------------------------+
+| [Emerald/Violet Gradient Header]         |
+|   +-------+  Username                    |
+|   |Avatar |  ● Online                🔔 |
+|   |  📷   |  Member since Jan 2025       |
+|   +-------+                              |
++------------------------------------------+
+| PROFILE                                  |
+|   📷 Profile Image                    >  |
+|   ✏️ Edit Name                        >  |
+|   📧 Email Address              Verified |
++------------------------------------------+
+| SETTINGS                                 |
+|   🔔 Notifications                    >  |
+|   🔒 Security                         >  |
+|   🔑 Two-Factor Authentication    ON  >  |
+|   🌐 Language                         >  |
+|   🎨 Appearance                       >  |
+|   💰 Currency                         >  |
++------------------------------------------+
+| Set status                               |
+|   🟢 Online status               [ON]    |
+|   You'll remain online...                |
++------------------------------------------+
+| DANGER ZONE                              |
+|   📥 Export Data                      >  |
+|   🗑️ Delete Account                   >  |
++------------------------------------------+
+```
 
-### Part 4: Add Missing Templates
+### Key Components
 
-| Template | Purpose |
-|----------|---------|
-| `withdrawal_submitted` | Confirmation when withdrawal request is created |
-| `withdrawal_approved` | When admin approves withdrawal |
-| `withdrawal_rejected` | When admin rejects withdrawal |
+1. **ProfileHeader**
+   - Gradient background (violet for buyer, emerald for seller)
+   - Large avatar with camera icon overlay
+   - Online status indicator dot
+   - Username + member since date
+   - Notification bell icon
 
-### Part 5: Add Welcome Email
+2. **MenuListItem**
+   - Reusable component for list items
+   - Props: icon, label, value (optional), hasChevron, onClick
 
-| Method | Implementation |
-|--------|---------------|
-| Option 1: Database Trigger | Create trigger on `profiles` insert that calls Edge Function |
-| Option 2: Auth Hook | Use Supabase Auth hook for new user signup |
+3. **SectionHeader**
+   - Bold section title (PROFILE, SETTINGS, etc.)
+
+4. **StatusToggle**
+   - Inline toggle for online status
+
+5. **Sub-views (Sheets/Dialogs)**
+   - Profile Image options (Take photo / Choose library)
+   - Notifications preferences
+   - Security settings with password change
+   - Sessions management
+
+---
+
+## Part 2: Seller SellerSettings Redesign
+
+### Structure
+
+```text
++------------------------------------------+
+| [Emerald Gradient Header]                |
+|   +-------+  Store Name                  |
+|   | Logo  |  ✓ Verified  ● Online   🔔  |
+|   |  📷   |  Seller since Jan 2025       |
+|   +-------+                              |
++------------------------------------------+
+| STORE                                    |
+|   🏪 Store Information                >  |
+|   🎨 Display Settings                 >  |
+|   🖼️ Banner & Media                   >  |
+|   🔗 Social Media Links               >  |
++------------------------------------------+
+| SETTINGS                                 |
+|   🔔 Notifications                    >  |
+|   🔒 Two-Factor Authentication    ON  >  |
+|   📊 Account Details                  >  |
++------------------------------------------+
+| Set status                               |
+|   🟢 Online status               [ON]    |
+|   You'll remain online...                |
++------------------------------------------+
+| DANGER ZONE                              |
+|   🗑️ Delete Store                     >  |
++------------------------------------------+
+```
 
 ---
 
 ## Technical Details
 
-### Helper Functions Already Available
+### Shared Components to Create
 
+1. **ProfileHeader Component**
 ```typescript
-// src/lib/email-sender.ts
-
-// Generic sender
-sendEmail({ templateId, to, variables, userId })
-
-// Pre-built helpers
-sendOrderConfirmationEmail(buyerEmail, { orderId, productName, amount, sellerName })
-sendSellerOrderNotification(sellerEmail, { orderId, productName, amount, buyerName })
-sendWalletTopupEmail(userEmail, { amount, newBalance, transactionId })
+interface ProfileHeaderProps {
+  avatarUrl?: string;
+  name: string;
+  subtitle: string;
+  isOnline?: boolean;
+  isVerified?: boolean;
+  gradient?: 'violet' | 'emerald';
+  onAvatarClick?: () => void;
+  onNotificationClick?: () => void;
+}
 ```
 
-### Server-Side Email Sending Pattern
-
-For Edge Functions, make HTTP call to `send-email` function:
-
+2. **MenuListItem Component**
 ```typescript
-// Inside any Edge Function
-const sendEmailFromEdge = async (templateId, to, subject, html) => {
-  await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${serviceKey}`
-    },
-    body: JSON.stringify({ template_id, to, subject, html })
-  });
-};
+interface MenuListItemProps {
+  icon: LucideIcon;
+  label: string;
+  description?: string;
+  value?: React.ReactNode;
+  hasChevron?: boolean;
+  onClick?: () => void;
+  variant?: 'default' | 'danger';
+}
 ```
+
+3. **SectionDivider Component**
+```typescript
+interface SectionDividerProps {
+  title: string;
+}
+```
+
+### Sub-views (Sheets)
+
+Using Shadcn Sheet component for drill-down views:
+
+1. **Profile Image Sheet** - Camera/Library options
+2. **Edit Name Sheet** - Name input form
+3. **Notifications Sheet** - All notification toggles
+4. **Security Sheet** - Password change + sessions
+5. **Two-Factor Sheet** - 2FA toggle + info
+
+### Data Flow
+
+Both components will continue using their existing data hooks:
+- **Buyer**: `useAuthContext()`, direct Supabase queries for preferences/sessions
+- **Seller**: `useSellerContext()`, profile data from context
+
+All existing functionality (avatar upload, password change, session management, 2FA toggle, etc.) will be preserved - only the UI presentation changes.
 
 ---
 
-## Implementation Priority
+## Styling Guidelines (From Reference)
 
-| Priority | Feature | Effort | Impact |
-|----------|---------|--------|--------|
-| 1 | Order placed → Buyer email | Low | High |
-| 2 | Order placed → Seller email | Low | High |
-| 3 | Order delivered → Buyer email | Low | High |
-| 4 | Order approved → Seller email | Low | High |
-| 5 | Wallet top-up → Email | Medium | Medium |
-| 6 | Withdrawal processed → Email | Medium | Medium |
-| 7 | Welcome email on signup | Medium | Medium |
-| 8 | New login detection email | High | Low |
+| Property | Value |
+|----------|-------|
+| Header height | 120px mobile, 140px desktop |
+| Avatar size | 72px with 4px white border |
+| Font - Label | 16px, font-medium |
+| Font - Description | 12px, text-muted-foreground |
+| Section header | 12px, uppercase, letter-spacing, text-muted |
+| List item padding | 16px horizontal, 14px vertical |
+| Divider | 1px border-gray-100 |
+| Chevron | ChevronRight 16px text-gray-400 |
+| Status dot | 10px bg-emerald-500 with ring |
 
 ---
 
-## Summary
+## Mobile Optimization
 
-**Root Cause:** The email infrastructure is complete (templates + send function + Resend API), but the transactional triggers are missing. The system only sends OTP emails because those are explicitly coded in the withdrawal edge functions.
+- Touch targets minimum 44px
+- Full-width list items
+- Sheet modals for sub-views (not accordions)
+- Safe area padding at bottom
+- Smooth spring animations on sheet open
 
-**Solution:** Add `sendEmail()` calls at each transaction point:
-1. After purchase in `AIAccountsSection.tsx`
-2. After delivery in `SellerOrders.tsx`
-3. After approval in `handleApproveDelivery`
-4. After top-up in `verify-topup` edge function
-5. After withdrawal processing in admin panel
+---
 
+## Expected Result
+
+| Before | After |
+|--------|-------|
+| Complex nested accordions | Clean flat menu list |
+| Small inline avatar | Large header with gradient |
+| Hidden camera icon | Always-visible camera overlay |
+| No online status | Green status dot indicator |
+| Busy visual hierarchy | Clean, consistent rows |
+| Desktop-first layout | Mobile-first app-like UX |
+
+---
+
+## Implementation Sequence
+
+1. Create shared `ProfileHeader` component
+2. Create shared `MenuListItem` component
+3. Create Sheet-based sub-views for each section
+4. Refactor `ProfileSection.tsx` with new layout
+5. Refactor `SellerSettings.tsx` with new layout
+6. Ensure all existing functionality works with new UI
+7. Test on mobile and desktop viewports
