@@ -25,6 +25,7 @@ import { FloatingChatProvider } from '@/contexts/FloatingChatContext';
 import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useSessionHeartbeat } from '@/hooks/useSessionHeartbeat';
 import { Button } from '@/components/ui/button';
 import { Crown, Bell, BellRing, X } from 'lucide-react';
 
@@ -88,6 +89,9 @@ const DashboardLayout = () => {
 };
 
 const Dashboard = () => {
+  // Start background session monitoring
+  useSessionHeartbeat();
+  
   return (
     <CurrencyProvider>
       <SidebarProvider>
