@@ -543,25 +543,27 @@ const StoreContent = () => {
       </div>
 
       {/* Main Content with Sidebar */}
-      <main className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-6">
-        <div className="flex gap-6">
+      <main className="max-w-7xl mx-auto px-2 md:px-4 py-3 md:py-6">
+        <div className="lg:flex lg:gap-6">
           {/* Sidebar - Desktop only */}
-          <StoreSidebar
-            products={products}
-            categories={categories}
-            selectedCategory={selectedCategory}
-            selectedTags={selectedTags}
-            onCategorySelect={setSelectedCategory}
-            onTagSelect={handleTagSelect}
-            onProductClick={(product) => setSelectedProduct(product)}
-          />
+          <div className="hidden lg:block">
+            <StoreSidebar
+              products={products}
+              categories={categories}
+              selectedCategory={selectedCategory}
+              selectedTags={selectedTags}
+              onCategorySelect={setSelectedCategory}
+              onTagSelect={handleTagSelect}
+              onProductClick={(product) => setSelectedProduct(product)}
+            />
+          </div>
 
           {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            {/* Search Bar - Single row on mobile */}
-            <div className="flex gap-2 mb-3 md:mb-6">
+          <div className="flex-1 min-w-0 w-full">
+            {/* Search Bar - Single row: Filter + Search on mobile */}
+            <div className="grid grid-cols-[auto_1fr] gap-2 mb-3 md:mb-6 lg:block">
               {/* Mobile Filter Button */}
-              <div className="lg:hidden flex-shrink-0">
+              <div className="lg:hidden">
                 <StoreSidebar
                   products={products}
                   categories={categories}
@@ -573,8 +575,8 @@ const StoreContent = () => {
                 />
               </div>
 
-              {/* Search Input - Compact on mobile */}
-              <div className="relative flex-1">
+              {/* Search Input */}
+              <div className="relative w-full">
                 <div className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 p-1.5 md:p-2 bg-slate-100 rounded-lg">
                   <Search size={16} className="text-slate-500" />
                 </div>
@@ -583,7 +585,7 @@ const StoreContent = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search..."
-                  className="w-full bg-white border border-slate-200 rounded-xl md:rounded-2xl pl-11 md:pl-14 pr-10 py-3 md:py-4 text-sm md:text-base text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-all font-medium shadow-sm mobile-search-bar"
+                  className="w-full bg-white border border-slate-200 rounded-xl md:rounded-2xl pl-11 md:pl-14 pr-10 py-3 md:py-4 text-sm md:text-base text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-all font-medium shadow-sm"
                 />
                 {(searchQuery || selectedTags.length > 0 || selectedCategory !== 'all') && (
                   <button
