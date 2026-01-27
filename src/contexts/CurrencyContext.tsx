@@ -6,6 +6,8 @@ interface CurrencyOption {
   symbol: string;
   name: string;
   rate: number;
+  flag: string;
+  priority: number; // Lower = higher priority (shown first)
 }
 
 interface CurrencyContextType {
@@ -18,17 +20,66 @@ interface CurrencyContextType {
   loading: boolean;
 }
 
+// 20+ currencies sorted by freelancer country popularity
 const DEFAULT_CURRENCIES: CurrencyOption[] = [
-  { code: 'USD', symbol: '$', name: 'US Dollar', rate: 1 },
-  { code: 'INR', symbol: '₹', name: 'Indian Rupee', rate: 91 },
-  { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka', rate: 121 },
-  { code: 'PKR', symbol: 'Rs', name: 'Pakistani Rupee', rate: 290 }
+  // TOP TIER - Most freelancer countries (priority 1)
+  { code: 'USD', symbol: '$', name: 'US Dollar', rate: 1, flag: '🇺🇸', priority: 1 },
+  { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka', rate: 121, flag: '🇧🇩', priority: 2 },
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee', rate: 83, flag: '🇮🇳', priority: 3 },
+  { code: 'PKR', symbol: 'Rs', name: 'Pakistani Rupee', rate: 278, flag: '🇵🇰', priority: 4 },
+  { code: 'GBP', symbol: '£', name: 'British Pound', rate: 0.79, flag: '🇬🇧', priority: 5 },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar', rate: 1.36, flag: '🇨🇦', priority: 6 },
+  
+  // SECOND TIER - Major markets (priority 10+)
+  { code: 'EUR', symbol: '€', name: 'Euro', rate: 0.92, flag: '🇪🇺', priority: 10 },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', rate: 1.53, flag: '🇦🇺', priority: 11 },
+  { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham', rate: 3.67, flag: '🇦🇪', priority: 12 },
+  { code: 'SAR', symbol: 'ر.س', name: 'Saudi Riyal', rate: 3.75, flag: '🇸🇦', priority: 13 },
+  { code: 'NGN', symbol: '₦', name: 'Nigerian Naira', rate: 1550, flag: '🇳🇬', priority: 14 },
+  { code: 'PHP', symbol: '₱', name: 'Philippine Peso', rate: 56, flag: '🇵🇭', priority: 15 },
+  { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah', rate: 15800, flag: '🇮🇩', priority: 16 },
+  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', rate: 4.5, flag: '🇲🇾', priority: 17 },
+  { code: 'VND', symbol: '₫', name: 'Vietnamese Dong', rate: 24500, flag: '🇻🇳', priority: 18 },
+  { code: 'THB', symbol: '฿', name: 'Thai Baht', rate: 35, flag: '🇹🇭', priority: 19 },
+  { code: 'EGP', symbol: 'E£', name: 'Egyptian Pound', rate: 49, flag: '🇪🇬', priority: 20 },
+  { code: 'KES', symbol: 'KSh', name: 'Kenyan Shilling', rate: 152, flag: '🇰🇪', priority: 21 },
+  { code: 'ZAR', symbol: 'R', name: 'South African Rand', rate: 18, flag: '🇿🇦', priority: 22 },
+  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real', rate: 5.1, flag: '🇧🇷', priority: 23 },
+  { code: 'MXN', symbol: 'MX$', name: 'Mexican Peso', rate: 17, flag: '🇲🇽', priority: 24 },
+  { code: 'NPR', symbol: 'रू', name: 'Nepalese Rupee', rate: 133, flag: '🇳🇵', priority: 25 },
+  { code: 'LKR', symbol: 'Rs', name: 'Sri Lankan Rupee', rate: 325, flag: '🇱🇰', priority: 26 },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen', rate: 149, flag: '🇯🇵', priority: 27 },
+  { code: 'KRW', symbol: '₩', name: 'South Korean Won', rate: 1320, flag: '🇰🇷', priority: 28 },
+  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', rate: 1.34, flag: '🇸🇬', priority: 29 },
+  { code: 'CHF', symbol: 'Fr', name: 'Swiss Franc', rate: 0.88, flag: '🇨🇭', priority: 30 },
 ];
 
 const COUNTRY_CURRENCY_MAP: Record<string, string> = {
-  'IN': 'INR',
   'BD': 'BDT',
+  'IN': 'INR',
   'PK': 'PKR',
+  'GB': 'GBP',
+  'CA': 'CAD',
+  'AU': 'AUD',
+  'AE': 'AED',
+  'SA': 'SAR',
+  'NG': 'NGN',
+  'PH': 'PHP',
+  'ID': 'IDR',
+  'MY': 'MYR',
+  'VN': 'VND',
+  'TH': 'THB',
+  'EG': 'EGP',
+  'KE': 'KES',
+  'ZA': 'ZAR',
+  'BR': 'BRL',
+  'MX': 'MXN',
+  'NP': 'NPR',
+  'LK': 'LKR',
+  'JP': 'JPY',
+  'KR': 'KRW',
+  'SG': 'SGD',
+  'CH': 'CHF',
   'DEFAULT': 'USD'
 };
 
@@ -63,6 +114,8 @@ export const CurrencyProvider = ({
             rate: method?.exchange_rate || currency.rate
           };
         });
+        // Sort by priority
+        updatedCurrencies.sort((a, b) => a.priority - b.priority);
         setCurrencies(updatedCurrencies);
       }
     } catch (error) {

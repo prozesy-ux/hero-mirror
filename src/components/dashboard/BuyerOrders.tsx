@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
-import { ShoppingBag, Package, Clock, CheckCircle, XCircle, Search, Filter, Eye, MessageSquare, Star } from 'lucide-react';
+import { ShoppingBag, Package, Clock, CheckCircle, XCircle, Search, Eye, MessageSquare, Star, Calendar, ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -21,8 +21,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { format } from 'date-fns';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format, subDays, startOfDay, endOfDay, isWithinInterval, startOfWeek, startOfMonth } from 'date-fns';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface Order {
   id: string;
@@ -46,6 +53,9 @@ interface Order {
   } | null;
 }
 
+type DatePreset = 'all' | 'today' | 'yesterday' | 'week' | 'month' | '30days' | 'custom';
+type SortOption = 'newest' | 'oldest' | 'amount_high' | 'amount_low';
+
 const BuyerOrders = () => {
   const { formatAmountOnly } = useCurrency();
   const { user } = useAuthContext();
@@ -55,6 +65,12 @@ const BuyerOrders = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [approving, setApproving] = useState(false);
+  
+  // Advanced filters
+  const [datePreset, setDatePreset] = useState<DatePreset>('all');
+  const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     if (user) fetchOrders();
@@ -86,15 +102,67 @@ const BuyerOrders = () => {
     totalSpent: orders.reduce((sum, o) => sum + o.amount, 0)
   }), [orders]);
 
-  // Filter orders
+  // Get date range based on preset
+  const getDateRange = useMemo(() => {
+    const now = new Date();
+    switch (datePreset) {
+      case 'today':
+        return { from: startOfDay(now), to: endOfDay(now) };
+      case 'yesterday':
+        const yesterday = subDays(now, 1);
+        return { from: startOfDay(yesterday), to: endOfDay(yesterday) };
+      case 'week':
+        return { from: startOfWeek(now, { weekStartsOn: 1 }), to: endOfDay(now) };
+      case 'month':
+        return { from: startOfMonth(now), to: endOfDay(now) };
+      case '30days':
+        return { from: subDays(now, 30), to: endOfDay(now) };
+      case 'custom':
+        return { from: customDateRange.from, to: customDateRange.to };
+      default:
+        return { from: undefined, to: undefined };
+    }
+  }, [datePreset, customDateRange]);
+
+  // Filter and sort orders
   const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
+    let result = orders.filter(order => {
+      // Search filter
       const matchesSearch = order.product?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           order.seller?.store_name.toLowerCase().includes(searchQuery.toLowerCase());
-      if (statusFilter === 'all') return matchesSearch;
-      return matchesSearch && order.status === statusFilter;
+                           order.seller?.store_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           order.id.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+      
+      // Date filter
+      let matchesDate = true;
+      if (getDateRange.from && getDateRange.to) {
+        const orderDate = new Date(order.created_at);
+        matchesDate = isWithinInterval(orderDate, { start: getDateRange.from, end: getDateRange.to });
+      }
+      
+      return matchesSearch && matchesStatus && matchesDate;
     });
-  }, [orders, searchQuery, statusFilter]);
+
+    // Sort
+    switch (sortOption) {
+      case 'newest':
+        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'oldest':
+        result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        break;
+      case 'amount_high':
+        result.sort((a, b) => b.amount - a.amount);
+        break;
+      case 'amount_low':
+        result.sort((a, b) => a.amount - b.amount);
+        break;
+    }
+
+    return result;
+  }, [orders, searchQuery, statusFilter, getDateRange, sortOption]);
 
   const handleApproveDelivery = async (orderId: string) => {
     setApproving(true);
@@ -130,11 +198,27 @@ const BuyerOrders = () => {
     }
   };
 
+  const getDateLabel = () => {
+    switch (datePreset) {
+      case 'today': return 'Today';
+      case 'yesterday': return 'Yesterday';
+      case 'week': return 'This Week';
+      case 'month': return 'This Month';
+      case '30days': return 'Last 30 Days';
+      case 'custom': 
+        if (customDateRange.from && customDateRange.to) {
+          return `${format(customDateRange.from, 'MMM d')} - ${format(customDateRange.to, 'MMM d')}`;
+        }
+        return 'Custom';
+      default: return 'All Time';
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {[...Array(5)].map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-2xl" />
           ))}
         </div>
@@ -209,29 +293,120 @@ const BuyerOrders = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search orders..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 rounded-xl border-slate-200"
-          />
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-4">
+        {/* Search, Date, Sort Row */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Search by product, seller, or order ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 rounded-xl border-slate-200"
+            />
+          </div>
+
+          {/* Date Filter */}
+          <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-auto gap-2 rounded-xl border-slate-200">
+                <Calendar className="h-4 w-4 text-slate-500" />
+                <span>{getDateLabel()}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <div className="p-2 space-y-1 border-b">
+                {(['all', 'today', 'yesterday', 'week', 'month', '30days'] as DatePreset[]).map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => { setDatePreset(preset); if (preset !== 'custom') setShowDatePicker(false); }}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
+                      datePreset === preset ? "bg-violet-100 text-violet-700" : "hover:bg-slate-100"
+                    )}
+                  >
+                    {preset === 'all' ? 'All Time' : 
+                     preset === 'today' ? 'Today' :
+                     preset === 'yesterday' ? 'Yesterday' :
+                     preset === 'week' ? 'This Week' :
+                     preset === 'month' ? 'This Month' :
+                     'Last 30 Days'}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setDatePreset('custom')}
+                  className={cn(
+                    "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
+                    datePreset === 'custom' ? "bg-violet-100 text-violet-700" : "hover:bg-slate-100"
+                  )}
+                >
+                  Custom Range
+                </button>
+              </div>
+              {datePreset === 'custom' && (
+                <CalendarComponent
+                  mode="range"
+                  selected={{ from: customDateRange.from, to: customDateRange.to }}
+                  onSelect={(range) => {
+                    setCustomDateRange({ from: range?.from, to: range?.to });
+                    if (range?.from && range?.to) setShowDatePicker(false);
+                  }}
+                  className="p-3 pointer-events-auto"
+                />
+              )}
+            </PopoverContent>
+          </Popover>
+
+          {/* Sort */}
+          <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
+            <SelectTrigger className="w-full sm:w-[160px] rounded-xl border-slate-200">
+              <ArrowUpDown className="w-4 h-4 mr-2 text-slate-400" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">
+                <span className="flex items-center gap-2"><ArrowDown className="w-3 h-3" /> Newest</span>
+              </SelectItem>
+              <SelectItem value="oldest">
+                <span className="flex items-center gap-2"><ArrowUp className="w-3 h-3" /> Oldest</span>
+              </SelectItem>
+              <SelectItem value="amount_high">Amount (High)</SelectItem>
+              <SelectItem value="amount_low">Amount (Low)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[180px] rounded-xl border-slate-200">
-            <Filter className="w-4 h-4 mr-2 text-slate-400" />
-            <SelectValue placeholder="Filter status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Orders</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="delivered">Delivered</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+
+        {/* Status Tabs */}
+        <div className="flex flex-wrap gap-2">
+          {[
+            { value: 'all', label: 'All', count: stats.total },
+            { value: 'pending', label: 'Pending', count: stats.pending },
+            { value: 'delivered', label: 'Delivered', count: stats.delivered },
+            { value: 'completed', label: 'Completed', count: stats.completed },
+            { value: 'cancelled', label: 'Cancelled', count: orders.filter(o => o.status === 'cancelled').length },
+          ].map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setStatusFilter(tab.value)}
+              className={cn(
+                "px-4 py-2 rounded-full text-sm font-medium transition-all",
+                statusFilter === tab.value
+                  ? "bg-violet-600 text-white shadow-sm"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              )}
+            >
+              {tab.label}
+              {tab.count > 0 && (
+                <span className={cn(
+                  "ml-1.5 px-1.5 py-0.5 rounded-full text-xs",
+                  statusFilter === tab.value ? "bg-white/20" : "bg-slate-200"
+                )}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Orders List */}
@@ -249,7 +424,13 @@ const BuyerOrders = () => {
                   {/* Product Info */}
                   <div className="flex items-center gap-3 flex-1">
                     {order.product?.icon_url ? (
-                      <img src={order.product.icon_url} alt="" className="w-14 h-14 rounded-xl object-cover" />
+                      <img 
+                        src={order.product.icon_url} 
+                        alt="" 
+                        className="w-14 h-14 rounded-xl object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
                     ) : (
                       <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center">
                         <Package className="w-6 h-6 text-slate-400" />
@@ -319,7 +500,12 @@ const BuyerOrders = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 {selectedOrder.product?.icon_url ? (
-                  <img src={selectedOrder.product.icon_url} alt="" className="w-16 h-16 rounded-xl object-cover" />
+                  <img 
+                    src={selectedOrder.product.icon_url} 
+                    alt="" 
+                    className="w-16 h-16 rounded-xl object-cover"
+                    loading="lazy"
+                  />
                 ) : (
                   <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center">
                     <Package className="w-8 h-8 text-slate-400" />

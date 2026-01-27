@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Globe } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface CurrencySelectorProps {
   variant?: 'default' | 'compact' | 'minimal';
@@ -27,30 +27,70 @@ export const CurrencySelector = ({ variant = 'default', className = '' }: Curren
 
   const currentCurrency = currencies.find(c => c.code === selectedCurrency);
 
+  // Top 6 currencies (highest priority)
+  const topCurrencies = currencies.filter(c => c.priority <= 6);
+  const otherCurrencies = currencies.filter(c => c.priority > 6);
+
   if (variant === 'minimal') {
     return (
       <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
         <SelectTrigger className={`w-auto gap-1.5 bg-white border-slate-200 rounded-xl h-9 px-3 text-sm ${className}`}>
-          <Globe className="h-3.5 w-3.5 text-slate-500" />
           <SelectValue>
-            <span className="font-medium">{currentCurrency?.symbol}</span>
-            <span className="text-slate-500 ml-1">{selectedCurrency}</span>
+            <span className="flex items-center gap-1.5">
+              <span className="text-base">{currentCurrency?.flag}</span>
+              <span className="font-medium">{selectedCurrency}</span>
+            </span>
           </SelectValue>
         </SelectTrigger>
-        <SelectContent className="bg-white min-w-[180px]">
-          {currencies.map((currency) => (
-            <SelectItem key={currency.code} value={currency.code} className="cursor-pointer">
-              <div className="flex items-center justify-between w-full gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-base">{currency.symbol}</span>
-                  <span className="text-slate-700">{currency.code}</span>
-                </div>
-                {currency.code !== 'USD' && (
-                  <span className="text-xs text-slate-400">1$ = {currency.rate}</span>
-                )}
+        <SelectContent className="bg-white min-w-[220px] p-0">
+          <ScrollArea className="h-[320px]">
+            {/* Top currencies */}
+            <div className="p-1">
+              <div className="px-2 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                Popular
               </div>
-            </SelectItem>
-          ))}
+              {topCurrencies.map((currency) => (
+                <SelectItem 
+                  key={currency.code} 
+                  value={currency.code} 
+                  className="cursor-pointer rounded-lg mx-1 my-0.5"
+                >
+                  <div className="flex items-center gap-3 py-0.5">
+                    <span className="text-lg">{currency.flag}</span>
+                    <div className="flex-1">
+                      <span className="font-medium text-slate-800">{currency.code}</span>
+                      <span className="text-slate-500 ml-2 text-xs">{currency.name}</span>
+                    </div>
+                  </div>
+                </SelectItem>
+              ))}
+            </div>
+            
+            {/* Separator */}
+            <div className="h-px bg-slate-100 my-1" />
+            
+            {/* Other currencies */}
+            <div className="p-1">
+              <div className="px-2 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                All Currencies
+              </div>
+              {otherCurrencies.map((currency) => (
+                <SelectItem 
+                  key={currency.code} 
+                  value={currency.code} 
+                  className="cursor-pointer rounded-lg mx-1 my-0.5"
+                >
+                  <div className="flex items-center gap-3 py-0.5">
+                    <span className="text-lg">{currency.flag}</span>
+                    <div className="flex-1">
+                      <span className="font-medium text-slate-800">{currency.code}</span>
+                      <span className="text-slate-500 ml-2 text-xs">{currency.name}</span>
+                    </div>
+                  </div>
+                </SelectItem>
+              ))}
+            </div>
+          </ScrollArea>
         </SelectContent>
       </Select>
     );
@@ -60,18 +100,27 @@ export const CurrencySelector = ({ variant = 'default', className = '' }: Curren
     return (
       <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
         <SelectTrigger className={`w-auto gap-1 bg-slate-50 border-slate-100 rounded-lg h-8 px-2 text-xs ${className}`}>
+          <span className="text-sm">{currentCurrency?.flag}</span>
           <span className="font-bold">{currentCurrency?.symbol}</span>
-          <span className="text-slate-500">{selectedCurrency}</span>
         </SelectTrigger>
-        <SelectContent className="bg-white min-w-[160px]">
-          {currencies.map((currency) => (
-            <SelectItem key={currency.code} value={currency.code} className="cursor-pointer text-sm">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{currency.symbol}</span>
-                <span>{currency.name}</span>
-              </div>
-            </SelectItem>
-          ))}
+        <SelectContent className="bg-white min-w-[200px] p-0">
+          <ScrollArea className="h-[280px]">
+            <div className="p-1">
+              {currencies.map((currency) => (
+                <SelectItem 
+                  key={currency.code} 
+                  value={currency.code} 
+                  className="cursor-pointer text-sm rounded-lg mx-1 my-0.5"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>{currency.flag}</span>
+                    <span className="font-semibold">{currency.symbol}</span>
+                    <span className="text-slate-600">{currency.code}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </div>
+          </ScrollArea>
         </SelectContent>
       </Select>
     );
@@ -80,34 +129,70 @@ export const CurrencySelector = ({ variant = 'default', className = '' }: Curren
   // Default variant
   return (
     <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-      <SelectTrigger className={`w-[140px] bg-white border-slate-200 rounded-xl h-10 ${className}`}>
+      <SelectTrigger className={`w-[160px] bg-white border-slate-200 rounded-xl h-10 ${className}`}>
         <div className="flex items-center gap-2">
-          <Globe className="h-4 w-4 text-slate-500" />
+          <span className="text-lg">{currentCurrency?.flag}</span>
           <SelectValue>
             <span className="font-semibold">{currentCurrency?.symbol}</span>
             <span className="text-slate-500 ml-1">{selectedCurrency}</span>
           </SelectValue>
         </div>
       </SelectTrigger>
-      <SelectContent className="bg-white">
-        {currencies.map((currency) => (
-          <SelectItem key={currency.code} value={currency.code} className="cursor-pointer">
-            <div className="flex items-center justify-between w-full gap-3">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-lg">{currency.symbol}</span>
-                <div>
-                  <p className="font-medium">{currency.code}</p>
-                  <p className="text-xs text-slate-500">{currency.name}</p>
-                </div>
-              </div>
-              {currency.code !== 'USD' && (
-                <span className="text-xs text-slate-400 whitespace-nowrap">
-                  1$ = {currency.rate}
-                </span>
-              )}
+      <SelectContent className="bg-white p-0">
+        <ScrollArea className="h-[360px]">
+          {/* Top currencies */}
+          <div className="p-1">
+            <div className="px-2 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+              Popular Currencies
             </div>
-          </SelectItem>
-        ))}
+            {topCurrencies.map((currency) => (
+              <SelectItem 
+                key={currency.code} 
+                value={currency.code} 
+                className="cursor-pointer rounded-lg mx-1 my-0.5"
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <span className="text-xl">{currency.flag}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-lg">{currency.symbol}</span>
+                    <div>
+                      <p className="font-medium">{currency.code}</p>
+                      <p className="text-xs text-slate-500">{currency.name}</p>
+                    </div>
+                  </div>
+                </div>
+              </SelectItem>
+            ))}
+          </div>
+          
+          {/* Separator */}
+          <div className="h-px bg-slate-100 my-1" />
+          
+          {/* Other currencies */}
+          <div className="p-1">
+            <div className="px-2 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+              All Currencies
+            </div>
+            {otherCurrencies.map((currency) => (
+              <SelectItem 
+                key={currency.code} 
+                value={currency.code} 
+                className="cursor-pointer rounded-lg mx-1 my-0.5"
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <span className="text-xl">{currency.flag}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-lg">{currency.symbol}</span>
+                    <div>
+                      <p className="font-medium">{currency.code}</p>
+                      <p className="text-xs text-slate-500">{currency.name}</p>
+                    </div>
+                  </div>
+                </div>
+              </SelectItem>
+            ))}
+          </div>
+        </ScrollArea>
       </SelectContent>
     </Select>
   );
