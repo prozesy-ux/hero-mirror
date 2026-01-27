@@ -509,10 +509,23 @@ const BuyerWallet = () => {
     setIsPrimary(false);
   };
 
+  // Check if there's a pending withdrawal
+  const hasPendingWithdrawal = useMemo(() => {
+    return withdrawals.some(w => 
+      ['pending', 'processing', 'queued', 'in_review'].includes(w.status.toLowerCase())
+    );
+  }, [withdrawals]);
+
   // Withdrawal handling with OTP
   const handleWithdraw = async () => {
     if (!user || !withdrawAmount || !selectedAccountForWithdraw) {
       toast.error('Please select an account');
+      return;
+    }
+
+    // Layer 1: Frontend check for existing pending withdrawal
+    if (hasPendingWithdrawal) {
+      toast.error('You already have a pending withdrawal. Please wait for it to be processed.');
       return;
     }
 
@@ -572,7 +585,14 @@ const BuyerWallet = () => {
             account_details: `${selectedAccount.account_name} - ${selectedAccount.account_number}${selectedAccount.bank_name ? ` (${selectedAccount.bank_name})` : ''}`
           });
 
-        if (error) throw error;
+        if (error) {
+          // Handle duplicate constraint error (Layer 3 fallback for non-2FA path)
+          if (error.code === '23505') {
+            toast.error('You already have a pending withdrawal. Please wait for it to be processed.');
+            return;
+          }
+          throw error;
+        }
 
         const newBalance = (wallet?.balance || 0) - withdrawAmount;
         await supabase
