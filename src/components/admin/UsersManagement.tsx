@@ -405,7 +405,6 @@ const UsersManagement = () => {
                       >
                         <Trash2 size={18} />
                       </button>
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -526,15 +525,11 @@ const UsersManagement = () => {
                           {selectedUser.is_pro ? 'Downgrade to Free' : 'Upgrade to Pro'}
                         </button>
                         <button
-                          onClick={() => handleDeleteUser(selectedUser.id, selectedUser.user_id)}
-                          disabled={deletingId === selectedUser.id}
+                          onClick={() => handleDeleteClick(selectedUser.id, selectedUser.user_id)}
+                          disabled={deleting}
                           className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-all"
                         >
-                          {deletingId === selectedUser.id ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={16} />
-                          )}
+                          <Trash2 size={16} />
                           Delete User
                         </button>
                       </div>
@@ -759,6 +754,18 @@ const UsersManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ open, id: open ? deleteConfirm.id : null, userId: open ? deleteConfirm.userId : null })}
+        title="Delete User"
+        description="Are you sure you want to delete this user? This action cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        variant="destructive"
+        loading={deleting}
+      />
     </div>
   );
 };

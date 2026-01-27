@@ -47,7 +47,6 @@ const AccountOrdersManagement = () => {
   // Delete confirmation state
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   const [deleting, setDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState<StatusFilter>('all');
 
   const enrichedOrders = useMemo(() => {
     const profileMap = new Map(profiles.map((p: any) => [p.user_id, p]));
@@ -424,8 +423,6 @@ const AccountOrdersManagement = () => {
                         >
                           <Trash2 size={16} />
                         </button>
-                          )}
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -555,6 +552,18 @@ const AccountOrdersManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ open, id: open ? deleteConfirm.id : null })}
+        title="Delete Order"
+        description="Are you sure you want to delete this order? This action cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        variant="destructive"
+        loading={deleting}
+      />
     </div>
   );
 };
