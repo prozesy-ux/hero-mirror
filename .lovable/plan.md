@@ -1,87 +1,150 @@
 
-# Fix Wallet Section Live Updates from Admin Panel
+# Fix Wallet Section Issues - Complete Fixes
 
 ## Issues Identified
 
-### 1. Critical Database Error: `profiles.country` Does Not Exist
-The BFF-BuyerWallet edge function is failing because it tries to query `profiles.country`, but this column doesn't exist in the `profiles` table.
+### 1. Remove "Min: $5000" Text from Bank Section
+**Location:** `BuyerWallet.tsx` (Lines 758-760) and `SellerWallet.tsx` (Lines 776-778)
 
-**Current `profiles` columns:**
-- id, user_id, email, full_name, avatar_url, is_pro, created_at, updated_at, username, two_factor_enabled
+Current code displays:
+```tsx
+<p className="text-gray-500 text-xs mt-1">
+  Min: ${method.min_withdrawal}
+</p>
+```
+This needs to be removed from the "Available Withdrawal Methods" section entirely.
 
-**Missing:** `country`
+### 2. Country Selection Option Missing for Users
+**Issue:** Users (e.g., Bangladesh users) cannot change country to preview withdrawal methods for other countries.
+**Location:** `BuyerWallet.tsx` and `SellerWallet.tsx` - Lines 726-773
 
-**Note:** `seller_profiles` has a `country` column, but `profiles` (for buyers) does not.
+The current header shows the country badge but has NO selector for users to change it:
+```tsx
+<Badge variant="outline" className="ml-2 text-xs">
+  {COUNTRY_CONFIG[userCountry]?.flag || '🌍'} {COUNTRY_CONFIG[userCountry]?.name || userCountry}
+</Badge>
+```
 
-### 2. Realtime Not Enabled for `withdrawal_method_config`
-The `withdrawal_method_config` table is not in the Supabase realtime publication, which prevents live updates from propagating to wallets when admin changes settings.
+**Solution:** Add a dropdown to allow users to preview methods for other countries while their actual withdrawals remain tied to their profile country.
 
-### 3. Country Auto-Selection in Admin Preview
-The admin panel's "Available Withdrawal Methods" section needs to show a default country with enabled methods count badges.
+### 3. Admin Panel Logo Not Updating
+**Issue:** In the admin panel's "Available Withdrawal Methods" preview section and the withdrawal method cards, logos are not displaying correctly.
+
+**Root Cause Analysis:**
+- The `getMethodLogo` helper in `PaymentSettingsManagement.tsx` (Lines 296-303) correctly prioritizes `custom_logo_url > registry > fallback`
+- However, the `LogoWithFallback` component expects `src` to be a valid URL - if the `method_code` doesn't match any registry entry AND no `custom_logo_url` is set, it passes an empty string
+
+**Current logic at line 297:**
+```tsx
+const logoConfig = getPaymentLogo(method.method_code || method.account_type);
+```
+When `method_code` is something like "bkash" but the registry has it lowercase, and no custom_logo_url is set, it should still work. However if the code doesn't match at all, it returns empty URL.
+
+### 4. Wallet Section Logos Not Showing
+**Same Issue:** The wallet components use identical logo logic but logos aren't rendering.
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Database Migration
-Add the missing `country` column to the `profiles` table and enable realtime for `withdrawal_method_config`.
+### Phase 1: Remove "Min: $X" Text from Available Withdrawal Methods
 
-```sql
--- Add country column to profiles table
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'BD';
-
--- Add realtime for withdrawal_method_config
-ALTER PUBLICATION supabase_realtime ADD TABLE withdrawal_method_config;
+**BuyerWallet.tsx** - Remove lines 758-760:
+```tsx
+// REMOVE THIS:
+<p className="text-gray-500 text-xs mt-1">
+  Min: ${method.min_withdrawal}
+</p>
 ```
 
-### Phase 2: Fix BFF-BuyerWallet Fallback Logic
-Update the edge function to handle cases where country might be null or missing:
-
-```typescript
-// Before:
-const { data: profileData } = await supabase
-  .from('profiles')
-  .select('country')
-  .eq('user_id', userId)
-  .maybeSingle();
-
-const userCountry = profileData?.country || 'GLOBAL';
-
-// After (with fallback to buyer_payment_accounts):
-const { data: profileData } = await supabase
-  .from('profiles')
-  .select('country')
-  .eq('user_id', userId)
-  .maybeSingle();
-
-let userCountry = profileData?.country;
-
-// Fallback: check buyer's saved accounts for country
-if (!userCountry) {
-  const { data: accountData } = await supabase
-    .from('buyer_payment_accounts')
-    .select('country')
-    .eq('user_id', userId)
-    .not('country', 'is', null)
-    .limit(1)
-    .maybeSingle();
-  userCountry = accountData?.country;
-}
-
-userCountry = userCountry || 'GLOBAL';
+**SellerWallet.tsx** - Remove lines 776-778:
+```tsx
+// REMOVE THIS:  
+<p className="text-gray-500 text-xs mt-1">
+  Min: ${method.min_withdrawal}
+</p>
 ```
 
-### Phase 3: Admin Panel Improvements
-1. **Country auto-select with badge:** When loading withdrawal tab, auto-select the first country that has configured methods
-2. **Live preview section:** Show all enabled methods for selected country with logos
-3. **Method count badges:** Display number of active methods per country in dropdown
+### Phase 2: Add Country Preview Selector to Wallet Sections
 
-### Phase 4: Wallet Components Update
-Ensure both `BuyerWallet.tsx` and `SellerWallet.tsx`:
-1. Subscribe to `withdrawal_method_config` realtime changes
-2. Use logo priority: `custom_logo_url` > `payment-logos.ts` registry > fallback color
-3. Show country badge with flag and name
-4. Display min withdrawal limits per method
+Add a dropdown above the "Available Withdrawal Methods" section that allows users to PREVIEW methods for other countries:
+
+```tsx
+{/* Country Preview Selector */}
+<div className="flex items-center gap-3 mb-4">
+  <Label className="text-sm text-gray-600">Preview for:</Label>
+  <Select value={previewCountry} onValueChange={setPreviewCountry}>
+    <SelectTrigger className="w-[180px]">
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      {/* User's default country first */}
+      <SelectItem value={userCountry}>
+        {COUNTRY_CONFIG[userCountry]?.flag} {COUNTRY_CONFIG[userCountry]?.name} (Your Country)
+      </SelectItem>
+      <div className="h-px bg-gray-200 my-1" />
+      {/* Other available countries from withdrawal config */}
+      {availableCountries.filter(c => c !== userCountry).map(code => (
+        <SelectItem key={code} value={code}>
+          {COUNTRY_CONFIG[code]?.flag} {COUNTRY_CONFIG[code]?.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+```
+
+**State additions:**
+```tsx
+const [previewCountry, setPreviewCountry] = useState<string>(userCountry);
+
+// Derive available countries from withdrawal methods
+const availableCountries = useMemo(() => {
+  const countries = [...new Set(withdrawalMethods.map(m => m.country_code))];
+  return countries;
+}, [withdrawalMethods]);
+
+// Filter methods by preview country
+const filteredMethods = useMemo(() => {
+  return withdrawalMethods.filter(m => m.country_code === previewCountry);
+}, [withdrawalMethods, previewCountry]);
+```
+
+### Phase 3: Fix Logo Rendering in All Components
+
+The issue is that `LogoWithFallback` shows the fallback letter when `src` is empty. The `getPaymentLogo` function returns empty string if no match.
+
+**Enhanced logo fetching with better fallback:**
+
+In both wallet components and admin panel, ensure the logo helper properly handles edge cases:
+
+```tsx
+const getMethodLogoUrl = (method: WithdrawalMethod) => {
+  // 1. Priority: custom_logo_url from database
+  if (method.custom_logo_url) return method.custom_logo_url;
+  
+  // 2. Check registry by method_code
+  if (method.method_code) {
+    const logoConfig = getPaymentLogo(method.method_code);
+    if (logoConfig.url) return logoConfig.url;
+  }
+  
+  // 3. Return empty (fallback to letter placeholder)
+  return '';
+};
+```
+
+This is already correct. The actual issue might be with how the `LogoWithFallback` component handles the src/alt combination. Let me verify the component is receiving correct props.
+
+**Ensure brand colors are passed correctly:**
+```tsx
+<LogoWithFallback
+  src={logoUrl}
+  alt={method.method_name}
+  color={method.brand_color || logoConfig.color} // Ensure color is passed
+  className="h-10 w-10 mx-auto mb-3"
+/>
+```
 
 ---
 
@@ -89,47 +152,70 @@ Ensure both `BuyerWallet.tsx` and `SellerWallet.tsx`:
 
 | File | Changes |
 |------|---------|
-| **Database Migration** | Add `country` to `profiles`, enable realtime for `withdrawal_method_config` |
-| `supabase/functions/bff-buyer-wallet/index.ts` | Add fallback logic for country detection |
-| `src/components/admin/PaymentSettingsManagement.tsx` | Improve country auto-selection with active method counts |
-| `src/components/dashboard/BuyerWallet.tsx` | Verify realtime subscription, logo fallback |
-| `src/components/seller/SellerWallet.tsx` | Verify realtime subscription, logo fallback |
+| `src/components/dashboard/BuyerWallet.tsx` | Remove min withdrawal text, add country preview selector, verify logo props |
+| `src/components/seller/SellerWallet.tsx` | Same changes as BuyerWallet |
+| `src/components/admin/PaymentSettingsManagement.tsx` | Verify logo rendering in withdrawal cards |
 
 ---
 
-## Technical Flow After Fix
+## Technical Implementation Details
 
-```text
-ADMIN PANEL
-    │
-    ▼
-┌───────────────────────────────────┐
-│  withdrawal_method_config table   │
-│  (country, account_type, method)  │
-└───────────────────────────────────┘
-    │
-    │ Realtime subscription
-    ▼
-┌───────────────────────────────────┐
-│  BuyerWallet / SellerWallet       │
-│  - Fetch enabled methods          │
-│  - Filter by user country         │
-│  - Display with logos             │
-└───────────────────────────────────┘
+### BuyerWallet.tsx Changes:
+
+1. **Add new state:**
+```tsx
+const [previewCountry, setPreviewCountry] = useState<string>('');
 ```
 
-**Logo Priority System:**
-1. `custom_logo_url` from database (admin uploaded)
-2. `getPaymentLogo(method_code)` from registry
-3. Colored fallback with first letter
+2. **Sync previewCountry with userCountry on load:**
+```tsx
+useEffect(() => {
+  if (userCountry && !previewCountry) {
+    setPreviewCountry(userCountry);
+  }
+}, [userCountry]);
+```
+
+3. **Derive available countries:**
+```tsx
+const availableCountries = useMemo(() => {
+  return [...new Set(withdrawalMethods.map(m => m.country_code))];
+}, [withdrawalMethods]);
+```
+
+4. **Filter methods by preview country:**
+```tsx
+const displayMethods = useMemo(() => {
+  if (!previewCountry) return withdrawalMethods;
+  return withdrawalMethods.filter(m => m.country_code === previewCountry);
+}, [withdrawalMethods, previewCountry]);
+```
+
+5. **Update the UI section** - Replace the header and remove min text.
+
+### SellerWallet.tsx Changes:
+Same pattern as BuyerWallet.
 
 ---
 
-## Expected Outcome
+## Expected Results After Fix
 
-After implementation:
-- Admin can add/edit/delete withdrawal methods per country
-- Changes sync instantly to buyer and seller wallets
-- Logos display correctly with fallbacks
-- Country is auto-detected from user profile or payment accounts
-- Admin sees live preview of enabled methods per country
+1. **No "Min: $X" text** in the Available Withdrawal Methods cards - cleaner UI
+2. **Country dropdown** allows Bangladesh users (and all users) to preview methods for other countries
+3. **Logos display correctly** with priority: custom_logo_url > registry match > colored letter fallback
+4. **Admin panel logos** update properly when method_code is entered
+5. **Real-time sync** - when admin adds/removes methods, wallet sections update automatically
+
+---
+
+## Summary of Removals/Additions
+
+**Remove:**
+- "Min: ${method.min_withdrawal}" text from BuyerWallet.tsx line 758-760
+- "Min: ${method.min_withdrawal}" text from SellerWallet.tsx line 776-778
+
+**Add:**
+- Country preview dropdown selector in BuyerWallet.tsx
+- Country preview dropdown selector in SellerWallet.tsx  
+- `previewCountry` state and related filtering logic
+- Better logo fallback handling if needed
