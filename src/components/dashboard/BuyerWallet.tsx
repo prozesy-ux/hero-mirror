@@ -207,13 +207,45 @@ const BuyerWallet = () => {
 
   const quickAmounts = [5, 10, 25, 50, 100];
 
-  const getAvailableDigitalWallets = () => {
-    return getDigitalWalletsForCountry(selectedCountry || userCountry);
-  };
+  // Merge admin-configured logos with static config
+  const getAvailableDigitalWallets = useCallback(() => {
+    const country = selectedCountry || userCountry;
+    const staticWallets = getDigitalWalletsForCountry(country);
+    
+    // Merge with admin-configured withdrawal methods for this country/type
+    return staticWallets.map(wallet => {
+      const adminConfig = withdrawalMethods.find(
+        m => m.country_code === country && 
+             m.account_type === 'digital_wallet' && 
+             m.method_code?.toLowerCase() === wallet.code.toLowerCase()
+      );
+      return {
+        ...wallet,
+        logo: adminConfig?.custom_logo_url || wallet.logo,
+        color: adminConfig?.brand_color || wallet.color,
+      };
+    });
+  }, [selectedCountry, userCountry, withdrawalMethods]);
 
-  const getAvailableBanks = () => {
-    return getBanksForCountry(selectedCountry || userCountry);
-  };
+  // Merge admin-configured logos with static bank config
+  const getAvailableBanks = useCallback(() => {
+    const country = selectedCountry || userCountry;
+    const staticBanks = getBanksForCountry(country);
+    
+    // Merge with admin-configured withdrawal methods for this country/type
+    return staticBanks.map(bank => {
+      const adminConfig = withdrawalMethods.find(
+        m => m.country_code === country && 
+             m.account_type === 'bank' && 
+             m.method_code?.toLowerCase() === bank.code.toLowerCase()
+      );
+      return {
+        ...bank,
+        logo: adminConfig?.custom_logo_url || bank.logo,
+        color: adminConfig?.brand_color || bank.color,
+      };
+    });
+  }, [selectedCountry, userCountry, withdrawalMethods]);
 
   // Fetch all data from BFF API
   const fetchData = useCallback(async () => {
