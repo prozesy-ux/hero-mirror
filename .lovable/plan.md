@@ -1,169 +1,87 @@
 
-# Connect "Available Withdrawal Methods" to Admin Panel
+# Fix Wallet Section Live Updates from Admin Panel
 
-## Overview
-The "Available Withdrawal Methods" section in BuyerWallet and SellerWallet needs to fetch data from the admin-controlled `withdrawal_method_config` table instead of the current `payment_methods` table. This ensures:
+## Issues Identified
 
-1. **Live updates**: When admin enables/disables a method, wallets reflect changes immediately
-2. **Country-based filtering**: Users only see methods enabled for their country  
-3. **Correct logos**: Uses the `payment-logos.ts` registry with `custom_logo_url` fallback
-4. **No deposit connection**: Completely separate from the deposit methods
+### 1. Critical Database Error: `profiles.country` Does Not Exist
+The BFF-BuyerWallet edge function is failing because it tries to query `profiles.country`, but this column doesn't exist in the `profiles` table.
 
----
+**Current `profiles` columns:**
+- id, user_id, email, full_name, avatar_url, is_pro, created_at, updated_at, username, two_factor_enabled
 
-## Current State
+**Missing:** `country`
 
-### BuyerWallet.tsx (Lines 716-748)
-- Fetches from `payment_methods` table via BFF API
-- Shows `method.icon_url` with generic fallback
-- No country filtering
-- Not connected to `withdrawal_method_config`
+**Note:** `seller_profiles` has a `country` column, but `profiles` (for buyers) does not.
 
-### SellerWallet.tsx (Lines 729-761)
-- Similar logic, same issues
-- Fetches from `payment_methods` directly
+### 2. Realtime Not Enabled for `withdrawal_method_config`
+The `withdrawal_method_config` table is not in the Supabase realtime publication, which prevents live updates from propagating to wallets when admin changes settings.
 
-### Admin Panel
-- `withdrawal_method_config` table has:
-  - `country_code`, `account_type`, `method_code`
-  - `is_enabled`, `min_withdrawal`, `max_withdrawal`
-  - `custom_logo_url`, `brand_color`, `method_name`
-- Already seeded with data for BD, GB, US, IN, PK, etc.
+### 3. Country Auto-Selection in Admin Preview
+The admin panel's "Available Withdrawal Methods" section needs to show a default country with enabled methods count badges.
 
 ---
 
 ## Implementation Plan
 
-### Step 1: Update BFF Endpoints to Include Withdrawal Config
+### Phase 1: Database Migration
+Add the missing `country` column to the `profiles` table and enable realtime for `withdrawal_method_config`.
 
-**bff-buyer-wallet/index.ts**
-Add fetching `withdrawal_method_config` for user's country:
+```sql
+-- Add country column to profiles table
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'BD';
+
+-- Add realtime for withdrawal_method_config
+ALTER PUBLICATION supabase_realtime ADD TABLE withdrawal_method_config;
+```
+
+### Phase 2: Fix BFF-BuyerWallet Fallback Logic
+Update the edge function to handle cases where country might be null or missing:
+
 ```typescript
-// Get user's country from profile or buyer_payment_accounts
-const profileResult = await supabase
+// Before:
+const { data: profileData } = await supabase
   .from('profiles')
   .select('country')
   .eq('user_id', userId)
-  .single();
+  .maybeSingle();
 
-const userCountry = profileResult.data?.country || 'GLOBAL';
+const userCountry = profileData?.country || 'GLOBAL';
 
-// Fetch withdrawal methods for user's country + GLOBAL
-const withdrawalConfigResult = await supabase
-  .from('withdrawal_method_config')
-  .select('*')
-  .in('country_code', [userCountry, 'GLOBAL'])
-  .eq('is_enabled', true)
-  .order('account_type, method_name');
-```
+// After (with fallback to buyer_payment_accounts):
+const { data: profileData } = await supabase
+  .from('profiles')
+  .select('country')
+  .eq('user_id', userId)
+  .maybeSingle();
 
-**bff-seller-dashboard/index.ts**
-Same pattern - fetch config based on seller's country from `seller_profiles.country`.
+let userCountry = profileData?.country;
 
-### Step 2: Update BuyerWallet.tsx
-
-**Add new state for withdrawal config:**
-```typescript
-interface WithdrawalMethod {
-  id: string;
-  country_code: string;
-  account_type: 'bank' | 'digital_wallet' | 'crypto';
-  method_code: string | null;
-  method_name: string;
-  is_enabled: boolean;
-  min_withdrawal: number;
-  max_withdrawal: number;
-  custom_logo_url: string | null;
-  brand_color: string | null;
-  exchange_rate: number;
+// Fallback: check buyer's saved accounts for country
+if (!userCountry) {
+  const { data: accountData } = await supabase
+    .from('buyer_payment_accounts')
+    .select('country')
+    .eq('user_id', userId)
+    .not('country', 'is', null)
+    .limit(1)
+    .maybeSingle();
+  userCountry = accountData?.country;
 }
 
-const [withdrawalMethods, setWithdrawalMethods] = useState<WithdrawalMethod[]>([]);
+userCountry = userCountry || 'GLOBAL';
 ```
 
-**Replace "Available Withdrawal Methods" section (Lines 716-748):**
-```typescript
-{/* Available Withdrawal Methods - from Admin Config */}
-<div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
-  <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
-    <CreditCard className="text-violet-500" size={20} />
-    Available Withdrawal Methods
-    <Badge variant="outline" className="ml-2 text-xs">
-      {getCountryName(userCountry)}
-    </Badge>
-  </h3>
-  
-  {withdrawalMethods.length === 0 ? (
-    <p className="text-gray-500 text-center py-8">
-      No withdrawal methods available for your region. Contact admin.
-    </p>
-  ) : (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-      {withdrawalMethods.map((method) => {
-        const logoConfig = getPaymentLogo(method.method_code || method.account_type);
-        const logoUrl = method.custom_logo_url || logoConfig.url;
-        const brandColor = method.brand_color || logoConfig.color;
-        
-        return (
-          <div 
-            key={method.id}
-            className="p-4 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-200 text-center hover:shadow-md hover:border-violet-200 transition-all"
-          >
-            <LogoWithFallback
-              src={logoUrl}
-              alt={method.method_name}
-              fallbackColor={brandColor}
-              className="h-10 w-10 mx-auto mb-3"
-            />
-            <p className="text-gray-900 font-semibold text-sm">
-              {method.method_name}
-            </p>
-            <p className="text-gray-500 text-xs mt-1">
-              Min: ${method.min_withdrawal}
-            </p>
-            <Badge 
-              variant="secondary" 
-              className="mt-2 text-[10px]"
-              style={{ backgroundColor: `${brandColor}15`, color: brandColor }}
-            >
-              {method.account_type === 'bank' ? 'Bank' : 
-               method.account_type === 'digital_wallet' ? 'Wallet' : 'Crypto'}
-            </Badge>
-          </div>
-        );
-      })}
-    </div>
-  )}
-</div>
-```
+### Phase 3: Admin Panel Improvements
+1. **Country auto-select with badge:** When loading withdrawal tab, auto-select the first country that has configured methods
+2. **Live preview section:** Show all enabled methods for selected country with logos
+3. **Method count badges:** Display number of active methods per country in dropdown
 
-### Step 3: Update SellerWallet.tsx
-
-Same changes as BuyerWallet - replace the "Available Withdrawal Methods" section with the admin-connected version.
-
-### Step 4: Add Real-Time Subscription
-
-**BuyerWallet.tsx & SellerWallet.tsx:**
-```typescript
-// Subscribe to withdrawal config changes
-const configChannel = supabase
-  .channel('withdrawal-config-updates')
-  .on('postgres_changes', {
-    event: '*',
-    schema: 'public',
-    table: 'withdrawal_method_config'
-  }, () => {
-    // Refetch withdrawal methods
-    fetchWithdrawalMethods();
-  })
-  .subscribe();
-```
-
-### Step 5: Import getPaymentLogo Helper
-
-```typescript
-import { getPaymentLogo, COUNTRIES } from '@/lib/payment-logos';
-```
+### Phase 4: Wallet Components Update
+Ensure both `BuyerWallet.tsx` and `SellerWallet.tsx`:
+1. Subscribe to `withdrawal_method_config` realtime changes
+2. Use logo priority: `custom_logo_url` > `payment-logos.ts` registry > fallback color
+3. Show country badge with flag and name
+4. Display min withdrawal limits per method
 
 ---
 
@@ -171,26 +89,47 @@ import { getPaymentLogo, COUNTRIES } from '@/lib/payment-logos';
 
 | File | Changes |
 |------|---------|
-| `supabase/functions/bff-buyer-wallet/index.ts` | Add `withdrawal_method_config` fetch + return |
-| `supabase/functions/bff-seller-dashboard/index.ts` | Add `withdrawal_method_config` fetch + return |
-| `src/components/dashboard/BuyerWallet.tsx` | Replace available methods section, add real-time |
-| `src/components/seller/SellerWallet.tsx` | Same as BuyerWallet |
+| **Database Migration** | Add `country` to `profiles`, enable realtime for `withdrawal_method_config` |
+| `supabase/functions/bff-buyer-wallet/index.ts` | Add fallback logic for country detection |
+| `src/components/admin/PaymentSettingsManagement.tsx` | Improve country auto-selection with active method counts |
+| `src/components/dashboard/BuyerWallet.tsx` | Verify realtime subscription, logo fallback |
+| `src/components/seller/SellerWallet.tsx` | Verify realtime subscription, logo fallback |
 
 ---
 
-## Expected Behavior After Implementation
+## Technical Flow After Fix
 
-1. **Admin enables bKash for BD**: Buyer/Seller in BD sees bKash appear in "Available Withdrawal Methods"
-2. **Admin disables PayPal for US**: Buyer/Seller in US no longer sees PayPal
-3. **Admin updates min_withdrawal**: New limit reflected immediately
-4. **Admin uploads custom logo**: Logo updates in all wallet views
-5. **GLOBAL methods (crypto)**: Visible to all users regardless of country
+```text
+ADMIN PANEL
+    │
+    ▼
+┌───────────────────────────────────┐
+│  withdrawal_method_config table   │
+│  (country, account_type, method)  │
+└───────────────────────────────────┘
+    │
+    │ Realtime subscription
+    ▼
+┌───────────────────────────────────┐
+│  BuyerWallet / SellerWallet       │
+│  - Fetch enabled methods          │
+│  - Filter by user country         │
+│  - Display with logos             │
+└───────────────────────────────────┘
+```
+
+**Logo Priority System:**
+1. `custom_logo_url` from database (admin uploaded)
+2. `getPaymentLogo(method_code)` from registry
+3. Colored fallback with first letter
 
 ---
 
-## Technical Notes
+## Expected Outcome
 
-- **No deposit section changes**: The deposit methods remain unchanged and separate
-- **Logo priority**: `custom_logo_url` > `payment-logos.ts` registry > fallback color placeholder
-- **Country detection**: Uses `profiles.country` for buyers, `seller_profiles.country` for sellers
-- **Real-time sync**: Supabase subscription on `withdrawal_method_config` table triggers refetch
+After implementation:
+- Admin can add/edit/delete withdrawal methods per country
+- Changes sync instantly to buyer and seller wallets
+- Logos display correctly with fallbacks
+- Country is auto-detected from user profile or payment accounts
+- Admin sees live preview of enabled methods per country
