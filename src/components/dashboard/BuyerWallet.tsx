@@ -196,15 +196,28 @@ const BuyerWallet = () => {
   const displayMethods = useMemo(() => {
     const filterCountry = previewCountry || userCountry;
     if (!filterCountry) return [];
-    return withdrawalMethods.filter(m => m.country_code === filterCountry);
+    // Include GLOBAL methods + country-specific methods
+    return withdrawalMethods.filter(m => 
+      m.country_code === filterCountry || m.country_code === 'GLOBAL'
+    );
   }, [withdrawalMethods, previewCountry, userCountry]);
 
   // Sync previewCountry with userCountry on load
   useEffect(() => {
-    if (userCountry) {
+    if (userCountry && !previewCountry) {
       setPreviewCountry(userCountry);
     }
-  }, [userCountry]);
+  }, [userCountry, previewCountry]);
+
+  // Fetch ALL enabled withdrawal methods (for cross-country preview)
+  const fetchWithdrawalMethods = useCallback(async () => {
+    const { data } = await supabase
+      .from('withdrawal_method_config')
+      .select('*')
+      .eq('is_enabled', true)
+      .order('country_code, account_type, method_name');
+    if (data) setWithdrawalMethods(data as WithdrawalMethod[]);
+  }, []);
 
   const quickAmounts = [5, 10, 25, 50, 100];
 
@@ -305,8 +318,9 @@ const BuyerWallet = () => {
   useEffect(() => {
     if (user) {
       fetchData();
+      fetchWithdrawalMethods();
     }
-  }, [user, fetchData]);
+  }, [user, fetchData, fetchWithdrawalMethods]);
 
   // Real-time subscriptions
   useEffect(() => {
@@ -336,13 +350,13 @@ const BuyerWallet = () => {
         event: '*',
         schema: 'public',
         table: 'withdrawal_method_config'
-      }, () => fetchData())
+      }, () => fetchWithdrawalMethods())
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, fetchData]);
+  }, [user, fetchData, fetchWithdrawalMethods]);
 
   // Account management
   const handleAddAccount = async () => {

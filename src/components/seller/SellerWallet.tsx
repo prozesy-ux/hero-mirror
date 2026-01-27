@@ -188,17 +188,30 @@ const SellerWallet = () => {
   const displayMethods = useMemo(() => {
     const filterCountry = previewCountry || sellerCountry;
     if (!filterCountry) return [];
-    return withdrawalMethods.filter(m => m.country_code === filterCountry);
+    // Include GLOBAL methods + country-specific methods
+    return withdrawalMethods.filter(m => 
+      m.country_code === filterCountry || m.country_code === 'GLOBAL'
+    );
   }, [withdrawalMethods, previewCountry, sellerCountry]);
 
   // Sync previewCountry with sellerCountry on load
   useEffect(() => {
-    if (sellerCountry) {
+    if (sellerCountry && !previewCountry) {
       setPreviewCountry(sellerCountry);
     }
-  }, [sellerCountry]);
+  }, [sellerCountry, previewCountry]);
 
   const quickAmounts = [5, 10, 25, 50, 100];
+
+  // Fetch ALL enabled withdrawal methods (for cross-country preview)
+  const fetchWithdrawalMethods = useCallback(async () => {
+    const { data } = await supabase
+      .from('withdrawal_method_config')
+      .select('*')
+      .eq('is_enabled', true)
+      .order('country_code, account_type, method_name');
+    if (data) setWithdrawalMethods(data as WithdrawalMethod[]);
+  }, []);
 
   // Merge admin-configured logos with static config
   const getAvailableDigitalWallets = useCallback(() => {
@@ -246,7 +259,7 @@ const SellerWallet = () => {
       fetchSellerCountry();
       fetchWithdrawalMethods();
     }
-  }, [profile?.id]);
+  }, [profile?.id, fetchWithdrawalMethods]);
 
   // Real-time subscription for withdrawals
   useEffect(() => {
@@ -294,18 +307,7 @@ const SellerWallet = () => {
       supabase.removeChannel(accountsChannel);
       supabase.removeChannel(configChannel);
     };
-  }, [profile?.id, refreshWithdrawals, refreshWallet]);
-
-  const fetchWithdrawalMethods = async () => {
-    if (!sellerCountry) return;
-    const { data } = await supabase
-      .from('withdrawal_method_config')
-      .select('*')
-      .in('country_code', [sellerCountry, 'GLOBAL'])
-      .eq('is_enabled', true)
-      .order('account_type, method_name');
-    if (data) setWithdrawalMethods(data as WithdrawalMethod[]);
-  };
+  }, [profile?.id, refreshWithdrawals, refreshWallet, fetchWithdrawalMethods]);
 
   const fetchSavedAccounts = async () => {
     if (!profile?.id) return;
