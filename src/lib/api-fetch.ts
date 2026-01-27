@@ -216,6 +216,7 @@ export const bffApi = {
     purchases: any[];
     sellerOrders: any[];
     favorites: string[];
+    wishlist: any[];
     wishlistCount: number;
     orderStats: {
       total: number;
