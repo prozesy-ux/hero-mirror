@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AnnouncementBanner } from '@/components/ui/announcement-banner';
+import SellerLevelBadge from '@/components/seller/SellerLevelBadge';
+import SellerLevelProgress from '@/components/seller/SellerLevelProgress';
 import { 
   AreaChart, 
   Area, 
@@ -266,8 +268,11 @@ const SellerDashboard = () => {
       <AnnouncementBanner audience="seller" />
       {/* Dashboard Header - Shopeers Style */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-xl font-bold text-slate-800 seller-heading">Dashboard</h1>
+          {profile.level && (
+            <SellerLevelBadge level={profile.level} size="md" />
+          )}
           {trustScore && (
             <Badge className={`px-2.5 py-1 text-xs font-semibold ${
               trustScore.trust_score >= 90 ? 'bg-emerald-100 text-emerald-700' :
@@ -424,6 +429,16 @@ const SellerDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Seller Level Progress Section */}
+      {profile.level && (
+        <SellerLevelProgress 
+          currentLevel={profile.level}
+          totalOrders={profile.total_orders || 0}
+          avgRating={averageRating || 0}
+          totalRevenue={profile.total_sales || 0}
+        />
+      )}
 
       {/* Main Content Row - Chart + Quick Stats */}
       <div className="grid lg:grid-cols-3 gap-6">
