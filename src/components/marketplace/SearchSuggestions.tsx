@@ -156,7 +156,8 @@ export function SearchSuggestions({
           </span>
           {showClear && onClearRecent && (
             <button
-              onClick={(e) => {
+              onMouseDown={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 onClearRecent();
               }}
@@ -174,7 +175,10 @@ export function SearchSuggestions({
             return (
               <button
                 key={`${item.type}-${item.id}`}
-                onClick={() => onSelect(item)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onSelect(item);
+                }}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2 text-left transition-colors",
                   isHighlighted 

@@ -221,6 +221,7 @@ export type Database = {
           stock: number | null
           tags: string[] | null
           updated_at: string | null
+          view_count: number | null
         }
         Insert: {
           category?: string | null
@@ -241,6 +242,7 @@ export type Database = {
           stock?: number | null
           tags?: string[] | null
           updated_at?: string | null
+          view_count?: number | null
         }
         Update: {
           category?: string | null
@@ -261,6 +263,7 @@ export type Database = {
           stock?: number | null
           tags?: string[] | null
           updated_at?: string | null
+          view_count?: number | null
         }
         Relationships: [
           {
@@ -2125,6 +2128,7 @@ export type Database = {
           stock: number | null
           tags: string[] | null
           updated_at: string | null
+          view_count: number | null
         }
         Insert: {
           category_id?: string | null
@@ -2145,6 +2149,7 @@ export type Database = {
           stock?: number | null
           tags?: string[] | null
           updated_at?: string | null
+          view_count?: number | null
         }
         Update: {
           category_id?: string | null
@@ -2165,6 +2170,7 @@ export type Database = {
           stock?: number | null
           tags?: string[] | null
           updated_at?: string | null
+          view_count?: number | null
         }
         Relationships: [
           {
@@ -2700,6 +2706,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_product_interactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          interaction_type: string
+          product_id: string
+          product_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          interaction_type: string
+          product_id: string
+          product_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          interaction_type?: string
+          product_id?: string
+          product_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -3049,7 +3082,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_ai_account_view: {
+        Args: { p_account_id: string }
+        Returns: undefined
+      }
       increment_product_view: {
+        Args: { p_product_id: string }
+        Returns: undefined
+      }
+      increment_seller_product_view: {
         Args: { p_product_id: string }
         Returns: undefined
       }
