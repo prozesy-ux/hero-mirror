@@ -18,9 +18,42 @@ const SignIn = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
+  const [oauthProcessing, setOauthProcessing] = useState(false);
   const { user, loading: authLoading, signIn, signUp, signInWithGoogle } = useAuthContext();
   const didAutoRedirect = useRef(false);
+  const didProcessOAuth = useRef(false);
   const navigate = useNavigate();
+
+  // Handle OAuth token from URL hash (Google OAuth callback)
+  useEffect(() => {
+    if (didProcessOAuth.current) return;
+    
+    const hash = window.location.hash;
+    if (!hash || hash.length < 10) return;
+    
+    // Check if hash contains access_token (OAuth callback)
+    if (hash.includes('access_token=')) {
+      didProcessOAuth.current = true;
+      setOauthProcessing(true);
+      console.log('[SignIn] OAuth callback detected, processing token...');
+      
+      // Parse token from hash
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      
+      if (accessToken) {
+        console.log('[SignIn] Access token found, clearing URL hash');
+        
+        // Clear the URL hash immediately to prevent page freeze
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        
+        // Supabase SDK will auto-detect the session from the hash
+        // We just need to wait for onAuthStateChange to fire
+        // The token is already being processed by Supabase client
+      }
+    }
+  }, []);
 
   // Handle post-auth redirect (for store purchases and chats)
   const handlePostAuthRedirect = () => {
@@ -144,6 +177,21 @@ const SignIn = () => {
       toast.error(error.message);
     }
   };
+
+  // Show OAuth processing screen
+  if (oauthProcessing || (authLoading && window.location.hash.includes('access_token'))) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-black">
+        <div className="overflow-hidden rounded-2xl bg-white p-0.5 shadow-xl shadow-black/20 mb-6">
+          <img src={promptheroIcon} alt="PromptHero" className="h-16 w-16 rounded-xl" />
+        </div>
+        <div className="flex items-center gap-3 text-white">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span className="text-lg font-medium">Signing you in...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
