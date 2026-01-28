@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { VoiceSearchButton } from './VoiceSearchButton';
+import { ImageSearchButton } from './ImageSearchButton';
 
 interface MobileSearchOverlayProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ interface MobileSearchOverlayProps {
     tags: SearchSuggestion[];
     sellers: SearchSuggestion[];
     recentlyViewed?: SearchSuggestion[];
+    didYouMean?: string;
+    priceFilter?: { min?: number; max?: number };
   };
   isLoading: boolean;
   onSelect: (suggestion: SearchSuggestion) => void;
@@ -32,6 +35,8 @@ interface MobileSearchOverlayProps {
   voiceError?: string | null;
   onVoiceStart?: () => void;
   onVoiceStop?: () => void;
+  // Image search
+  onImageSearchResult?: (text: string) => void;
 }
 
 export function MobileSearchOverlay({
@@ -49,6 +54,7 @@ export function MobileSearchOverlay({
   voiceError = null,
   onVoiceStart,
   onVoiceStop,
+  onImageSearchResult,
 }: MobileSearchOverlayProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { formatAmount } = useCurrency();
@@ -242,9 +248,21 @@ export function MobileSearchOverlay({
             className="pl-10 pr-20 h-11 text-base"
           />
           
-          {/* Voice Search Button */}
-          {voiceSupported && onVoiceStart && onVoiceStop && (
-            <div className="absolute right-10 top-1/2 -translate-y-1/2">
+          {/* Action buttons */}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+            {/* Image Search */}
+            {onImageSearchResult && (
+              <ImageSearchButton
+                onSearchResult={(text) => {
+                  setQuery(text);
+                  onImageSearchResult(text);
+                }}
+                className="h-8 w-8"
+              />
+            )}
+            
+            {/* Voice Search Button */}
+            {voiceSupported && onVoiceStart && onVoiceStop && (
               <VoiceSearchButton
                 isListening={isListening}
                 isSupported={voiceSupported}
@@ -253,18 +271,19 @@ export function MobileSearchOverlay({
                 onStop={onVoiceStop}
                 size="sm"
               />
-            </div>
-          )}
-          
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+            )}
+            
+            {/* Clear button */}
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="p-1.5 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
@@ -290,6 +309,31 @@ export function MobileSearchOverlay({
 
         {!isLoading && hasResults && (
           <div className="divide-y divide-border">
+            {/* Did you mean? */}
+            {suggestions.didYouMean && (
+              <div className="py-3 px-4">
+                <button
+                  onClick={() => {
+                    setQuery(suggestions.didYouMean!);
+                  }}
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Did you mean: <span className="font-medium text-primary">{suggestions.didYouMean}</span>?
+                </button>
+              </div>
+            )}
+            
+            {/* Price filter indicator */}
+            {suggestions.priceFilter && (
+              <div className="py-2 px-4 flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  Price: {suggestions.priceFilter.min !== undefined ? `$${suggestions.priceFilter.min}` : '$0'} 
+                  {' - '} 
+                  {suggestions.priceFilter.max !== undefined ? `$${suggestions.priceFilter.max}` : '∞'}
+                </Badge>
+              </div>
+            )}
+            
             {renderSection(
               'Recent Searches', 
               suggestions.recent, 

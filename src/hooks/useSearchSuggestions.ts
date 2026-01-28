@@ -19,7 +19,11 @@ export interface SearchSuggestions {
   tags: SearchSuggestion[];
   sellers: SearchSuggestion[];
   recentlyViewed?: SearchSuggestion[];
+  didYouMean?: string;
+  priceFilter?: { min?: number; max?: number };
 }
+
+export type SearchScope = 'all' | 'products' | 'sellers' | 'categories';
 
 const DEBOUNCE_MS = 150; // Reduced from 300ms for faster response
 const CACHE_TTL_MS = 30000; // 30 seconds cache
@@ -39,6 +43,7 @@ let prefetchTimestamp = 0;
 
 export function useSearchSuggestions() {
   const [query, setQuery] = useState('');
+  const [scope, setScope] = useState<SearchScope>('all');
   const [suggestions, setSuggestions] = useState<SearchSuggestions>({
     recent: [],
     trending: [],
@@ -116,7 +121,7 @@ export function useSearchSuggestions() {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
 
-      const url = `${SUPABASE_URL}/functions/v1/bff-marketplace-search?q=${encodeURIComponent(searchQuery)}`;
+      const url = `${SUPABASE_URL}/functions/v1/bff-marketplace-search?q=${encodeURIComponent(searchQuery)}&scope=${scope}`;
       
       const response = await fetch(url, {
         method: 'GET',
@@ -144,7 +149,7 @@ export function useSearchSuggestions() {
     } finally {
       setIsLoading(false);
     }
-  }, [getCachedResult, setCacheResult, isCacheValid]);
+  }, [getCachedResult, setCacheResult, isCacheValid, scope]);
 
   // Prefetch base data on mount (recent/trending)
   useEffect(() => {
@@ -245,6 +250,8 @@ export function useSearchSuggestions() {
   return {
     query,
     setQuery,
+    scope,
+    setScope,
     suggestions,
     isLoading,
     isOpen,

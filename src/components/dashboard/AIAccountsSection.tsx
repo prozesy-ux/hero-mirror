@@ -11,6 +11,8 @@ import { useFloatingChat } from '@/contexts/FloatingChatContext';
 import { SearchSuggestions } from '@/components/marketplace/SearchSuggestions';
 import { MobileSearchOverlay } from '@/components/marketplace/MobileSearchOverlay';
 import { VoiceSearchButton } from '@/components/marketplace/VoiceSearchButton';
+import { SearchScopeSelector, SearchScope } from '@/components/marketplace/SearchScopeSelector';
+import { ImageSearchButton } from '@/components/marketplace/ImageSearchButton';
 import { useSearchSuggestions, SearchSuggestion } from '@/hooks/useSearchSuggestions';
 import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { sendEmail } from '@/lib/email-sender';
@@ -227,6 +229,8 @@ const AIAccountsSection = () => {
     logSearch,
     clearRecentSearches,
     setQuery: setSuggestionsQuery,
+    scope: searchScope,
+    setScope: setSearchScope,
   } = useSearchSuggestions();
 
   // Voice search hook
@@ -1189,59 +1193,82 @@ const AIAccountsSection = () => {
           <div className="flex-1 min-w-0 w-full overflow-hidden">
             {/* Desktop Search Bar - Full width inside content area */}
             <div className="hidden lg:block mb-6">
-              <div className="relative w-full">
-                <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                <input 
-                  ref={searchInputRef}
-                  type="text" 
-                  value={searchQuery} 
-                  onChange={e => setSearchQuery(e.target.value)} 
-                  onFocus={openSuggestions}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && searchQuery.length >= 2) {
-                      logSearch(searchQuery, categoryFilter);
-                      closeSuggestions();
-                    }
-                  }}
-                  placeholder={isListening ? 'Listening...' : 'Search products, categories, tags...'}
-                  className="w-full pl-12 pr-24 py-3.5 bg-background border border-border rounded-2xl text-base text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all shadow-sm" 
+              <div className="relative w-full flex items-center">
+                {/* Search Scope Selector */}
+                <SearchScopeSelector
+                  value={searchScope}
+                  onChange={setSearchScope}
                 />
                 
-                {/* Voice Search Button */}
-                <div className="absolute right-12 top-1/2 -translate-y-1/2 z-10">
-                  <VoiceSearchButton
-                    isListening={isListening}
-                    isSupported={voiceSupported}
-                    error={voiceError}
-                    onStart={startListening}
-                    onStop={stopListening}
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                  <input 
+                    ref={searchInputRef}
+                    type="text" 
+                    value={searchQuery} 
+                    onChange={e => setSearchQuery(e.target.value)} 
+                    onFocus={openSuggestions}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchQuery.length >= 2) {
+                        logSearch(searchQuery, categoryFilter);
+                        closeSuggestions();
+                      }
+                    }}
+                    placeholder={isListening ? 'Listening...' : 'Search products, "under $20", or upload an image...'}
+                    className="w-full pl-12 pr-32 py-3.5 bg-background border border-border border-l-0 rounded-l-none rounded-r-2xl text-base text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all shadow-sm" 
+                  />
+                  
+                  {/* Action buttons */}
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1">
+                    {/* Image Search Button */}
+                    <ImageSearchButton
+                      onSearchResult={(text) => {
+                        setSearchQuery(text);
+                        openSuggestions();
+                      }}
+                    />
+                    
+                    {/* Voice Search Button */}
+                    <VoiceSearchButton
+                      isListening={isListening}
+                      isSupported={voiceSupported}
+                      error={voiceError}
+                      onStart={startListening}
+                      onStop={stopListening}
+                    />
+                    
+                    {/* Clear Button */}
+                    {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
+                      <button 
+                        onClick={() => {
+                          setSearchQuery('');
+                          setSelectedTags([]);
+                          setCategoryFilter('all');
+                          closeSuggestions();
+                        }} 
+                        className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+                      >
+                        <X size={18} className="text-muted-foreground" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Search Suggestions Dropdown */}
+                  <SearchSuggestions
+                    query={searchQuery}
+                    suggestions={suggestions}
+                    isLoading={suggestionsLoading}
+                    isOpen={suggestionsOpen}
+                    onClose={closeSuggestions}
+                    onSelect={handleSuggestionSelect}
+                    onClearRecent={clearRecentSearches}
+                    onDidYouMeanClick={(text) => {
+                      setSearchQuery(text);
+                      logSearch(text, categoryFilter);
+                    }}
                   />
                 </div>
-                
-                {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
-                  <button 
-                    onClick={() => {
-                      setSearchQuery('');
-                      setSelectedTags([]);
-                      setCategoryFilter('all');
-                      closeSuggestions();
-                    }} 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 hover:bg-muted rounded-lg transition-colors z-10"
-                  >
-                    <X size={18} className="text-muted-foreground" />
-                  </button>
-                )}
-                
-                {/* Search Suggestions Dropdown */}
-                <SearchSuggestions
-                  query={searchQuery}
-                  suggestions={suggestions}
-                  isLoading={suggestionsLoading}
-                  isOpen={suggestionsOpen}
-                  onClose={closeSuggestions}
-                  onSelect={handleSuggestionSelect}
-                  onClearRecent={clearRecentSearches}
-                />
               </div>
             </div>
 
@@ -2299,6 +2326,9 @@ const AIAccountsSection = () => {
         voiceError={voiceError}
         onVoiceStart={startListening}
         onVoiceStop={stopListening}
+        onImageSearchResult={(text) => {
+          setSearchQuery(text);
+        }}
       />
     </div>;
 };
