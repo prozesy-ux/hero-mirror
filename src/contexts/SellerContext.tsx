@@ -4,6 +4,19 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
 import { toast } from 'sonner';
 
+interface SellerLevel {
+  id: string;
+  name: string;
+  badge_color: string;
+  badge_icon: string;
+  min_orders: number;
+  min_rating: number;
+  min_revenue: number;
+  commission_rate: number;
+  benefits: string[];
+  display_order: number;
+}
+
 interface SellerProfile {
   id: string;
   user_id: string;
@@ -16,6 +29,8 @@ interface SellerProfile {
   total_sales: number;
   total_orders: number;
   two_factor_enabled: boolean;
+  level_id: string | null;
+  level?: SellerLevel | null;
 }
 
 interface SellerWallet {

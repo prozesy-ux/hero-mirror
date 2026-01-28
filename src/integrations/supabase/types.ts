@@ -831,6 +831,73 @@ export type Database = {
           },
         ]
       }
+      flash_sales: {
+        Row: {
+          created_at: string | null
+          discount_percentage: number
+          ends_at: string
+          id: string
+          is_active: boolean | null
+          max_quantity: number | null
+          original_price: number
+          product_id: string
+          sale_price: number
+          seller_id: string
+          sold_quantity: number | null
+          starts_at: string
+        }
+        Insert: {
+          created_at?: string | null
+          discount_percentage: number
+          ends_at: string
+          id?: string
+          is_active?: boolean | null
+          max_quantity?: number | null
+          original_price: number
+          product_id: string
+          sale_price: number
+          seller_id: string
+          sold_quantity?: number | null
+          starts_at: string
+        }
+        Update: {
+          created_at?: string | null
+          discount_percentage?: number
+          ends_at?: string
+          id?: string
+          is_active?: boolean | null
+          max_quantity?: number | null
+          original_price?: number
+          product_id?: string
+          sale_price?: number
+          seller_id?: string
+          sold_quantity?: number | null
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flash_sales_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flash_sales_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flash_sales_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       login_history: {
         Row: {
           device_info: string | null
@@ -1066,6 +1133,44 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_analytics: {
+        Row: {
+          clicks: number | null
+          date: string
+          id: string
+          product_id: string
+          purchases: number | null
+          revenue: number | null
+          views: number | null
+        }
+        Insert: {
+          clicks?: number | null
+          date: string
+          id?: string
+          product_id: string
+          purchases?: number | null
+          revenue?: number | null
+          views?: number | null
+        }
+        Update: {
+          clicks?: number | null
+          date?: string
+          id?: string
+          product_id?: string
+          purchases?: number | null
+          revenue?: number | null
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_analytics_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
             referencedColumns: ["id"]
           },
         ]
@@ -1783,6 +1888,48 @@ export type Database = {
           },
         ]
       }
+      seller_levels: {
+        Row: {
+          badge_color: string
+          badge_icon: string | null
+          benefits: Json | null
+          commission_rate: number | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          min_orders: number | null
+          min_rating: number | null
+          min_revenue: number | null
+          name: string
+        }
+        Insert: {
+          badge_color?: string
+          badge_icon?: string | null
+          benefits?: Json | null
+          commission_rate?: number | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          min_orders?: number | null
+          min_rating?: number | null
+          min_revenue?: number | null
+          name: string
+        }
+        Update: {
+          badge_color?: string
+          badge_icon?: string | null
+          benefits?: Json | null
+          commission_rate?: number | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          min_orders?: number | null
+          min_rating?: number | null
+          min_revenue?: number | null
+          name?: string
+        }
+        Relationships: []
+      }
       seller_notifications: {
         Row: {
           created_at: string | null
@@ -2057,6 +2204,7 @@ export type Database = {
           is_active: boolean | null
           is_deleted: boolean | null
           is_verified: boolean | null
+          level_id: string | null
           show_description: boolean | null
           show_order_count: boolean | null
           show_product_count: boolean | null
@@ -2089,6 +2237,7 @@ export type Database = {
           is_active?: boolean | null
           is_deleted?: boolean | null
           is_verified?: boolean | null
+          level_id?: string | null
           show_description?: boolean | null
           show_order_count?: boolean | null
           show_product_count?: boolean | null
@@ -2121,6 +2270,7 @@ export type Database = {
           is_active?: boolean | null
           is_deleted?: boolean | null
           is_verified?: boolean | null
+          level_id?: string | null
           show_description?: boolean | null
           show_order_count?: boolean | null
           show_product_count?: boolean | null
@@ -2140,7 +2290,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "seller_profiles_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "seller_levels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       seller_reports: {
         Row: {
@@ -2872,12 +3030,28 @@ export type Database = {
       check_admin_rate_limit: { Args: { p_ip_address: string }; Returns: Json }
       clean_old_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
+      get_active_flash_sale: {
+        Args: { p_product_id: string }
+        Returns: {
+          discount_percentage: number
+          ends_at: string
+          id: string
+          max_quantity: number
+          original_price: number
+          sale_price: number
+          sold_quantity: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_product_view: {
+        Args: { p_product_id: string }
+        Returns: undefined
       }
       is_pro_user: { Args: { _user_id: string }; Returns: boolean }
       is_seller: { Args: { _user_id: string }; Returns: boolean }
@@ -2909,6 +3083,7 @@ export type Database = {
         Args: { p_ip_address: string }
         Returns: undefined
       }
+      update_seller_level: { Args: { p_seller_id: string }; Returns: undefined }
       update_seller_trust_score: {
         Args: { p_seller_id: string }
         Returns: undefined
