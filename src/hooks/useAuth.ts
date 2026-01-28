@@ -56,7 +56,7 @@ export const useAuth = () => {
         // Mark session start on successful sign in
         if (event === 'SIGNED_IN') {
           markSessionStart();
-          console.log('[useAuth] Session marked - 24h window started');
+          console.log('[useAuth] Session marked - 12h window started');
         }
         
         // Clear session timestamp and admin cache on signout

@@ -1,23 +1,23 @@
 /**
  * Session Persistence Utilities
  * 
- * Tracks login timestamps to ensure users stay logged in for 24 hours
+ * Tracks login timestamps to ensure users stay logged in for 12 hours
  * regardless of temporary session issues or network hiccups.
  */
 
 const SESSION_KEY = 'app_session_start';
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const SESSION_DURATION = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
 /**
  * Mark the start of a new session (called on successful login)
  */
 export const markSessionStart = () => {
   localStorage.setItem(SESSION_KEY, Date.now().toString());
-  console.log('[SessionPersistence] Session started - 24h window begins');
+  console.log('[SessionPersistence] Session started - 12h window begins');
 };
 
 /**
- * Check if the current session is still within the 24-hour validity window
+ * Check if the current session is still within the 12-hour validity window
  */
 export const isSessionValid = (): boolean => {
   const start = localStorage.getItem(SESSION_KEY);
@@ -27,14 +27,14 @@ export const isSessionValid = (): boolean => {
   const isValid = elapsed < SESSION_DURATION;
   
   if (!isValid) {
-    console.log('[SessionPersistence] 24h window expired');
+    console.log('[SessionPersistence] 12h window expired');
   }
   
   return isValid;
 };
 
 /**
- * Get remaining time in the 24-hour session window (in milliseconds)
+ * Get remaining time in the 12-hour session window (in milliseconds)
  */
 export const getSessionTimeRemaining = (): number => {
   const start = localStorage.getItem(SESSION_KEY);
@@ -57,5 +57,5 @@ export const clearSessionTimestamp = () => {
  */
 export const extendSession = () => {
   markSessionStart();
-  console.log('[SessionPersistence] Session extended - new 24h window');
+  console.log('[SessionPersistence] Session extended - new 12h window');
 };
