@@ -6,14 +6,29 @@
  * - Adding authorization headers
  * - Request timeouts (no infinite loading)
  * - 401 handling with automatic refresh retry
+ * - Request queuing during token refresh (prevents race conditions)
  * - Clean error states
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { sessionRecovery } from '@/lib/session-recovery';
 
 const API_TIMEOUT = 15000; // 15 seconds max
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+// Request queue for handling concurrent calls during token refresh
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string | null) => void> = [];
+
+const subscribeToRefresh = (callback: (token: string | null) => void) => {
+  refreshSubscribers.push(callback);
+};
+
+const onRefreshComplete = (token: string | null) => {
+  refreshSubscribers.forEach(callback => callback(token));
+  refreshSubscribers = [];
+};
 
 export interface ApiFetchResult<T> {
   data: T | null;
@@ -41,15 +56,19 @@ async function getAccessToken(): Promise<string | null> {
     
     if (exp && (exp - now) < fiveMinutes) {
       console.log('[ApiFetch] Token near expiry, refreshing proactively');
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
       
-      if (refreshError || !refreshData.session) {
-        console.warn('[ApiFetch] Proactive refresh failed:', refreshError?.message);
+      // Use centralized recovery to prevent duplicate refresh attempts
+      const refreshed = await sessionRecovery.recover();
+      
+      if (!refreshed) {
+        console.warn('[ApiFetch] Proactive refresh failed');
         return session.access_token; // Return existing token, let the request try
       }
       
+      // Get the new session after refresh
+      const { data: { session: newSession } } = await supabase.auth.getSession();
       console.log('[ApiFetch] Token refreshed proactively');
-      return refreshData.session.access_token;
+      return newSession?.access_token || session.access_token;
     }
     
     return session.access_token;
@@ -60,20 +79,41 @@ async function getAccessToken(): Promise<string | null> {
 }
 
 /**
- * Attempt to refresh the session
+ * Attempt to refresh the session with request queuing
+ * All concurrent 401 handlers will wait for the same refresh
  */
-async function refreshSession(): Promise<boolean> {
+async function refreshSessionWithQueue(): Promise<string | null> {
+  // If already refreshing, wait for the result
+  if (isRefreshing) {
+    return new Promise(resolve => {
+      subscribeToRefresh(resolve);
+    });
+  }
+
+  isRefreshing = true;
+
   try {
-    const { data, error } = await supabase.auth.refreshSession();
-    if (error || !data.session) {
-      console.log('[ApiFetch] Session refresh failed:', error?.message);
-      return false;
+    const success = await sessionRecovery.recover();
+    
+    if (!success) {
+      console.log('[ApiFetch] Session refresh failed');
+      onRefreshComplete(null);
+      return null;
     }
+
+    // Get the new token
+    const { data: { session } } = await supabase.auth.getSession();
+    const newToken = session?.access_token || null;
+    
     console.log('[ApiFetch] Session refreshed successfully');
-    return true;
+    onRefreshComplete(newToken);
+    return newToken;
   } catch (error) {
     console.error('[ApiFetch] Refresh error:', error);
-    return false;
+    onRefreshComplete(null);
+    return null;
+  } finally {
+    isRefreshing = false;
   }
 }
 
@@ -123,12 +163,14 @@ export async function apiFetch<T = any>(
 
     clearTimeout(timeoutId);
 
-    // Handle 401 - try refresh once
+    // Handle 401 - try refresh once with queuing
     if (response.status === 401 && !skipAuthRetry) {
       console.log('[ApiFetch] Got 401, attempting session refresh...');
-      const refreshed = await refreshSession();
       
-      if (refreshed) {
+      // Use queue-based refresh to prevent race conditions
+      const newToken = await refreshSessionWithQueue();
+      
+      if (newToken) {
         // Retry the request with new token
         return apiFetch<T>(endpoint, { ...options, skipAuthRetry: true });
       }

@@ -4,6 +4,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { hasLocalSession } from '@/lib/session-detector';
 import SessionExpiredBanner from '@/components/ui/session-expired-banner';
+import SessionWarningBanner from '@/components/ui/session-warning-banner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -605,14 +606,14 @@ const SellerContent = () => {
 // Main Seller Page - Enterprise Grade
 // RULE: If local session exists, render immediately - no auth blocking
 const Seller = () => {
-  const { user, loading: authLoading, isAuthenticated, sessionExpired } = useAuthContext();
+  const { user, loading: authLoading, isAuthenticated, sessionExpired, sessionWarning } = useAuthContext();
   const navigate = useNavigate();
   const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsRegistration, setNeedsRegistration] = useState(false);
 
   // Start background session monitoring
-  useSessionHeartbeat();
+  const { refreshSession } = useSessionHeartbeat();
 
   useEffect(() => {
     // OPTIMISTIC: If local session exists, start fetching immediately
@@ -700,6 +701,12 @@ const Seller = () => {
       return (
         <>
           <SuspendedAccount />
+          {sessionWarning !== null && !sessionExpired && (
+            <SessionWarningBanner 
+              minutesRemaining={sessionWarning}
+              onRefresh={refreshSession}
+            />
+          )}
           {sessionExpired && <SessionExpiredBanner />}
         </>
       );
@@ -710,6 +717,13 @@ const Seller = () => {
         <CurrencyProvider sellerCountry={(sellerProfile as any)?.country}>
           <SellerProvider sellerProfile={sellerProfile}>
             <SellerContent />
+            {/* Session warning banner (5 min before expiry) */}
+            {sessionWarning !== null && !sessionExpired && (
+              <SessionWarningBanner 
+                minutesRemaining={sessionWarning}
+                onRefresh={refreshSession}
+              />
+            )}
             {/* Session expired banner floats above content */}
             {sessionExpired && <SessionExpiredBanner />}
           </SellerProvider>
@@ -721,6 +735,12 @@ const Seller = () => {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        {sessionWarning !== null && !sessionExpired && (
+          <SessionWarningBanner 
+            minutesRemaining={sessionWarning}
+            onRefresh={refreshSession}
+          />
+        )}
         {sessionExpired && <SessionExpiredBanner />}
       </div>
     );

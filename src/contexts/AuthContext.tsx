@@ -6,6 +6,7 @@
  * - sessionVerified: True after background validation
  * - canMutate: Only true when session is verified (safe for writes)
  * - sessionExpired: True when 12h+ expired (show soft banner)
+ * - sessionWarning: Minutes remaining when near expiry (for warning banner)
  */
 
 import React, { createContext, useContext, ReactNode, useState, useCallback, useEffect } from 'react';
@@ -37,15 +38,17 @@ interface AuthContextType {
   isPro: boolean;
   isAdmin: boolean;
   
-  // NEW - UI State Machine
+  // UI State Machine
   uiReady: boolean;          // Always true after mount - render UI immediately
   sessionVerified: boolean;  // True after background server validation
   canMutate: boolean;        // True only when session is verified (safe for writes)
   sessionExpired: boolean;   // True when 12h+ expired - show soft banner
+  sessionWarning: number | null; // Minutes remaining when near expiry (null = no warning)
   
-  // NEW - Actions
+  // Actions
   revalidateSession: () => Promise<void>;
   setSessionExpired: (expired: boolean) => void;
+  setSessionWarning: (minutes: number | null) => void;
   softLogout: () => void;    // Clears state without redirect
 }
 
@@ -58,6 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [uiReady] = useState(true); // Always true - render immediately
   const [sessionVerified, setSessionVerified] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [sessionWarning, setSessionWarning] = useState<number | null>(null);
 
   // Computed: Can mutate only when session is verified and not expired
   const canMutate = sessionVerified && !sessionExpired && auth.isAuthenticated;
@@ -67,6 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!auth.loading && auth.isAuthenticated && auth.user) {
       setSessionVerified(true);
       setSessionExpired(false);
+      setSessionWarning(null);
     }
   }, [auth.loading, auth.isAuthenticated, auth.user]);
 
@@ -92,6 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setSessionVerified(true);
       setSessionExpired(false);
+      setSessionWarning(null);
       console.log('[AuthContext] Session revalidated successfully');
     } catch (err) {
       console.error('[AuthContext] Revalidation error:', err);
@@ -103,6 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const softLogout = useCallback(() => {
     setSessionVerified(false);
     setSessionExpired(true);
+    setSessionWarning(null);
   }, []);
 
   // Listen for session refresh events to resubscribe realtime channels
@@ -113,15 +120,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         window.dispatchEvent(new CustomEvent('session-refreshed'));
         setSessionVerified(true);
         setSessionExpired(false);
+        setSessionWarning(null);
       }
       
       if (event === 'SIGNED_OUT') {
         setSessionVerified(false);
         setSessionExpired(false);
+        setSessionWarning(null);
       }
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Listen for session-recovered events from the recovery manager
+  useEffect(() => {
+    const handleRecovered = () => {
+      console.log('[AuthContext] Session recovered - clearing warning');
+      setSessionWarning(null);
+      setSessionExpired(false);
+      setSessionVerified(true);
+    };
+
+    window.addEventListener('session-recovered', handleRecovered);
+    return () => window.removeEventListener('session-recovered', handleRecovered);
   }, []);
 
   const value: AuthContextType = {
@@ -130,8 +152,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     sessionVerified,
     canMutate,
     sessionExpired,
+    sessionWarning,
     revalidateSession,
     setSessionExpired,
+    setSessionWarning,
     softLogout,
   };
 

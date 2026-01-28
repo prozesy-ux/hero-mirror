@@ -20,6 +20,7 @@ import BuyerDashboardHome from '@/components/dashboard/BuyerDashboardHome';
 import BuyerReports from '@/components/dashboard/BuyerReports';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import SessionExpiredBanner from '@/components/ui/session-expired-banner';
+import SessionWarningBanner from '@/components/ui/session-warning-banner';
 import { SearchProvider } from '@/contexts/SearchContext';
 import { SidebarProvider, useSidebarContext } from '@/contexts/SidebarContext';
 import { FloatingChatProvider } from '@/contexts/FloatingChatContext';
@@ -90,10 +91,10 @@ const DashboardLayout = () => {
 };
 
 const Dashboard = () => {
-  const { sessionExpired } = useAuthContext();
+  const { sessionExpired, sessionWarning } = useAuthContext();
   
   // Start background session monitoring
-  useSessionHeartbeat();
+  const { refreshSession } = useSessionHeartbeat();
   
   return (
     <CurrencyProvider>
@@ -101,6 +102,13 @@ const Dashboard = () => {
         <SearchProvider>
           <FloatingChatProvider>
             <DashboardLayout />
+            {/* Session warning banner (5 min before expiry) */}
+            {sessionWarning !== null && !sessionExpired && (
+              <SessionWarningBanner 
+                minutesRemaining={sessionWarning}
+                onRefresh={refreshSession}
+              />
+            )}
             {/* Session expired banner floats above all content */}
             {sessionExpired && <SessionExpiredBanner />}
           </FloatingChatProvider>
