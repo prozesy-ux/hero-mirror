@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -141,6 +142,7 @@ const getMethodBg = (code: string) => {
 };
 
 const SellerWallet = () => {
+  const { canMutate } = useAuthContext();
   const { profile, wallet, withdrawals, refreshWallet, refreshWithdrawals, loading } = useSellerContext();
   const { formatAmountOnly, formatAmount } = useCurrency();
   const [withdrawalMethods, setWithdrawalMethods] = useState<WithdrawalMethod[]>([]);
@@ -498,6 +500,11 @@ const SellerWallet = () => {
   const handleWithdraw = async () => {
     console.log('[WITHDRAW] Starting withdrawal process...');
     
+    // MUTATION LOCK - Check canMutate before any write operation
+    if (!canMutate) {
+      toast.error('Please wait - verifying your session...');
+      return;
+    }
     if (!profile || !withdrawAmount || !selectedAccountForWithdraw) {
       toast.error('Please select an account');
       return;

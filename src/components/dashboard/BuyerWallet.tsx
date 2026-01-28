@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
+import { bffApi } from '@/lib/api-fetch';
 import { toast } from 'sonner';
 import { format, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
+import SessionExpiredBanner from '@/components/ui/session-expired-banner';
 import { 
   Wallet, 
   ArrowDownCircle, 
@@ -137,8 +138,9 @@ const getMethodBg = (code: string) => {
 };
 
 const BuyerWallet = () => {
-  const { user } = useAuthContext();
+  const { user, canMutate, setSessionExpired } = useAuthContext();
   const { formatAmount } = useCurrency();
+  const [sessionExpiredLocal, setSessionExpiredLocal] = useState(false);
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [withdrawalMethods, setWithdrawalMethods] = useState<WithdrawalMethod[]>([]);
   const [allWithdrawalMethods, setAllWithdrawalMethods] = useState<WithdrawalMethod[]>([]);
@@ -285,7 +287,9 @@ const BuyerWallet = () => {
       const result = await bffApi.getBuyerWallet();
 
       if (result.isUnauthorized) {
-        handleUnauthorized();
+        setSessionExpiredLocal(true);
+        setSessionExpired?.(true);
+        // Don't redirect - just show banner
         return;
       }
 
@@ -516,8 +520,14 @@ const BuyerWallet = () => {
     );
   }, [withdrawals]);
 
-  // Withdrawal handling with OTP
+  // Withdrawal handling with OTP and mutation lock
   const handleWithdraw = async () => {
+    // MUTATION LOCK - Check canMutate before any write operation
+    if (!canMutate) {
+      toast.error('Please wait - verifying your session...');
+      return;
+    }
+    
     if (!user || !withdrawAmount || !selectedAccountForWithdraw) {
       toast.error('Please select an account');
       return;

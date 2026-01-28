@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
-import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
-import { Wallet, ShoppingBag, TrendingUp, Clock, Package, ArrowRight, Plus, Heart, Store, CheckCircle, AlertCircle } from 'lucide-react';
+import { bffApi } from '@/lib/api-fetch';
+import { Wallet, ShoppingBag, TrendingUp, Clock, Package, ArrowRight, Plus, Heart, Store, CheckCircle, AlertCircle, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import SessionExpiredBanner from '@/components/ui/session-expired-banner';
 
 interface Order {
   id: string;
@@ -37,51 +38,105 @@ interface DashboardData {
   };
 }
 
+const CACHE_KEY = 'buyer_dashboard_cache';
+
 const BuyerDashboardHome = () => {
-  const { user } = useAuthContext();
+  const { user, setSessionExpired } = useAuthContext();
   const { formatAmountOnly } = useCurrency();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sessionExpiredLocal, setSessionExpiredLocal] = useState(false);
+  const [usingCachedData, setUsingCachedData] = useState(false);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const fetchData = async () => {
-    setLoading(true);
+  // Load cached data on mount for instant UI
+  useEffect(() => {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const { data: cachedData, timestamp } = JSON.parse(cached);
+        // Use cache if less than 5 minutes old
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          setData(cachedData);
+          setLoading(false);
+        }
+      } catch (e) { /* ignore parse errors */ }
+    }
+  }, []);
+
+  const fetchData = useCallback(async () => {
+    if (!loading) setLoading(true);
     setError(null);
     
     const result = await bffApi.getBuyerDashboard();
     
+    // SOFT unauthorized handling - no redirect, just show banner
     if (result.isUnauthorized) {
-      handleUnauthorized();
+      setSessionExpiredLocal(true);
+      setSessionExpired?.(true);
+      // Try to show cached data if available
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          const { data: cachedData } = JSON.parse(cached);
+          setData(cachedData);
+          setUsingCachedData(true);
+        } catch (e) { /* ignore */ }
+      }
+      setLoading(false);
       return;
     }
     
     if (result.error) {
-      setError(result.error);
+      // Network/server error - try cache fallback
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          const { data: cachedData } = JSON.parse(cached);
+          setData(cachedData);
+          setUsingCachedData(true);
+          setError('Using cached data - refresh when online');
+        } catch (e) {
+          setError(result.error);
+        }
+      } else {
+        setError(result.error);
+      }
       setLoading(false);
       return;
     }
     
     if (result.data) {
-      setData({
+      const newData = {
         wallet: result.data.wallet,
         sellerOrders: result.data.sellerOrders,
         wishlistCount: result.data.wishlistCount,
         orderStats: result.data.orderStats
-      });
+      };
+      setData(newData);
+      setUsingCachedData(false);
+      // Cache for offline use
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ data: newData, timestamp: Date.now() }));
     }
     setLoading(false);
-  };
+  }, [setSessionExpired]);
 
   // Initial load from BFF
   useEffect(() => {
     if (user) fetchData();
-  }, [user]);
+  }, [user, fetchData]);
 
-  // Realtime for instant updates
-  useEffect(() => {
+  // Setup realtime subscriptions with resubscription on token refresh
+  const setupRealtimeSubscriptions = useCallback(() => {
     if (!user) return;
     
-    const channel = supabase
+    // Clean up existing channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+    
+    channelRef.current = supabase
       .channel('buyer-dashboard-home')
       .on('postgres_changes', { 
         event: '*', 
@@ -96,9 +151,28 @@ const BuyerDashboardHome = () => {
         filter: `user_id=eq.${user.id}`
       }, fetchData)
       .subscribe();
-      
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, fetchData]);
+
+  // Realtime for instant updates
+  useEffect(() => {
+    setupRealtimeSubscriptions();
+    return () => { 
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current); 
+      }
+    };
+  }, [setupRealtimeSubscriptions]);
+
+  // Resubscribe realtime channels on token refresh
+  useEffect(() => {
+    const handleSessionRefresh = () => {
+      console.log('[BuyerDashboardHome] Session refreshed - resubscribing realtime');
+      setupRealtimeSubscriptions();
+    };
+    
+    window.addEventListener('session-refreshed', handleSessionRefresh);
+    return () => window.removeEventListener('session-refreshed', handleSessionRefresh);
+  }, [setupRealtimeSubscriptions]);
 
   // Get recent 5 orders for display
   const recentOrders = data?.sellerOrders?.slice(0, 5) || [];
@@ -119,7 +193,7 @@ const BuyerDashboardHome = () => {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
@@ -131,6 +205,18 @@ const BuyerDashboardHome = () => {
 
   return (
     <div className="space-y-6">
+      {/* Session Expired Banner - Soft, non-blocking */}
+      {sessionExpiredLocal && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
+      
+      {/* Offline/Cached Data Notice */}
+      {usingCachedData && (
+        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <WifiOff className="h-4 w-4" />
+          <span>Using cached data - some info may be outdated</span>
+          <Button size="sm" variant="ghost" onClick={fetchData} className="ml-auto">Refresh</Button>
+        </div>
+      )}
+      
       {/* Stats Cards - Real Data */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Link to="/dashboard/wallet">

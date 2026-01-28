@@ -251,18 +251,19 @@ export const bffApi = {
 };
 
 /**
- * Handle unauthorized state - redirect to sign in
+ * Handle unauthorized state - SOFT notification only
+ * 
+ * CRITICAL: This function NEVER forces logout or redirect.
+ * It emits an event for UI components to show a soft banner.
+ * 
+ * Enterprise UX: Let users stay on page, show banner, they click to re-login when ready.
  */
 export function handleUnauthorized(): void {
-  // Clear any stale session state
-  supabase.auth.signOut().catch(() => {});
+  // DO NOT call signOut() - this causes forced logout
+  // DO NOT redirect - let user stay on page with cached data
   
-  // Store current location for redirect after login
-  const currentPath = window.location.pathname;
-  if (currentPath !== '/signin' && currentPath !== '/signup') {
-    sessionStorage.setItem('redirectAfterLogin', currentPath);
-  }
+  // Emit soft event for UI to show "Session Expired" banner
+  window.dispatchEvent(new CustomEvent('session-unauthorized'));
   
-  // Navigate to sign in
-  window.location.href = '/signin';
+  console.warn('[ApiFetch] Session unauthorized - soft banner triggered (no redirect)');
 }
