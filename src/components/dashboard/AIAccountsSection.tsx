@@ -13,8 +13,10 @@ import { MobileSearchOverlay } from '@/components/marketplace/MobileSearchOverla
 import { VoiceSearchButton } from '@/components/marketplace/VoiceSearchButton';
 import { SearchScopeSelector, SearchScope } from '@/components/marketplace/SearchScopeSelector';
 import { ImageSearchButton } from '@/components/marketplace/ImageSearchButton';
+import { SearchFiltersBar, FilterState } from '@/components/marketplace/SearchFiltersBar';
 import { useSearchSuggestions, SearchSuggestion } from '@/hooks/useSearchSuggestions';
 import { useVoiceSearch } from '@/hooks/useVoiceSearch';
+import { useMarketplaceData } from '@/hooks/useMarketplaceData';
 import { sendEmail } from '@/lib/email-sender';
 import { HotProductsSection } from '@/components/marketplace/HotProductsSection';
 import { TopRatedSection } from '@/components/marketplace/TopRatedSection';
@@ -218,6 +220,23 @@ const AIAccountsSection = () => {
 
   // Mobile search overlay state
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  // Filter state for price/rating
+  const [filterState, setFilterState] = useState<FilterState>({
+    priceMin: undefined,
+    priceMax: undefined,
+    minRating: null,
+    verifiedOnly: false,
+  });
+
+  // Use unified marketplace data hook for faster loading
+  const { 
+    categories: marketplaceCategories, 
+    hotProducts: marketplaceHotProducts,
+    topRated: marketplaceTopRated,
+    newArrivals: marketplaceNewArrivals,
+    loading: marketplaceLoading,
+  } = useMarketplaceData();
 
   // Search suggestions hook
   const {
@@ -1174,7 +1193,11 @@ const AIAccountsSection = () => {
                 setSelectedAccount(account);
                 setShowDetailsModal(true);
               }} 
-              getCategoryCount={getCategoryCount} 
+              getCategoryCount={getCategoryCount}
+              priceRange={{ min: filterState.priceMin, max: filterState.priceMax }}
+              onPriceChange={(min, max) => setFilterState(prev => ({ ...prev, priceMin: min, priceMax: max }))}
+              minRating={filterState.minRating}
+              onRatingChange={(rating) => setFilterState(prev => ({ ...prev, minRating: rating }))}
             />
           </div>
         </div>
@@ -1183,10 +1206,24 @@ const AIAccountsSection = () => {
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* Left Sidebar - Desktop Only */}
           <div className="hidden lg:block w-72 flex-shrink-0">
-            <MarketplaceSidebar trendingAccounts={trendingAccounts} categories={dynamicCategories} accounts={accounts} selectedCategory={categoryFilter} selectedTags={selectedTags} onCategorySelect={setCategoryFilter} onTagSelect={handleTagSelect} onAccountClick={account => {
-              setSelectedAccount(account);
-              setShowDetailsModal(true);
-            }} getCategoryCount={getCategoryCount} />
+            <MarketplaceSidebar 
+              trendingAccounts={trendingAccounts} 
+              categories={dynamicCategories} 
+              accounts={accounts} 
+              selectedCategory={categoryFilter} 
+              selectedTags={selectedTags} 
+              onCategorySelect={setCategoryFilter} 
+              onTagSelect={handleTagSelect} 
+              onAccountClick={account => {
+                setSelectedAccount(account);
+                setShowDetailsModal(true);
+              }} 
+              getCategoryCount={getCategoryCount}
+              priceRange={{ min: filterState.priceMin, max: filterState.priceMax }}
+              onPriceChange={(min, max) => setFilterState(prev => ({ ...prev, priceMin: min, priceMax: max }))}
+              minRating={filterState.minRating}
+              onRatingChange={(rating) => setFilterState(prev => ({ ...prev, minRating: rating }))}
+            />
           </div>
 
           {/* Main Content */}
@@ -1267,6 +1304,14 @@ const AIAccountsSection = () => {
                       setSearchQuery(text);
                       logSearch(text, categoryFilter);
                     }}
+                  />
+                </div>
+                
+                {/* Filters Bar - Below Search */}
+                <div className="mt-3">
+                  <SearchFiltersBar
+                    filters={filterState}
+                    onFiltersChange={setFilterState}
                   />
                 </div>
               </div>
