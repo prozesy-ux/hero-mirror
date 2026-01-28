@@ -153,8 +153,28 @@ export async function apiFetch<T = any>(
       };
     }
 
+    // Smart detection: Handle both wrapped { data: ... } and root-level responses
+    // validate-session returns { data: { valid: true, ... } }
+    // BFF endpoints return { profile, wallet, orders, ... } at root level
+    const isWrappedResponse = result && 
+      typeof result === 'object' && 
+      'data' in result && 
+      (
+        // validate-session pattern: has 'data' key with 'valid' property
+        (result.data && typeof result.data === 'object' && 'valid' in result.data) ||
+        // Simple wrapped response with only 'data' key (and maybe error/status)
+        Object.keys(result).every(key => ['data', 'error', 'status', 'message'].includes(key))
+      );
+
+    const payload = isWrappedResponse ? result.data : result;
+
+    // Dev-only logging to confirm format detection
+    if (import.meta.env.DEV) {
+      console.log(`[ApiFetch] ${endpoint} -> ${isWrappedResponse ? 'wrapped' : 'root'} format`);
+    }
+
     return {
-      data: result.data,
+      data: payload,
       error: null,
       status: 200,
       isUnauthorized: false
