@@ -95,50 +95,6 @@ const SellerSidebar = () => {
           })}
         </nav>
 
-        {/* Ads Agency Card - Same as User Dashboard */}
-        {!isCollapsed ? (
-          <div className="p-3">
-            <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-              {/* Logos Row */}
-              <div className="flex items-center justify-center gap-4 mb-3">
-                <div className="w-10 h-10 bg-white rounded-lg border border-gray-100 flex items-center justify-center p-1.5 shadow-sm">
-                  <img src={metaLogo} alt="Meta" className="w-full h-full object-contain" />
-                </div>
-                <div className="w-10 h-10 bg-white rounded-lg border border-gray-100 flex items-center justify-center p-1.5 shadow-sm">
-                  <img src={googleAdsLogo} alt="Google Ads" className="w-full h-full object-contain" />
-                </div>
-              </div>
-              
-              {/* Content */}
-              <div className="text-center">
-                <h3 className="text-sm font-bold text-gray-900 mb-1">Ads Agency</h3>
-                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                  Get professional ad campaigns managed by experts
-                </p>
-                <button className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md">
-                  Learn More
-                  <ExternalLink size={12} />
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <div className="p-3">
-                <div className="w-full aspect-square bg-white border-2 border-gray-200 rounded-xl flex items-center justify-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="flex flex-col gap-1">
-                    <img src={metaLogo} alt="Meta" className="w-6 h-6 object-contain mx-auto" />
-                    <img src={googleAdsLogo} alt="Google" className="w-6 h-6 object-contain mx-auto" />
-                  </div>
-                </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="bg-gray-900 text-white border-0">
-              <p>Ads Agency</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
 
         {/* Collapse Toggle */}
         <div className="p-3 border-t border-gray-100">

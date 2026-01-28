@@ -327,11 +327,13 @@ const StoreContent = () => {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        if (errorData.notFound) {
-          setSeller(null);
-          setLoading(false);
-          return;
+        const errorData = await response.json().catch(() => ({}));
+        console.log('[Store] BFF error response:', { status: response.status, errorData });
+        
+        // Check for various not-found indicators
+        if (response.status === 404 || errorData.notFound || errorData.code === 'NOT_FOUND') {
+          console.log('[Store] Store not found via BFF, trying fallback');
+          throw new Error('FALLBACK_NEEDED');
         }
         throw new Error(errorData.error || 'Failed to load store');
       }

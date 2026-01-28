@@ -198,47 +198,22 @@ const MobileNavigation = () => {
                 })}
               </nav>
               
-              {/* Bottom Section: Become a Seller + Ads Agency */}
-              <div className="p-3 mt-auto absolute bottom-0 left-0 right-0 space-y-3">
-                {/* Become a Seller - Text link style */}
-                <button
-                  onClick={() => {
-                    setSidebarOpen(false);
-                    navigate('/seller');
-                  }}
-                  className="w-full text-center py-2 text-sm transition-colors"
-                >
-                  <span className="text-gray-500">Want to sell?</span>{' '}
-                  <span className="font-medium text-emerald-600 hover:underline">
-                    Become a Seller →
-                  </span>
-                </button>
-                
-                {/* Ads Agency Card */}
-                <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                  {/* Logos Row */}
-                  <div className="flex items-center justify-center gap-4 mb-3">
-                    <div className="w-10 h-10 bg-white rounded-lg border border-gray-100 flex items-center justify-center p-1.5 shadow-sm">
-                      <img src={metaLogo} alt="Meta" className="w-full h-full object-contain" />
-                    </div>
-                    <div className="w-10 h-10 bg-white rounded-lg border border-gray-100 flex items-center justify-center p-1.5 shadow-sm">
-                      <img src={googleAdsLogo} alt="Google Ads" className="w-full h-full object-contain" />
-                    </div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="text-center">
-                    <h3 className="text-sm font-bold text-gray-900 mb-1">Ads Agency</h3>
-                    <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                      Get professional ad campaigns managed by experts
-                    </p>
-                    <button className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md">
-                      Learn More
-                      <ExternalLink size={12} />
-                    </button>
-                  </div>
+                {/* Bottom Section: Become a Seller */}
+                <div className="p-3 mt-auto absolute bottom-0 left-0 right-0">
+                  {/* Become a Seller - Text link style */}
+                  <button
+                    onClick={() => {
+                      setSidebarOpen(false);
+                      navigate('/seller');
+                    }}
+                    className="w-full text-center py-2 text-sm transition-colors"
+                  >
+                    <span className="text-gray-500">Want to sell?</span>{' '}
+                    <span className="font-medium text-emerald-600 hover:underline">
+                      Become a Seller →
+                    </span>
+                  </button>
                 </div>
-              </div>
             </SheetContent>
           </Sheet>
           
