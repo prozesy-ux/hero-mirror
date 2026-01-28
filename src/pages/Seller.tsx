@@ -36,7 +36,7 @@ import SellerMarketing from '@/components/seller/SellerMarketing';
 import SellerReports from '@/components/seller/SellerReports';
 import SellerPerformance from '@/components/seller/SellerPerformance';
 import signinBackground from '@/assets/signin-background.webp';
-import promptheroIcon from '@/assets/prompthero-icon.png';
+import uptozaLogo from '@/assets/uptoza-logo.png';
 
 interface SellerProfile {
   id: string;
@@ -135,7 +135,7 @@ const SellerAuthForm = ({ onSuccess }: { onSuccess: () => void }) => {
               Become a Seller
             </h1>
             <p className="text-xl font-medium text-white/90 drop-shadow-md">
-              Start selling on PromptHero
+              Start selling on Uptoza
             </p>
           </div>
         </div>
@@ -160,8 +160,8 @@ const SellerAuthForm = ({ onSuccess }: { onSuccess: () => void }) => {
         <div className="flex w-full max-w-sm flex-col items-center px-6 py-8 lg:px-0">
           {/* Logo */}
           <div className="mb-8 flex justify-center">
-            <div className="overflow-hidden rounded-2xl bg-white p-0.5 shadow-xl shadow-black/20">
-              <img src={promptheroIcon} alt="PromptHero" className="h-14 w-14 rounded-xl" />
+            <div className="overflow-hidden rounded-2xl bg-white p-2 shadow-xl shadow-black/20">
+              <img src={uptozaLogo} alt="Uptoza" className="h-10 w-auto rounded-xl" />
             </div>
           </div>
 

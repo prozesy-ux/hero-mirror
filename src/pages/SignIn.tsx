@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
 import signinBackground from "@/assets/signin-background.webp";
-import promptheroIcon from "@/assets/prompthero-icon.png";
+import uptozaLogo from "@/assets/uptoza-logo.png";
 
 const SignIn = () => {
   const [searchParams] = useSearchParams();
@@ -182,8 +182,8 @@ const SignIn = () => {
   if (oauthProcessing || (authLoading && window.location.hash.includes('access_token'))) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-black">
-        <div className="overflow-hidden rounded-2xl bg-white p-0.5 shadow-xl shadow-black/20 mb-6">
-          <img src={promptheroIcon} alt="PromptHero" className="h-16 w-16 rounded-xl" />
+        <div className="overflow-hidden rounded-2xl bg-white p-2 shadow-xl shadow-black/20 mb-6">
+          <img src={uptozaLogo} alt="Uptoza" className="h-12 w-auto rounded-xl" />
         </div>
         <div className="flex items-center gap-3 text-white">
           <Loader2 className="h-5 w-5 animate-spin" />
@@ -213,7 +213,7 @@ const SignIn = () => {
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-12 text-center">
           <div className="space-y-3">
             <h1 className="text-4xl font-light tracking-tight text-white drop-shadow-lg">
-              Welcome to PromptHero
+              Welcome to Uptoza
             </h1>
             <p className="text-xl font-medium text-white/90 drop-shadow-md">
               Access 10,000+ Premium AI Prompts
@@ -233,7 +233,7 @@ const SignIn = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black" />
           <div className="relative z-10 flex h-full flex-col items-center justify-center p-8">
-            <h1 className="text-2xl font-light text-white">Welcome to PromptHero</h1>
+            <h1 className="text-2xl font-light text-white">Welcome to Uptoza</h1>
           </div>
         </div>
 
@@ -241,8 +241,8 @@ const SignIn = () => {
         <div className="flex w-full max-w-sm flex-col items-center px-6 py-8 lg:px-0">
           {/* Logo */}
           <div className="mb-8 flex justify-center">
-            <div className="overflow-hidden rounded-2xl bg-white p-0.5 shadow-xl shadow-black/20">
-              <img src={promptheroIcon} alt="PromptHero" className="h-14 w-14 rounded-xl" />
+            <div className="overflow-hidden rounded-2xl bg-white p-2 shadow-xl shadow-black/20">
+              <img src={uptozaLogo} alt="Uptoza" className="h-10 w-auto rounded-xl" />
             </div>
           </div>
 
