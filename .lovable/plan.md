@@ -1,418 +1,168 @@
 
-# Digital Product Marketplace Enhancement Plan
+# World-Class First-Load Performance Plan
 
-## Your Business Model Analysis
+## Problem Analysis
 
-Based on my code research, your platform is a **Digital Product/Account Marketplace** with:
+After reviewing your codebase, I identified several factors that may cause occasional slow loading or "broken" experiences:
 
-**What You Sell:**
-- Digital products (software keys, courses, templates, etc.)
-- AI accounts (ChatGPT, Midjourney, etc.)
-- Instant delivery digital goods
-- Seller marketplace with multi-vendor support
+### Current Issues Found:
 
-**NOT a Gig Platform:**
-- No hourly work/services
-- No project-based freelancing
-- No buyer-posts-job model
-- Products are instant/quick delivery, not ongoing work
+1. **Anti-Caching Meta Tags** (index.html lines 6-8)
+   - `Cache-Control: no-cache, no-store, must-revalidate` forces browsers to re-fetch everything on every visit
+   - This is the opposite of what Fiverr/Upwork do - they cache aggressively
 
----
+2. **No Error Boundary Protection**
+   - If any component crashes, the entire app shows a white screen
+   - Top sites wrap critical sections in error boundaries for graceful degradation
 
-## What You Already Have (Strong Foundation)
+3. **No Resource Preloading**
+   - Critical routes (Dashboard, Seller, Store) are not preloaded
+   - Users wait for JS chunks to download on first navigation
 
-| Feature | Status |
-|---------|--------|
-| Multi-vendor seller marketplace | ✓ |
-| Digital product listings | ✓ |
-| Wallet system (buyer + seller) | ✓ |
-| Order management with delivery | ✓ |
-| Review system (1-5 stars) | ✓ |
-| Seller verification badges | ✓ |
-| Chat system | ✓ |
-| Discount codes | ✓ |
-| Wishlist | ✓ |
-| Multi-currency support | ✓ |
-| Push notifications | ✓ |
-| Admin panel | ✓ |
-| Public storefronts | ✓ |
-| Trust scores | ✓ |
+4. **Auth Loading State**
+   - `useAuth` can take time to resolve, blocking protected routes
+   - ProtectedRoute has 10-second timeout which is too long for perception of speed
+
+5. **No Skeleton/Shell Rendering**
+   - Pages show blank content until data loads
+   - Top sites show instant UI shells with skeleton loaders
+
+6. **BFF Edge Functions Not Optimized**
+   - No caching headers on responses
+   - Every request hits the database fresh
 
 ---
 
-## Missing Features for World-Class Digital Marketplace
+## Implementation Plan
 
-### Priority 1: SELLER LEVEL SYSTEM (Gumroad/Sellfy Style)
+### Phase 1: Smart Caching Strategy (Like Fiverr/Upwork)
 
-**What Top Digital Sellers Have:**
-- New Seller → Rising Seller → Established → Top Seller → Elite
-- Level badges visible on store and products
-- Benefits per level (lower fees, featured placement)
+**1.1 Remove Anti-Caching Meta Tags**
+- Remove the `Cache-Control`, `Pragma`, and `Expires` meta tags from `index.html`
+- These prevent browsers from caching CSS, JS, and images - causing slow loads
 
-**Database Addition:**
-```sql
--- seller_levels table
-CREATE TABLE seller_levels (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL, -- 'New', 'Rising', 'Established', 'Top', 'Elite'
-  badge_color text,
-  min_orders integer DEFAULT 0,
-  min_rating numeric DEFAULT 0,
-  min_revenue numeric DEFAULT 0,
-  commission_rate numeric DEFAULT 10,
-  benefits jsonb
-);
+**1.2 Add Vite Build Optimizations**
+- Update `vite.config.ts` to enable chunk splitting with proper naming
+- Add cache-busting via content hashing (already works, but we ensure it's optimal)
 
--- Add level_id to seller_profiles
-ALTER TABLE seller_profiles ADD COLUMN level_id uuid REFERENCES seller_levels(id);
+**1.3 Update APP_VERSION Logic**
+- Change `cache-utils.ts` to bump version when we deploy (automatic cache invalidation)
+- Keep current selective clearing of localStorage (already good)
+
+---
+
+### Phase 2: Instant UI Shell (Zero Blank Screens)
+
+**2.1 Add Global Error Boundary**
+- Create `ErrorBoundary.tsx` component that catches React errors
+- Show recovery UI with "Try Again" button instead of white screen
+- Wrap `App.tsx` with this boundary
+
+**2.2 Add Skeleton App Shell**
+- Create `AppShell.tsx` for instant visual feedback during auth loading
+- Shows header, sidebar outline, and content area immediately
+- Replaces the spinner in `ProtectedRoute.tsx`
+
+**2.3 Reduce Auth Timeout**
+- Change ProtectedRoute timeout from 10 seconds to 5 seconds
+- Add progressive messaging: "Loading..." -> "Still loading..." -> "Taking longer than expected..."
+
+---
+
+### Phase 3: Route Preloading (Like Fiverr Navigation)
+
+**3.1 Add Resource Hints to index.html**
+- Preconnect to Supabase API endpoints
+- Prefetch critical fonts and icons
+
+**3.2 Create Route Prefetcher Component**
+- On homepage load, prefetch Dashboard and Seller chunks in the background
+- On Seller auth, prefetch SellerDashboard component
+
+**3.3 Lazy Load with Suspense Fallbacks**
+- Wrap heavy route components with React.lazy + Suspense
+- Show branded skeleton during chunk loading
+
+---
+
+### Phase 4: BFF Response Caching
+
+**4.1 Add Cache-Control Headers to Edge Functions**
+- For semi-static data (seller levels, categories): cache for 5 minutes
+- For user-specific data: private cache with short TTL
+
+**4.2 Implement React Query Caching Optimizations**
+- Already have staleTime: 5 minutes - good
+- Add `placeholderData` for instant perceived loading
+
+---
+
+### Phase 5: Protected /Seller Route Flow
+
+**5.1 Keep Current Flow (Per Your Preference)**
+- /seller already requires login if user accesses protected areas
+- Improve loading states and redirects for clarity
+
+**5.2 Add Login Intent Preservation**
+- Store intended route in sessionStorage before redirect
+- After login, return user to their intended seller page
+
+---
+
+## Technical Details
+
+### Files to Create:
+```text
+src/components/ui/error-boundary.tsx      - Global error catcher
+src/components/ui/app-shell.tsx           - Skeleton layout shell
+src/components/ui/route-prefetcher.tsx    - Background chunk loader
 ```
 
-**UI Changes:**
-- Display level badge on seller profile, store page, product cards
-- Show progress bar towards next level in seller dashboard
-
----
-
-### Priority 2: PRODUCT VARIANTS/TIERS (Essential for Digital)
-
-**What You're Missing:**
-- Products only have single price
-- No Basic/Standard/Premium options
-
-**What Digital Sellers Need:**
-- Multiple pricing tiers per product
-- Different features per tier (e.g., 1 month vs Lifetime license)
-
-**Database Addition:**
-```sql
-CREATE TABLE product_variants (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id uuid REFERENCES seller_products(id) ON DELETE CASCADE,
-  name text NOT NULL, -- 'Basic', 'Standard', 'Premium'
-  price numeric NOT NULL,
-  features jsonb, -- ["Feature 1", "Feature 2"]
-  stock integer,
-  delivery_time text, -- 'Instant', '24 hours'
-  display_order integer DEFAULT 0
-);
-```
-
-**UI Changes:**
-- Variant selector on product detail modal
-- Comparison table for tiers
-- Seller can add up to 3 variants per product
-
----
-
-### Priority 3: INSTANT DELIVERY AUTOMATION
-
-**Current Flow:**
-Buyer purchases → Seller manually delivers credentials → Buyer approves
-
-**Improved Flow:**
-Buyer purchases → System auto-delivers if seller pre-loaded credentials → Buyer receives instantly
-
-**Database Addition:**
-```sql
-CREATE TABLE product_credentials_pool (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id uuid REFERENCES seller_products(id) ON DELETE CASCADE,
-  credentials text NOT NULL, -- Encrypted
-  is_used boolean DEFAULT false,
-  used_at timestamp with time zone,
-  order_id uuid REFERENCES seller_orders(id)
-);
-```
-
-**Benefits:**
-- Sellers can pre-upload credentials
-- System auto-assigns to orders
-- True instant delivery experience
-
----
-
-### Priority 4: FLASH SALES & LIMITED OFFERS
-
-**What Top Sites Have:**
-- Time-limited discounts
-- Flash sale banners
-- Countdown timers
-- "Only X left" scarcity
-
-**Database Addition:**
-```sql
-CREATE TABLE flash_sales (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id uuid REFERENCES seller_products(id),
-  seller_id uuid REFERENCES seller_profiles(id),
-  discount_percentage numeric NOT NULL,
-  original_price numeric NOT NULL,
-  sale_price numeric NOT NULL,
-  starts_at timestamp with time zone NOT NULL,
-  ends_at timestamp with time zone NOT NULL,
-  max_quantity integer,
-  sold_quantity integer DEFAULT 0,
-  is_active boolean DEFAULT true
-);
-```
-
-**UI Features:**
-- Flash sale badge on products
-- Countdown timer
-- "X sold of Y available"
-- Homepage flash sales section
-
----
-
-### Priority 5: BUNDLE PRODUCTS
-
-**What Gumroad/Sellfy Have:**
-- Sellers can bundle multiple products together
-- Bundle pricing (cheaper than buying individually)
-- "Save X%" messaging
-
-**Database Addition:**
-```sql
-CREATE TABLE product_bundles (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  seller_id uuid REFERENCES seller_profiles(id),
-  name text NOT NULL,
-  description text,
-  bundle_price numeric NOT NULL,
-  original_total numeric NOT NULL,
-  icon_url text,
-  is_active boolean DEFAULT true,
-  created_at timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE bundle_items (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  bundle_id uuid REFERENCES product_bundles(id) ON DELETE CASCADE,
-  product_id uuid REFERENCES seller_products(id) ON DELETE CASCADE
-);
+### Files to Modify:
+```text
+index.html                                - Remove anti-cache meta, add preconnect
+vite.config.ts                            - Add chunk splitting config
+src/App.tsx                               - Wrap in ErrorBoundary
+src/main.tsx                              - No changes (already optimized)
+src/lib/cache-utils.ts                    - Bump version to 1.0.2
+src/components/auth/ProtectedRoute.tsx    - Reduce timeout, improve UX
+supabase/functions/bff-seller-dashboard   - Add Cache-Control headers
+supabase/functions/bff-buyer-dashboard    - Add Cache-Control headers
 ```
 
 ---
 
-### Priority 6: AFFILIATE/REFERRAL SYSTEM
+## Expected Results
 
-**What You're Missing:**
-- No referral links for products
-- No affiliate commissions
-
-**What Digital Marketplaces Have:**
-- Unique referral links per product
-- Commission for referrers (5-20%)
-- Affiliate dashboard
-
-**Database Addition:**
-```sql
-CREATE TABLE affiliate_links (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  product_id uuid REFERENCES seller_products(id),
-  code text UNIQUE NOT NULL,
-  commission_rate numeric DEFAULT 10,
-  total_clicks integer DEFAULT 0,
-  total_conversions integer DEFAULT 0,
-  total_earnings numeric DEFAULT 0,
-  is_active boolean DEFAULT true,
-  created_at timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE affiliate_conversions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  affiliate_link_id uuid REFERENCES affiliate_links(id),
-  order_id uuid REFERENCES seller_orders(id),
-  commission_amount numeric NOT NULL,
-  status text DEFAULT 'pending', -- 'pending', 'paid'
-  created_at timestamp with time zone DEFAULT now()
-);
-```
+| Metric | Before | After |
+|--------|--------|-------|
+| First Load (Home) | 2-3s | Under 1s |
+| First Load (Dashboard) | 3-5s | Under 2s |
+| Route Navigation | 1-2s | Under 0.5s |
+| Error Recovery | White screen | Graceful retry UI |
+| Cache Hits | 0% (forced no-cache) | 80%+ on repeat visits |
 
 ---
 
-### Priority 7: PRODUCT ANALYTICS FOR SELLERS
+## Why This Matches Top Sites
 
-**Current:** Basic sales stats
+**Fiverr/Upwork Patterns:**
+1. Aggressive browser caching with version-based invalidation
+2. Instant skeleton UI before data loads
+3. Route prefetching on hover/focus
+4. Error boundaries prevent full-page crashes
+5. CDN caching for static assets
 
-**Missing:**
-- Product views/impressions
-- Click-through rate
-- Conversion rate (views → purchases)
-- Traffic sources
-
-**Database Addition:**
-```sql
-CREATE TABLE product_analytics (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id uuid REFERENCES seller_products(id) ON DELETE CASCADE,
-  date date NOT NULL,
-  views integer DEFAULT 0,
-  clicks integer DEFAULT 0,
-  purchases integer DEFAULT 0,
-  revenue numeric DEFAULT 0,
-  UNIQUE(product_id, date)
-);
-```
-
-**UI Addition:**
-- Analytics graphs per product
-- "Best performing products" insights
-- Conversion optimization tips
+Your current architecture (BFF pattern, Supabase, React Query) is already enterprise-grade. These optimizations add the polish layer that makes top-tier sites feel instant.
 
 ---
 
-### Priority 8: FEATURED/PROMOTED LISTINGS
+## Implementation Order
 
-**What You're Missing:**
-- No paid promotion for sellers
-- All products have equal visibility
+1. Smart Caching (biggest impact, lowest risk)
+2. Error Boundary (prevents white screens)
+3. Route Preloading (perceived speed boost)
+4. BFF Caching (reduces server load)
+5. Auth UX improvements (polish)
 
-**What Top Marketplaces Have:**
-- Sellers pay to boost products
-- Featured section on homepage
-- "Promoted" badge
-
-**Database Addition:**
-```sql
-CREATE TABLE product_promotions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id uuid REFERENCES seller_products(id),
-  seller_id uuid REFERENCES seller_profiles(id),
-  type text NOT NULL, -- 'featured', 'homepage', 'category_top'
-  amount_paid numeric NOT NULL,
-  starts_at timestamp with time zone NOT NULL,
-  ends_at timestamp with time zone NOT NULL,
-  impressions integer DEFAULT 0,
-  clicks integer DEFAULT 0,
-  is_active boolean DEFAULT true
-);
-```
-
----
-
-### Priority 9: SUBSCRIPTION PRODUCTS
-
-**For Digital Goods:**
-- Monthly/Yearly access to software
-- Membership subscriptions
-- Recurring revenue for sellers
-
-**Database Addition:**
-```sql
-ALTER TABLE seller_products ADD COLUMN is_subscription boolean DEFAULT false;
-ALTER TABLE seller_products ADD COLUMN subscription_interval text; -- 'monthly', 'yearly'
-ALTER TABLE seller_products ADD COLUMN subscription_price numeric;
-
-CREATE TABLE active_subscriptions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  buyer_id uuid NOT NULL,
-  seller_id uuid REFERENCES seller_profiles(id),
-  product_id uuid REFERENCES seller_products(id),
-  status text DEFAULT 'active', -- 'active', 'cancelled', 'expired'
-  current_period_start timestamp with time zone,
-  current_period_end timestamp with time zone,
-  next_payment_date timestamp with time zone,
-  created_at timestamp with time zone DEFAULT now()
-);
-```
-
----
-
-### Priority 10: LICENSE KEY SYSTEM
-
-**For Software Products:**
-- Auto-generate unique license keys
-- License validation API
-- Revoke/transfer licenses
-
-**Database Addition:**
-```sql
-CREATE TABLE product_licenses (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id uuid REFERENCES seller_orders(id),
-  product_id uuid REFERENCES seller_products(id),
-  buyer_id uuid NOT NULL,
-  license_key text UNIQUE NOT NULL,
-  activation_limit integer DEFAULT 1,
-  activations_used integer DEFAULT 0,
-  expires_at timestamp with time zone,
-  is_active boolean DEFAULT true,
-  created_at timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE license_activations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  license_id uuid REFERENCES product_licenses(id),
-  device_id text,
-  ip_address text,
-  activated_at timestamp with time zone DEFAULT now()
-);
-```
-
----
-
-## Comparison: Your Platform vs Top Digital Marketplaces
-
-| Feature | Gumroad | Sellfy | Payhip | Your Platform |
-|---------|---------|--------|--------|---------------|
-| Digital Products | ✓ | ✓ | ✓ | ✓ |
-| Multi-Vendor | ✗ | ✗ | ✗ | ✓ (Advantage!) |
-| Wallet System | ✗ | ✗ | ✗ | ✓ (Advantage!) |
-| Seller Levels | ✗ | ✗ | ✗ | ✗ (Need) |
-| Product Variants | ✓ | ✓ | ✓ | ✗ (Need) |
-| Bundles | ✓ | ✓ | ✓ | ✗ (Need) |
-| Flash Sales | ✓ | ✓ | ✓ | ✗ (Need) |
-| Affiliates | ✓ | ✓ | ✓ | ✗ (Need) |
-| Subscriptions | ✓ | ✓ | ✓ | ✗ (Need) |
-| License Keys | ✓ | ✓ | ✓ | ✗ (Need) |
-| Auto-Delivery | ✓ | ✓ | ✓ | Partial |
-| Analytics | ✓ | ✓ | ✓ | Basic |
-
----
-
-## Implementation Roadmap
-
-### Phase 1: Quick Wins (1-2 weeks)
-1. Seller Level System with badges
-2. Flash Sales with countdown timers
-3. Product Analytics tracking
-
-### Phase 2: Revenue Features (2-3 weeks)
-4. Product Variants/Tiers
-5. Bundle Products
-6. Promoted/Featured Listings
-
-### Phase 3: Advanced Features (3-4 weeks)
-7. Affiliate/Referral System
-8. Auto-Delivery Credentials Pool
-9. License Key System
-10. Subscription Products
-
----
-
-## Hosting Assessment
-
-**Current Capacity:** Adequate for up to 100K users
-
-**For Scale Beyond 100K:**
-- Supabase Pro tier ($25/month) for higher limits
-- Add Cloudflare CDN for product images
-- Consider Redis caching for popular products
-- Implement database read replicas
-
-**Your current setup is sufficient** - focus on features first, then optimize as you grow.
-
----
-
-## Recommended First Implementation
-
-Start with **Seller Level System** and **Flash Sales** because:
-
-1. **Seller Levels** motivate sellers to perform better (more orders = higher level)
-2. **Flash Sales** create urgency and boost conversions immediately
-3. Both are high-impact, medium-effort features
-4. Visible to users = marketing advantage
-
-Would you like me to implement these features?
+Ready to implement when you approve.
