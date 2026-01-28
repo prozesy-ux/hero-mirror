@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import AppShell from '@/components/ui/app-shell';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-const AUTH_TIMEOUT = 10000; // 10 seconds max for auth loading
+// Reduced timeout for faster perceived performance
+const AUTH_TIMEOUT = 5000; // 5 seconds (down from 10)
+const SLOW_THRESHOLD = 3000; // Show "slow" message after 3 seconds
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -41,48 +44,65 @@ async function validateSessionServer(accessToken: string): Promise<boolean> {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, loading, user } = useAuthContext();
+  const location = useLocation();
   const [timedOut, setTimedOut] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<'loading' | 'validating' | 'slow'>('loading');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const slowTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Determine shell variant based on route
+  const getShellVariant = () => {
+    if (location.pathname.startsWith('/seller')) return 'seller';
+    if (location.pathname.startsWith('/dashboard')) return 'dashboard';
+    return 'default';
+  };
 
   useEffect(() => {
-    // Set a hard timeout to prevent infinite loading
     if (loading && !timedOut) {
+      // Progressive loading messages
+      slowTimeoutRef.current = setTimeout(() => {
+        setLoadingStage('slow');
+      }, SLOW_THRESHOLD);
+
+      // Hard timeout for auth loading
       timeoutRef.current = setTimeout(async () => {
         console.warn('[ProtectedRoute] Auth loading timeout - attempting server-side validation');
         setIsRecovering(true);
+        setLoadingStage('validating');
         
         try {
-          // Get session from Supabase
           const { data: { session }, error } = await supabase.auth.getSession();
           
           if (error || !session?.access_token) {
             console.log('[ProtectedRoute] No session available - redirecting to signin');
+            // Store intended destination for post-login redirect
+            sessionStorage.setItem('authRedirectPath', location.pathname);
             setTimedOut(true);
             setIsRecovering(false);
             return;
           }
 
-          // Validate server-side
           const isValid = await validateSessionServer(session.access_token);
           
           if (!isValid) {
             console.log('[ProtectedRoute] Server validation failed - clearing session');
-            // Clear stale admin cache
             if (user?.id) {
               sessionStorage.removeItem(`admin_${user.id}`);
             }
             await supabase.auth.signOut();
+            sessionStorage.setItem('authRedirectPath', location.pathname);
             setTimedOut(true);
           } else {
-            console.log('[ProtectedRoute] Server validated session - auth context may still be loading');
-            // Session is valid, but auth context is slow. Give it 3 more seconds
+            console.log('[ProtectedRoute] Server validated session - giving auth context more time');
+            // Session is valid, give auth context 2 more seconds (reduced from 3)
             setTimeout(() => {
               if (!isAuthenticated) {
-                console.log('[ProtectedRoute] Auth context still not ready after validation - redirecting');
+                console.log('[ProtectedRoute] Auth context still not ready - redirecting');
+                sessionStorage.setItem('authRedirectPath', location.pathname);
                 setTimedOut(true);
               }
-            }, 3000);
+            }, 2000);
           }
         } catch (e) {
           console.error('[ProtectedRoute] Recovery failed:', e);
@@ -93,40 +113,43 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       }, AUTH_TIMEOUT);
     }
 
-    // Clear timeout when loading finishes
-    if (!loading && timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
+    // Clear timeouts when loading finishes
+    if (!loading) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      if (slowTimeoutRef.current) {
+        clearTimeout(slowTimeoutRef.current);
+        slowTimeoutRef.current = null;
+      }
     }
 
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (slowTimeoutRef.current) clearTimeout(slowTimeoutRef.current);
     };
-  }, [loading, timedOut, isAuthenticated, user?.id]);
+  }, [loading, timedOut, isAuthenticated, user?.id, location.pathname]);
 
   // Timed out - redirect to signin
   if (timedOut) {
     return <Navigate to="/signin" replace />;
   }
 
-  // Still loading (within timeout window)
+  // Still loading - show branded skeleton shell
   if (loading || isRecovering) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-        {isRecovering && (
-          <p className="text-sm text-muted-foreground animate-pulse">
-            Validating session...
-          </p>
-        )}
-      </div>
+      <AppShell 
+        variant={getShellVariant()} 
+        stage={isRecovering ? 'validating' : loadingStage}
+      />
     );
   }
 
   // Not authenticated
   if (!isAuthenticated) {
+    // Store intended path for redirect after login
+    sessionStorage.setItem('authRedirectPath', location.pathname);
     return <Navigate to="/signin" replace />;
   }
 

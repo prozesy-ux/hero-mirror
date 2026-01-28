@@ -1,6 +1,7 @@
 /**
  * BFF API: Buyer Wallet Data
  * Server-side validated endpoint for buyer wallet and withdrawals
+ * Optimized for fast first-load with cache headers
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -8,9 +9,20 @@ import {
   verifyAuth, 
   createServiceClient, 
   corsHeaders, 
-  errorResponse, 
-  successResponse 
+  errorResponse 
 } from '../_shared/auth-verify.ts';
+
+// Enhanced response with cache headers for performance
+const cachedSuccessResponse = (data: unknown, cacheSeconds = 30) => {
+  return new Response(JSON.stringify(data), {
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+      'Cache-Control': `private, max-age=${cacheSeconds}, stale-while-revalidate=${cacheSeconds * 2}`,
+    },
+    status: 200,
+  });
+};
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -93,8 +105,8 @@ serve(async (req) => {
       wallet = newWallet;
     }
 
-    // 5. Return clean response
-    return successResponse({
+    // 5. Return clean response with cache headers
+    return cachedSuccessResponse({
       wallet: wallet || { balance: 0 },
       withdrawals: withdrawalsResult.data || [],
       withdrawalMethods: withdrawalConfigResult.data || [],
@@ -103,7 +115,7 @@ serve(async (req) => {
         fetchedAt: new Date().toISOString(),
         userId
       }
-    });
+    }, 30); // Cache for 30 seconds
 
   } catch (error) {
     console.error('[BFF-BuyerWallet] Unexpected error:', error);

@@ -1,7 +1,7 @@
 /**
  * BFF API: Seller Dashboard Data
  * Server-side validated endpoint for seller dashboard data
- * Replaces direct client-side Supabase calls
+ * Optimized for fast first-load with cache headers
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -9,9 +9,20 @@ import {
   verifyAuth, 
   createServiceClient, 
   corsHeaders, 
-  errorResponse, 
-  successResponse 
+  errorResponse 
 } from '../_shared/auth-verify.ts';
+
+// Enhanced response with cache headers for performance
+const cachedSuccessResponse = (data: unknown, cacheSeconds = 60) => {
+  return new Response(JSON.stringify(data), {
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+      'Cache-Control': `private, max-age=${cacheSeconds}, stale-while-revalidate=${cacheSeconds * 2}`,
+    },
+    status: 200,
+  });
+};
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -131,8 +142,8 @@ serve(async (req) => {
       level: sellerLevelResult.data || null
     };
 
-    // 6. Return clean response
-    return successResponse({
+    // 6. Return clean response with cache headers
+    return cachedSuccessResponse({
       profile: profileWithLevel,
       wallet: walletResult.data || null,
       products: productsResult.data || [],
@@ -146,7 +157,7 @@ serve(async (req) => {
         userId,
         sellerId
       }
-    });
+    }, 60); // Cache for 60 seconds
 
   } catch (error) {
     console.error('[BFF-Seller] Unexpected error:', error);

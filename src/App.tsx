@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,15 +6,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import ErrorBoundary from "@/components/ui/error-boundary";
+import RoutePrefetcher from "@/components/ui/route-prefetcher";
+import AppShell from "@/components/ui/app-shell";
+
+// Eager load critical pages
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
-import ResetPassword from "./pages/ResetPassword";
-import Dashboard from "./pages/Dashboard";
-import Seller from "./pages/Seller";
-import Admin from "./pages/Admin";
-import Store from "./pages/Store";
-import ProductFullView from "./pages/ProductFullView";
 import NotFound from "./pages/NotFound";
+
+// Lazy load heavy pages for faster initial bundle
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Seller = lazy(() => import("./pages/Seller"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Store = lazy(() => import("./pages/Store"));
+const ProductFullView = lazy(() => import("./pages/ProductFullView"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,32 +35,57 @@ const queryClient = new QueryClient({
 });
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/signup" element={<SignIn />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/store/:storeSlug" element={<Store />} />
-            <Route path="/store/:storeSlug/product/:productId" element={<ProductFullView />} />
-            <Route path="/dashboard/*" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/seller/*" element={<Seller />} />
-            <Route path="/admin/*" element={<Admin />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <RoutePrefetcher />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<SignIn />} />
+              <Route path="/reset-password" element={
+                <Suspense fallback={<AppShell />}>
+                  <ResetPassword />
+                </Suspense>
+              } />
+              <Route path="/store/:storeSlug" element={
+                <Suspense fallback={<AppShell variant="store" />}>
+                  <Store />
+                </Suspense>
+              } />
+              <Route path="/store/:storeSlug/product/:productId" element={
+                <Suspense fallback={<AppShell variant="store" />}>
+                  <ProductFullView />
+                </Suspense>
+              } />
+              <Route path="/dashboard/*" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<AppShell variant="dashboard" />}>
+                    <Dashboard />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/seller/*" element={
+                <Suspense fallback={<AppShell variant="seller" />}>
+                  <Seller />
+                </Suspense>
+              } />
+              <Route path="/admin/*" element={
+                <Suspense fallback={<AppShell variant="dashboard" />}>
+                  <Admin />
+                </Suspense>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

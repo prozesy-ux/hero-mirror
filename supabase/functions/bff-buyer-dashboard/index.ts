@@ -1,6 +1,7 @@
 /**
  * BFF API: Buyer Dashboard Data
  * Server-side validated endpoint for buyer dashboard core data
+ * Optimized for fast first-load with cache headers
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -8,9 +9,20 @@ import {
   verifyAuth, 
   createServiceClient, 
   corsHeaders, 
-  errorResponse, 
-  successResponse 
+  errorResponse 
 } from '../_shared/auth-verify.ts';
+
+// Enhanced response with cache headers for performance
+const cachedSuccessResponse = (data: unknown, cacheSeconds = 30) => {
+  return new Response(JSON.stringify(data), {
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+      'Cache-Control': `private, max-age=${cacheSeconds}, stale-while-revalidate=${cacheSeconds * 2}`,
+    },
+    status: 200,
+  });
+};
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -114,8 +126,8 @@ serve(async (req) => {
       totalSpent: allOrders.reduce((sum: number, o: any) => sum + (o.amount || 0), 0)
     };
 
-    // 4. Return clean response
-    return successResponse({
+    // 4. Return clean response with cache headers
+    return cachedSuccessResponse({
       profile: profileResult.data || null,
       wallet: wallet || { balance: 0 },
       purchases: purchasesResult.data || [],
@@ -127,7 +139,7 @@ serve(async (req) => {
         fetchedAt: new Date().toISOString(),
         userId
       }
-    });
+    }, 30); // Cache for 30 seconds
 
   } catch (error) {
     console.error('[BFF-BuyerDashboard] Unexpected error:', error);
