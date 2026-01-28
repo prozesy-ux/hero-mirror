@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ExternalLink, LayoutDashboard, Package, ShoppingCart, BarChart3, Warehouse, Users, Tag, FileText, Activity, MessageSquare, Wallet, Settings, Lightbulb, HelpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, LayoutDashboard, Package, ShoppingCart, BarChart3, Warehouse, Users, Tag, FileText, Activity, MessageSquare, Wallet, Settings, Lightbulb, HelpCircle, Zap, TrendingUp } from 'lucide-react';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import metaLogo from '@/assets/meta-logo.png';
 import googleAdsLogo from '@/assets/google-ads-logo.png';
@@ -14,7 +14,9 @@ const navItems = [
   { to: '/seller', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { to: '/seller/products', icon: Package, label: 'Products' },
   { to: '/seller/orders', icon: ShoppingCart, label: 'Orders' },
+  { to: '/seller/flash-sales', icon: Zap, label: 'Flash Sales', badge: 'New' },
   { to: '/seller/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/seller/product-analytics', icon: TrendingUp, label: 'Product Insights' },
   { to: '/seller/inventory', icon: Warehouse, label: 'Inventory' },
   { to: '/seller/customers', icon: Users, label: 'Customers' },
   { to: '/seller/marketing', icon: Tag, label: 'Marketing' },
@@ -82,7 +84,12 @@ const SellerSidebar = () => {
                 }`}
               >
                 <Icon size={20} />
-                <span className="text-sm">{item.label}</span>
+                <span className="text-sm flex-1">{item.label}</span>
+                {(item as any).badge && (
+                  <span className="text-[9px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full font-bold">
+                    {(item as any).badge}
+                  </span>
+                )}
               </Link>
             );
           })}

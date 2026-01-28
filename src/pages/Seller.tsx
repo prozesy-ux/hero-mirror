@@ -26,6 +26,8 @@ import SellerSettings from '@/components/seller/SellerSettings';
 import SellerFeatureRequests from '@/components/seller/SellerFeatureRequests';
 import SellerAnalytics from '@/components/seller/SellerAnalytics';
 import SellerInventory from '@/components/seller/SellerInventory';
+import SellerFlashSales from '@/components/seller/SellerFlashSales';
+import SellerProductAnalytics from '@/components/seller/SellerProductAnalytics';
 import SellerCustomers from '@/components/seller/SellerCustomers';
 import SellerMarketing from '@/components/seller/SellerMarketing';
 import SellerReports from '@/components/seller/SellerReports';
@@ -45,6 +47,7 @@ interface SellerProfile {
   total_sales: number;
   total_orders: number;
   two_factor_enabled: boolean;
+  level_id: string | null;
 }
 
 // Seller Auth Form - Same design as main SignIn page
@@ -560,6 +563,8 @@ const SellerMainContent = () => {
           <Route path="/marketing" element={<SellerMarketing />} />
           <Route path="/reports" element={<SellerReports />} />
           <Route path="/performance" element={<SellerPerformance />} />
+          <Route path="/flash-sales" element={<SellerFlashSales />} />
+          <Route path="/product-analytics" element={<SellerProductAnalytics />} />
           <Route path="/chat" element={<SellerChat />} />
           <Route path="/wallet" element={<SellerWallet />} />
           <Route path="/feature-requests" element={<SellerFeatureRequests />} />
