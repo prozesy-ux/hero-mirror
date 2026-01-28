@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
 import { FolderOpen, ChevronRight, Sparkle, Bot, Gamepad2, Music, Video, ShoppingBag, Palette, BookOpen, Code, Briefcase } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { useMarketplaceData } from '@/hooks/useMarketplaceData';
 
 interface Category {
   id: string;
@@ -46,51 +45,16 @@ const colorMap: Record<string, string> = {
 };
 
 export function CategoryBrowser({ onCategoryClick, selectedCategory, className }: CategoryBrowserProps) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const { data } = await supabase
-        .from('categories')
-        .select('id, name, icon, color')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-
-      // Get product counts for each category
-      const categoriesWithCounts = await Promise.all(
-        (data || []).map(async (cat) => {
-          const { count: sellerCount } = await supabase
-            .from('seller_products')
-            .select('*', { count: 'exact', head: true })
-            .eq('category_id', cat.id)
-            .eq('is_available', true)
-            .eq('is_approved', true);
-
-          const { count: aiCount } = await supabase
-            .from('ai_accounts')
-            .select('*', { count: 'exact', head: true })
-            .eq('category_id', cat.id)
-            .eq('is_available', true);
-
-          return {
-            ...cat,
-            product_count: (sellerCount || 0) + (aiCount || 0),
-          };
-        })
-      );
-
-      setCategories(categoriesWithCounts);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { categories: marketplaceCategories, loading } = useMarketplaceData();
+  
+  // Map marketplace data to local Category type with counts
+  const categories: Category[] = marketplaceCategories.map(cat => ({
+    id: cat.id,
+    name: cat.name,
+    icon: cat.icon,
+    color: cat.color,
+    product_count: cat.productCount,
+  }));
 
   if (loading) {
     return (

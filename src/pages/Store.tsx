@@ -184,44 +184,70 @@ const StoreContent = () => {
     setLoading(true);
     
     try {
-      // Fetch seller first (required for products query)
-      const { data: sellerData, error: sellerError } = await supabase
-        .from('seller_profiles')
-        .select('*')
-        .eq('store_slug', storeSlug)
-        .eq('is_active', true)
-        .maybeSingle();
+      // Use BFF for server-side data fetch - single request, all data
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bff-store-public?slug=${storeSlug}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
 
-      if (sellerError || !sellerData) {
-        setLoading(false);
-        return;
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.notFound) {
+          setSeller(null);
+          setLoading(false);
+          return;
+        }
+        throw new Error(errorData.error || 'Failed to load store');
       }
 
-      setSeller(sellerData as SellerProfile);
-
-      // Fetch products AND categories in PARALLEL for faster loading
-      const [productsResult, categoriesResult] = await Promise.all([
-        supabase
-          .from('seller_products')
-          .select('*')
-          .eq('seller_id', sellerData.id)
-          .eq('is_available', true)
-          .eq('is_approved', true)
-          .order('sold_count', { ascending: false }),
-        supabase
-          .from('categories')
-          .select('*')
-          .eq('is_active', true)
-      ]);
-
-      if (productsResult.data) {
-        setProducts(productsResult.data);
-      }
-      if (categoriesResult.data) {
-        setCategories(categoriesResult.data);
-      }
+      const data = await response.json();
+      
+      setSeller(data.seller as SellerProfile);
+      setProducts(data.products || []);
+      setCategories(data.categories || []);
     } catch (error) {
-      console.error('[Store] Fetch error:', error);
+      console.error('[Store] BFF fetch error:', error);
+      // Fallback to direct query if BFF fails (during deployment)
+      try {
+        const { data: sellerData } = await supabase
+          .from('seller_profiles')
+          .select('*')
+          .eq('store_slug', storeSlug)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (!sellerData) {
+          setLoading(false);
+          return;
+        }
+
+        setSeller(sellerData as SellerProfile);
+
+        const [productsResult, categoriesResult] = await Promise.all([
+          supabase
+            .from('seller_products')
+            .select('*')
+            .eq('seller_id', sellerData.id)
+            .eq('is_available', true)
+            .eq('is_approved', true)
+            .order('sold_count', { ascending: false }),
+          supabase
+            .from('categories')
+            .select('*')
+            .eq('is_active', true)
+        ]);
+
+        if (productsResult.data) setProducts(productsResult.data);
+        if (categoriesResult.data) setCategories(categoriesResult.data);
+      } catch (fallbackError) {
+        console.error('[Store] Fallback also failed:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }
