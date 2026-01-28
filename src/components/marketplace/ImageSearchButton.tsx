@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
-import { Camera, Upload, Loader2, X, Image as ImageIcon } from 'lucide-react';
+import { Camera, Upload, Loader2, X, Image as ImageIcon, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,8 @@ export function ImageSearchButton({ onSearchResult, className }: ImageSearchButt
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
+  const [urlError, setUrlError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,6 +113,70 @@ export function ImageSearchButton({ onSearchResult, className }: ImageSearchButt
     }
   };
 
+  // Process image from URL
+  const processImageUrl = async () => {
+    if (!imageUrl.trim()) {
+      setUrlError('Please enter an image URL');
+      return;
+    }
+
+    // Basic URL validation
+    try {
+      new URL(imageUrl);
+    } catch {
+      setUrlError('Please enter a valid URL');
+      return;
+    }
+
+    setIsProcessing(true);
+    setUrlError(null);
+    setPreviewUrl(imageUrl);
+
+    try {
+      // Get session for auth
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Call image-search edge function with URL
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-search`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            ...(session?.access_token && {
+              'Authorization': `Bearer ${session.access_token}`,
+            }),
+          },
+          body: JSON.stringify({
+            imageUrl: imageUrl.trim(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Image analysis failed');
+      }
+
+      const data = await response.json();
+      
+      if (data.searchQuery) {
+        toast.success(`Found: "${data.searchQuery}"`);
+        onSearchResult(data.searchQuery);
+        setIsOpen(false);
+        setPreviewUrl(null);
+        setImageUrl('');
+      } else {
+        toast.error('Could not identify product in image');
+      }
+    } catch (error) {
+      console.error('Image URL search error:', error);
+      toast.error('Failed to analyze image. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -133,9 +200,16 @@ export function ImageSearchButton({ onSearchResult, className }: ImageSearchButt
 
   const clearPreview = () => {
     setPreviewUrl(null);
+    setImageUrl('');
+    setUrlError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    clearPreview();
   };
 
   return (
@@ -151,7 +225,7 @@ export function ImageSearchButton({ onSearchResult, className }: ImageSearchButt
         <Camera className="h-4 w-4" />
       </Button>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -178,6 +252,10 @@ export function ImageSearchButton({ onSearchResult, className }: ImageSearchButt
                     src={previewUrl}
                     alt="Preview"
                     className="max-h-48 mx-auto rounded-lg object-contain"
+                    onError={() => {
+                      setUrlError('Failed to load image from URL');
+                      setPreviewUrl(null);
+                    }}
                   />
                   {!isProcessing && (
                     <Button
@@ -242,8 +320,47 @@ export function ImageSearchButton({ onSearchResult, className }: ImageSearchButt
               )}
             </Button>
 
+            {/* OR Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">OR</span>
+              </div>
+            </div>
+
+            {/* URL Input */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Paste image URL here..."
+                    value={imageUrl}
+                    onChange={(e) => {
+                      setImageUrl(e.target.value);
+                      setUrlError(null);
+                    }}
+                    className="pl-9"
+                    disabled={isProcessing}
+                  />
+                </div>
+                <Button
+                  onClick={processImageUrl}
+                  disabled={isProcessing || !imageUrl.trim()}
+                  variant="secondary"
+                >
+                  Search
+                </Button>
+              </div>
+              {urlError && (
+                <p className="text-xs text-destructive">{urlError}</p>
+              )}
+            </div>
+
             <p className="text-xs text-muted-foreground text-center">
-              Upload a screenshot or image of a product to find similar items
+              Upload a screenshot or paste an image URL to find similar products
             </p>
           </div>
         </DialogContent>

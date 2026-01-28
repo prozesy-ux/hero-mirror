@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { TrendingUp, Flame, Tag, ChevronRight, Sparkles, Menu, X } from 'lucide-react';
+import { TrendingUp, Flame, Tag, ChevronRight, Sparkles, Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { PriceFilterSidebar } from '@/components/marketplace/PriceFilterSidebar';
+import { RatingFilter } from '@/components/marketplace/RatingFilter';
 
 interface AIAccount {
   id: string;
@@ -37,6 +39,11 @@ interface MarketplaceSidebarProps {
   onTagSelect: (tag: string) => void;
   onAccountClick: (account: AIAccount) => void;
   getCategoryCount: (categoryId: string) => number;
+  // New filter props
+  priceRange?: { min?: number; max?: number };
+  onPriceChange?: (min: number | undefined, max: number | undefined) => void;
+  minRating?: number | null;
+  onRatingChange?: (rating: number | null) => void;
 }
 
 const getCategoryColorClass = (color: string | null) => {
@@ -81,6 +88,10 @@ const SidebarContent = ({
   onTagSelect,
   onAccountClick,
   getCategoryCount,
+  priceRange,
+  onPriceChange,
+  minRating,
+  onRatingChange,
 }: MarketplaceSidebarProps) => {
   const [isPaused, setIsPaused] = useState(false);
   const trendingRef = useRef<HTMLDivElement>(null);
@@ -115,6 +126,24 @@ const SidebarContent = ({
 
   return (
     <div className="h-full flex flex-col gap-4 overflow-hidden">
+      {/* Price Filter */}
+      {onPriceChange && (
+        <PriceFilterSidebar
+          minPrice={priceRange?.min || 0}
+          maxPrice={priceRange?.max || 100}
+          onPriceChange={onPriceChange}
+        />
+      )}
+
+      {/* Rating Filter */}
+      {onRatingChange && (
+        <RatingFilter
+          value={minRating ?? null}
+          onChange={onRatingChange}
+        />
+      )}
+
+      {/* Trending Section */}
       {/* Trending Section */}
       {trendingAccounts.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden flex-shrink-0">
