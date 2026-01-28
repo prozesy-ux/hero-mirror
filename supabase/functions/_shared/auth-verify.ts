@@ -113,7 +113,7 @@ export const corsHeaders = {
 };
 
 /**
- * Create a standard error response
+ * Create a standard error response (with no-cache to prevent caching errors)
  */
 export function errorResponse(message: string, status: number = 401): Response {
   return new Response(
@@ -123,7 +123,11 @@ export function errorResponse(message: string, status: number = 401): Response {
     }),
     { 
       status, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+      } 
     }
   );
 }
@@ -137,6 +141,56 @@ export function successResponse(data: any): Response {
     { 
       status: 200, 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  );
+}
+
+/**
+ * Cloudflare-optimized cache header utilities
+ */
+export const cacheHeaders = {
+  // Public data - Cloudflare edge cacheable
+  public: (maxAge = 60, swr = 120) => ({
+    'Cache-Control': `public, max-age=${maxAge}, stale-while-revalidate=${swr}`,
+    'CDN-Cache-Control': `max-age=${maxAge * 2}`,
+    'Vary': 'Accept-Encoding',
+  }),
+  
+  // Private user data - browser only
+  private: (maxAge = 30, swr = 60) => ({
+    'Cache-Control': `private, max-age=${maxAge}, stale-while-revalidate=${swr}`,
+  }),
+  
+  // No cache for mutations/sensitive data/errors
+  noCache: () => ({
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
+    'Pragma': 'no-cache',
+  }),
+};
+
+/**
+ * Create a cached response with Cloudflare-optimized headers
+ */
+export function cachedResponse(
+  data: any, 
+  cacheType: 'public' | 'private' | 'none' = 'private', 
+  maxAge = 60
+): Response {
+  const cacheDirective = cacheType === 'public' 
+    ? cacheHeaders.public(maxAge, maxAge * 2)
+    : cacheType === 'private'
+    ? cacheHeaders.private(maxAge, maxAge * 2)
+    : cacheHeaders.noCache();
+    
+  return new Response(
+    JSON.stringify(data),
+    { 
+      status: 200, 
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        ...cacheDirective,
+      } 
     }
   );
 }

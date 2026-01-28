@@ -3,7 +3,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-  'Cache-Control': 'public, max-age=60, stale-while-revalidate=120',
+  // Cloudflare CDN optimized: 5 min cache, 10 min stale-while-revalidate
+  'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+  'CDN-Cache-Control': 'max-age=600',
+  'Vary': 'Accept-Encoding',
 };
 
 Deno.serve(async (req) => {
@@ -144,7 +147,7 @@ Deno.serve(async (req) => {
     console.error('[BFF-MarketplaceHome] Error:', error);
     return new Response(
       JSON.stringify({ error: 'Failed to fetch marketplace data' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
     );
   }
 });

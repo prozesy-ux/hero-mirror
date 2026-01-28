@@ -3,8 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-  // Cloudflare CDN optimized caching: 5 min cache, 10 min stale-while-revalidate
+  // Cloudflare CDN optimized: 5 min cache, 10 min stale-while-revalidate
   'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+  'CDN-Cache-Control': 'max-age=600',
   'Vary': 'Accept-Encoding',
 };
 
@@ -20,7 +21,7 @@ Deno.serve(async (req) => {
     if (!storeSlug) {
       return new Response(
         JSON.stringify({ error: 'Store slug is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
       );
     }
 
@@ -42,14 +43,14 @@ Deno.serve(async (req) => {
       console.error('[BFF-StorePublic] Seller fetch error:', sellerError);
       return new Response(
         JSON.stringify({ error: 'Failed to fetch store' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
       );
     }
 
     if (!seller) {
       return new Response(
         JSON.stringify({ error: 'Store not found', notFound: true }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
       );
     }
 
@@ -115,7 +116,7 @@ Deno.serve(async (req) => {
     console.error('[BFF-StorePublic] Error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
     );
   }
 });

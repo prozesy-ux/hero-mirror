@@ -12,8 +12,8 @@ import {
   errorResponse 
 } from '../_shared/auth-verify.ts';
 
-// Enhanced response with cache headers for performance
-const cachedSuccessResponse = (data: unknown, cacheSeconds = 30) => {
+// Enhanced response with cache headers for financial data (shorter cache)
+const cachedSuccessResponse = (data: unknown, cacheSeconds = 15) => {
   return new Response(JSON.stringify(data), {
     headers: {
       ...corsHeaders,
@@ -105,7 +105,7 @@ serve(async (req) => {
       wallet = newWallet;
     }
 
-    // 5. Return clean response with cache headers
+    // 5. Return clean response with cache headers (shorter for financial data)
     return cachedSuccessResponse({
       wallet: wallet || { balance: 0 },
       withdrawals: withdrawalsResult.data || [],
@@ -115,7 +115,7 @@ serve(async (req) => {
         fetchedAt: new Date().toISOString(),
         userId
       }
-    }, 30); // Cache for 30 seconds
+    }, 15); // Cache for 15 seconds (financial data)
 
   } catch (error) {
     console.error('[BFF-BuyerWallet] Unexpected error:', error);
