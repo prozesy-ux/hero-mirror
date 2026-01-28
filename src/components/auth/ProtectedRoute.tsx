@@ -87,9 +87,9 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           const isValid = await validateSessionServer(session.access_token);
           
           if (!isValid) {
-            // Check 24-hour window before forcing logout
+            // Check 12-hour window before forcing logout
             if (isSessionValid()) {
-              console.log('[ProtectedRoute] Server validation failed but within 24h window - attempting refresh');
+              console.log('[ProtectedRoute] Server validation failed but within 12h window - attempting refresh');
               const { error: refreshError } = await supabase.auth.refreshSession();
               if (!refreshError) {
                 console.log('[ProtectedRoute] Session refreshed successfully');
@@ -98,7 +98,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
               }
             }
             
-            console.log('[ProtectedRoute] Server validation failed and 24h expired - clearing session');
+            console.log('[ProtectedRoute] Server validation failed and 12h expired - clearing session');
             if (user?.id) {
               sessionStorage.removeItem(`admin_${user.id}`);
             }

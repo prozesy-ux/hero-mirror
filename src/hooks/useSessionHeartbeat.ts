@@ -7,7 +7,7 @@
  * Features:
  * - Runs every 5 minutes when authenticated
  * - Proactively refreshes tokens 10 minutes before expiry
- * - 24-hour grace period: won't force logout within 24h of login
+ * - 12-hour grace period: won't force logout within 12h of login
  * - Resilient to network hiccups and temporary failures
  * - Cleans up stale admin cache on session changes
  */
@@ -50,15 +50,15 @@ export const useSessionHeartbeat = () => {
           // Try to refresh the session
           const { data, error: refreshError } = await supabase.auth.refreshSession();
           
-          if (refreshError || !data.session) {
-            // Check if within 24-hour window - if so, don't force logout
+        if (refreshError || !data.session) {
+            // Check if within 12-hour window - if so, don't force logout
             if (isSessionValid()) {
-              console.log('[Heartbeat] Session issue but within 24h window - staying logged in');
+              console.log('[Heartbeat] Session issue but within 12h window - staying logged in');
               return; // Don't sign out, stay logged in
             }
             
-            // Only sign out if truly expired (24h+ since login)
-            console.warn('[Heartbeat] 24h window expired and refresh failed - signing out');
+            // Only sign out if truly expired (12h+ since login)
+            console.warn('[Heartbeat] 12h window expired and refresh failed - signing out');
             
             if (user?.id) {
               sessionStorage.removeItem(`admin_${user.id}`);
@@ -85,9 +85,9 @@ export const useSessionHeartbeat = () => {
           if (refreshError) {
             console.error('[Heartbeat] Proactive refresh failed:', refreshError.message);
             
-            // Don't sign out on refresh failure if within 24h window
+            // Don't sign out on refresh failure if within 12h window
             if (isSessionValid()) {
-              console.log('[Heartbeat] Refresh failed but within 24h window - staying logged in');
+              console.log('[Heartbeat] Refresh failed but within 12h window - staying logged in');
               return;
             }
             
