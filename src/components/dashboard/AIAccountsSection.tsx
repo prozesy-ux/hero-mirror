@@ -11,6 +11,10 @@ import { useFloatingChat } from '@/contexts/FloatingChatContext';
 import { SearchSuggestions } from '@/components/marketplace/SearchSuggestions';
 import { useSearchSuggestions, SearchSuggestion } from '@/hooks/useSearchSuggestions';
 import { sendEmail } from '@/lib/email-sender';
+import { HotProductsSection } from '@/components/marketplace/HotProductsSection';
+import { TopRatedSection } from '@/components/marketplace/TopRatedSection';
+import { NewArrivalsSection } from '@/components/marketplace/NewArrivalsSection';
+import { CategoryBrowser } from '@/components/marketplace/CategoryBrowser';
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -1229,6 +1233,72 @@ const AIAccountsSection = () => {
                   </span>)}
               </div>}
 
+            {/* Discovery Sections - Only show when no active search/filters */}
+            {searchQuery.length === 0 && selectedTags.length === 0 && categoryFilter === 'all' && (
+              <div className="space-y-8 mb-8">
+                {/* Category Browser */}
+                <CategoryBrowser
+                  onCategoryClick={(categoryId) => setCategoryFilter(categoryId)}
+                  selectedCategory={categoryFilter}
+                />
+
+                {/* Hot Products */}
+                <HotProductsSection
+                  onProductClick={(product) => {
+                    const sellerProduct = sellerProducts.find(p => p.id === product.id);
+                    if (sellerProduct) {
+                      setSelectedSellerProduct(sellerProduct);
+                      setShowSellerDetailsModal(true);
+                    }
+                  }}
+                />
+
+                {/* Top Rated */}
+                <TopRatedSection
+                  onProductClick={(product) => {
+                    const sellerProduct = sellerProducts.find(p => p.id === product.id);
+                    if (sellerProduct) {
+                      setSelectedSellerProduct(sellerProduct);
+                      setShowSellerDetailsModal(true);
+                    }
+                  }}
+                />
+
+                {/* New Arrivals */}
+                <NewArrivalsSection
+                  onProductClick={(product) => {
+                    if (product.type === 'seller') {
+                      const sellerProduct = sellerProducts.find(p => p.id === product.id);
+                      if (sellerProduct) {
+                        setSelectedSellerProduct(sellerProduct);
+                        setShowSellerDetailsModal(true);
+                      }
+                    } else {
+                      const aiAccount = accounts.find(a => a.id === product.id);
+                      if (aiAccount) {
+                        setSelectedAccount(aiAccount);
+                        setShowDetailsModal(true);
+                      }
+                    }
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Section Header for All Products */}
+            {(searchQuery.length > 0 || selectedTags.length > 0 || categoryFilter !== 'all') && (
+              <h3 className="text-lg font-semibold mb-4 text-foreground">
+                {searchQuery ? `Results for "${searchQuery}"` : categoryFilter !== 'all' ? getCategoryName(categoryFilter) : 'All Products'}
+                <span className="text-muted-foreground text-sm font-normal ml-2">
+                  ({filteredAccounts.length + sellerProducts.filter(p => {
+                    const matchesSearch = searchQuery.length === 0 || p.name.toLowerCase().includes(searchQuery.toLowerCase());
+                    const matchesCategory = categoryFilter === 'all' || p.category_id === categoryFilter;
+                    const matchesTags = selectedTags.length === 0 || p.tags?.some(tag => selectedTags.includes(tag));
+                    return matchesSearch && matchesCategory && matchesTags;
+                  }).length} products)
+                </span>
+              </h3>
+            )}
             {/* Products Grid */}
             {filteredAccounts.length === 0 ? <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
                 <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
