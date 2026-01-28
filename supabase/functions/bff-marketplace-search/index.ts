@@ -332,8 +332,15 @@ Deno.serve(async (req) => {
         }));
     }
 
+    // Add Cache-Control headers for browser caching
+    const cacheMaxAge = query.length < 2 ? 60 : 30; // Base data cached longer
+    
     return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { 
+        ...corsHeaders, 
+        "Content-Type": "application/json",
+        "Cache-Control": `private, max-age=${cacheMaxAge}, stale-while-revalidate=120`,
+      },
     });
   } catch (error) {
     console.error("Search error:", error);

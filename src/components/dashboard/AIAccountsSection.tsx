@@ -10,7 +10,9 @@ import MarketplaceSidebar from './MarketplaceSidebar';
 import { useFloatingChat } from '@/contexts/FloatingChatContext';
 import { SearchSuggestions } from '@/components/marketplace/SearchSuggestions';
 import { MobileSearchOverlay } from '@/components/marketplace/MobileSearchOverlay';
+import { VoiceSearchButton } from '@/components/marketplace/VoiceSearchButton';
 import { useSearchSuggestions, SearchSuggestion } from '@/hooks/useSearchSuggestions';
+import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { sendEmail } from '@/lib/email-sender';
 import { HotProductsSection } from '@/components/marketplace/HotProductsSection';
 import { TopRatedSection } from '@/components/marketplace/TopRatedSection';
@@ -226,6 +228,20 @@ const AIAccountsSection = () => {
     clearRecentSearches,
     setQuery: setSuggestionsQuery,
   } = useSearchSuggestions();
+
+  // Voice search hook
+  const handleVoiceResult = useCallback((text: string) => {
+    setSearchQuery(text);
+    openSuggestions();
+  }, [openSuggestions]);
+  
+  const {
+    isListening,
+    isSupported: voiceSupported,
+    error: voiceError,
+    startListening,
+    stopListening,
+  } = useVoiceSearch(handleVoiceResult);
 
   // "/" keyboard shortcut to focus search
   useEffect(() => {
@@ -1174,7 +1190,7 @@ const AIAccountsSection = () => {
             {/* Desktop Search Bar - Full width inside content area */}
             <div className="hidden lg:block mb-6">
               <div className="relative w-full">
-                <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
                 <input 
                   ref={searchInputRef}
                   type="text" 
@@ -1187,9 +1203,21 @@ const AIAccountsSection = () => {
                       closeSuggestions();
                     }
                   }}
-                  placeholder="Search products, categories, tags..." 
-                  className="w-full pl-12 pr-12 py-3.5 bg-white border border-gray-200 rounded-2xl text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-300 transition-all shadow-sm" 
+                  placeholder={isListening ? 'Listening...' : 'Search products, categories, tags...'}
+                  className="w-full pl-12 pr-24 py-3.5 bg-background border border-border rounded-2xl text-base text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all shadow-sm" 
                 />
+                
+                {/* Voice Search Button */}
+                <div className="absolute right-12 top-1/2 -translate-y-1/2 z-10">
+                  <VoiceSearchButton
+                    isListening={isListening}
+                    isSupported={voiceSupported}
+                    error={voiceError}
+                    onStart={startListening}
+                    onStop={stopListening}
+                  />
+                </div>
+                
                 {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
                   <button 
                     onClick={() => {
@@ -1198,9 +1226,9 @@ const AIAccountsSection = () => {
                       setCategoryFilter('all');
                       closeSuggestions();
                     }} 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded-lg transition-colors z-10"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 hover:bg-muted rounded-lg transition-colors z-10"
                   >
-                    <X size={18} className="text-gray-400" />
+                    <X size={18} className="text-muted-foreground" />
                   </button>
                 )}
                 
@@ -2266,6 +2294,11 @@ const AIAccountsSection = () => {
             logSearch(searchQuery, categoryFilter);
           }
         }}
+        voiceSupported={voiceSupported}
+        isListening={isListening}
+        voiceError={voiceError}
+        onVoiceStart={startListening}
+        onVoiceStop={stopListening}
       />
     </div>;
 };
