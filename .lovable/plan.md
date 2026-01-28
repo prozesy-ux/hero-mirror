@@ -1,258 +1,229 @@
 
-# Marketplace Search Box - Complete Redesign Plan
+# Amazon-Style Search Box Redesign Plan
 
-## Current Issues Identified
+## Current Issues
 
-### 1. Data Loading Problems (CRITICAL)
-The marketplace sections load slowly because of inefficient data fetching:
+1. **Search box has too many elements** - Voice, image, clear buttons all inside input
+2. **Filters bar scattered** - Price/rating chips mixed with search
+3. **Color inconsistency** - Green gradients for price, yellow for rating, violet for tags
+4. **Scope selector styling** - Doesn't match Amazon's clean look
+5. **No clear visual hierarchy** - Everything looks the same importance
 
-**Problem 1: N+1 Query in CategoryBrowser**
-```
-CategoryBrowser.tsx (lines 65-85):
-- For each category, makes 2 separate count queries
-- If 10 categories → 20 database calls!
-- Causes slow "Browse by Category" section loading
-```
-
-**Problem 2: No Server-Side Data Aggregation**
-- `HotProductsSection`, `TopRatedSection`, `NewArrivalsSection`, `CategoryBrowser` each fetch independently
-- User sees sections appearing at different times
-- Multiple network round-trips
-
-**Problem 3: No Data Prefetching**
-- Marketplace homepage data not prefetched
-- Each section waits for mount → fetch → render
-
-### 2. Missing Search Features
-| Feature | Status | Issue |
-|---------|--------|-------|
-| Voice Search | ✅ Exists | Working |
-| Image Upload | ✅ Exists | Working |
-| Image URL Search | ❌ Missing | Can't paste URL |
-| Price Filter UI | ❌ Missing | Only text-based ("under $20") |
-| Rating Filter | ❌ Missing | No 4+ stars filter |
-| Semantic AI Search | ❌ Missing | Not understanding intent |
-
-### 3. UI/UX Issues
-- Price filter not visible in sidebar
-- No clear filter indicators
-- Category selection slow to respond
-
----
-
-## Solution Architecture
-
-### Phase 1: Unified Data Loading (Fixes "Late Load" Issue)
-
-**Create a BFF endpoint that aggregates ALL marketplace homepage data in ONE call:**
+## Design Reference: Amazon Search Bar
 
 ```text
-GET /functions/v1/bff-marketplace-home
-
-Response:
-{
-  "categories": [...],      // with product counts (pre-computed)
-  "hotProducts": [...],     // top 10 trending
-  "topRated": [...],        // highest rated
-  "newArrivals": [...],     // last 7 days
-  "featuredSellers": [...]  // verified sellers
-}
+┌────────────────────────────────────────────────────────────────────────┐
+│ ██ BLACK/DARK HEADER BAR ██████████████████████████████████████████████│
+│ ┌─────────────┬────────────────────────────────────────────┬──────────┐│
+│ │ All      ▼  │  Search products...                        │ 🔍 Search││
+│ └─────────────┴────────────────────────────────────────────┴──────────┘│
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Benefits:**
-- Single network request vs 8+ current requests
-- Server-side parallel queries (faster)
-- Browser caching with Cache-Control headers
-- Instant UI with skeleton states
+## New Design
 
-### Phase 2: Enhanced Search Box Design
+### Search Box (Amazon-Style)
 
-**New Search Box Layout:**
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│ ┌─────────┐ ┌─────────────────────────────────────────┐ ┌─────┐ │
-│ │ All   ▼ │ │ 🔍 Search products, sellers...         │ │🎤 📷│ │
-│ └─────────┘ └─────────────────────────────────────────┘ └─────┘ │
-│                                                                  │
-│ Quick Filters:                                                   │
-│ ┌─────────┐ ┌───────────────┐ ┌────────────┐ ┌─────────────────┐│
-│ │Price  ▼ │ │ Rating: 4+★ ▼│ │ Verified ☑ │ │ Free Shipping ☑ ││
-│ └─────────┘ └───────────────┘ └────────────┘ └─────────────────┘│
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ┌────────────┐┌─────────────────────────────────────────────┐┌────────┐ │
+│ │ All      ▼ ││ 🔍 Search products, sellers, categories...  ││ Search │ │
+│ │ [gray bg]  ││                               [🎤] [📷] [X] ││[black] │ │
+│ └────────────┘└─────────────────────────────────────────────┘└────────┘ │
+│ bg-white with shadow, rounded-xl border                                  │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Phase 3: Image Search with URL Support
+### Filters Bar (Below Search - Clean Chips)
 
-**Enhanced Image Search Modal:**
 ```text
-┌────────────────────────────────────────────┐
-│ 📷 Visual Search                     [X]   │
-├────────────────────────────────────────────┤
-│                                            │
-│   ┌─────────────────────────────────┐      │
-│   │     Drop image here             │      │
-│   │     or click to upload          │      │
-│   └─────────────────────────────────┘      │
-│                                            │
-│   ─────────── OR ───────────              │
-│                                            │
-│   ┌─────────────────────────────────┐      │
-│   │ Paste image URL here...          │     │
-│   └─────────────────────────────────┘      │
-│                                            │
-│   [Upload Image]  [Search by URL]          │
-│                                            │
-└────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Filter by:   [Price ▼]   [Rating ▼]   [✓ Verified]   [Clear All]       │
+│               [black outline buttons - minimal style]                    │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Phase 4: Left Sidebar Price Filter
+### Price Filter Sidebar (Black/White Theme)
 
-**Add visual price filter to MarketplaceSidebar:**
 ```text
-┌──────────────────────┐
-│ 💰 Price Range       │
-│ ┌─────────────────┐  │
-│ │ ●───────────○   │  │ (Slider)
-│ └─────────────────┘  │
-│ $0  ─────────  $100+ │
-│                      │
-│ Quick:               │
-│ [Under $5] [Under $10]│
-│ [Under $20] [$20-$50] │
-│ [Over $50]            │
-└──────────────────────┘
-
-│ ⭐ Rating Filter      │
-│ ○ All Ratings        │
-│ ● 4+ Stars ⭐⭐⭐⭐     │
-│ ○ 3+ Stars ⭐⭐⭐      │
-└──────────────────────┘
+┌──────────────────────────┐
+│ 💰 Price                 │  ← Simple black text header
+├──────────────────────────┤
+│  ┌────────────────────┐  │
+│  │ ●═══════════════○  │  │  ← Black slider track
+│  └────────────────────┘  │
+│  $0 ────────────── $100+ │
+│                          │
+│  ┌─────┐ - ┌─────┐       │  ← Min/Max inputs
+│  │ Min │   │ Max │       │
+│  └─────┘   └─────┘       │
+│                          │
+│  Quick:                  │
+│  ┌─────────┐ ┌──────────┐│
+│  │Under $5 │ │Under $10 ││  ← Black outlined chips
+│  └─────────┘ └──────────┘│
+│  ┌──────────┐ ┌─────────┐│
+│  │Under $20 │ │ $20-$50 ││
+│  └──────────┘ └─────────┘│
+│                          │
+│ [Clear]     [Apply]      │  ← Black buttons
+└──────────────────────────┘
 ```
-
----
 
 ## Technical Implementation
-
-### Files to Create
-
-| File | Purpose |
-|------|---------|
-| `supabase/functions/bff-marketplace-home/index.ts` | Unified homepage data endpoint |
-| `src/hooks/useMarketplaceData.ts` | React Query hook for homepage data |
-| `src/components/marketplace/PriceFilterSidebar.tsx` | Visual price slider |
-| `src/components/marketplace/RatingFilter.tsx` | Star rating filter |
-| `src/components/marketplace/SearchFiltersBar.tsx` | Horizontal filter chips |
 
 ### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/dashboard/AIAccountsSection.tsx` | Use unified data hook, add filter bar |
-| `src/components/marketplace/ImageSearchButton.tsx` | Add URL input field |
-| `src/components/marketplace/MobileSearchOverlay.tsx` | Add filter chips |
-| `src/components/dashboard/MarketplaceSidebar.tsx` | Add price/rating filters |
-| `src/hooks/useSearchSuggestions.ts` | Add rating filter support |
-| `supabase/functions/bff-marketplace-search/index.ts` | Add rating filter param |
+| `AIAccountsSection.tsx` | Restructure search bar layout with Amazon styling |
+| `SearchScopeSelector.tsx` | Gray background, cleaner dropdown styling |
+| `SearchFiltersBar.tsx` | Black/white theme, minimal chip buttons |
+| `PriceFilterSidebar.tsx` | Black/white styling, remove green gradients |
+| `RatingFilter.tsx` | Black/white theme, simple star icons |
+| `MarketplaceSidebar.tsx` | Clean headers without colored gradients |
 
-### Database Changes
-```sql
--- Add product_analytics table for faster hot products query
-CREATE INDEX IF NOT EXISTS idx_seller_orders_product_recent 
-ON seller_orders(product_id, created_at) 
-WHERE status = 'completed';
+### Color Scheme
 
--- Materialized view for category counts (updated hourly)
-CREATE MATERIALIZED VIEW IF NOT EXISTS category_product_counts AS
-SELECT 
-  c.id,
-  c.name,
-  c.icon,
-  c.color,
-  c.display_order,
-  (
-    SELECT COUNT(*) FROM seller_products sp 
-    WHERE sp.category_id = c.id AND sp.is_available AND sp.is_approved
-  ) + (
-    SELECT COUNT(*) FROM ai_accounts aa 
-    WHERE aa.category_id = c.id AND aa.is_available
-  ) as product_count
-FROM categories c
-WHERE c.is_active = true;
+| Element | Current | New |
+|---------|---------|-----|
+| Search bar bg | `bg-background` | `bg-white` with `shadow-md` |
+| Scope selector | `bg-muted/50` | `bg-gray-100` |
+| Search button | None (just icon) | `bg-gray-900 text-white` |
+| Filter chips | Multi-colored | `border-gray-300 hover:border-gray-900` |
+| Active filter | Green/yellow/blue | `bg-gray-900 text-white` |
+| Price header | `from-green-50 to-emerald-50` | `bg-gray-50` |
+| Quick filter active | `bg-green-500` | `bg-gray-900` |
 
-CREATE UNIQUE INDEX ON category_product_counts(id);
+### New Search Box Structure
+
+```tsx
+{/* Search Container - Amazon Style */}
+<div className="flex items-center bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+  {/* Category Dropdown - Left */}
+  <div className="px-3 py-2 bg-gray-100 border-r border-gray-200">
+    <SearchScopeSelector value={scope} onChange={setScope} />
+  </div>
+  
+  {/* Search Input - Center */}
+  <div className="flex-1 relative">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+    <input 
+      className="w-full pl-10 pr-24 py-3 border-0 focus:ring-0" 
+      placeholder="Search products..."
+    />
+    {/* Action icons inside input */}
+    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+      <VoiceSearchButton />
+      <ImageSearchButton />
+      {query && <button onClick={clear}><X /></button>}
+    </div>
+  </div>
+  
+  {/* Search Button - Right */}
+  <button className="px-6 py-3 bg-gray-900 text-white font-medium hover:bg-gray-800">
+    Search
+  </button>
+</div>
 ```
 
----
+### Updated SearchFiltersBar
 
-## Implementation Order
-
-### Day 1: Fix Data Loading (Highest Priority)
-1. Create `bff-marketplace-home` edge function
-2. Create `useMarketplaceData` hook with caching
-3. Update `AIAccountsSection.tsx` to use unified hook
-4. Remove individual fetch calls from section components
-
-### Day 2: Enhanced Search Box
-5. Add URL input to `ImageSearchButton.tsx`
-6. Create `SearchFiltersBar.tsx` with price/rating chips
-7. Update `bff-marketplace-search` for rating filter
-
-### Day 3: Sidebar Filters
-8. Create `PriceFilterSidebar.tsx` with slider
-9. Create `RatingFilter.tsx` component
-10. Integrate into `MarketplaceSidebar.tsx`
-
-### Day 4: Mobile Optimization
-11. Update `MobileSearchOverlay.tsx` with filter chips
-12. Add bottom sheet for filters on mobile
-13. Performance testing and optimization
-
----
-
-## Expected Performance Improvements
-
-| Metric | Current | After |
-|--------|---------|-------|
-| Homepage data requests | 8+ requests | 1 request |
-| Category load time | 2-3 seconds | <200ms |
-| Initial render time | 3-5 seconds | <1 second |
-| Time to interactive | 5+ seconds | <2 seconds |
-
----
-
-## Technical Details
-
-### BFF Marketplace Home Response Structure
-```typescript
-interface MarketplaceHomeData {
-  categories: Array<{
-    id: string;
-    name: string;
-    icon: string;
-    color: string;
-    productCount: number;
-  }>;
-  hotProducts: Array<ProductSummary>;
-  topRated: Array<ProductSummary>;
-  newArrivals: Array<ProductSummary>;
-  featuredSellers: Array<SellerSummary>;
-  // Cached for 60 seconds
-}
+```tsx
+<div className="flex items-center gap-3 mt-3">
+  <span className="text-sm text-gray-500">Filter by:</span>
+  
+  {/* Price Popover */}
+  <Button variant="outline" className="border-gray-300 hover:border-gray-900">
+    Price {priceActive && '•'}
+  </Button>
+  
+  {/* Rating Popover */}
+  <Button variant="outline" className="border-gray-300 hover:border-gray-900">
+    Rating {ratingActive && '•'}
+  </Button>
+  
+  {/* Verified Toggle */}
+  <Button variant={verified ? 'default' : 'outline'} 
+          className={verified ? 'bg-gray-900' : 'border-gray-300'}>
+    ✓ Verified
+  </Button>
+  
+  {/* Clear */}
+  {hasFilters && (
+    <Button variant="ghost" className="text-gray-500">
+      Clear All
+    </Button>
+  )}
+</div>
 ```
 
-### Price Filter State
-```typescript
-interface FilterState {
-  priceRange: { min?: number; max?: number };
-  minRating: number | null; // 3, 4, or null
-  verifiedOnly: boolean;
-  freeShippingOnly: boolean;
-}
+### Updated PriceFilterSidebar
+
+```tsx
+<div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  {/* Header - Simple */}
+  <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+    <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+      <DollarSign className="w-4 h-4" />
+      Price
+    </h3>
+  </div>
+  
+  <div className="p-4 space-y-4">
+    {/* Slider with black track */}
+    <Slider className="[&_[role=slider]]:bg-gray-900 [&_[role=slider]]:border-gray-900" />
+    
+    {/* Quick filters - black outline chips */}
+    <div className="flex flex-wrap gap-2">
+      {filters.map((f, i) => (
+        <button className={cn(
+          "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+          active === i 
+            ? "bg-gray-900 text-white border-gray-900" 
+            : "bg-white text-gray-700 border-gray-300 hover:border-gray-900"
+        )}>
+          {f.label}
+        </button>
+      ))}
+    </div>
+    
+    {/* Actions */}
+    <div className="flex gap-2 pt-2">
+      <Button variant="outline" className="flex-1 border-gray-300">Clear</Button>
+      <Button className="flex-1 bg-gray-900 hover:bg-gray-800">Apply</Button>
+    </div>
+  </div>
+</div>
 ```
 
-### URL-Based Image Search Flow
-```text
-User pastes URL → Fetch image → Convert to base64 → Send to image-search function
-```
+## Visual Comparison
 
-This plan will fix all data loading issues and add the missing enterprise-level search features to create a world-class marketplace experience.
+### Before (Current)
+- Colorful gradients (green, yellow, violet)
+- Scope selector attached to input with border
+- Filter chips with different colored backgrounds
+- Voice/image buttons scattered
+
+### After (Amazon-Style)
+- Clean black and white only
+- Unified search container with clear sections
+- All filter chips use same black/white styling
+- Professional e-commerce appearance
+
+## Implementation Steps
+
+1. Update `SearchScopeSelector.tsx` with gray background styling
+2. Update `AIAccountsSection.tsx` search bar structure
+3. Update `SearchFiltersBar.tsx` with black/white theme
+4. Update `PriceFilterSidebar.tsx` removing green gradients
+5. Update `RatingFilter.tsx` with minimal styling
+6. Update `MarketplaceSidebar.tsx` section headers
+
+## Expected Result
+
+A clean, professional search experience that matches Amazon, Flipkart, and other top e-commerce sites with:
+- Instant recognition as a search bar
+- Clear visual hierarchy
+- Consistent black/white color scheme
+- All features (voice, image, filters) properly organized
