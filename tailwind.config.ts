@@ -121,6 +121,14 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-4px)" },
         },
+        "beam-pulse": {
+          "0%, 100%": { opacity: "0.4" },
+          "50%": { opacity: "0.7" },
+        },
+        "float-product": {
+          "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+          "50%": { transform: "translateY(-8px) rotate(3deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -137,6 +145,8 @@ export default {
         "shimmer-white": "shimmer-white 2s linear infinite",
         "card-glow": "card-glow 2s ease-in-out infinite",
         "bounce-subtle": "bounce-subtle 2s ease-in-out infinite",
+        "beam-pulse": "beam-pulse 2s ease-in-out infinite",
+        "float-product": "float-product 3s ease-in-out infinite",
       },
     },
   },
