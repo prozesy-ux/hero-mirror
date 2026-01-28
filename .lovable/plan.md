@@ -1,98 +1,73 @@
 
-# Fix Stripe Popup Being Blocked
 
-## Problem Identified
+# Replace PromptHero Branding with Uptoza Logo
 
-When clicking "Pay" for Stripe, the browser **blocks the popup** because:
+## Overview
 
-1. User clicks button → triggers async API call to `create-topup`
-2. API call takes 1-2 seconds to complete
-3. Then code calls `window.open(data.url, '_blank')`
-4. Browser blocks this because the "user gesture" expired during the async wait
+The user has provided a new Uptoza logo (green "Upto" + blue "za" gradient text) to replace the current PromptHero branding throughout the application. This involves:
 
-Other sites work because they either:
-- Redirect the same tab (`window.location.href`)
-- Open the popup window immediately on click, then update its URL after the API call
+1. Adding the new Uptoza logo image to assets
+2. Replacing all PromptHero icon imports with the new Uptoza logo
+3. Updating text references from "PromptHero" to "Uptoza"
 
 ---
 
-## Solution
+## Files to Modify
 
-Change from `window.open()` to `window.location.href` to redirect the current tab to Stripe Checkout. This is the most reliable method and matches how most payment sites work.
+### 1. Add New Logo Asset
+- **Copy** `user-uploads://IMG_7951.png` → `src/assets/uptoza-logo.png`
 
----
+### 2. Sign In Page (`src/pages/SignIn.tsx`)
+- Replace `promptheroIcon` import with `uptozaLogo`
+- Update 4 image references from PromptHero icon to Uptoza logo
+- Change 3 text occurrences:
+  - "Welcome to PromptHero" → "Welcome to Uptoza"
+  - Alt text "PromptHero" → "Uptoza"
 
-## File to Modify
+### 3. Seller Page (`src/pages/Seller.tsx`)
+- Replace `promptheroIcon` import with `uptozaLogo`
+- Update image references
+- Change text:
+  - "Start selling on PromptHero" → "Start selling on Uptoza"
+  - Alt text updates
 
-**`src/components/dashboard/BillingSection.tsx`**
+### 4. Admin Page (`src/pages/Admin.tsx`)
+- Replace `promptheroIcon` import with `uptozaLogo`
+- Update admin login logo image
 
-### Change (around line 337-338)
+### 5. Products Hero (`src/components/ProductsHero.tsx`)
+- Change "by PromptHero" → "by Uptoza"
 
-**Before:**
-```typescript
-if (data?.url) {
-  window.open(data.url, '_blank');
-}
-```
-
-**After:**
-```typescript
-if (data?.url) {
-  window.location.href = data.url;
-}
-```
-
----
-
-## Why This Works
-
-| Method | Popup Blocked? | User Experience |
-|--------|----------------|-----------------|
-| `window.open('url', '_blank')` | YES (after async) | New tab blocked |
-| `window.location.href = url` | NO | Redirects same tab, returns after payment |
-
-The `success_url` in the edge function already points back to `/dashboard/billing?topup=success`, so users will return to the billing page after payment.
+### 6. CSS Comments (`src/index.css`)
+- Update comment "PromptHero Design System" → "Uptoza Design System"
 
 ---
 
-## Alternative (If You Want New Tab)
+## Summary of Changes
 
-If you really want a new tab, you can open a blank popup immediately on click, then set its location after the API call:
-
-```typescript
-const popup = window.open('about:blank', '_blank');
-// ... make API call ...
-if (popup && data?.url) {
-  popup.location.href = data.url;
-}
-```
-
-But the redirect approach is simpler and more reliable.
+| Location | Current | After |
+|----------|---------|-------|
+| SignIn page logo | prompthero-icon.png | uptoza-logo.png |
+| SignIn welcome text | "Welcome to PromptHero" | "Welcome to Uptoza" |
+| Seller page logo | prompthero-icon.png | uptoza-logo.png |
+| Seller tagline | "Start selling on PromptHero" | "Start selling on Uptoza" |
+| Admin login logo | prompthero-icon.png | uptoza-logo.png |
+| Products hero credit | "by PromptHero" | "by Uptoza" |
 
 ---
 
-## Also Fix CORS Headers
+## Technical Details
 
-While fixing this, I'll also update the CORS headers in `create-topup` and `verify-topup` edge functions to ensure they work properly with the Supabase client.
+**Logo styling considerations:**
+- The new Uptoza logo is a text-based logo (not a square icon)
+- It should display with a white background container with rounded corners to match the current aesthetic
+- The logo may need larger width dimensions since it's horizontal text rather than a square icon
 
-### Files to Update CORS:
-1. `supabase/functions/create-topup/index.ts`
-2. `supabase/functions/verify-topup/index.ts`
+**Files involved:**
+1. `src/assets/uptoza-logo.png` (new file)
+2. `src/pages/SignIn.tsx` (edit)
+3. `src/pages/Seller.tsx` (edit)
+4. `src/pages/Admin.tsx` (edit)
+5. `src/components/ProductsHero.tsx` (edit)
+6. `src/index.css` (edit - comment only)
 
-### CORS Change:
-```typescript
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-```
-
----
-
-## Expected Outcome
-
-After this fix:
-- Clicking "Pay" will immediately redirect to Stripe Checkout (no popup blocker)
-- After payment, user returns to billing page
-- Payment verification happens automatically
-- CORS errors eliminated
