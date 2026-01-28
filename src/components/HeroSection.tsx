@@ -6,11 +6,14 @@ const modelTags = ["ChatGPT Image", "Midjourney", "SeedEdit", "Seedream 4", "Nan
 const HeroSection = () => {
   return (
     <section className="relative overflow-hidden border-b border-white/10 bg-black text-white">
-      {/* Background Image */}
+      {/* Background Image - Priority loading */}
       <img
         src={heroBackground}
-        alt="Hero background"
+        alt=""
         className="absolute inset-0 h-full w-full object-cover object-center"
+        loading="eager"
+        decoding="async"
+        fetchPriority="high"
       />
 
       {/* Gradient Overlay */}

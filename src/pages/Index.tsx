@@ -1,28 +1,55 @@
+import { lazy, Suspense } from "react";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
-import AsSeenIn from "@/components/AsSeenIn";
-import CompleteBundleCard from "@/components/CompleteBundleCard";
-import ChatGPTPromptsSection from "@/components/ChatGPTPromptsSection";
-import AddonsSection from "@/components/AddonsSection";
-import FreeProductsSection from "@/components/FreeProductsSection";
-import PromptsSection from "@/components/PromptsSection";
-import BundleSection from "@/components/BundleSection";
-import TestimonialsSection from "@/components/TestimonialsSection";
+
+// Lazy load below-fold components for faster First Contentful Paint
+const AsSeenIn = lazy(() => import("@/components/AsSeenIn"));
+const CompleteBundleCard = lazy(() => import("@/components/CompleteBundleCard"));
+const ChatGPTPromptsSection = lazy(() => import("@/components/ChatGPTPromptsSection"));
+const AddonsSection = lazy(() => import("@/components/AddonsSection"));
+const FreeProductsSection = lazy(() => import("@/components/FreeProductsSection"));
+const PromptsSection = lazy(() => import("@/components/PromptsSection"));
+const BundleSection = lazy(() => import("@/components/BundleSection"));
+const TestimonialsSection = lazy(() => import("@/components/TestimonialsSection"));
+
+// Minimal loading placeholder for lazy sections
+const SectionPlaceholder = () => (
+  <div className="min-h-[200px] bg-background" />
+);
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main>
+        {/* Above the fold - loaded immediately */}
         <HeroSection />
-        <AsSeenIn />
-        <CompleteBundleCard />
-        <ChatGPTPromptsSection />
-        <AddonsSection />
-        <FreeProductsSection />
-        <PromptsSection />
-        <BundleSection />
-        <TestimonialsSection />
+        
+        {/* Below the fold - lazy loaded */}
+        <Suspense fallback={<SectionPlaceholder />}>
+          <AsSeenIn />
+        </Suspense>
+        <Suspense fallback={<SectionPlaceholder />}>
+          <CompleteBundleCard />
+        </Suspense>
+        <Suspense fallback={<SectionPlaceholder />}>
+          <ChatGPTPromptsSection />
+        </Suspense>
+        <Suspense fallback={<SectionPlaceholder />}>
+          <AddonsSection />
+        </Suspense>
+        <Suspense fallback={<SectionPlaceholder />}>
+          <FreeProductsSection />
+        </Suspense>
+        <Suspense fallback={<SectionPlaceholder />}>
+          <PromptsSection />
+        </Suspense>
+        <Suspense fallback={<SectionPlaceholder />}>
+          <BundleSection />
+        </Suspense>
+        <Suspense fallback={<SectionPlaceholder />}>
+          <TestimonialsSection />
+        </Suspense>
       </main>
     </div>
   );
