@@ -1,153 +1,58 @@
 
 
-# 24-Hour Persistent Login Plan
+# 12-Hour Persistent Login Update
 
-## Current Behavior
+## Summary
 
-The app currently:
-1. Uses Supabase auth with `persistSession: true` and `autoRefreshToken: true`
-2. Has a heartbeat that checks every 5 minutes and refreshes tokens
-3. **Problem**: If any session check fails, it immediately signs out the user
+Update the existing session persistence from 24 hours to **12 hours** minimum. Users will:
+- Stay logged in even after closing tabs/browsers
+- Access /dashboard or /seller directly without re-login (within 12h)
+- Only logout when: manual logout, clear cookies/storage, or 12+ hours expired
 
-## Goal
+## Changes Required
 
-- User logs in once → stays logged in for 24 hours minimum
-- No automatic logout unless:
-  1. User manually clicks "Log Out"
-  2. User hasn't used the app for 24+ hours
-  3. Refresh token is truly expired (server-side invalid)
+### 1. Session Persistence Utility
+**File:** `src/lib/session-persistence.ts`
 
-## Implementation
+| Line | Change |
+|------|--------|
+| 5 | Update comment: "24 hours" → "12 hours" |
+| 9 | `SESSION_DURATION = 12 * 60 * 60 * 1000` (12 hours) |
+| 16 | Log message: "24h" → "12h" |
+| 20 | Comment: "24-hour" → "12-hour" |
+| 30 | Log message: "24h" → "12h" |
+| 37 | Comment: "24-hour" → "12-hour" |
+| 60 | Log message: "24h" → "12h" |
 
-### 1. Add Session Persistence Tracking
+### 2. Session Heartbeat Hook
+**File:** `src/hooks/useSessionHeartbeat.ts`
 
-Create a new utility to track login timestamps:
+| Line | Change |
+|------|--------|
+| 5 | Comment: "24 hours" → "12 hours" |
+| 10 | Comment: "24-hour" → "12-hour" |
+| 54 | Comment: "24-hour" → "12-hour" |
+| 56 | Log: "24h" → "12h" |
+| 60 | Comment: "24h+" → "12h+" |
+| 61 | Log: "24h" → "12h" |
+| 88 | Comment: "24h" → "12h" |
+| 90 | Log: "24h" → "12h" |
 
-**File: `src/lib/session-persistence.ts`**
-```typescript
-const SESSION_KEY = 'app_session_start';
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+### 3. Auth Hook
+**File:** `src/hooks/useAuth.ts`
 
-export const markSessionStart = () => {
-  localStorage.setItem(SESSION_KEY, Date.now().toString());
-};
+| Line | Change |
+|------|--------|
+| 59 | Log message: "24h" → "12h" |
 
-export const isSessionValid = (): boolean => {
-  const start = localStorage.getItem(SESSION_KEY);
-  if (!start) return true; // No timestamp = new session, allow
-  return Date.now() - parseInt(start) < SESSION_DURATION;
-};
+### 4. Protected Route
+**File:** `src/components/auth/ProtectedRoute.tsx`
 
-export const clearSessionTimestamp = () => {
-  localStorage.removeItem(SESSION_KEY);
-};
-```
-
-### 2. Update Heartbeat - More Resilient
-
-**File: `src/hooks/useSessionHeartbeat.ts`**
-
-Key changes:
-- **Don't immediately sign out on failures** - try to recover first
-- Only sign out if 24-hour window has passed AND refresh fails
-- Add retry logic for token refresh
-
-```typescript
-const heartbeat = async () => {
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    // If no session but within 24-hour window, try to recover
-    if (error || !session) {
-      // Attempt refresh before giving up
-      const { data, error: refreshError } = await supabase.auth.refreshSession();
-      
-      if (refreshError || !data.session) {
-        // Check if within 24-hour window - if so, don't force logout
-        if (isSessionValid()) {
-          console.log('[Heartbeat] Session issue but within 24h window - staying logged in');
-          return; // Don't sign out
-        }
-        // Only sign out if truly expired (24h+)
-        await signOut();
-        clearSessionTimestamp();
-        window.location.href = '/signin';
-      }
-      return;
-    }
-
-    // Proactive refresh (same as before)
-    const exp = session.expires_at;
-    const now = Math.floor(Date.now() / 1000);
-    if (exp && (exp - now) < TOKEN_REFRESH_THRESHOLD) {
-      await supabase.auth.refreshSession();
-    }
-  } catch (error) {
-    // On error, don't sign out - just log
-    console.error('[Heartbeat] Error:', error);
-  }
-};
-```
-
-### 3. Update Auth Hook - Mark Session on Login
-
-**File: `src/hooks/useAuth.ts`**
-
-Add session timestamp when user logs in:
-
-```typescript
-const signIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({ ... });
-  if (!error && data.session) {
-    markSessionStart(); // Track 24-hour window
-  }
-  return { data, error };
-};
-
-const signInWithGoogle = async () => {
-  // Google OAuth will trigger onAuthStateChange
-  // Mark session there
-};
-
-// In onAuthStateChange:
-if (event === 'SIGNED_IN') {
-  markSessionStart();
-}
-
-const signOut = async () => {
-  clearSessionTimestamp(); // Clear on manual logout
-  const { error } = await supabase.auth.signOut();
-  return { error };
-};
-```
-
-### 4. Update ProtectedRoute - Don't Force Logout
-
-**File: `src/components/auth/ProtectedRoute.tsx`**
-
-If auth loading times out, check 24-hour window before redirecting:
-
-```typescript
-// Instead of immediate redirect on timeout:
-if (authLoadingTimedOut && !isAuthenticated) {
-  if (isSessionValid()) {
-    // Try silent refresh instead of redirect
-    await supabase.auth.refreshSession();
-    return; // Don't redirect yet
-  }
-  // Only redirect if truly expired
-  navigate('/signin');
-}
-```
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/lib/session-persistence.ts` | **NEW** - 24-hour tracking utilities |
-| `src/hooks/useSessionHeartbeat.ts` | More resilient, don't force logout |
-| `src/hooks/useAuth.ts` | Mark session start on login |
-| `src/components/auth/ProtectedRoute.tsx` | Check 24h window before redirect |
+| Line | Change |
+|------|--------|
+| 90 | Comment: "24-hour" → "12-hour" |
+| 92 | Log: "24h" → "12h" |
+| 101 | Log: "24h" → "12h" |
 
 ## How It Works
 
@@ -155,41 +60,38 @@ if (authLoadingTimedOut && !isAuthenticated) {
 User Login
     │
     ▼
-┌──────────────────────┐
-│ markSessionStart()   │ ← Store timestamp in localStorage
-│ 24-hour timer begins │
-└──────────────────────┘
+┌─────────────────────────────┐
+│ markSessionStart()          │ ← Store timestamp in localStorage
+│ 12-hour persistence begins  │
+└─────────────────────────────┘
     │
     ▼
-┌──────────────────────┐
-│ Session Heartbeat    │ ← Runs every 5 minutes
-│ Refreshes JWT tokens │
-│ Keeps session alive  │
-└──────────────────────┘
+┌─────────────────────────────┐
+│ User closes tab/browser     │
+│ Comes back later            │
+│ Visits /dashboard or /seller│
+└─────────────────────────────┘
     │
     ▼
-┌──────────────────────┐
-│ Token Refresh Fails? │
-│ Check 24h window:    │
-│ - Within 24h → STAY  │
-│ - Beyond 24h → LOGOUT│
-└──────────────────────┘
+┌─────────────────────────────┐
+│ Check localStorage session  │
+│ If within 12h → AUTO LOGIN  │
+│ If 12h+ expired → REDIRECT  │
+└─────────────────────────────┘
 ```
 
-## Expected Behavior After Implementation
+## Expected Behavior
 
-| Scenario | Current | After |
-|----------|---------|-------|
-| Network hiccup during heartbeat | Logs out | Stays logged in |
-| Browser tab inactive for hours | May logout | Stays logged in |
-| Token refresh fails once | Logs out | Retries, stays in |
-| User closes browser, returns next day (< 24h) | Often logged out | Stays logged in |
-| User inactive for 24+ hours | - | Logs out (expected) |
-| User clicks "Log Out" | Logs out | Logs out |
+| Scenario | Result |
+|----------|--------|
+| User closes tab, returns in 1 hour | ✅ Auto logged in |
+| User closes browser, returns in 6 hours | ✅ Auto logged in |
+| User directly visits /dashboard after 10 hours | ✅ Auto logged in |
+| User returns after 12+ hours | ❌ Redirect to login |
+| User clicks "Log Out" | ❌ Logged out immediately |
+| User clears cookies/localStorage | ❌ Logged out |
 
-## Technical Notes
+## Technical Note
 
-1. **Refresh tokens** in Supabase are valid for much longer than JWTs (default 7 days)
-2. The 24-hour window is a **client-side grace period** - the actual token refresh happens server-side
-3. This change makes the auth system more **fault-tolerant** while still being secure
+Supabase already stores the session in localStorage with `persistSession: true`. The 12-hour window is a **grace period** - if token refresh fails for any reason (network issue, server error), the user stays logged in as long as they're within 12 hours of their last login.
 
