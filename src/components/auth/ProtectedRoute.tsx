@@ -68,7 +68,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return (
       <AppShell 
         variant={getShellVariant()} 
-        stage="loading"
       />
     );
   }

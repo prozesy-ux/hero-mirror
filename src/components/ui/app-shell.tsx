@@ -2,23 +2,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface AppShellProps {
   variant?: 'dashboard' | 'seller' | 'store' | 'default';
-  message?: string;
-  stage?: 'loading' | 'validating' | 'slow';
 }
 
 /**
  * App Shell - Instant skeleton UI shown during loading
  * Provides immediate visual feedback like Fiverr/Upwork
  */
-const AppShell = ({ variant = 'default', message, stage = 'loading' }: AppShellProps) => {
-  const progressMessages = {
-    loading: 'Loading...',
-    validating: 'Validating session...',
-    slow: 'Taking longer than expected...',
-  };
-
-  const displayMessage = message || progressMessages[stage];
-
+const AppShell = ({ variant = 'default' }: AppShellProps) => {
   // Dashboard shell with sidebar
   if (variant === 'dashboard' || variant === 'seller') {
     return (
@@ -60,12 +50,6 @@ const AppShell = ({ variant = 'default', message, stage = 'loading' }: AppShellP
               {/* Main content */}
               <Skeleton className="h-64 rounded-xl" />
             </div>
-
-            {/* Loading indicator */}
-            <div className="fixed bottom-4 right-4 flex items-center gap-2 bg-card/80 backdrop-blur-sm border border-border rounded-full px-4 py-2 shadow-lg">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-              <span className="text-sm text-muted-foreground">{displayMessage}</span>
-            </div>
           </main>
         </div>
       </div>
@@ -102,24 +86,17 @@ const AppShell = ({ variant = 'default', message, stage = 'loading' }: AppShellP
             ))}
           </div>
         </main>
-
-        {/* Loading indicator */}
-        <div className="fixed bottom-4 right-4 flex items-center gap-2 bg-card/80 backdrop-blur-sm border border-border rounded-full px-4 py-2 shadow-lg">
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-          <span className="text-sm text-muted-foreground">{displayMessage}</span>
-        </div>
       </div>
     );
   }
 
-  // Default centered loading
+  // Default centered loading - spinner only
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
       <div className="relative">
         <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary border-t-transparent" />
         <div className="absolute inset-0 animate-ping rounded-full h-12 w-12 border border-primary/20" />
       </div>
-      <p className="text-sm text-muted-foreground animate-pulse">{displayMessage}</p>
     </div>
   );
 };
