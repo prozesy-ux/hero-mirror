@@ -98,7 +98,7 @@ const bannerHeightClasses: Record<string, string> = {
 const StoreContent = () => {
   const { storeSlug } = useParams<{ storeSlug: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const { user, canMutate } = useAuthContext();
   const { openChat } = useFloatingChat();
   const isMobile = useIsMobile();
   
@@ -284,6 +284,12 @@ const StoreContent = () => {
         iconUrl: product.icon_url
       }));
       navigate('/signin');
+      return;
+    }
+
+    // MUTATION LOCK - Check canMutate before any write operation
+    if (!canMutate) {
+      toast.error('Please wait - verifying your session...');
       return;
     }
 

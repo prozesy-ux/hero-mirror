@@ -1,8 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
+import { bffApi } from '@/lib/api-fetch';
 import { toast } from 'sonner';
+
+// Cache key for offline fallback
+const CACHE_KEY = 'seller_dashboard_cache';
 
 interface SellerLevel {
   id: string;
@@ -104,6 +107,8 @@ interface SellerContextType {
   sellerLevels: SellerLevel[];
   loading: boolean;
   error: string | null;
+  sessionExpiredLocal: boolean;
+  usingCachedData: boolean;
   refreshProfile: () => Promise<void>;
   refreshWallet: () => Promise<void>;
   refreshProducts: () => Promise<void>;
@@ -121,7 +126,7 @@ export const SellerProvider = ({
   children: ReactNode; 
   sellerProfile: SellerProfile;
 }) => {
-  const { user } = useAuthContext();
+  const { user, setSessionExpired } = useAuthContext();
   const [profile, setProfile] = useState<SellerProfile>(sellerProfile);
   const [wallet, setWallet] = useState<SellerWallet | null>(null);
   const [products, setProducts] = useState<SellerProduct[]>([]);
@@ -130,6 +135,33 @@ export const SellerProvider = ({
   const [sellerLevels, setSellerLevels] = useState<SellerLevel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sessionExpiredLocal, setSessionExpiredLocal] = useState(false);
+  const [usingCachedData, setUsingCachedData] = useState(false);
+  
+  // Refs for realtime channels
+  const ordersChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const walletChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const productsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const withdrawalsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // Load cached data on mount for instant UI
+  useEffect(() => {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const { data: cachedData, timestamp } = JSON.parse(cached);
+        // Use cache if less than 5 minutes old
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          if (cachedData.wallet) setWallet(cachedData.wallet);
+          if (cachedData.products) setProducts(cachedData.products);
+          if (cachedData.orders) setOrders(cachedData.orders);
+          if (cachedData.withdrawals) setWithdrawals(cachedData.withdrawals);
+          if (cachedData.sellerLevels) setSellerLevels(cachedData.sellerLevels);
+          setLoading(false);
+        }
+      } catch (e) { /* ignore parse errors */ }
+    }
+  }, []);
 
   // Fetch all data from BFF API (server-side validated)
   const refreshAll = useCallback(async () => {
@@ -139,16 +171,50 @@ export const SellerProvider = ({
     try {
       const result = await bffApi.getSellerDashboard();
 
+      // SOFT unauthorized handling - no redirect, just show banner
       if (result.isUnauthorized) {
-        console.log('[SellerContext] Unauthorized - redirecting to signin');
-        handleUnauthorized();
+        console.log('[SellerContext] Unauthorized - showing soft banner (no redirect)');
+        setSessionExpiredLocal(true);
+        setSessionExpired?.(true);
+        
+        // Try to show cached data
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          try {
+            const { data: cachedData } = JSON.parse(cached);
+            if (cachedData.wallet) setWallet(cachedData.wallet);
+            if (cachedData.products) setProducts(cachedData.products);
+            if (cachedData.orders) setOrders(cachedData.orders);
+            if (cachedData.withdrawals) setWithdrawals(cachedData.withdrawals);
+            setUsingCachedData(true);
+          } catch (e) { /* ignore */ }
+        }
+        setLoading(false);
         return;
       }
 
       if (result.error || !result.data) {
         console.error('[SellerContext] BFF fetch failed:', result.error);
-        setError(result.error || 'Failed to load seller data');
-        toast.error('Failed to load dashboard data');
+        
+        // Network/server error - try cache fallback
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          try {
+            const { data: cachedData } = JSON.parse(cached);
+            if (cachedData.wallet) setWallet(cachedData.wallet);
+            if (cachedData.products) setProducts(cachedData.products);
+            if (cachedData.orders) setOrders(cachedData.orders);
+            if (cachedData.withdrawals) setWithdrawals(cachedData.withdrawals);
+            setUsingCachedData(true);
+            setError('Using cached data - refresh when online');
+          } catch (e) {
+            setError(result.error || 'Failed to load seller data');
+          }
+        } else {
+          setError(result.error || 'Failed to load seller data');
+          toast.error('Failed to load dashboard data');
+        }
+        setLoading(false);
         return;
       }
 
@@ -166,6 +232,13 @@ export const SellerProvider = ({
       setOrders(newOrders || []);
       setWithdrawals(newWithdrawals || []);
       setSellerLevels(newSellerLevels || []);
+      setUsingCachedData(false);
+
+      // Cache for offline use
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        data: { wallet: newWallet, products: newProducts, orders: newOrders, withdrawals: newWithdrawals, sellerLevels: newSellerLevels },
+        timestamp: Date.now()
+      }));
 
       console.log('[SellerContext] Data loaded from BFF at:', data._meta?.fetchedAt);
     } catch (err) {
@@ -174,7 +247,7 @@ export const SellerProvider = ({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setSessionExpired]);
 
   // Individual refresh functions (still use BFF but could be optimized later)
   const refreshProfile = useCallback(async () => {
@@ -204,11 +277,17 @@ export const SellerProvider = ({
     refreshAll();
   }, [refreshAll]);
 
-  // Real-time subscriptions (keep for instant updates, BFF for reliability)
-  useEffect(() => {
+  // Setup realtime subscriptions
+  const setupRealtimeSubscriptions = useCallback(() => {
     if (!profile.id) return;
 
-    const ordersChannel = supabase
+    // Clean up existing channels
+    if (ordersChannelRef.current) supabase.removeChannel(ordersChannelRef.current);
+    if (walletChannelRef.current) supabase.removeChannel(walletChannelRef.current);
+    if (productsChannelRef.current) supabase.removeChannel(productsChannelRef.current);
+    if (withdrawalsChannelRef.current) supabase.removeChannel(withdrawalsChannelRef.current);
+
+    ordersChannelRef.current = supabase
       .channel('seller-orders')
       .on('postgres_changes', {
         event: '*',
@@ -221,7 +300,7 @@ export const SellerProvider = ({
       })
       .subscribe();
 
-    const walletChannel = supabase
+    walletChannelRef.current = supabase
       .channel('seller-wallet')
       .on('postgres_changes', {
         event: '*',
@@ -234,7 +313,7 @@ export const SellerProvider = ({
       })
       .subscribe();
 
-    const productsChannel = supabase
+    productsChannelRef.current = supabase
       .channel('seller-products-realtime')
       .on('postgres_changes', {
         event: '*',
@@ -247,7 +326,7 @@ export const SellerProvider = ({
       })
       .subscribe();
 
-    const withdrawalsChannel = supabase
+    withdrawalsChannelRef.current = supabase
       .channel('seller-withdrawals-realtime')
       .on('postgres_changes', {
         event: '*',
@@ -259,14 +338,30 @@ export const SellerProvider = ({
         refreshAll();
       })
       .subscribe();
+  }, [profile.id, refreshAll]);
+
+  // Real-time subscriptions (keep for instant updates, BFF for reliability)
+  useEffect(() => {
+    setupRealtimeSubscriptions();
 
     return () => {
-      supabase.removeChannel(ordersChannel);
-      supabase.removeChannel(walletChannel);
-      supabase.removeChannel(productsChannel);
-      supabase.removeChannel(withdrawalsChannel);
+      if (ordersChannelRef.current) supabase.removeChannel(ordersChannelRef.current);
+      if (walletChannelRef.current) supabase.removeChannel(walletChannelRef.current);
+      if (productsChannelRef.current) supabase.removeChannel(productsChannelRef.current);
+      if (withdrawalsChannelRef.current) supabase.removeChannel(withdrawalsChannelRef.current);
     };
-  }, [profile.id, refreshAll]);
+  }, [setupRealtimeSubscriptions]);
+
+  // Resubscribe realtime channels on token refresh
+  useEffect(() => {
+    const handleSessionRefresh = () => {
+      console.log('[SellerContext] Session refreshed - resubscribing realtime');
+      setupRealtimeSubscriptions();
+    };
+    
+    window.addEventListener('session-refreshed', handleSessionRefresh);
+    return () => window.removeEventListener('session-refreshed', handleSessionRefresh);
+  }, [setupRealtimeSubscriptions]);
 
   return (
     <SellerContext.Provider value={{
@@ -278,6 +373,8 @@ export const SellerProvider = ({
       sellerLevels,
       loading,
       error,
+      sessionExpiredLocal,
+      usingCachedData,
       refreshProfile,
       refreshWallet,
       refreshProducts,

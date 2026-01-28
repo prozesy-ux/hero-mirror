@@ -1,9 +1,9 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
-import { bffApi, handleUnauthorized } from '@/lib/api-fetch';
-import { ShoppingBag, Package, Clock, CheckCircle, XCircle, Search, Eye, MessageSquare, Star, Calendar, ArrowUpDown, ArrowDown, ArrowUp, AlertCircle } from 'lucide-react';
+import { bffApi } from '@/lib/api-fetch';
+import { ShoppingBag, Package, Clock, CheckCircle, XCircle, Search, Eye, MessageSquare, Star, Calendar, ArrowUpDown, ArrowDown, ArrowUp, AlertCircle, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +31,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, subDays, startOfDay, endOfDay, isWithinInterval, startOfWeek, startOfMonth } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import SessionExpiredBanner from '@/components/ui/session-expired-banner';
 
 interface Order {
   id: string;
@@ -57,9 +58,11 @@ interface Order {
 type DatePreset = 'all' | 'today' | 'yesterday' | 'week' | 'month' | '30days' | 'custom';
 type SortOption = 'newest' | 'oldest' | 'amount_high' | 'amount_low';
 
+const CACHE_KEY = 'buyer_orders_cache';
+
 const BuyerOrders = () => {
   const { formatAmountOnly } = useCurrency();
-  const { user } = useAuthContext();
+  const { user, setSessionExpired } = useAuthContext();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +70,9 @@ const BuyerOrders = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [approving, setApproving] = useState(false);
+  const [sessionExpiredLocal, setSessionExpiredLocal] = useState(false);
+  const [usingCachedData, setUsingCachedData] = useState(false);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   
   // Advanced filters
   const [datePreset, setDatePreset] = useState<DatePreset>('all');
@@ -74,39 +80,83 @@ const BuyerOrders = () => {
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const fetchOrders = async () => {
-    setLoading(true);
+  // Load cached data on mount
+  useEffect(() => {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const { data: cachedData, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          setOrders(cachedData);
+          setLoading(false);
+        }
+      } catch (e) { /* ignore */ }
+    }
+  }, []);
+
+  const fetchOrders = useCallback(async () => {
+    if (!loading) setLoading(true);
     setError(null);
     
     const result = await bffApi.getBuyerDashboard();
     
+    // SOFT unauthorized handling
     if (result.isUnauthorized) {
-      handleUnauthorized();
+      setSessionExpiredLocal(true);
+      setSessionExpired?.(true);
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          const { data: cachedData } = JSON.parse(cached);
+          setOrders(cachedData);
+          setUsingCachedData(true);
+        } catch (e) { /* ignore */ }
+      }
+      setLoading(false);
       return;
     }
     
     if (result.error) {
-      setError(result.error);
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          const { data: cachedData } = JSON.parse(cached);
+          setOrders(cachedData);
+          setUsingCachedData(true);
+          setError('Using cached data');
+        } catch (e) {
+          setError(result.error);
+        }
+      } else {
+        setError(result.error);
+      }
       setLoading(false);
       return;
     }
     
     if (result.data) {
-      setOrders(result.data.sellerOrders as Order[]);
+      const orderData = result.data.sellerOrders as Order[];
+      setOrders(orderData);
+      setUsingCachedData(false);
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ data: orderData, timestamp: Date.now() }));
     }
     setLoading(false);
-  };
+  }, [setSessionExpired]);
 
   // Initial load from BFF
   useEffect(() => {
     if (user) fetchOrders();
-  }, [user]);
+  }, [user, fetchOrders]);
 
-  // Realtime for instant updates
-  useEffect(() => {
+  // Setup realtime subscriptions
+  const setupRealtimeSubscriptions = useCallback(() => {
     if (!user) return;
     
-    const channel = supabase
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+    
+    channelRef.current = supabase
       .channel('buyer-orders')
       .on('postgres_changes', { 
         event: '*', 
@@ -115,9 +165,28 @@ const BuyerOrders = () => {
         filter: `buyer_id=eq.${user.id}`
       }, fetchOrders)
       .subscribe();
-      
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, fetchOrders]);
+
+  // Realtime for instant updates
+  useEffect(() => {
+    setupRealtimeSubscriptions();
+    return () => { 
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current); 
+      }
+    };
+  }, [setupRealtimeSubscriptions]);
+
+  // Resubscribe on token refresh
+  useEffect(() => {
+    const handleSessionRefresh = () => {
+      console.log('[BuyerOrders] Session refreshed - resubscribing realtime');
+      setupRealtimeSubscriptions();
+    };
+    
+    window.addEventListener('session-refreshed', handleSessionRefresh);
+    return () => window.removeEventListener('session-refreshed', handleSessionRefresh);
+  }, [setupRealtimeSubscriptions]);
 
   // Stats
   const stats = useMemo(() => ({
@@ -253,7 +322,7 @@ const BuyerOrders = () => {
     );
   }
 
-  if (error) {
+  if (error && orders.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
@@ -265,6 +334,18 @@ const BuyerOrders = () => {
 
   return (
     <div className="space-y-6">
+      {/* Session Expired Banner */}
+      {sessionExpiredLocal && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
+      
+      {/* Cached Data Notice */}
+      {usingCachedData && (
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <WifiOff className="h-4 w-4" />
+          <span>Using cached data</span>
+          <Button size="sm" variant="ghost" onClick={fetchOrders} className="ml-auto">Refresh</Button>
+        </div>
+      )}
+      
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
