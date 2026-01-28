@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface HotProduct {
   id: string;
@@ -147,20 +148,13 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
           >
             <CardContent className="p-3">
               <div className="relative mb-2">
-                {product.icon_url ? (
-                  <img
-                    src={product.icon_url}
-                    alt={product.name}
-                    className="w-full h-24 object-cover rounded-md bg-muted"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-24 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                    <ShoppingCart className="h-8 w-8 text-primary/50" />
-                  </div>
-                )}
+                <OptimizedImage
+                  src={product.icon_url}
+                  alt={product.name}
+                  className="w-full h-24 rounded-md"
+                  aspectRatio="auto"
+                  fallbackIcon={<ShoppingCart className="h-8 w-8 text-primary/50" />}
+                />
                 <Badge className="absolute top-1 right-1 bg-orange-500 text-white text-[10px] px-1.5">
                   🔥 Hot
                 </Badge>

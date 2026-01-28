@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface NewProduct {
   id: string;
@@ -129,20 +130,13 @@ export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSec
           >
             <CardContent className="p-3">
               <div className="relative mb-2">
-                {product.icon_url ? (
-                  <img
-                    src={product.icon_url}
-                    alt={product.name}
-                    className="w-full h-24 object-cover rounded-md bg-muted"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-24 rounded-md bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center">
-                    <ShoppingCart className="h-8 w-8 text-green-500/50" />
-                  </div>
-                )}
+                <OptimizedImage
+                  src={product.icon_url}
+                  alt={product.name}
+                  className="w-full h-24 rounded-md"
+                  aspectRatio="auto"
+                  fallbackIcon={<ShoppingCart className="h-8 w-8 text-green-500/50" />}
+                />
                 <Badge className="absolute top-1 right-1 bg-green-500 text-white text-[10px] px-1.5">
                   🆕 New
                 </Badge>
