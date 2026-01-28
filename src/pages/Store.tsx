@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -39,6 +39,13 @@ import StoreCategoryChips from '@/components/store/StoreCategoryChips';
 import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatContext';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import { useIsMobile } from '@/hooks/use-mobile';
+// Marketplace search components
+import { SearchSuggestions } from '@/components/marketplace/SearchSuggestions';
+import { VoiceSearchButton } from '@/components/marketplace/VoiceSearchButton';
+import { ImageSearchButton } from '@/components/marketplace/ImageSearchButton';
+import { SearchFiltersBar, FilterState } from '@/components/marketplace/SearchFiltersBar';
+import { MobileSearchOverlay } from '@/components/marketplace/MobileSearchOverlay';
+import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 
 interface SellerProfile {
   id: string;
@@ -62,6 +69,9 @@ interface SellerProfile {
   show_order_count?: boolean;
   show_description?: boolean;
   show_social_links?: boolean;
+  // Rating from BFF
+  averageRating?: number;
+  totalReviews?: number;
 }
 
 interface SellerProduct {
@@ -69,15 +79,18 @@ interface SellerProduct {
   name: string;
   description: string | null;
   price: number;
+  original_price?: number | null;
   icon_url: string | null;
+  images?: string[] | null;
   category_id: string | null;
-  is_available: boolean;
-  is_approved: boolean;
+  is_available?: boolean;
+  is_approved?: boolean;
   tags: string[] | null;
   stock: number | null;
   sold_count: number | null;
   chat_allowed: boolean | null;
   seller_id: string;
+  view_count?: number | null;
 }
 
 interface Category {
@@ -101,6 +114,7 @@ const StoreContent = () => {
   const { user, canMutate } = useAuthContext();
   const { openChat } = useFloatingChat();
   const isMobile = useIsMobile();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [products, setProducts] = useState<SellerProduct[]>([]);
@@ -123,6 +137,101 @@ const StoreContent = () => {
     shortfall: number;
     productName?: string;
   }>({ show: false, required: 0, current: 0, shortfall: 0 });
+
+  // Marketplace search features state
+  const [filterState, setFilterState] = useState<FilterState>({
+    priceMin: undefined,
+    priceMax: undefined,
+    minRating: null,
+    verifiedOnly: false,
+  });
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [searchInputFocused, setSearchInputFocused] = useState(false);
+
+  // Voice search hook
+  const handleVoiceResult = useCallback((text: string) => {
+    setSearchQuery(text);
+    setShowSuggestions(false);
+  }, []);
+
+  const {
+    isListening,
+    isSupported: voiceSupported,
+    error: voiceError,
+    startListening,
+    stopListening,
+  } = useVoiceSearch(handleVoiceResult);
+
+  // Generate search suggestions from products
+  const generateSuggestions = useCallback(() => {
+    if (!products.length) {
+      return {
+        recent: [],
+        trending: [],
+        products: [],
+        categories: [],
+        tags: [],
+        sellers: [],
+      };
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    const matchedProducts = query.length >= 2 
+      ? products.filter(p => 
+          p.name.toLowerCase().includes(query) ||
+          p.description?.toLowerCase().includes(query) ||
+          p.tags?.some(t => t.toLowerCase().includes(query))
+        ).slice(0, 5).map(p => ({
+          type: 'product' as const,
+          id: p.id,
+          text: p.name,
+          subtitle: `$${p.price}`,
+          icon_url: p.icon_url || undefined,
+          price: p.price,
+        }))
+      : [];
+
+    // Get trending products (by sold_count)
+    const trendingProducts = products
+      .filter(p => (p.sold_count || 0) > 0)
+      .sort((a, b) => (b.sold_count || 0) - (a.sold_count || 0))
+      .slice(0, 3)
+      .map(p => ({
+        type: 'trending' as const,
+        id: p.id,
+        text: p.name,
+        result_count: p.sold_count || 0,
+        icon_url: p.icon_url || undefined,
+      }));
+
+    // Get unique tags
+    const allTags = new Set<string>();
+    products.forEach(p => p.tags?.forEach(t => allTags.add(t)));
+    const matchedTags = query.length >= 2
+      ? Array.from(allTags)
+          .filter(t => t.toLowerCase().includes(query))
+          .slice(0, 3)
+          .map(t => ({ type: 'tag' as const, id: t, text: t }))
+      : [];
+
+    // Get matching categories
+    const matchedCategories = query.length >= 2
+      ? categories
+          .filter(c => c.name.toLowerCase().includes(query))
+          .slice(0, 3)
+          .map(c => ({ type: 'category' as const, id: c.id, text: c.name }))
+      : [];
+
+    return {
+      recent: [],
+      trending: query.length < 2 ? trendingProducts : [],
+      products: matchedProducts,
+      categories: matchedCategories,
+      tags: matchedTags,
+      sellers: [],
+    };
+  }, [products, categories, searchQuery]);
 
   // Handle return from auth with pending purchase or chat
   useEffect(() => {
@@ -180,6 +289,26 @@ const StoreContent = () => {
     }
   }, [user]);
 
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
+        const target = e.target as HTMLElement;
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          if (isMobile) {
+            setMobileSearchOpen(true);
+          } else {
+            searchInputRef.current?.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isMobile]);
+
   const fetchStoreData = async () => {
     setLoading(true);
     
@@ -207,6 +336,7 @@ const StoreContent = () => {
       }
 
       const data = await response.json();
+      console.log('[Store] BFF response:', { seller: data.seller?.store_name, productCount: data.products?.length });
       
       setSeller(data.seller as SellerProfile);
       setProducts(data.products || []);
@@ -215,6 +345,7 @@ const StoreContent = () => {
       console.error('[Store] BFF fetch error:', error);
       // Fallback to direct query if BFF fails (during deployment)
       try {
+        console.log('[Store] Falling back to direct Supabase query');
         const { data: sellerData } = await supabase
           .from('seller_profiles')
           .select('*')
@@ -223,11 +354,13 @@ const StoreContent = () => {
           .maybeSingle();
 
         if (!sellerData) {
+          console.log('[Store] No seller found for slug:', storeSlug);
           setLoading(false);
           return;
         }
 
         setSeller(sellerData as SellerProfile);
+        console.log('[Store] Seller found:', sellerData.store_name);
 
         const [productsResult, categoriesResult] = await Promise.all([
           supabase
@@ -243,6 +376,7 @@ const StoreContent = () => {
             .eq('is_active', true)
         ]);
 
+        console.log('[Store] Direct query products:', productsResult.data?.length || 0);
         if (productsResult.data) setProducts(productsResult.data);
         if (categoriesResult.data) setCategories(categoriesResult.data);
       } catch (fallbackError) {
@@ -373,12 +507,44 @@ const StoreContent = () => {
     }
   };
 
+  const handleSuggestionSelect = (suggestion: any) => {
+    if (suggestion.type === 'product') {
+      const product = products.find(p => p.id === suggestion.id);
+      if (product) setSelectedProduct(product);
+    } else if (suggestion.type === 'category') {
+      setSelectedCategory(suggestion.id);
+    } else if (suggestion.type === 'tag') {
+      handleTagSelect(suggestion.text);
+    } else if (suggestion.type === 'trending') {
+      const product = products.find(p => p.id === suggestion.id);
+      if (product) setSelectedProduct(product);
+    } else {
+      setSearchQuery(suggestion.text);
+    }
+    setShowSuggestions(false);
+  };
+
+  const handleImageSearchResult = (text: string) => {
+    setSearchQuery(text);
+    setShowSuggestions(false);
+  };
+
+  const handleSearch = () => {
+    setShowSuggestions(false);
+    setMobileSearchOpen(false);
+  };
+
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || product.category_id === selectedCategory;
     const matchesTags = selectedTags.length === 0 || product.tags?.some(tag => selectedTags.includes(tag));
-    return matchesSearch && matchesCategory && matchesTags;
+    
+    // Apply filter state
+    const matchesMinPrice = filterState.priceMin === undefined || product.price >= filterState.priceMin;
+    const matchesMaxPrice = filterState.priceMax === undefined || product.price <= filterState.priceMax;
+    
+    return matchesSearch && matchesCategory && matchesTags && matchesMinPrice && matchesMaxPrice;
   });
 
   const hasEnoughBalance = (price: number) => {
@@ -394,6 +560,8 @@ const StoreContent = () => {
   const showOrderCount = seller?.show_order_count !== false;
   const showDescription = seller?.show_description !== false;
   const showSocialLinks = seller?.show_social_links !== false;
+
+  const suggestions = generateSuggestions();
 
   if (loading) {
     return (
@@ -489,7 +657,7 @@ const StoreContent = () => {
                 {showReviews && (
                   <div className="flex items-center gap-1 md:gap-1.5 bg-white/20 backdrop-blur-sm px-2 md:px-3 py-1 md:py-1.5 rounded-full">
                     <Star className="w-3 md:w-4 h-3 md:h-4 text-amber-400 fill-amber-400" />
-                    <span className="text-xs md:text-sm font-semibold">4.9</span>
+                    <span className="text-xs md:text-sm font-semibold">{seller.averageRating || 4.9}</span>
                   </div>
                 )}
                 {showProductCount && (
@@ -592,10 +760,95 @@ const StoreContent = () => {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0 w-full">
-            {/* Search Bar - Single row: Filter + Search on mobile */}
-            <div className="grid grid-cols-[auto_1fr] gap-2 mb-3 md:mb-6 lg:block">
-              {/* Mobile Filter Button */}
-              <div className="lg:hidden">
+            {/* Search Bar - Amazon-style with marketplace features */}
+            <div className="mb-3 md:mb-4">
+              {/* Desktop Search Bar */}
+              <div className="hidden md:block relative">
+                <div className="flex items-stretch bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-emerald-200 focus-within:border-emerald-300">
+                  {/* Category Selector */}
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="bg-slate-100 border-r border-slate-200 px-3 py-3 text-sm font-medium text-slate-700 focus:outline-none cursor-pointer hover:bg-slate-200 transition-colors"
+                  >
+                    <option value="all">All Categories</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+
+                  {/* Search Input */}
+                  <div className="flex-1 relative">
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => {
+                        setSearchInputFocused(true);
+                        setShowSuggestions(true);
+                      }}
+                      onBlur={() => {
+                        setSearchInputFocused(false);
+                        // Delay closing to allow click on suggestions
+                        setTimeout(() => setShowSuggestions(false), 200);
+                      }}
+                      placeholder="Search products in this store..."
+                      className="w-full py-3 px-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none"
+                    />
+                    
+                    {/* Action buttons inside input */}
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                      <VoiceSearchButton
+                        isListening={isListening}
+                        isSupported={voiceSupported}
+                        error={voiceError}
+                        onStart={startListening}
+                        onStop={stopListening}
+                        className="h-8 w-8"
+                      />
+                      <ImageSearchButton
+                        onSearchResult={handleImageSearchResult}
+                        className="h-8 w-8"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery('')}
+                          className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                          <X size={16} className="text-slate-400" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Search Button */}
+                  <button
+                    onClick={handleSearch}
+                    className="bg-slate-900 hover:bg-slate-800 text-white px-6 font-semibold text-sm transition-colors flex items-center gap-2"
+                  >
+                    <Search size={18} />
+                    Search
+                  </button>
+                </div>
+
+                {/* Search Suggestions Dropdown */}
+                {showSuggestions && (searchQuery.length >= 2 || suggestions.trending.length > 0) && (
+                  <SearchSuggestions
+                    query={searchQuery}
+                    suggestions={suggestions}
+                    isLoading={false}
+                    isOpen={showSuggestions}
+                    onClose={() => setShowSuggestions(false)}
+                    onSelect={handleSuggestionSelect}
+                    className="mt-1"
+                  />
+                )}
+              </div>
+
+              {/* Mobile Search Row */}
+              <div className="md:hidden grid grid-cols-[auto_1fr] gap-2">
+                {/* Mobile Filter Button */}
                 <StoreSidebar
                   products={products}
                   categories={categories}
@@ -605,32 +858,26 @@ const StoreContent = () => {
                   onTagSelect={handleTagSelect}
                   onProductClick={(product) => setSelectedProduct(product)}
                 />
+
+                {/* Mobile Search Trigger */}
+                <button
+                  onClick={() => setMobileSearchOpen(true)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-left text-sm text-slate-400 shadow-sm flex items-center gap-3"
+                >
+                  <Search size={18} className="text-slate-400" />
+                  <span className="flex-1">Search products...</span>
+                  {voiceSupported && (
+                    <span className="text-slate-300">🎤</span>
+                  )}
+                </button>
               </div>
 
-              {/* Search Input */}
-              <div className="relative w-full">
-                <div className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 p-1.5 md:p-2 bg-slate-100 rounded-lg">
-                  <Search size={16} className="text-slate-500" />
-                </div>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search..."
-                  className="w-full bg-white border border-slate-200 rounded-xl md:rounded-2xl pl-11 md:pl-14 pr-10 py-3 md:py-4 text-sm md:text-base text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-all font-medium shadow-sm"
+              {/* Filter Bar - Desktop */}
+              <div className="hidden md:block mt-3">
+                <SearchFiltersBar
+                  filters={filterState}
+                  onFiltersChange={setFilterState}
                 />
-                {(searchQuery || selectedTags.length > 0 || selectedCategory !== 'all') && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setSelectedTags([]);
-                      setSelectedCategory('all');
-                    }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-slate-100 rounded-lg transition-colors tap-feedback"
-                  >
-                    <X size={16} className="text-slate-400" />
-                  </button>
-                )}
               </div>
             </div>
 
@@ -695,6 +942,12 @@ const StoreContent = () => {
                     setSearchQuery('');
                     setSelectedTags([]);
                     setSelectedCategory('all');
+                    setFilterState({
+                      priceMin: undefined,
+                      priceMax: undefined,
+                      minRating: null,
+                      verifiedOnly: false,
+                    });
                   }}
                   className="text-emerald-600 font-medium hover:underline text-sm md:text-base tap-feedback"
                 >
@@ -733,6 +986,24 @@ const StoreContent = () => {
           </div>
         </div>
       </main>
+
+      {/* Mobile Search Overlay */}
+      <MobileSearchOverlay
+        isOpen={mobileSearchOpen}
+        onClose={() => setMobileSearchOpen(false)}
+        query={searchQuery}
+        setQuery={setSearchQuery}
+        suggestions={suggestions}
+        isLoading={false}
+        onSelect={handleSuggestionSelect}
+        onSearch={handleSearch}
+        voiceSupported={voiceSupported}
+        isListening={isListening}
+        voiceError={voiceError}
+        onVoiceStart={startListening}
+        onVoiceStop={stopListening}
+        onImageSearchResult={handleImageSearchResult}
+      />
 
       {/* Product Details Modal */}
       <ProductDetailModal
