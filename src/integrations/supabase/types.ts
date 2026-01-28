@@ -1631,6 +1631,27 @@ export type Database = {
           },
         ]
       }
+      search_synonyms: {
+        Row: {
+          created_at: string | null
+          id: string
+          synonyms: string[]
+          term: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          synonyms?: string[]
+          term: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          synonyms?: string[]
+          term?: string
+        }
+        Relationships: []
+      }
       security_logs: {
         Row: {
           attempt_count: number | null
@@ -3124,6 +3145,8 @@ export type Database = {
         Args: { p_ip_address: string }
         Returns: undefined
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       update_seller_level: { Args: { p_seller_id: string }; Returns: undefined }
       update_seller_trust_score: {
         Args: { p_seller_id: string }

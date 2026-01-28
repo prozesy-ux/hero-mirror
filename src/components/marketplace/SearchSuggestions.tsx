@@ -16,6 +16,8 @@ interface SearchSuggestionsProps {
     tags: SearchSuggestion[];
     sellers: SearchSuggestion[];
     recentlyViewed?: SearchSuggestion[];
+    didYouMean?: string;
+    priceFilter?: { min?: number; max?: number };
   };
   isLoading: boolean;
   isOpen: boolean;
@@ -23,6 +25,7 @@ interface SearchSuggestionsProps {
   onSelect: (suggestion: SearchSuggestion) => void;
   onClearRecent?: () => void;
   onQuickAction?: (action: 'view' | 'buy', suggestion: SearchSuggestion) => void;
+  onDidYouMeanClick?: (text: string) => void;
   className?: string;
 }
 
@@ -35,6 +38,7 @@ export function SearchSuggestions({
   onSelect,
   onClearRecent,
   onQuickAction,
+  onDidYouMeanClick,
   className,
 }: SearchSuggestionsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -330,6 +334,32 @@ export function SearchSuggestions({
 
       {!isLoading && hasResults && (
         <div className="divide-y divide-border">
+          {/* Did you mean? */}
+          {suggestions.didYouMean && (
+            <div className="py-2 px-3">
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onDidYouMeanClick?.(suggestions.didYouMean!);
+                }}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                Did you mean: <span className="font-medium text-primary">{suggestions.didYouMean}</span>?
+              </button>
+            </div>
+          )}
+          
+          {/* Price filter indicator */}
+          {suggestions.priceFilter && (
+            <div className="py-2 px-3 flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                Price: {suggestions.priceFilter.min !== undefined ? `$${suggestions.priceFilter.min}` : '$0'} 
+                {' - '} 
+                {suggestions.priceFilter.max !== undefined ? `$${suggestions.priceFilter.max}` : '∞'}
+              </Badge>
+            </div>
+          )}
+          
           {renderSection('Recent Searches', suggestions.recent, recentStart, <Clock className="h-3.5 w-3.5 text-muted-foreground" />, true)}
           {renderSection('Trending Now', suggestions.trending, trendingStart, <TrendingUp className="h-3.5 w-3.5 text-primary" />)}
           {suggestions.recentlyViewed && suggestions.recentlyViewed.length > 0 && 
