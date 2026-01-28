@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { VoiceSearchButton } from './VoiceSearchButton';
 
 interface MobileSearchOverlayProps {
   isOpen: boolean;
@@ -25,6 +26,12 @@ interface MobileSearchOverlayProps {
   onSelect: (suggestion: SearchSuggestion) => void;
   onClearRecent?: () => void;
   onSearch: () => void;
+  // Voice search props
+  voiceSupported?: boolean;
+  isListening?: boolean;
+  voiceError?: string | null;
+  onVoiceStart?: () => void;
+  onVoiceStop?: () => void;
 }
 
 export function MobileSearchOverlay({
@@ -37,6 +44,11 @@ export function MobileSearchOverlay({
   onSelect,
   onClearRecent,
   onSearch,
+  voiceSupported = false,
+  isListening = false,
+  voiceError = null,
+  onVoiceStart,
+  onVoiceStop,
 }: MobileSearchOverlayProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { formatAmount } = useCurrency();
@@ -224,11 +236,26 @@ export function MobileSearchOverlay({
           <Input
             ref={inputRef}
             type="text"
-            placeholder="Search products, sellers, categories..."
+            placeholder={isListening ? 'Listening...' : 'Search products, sellers, categories...'}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-10 pr-10 h-11 text-base"
+            className="pl-10 pr-20 h-11 text-base"
           />
+          
+          {/* Voice Search Button */}
+          {voiceSupported && onVoiceStart && onVoiceStop && (
+            <div className="absolute right-10 top-1/2 -translate-y-1/2">
+              <VoiceSearchButton
+                isListening={isListening}
+                isSupported={voiceSupported}
+                error={voiceError}
+                onStart={onVoiceStart}
+                onStop={onVoiceStop}
+                size="sm"
+              />
+            </div>
+          )}
+          
           {query && (
             <button
               type="button"
