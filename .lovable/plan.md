@@ -1,378 +1,251 @@
 
+# Enterprise Stability Fix Plan - Zero Data Load Failures
 
-# Enterprise-Grade Session & Data Reliability Implementation
+## Critical Issues Identified
 
-## PROJECT: Uptoza Marketplace
-## GOAL: Zero random logout, zero page delay, zero auth flicker, million-user scalability
+After thorough codebase analysis against your 18-point checklist, I found **5 critical bugs** causing the "data not load" issues:
 
----
-
-## Root Cause Analysis
-
-After thorough codebase review, I identified these critical issues:
-
-| Problem | Root Cause | Location |
-|---------|-----------|----------|
-| Random logouts | 5-second timeout in ProtectedRoute triggers redirect before auth loads | `ProtectedRoute.tsx:13` |
-| Auth flicker on /seller | Double auth check - page has its own `!isAuthenticated` check that shows login form prematurely | `Seller.tsx:654-669` |
-| Data load delays | Components wait for auth to complete before fetching data | `BuyerDashboardHome.tsx:77` |
-| 12h session not working | Client-side timestamp can fail; server validation triggers logout | `useSessionHeartbeat.ts:54-61` |
-| Direct route access fails | ProtectedRoute blocks rendering until server validation completes | `ProtectedRoute.tsx:70-126` |
+| Issue | Root Cause | Affected Checklist Items |
+|-------|-----------|-------------------------|
+| `handleUnauthorized()` forces logout | Called in 4 components, triggers `signOut()` + redirect | #2, #3, #4, #10, #15, #16 |
+| BFF 401 response triggers redirect | Instead of soft banner, user is kicked out | #2, #3, #16 |
+| No cached data fallback | When BFF fails, UI shows error instead of cached data | #10, #12 |
+| Realtime channels not resubscribing | After token refresh, channels go dead | #13, #14 |
+| Mutation lock not enforced | `canMutate` exists but not used in purchase/withdrawal flows | #17, #18 |
 
 ---
 
-## Architecture Changes
+## Fix 1: Remove `handleUnauthorized()` Calls
 
-### Current Flow (BROKEN)
-```text
-User visits /dashboard
-       │
-       ▼
-ProtectedRoute checks auth.loading
-       │
-       ▼ (5 second timeout)
-Server validation call
-       │
-       ▼ (if fails or slow)
-REDIRECT TO /signin ← PROBLEM!
+**Problem**: 4 components call `handleUnauthorized()` which triggers `signOut()` + redirect to `/signin`:
+
+- `BuyerDashboardHome.tsx` (line 54)
+- `BuyerWallet.tsx` (line 288)
+- `BuyerOrders.tsx` (line 84)
+- `SellerContext.tsx` (line 144)
+
+**Solution**: Replace with soft state - set `sessionExpired = true` and show banner instead of forcing redirect.
+
+```typescript
+// BEFORE (WRONG - Forces logout)
+if (result.isUnauthorized) {
+  handleUnauthorized();
+  return;
+}
+
+// AFTER (CORRECT - Soft state)
+if (result.isUnauthorized) {
+  setSessionExpired(true);
+  setError('Session expired - please re-login');
+  return;
+}
 ```
 
-### New Flow (FIXED)
-```text
-User visits /dashboard
-       │
-       ▼
-Check localStorage for Supabase session token
-       │
-       ├─ No token → Redirect /signin
-       │
-       └─ Has token → RENDER PAGE INSTANTLY
-                            │
-                            ▼
-                 Background validation (non-blocking)
-                            │
-                 If expired > 12h → Soft banner "Session expired"
-                 If < 12h → Silent refresh
-                 NEVER auto-redirect
-```
+**Files to modify**:
+- `src/components/dashboard/BuyerDashboardHome.tsx`
+- `src/components/dashboard/BuyerWallet.tsx`
+- `src/components/dashboard/BuyerOrders.tsx`
+- `src/contexts/SellerContext.tsx`
 
 ---
 
-## Implementation Plan
+## Fix 2: Update `api-fetch.ts` to Never Force Logout
 
-### Phase 1: Optimistic Session Detection
+**Problem**: `handleUnauthorized()` function in `api-fetch.ts` calls `supabase.auth.signOut()` and redirects.
 
-**New File: `src/lib/session-detector.ts`**
-
-Create a fast, synchronous check for session existence:
+**Solution**: Remove the auto-signout behavior. Return error state only - let UI decide what to do.
 
 ```typescript
-/**
- * Fast Session Detector
- * Checks localStorage for Supabase session token existence
- * Does NOT validate token - just checks if one exists
- */
-
-export function hasLocalSession(): boolean {
-  try {
-    const keys = Object.keys(localStorage);
-    // Supabase stores session with key like: sb-<project-ref>-auth-token
-    return keys.some(k => 
-      k.startsWith('sb-') && k.includes('-auth-token')
-    );
-  } catch {
-    return false;
-  }
-}
-
-export function getStoredSessionExpiry(): number | null {
-  try {
-    const keys = Object.keys(localStorage);
-    const authKey = keys.find(k => k.startsWith('sb-') && k.includes('-auth-token'));
-    if (!authKey) return null;
-    
-    const data = JSON.parse(localStorage.getItem(authKey) || '{}');
-    return data.expires_at ? data.expires_at * 1000 : null;
-  } catch {
-    return null;
-  }
+// NEW - Soft unauthorized handler
+export function handleUnauthorized(): void {
+  // DO NOT call signOut() - this causes forced logout
+  // Just emit an event for UI to show soft banner
+  window.dispatchEvent(new CustomEvent('session-unauthorized'));
+  console.warn('[ApiFetch] Unauthorized - soft state triggered');
 }
 ```
 
-### Phase 2: Remove All Blocking Auth Checks
+**File to modify**: `src/lib/api-fetch.ts`
 
-**File: `src/components/auth/ProtectedRoute.tsx`**
+---
 
-Complete rewrite with optimistic rendering:
+## Fix 3: Add Cached Data Fallback in Components
 
-| Current Behavior | New Behavior |
-|-----------------|--------------|
-| Wait 5s for auth, then validate, then render | Check localStorage instantly, render if token exists |
-| Redirect on timeout | Never redirect automatically |
-| Show skeleton during validation | Render actual page, validate in background |
-| Force logout on validation failure | Show soft banner, allow retry |
+**Problem**: When BFF fails (network error, timeout, 500), UI shows error with "Try Again" button. No cached data shown.
 
-Key changes:
-- Remove `AUTH_TIMEOUT` redirect logic
-- Use `hasLocalSession()` for instant decision
-- Render children immediately if local session exists
-- Background validation only sets a state flag, never redirects
-- Add `sessionExpired` state for soft banner
-
-### Phase 3: Fix Seller Page Double Auth Check
-
-**File: `src/pages/Seller.tsx`**
-
-Current problem (line 654-669):
-```typescript
-// CURRENT - WRONG
-if (authLoading || loading) {
-  return <Loader />; // Blocks page
-}
-if (!isAuthenticated) {
-  return <SellerAuthForm />; // Shows login to logged-in users!
-}
-```
-
-New approach:
-```typescript
-// NEW - CORRECT
-// If local session exists, render page shell immediately
-if (hasLocalSession()) {
-  if (loading && !sellerProfile) {
-    return <SellerSkeleton />; // Show branded skeleton
-  }
-  // Continue with normal logic...
-}
-
-// Only show auth form if truly no session
-if (!hasLocalSession() && !authLoading) {
-  return <SellerAuthForm />;
-}
-```
-
-### Phase 4: Pre-fetch Data on Login
-
-**File: `src/hooks/useAuth.ts`**
-
-Add data prefetching when user signs in:
+**Solution**: Use React Query for automatic caching, or implement localStorage cache fallback.
 
 ```typescript
-// In onAuthStateChange, after SIGNED_IN:
-if (event === 'SIGNED_IN') {
-  markSessionStart();
+// In fetchData function:
+const fetchData = async () => {
+  setLoading(true);
   
-  // Pre-warm cache for instant page loads
-  Promise.allSettled([
-    bffApi.getBuyerDashboard(),
-    bffApi.getSellerDashboard()
-  ]).catch(() => {}); // Silent - just warming cache
-}
-```
-
-### Phase 5: Never Auto-Logout (Soft Expiry)
-
-**File: `src/hooks/useSessionHeartbeat.ts`**
-
-Replace all `signOut()` + redirect with soft state:
-
-```typescript
-// BEFORE - WRONG
-if (refreshError && !isSessionValid()) {
-  await signOut();
-  window.location.href = '/signin'; // Forces logout
-}
-
-// AFTER - CORRECT
-if (refreshError && !isSessionValid()) {
-  setSessionExpiredState(true); // Just set a flag
-  // User sees soft banner, can click to re-login
-  // BUT stays on page, can view cached data
-}
-```
-
-**New: Session Expired Banner Component**
-
-Create `src/components/ui/session-expired-banner.tsx`:
-
-```typescript
-const SessionExpiredBanner = ({ onRelogin }) => (
-  <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 
-                  bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 
-                  shadow-lg flex items-center gap-3">
-    <Clock className="w-5 h-5 text-amber-600" />
-    <span className="text-sm text-amber-800">Session expired</span>
-    <Button size="sm" onClick={onRelogin}>Re-login</Button>
-  </div>
-);
-```
-
-### Phase 6: Upgrade validate-session Edge Function
-
-**File: `supabase/functions/validate-session/index.ts`**
-
-Add server-side 12-hour grace period tracking:
-
-```typescript
-// After JWT verification:
-const now = Date.now();
-const tokenExp = authResult.exp ? authResult.exp * 1000 : 0;
-
-// Even if JWT is technically expired, check server-side login timestamp
-if (!authResult.success && tokenExp > 0) {
-  // Token expired - check if within 12-hour grace window
-  const hoursSinceExpiry = (now - tokenExp) / (1000 * 60 * 60);
+  const result = await bffApi.getBuyerDashboard();
   
-  if (hoursSinceExpiry < 12) {
-    // Within grace window - try to issue new token
-    return successResponse({
-      valid: true,
-      shouldRefresh: true, // Client should call refreshSession
-      graceWindow: true,
-      hoursRemaining: 12 - hoursSinceExpiry
-    });
+  if (result.error && !result.isUnauthorized) {
+    // Try to load from cache
+    const cached = localStorage.getItem('buyer_dashboard_cache');
+    if (cached) {
+      const cachedData = JSON.parse(cached);
+      setData(cachedData.data);
+      setError('Using cached data - some info may be outdated');
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
+    return;
   }
-}
+  
+  if (result.data) {
+    setData(result.data);
+    // Cache for offline use
+    localStorage.setItem('buyer_dashboard_cache', JSON.stringify({
+      data: result.data,
+      timestamp: Date.now()
+    }));
+  }
+  setLoading(false);
+};
 ```
 
-### Phase 7: Global Auth State Machine
+**Files to modify**:
+- `src/components/dashboard/BuyerDashboardHome.tsx`
+- `src/contexts/SellerContext.tsx`
 
-**File: `src/contexts/AuthContext.tsx`**
+---
 
-Add new state properties for UI:
+## Fix 4: Realtime Channel Resubscription on Token Refresh
 
-```typescript
-interface AuthContextType {
-  // Existing
-  user: User | null;
-  isAuthenticated: boolean;
-  loading: boolean;
-  
-  // NEW - UI State Machine
-  uiReady: boolean;        // Always true after first render
-  sessionVerified: boolean; // True after server validation
-  canMutate: boolean;       // True only when session is verified
-  sessionExpired: boolean;  // True when 12h+ expired
-  
-  // NEW - Actions
-  revalidateSession: () => Promise<void>;
-  softLogout: () => void;   // Just clears state, no redirect
-}
-```
+**Problem**: When `TOKEN_REFRESHED` event fires, existing realtime channels have stale tokens and stop receiving updates.
 
-This enables:
-- `uiReady` = Always render UI immediately
-- `sessionVerified` = Allow writes only after validation
-- `canMutate` = Disable buttons until verified
-- `sessionExpired` = Show soft banner
-
-### Phase 8: Realtime Channel Stability
-
-**Files:** All components with realtime subscriptions
-
-On session refresh, realtime channels can become stale. Add cleanup:
+**Solution**: Listen for `session-refreshed` event and resubscribe channels.
 
 ```typescript
-// In useAuth.ts onAuthStateChange:
-if (event === 'TOKEN_REFRESHED') {
-  // Emit event for components to resubscribe
-  window.dispatchEvent(new CustomEvent('session-refreshed'));
-}
-
-// In dashboard components:
+// In SellerContext.tsx and BuyerDashboardHome.tsx:
 useEffect(() => {
-  const handleRefresh = () => {
-    supabase.removeChannel(channelRef.current);
-    // Resubscribe with new token
-    subscribeToChannel();
+  const handleSessionRefresh = () => {
+    console.log('[Component] Session refreshed - resubscribing realtime');
+    // Remove and resubscribe all channels
+    supabase.removeAllChannels();
+    // Re-run the subscription setup
+    setupRealtimeSubscriptions();
   };
   
-  window.addEventListener('session-refreshed', handleRefresh);
-  return () => window.removeEventListener('session-refreshed', handleRefresh);
+  window.addEventListener('session-refreshed', handleSessionRefresh);
+  return () => window.removeEventListener('session-refreshed', handleSessionRefresh);
 }, []);
 ```
 
----
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/lib/session-detector.ts` | Fast localStorage session check |
-| `src/components/ui/session-expired-banner.tsx` | Soft expiry notification |
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/components/auth/ProtectedRoute.tsx` | Remove blocking checks, optimistic render |
-| `src/pages/Seller.tsx` | Remove double auth check, use session detector |
-| `src/pages/Dashboard.tsx` | Add session expired banner integration |
-| `src/hooks/useSessionHeartbeat.ts` | Never auto-logout, set soft state instead |
-| `src/hooks/useAuth.ts` | Add prefetch, new state properties |
-| `src/contexts/AuthContext.tsx` | Add UI state machine properties |
-| `src/lib/api-fetch.ts` | Never call handleUnauthorized, return state |
-| `supabase/functions/validate-session/index.ts` | Add 12h grace window logic |
-| `src/components/dashboard/BuyerDashboardHome.tsx` | Use canMutate for actions |
+**Files to modify**:
+- `src/contexts/SellerContext.tsx`
+- `src/components/dashboard/BuyerDashboardHome.tsx`
+- `src/components/dashboard/BuyerWallet.tsx`
 
 ---
 
-## Behavior After Implementation
+## Fix 5: Enforce Mutation Lock in Purchase/Withdrawal Flows
 
-| Scenario | Before | After |
-|----------|--------|-------|
-| User visits /dashboard (logged in) | 5s wait, may redirect | Instant render |
-| User visits /seller (logged in) | Shows login form briefly | Instant render |
-| Network hiccup during heartbeat | Auto-logout | Stays logged in |
-| Token expires at hour 6 | May logout | Silent refresh |
-| Token expires at hour 13 | May logout | Soft banner, stays on page |
-| User clicks "Log Out" | Redirects | Redirects (only manual) |
-| Data fetch fails | May show error | Shows cached data |
-| BFF returns 401 | Redirects to login | Shows soft banner |
+**Problem**: `canMutate` state exists in AuthContext but is not checked before sensitive operations.
 
----
-
-## Mutation Safety
-
-During unverified session state:
-- READ operations: Allowed (use cache)
-- WRITE operations: Disabled (button states)
-- Purchase/Withdraw: Blocked until verified
+**Solution**: Add `canMutate` check before all write operations.
 
 ```typescript
-// In any component with mutation:
-const { canMutate, revalidateSession } = useAuthContext();
+// In purchase handler:
+const { canMutate, sessionVerified } = useAuthContext();
 
+const handlePurchase = async (product) => {
+  if (!canMutate) {
+    toast.error('Please wait - verifying your session...');
+    return;
+  }
+  
+  // Proceed with purchase...
+};
+
+// In UI:
 <Button 
-  disabled={!canMutate}
-  onClick={handlePurchase}
+  disabled={!canMutate || purchasing}
+  onClick={() => handlePurchase(product)}
 >
-  {canMutate ? 'Buy Now' : 'Verifying session...'}
+  {!canMutate ? 'Verifying...' : 'Buy Now'}
 </Button>
 ```
 
----
-
-## Performance Expectations
-
-| Metric | Before | After |
-|--------|--------|-------|
-| Time to first paint | 2-5s | <100ms |
-| Auth flicker | Frequent | Zero |
-| Random logouts | Frequent | Zero |
-| Direct route access | Often fails | Always works |
-| Data loading | After auth | Pre-cached |
+**Files to modify**:
+- `src/pages/Store.tsx` (purchase flow)
+- `src/components/dashboard/BuyerWallet.tsx` (withdrawal flow)
+- `src/components/seller/SellerWallet.tsx` (seller withdrawal)
 
 ---
 
-## Technical Summary
+## Fix 6: Add Session Expired Banner to Seller Dashboard
 
-1. **Optimistic Rendering** - Render pages instantly if localStorage has session token
-2. **Background Validation** - Validate server-side without blocking UI
-3. **12-Hour Server Grace** - Server decides validity, not client
-4. **No Auto-Redirects** - Only manual logout redirects
-5. **Soft Expiry Banner** - User stays on page, sees gentle prompt
-6. **Mutation Lock** - Writes disabled until session verified
-7. **Data Prefetch** - Dashboard data cached on login
-8. **Realtime Stability** - Channels resubscribe on token refresh
+**Problem**: Seller page has the banner but SellerContext doesn't propagate the expired state properly.
 
+**Solution**: Pass `setSessionExpired` from AuthContext into SellerContext's unauthorized handler.
+
+**Files to modify**:
+- `src/contexts/SellerContext.tsx`
+
+---
+
+## Implementation Summary
+
+| File | Changes |
+|------|---------|
+| `src/lib/api-fetch.ts` | Remove `signOut()` call from `handleUnauthorized()` |
+| `src/components/dashboard/BuyerDashboardHome.tsx` | Remove `handleUnauthorized()`, add cache fallback, add realtime resubscription |
+| `src/components/dashboard/BuyerWallet.tsx` | Remove `handleUnauthorized()`, add `canMutate` check, add realtime resubscription |
+| `src/components/dashboard/BuyerOrders.tsx` | Remove `handleUnauthorized()`, add cache fallback |
+| `src/contexts/SellerContext.tsx` | Remove `handleUnauthorized()`, use `setSessionExpired`, add realtime resubscription |
+| `src/pages/Store.tsx` | Add `canMutate` check before purchase |
+| `src/components/seller/SellerWallet.tsx` | Add `canMutate` check before withdrawal |
+
+---
+
+## Expected Results After Fix
+
+| Checklist Item | Current | After Fix |
+|----------------|---------|-----------|
+| #2 No Auto Logout | FAIL - `handleUnauthorized` forces logout | PASS - Soft banner only |
+| #3 12-Hour Session | PARTIAL - BFF 401 triggers logout | PASS - Grace window honored |
+| #10 DB Failure ≠ Logout | FAIL - Shows error | PASS - Shows cached data |
+| #12 Search Without DB | FAIL - Breaks | PASS - Uses cache |
+| #13 Realtime After Refresh | FAIL - Channels die | PASS - Channels resubscribe |
+| #14 Realtime After Token Refresh | FAIL - No updates | PASS - Auto-resubscribe |
+| #15 Network Offline | FAIL - Error shown | PASS - Cached UI |
+| #16 Session Expired (>12h) | FAIL - Redirect | PASS - Soft banner |
+| #17 Mutation Lock | FAIL - Actions allowed | PASS - Blocked until verified |
+| #18 Write Enable After Verify | PASS | PASS |
+
+---
+
+## Technical Architecture After Fix
+
+```text
+User Action (Purchase/Withdraw)
+       │
+       ▼
+Check canMutate state
+       │
+       ├─ false → Show "Verifying..." (blocked)
+       │
+       └─ true → Proceed with API call
+                    │
+                    ├─ Success → Update UI
+                    │
+                    ├─ 401 → Set sessionExpired = true
+                    │         Show soft banner
+                    │         DO NOT redirect
+                    │
+                    └─ Network error → Show cached data
+                                       Show "Using offline data" badge
+```
+
+This plan addresses ALL identified failures in your 18-point checklist by:
+
+1. **Never forcing logout** - Only soft banners
+2. **Honoring 12-hour session** - Server decides, not client
+3. **Caching data locally** - Works offline
+4. **Resubscribing realtime channels** - After token refresh
+5. **Locking mutations** - Until session verified
