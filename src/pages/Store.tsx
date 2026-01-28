@@ -37,6 +37,7 @@ import ShareStoreModal from '@/components/seller/ShareStoreModal';
 import MobileStoreHeader from '@/components/store/MobileStoreHeader';
 import StoreCategoryChips from '@/components/store/StoreCategoryChips';
 import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatContext';
+import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import { useIsMobile } from '@/hooks/use-mobile';
 // Marketplace search components
@@ -1128,12 +1129,14 @@ const StoreContent = () => {
   );
 };
 
-// Main Store component wrapped with FloatingChatProvider
+// Main Store component wrapped with CurrencyProvider and FloatingChatProvider
 const Store = () => {
   return (
-    <FloatingChatProvider>
-      <StoreContent />
-    </FloatingChatProvider>
+    <CurrencyProvider>
+      <FloatingChatProvider>
+        <StoreContent />
+      </FloatingChatProvider>
+    </CurrencyProvider>
   );
 };
 
