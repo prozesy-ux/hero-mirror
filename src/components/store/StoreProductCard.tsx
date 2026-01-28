@@ -1,4 +1,5 @@
 import { Star, MessageCircle, Eye, Wallet, Loader2, Package, TrendingUp, Store } from 'lucide-react';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface SellerProduct {
   id: string;
@@ -39,26 +40,14 @@ const StoreProductCard = ({
   return (
     <div className="group bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-200 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
       {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-50">
-        {product.icon_url ? (
-          <img 
-            src={product.icon_url} 
-            alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            onError={(e) => {
-              const target = e.currentTarget;
-              target.style.display = 'none';
-              const fallback = target.nextElementSibling as HTMLElement;
-              if (fallback) fallback.style.display = 'flex';
-            }}
-          />
-        ) : null}
-        <div 
-          className="w-full h-full flex items-center justify-center absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-50"
-          style={{ display: product.icon_url ? 'none' : 'flex' }}
-        >
-          <Package className="h-16 w-16 text-slate-300" />
-        </div>
+      <div className="relative aspect-[4/3] overflow-hidden">
+        <OptimizedImage
+          src={product.icon_url}
+          alt={product.name}
+          aspectRatio="4/3"
+          className="w-full h-full transition-transform duration-500 group-hover:scale-105"
+          fallbackIcon={<Package className="h-16 w-16 text-slate-300" />}
+        />
 
         {/* Store Badge */}
         <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 backdrop-blur-sm text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm border border-slate-100">

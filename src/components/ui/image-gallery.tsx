@@ -12,6 +12,7 @@ import {
   Package,
   Maximize2
 } from 'lucide-react';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface ImageGalleryProps {
   images: string[];
@@ -127,12 +128,13 @@ const ImageGallery = ({
   return (
     <div className={cn('space-y-3', className)}>
       {/* Main Image Container */}
-      <div className={cn('relative rounded-2xl overflow-hidden bg-slate-100 group', aspectRatioClass)}>
-        <img
+      <div className={cn('relative rounded-2xl overflow-hidden group', aspectRatioClass)}>
+        <OptimizedImage
           src={currentImage}
           alt={`${alt} ${currentIndex + 1}`}
-          className="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full cursor-pointer transition-transform duration-300 group-hover:scale-105"
           onClick={openLightbox}
+          priority={currentIndex === 0}
         />
         
         {/* Navigation Arrows */}
@@ -191,10 +193,11 @@ const ImageGallery = ({
                   : 'border-transparent hover:border-slate-300'
               )}
             >
-              <img
+              <OptimizedImage
                 src={img}
                 alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full"
+                aspectRatio="square"
               />
             </button>
           ))}

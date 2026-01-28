@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
-import { X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { X, Image as ImageIcon, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { prepareImageForUpload, formatFileSize, calculateSavings } from '@/lib/image-optimizer';
 
 interface ImageUploaderProps {
   value: string | null;
@@ -18,6 +19,11 @@ const ImageUploader = ({
 }: ImageUploaderProps) => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState<{ 
+    original: number; 
+    compressed: number; 
+    percentage: number 
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File) => {
@@ -26,20 +32,31 @@ const ImageUploader = ({
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image must be less than 10MB');
       return;
     }
 
     setUploading(true);
+    setCompressionInfo(null);
 
     try {
-      const fileExt = file.name.split('.').pop();
+      // Compress image before upload
+      const { file: compressedFile, originalSize, compressedSize } = await prepareImageForUpload(file, 'full');
+      const { percentage } = calculateSavings(originalSize, compressedSize);
+      
+      setCompressionInfo({
+        original: originalSize,
+        compressed: compressedSize,
+        percentage
+      });
+
+      const fileExt = compressedFile.name.split('.').pop();
       const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, compressedFile, { upsert: true });
 
       if (uploadError) {
         console.error('Upload error details:', uploadError);
@@ -51,10 +68,11 @@ const ImageUploader = ({
         .getPublicUrl(fileName);
 
       onChange(publicUrl);
-      toast.success('Image uploaded successfully');
+      toast.success(`Image optimized & uploaded (${percentage}% smaller)`);
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error(error?.message || 'Failed to upload image');
+      setCompressionInfo(null);
     } finally {
       setUploading(false);
     }
@@ -72,6 +90,7 @@ const ImageUploader = ({
         await supabase.storage.from(bucket).remove([filePath]);
       }
       onChange(null);
+      setCompressionInfo(null);
       toast.success('Image removed');
     } catch (error) {
       console.error('Remove error:', error);
@@ -116,6 +135,8 @@ const ImageUploader = ({
             src={value}
             alt="Prompt preview"
             className="w-full h-48 object-cover rounded-lg border border-gray-700"
+            loading="lazy"
+            decoding="async"
           />
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-3">
             <button
@@ -133,6 +154,13 @@ const ImageUploader = ({
               <X size={20} />
             </button>
           </div>
+          {/* Compression info badge */}
+          {compressionInfo && (
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 bg-emerald-500/90 text-white rounded-md text-xs font-medium">
+              <CheckCircle2 size={12} />
+              <span>{compressionInfo.percentage}% smaller</span>
+            </div>
+          )}
         </div>
       ) : (
         <div
@@ -151,7 +179,12 @@ const ImageUploader = ({
           {uploading ? (
             <div className="flex flex-col items-center">
               <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
-              <p className="text-gray-400 text-sm mt-2">Uploading...</p>
+              <p className="text-gray-400 text-sm mt-2">Optimizing & uploading...</p>
+              {compressionInfo && (
+                <p className="text-emerald-400 text-xs mt-1">
+                  {formatFileSize(compressionInfo.original)} → {formatFileSize(compressionInfo.compressed)}
+                </p>
+              )}
             </div>
           ) : (
             <>
@@ -160,7 +193,7 @@ const ImageUploader = ({
               </div>
               <p className="text-gray-400 text-sm mb-1">Drag & drop an image here</p>
               <p className="text-gray-500 text-xs">or click to browse</p>
-              <p className="text-gray-600 text-xs mt-2">Max 5MB • JPG, PNG, GIF, WebP</p>
+              <p className="text-gray-600 text-xs mt-2">Max 10MB • Auto-optimized to WebP</p>
             </>
           )}
         </div>

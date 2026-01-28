@@ -1,4 +1,5 @@
 import { Star, Loader2, Package, Wallet } from 'lucide-react';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface SellerProduct {
   id: string;
@@ -36,27 +37,14 @@ const StoreProductCardCompact = ({
       className="group bg-white rounded-xl overflow-hidden border border-slate-100 shadow-sm active:scale-[0.98] transition-all duration-150 cursor-pointer tap-feedback mobile-card-touch"
     >
       {/* Image - Square aspect for compact view */}
-      <div className="relative aspect-square overflow-hidden bg-slate-50">
-        {product.icon_url ? (
-          <img 
-            src={product.icon_url} 
-            alt={product.name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            onError={(e) => {
-              const target = e.currentTarget;
-              target.style.display = 'none';
-              const fallback = target.nextElementSibling as HTMLElement;
-              if (fallback) fallback.style.display = 'flex';
-            }}
-          />
-        ) : null}
-        <div 
-          className="w-full h-full flex items-center justify-center absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-50"
-          style={{ display: product.icon_url ? 'none' : 'flex' }}
-        >
-          <Package className="h-10 w-10 text-slate-300" />
-        </div>
+      <div className="relative aspect-square overflow-hidden">
+        <OptimizedImage
+          src={product.icon_url}
+          alt={product.name}
+          aspectRatio="square"
+          className="w-full h-full"
+          fallbackIcon={<Package className="h-10 w-10 text-slate-300" />}
+        />
 
         {/* Low Balance Overlay */}
         {isLoggedIn && !hasEnoughBalance && (

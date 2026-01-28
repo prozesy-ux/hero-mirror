@@ -3,7 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-  'Cache-Control': 'public, max-age=30, stale-while-revalidate=60',
+  // Cloudflare CDN optimized caching: 5 min cache, 10 min stale-while-revalidate
+  'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+  'Vary': 'Accept-Encoding',
 };
 
 Deno.serve(async (req) => {
