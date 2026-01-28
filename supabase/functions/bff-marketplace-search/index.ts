@@ -22,6 +22,7 @@ interface SearchResponse {
   categories: SearchSuggestion[];
   tags: SearchSuggestion[];
   sellers: SearchSuggestion[];
+  recentlyViewed: SearchSuggestion[];
 }
 
 Deno.serve(async (req) => {
@@ -60,6 +61,7 @@ Deno.serve(async (req) => {
       categories: [],
       tags: [],
       sellers: [],
+      recentlyViewed: [],
     };
 
     // If logging a search, just log and return
@@ -82,7 +84,7 @@ Deno.serve(async (req) => {
     }
 
     // Fetch data in parallel using Promise.all with async functions
-    const [recentResult, trendingResult, productsResult, categoriesResult, sellersResult] = await Promise.all([
+    const [recentResult, trendingResult, productsResult, categoriesResult, sellersResult, recentlyViewedResult] = await Promise.all([
       // 1. Recent searches (user-specific, only if authenticated)
       (async () => {
         if (!userId) return { type: "recent", data: [] };
@@ -158,6 +160,56 @@ Deno.serve(async (req) => {
           .limit(4);
         return { type: "sellers", data };
       })(),
+
+      // 6. Recently viewed products (user-specific)
+      (async () => {
+        if (!userId) return { type: "recentlyViewed", data: [] };
+        
+        // Get recently viewed product IDs
+        const { data: viewedData } = await serviceClient
+          .from("recently_viewed")
+          .select("product_id, product_type, viewed_at")
+          .eq("user_id", userId)
+          .order("viewed_at", { ascending: false })
+          .limit(5);
+
+        if (!viewedData || viewedData.length === 0) {
+          return { type: "recentlyViewed", data: [] };
+        }
+
+        // Separate AI accounts and seller products
+        const aiIds = viewedData.filter(v => v.product_type === 'ai_account').map(v => v.product_id);
+        const sellerIds = viewedData.filter(v => v.product_type !== 'ai_account').map(v => v.product_id);
+
+        const [aiProducts, sellerProducts] = await Promise.all([
+          aiIds.length > 0
+            ? serviceClient
+                .from("ai_accounts")
+                .select("id, name, price, icon_url")
+                .in("id", aiIds)
+                .eq("is_available", true)
+            : Promise.resolve({ data: [] }),
+          sellerIds.length > 0
+            ? serviceClient
+                .from("seller_products")
+                .select("id, name, price, icon_url, seller_profiles(store_name)")
+                .in("id", sellerIds)
+                .eq("is_available", true)
+                .eq("is_approved", true)
+            : Promise.resolve({ data: [] }),
+        ]);
+
+        // Combine and sort by original view order
+        const productMap = new Map<string, any>();
+        (aiProducts.data || []).forEach((p: any) => productMap.set(p.id, { ...p, source: 'ai' }));
+        (sellerProducts.data || []).forEach((p: any) => productMap.set(p.id, { ...p, source: 'seller' }));
+
+        const orderedProducts = viewedData
+          .map(v => productMap.get(v.product_id))
+          .filter(Boolean);
+
+        return { type: "recentlyViewed", data: orderedProducts };
+      })(),
     ]);
 
     // Process results
@@ -229,6 +281,18 @@ Deno.serve(async (req) => {
         text: s.store_name,
         icon_url: s.store_logo_url,
         subtitle: s.is_verified ? "Verified Seller" : "Seller",
+      }));
+    }
+
+    // Recently viewed products
+    if (recentlyViewedResult.data && Array.isArray(recentlyViewedResult.data)) {
+      response.recentlyViewed = recentlyViewedResult.data.map((p: any) => ({
+        type: "product" as const,
+        id: p.id,
+        text: p.name,
+        price: p.price,
+        icon_url: p.icon_url,
+        subtitle: p.source === 'ai' ? 'AI Account' : (p.seller_profiles?.store_name || 'Seller Product'),
       }));
     }
 

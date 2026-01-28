@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import MarketplaceSidebar from './MarketplaceSidebar';
 import { useFloatingChat } from '@/contexts/FloatingChatContext';
 import { SearchSuggestions } from '@/components/marketplace/SearchSuggestions';
+import { MobileSearchOverlay } from '@/components/marketplace/MobileSearchOverlay';
 import { useSearchSuggestions, SearchSuggestion } from '@/hooks/useSearchSuggestions';
 import { sendEmail } from '@/lib/email-sender';
 import { HotProductsSection } from '@/components/marketplace/HotProductsSection';
@@ -211,6 +212,9 @@ const AIAccountsSection = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Mobile search overlay state
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
   // Search suggestions hook
   const {
     suggestions,
@@ -222,6 +226,31 @@ const AIAccountsSection = () => {
     clearRecentSearches,
     setQuery: setSuggestionsQuery,
   } = useSearchSuggestions();
+
+  // "/" keyboard shortcut to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input/textarea
+      if (
+        e.key === '/' &&
+        !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName) &&
+        !(e.target as HTMLElement).isContentEditable
+      ) {
+        e.preventDefault();
+        if (window.innerWidth < 1024) {
+          // Mobile: open overlay
+          setMobileSearchOpen(true);
+        } else {
+          // Desktop: focus search input
+          searchInputRef.current?.focus();
+          openSuggestions();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [openSuggestions]);
 
   // Handle search suggestion selection
   const handleSuggestionSelect = useCallback((suggestion: SearchSuggestion) => {
@@ -1099,48 +1128,19 @@ const AIAccountsSection = () => {
         {/* Mobile Search Bar - Sticky at top */}
         <div className="lg:hidden sticky top-0 z-10 bg-white/95 backdrop-blur-md pb-3 pt-3 -mx-3 px-3 border-b border-gray-100 mb-4">
           <div className="grid grid-cols-[1fr,auto] gap-2">
-            <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
-              <input 
-                type="text" 
-                value={searchQuery} 
-                onChange={e => setSearchQuery(e.target.value)} 
-                onFocus={openSuggestions}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchQuery.length >= 2) {
-                    logSearch(searchQuery, categoryFilter);
-                    closeSuggestions();
-                  }
-                }}
-                placeholder="Search..." 
-                className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-8 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-300 transition-all shadow-sm" 
-              />
-              {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
-                <button 
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedTags([]);
-                    setCategoryFilter('all');
-                    closeSuggestions();
-                  }} 
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-md transition-colors z-10"
-                >
-                  <X size={14} className="text-gray-400" />
-                </button>
+            {/* Mobile Search Button - Opens Full Screen Overlay */}
+            <button
+              onClick={() => setMobileSearchOpen(true)}
+              className="flex items-center gap-2 w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-left shadow-sm active:scale-[0.98] transition-transform"
+            >
+              <Search size={16} className="text-gray-400" />
+              {searchQuery ? (
+                <span className="text-sm text-gray-900 truncate flex-1">{searchQuery}</span>
+              ) : (
+                <span className="text-sm text-gray-400 flex-1">Search products...</span>
               )}
-              
-              {/* Mobile Search Suggestions */}
-              <SearchSuggestions
-                query={searchQuery}
-                suggestions={suggestions}
-                isLoading={suggestionsLoading}
-                isOpen={suggestionsOpen}
-                onClose={closeSuggestions}
-                onSelect={handleSuggestionSelect}
-                onClearRecent={clearRecentSearches}
-                className="left-0 right-0"
-              />
-            </div>
+              <kbd className="hidden xs:inline px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-xs font-mono">/</kbd>
+            </button>
             {/* Filter Button - Mobile only */}
             <MarketplaceSidebar 
               trendingAccounts={trendingAccounts} 
@@ -2247,6 +2247,26 @@ const AIAccountsSection = () => {
             </div>
           </div>
         </div>}
+
+      {/* Mobile Search Overlay */}
+      <MobileSearchOverlay
+        isOpen={mobileSearchOpen}
+        onClose={() => setMobileSearchOpen(false)}
+        query={searchQuery}
+        setQuery={setSearchQuery}
+        suggestions={suggestions}
+        isLoading={suggestionsLoading}
+        onSelect={(suggestion) => {
+          handleSuggestionSelect(suggestion);
+          setMobileSearchOpen(false);
+        }}
+        onClearRecent={clearRecentSearches}
+        onSearch={() => {
+          if (searchQuery.length >= 2) {
+            logSearch(searchQuery, categoryFilter);
+          }
+        }}
+      />
     </div>;
 };
 export default AIAccountsSection;

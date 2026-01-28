@@ -1,7 +1,10 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Search, Clock, TrendingUp, Package, Tag, Store, FolderOpen, Loader2 } from 'lucide-react';
+import { Search, Clock, TrendingUp, Package, Tag, Store, FolderOpen, Loader2, Eye, CheckCircle, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SearchSuggestion } from '@/hooks/useSearchSuggestions';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface SearchSuggestionsProps {
   query: string;
@@ -12,12 +15,14 @@ interface SearchSuggestionsProps {
     categories: SearchSuggestion[];
     tags: SearchSuggestion[];
     sellers: SearchSuggestion[];
+    recentlyViewed?: SearchSuggestion[];
   };
   isLoading: boolean;
   isOpen: boolean;
   onClose: () => void;
   onSelect: (suggestion: SearchSuggestion) => void;
   onClearRecent?: () => void;
+  onQuickAction?: (action: 'view' | 'buy', suggestion: SearchSuggestion) => void;
   className?: string;
 }
 
@@ -29,15 +34,19 @@ export function SearchSuggestions({
   onClose,
   onSelect,
   onClearRecent,
+  onQuickAction,
   className,
 }: SearchSuggestionsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const { formatAmount } = useCurrency();
 
   // Flatten all suggestions for keyboard navigation
   const allSuggestions = [
     ...suggestions.recent,
     ...suggestions.trending,
+    ...(suggestions.recentlyViewed || []),
     ...suggestions.products,
     ...suggestions.categories,
     ...suggestions.tags,
@@ -144,16 +153,20 @@ export function SearchSuggestions({
     title: string,
     items: SearchSuggestion[],
     startIndex: number,
+    icon?: React.ReactNode,
     showClear?: boolean
   ) => {
-    if (items.length === 0) return null;
+    if (!items || items.length === 0) return null;
 
     return (
       <div className="py-2">
         <div className="flex items-center justify-between px-3 pb-1">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            {title}
-          </span>
+          <div className="flex items-center gap-2">
+            {icon}
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {title}
+            </span>
+          </div>
           {showClear && onClearRecent && (
             <button
               onMouseDown={(e) => {
@@ -171,6 +184,8 @@ export function SearchSuggestions({
           {items.map((item, idx) => {
             const globalIndex = startIndex + idx;
             const isHighlighted = globalIndex === highlightIndex;
+            const isHovered = globalIndex === hoveredIndex;
+            const showActions = (isHighlighted || isHovered) && item.type === 'product' && onQuickAction;
 
             return (
               <button
@@ -179,8 +194,10 @@ export function SearchSuggestions({
                   e.preventDefault();
                   onSelect(item);
                 }}
+                onMouseEnter={() => setHoveredIndex(globalIndex)}
+                onMouseLeave={() => setHoveredIndex(null)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 text-left transition-colors",
+                  "w-full flex items-center gap-3 px-3 py-2 text-left transition-colors group",
                   isHighlighted 
                     ? "bg-accent text-accent-foreground" 
                     : "hover:bg-accent/50"
@@ -190,17 +207,25 @@ export function SearchSuggestions({
                   <img 
                     src={item.icon_url} 
                     alt="" 
-                    className="h-6 w-6 rounded object-cover"
+                    className="h-8 w-8 rounded-md object-cover bg-muted"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
                     }}
                   />
                 ) : (
-                  getIcon(item.type)
+                  <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                    {getIcon(item.type)}
+                  </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">
-                    {highlightMatch(item.text)}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium truncate">
+                      {highlightMatch(item.text)}
+                    </span>
+                    {/* Verified badge for sellers */}
+                    {item.type === 'seller' && item.subtitle === 'Verified Seller' && (
+                      <CheckCircle className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    )}
                   </div>
                   {item.subtitle && (
                     <div className="text-xs text-muted-foreground truncate">
@@ -208,15 +233,50 @@ export function SearchSuggestions({
                     </div>
                   )}
                 </div>
-                {item.price !== undefined && (
+                
+                {/* Price display */}
+                {item.price !== undefined && !showActions && (
                   <span className="text-sm font-semibold text-primary">
-                    ${item.price.toFixed(2)}
+                    {formatAmount(item.price)}
                   </span>
                 )}
-                {item.result_count !== undefined && (
-                  <span className="text-xs text-muted-foreground">
-                    {item.result_count} searches
-                  </span>
+                
+                {/* Quick action buttons for products */}
+                {showActions && (
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onQuickAction?.('view', item);
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onQuickAction?.('buy', item);
+                      }}
+                    >
+                      <ShoppingCart className="h-3.5 w-3.5 mr-1" />
+                      {formatAmount(item.price || 0)}
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Result count for trending */}
+                {item.result_count !== undefined && item.type === 'trending' && (
+                  <Badge variant="secondary" className="text-xs">
+                    {item.result_count}
+                  </Badge>
                 )}
               </button>
             );
@@ -232,6 +292,8 @@ export function SearchSuggestions({
   currentIndex += suggestions.recent.length;
   const trendingStart = currentIndex;
   currentIndex += suggestions.trending.length;
+  const recentlyViewedStart = currentIndex;
+  currentIndex += (suggestions.recentlyViewed || []).length;
   const productsStart = currentIndex;
   currentIndex += suggestions.products.length;
   const categoriesStart = currentIndex;
@@ -268,8 +330,11 @@ export function SearchSuggestions({
 
       {!isLoading && hasResults && (
         <div className="divide-y divide-border">
-          {renderSection('Recent Searches', suggestions.recent, recentStart, true)}
-          {renderSection('Trending Now', suggestions.trending, trendingStart)}
+          {renderSection('Recent Searches', suggestions.recent, recentStart, <Clock className="h-3.5 w-3.5 text-muted-foreground" />, true)}
+          {renderSection('Trending Now', suggestions.trending, trendingStart, <TrendingUp className="h-3.5 w-3.5 text-primary" />)}
+          {suggestions.recentlyViewed && suggestions.recentlyViewed.length > 0 && 
+            renderSection('Recently Viewed', suggestions.recentlyViewed, recentlyViewedStart, <Eye className="h-3.5 w-3.5 text-primary" />)
+          }
           {renderSection('Products', suggestions.products, productsStart)}
           {renderSection('Categories', suggestions.categories, categoriesStart)}
           {renderSection('Tags', suggestions.tags, tagsStart)}
@@ -282,6 +347,9 @@ export function SearchSuggestions({
           <Search className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
           <p className="text-sm text-muted-foreground">
             Type to search products, categories, sellers...
+          </p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">/</kbd> anywhere to search
           </p>
         </div>
       )}
