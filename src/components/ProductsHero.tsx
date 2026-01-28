@@ -20,7 +20,7 @@ const ProductsHero = () => {
           <br />
           of <span className="bg-yellow-400 px-4 py-1 rounded-lg inline-block">AI Resources</span>
         </h1>
-        <p className="text-gray-500 text-lg font-medium">by PromptHero</p>
+        <p className="text-gray-500 text-lg font-medium">by Uptoza</p>
       </div>
     </section>
   );

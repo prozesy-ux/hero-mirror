@@ -24,7 +24,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import promptheroIcon from '@/assets/prompthero-icon.png';
+import uptozaLogo from '@/assets/uptoza-logo.png';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const ADMIN_SESSION_KEY = 'admin_session_token';
@@ -187,11 +187,13 @@ const AdminLoginForm = ({ onLogin }: { onLogin: () => void }) => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <img 
-            src={promptheroIcon} 
-            alt="Admin" 
-            className="h-16 w-16 rounded-2xl shadow-lg shadow-purple-500/20" 
-          />
+          <div className="bg-white p-3 rounded-2xl shadow-lg shadow-purple-500/20">
+            <img 
+              src={uptozaLogo} 
+              alt="Uptoza Admin" 
+              className="h-10 w-auto" 
+            />
+          </div>
         </div>
 
         <div className="rounded-2xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm p-8">
