@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { markSessionStart, clearSessionTimestamp } from '@/lib/session-persistence';
 
 interface Profile {
   id: string;
@@ -52,8 +53,24 @@ export const useAuth = () => {
       async (event, session) => {
         console.log('[useAuth] Auth state changed:', event);
         
-        // Clear admin cache on signout or token refresh to force re-check
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        // Mark session start on successful sign in
+        if (event === 'SIGNED_IN') {
+          markSessionStart();
+          console.log('[useAuth] Session marked - 24h window started');
+        }
+        
+        // Clear session timestamp and admin cache on signout
+        if (event === 'SIGNED_OUT') {
+          clearSessionTimestamp();
+          const userId = session?.user?.id || user?.id;
+          if (userId) {
+            sessionStorage.removeItem(`admin_${userId}`);
+            console.log('[useAuth] Cleared admin cache for:', userId);
+          }
+        }
+        
+        // Clear admin cache on token refresh to force re-check
+        if (event === 'TOKEN_REFRESHED') {
           const userId = session?.user?.id || user?.id;
           if (userId) {
             sessionStorage.removeItem(`admin_${userId}`);
@@ -138,6 +155,7 @@ export const useAuth = () => {
   };
 
   const signOut = async () => {
+    clearSessionTimestamp(); // Clear 24h tracking on manual logout
     const { error } = await supabase.auth.signOut();
     return { error };
   };

@@ -7,13 +7,15 @@
  * Features:
  * - Runs every 5 minutes when authenticated
  * - Proactively refreshes tokens 10 minutes before expiry
- * - Redirects to signin if session becomes invalid
+ * - 24-hour grace period: won't force logout within 24h of login
+ * - Resilient to network hiccups and temporary failures
  * - Cleans up stale admin cache on session changes
  */
 
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { isSessionValid, clearSessionTimestamp } from '@/lib/session-persistence';
 
 const HEARTBEAT_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const TOKEN_REFRESH_THRESHOLD = 10 * 60; // 10 minutes before expiry
@@ -41,14 +43,37 @@ export const useSessionHeartbeat = () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         
+        // If no session, try to recover before giving up
         if (error || !session) {
-          console.warn('[Heartbeat] No valid session found - signing out');
-          await signOut();
-          window.location.href = '/signin';
+          console.warn('[Heartbeat] No session found - attempting recovery...');
+          
+          // Try to refresh the session
+          const { data, error: refreshError } = await supabase.auth.refreshSession();
+          
+          if (refreshError || !data.session) {
+            // Check if within 24-hour window - if so, don't force logout
+            if (isSessionValid()) {
+              console.log('[Heartbeat] Session issue but within 24h window - staying logged in');
+              return; // Don't sign out, stay logged in
+            }
+            
+            // Only sign out if truly expired (24h+ since login)
+            console.warn('[Heartbeat] 24h window expired and refresh failed - signing out');
+            
+            if (user?.id) {
+              sessionStorage.removeItem(`admin_${user.id}`);
+            }
+            clearSessionTimestamp();
+            await signOut();
+            window.location.href = '/signin';
+            return;
+          }
+          
+          console.log('[Heartbeat] Session recovered successfully');
           return;
         }
 
-        // Check if token is near expiry
+        // Check if token is near expiry - proactive refresh
         const exp = session.expires_at;
         const now = Math.floor(Date.now() / 1000);
 
@@ -58,13 +83,19 @@ export const useSessionHeartbeat = () => {
           const { error: refreshError } = await supabase.auth.refreshSession();
           
           if (refreshError) {
-            console.error('[Heartbeat] Refresh failed:', refreshError.message);
+            console.error('[Heartbeat] Proactive refresh failed:', refreshError.message);
+            
+            // Don't sign out on refresh failure if within 24h window
+            if (isSessionValid()) {
+              console.log('[Heartbeat] Refresh failed but within 24h window - staying logged in');
+              return;
+            }
             
             // Clear stale admin cache before redirecting
             if (user?.id) {
               sessionStorage.removeItem(`admin_${user.id}`);
             }
-            
+            clearSessionTimestamp();
             await signOut();
             window.location.href = '/signin';
             return;
@@ -78,7 +109,8 @@ export const useSessionHeartbeat = () => {
           }
         }
       } catch (error) {
-        console.error('[Heartbeat] Error:', error);
+        // On error, don't sign out - just log and continue
+        console.error('[Heartbeat] Error (staying logged in):', error);
       } finally {
         isRunningRef.current = false;
       }

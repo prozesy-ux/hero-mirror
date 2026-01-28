@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AppShell from '@/components/ui/app-shell';
+import { isSessionValid, clearSessionTimestamp } from '@/lib/session-persistence';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -86,10 +87,22 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           const isValid = await validateSessionServer(session.access_token);
           
           if (!isValid) {
-            console.log('[ProtectedRoute] Server validation failed - clearing session');
+            // Check 24-hour window before forcing logout
+            if (isSessionValid()) {
+              console.log('[ProtectedRoute] Server validation failed but within 24h window - attempting refresh');
+              const { error: refreshError } = await supabase.auth.refreshSession();
+              if (!refreshError) {
+                console.log('[ProtectedRoute] Session refreshed successfully');
+                setIsRecovering(false);
+                return; // Stay logged in
+              }
+            }
+            
+            console.log('[ProtectedRoute] Server validation failed and 24h expired - clearing session');
             if (user?.id) {
               sessionStorage.removeItem(`admin_${user.id}`);
             }
+            clearSessionTimestamp();
             await supabase.auth.signOut();
             sessionStorage.setItem('authRedirectPath', location.pathname);
             setTimedOut(true);
