@@ -73,14 +73,15 @@ export function PriceFilterSidebar({
   };
 
   return (
-    <div className={cn("bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden", className)}>
-      <div className="flex items-center gap-2 p-4 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
-        <DollarSign className="w-5 h-5 text-green-600" />
-        <h3 className="font-bold text-gray-900 text-sm">Price Range</h3>
+    <div className={cn("bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden", className)}>
+      {/* Header - Clean black/white */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <DollarSign className="w-4 h-4 text-gray-700" />
+        <h3 className="font-semibold text-gray-900 text-sm">Price</h3>
       </div>
       
       <div className="p-4 space-y-4">
-        {/* Slider */}
+        {/* Slider with black track */}
         <div className="px-1">
           <Slider
             value={[localMin, localMax]}
@@ -88,7 +89,7 @@ export function PriceFilterSidebar({
             max={100}
             step={1}
             onValueChange={handleSliderChange}
-            className="w-full"
+            className="w-full [&_[role=slider]]:bg-gray-900 [&_[role=slider]]:border-gray-900"
           />
           <div className="flex justify-between mt-2 text-xs text-gray-500">
             <span>${localMin}</span>
@@ -106,7 +107,7 @@ export function PriceFilterSidebar({
               setLocalMin(Number(e.target.value) || 0);
               setActiveQuick(null);
             }}
-            className="h-8 text-sm"
+            className="h-9 text-sm border-gray-300 focus:border-gray-900 focus:ring-gray-900"
           />
           <span className="text-gray-400">-</span>
           <Input
@@ -117,11 +118,11 @@ export function PriceFilterSidebar({
               setLocalMax(Number(e.target.value) || 100);
               setActiveQuick(null);
             }}
-            className="h-8 text-sm"
+            className="h-9 text-sm border-gray-300 focus:border-gray-900 focus:ring-gray-900"
           />
         </div>
 
-        {/* Quick Filters */}
+        {/* Quick Filters - Black outlined chips */}
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-500">Quick Select</p>
           <div className="flex flex-wrap gap-1.5">
@@ -130,10 +131,10 @@ export function PriceFilterSidebar({
                 key={filter.label}
                 onClick={() => handleQuickFilter(index)}
                 className={cn(
-                  "px-2.5 py-1 rounded-full text-xs font-medium transition-all",
+                  "px-2.5 py-1.5 rounded-full text-xs font-medium transition-all border",
                   activeQuick === index
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-300 hover:border-gray-900"
                 )}
               >
                 {filter.label}
@@ -142,20 +143,20 @@ export function PriceFilterSidebar({
           </div>
         </div>
 
-        {/* Actions */}
+        {/* Actions - Black buttons */}
         <div className="flex gap-2 pt-2">
           <Button
             variant="outline"
             size="sm"
             onClick={handleClear}
-            className="flex-1 text-xs"
+            className="flex-1 text-xs border-gray-300 hover:border-gray-900"
           >
             Clear
           </Button>
           <Button
             size="sm"
             onClick={handleApply}
-            className="flex-1 text-xs bg-green-600 hover:bg-green-700"
+            className="flex-1 text-xs bg-gray-900 hover:bg-gray-800 text-white"
           >
             Apply
           </Button>

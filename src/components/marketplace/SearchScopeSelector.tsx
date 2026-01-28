@@ -27,15 +27,15 @@ export function SearchScopeSelector({ value, onChange, className }: SearchScopeS
 
   return (
     <Select value={value} onValueChange={(v) => onChange(v as SearchScope)}>
-      <SelectTrigger className={`w-[110px] h-9 border-r-0 rounded-r-none bg-muted/50 focus:ring-0 ${className}`}>
+      <SelectTrigger className={`w-[120px] h-full border-0 rounded-none bg-gray-100 hover:bg-gray-200 focus:ring-0 text-gray-700 font-medium ${className}`}>
         <div className="flex items-center gap-1.5">
           {selectedOption?.icon}
           <SelectValue placeholder="All" />
         </div>
       </SelectTrigger>
-      <SelectContent className="bg-popover border border-border shadow-lg z-[60]">
+      <SelectContent className="bg-white border border-gray-200 shadow-lg z-[60]">
         {scopeOptions.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
+          <SelectItem key={option.value} value={option.value} className="hover:bg-gray-100">
             <div className="flex items-center gap-2">
               {option.icon}
               <span>{option.label}</span>

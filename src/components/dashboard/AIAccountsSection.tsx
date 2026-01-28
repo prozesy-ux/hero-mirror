@@ -1228,18 +1228,21 @@ const AIAccountsSection = () => {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0 w-full overflow-hidden">
-            {/* Desktop Search Bar - Full width inside content area */}
+            {/* Desktop Search Bar - Amazon Style */}
             <div className="hidden lg:block mb-6">
-              <div className="relative w-full flex items-center">
-                {/* Search Scope Selector */}
-                <SearchScopeSelector
-                  value={searchScope}
-                  onChange={setSearchScope}
-                />
+              {/* Search Container */}
+              <div className="flex items-stretch bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                {/* Category Dropdown - Left */}
+                <div className="border-r border-gray-200">
+                  <SearchScopeSelector
+                    value={searchScope}
+                    onChange={setSearchScope}
+                  />
+                </div>
                 
-                {/* Search Input */}
+                {/* Search Input - Center */}
                 <div className="relative flex-1">
-                  <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                  <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
                   <input 
                     ref={searchInputRef}
                     type="text" 
@@ -1252,21 +1255,18 @@ const AIAccountsSection = () => {
                         closeSuggestions();
                       }
                     }}
-                    placeholder={isListening ? 'Listening...' : 'Search products, "under $20", or upload an image...'}
-                    className="w-full pl-12 pr-32 py-3.5 bg-background border border-border border-l-0 rounded-l-none rounded-r-2xl text-base text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all shadow-sm" 
+                    placeholder={isListening ? 'Listening...' : 'Search products, sellers, or "under $20"...'}
+                    className="w-full h-full pl-12 pr-28 py-3.5 bg-white border-0 text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0" 
                   />
                   
-                  {/* Action buttons */}
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1">
-                    {/* Image Search Button */}
+                  {/* Action buttons inside input */}
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1">
                     <ImageSearchButton
                       onSearchResult={(text) => {
                         setSearchQuery(text);
                         openSuggestions();
                       }}
                     />
-                    
-                    {/* Voice Search Button */}
                     <VoiceSearchButton
                       isListening={isListening}
                       isSupported={voiceSupported}
@@ -1274,8 +1274,6 @@ const AIAccountsSection = () => {
                       onStart={startListening}
                       onStop={stopListening}
                     />
-                    
-                    {/* Clear Button */}
                     {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
                       <button 
                         onClick={() => {
@@ -1284,9 +1282,9 @@ const AIAccountsSection = () => {
                           setCategoryFilter('all');
                           closeSuggestions();
                         }} 
-                        className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                       >
-                        <X size={18} className="text-muted-foreground" />
+                        <X size={18} className="text-gray-500" />
                       </button>
                     )}
                   </div>
@@ -1307,13 +1305,27 @@ const AIAccountsSection = () => {
                   />
                 </div>
                 
-                {/* Filters Bar - Below Search */}
-                <div className="mt-3">
-                  <SearchFiltersBar
-                    filters={filterState}
-                    onFiltersChange={setFilterState}
-                  />
-                </div>
+                {/* Search Button - Right */}
+                <button 
+                  onClick={() => {
+                    if (searchQuery.length >= 2) {
+                      logSearch(searchQuery, categoryFilter);
+                      closeSuggestions();
+                    }
+                  }}
+                  className="px-6 py-3.5 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
+                >
+                  <Search size={18} />
+                  <span>Search</span>
+                </button>
+              </div>
+              
+              {/* Filters Bar - Below Search */}
+              <div className="mt-4">
+                <SearchFiltersBar
+                  filters={filterState}
+                  onFiltersChange={setFilterState}
+                />
               </div>
             </div>
 

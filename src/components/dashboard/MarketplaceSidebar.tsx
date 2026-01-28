@@ -144,12 +144,11 @@ const SidebarContent = ({
       )}
 
       {/* Trending Section */}
-      {/* Trending Section */}
       {trendingAccounts.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden flex-shrink-0">
-          <div className="flex items-center gap-2 p-4 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-amber-50">
-            <Flame className="w-5 h-5 text-orange-500" />
-            <h3 className="font-bold text-gray-900 text-sm">Trending Now</h3>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex-shrink-0">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
+            <Flame className="w-4 h-4 text-gray-700" />
+            <h3 className="font-semibold text-gray-900 text-sm">Trending Now</h3>
           </div>
           <div
             ref={trendingRef}
@@ -170,14 +169,14 @@ const SidebarContent = ({
                     className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center flex-shrink-0">
-                    <TrendingUp className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-5 h-5 text-gray-600" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">{account.name}</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-orange-600 font-bold text-sm">${account.price}</span>
+                    <span className="text-gray-900 font-bold text-sm">${account.price}</span>
                     {account.original_price && account.original_price > account.price && (
                       <span className="text-xs text-gray-400 line-through">${account.original_price}</span>
                     )}
@@ -191,10 +190,10 @@ const SidebarContent = ({
       )}
 
       {/* Categories Section */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden flex-1 min-h-0 flex flex-col">
-        <div className="flex items-center gap-2 p-3 border-b border-gray-100">
-          <Sparkles className="w-4 h-4 text-violet-500" />
-          <h3 className="font-bold text-gray-900 text-sm">Categories</h3>
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
+          <Sparkles className="w-4 h-4 text-gray-700" />
+          <h3 className="font-semibold text-gray-900 text-sm">Categories</h3>
         </div>
         <div className="flex-1 overflow-y-auto">
           {/* All Category */}
@@ -216,7 +215,7 @@ const SidebarContent = ({
               onClick={() => onCategorySelect(category.id)}
               className={`w-full px-3 py-2.5 text-left transition-all border-l-3 ${
                 selectedCategory === category.id
-                  ? `bg-gray-100 ${getCategoryBorderClass(category.color)} font-semibold`
+                  ? `bg-gray-100 border-l-gray-900 font-semibold`
                   : 'border-l-transparent hover:bg-gray-50'
               }`}
             >
@@ -228,10 +227,10 @@ const SidebarContent = ({
 
       {/* Tags Section */}
       {allTags.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden flex-shrink-0">
-          <div className="flex items-center gap-2 p-4 border-b border-gray-100">
-            <Tag className="w-5 h-5 text-blue-500" />
-            <h3 className="font-bold text-gray-900 text-sm">Popular Tags</h3>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex-shrink-0">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
+            <Tag className="w-4 h-4 text-gray-700" />
+            <h3 className="font-semibold text-gray-900 text-sm">Popular Tags</h3>
           </div>
           <div className="p-4">
             <div className="flex flex-wrap gap-2">
@@ -239,10 +238,10 @@ const SidebarContent = ({
                 <button
                   key={tag}
                   onClick={() => onTagSelect(tag)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
                     selectedTags.includes(tag)
-                      ? 'bg-violet-500 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-900'
                   }`}
                 >
                   {tag}
