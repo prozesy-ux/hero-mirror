@@ -182,72 +182,65 @@ const StoreContent = () => {
 
   const fetchStoreData = async () => {
     setLoading(true);
+    console.log('[Store] Fetching store data for:', storeSlug);
     
+    // Always use direct Supabase queries for reliability
+    // BFF can be added later for optimization
     try {
-      // Use BFF for server-side data fetch - single request, all data
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bff-store-public?slug=${storeSlug}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-        }
-      );
+      // Fetch seller profile first
+      const { data: sellerData, error: sellerError } = await supabase
+        .from('seller_profiles')
+        .select('id, user_id, store_name, store_description, store_logo_url, store_banner_url, store_video_url, store_tagline, store_slug, is_verified, is_active, total_sales, total_orders, social_links, banner_height, show_reviews, show_product_count, show_order_count, show_description, show_social_links')
+        .eq('store_slug', storeSlug)
+        .eq('is_active', true)
+        .maybeSingle();
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        if (errorData.notFound) {
-          setSeller(null);
-          setLoading(false);
-          return;
-        }
-        throw new Error(errorData.error || 'Failed to load store');
+      if (sellerError) {
+        console.error('[Store] Seller fetch error:', sellerError);
+        setLoading(false);
+        return;
       }
 
-      const data = await response.json();
-      
-      setSeller(data.seller as SellerProfile);
-      setProducts(data.products || []);
-      setCategories(data.categories || []);
-    } catch (error) {
-      console.error('[Store] BFF fetch error:', error);
-      // Fallback to direct query if BFF fails (during deployment)
-      try {
-        const { data: sellerData } = await supabase
-          .from('seller_profiles')
-          .select('*')
-          .eq('store_slug', storeSlug)
+      if (!sellerData) {
+        console.log('[Store] Store not found:', storeSlug);
+        setSeller(null);
+        setLoading(false);
+        return;
+      }
+
+      console.log('[Store] Found seller:', sellerData.store_name, 'ID:', sellerData.id);
+      setSeller(sellerData as SellerProfile);
+
+      // Fetch products and categories in parallel
+      const [productsResult, categoriesResult] = await Promise.all([
+        supabase
+          .from('seller_products')
+          .select('id, name, description, price, icon_url, category_id, is_available, is_approved, tags, stock, sold_count, chat_allowed, seller_id')
+          .eq('seller_id', sellerData.id)
+          .eq('is_available', true)
+          .eq('is_approved', true)
+          .order('sold_count', { ascending: false }),
+        supabase
+          .from('categories')
+          .select('id, name, icon, color')
           .eq('is_active', true)
-          .maybeSingle();
+          .order('display_order', { ascending: true })
+      ]);
 
-        if (!sellerData) {
-          setLoading(false);
-          return;
-        }
-
-        setSeller(sellerData as SellerProfile);
-
-        const [productsResult, categoriesResult] = await Promise.all([
-          supabase
-            .from('seller_products')
-            .select('*')
-            .eq('seller_id', sellerData.id)
-            .eq('is_available', true)
-            .eq('is_approved', true)
-            .order('sold_count', { ascending: false }),
-          supabase
-            .from('categories')
-            .select('*')
-            .eq('is_active', true)
-        ]);
-
-        if (productsResult.data) setProducts(productsResult.data);
-        if (categoriesResult.data) setCategories(categoriesResult.data);
-      } catch (fallbackError) {
-        console.error('[Store] Fallback also failed:', fallbackError);
+      if (productsResult.error) {
+        console.error('[Store] Products fetch error:', productsResult.error);
+      } else {
+        console.log('[Store] Found products:', productsResult.data?.length || 0);
+        setProducts(productsResult.data || []);
       }
+
+      if (categoriesResult.error) {
+        console.error('[Store] Categories fetch error:', categoriesResult.error);
+      } else {
+        setCategories(categoriesResult.data || []);
+      }
+    } catch (error) {
+      console.error('[Store] Unexpected error:', error);
     } finally {
       setLoading(false);
     }
