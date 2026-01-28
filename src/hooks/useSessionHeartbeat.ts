@@ -1,27 +1,27 @@
 /**
- * Session Heartbeat Hook
+ * Session Heartbeat Hook - Enterprise Grade
  * 
  * Monitors session health in the background and proactively refreshes
- * tokens before they expire. This prevents sudden logouts during user activity.
+ * tokens before they expire. 
  * 
- * Features:
- * - Runs every 5 minutes when authenticated
- * - Proactively refreshes tokens 10 minutes before expiry
- * - 12-hour grace period: won't force logout within 12h of login
- * - Resilient to network hiccups and temporary failures
- * - Cleans up stale admin cache on session changes
+ * CRITICAL RULES:
+ * 1. NEVER call signOut() or redirect users
+ * 2. NEVER force logout within 12 hours of login
+ * 3. On failure, set sessionExpired state - let UI show soft banner
+ * 4. Resilient to network hiccups and temporary failures
+ * 5. Cleans up stale admin cache on session changes
  */
 
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { isSessionValid, clearSessionTimestamp } from '@/lib/session-persistence';
+import { isSessionValid } from '@/lib/session-persistence';
 
 const HEARTBEAT_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const TOKEN_REFRESH_THRESHOLD = 10 * 60; // 10 minutes before expiry
 
 export const useSessionHeartbeat = () => {
-  const { isAuthenticated, signOut, user } = useAuthContext();
+  const { isAuthenticated, user, setSessionExpired, revalidateSession } = useAuthContext();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isRunningRef = useRef(false);
 
@@ -50,22 +50,24 @@ export const useSessionHeartbeat = () => {
           // Try to refresh the session
           const { data, error: refreshError } = await supabase.auth.refreshSession();
           
-        if (refreshError || !data.session) {
-            // Check if within 12-hour window - if so, don't force logout
+          if (refreshError || !data.session) {
+            // Check if within 12-hour window - if so, DON'T mark as expired
             if (isSessionValid()) {
               console.log('[Heartbeat] Session issue but within 12h window - staying logged in');
-              return; // Don't sign out, stay logged in
+              return; // Don't mark as expired
             }
             
-            // Only sign out if truly expired (12h+ since login)
-            console.warn('[Heartbeat] 12h window expired and refresh failed - signing out');
+            // Only mark as expired if truly expired (12h+ since login)
+            console.warn('[Heartbeat] 12h window expired and refresh failed - marking session expired');
             
+            // Clear stale admin cache
             if (user?.id) {
               sessionStorage.removeItem(`admin_${user.id}`);
             }
-            clearSessionTimestamp();
-            await signOut();
-            window.location.href = '/signin';
+            
+            // Set expired state - UI will show soft banner
+            // DO NOT signOut() or redirect
+            setSessionExpired(true);
             return;
           }
           
@@ -85,19 +87,19 @@ export const useSessionHeartbeat = () => {
           if (refreshError) {
             console.error('[Heartbeat] Proactive refresh failed:', refreshError.message);
             
-            // Don't sign out on refresh failure if within 12h window
+            // Don't mark as expired if within 12h window
             if (isSessionValid()) {
               console.log('[Heartbeat] Refresh failed but within 12h window - staying logged in');
               return;
             }
             
-            // Clear stale admin cache before redirecting
+            // Clear stale admin cache
             if (user?.id) {
               sessionStorage.removeItem(`admin_${user.id}`);
             }
-            clearSessionTimestamp();
-            await signOut();
-            window.location.href = '/signin';
+            
+            // Set expired state - DO NOT redirect
+            setSessionExpired(true);
             return;
           }
           
@@ -109,7 +111,7 @@ export const useSessionHeartbeat = () => {
           }
         }
       } catch (error) {
-        // On error, don't sign out - just log and continue
+        // On error, don't mark as expired - just log and continue
         console.error('[Heartbeat] Error (staying logged in):', error);
       } finally {
         isRunningRef.current = false;
@@ -128,5 +130,5 @@ export const useSessionHeartbeat = () => {
         intervalRef.current = null;
       }
     };
-  }, [isAuthenticated, signOut, user?.id]);
+  }, [isAuthenticated, user?.id, setSessionExpired, revalidateSession]);
 };

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { hasLocalSession } from '@/lib/session-detector';
+import SessionExpiredBanner from '@/components/ui/session-expired-banner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -600,9 +602,10 @@ const SellerContent = () => {
   );
 };
 
-// Main Seller Page
+// Main Seller Page - Enterprise Grade
+// RULE: If local session exists, render immediately - no auth blocking
 const Seller = () => {
-  const { user, loading: authLoading, isAuthenticated } = useAuthContext();
+  const { user, loading: authLoading, isAuthenticated, sessionExpired } = useAuthContext();
   const navigate = useNavigate();
   const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -612,10 +615,15 @@ const Seller = () => {
   useSessionHeartbeat();
 
   useEffect(() => {
-    // Don't redirect - we show auth form inline
+    // OPTIMISTIC: If local session exists, start fetching immediately
+    // Don't wait for authLoading to complete
     if (user) {
       checkSellerStatus();
+    } else if (hasLocalSession()) {
+      // Local session exists but user not loaded yet - just wait
+      // Don't set loading to false prematurely
     } else if (!authLoading) {
+      // No local session and auth finished - show auth form
       setLoading(false);
     }
   }, [user, authLoading]);
@@ -651,7 +659,76 @@ const Seller = () => {
     }
   };
 
-  if (authLoading || loading) {
+  // OPTIMISTIC RENDERING: If local session exists, show skeleton instead of blocking
+  // This ensures instant perceived load time
+  if (hasLocalSession()) {
+    // Loading state while fetching seller data
+    if ((authLoading || loading) && !sellerProfile && !needsRegistration) {
+      return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+            <p className="text-sm text-slate-500">Loading your store...</p>
+          </div>
+          {/* Show session expired banner if needed */}
+          {sessionExpired && <SessionExpiredBanner />}
+        </div>
+      );
+    }
+
+    // User authenticated - show appropriate content
+    if (needsRegistration) {
+      return (
+        <>
+          <SellerRegistration onSuccess={checkSellerStatus} />
+          {sessionExpired && <SessionExpiredBanner />}
+        </>
+      );
+    }
+
+    // Check if account is deleted
+    if (sellerProfile && (sellerProfile as any).is_deleted) {
+      return (
+        <>
+          <DeletedAccount />
+          {sessionExpired && <SessionExpiredBanner />}
+        </>
+      );
+    }
+
+    if (sellerProfile && !sellerProfile.is_active) {
+      return (
+        <>
+          <SuspendedAccount />
+          {sessionExpired && <SessionExpiredBanner />}
+        </>
+      );
+    }
+
+    if (sellerProfile) {
+      return (
+        <CurrencyProvider sellerCountry={(sellerProfile as any)?.country}>
+          <SellerProvider sellerProfile={sellerProfile}>
+            <SellerContent />
+            {/* Session expired banner floats above content */}
+            {sessionExpired && <SessionExpiredBanner />}
+          </SellerProvider>
+        </CurrencyProvider>
+      );
+    }
+
+    // Still loading
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        {sessionExpired && <SessionExpiredBanner />}
+      </div>
+    );
+  }
+
+  // NO LOCAL SESSION: Show auth form
+  // Only reach here if hasLocalSession() is false
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
@@ -666,34 +743,6 @@ const Seller = () => {
       // Re-check after short delay for auth state to update
       setTimeout(() => checkSellerStatus(), 500);
     }} />;
-  }
-
-  if (needsRegistration) {
-    return <SellerRegistration onSuccess={checkSellerStatus} />;
-  }
-
-  // Skip pending approval - stores are auto-approved now
-  // if (sellerProfile && !sellerProfile.is_verified) {
-  //   return <PendingApproval />;
-  // }
-
-  // Check if account is deleted
-  if (sellerProfile && (sellerProfile as any).is_deleted) {
-    return <DeletedAccount />;
-  }
-
-  if (sellerProfile && !sellerProfile.is_active) {
-    return <SuspendedAccount />;
-  }
-
-  if (sellerProfile) {
-    return (
-      <CurrencyProvider sellerCountry={(sellerProfile as any)?.country}>
-        <SellerProvider sellerProfile={sellerProfile}>
-          <SellerContent />
-        </SellerProvider>
-      </CurrencyProvider>
-    );
   }
 
   return null;
