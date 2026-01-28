@@ -1,5 +1,6 @@
 // App version - update this with each deployment to trigger cache clear
-export const APP_VERSION = '1.0.1';
+// Bumped to 1.0.3 for world-class performance update
+export const APP_VERSION = '1.0.3';
 
 const VERSION_KEY = 'app_version';
 const CACHE_CLEARED_KEY = 'cache_cleared_at';

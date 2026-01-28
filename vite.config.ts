@@ -23,4 +23,24 @@ export default defineConfig(({ mode }) => ({
     include: ["react", "react-dom", "@tanstack/react-query"],
     force: true,
   },
+  build: {
+    // Optimal chunk splitting for caching
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-query': ['@tanstack/react-query'],
+          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
+        },
+        // Content hashing for cache busting
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
+    },
+    // Enable source maps for debugging
+    sourcemap: mode === 'development',
+    // Target modern browsers for smaller bundles
+    target: 'es2020',
+  },
 }));
