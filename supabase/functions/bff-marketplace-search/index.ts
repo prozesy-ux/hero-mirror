@@ -491,13 +491,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Non-personalized queries (no user) can be public for Cloudflare edge caching
+    const isPersonalized = !!userId;
     const cacheMaxAge = query.length < 2 ? 60 : 30;
     
     return new Response(JSON.stringify(response), {
       headers: { 
         ...corsHeaders, 
         "Content-Type": "application/json",
-        "Cache-Control": `private, max-age=${cacheMaxAge}, stale-while-revalidate=120`,
+        "Cache-Control": isPersonalized 
+          ? `private, max-age=${cacheMaxAge}, stale-while-revalidate=120`
+          : `public, max-age=${cacheMaxAge}, stale-while-revalidate=120`,
+        "Vary": "Accept-Encoding, Authorization",
       },
     });
   } catch (error) {
