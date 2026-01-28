@@ -166,32 +166,6 @@ const SellerMobileNavigation = () => {
                 </nav>
               </ScrollArea>
               
-              {/* Ads Agency Card */}
-              <div className="p-3 border-t border-slate-100">
-                <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                  {/* Logos Row */}
-                  <div className="flex items-center justify-center gap-4 mb-3">
-                    <div className="w-10 h-10 bg-white rounded-lg border border-slate-100 flex items-center justify-center p-1.5 shadow-sm">
-                      <img src={metaLogo} alt="Meta" className="w-full h-full object-contain" />
-                    </div>
-                    <div className="w-10 h-10 bg-white rounded-lg border border-slate-100 flex items-center justify-center p-1.5 shadow-sm">
-                      <img src={googleAdsLogo} alt="Google Ads" className="w-full h-full object-contain" />
-                    </div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="text-center">
-                    <h3 className="text-sm font-bold text-slate-900 mb-1">Ads Agency</h3>
-                    <p className="text-xs text-slate-500 mb-3 leading-relaxed">
-                      Get professional ad campaigns managed by experts
-                    </p>
-                    <button className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md">
-                      Learn More
-                      <ExternalLink size={12} />
-                    </button>
-                  </div>
-                </div>
-              </div>
             </SheetContent>
           </Sheet>
 

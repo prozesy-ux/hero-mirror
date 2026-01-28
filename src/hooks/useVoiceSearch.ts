@@ -45,12 +45,28 @@ export function useVoiceSearch(onResult?: (text: string) => void): UseVoiceSearc
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  
+  // Store callback in ref to avoid recreating recognition on callback changes
+  const onResultRef = useRef(onResult);
+  
+  // Update ref when callback changes (without recreating recognition)
+  useEffect(() => {
+    onResultRef.current = onResult;
+  }, [onResult]);
 
   const isSupported = typeof window !== 'undefined' && 
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
+  // Check for secure context (HTTPS required for microphone)
+  const isSecureContext = typeof window !== 'undefined' && window.isSecureContext;
+
   useEffect(() => {
     if (!isSupported) return;
+
+    // Warn if not in secure context (microphone won't work)
+    if (!isSecureContext) {
+      console.warn('[VoiceSearch] Not in secure context - microphone access may be blocked');
+    }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
@@ -81,9 +97,9 @@ export function useVoiceSearch(onResult?: (text: string) => void): UseVoiceSearc
       const currentTranscript = finalTranscript || interimTranscript;
       setTranscript(currentTranscript);
 
-      // If we have a final result, call the callback
-      if (finalTranscript && onResult) {
-        onResult(finalTranscript.trim());
+      // If we have a final result, call the callback using ref
+      if (finalTranscript && onResultRef.current) {
+        onResultRef.current(finalTranscript.trim());
       }
     };
 
@@ -98,13 +114,19 @@ export function useVoiceSearch(onResult?: (text: string) => void): UseVoiceSearc
           setError('No microphone found. Please check your device.');
           break;
         case 'not-allowed':
-          setError('Microphone access denied. Please enable permissions.');
+          setError('Microphone access denied. Please enable permissions in your browser settings.');
           break;
         case 'network':
           setError('Network error. Please check your connection.');
           break;
+        case 'aborted':
+          // User aborted, not an error
+          break;
+        case 'service-not-allowed':
+          setError('Voice search is not available on this device or browser.');
+          break;
         default:
-          setError('An error occurred. Please try again.');
+          setError('Voice search failed. Please try again or use text search.');
       }
     };
 
@@ -117,11 +139,21 @@ export function useVoiceSearch(onResult?: (text: string) => void): UseVoiceSearc
     return () => {
       recognition.abort();
     };
-  }, [isSupported, onResult]);
+  }, [isSupported, isSecureContext]); // Removed onResult from deps - using ref instead
 
   const startListening = useCallback(() => {
-    if (!isSupported || !recognitionRef.current) {
-      setError('Voice search is not supported in this browser.');
+    if (!isSupported) {
+      setError('Voice search is not supported in this browser. Try Chrome or Edge.');
+      return;
+    }
+
+    if (!isSecureContext) {
+      setError('Voice search requires a secure connection (HTTPS).');
+      return;
+    }
+
+    if (!recognitionRef.current) {
+      setError('Voice search is not available. Please refresh the page.');
       return;
     }
 
@@ -130,11 +162,24 @@ export function useVoiceSearch(onResult?: (text: string) => void): UseVoiceSearc
     
     try {
       recognitionRef.current.start();
-    } catch (e) {
+    } catch (e: any) {
       // Recognition might already be running
-      console.error('Failed to start recognition:', e);
+      if (e.name === 'InvalidStateError') {
+        // Already running, stop and restart
+        recognitionRef.current.stop();
+        setTimeout(() => {
+          try {
+            recognitionRef.current?.start();
+          } catch {
+            setError('Failed to start voice search. Please try again.');
+          }
+        }, 100);
+      } else {
+        console.error('Failed to start recognition:', e);
+        setError('Failed to start voice search. Please try again.');
+      }
     }
-  }, [isSupported]);
+  }, [isSupported, isSecureContext]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
