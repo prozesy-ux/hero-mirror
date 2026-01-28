@@ -61,10 +61,10 @@ Deno.serve(async (req) => {
     }
 
     // Fetch products and categories in parallel
-    const [productsResult, categoriesResult, reviewsResult] = await Promise.all([
+    const [productsResult, categoriesResult] = await Promise.all([
       supabase
         .from('seller_products')
-        .select('id, name, description, price, icon_url, category_id, is_available, is_approved, tags, stock, sold_count, chat_allowed, seller_id, view_count, original_price, images')
+        .select('id, name, description, price, icon_url, category_id, is_available, is_approved, tags, stock, sold_count, chat_allowed, seller_id, view_count, images')
         .eq('seller_id', seller.id)
         .eq('is_available', true)
         .eq('is_approved', true)
@@ -74,12 +74,14 @@ Deno.serve(async (req) => {
         .select('id, name, icon, color')
         .eq('is_active', true)
         .order('display_order', { ascending: true }),
-      // Get average rating for the store
-      supabase
-        .from('product_reviews')
-        .select('rating')
-        .in('product_id', [] as string[]) // Will be populated after products are fetched
     ]);
+
+    if (productsResult.error) {
+      console.error('[BFF-StorePublic] Products query error:', productsResult.error);
+    }
+    if (categoriesResult.error) {
+      console.error('[BFF-StorePublic] Categories query error:', categoriesResult.error);
+    }
 
     const products = productsResult.data || [];
     const categories = categoriesResult.data || [];
