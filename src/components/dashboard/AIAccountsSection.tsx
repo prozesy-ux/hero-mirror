@@ -628,59 +628,25 @@ const AIAccountsSection = () => {
       const commissionRate = 0.10; // 10% platform commission
       const sellerEarning = product.price * (1 - commissionRate);
 
-      // 1. Deduct from buyer wallet
-      const newBalance = currentBalance - product.price;
-      const {
-        error: updateError
-      } = await supabase.from('user_wallets').update({
-        balance: newBalance
-      }).eq('user_id', user.id);
-      if (updateError) throw new Error('Failed to update wallet balance');
-
-      // 2. Create wallet transaction record
-      const {
-        error: transactionError
-      } = await supabase.from('wallet_transactions').insert({
-        user_id: user.id,
-        type: 'purchase',
-        amount: product.price,
-        status: 'completed',
-        description: `Seller Product: ${product.name}`
-      });
-      if (transactionError) {
-        await supabase.from('user_wallets').update({
-          balance: currentBalance
-        }).eq('user_id', user.id);
-        throw new Error('Failed to create transaction record');
-      }
-
-      // 3. Create seller order with buyer email if required
-      const orderData: any = {
-        seller_id: product.seller_id,
-        buyer_id: user.id,
-        product_id: product.id,
-        amount: product.price,
-        seller_earning: sellerEarning,
-        status: 'pending'
-      };
-      if (product.requires_email && buyerEmailInput) {
-        orderData.buyer_email_input = buyerEmailInput;
-      }
-      const {
-        error: orderError
-      } = await supabase.from('seller_orders').insert(orderData);
-      if (orderError) {
-        await supabase.from('user_wallets').update({
-          balance: currentBalance
-        }).eq('user_id', user.id);
-        throw new Error('Failed to create order');
-      }
-
-      // 4. Add to seller pending balance using RPC
-      await supabase.rpc('add_seller_pending_balance', {
+      // Use atomic RPC for purchase - handles wallet deduction, transaction, order, and seller balance
+      const { data: result, error: rpcError } = await supabase.rpc('purchase_seller_product', {
+        p_buyer_id: user.id,
         p_seller_id: product.seller_id,
-        p_amount: sellerEarning
+        p_product_id: product.id,
+        p_product_name: product.name,
+        p_amount: product.price,
+        p_seller_earning: sellerEarning
       });
+
+      if (rpcError) throw rpcError;
+
+      const purchaseResult = result as { success: boolean; error?: string; order_id?: string };
+      if (!purchaseResult.success) {
+        throw new Error(purchaseResult.error || 'Purchase failed');
+      }
+
+      // Update local wallet state immediately
+      setWallet(prev => prev ? { ...prev, balance: currentBalance - product.price } : null);
 
       // 5. Create notification for buyer
       await supabase.from('notifications').insert({
@@ -774,42 +740,26 @@ const AIAccountsSection = () => {
       const commissionRate = 0.10;
       const sellerEarning = data.price * (1 - commissionRate);
 
-      // 1. Deduct from buyer wallet
-      const newBalance = currentBalance - data.price;
-      const {
-        error: updateError
-      } = await supabase.from('user_wallets').update({
-        balance: newBalance
-      }).eq('user_id', user.id);
-      if (updateError) throw new Error('Failed to update wallet balance');
-
-      // 2. Create wallet transaction record
-      await supabase.from('wallet_transactions').insert({
-        user_id: user.id,
-        type: 'purchase',
-        amount: data.price,
-        status: 'completed',
-        description: `Seller Product: ${data.productName}`
-      });
-
-      // 3. Create seller order
-      const {
-        error: orderError
-      } = await supabase.from('seller_orders').insert({
-        seller_id: data.sellerId,
-        buyer_id: user.id,
-        product_id: data.productId,
-        amount: data.price,
-        seller_earning: sellerEarning,
-        status: 'pending'
-      });
-      if (orderError) throw new Error('Failed to create order');
-
-      // 4. Add to seller pending balance
-      await supabase.rpc('add_seller_pending_balance', {
+      // Use atomic RPC for purchase - handles wallet deduction, transaction, order, and seller balance
+      const { data: result, error: rpcError } = await supabase.rpc('purchase_seller_product', {
+        p_buyer_id: user.id,
         p_seller_id: data.sellerId,
-        p_amount: sellerEarning
+        p_product_id: data.productId,
+        p_product_name: data.productName,
+        p_amount: data.price,
+        p_seller_earning: sellerEarning
       });
+
+      if (rpcError) throw rpcError;
+
+      const purchaseResult = result as { success: boolean; error?: string; order_id?: string };
+      if (!purchaseResult.success) {
+        throw new Error(purchaseResult.error || 'Purchase failed');
+      }
+
+      // Update local wallet state immediately
+      setWallet(prev => prev ? { ...prev, balance: currentBalance - data.price } : null);
+
       toast.success('Purchase successful! The seller will deliver your order soon.');
       setPendingPurchaseData(null);
       fetchWallet();

@@ -444,21 +444,28 @@ const StoreContent = () => {
     setPurchasing(product.id);
 
     try {
-      const { error } = await supabase.from('seller_orders').insert({
-        seller_id: product.seller_id,
-        buyer_id: user.id,
-        product_id: product.id,
-        amount: product.price,
-        seller_earning: product.price * 0.85,
-        status: 'pending'
+      const commissionRate = 0.10; // 10% platform commission
+      const sellerEarning = product.price * (1 - commissionRate);
+
+      // Use atomic RPC for purchase - handles wallet deduction, transaction, order, and seller balance
+      const { data: result, error } = await supabase.rpc('purchase_seller_product', {
+        p_buyer_id: user.id,
+        p_seller_id: product.seller_id,
+        p_product_id: product.id,
+        p_product_name: product.name,
+        p_amount: product.price,
+        p_seller_earning: sellerEarning
       });
 
       if (error) throw error;
 
-      await supabase
-        .from('user_wallets')
-        .update({ balance: wallet!.balance - product.price })
-        .eq('user_id', user.id);
+      const purchaseResult = result as { success: boolean; error?: string; order_id?: string };
+      if (!purchaseResult.success) {
+        throw new Error(purchaseResult.error || 'Purchase failed');
+      }
+
+      // Update local wallet state with new balance
+      setWallet(prev => prev ? { ...prev, balance: (prev.balance || 0) - product.price } : null);
 
       toast.success('Purchase successful! The seller will deliver your order soon.');
       setSelectedProduct(null);
