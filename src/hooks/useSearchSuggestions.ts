@@ -18,6 +18,7 @@ export interface SearchSuggestions {
   categories: SearchSuggestion[];
   tags: SearchSuggestion[];
   sellers: SearchSuggestion[];
+  recentlyViewed?: SearchSuggestion[];
 }
 
 const DEBOUNCE_MS = 300;
@@ -33,6 +34,7 @@ export function useSearchSuggestions() {
     categories: [],
     tags: [],
     sellers: [],
+    recentlyViewed: [],
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
