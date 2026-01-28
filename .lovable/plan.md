@@ -1,162 +1,195 @@
 
-# Mobile Navigation Fix - Buyer Dashboard
 
-## Summary of Changes
+# 24-Hour Persistent Login Plan
 
-This plan addresses two issues in the buyer dashboard mobile experience:
+## Current Behavior
 
-1. **Bottom Navigation Bar**: Replace "Wallet" with "Billing" in the mobile bottom nav
-2. **Sidebar "Become a Seller"**: Convert from button to simple text link on mobile
+The app currently:
+1. Uses Supabase auth with `persistSession: true` and `autoRefreshToken: true`
+2. Has a heartbeat that checks every 5 minutes and refreshes tokens
+3. **Problem**: If any session check fails, it immediately signs out the user
 
----
+## Goal
 
-## Current State
+- User logs in once → stays logged in for 24 hours minimum
+- No automatic logout unless:
+  1. User manually clicks "Log Out"
+  2. User hasn't used the app for 24+ hours
+  3. Refresh token is truly expired (server-side invalid)
 
-### Bottom Navigation (4 items)
-| Position | Current | Icon |
-|----------|---------|------|
-| 1 | Prompt | Sparkles |
-| 2 | Market | ShoppingBag |
-| 3 | **Wallet** | Wallet |
-| 4 | Chat | MessageSquare |
+## Implementation
 
-### Sidebar "Become a Seller"
-- Currently: Emerald green button with shadow
-- Problem: Takes too much space on mobile, looks like a CTA ad
+### 1. Add Session Persistence Tracking
 
----
+Create a new utility to track login timestamps:
 
-## Proposed Changes
-
-### 1. Bottom Navigation Update
-
-**Before:**
-```
-[Prompt] [Market] [Wallet] [Chat] [Alerts]
-```
-
-**After:**
-```
-[Prompt] [Market] [Billing] [Chat] [Alerts]
-```
-
-**File:** `src/components/dashboard/MobileNavigation.tsx`
-
-**Change:** Line 136
+**File: `src/lib/session-persistence.ts`**
 ```typescript
-// Before
-{ to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
+const SESSION_KEY = 'app_session_start';
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
-// After  
-{ to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
+export const markSessionStart = () => {
+  localStorage.setItem(SESSION_KEY, Date.now().toString());
+};
+
+export const isSessionValid = (): boolean => {
+  const start = localStorage.getItem(SESSION_KEY);
+  if (!start) return true; // No timestamp = new session, allow
+  return Date.now() - parseInt(start) < SESSION_DURATION;
+};
+
+export const clearSessionTimestamp = () => {
+  localStorage.removeItem(SESSION_KEY);
+};
 ```
 
-Also add `CreditCard` to imports from lucide-react.
+### 2. Update Heartbeat - More Resilient
 
----
+**File: `src/hooks/useSessionHeartbeat.ts`**
 
-### 2. "Become a Seller" Text Link
-
-**Before (Button Style):**
-```text
-┌────────────────────────────┐
-│ ████ Become a Seller ████  │  ← Green button with shadow
-└────────────────────────────┘
-```
-
-**After (Text Style):**
-```text
-Want to sell? Become a Seller →   ← Simple text link
-```
-
-**File:** `src/components/dashboard/MobileNavigation.tsx`
-
-**Change:** Lines 203-211
+Key changes:
+- **Don't immediately sign out on failures** - try to recover first
+- Only sign out if 24-hour window has passed AND refresh fails
+- Add retry logic for token refresh
 
 ```typescript
-// Before - Emerald button
-<button
-  onClick={() => { ... }}
-  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm tracking-wide rounded-xl transition-all shadow-lg shadow-emerald-500/25"
->
-  Become a Seller
-</button>
+const heartbeat = async () => {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    // If no session but within 24-hour window, try to recover
+    if (error || !session) {
+      // Attempt refresh before giving up
+      const { data, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !data.session) {
+        // Check if within 24-hour window - if so, don't force logout
+        if (isSessionValid()) {
+          console.log('[Heartbeat] Session issue but within 24h window - staying logged in');
+          return; // Don't sign out
+        }
+        // Only sign out if truly expired (24h+)
+        await signOut();
+        clearSessionTimestamp();
+        window.location.href = '/signin';
+      }
+      return;
+    }
 
-// After - Simple text link
-<button
-  onClick={() => { ... }}
-  className="w-full text-center py-2 text-sm text-gray-600 hover:text-emerald-600 transition-colors"
->
-  <span className="text-gray-500">Want to sell?</span>{' '}
-  <span className="font-medium text-emerald-600 hover:underline">
-    Become a Seller →
-  </span>
-</button>
+    // Proactive refresh (same as before)
+    const exp = session.expires_at;
+    const now = Math.floor(Date.now() / 1000);
+    if (exp && (exp - now) < TOKEN_REFRESH_THRESHOLD) {
+      await supabase.auth.refreshSession();
+    }
+  } catch (error) {
+    // On error, don't sign out - just log
+    console.error('[Heartbeat] Error:', error);
+  }
+};
 ```
 
----
+### 3. Update Auth Hook - Mark Session on Login
 
-## Visual Comparison
+**File: `src/hooks/useAuth.ts`**
 
-### Mobile Bottom Nav
+Add session timestamp when user logs in:
 
-| Before | After |
-|--------|-------|
-| Wallet icon + "Wallet" label | CreditCard icon + "Billing" label |
+```typescript
+const signIn = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signInWithPassword({ ... });
+  if (!error && data.session) {
+    markSessionStart(); // Track 24-hour window
+  }
+  return { data, error };
+};
 
-### Sidebar Bottom Section
+const signInWithGoogle = async () => {
+  // Google OAuth will trigger onAuthStateChange
+  // Mark session there
+};
 
-| Before | After |
-|--------|-------|
-| Large green button | Simple text: "Want to sell? Become a Seller →" |
-| Takes visual focus | Subtle, professional |
-| Shadow effects | No shadows |
+// In onAuthStateChange:
+if (event === 'SIGNED_IN') {
+  markSessionStart();
+}
 
----
+const signOut = async () => {
+  clearSessionTimestamp(); // Clear on manual logout
+  const { error } = await supabase.auth.signOut();
+  return { error };
+};
+```
+
+### 4. Update ProtectedRoute - Don't Force Logout
+
+**File: `src/components/auth/ProtectedRoute.tsx`**
+
+If auth loading times out, check 24-hour window before redirecting:
+
+```typescript
+// Instead of immediate redirect on timeout:
+if (authLoadingTimedOut && !isAuthenticated) {
+  if (isSessionValid()) {
+    // Try silent refresh instead of redirect
+    await supabase.auth.refreshSession();
+    return; // Don't redirect yet
+  }
+  // Only redirect if truly expired
+  navigate('/signin');
+}
+```
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/dashboard/MobileNavigation.tsx` | 1. Add CreditCard import, 2. Change bottom nav item, 3. Restyle Become a Seller |
+| `src/lib/session-persistence.ts` | **NEW** - 24-hour tracking utilities |
+| `src/hooks/useSessionHeartbeat.ts` | More resilient, don't force logout |
+| `src/hooks/useAuth.ts` | Mark session start on login |
+| `src/components/auth/ProtectedRoute.tsx` | Check 24h window before redirect |
 
----
+## How It Works
 
-## Technical Details
-
-### Import Change
-```typescript
-// Add CreditCard to existing imports
-import { 
-  Sparkles, ShoppingBag, Wallet, MessageSquare, Bell, Menu, 
-  ShoppingCart, Heart, BarChart3, ExternalLink, LayoutDashboard, 
-  FileText, User, CreditCard  // Add this
-} from 'lucide-react';
+```text
+User Login
+    │
+    ▼
+┌──────────────────────┐
+│ markSessionStart()   │ ← Store timestamp in localStorage
+│ 24-hour timer begins │
+└──────────────────────┘
+    │
+    ▼
+┌──────────────────────┐
+│ Session Heartbeat    │ ← Runs every 5 minutes
+│ Refreshes JWT tokens │
+│ Keeps session alive  │
+└──────────────────────┘
+    │
+    ▼
+┌──────────────────────┐
+│ Token Refresh Fails? │
+│ Check 24h window:    │
+│ - Within 24h → STAY  │
+│ - Beyond 24h → LOGOUT│
+└──────────────────────┘
 ```
 
-### Bottom Nav Array Update
-```typescript
-const bottomNavItems = [
-  { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompt' },
-  { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Market' },
-  { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },  // Changed
-  { to: '/dashboard/chat', icon: MessageSquare, label: 'Chat' },
-];
-```
+## Expected Behavior After Implementation
 
-### Become a Seller Restyle
-The button will be converted to a subtle text link that:
-- Uses gray/emerald text colors
-- Has no background or shadow
-- Includes an arrow (→) for affordance
-- Maintains click functionality to navigate to `/seller`
+| Scenario | Current | After |
+|----------|---------|-------|
+| Network hiccup during heartbeat | Logs out | Stays logged in |
+| Browser tab inactive for hours | May logout | Stays logged in |
+| Token refresh fails once | Logs out | Retries, stays in |
+| User closes browser, returns next day (< 24h) | Often logged out | Stays logged in |
+| User inactive for 24+ hours | - | Logs out (expected) |
+| User clicks "Log Out" | Logs out | Logs out |
 
----
+## Technical Notes
 
-## Note
+1. **Refresh tokens** in Supabase are valid for much longer than JWTs (default 7 days)
+2. The 24-hour window is a **client-side grace period** - the actual token refresh happens server-side
+3. This change makes the auth system more **fault-tolerant** while still being secure
 
-The Wallet section will still be accessible from:
-- The sidebar menu (hamburger menu items)
-- Direct URL navigation to `/dashboard/wallet`
-
-This change only affects the bottom navigation quick-access, replacing it with Billing which is more commonly accessed on mobile.
