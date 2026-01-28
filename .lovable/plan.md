@@ -1,171 +1,188 @@
 
-# Performance Optimization Plan: First Load & User Response
 
-## Current Architecture Assessment
+# Bug Fixes Implementation Plan
 
-Your project already implements several enterprise-grade patterns:
+## Issues Identified
 
-| Pattern | Status | Implementation |
-|---------|--------|----------------|
-| Server-Side Session | ✅ Implemented | `validate-session`, `useSessionHeartbeat`, 12h grace |
-| Request Queuing | ✅ Implemented | `api-fetch.ts` with refresh queue |
-| BFF Architecture | ✅ Implemented | 6 edge functions aggregating data |
-| Code Splitting | ✅ Implemented | Lazy loading for Dashboard, Seller, Admin, Store |
-| Skeleton UI | ✅ Implemented | `AppShell` component for instant feedback |
-| Data Prefetching | ✅ Implemented | `RoutePrefetcher`, `prefetchDashboardData` |
+Based on my analysis of the codebase, here are the 5 issues that need to be fixed:
 
-## Gap Analysis: What's Missing for Maximum Speed
+### Issue 1: Agency Ads Card in Both Dashboard Sidebars
+**Location**: `DashboardSidebar.tsx` (lines 85-128), `SellerSidebar.tsx` (lines 98-141)
+**Problem**: The "Ads Agency" promotional card with Meta and Google Ads logos is present in both the buyer and seller dashboard sidebars.
+**Solution**: Remove the Ads Agency card section from both sidebar components.
 
-Despite good foundations, there are 5 critical optimizations to achieve sub-300ms perceived load times:
+### Issue 2: Buyer Dashboard Layout Position
+**Location**: `Dashboard.tsx`, `DashboardSidebar.tsx`, `MobileNavigation.tsx`
+**Current State**: The buyer dashboard already mirrors the seller dashboard structure (top bar at `top-16`, sidebar with `72px` collapsed/`60` expanded width, mobile bottom nav).
+**Assessment**: After comparing both layouts, they are already synchronized. No changes needed here - the layouts are identical in positioning.
 
-### Gap 1: No Critical CSS Inlining
-**Problem**: CSS loads as external file, blocks first paint
-**Impact**: 100-200ms delay on first paint
+### Issue 3: Voice Search Not Working on Mobile
+**Location**: `useVoiceSearch.ts`, `VoiceSearchButton.tsx`, `AIAccountsSection.tsx`, `Store.tsx`
+**Problem**: The Web Speech API has limited support on mobile devices (especially iOS Safari and some Android browsers). The `onResult` callback dependency in the useEffect causes the recognition instance to be recreated on every render, breaking the recognition state.
+**Root Cause**: 
+1. The `onResult` callback is included in the useEffect dependency array (line 120), causing the speech recognition to be recreated on each render
+2. Mobile browsers often require HTTPS and explicit user interaction
+3. The recognition instance is not properly persisted across renders
 
-### Gap 2: No Preloading of Critical Assets
-**Problem**: Hero background image loads after JS execution
-**Impact**: 200-400ms delay showing hero content
+**Solution**: 
+- Move `onResult` callback to a ref to prevent recreation
+- Add mobile-specific handling for Safari/WebKit
+- Improve error messages for mobile users
 
-### Gap 3: No Service Worker for Return Visits
-**Problem**: Every visit re-downloads all assets
-**Impact**: 500ms+ on repeat visits
+### Issue 4: Image Search Not Working
+**Location**: `ImageSearchButton.tsx`, `image-search` edge function
+**Assessment**: The image search implementation looks correct - it calls the `image-search` edge function with base64 or URL. Need to verify the edge function is deployed and working.
+**Action**: Check edge function deployment status and logs.
 
-### Gap 4: Edge Function Cold Starts
-**Problem**: First request to edge function has ~500ms cold start
-**Impact**: First data fetch slower than expected
+### Issue 5: Store Page Products Not Showing
+**Location**: `Store.tsx`, `bff-store-public` edge function
+**Problem**: The BFF error handling in Store.tsx (lines 329-336) checks for `errorData.notFound` but the edge function returns `{ notFound: true }` only for 404. When there's another error or the function isn't deployed, products won't load.
+**Current Behavior**: Console log shows `[Store] BFF response` is logged, suggesting the BFF is working. The issue may be:
+1. Products exist but have `is_available: false` or `is_approved: false`
+2. The seller's `is_active` is false
+3. The store_slug doesn't match
 
-### Gap 5: Heavy Homepage (9 Components)
-**Problem**: Index page imports 9 components synchronously
-**Impact**: Larger initial bundle, slower First Contentful Paint
+**Solution**: Add comprehensive fallback logging and ensure both BFF path and fallback path work correctly.
 
 ---
 
-## Optimization Plan
+## Implementation Details
 
-### Phase 1: Critical Path Optimization
+### Fix 1: Remove Ads Agency Cards from Sidebars
 
-#### 1.1 Preload Hero Image in HTML
-Add preload link in `index.html` for the hero background:
-```html
-<link rel="preload" as="image" href="/src/assets/hero-background.webp" />
-```
+**File: `src/components/dashboard/DashboardSidebar.tsx`**
+- Remove lines 85-128 (the entire "Ads Agency Card" section including both collapsed and expanded states)
+- Keep only the navigation and collapse toggle
 
-#### 1.2 Inline Critical CSS
-Extract above-the-fold styles and inline them in `index.html`:
-```html
-<style>
-  body { margin: 0; background: #0B0F19; }
-  #root { min-height: 100vh; }
-  .hero-skeleton { /* critical skeleton styles */ }
-</style>
-```
+**File: `src/components/seller/SellerSidebar.tsx`**
+- Remove lines 98-141 (the entire "Ads Agency Card" section)
+- Keep only the navigation and collapse toggle
 
-#### 1.3 Lazy Load Below-Fold Components
-Split Index page to only eagerly load Header + HeroSection:
+**File: `src/components/dashboard/MobileNavigation.tsx`**
+- Remove lines 217-240 (the Ads Agency card in the mobile Sheet sidebar)
 
-```text
-Current Index.tsx:
-┌────────────────────────────────┐
-│ 9 components loaded together   │
-│ (Header, Hero, AsSeenIn,       │
-│  Bundle, ChatGPT, Addons...)   │
-└────────────────────────────────┘
+**File: `src/components/seller/SellerMobileNavigation.tsx`**
+- Remove lines 169-194 (the Ads Agency card in the mobile Sheet sidebar)
 
-Optimized:
-┌────────────────────────────────┐
-│ Eager: Header + HeroSection    │
-├────────────────────────────────┤
-│ Lazy: Everything below fold    │
-│ (loads when user scrolls)      │
-└────────────────────────────────┘
-```
+---
 
-### Phase 2: Return Visit Speed (Service Worker)
+### Fix 2: Voice Search Mobile Compatibility
 
-#### 2.1 Enhanced Service Worker
-Upgrade `public/sw.js` to cache:
-- Static assets (JS, CSS, images)
-- API responses with stale-while-revalidate
-- Offline fallback page
-
-```text
-First Visit:  [Network] ────────────────> [Render]
-                        500-1000ms
-
-Return Visit: [Cache] ──> [Render] ──> [Background Refresh]
-              50-100ms
-```
-
-### Phase 3: Edge Function Warming
-
-#### 3.1 Warm Critical Edge Functions on App Load
-Add background fetch on mount to warm up edge functions:
+**File: `src/hooks/useVoiceSearch.ts`**
 
 ```typescript
-// In main.tsx - warm up functions after initial render
-if (typeof window !== 'undefined') {
-  setTimeout(() => {
-    // Warm up marketplace BFF
-    fetch(`${SUPABASE_URL}/functions/v1/bff-marketplace-home`, { 
-      method: 'HEAD' 
-    }).catch(() => {});
-  }, 2000);
+// Key changes:
+1. Use useRef for the onResult callback to prevent recreation
+2. Add mobile browser detection and adjusted settings
+3. Improve error handling for mobile-specific issues
+4. Add retry mechanism for mobile Safari
+
+// Changes:
+- Line 43: Add onResultRef = useRef(onResult)
+- Line 52: Update onResultRef.current = onResult in effect
+- Line 120: Remove onResult from dependency array
+- Add mobile-specific error handling
+- Add check for secure context (HTTPS requirement)
+```
+
+**Updated implementation structure:**
+```typescript
+export function useVoiceSearch(onResult?: (text: string) => void) {
+  // Store callback in ref to avoid recreating recognition
+  const onResultRef = useRef(onResult);
+  
+  useEffect(() => {
+    onResultRef.current = onResult;
+  }, [onResult]);
+
+  useEffect(() => {
+    if (!isSupported) return;
+    
+    // Check for secure context (required for microphone)
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+      console.warn('Voice search requires HTTPS');
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    // ... setup with onResultRef.current instead of onResult
+  }, [isSupported]); // Remove onResult from deps
 }
 ```
 
-### Phase 4: Image Optimization
+---
 
-#### 4.1 Add Responsive Image Loading
-Use `<picture>` with WebP + fallback:
-```html
-<picture>
-  <source srcset="hero-bg.webp" type="image/webp">
-  <img src="hero-bg.jpg" alt="Hero" loading="eager" fetchpriority="high">
-</picture>
+### Fix 3: Store Products Not Showing
+
+**File: `src/pages/Store.tsx`**
+
+Improve error handling and fallback logic:
+
+```typescript
+// Lines 329-389 - Enhanced error handling
+const fetchStoreData = async () => {
+  setLoading(true);
+  
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bff-store-public?slug=${storeSlug}`,
+      { /* headers */ }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.log('[Store] BFF error response:', { status: response.status, errorData });
+      
+      // Check for various not-found indicators
+      if (response.status === 404 || errorData.notFound || errorData.code === 'NOT_FOUND') {
+        console.log('[Store] Store not found via BFF');
+        // Fall through to direct query as backup
+        throw new Error('FALLBACK_NEEDED');
+      }
+      throw new Error(errorData.error || 'Failed to load store');
+    }
+
+    const data = await response.json();
+    // ... rest of success handling
+  } catch (error: any) {
+    console.log('[Store] BFF failed, trying direct Supabase query:', error.message);
+    // Fallback logic...
+  }
+};
 ```
 
-#### 4.2 Lazy Load All Below-Fold Images
-Add `loading="lazy"` to non-critical images
+---
+
+## Files to Modify
+
+| File | Change Type | Description |
+|------|-------------|-------------|
+| `src/components/dashboard/DashboardSidebar.tsx` | Remove code | Remove Ads Agency card (lines 85-128) |
+| `src/components/seller/SellerSidebar.tsx` | Remove code | Remove Ads Agency card (lines 98-141) |
+| `src/components/dashboard/MobileNavigation.tsx` | Remove code | Remove Ads Agency card from mobile sidebar |
+| `src/components/seller/SellerMobileNavigation.tsx` | Remove code | Remove Ads Agency card from mobile sidebar |
+| `src/hooks/useVoiceSearch.ts` | Refactor | Fix callback recreation issue, add mobile support |
+| `src/pages/Store.tsx` | Fix logic | Improve BFF error handling and fallback |
 
 ---
 
-## Implementation Files
+## Technical Notes
 
-| File | Changes |
-|------|---------|
-| `index.html` | Add critical CSS, preload hero image |
-| `src/pages/Index.tsx` | Lazy load below-fold sections |
-| `public/sw.js` | Full caching strategy |
-| `src/main.tsx` | Edge function warming |
-| `src/components/HeroSection.tsx` | Priority image loading |
-| `vite.config.ts` | Add image optimization plugin |
+### Voice Search Mobile Limitations
+- iOS Safari: Requires user interaction to start, may timeout quickly
+- Android Chrome: Generally works but needs HTTPS
+- The fix uses useRef pattern to prevent unnecessary recreation of speech recognition
 
----
+### Store Products Debug Steps
+1. Verify seller has `is_active: true`
+2. Verify products have both `is_available: true` AND `is_approved: true`
+3. Verify store_slug matches exactly (case-sensitive in Postgres)
+4. Check browser console for `[Store]` prefixed logs
 
-## Expected Performance Gains
+### Mobile Responsiveness
+- Both dashboards already use identical responsive breakpoints
+- Bottom navigation is fixed at `bottom-0` with safe-area-inset
+- Content has appropriate `pb-24 lg:pb-0` padding for mobile nav
 
-| Metric | Current | After Optimization |
-|--------|---------|-------------------|
-| First Contentful Paint | ~800ms | ~300ms |
-| Largest Contentful Paint | ~1.5s | ~600ms |
-| Time to Interactive | ~2s | ~1s |
-| Return Visit Load | ~800ms | ~100ms |
-| Edge Function First Call | ~500ms | ~200ms (warm) |
-
----
-
-## Priority Order
-
-1. **Index.tsx lazy loading** - Biggest impact, lowest risk
-2. **Hero image preload** - Quick win, no code change
-3. **Service Worker** - Massive impact for return visitors
-4. **Edge warming** - Reduces cold start penalty
-5. **Critical CSS** - Final polish for perfect scores
-
----
-
-## Summary
-
-Your architecture is already enterprise-grade for **reliability**. These optimizations focus on **perceived speed** - making users feel instant response even when network is slow.
-
-The goal: **"Users should see content before they finish blinking"** (~300ms)
