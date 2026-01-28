@@ -101,6 +101,7 @@ interface SellerContextType {
   products: SellerProduct[];
   orders: SellerOrder[];
   withdrawals: SellerWithdrawal[];
+  sellerLevels: SellerLevel[];
   loading: boolean;
   error: string | null;
   refreshProfile: () => Promise<void>;
@@ -126,6 +127,7 @@ export const SellerProvider = ({
   const [products, setProducts] = useState<SellerProduct[]>([]);
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [withdrawals, setWithdrawals] = useState<SellerWithdrawal[]>([]);
+  const [sellerLevels, setSellerLevels] = useState<SellerLevel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -150,15 +152,22 @@ export const SellerProvider = ({
         return;
       }
 
-      const { profile: newProfile, wallet: newWallet, products: newProducts, orders: newOrders, withdrawals: newWithdrawals } = result.data;
+      const data = result.data;
+      const newProfile = data.profile;
+      const newWallet = data.wallet;
+      const newProducts = data.products;
+      const newOrders = data.orders;
+      const newWithdrawals = data.withdrawals;
+      const newSellerLevels = data.sellerLevels;
 
       if (newProfile) setProfile(newProfile);
       setWallet(newWallet);
       setProducts(newProducts || []);
       setOrders(newOrders || []);
       setWithdrawals(newWithdrawals || []);
+      setSellerLevels(newSellerLevels || []);
 
-      console.log('[SellerContext] Data loaded from BFF at:', result.data._meta?.fetchedAt);
+      console.log('[SellerContext] Data loaded from BFF at:', data._meta?.fetchedAt);
     } catch (err) {
       console.error('[SellerContext] Unexpected error:', err);
       setError('Unexpected error loading data');
@@ -266,6 +275,7 @@ export const SellerProvider = ({
       products,
       orders,
       withdrawals,
+      sellerLevels,
       loading,
       error,
       refreshProfile,

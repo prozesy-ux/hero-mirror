@@ -53,7 +53,7 @@ serve(async (req) => {
     const sellerId = profile.id;
 
     // 4. Fetch all seller data in parallel
-    const [walletResult, productsResult, ordersResult, withdrawalsResult, withdrawalConfigResult] = await Promise.all([
+    const [walletResult, productsResult, ordersResult, withdrawalsResult, withdrawalConfigResult, sellerLevelResult, allLevelsResult] = await Promise.all([
       // Wallet
       supabase
         .from('seller_wallets')
@@ -91,7 +91,20 @@ serve(async (req) => {
         .select('*')
         .in('country_code', [sellerCountry, 'GLOBAL'])
         .eq('is_enabled', true)
-        .order('account_type, method_name')
+        .order('account_type, method_name'),
+      
+      // Seller's current level (if level_id exists)
+      profile.level_id ? supabase
+        .from('seller_levels')
+        .select('*')
+        .eq('id', profile.level_id)
+        .single() : Promise.resolve({ data: null, error: null }),
+      
+      // All levels for progression display
+      supabase
+        .from('seller_levels')
+        .select('*')
+        .order('display_order', { ascending: true })
     ]);
 
     // 5. Fetch buyer info for orders (batch to avoid N+1)
@@ -112,14 +125,21 @@ serve(async (req) => {
       }));
     }
 
+    // Attach level to profile
+    const profileWithLevel = {
+      ...profile,
+      level: sellerLevelResult.data || null
+    };
+
     // 6. Return clean response
     return successResponse({
-      profile,
+      profile: profileWithLevel,
       wallet: walletResult.data || null,
       products: productsResult.data || [],
       orders: ordersWithBuyers,
       withdrawals: withdrawalsResult.data || [],
       withdrawalMethods: withdrawalConfigResult.data || [],
+      sellerLevels: allLevelsResult.data || [],
       sellerCountry,
       _meta: {
         fetchedAt: new Date().toISOString(),

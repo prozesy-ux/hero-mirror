@@ -197,6 +197,7 @@ export const bffApi = {
     orders: any[];
     withdrawals: any[];
     withdrawalMethods: any[];
+    sellerLevels: any[];
     sellerCountry: string;
     _meta: { fetchedAt: string; userId: string; sellerId: string };
   }>('bff-seller-dashboard'),
