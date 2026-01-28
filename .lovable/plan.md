@@ -1,251 +1,186 @@
 
-# Enterprise Stability Fix Plan - Zero Data Load Failures
 
-## Critical Issues Identified
+# Store Page Products & Marketplace Feature Parity Plan
 
-After thorough codebase analysis against your 18-point checklist, I found **5 critical bugs** causing the "data not load" issues:
+## Problem Summary
 
-| Issue | Root Cause | Affected Checklist Items |
-|-------|-----------|-------------------------|
-| `handleUnauthorized()` forces logout | Called in 4 components, triggers `signOut()` + redirect | #2, #3, #4, #10, #15, #16 |
-| BFF 401 response triggers redirect | Instead of soft banner, user is kicked out | #2, #3, #16 |
-| No cached data fallback | When BFF fails, UI shows error instead of cached data | #10, #12 |
-| Realtime channels not resubscribing | After token refresh, channels go dead | #13, #14 |
-| Mutation lock not enforced | `canMutate` exists but not used in purchase/withdrawal flows | #17, #18 |
+1. **Products Not Displaying**: The store page loads the seller profile but products are not rendering. The BFF function `bff-store-public` exists but may have deployment/propagation issues.
+
+2. **Design Mismatch**: The store page lacks the full marketplace features including:
+   - Advanced search with voice/image search
+   - Search suggestions and recent searches  
+   - Price/rating/verified filter bar
+   - Category browser sections
+   - Hot products, top-rated, new arrivals sections
+   - Mobile search overlay
 
 ---
 
-## Fix 1: Remove `handleUnauthorized()` Calls
+## Root Cause Analysis
 
-**Problem**: 4 components call `handleUnauthorized()` which triggers `signOut()` + redirect to `/signin`:
+### Issue 1: Products Not Showing
 
-- `BuyerDashboardHome.tsx` (line 54)
-- `BuyerWallet.tsx` (line 288)
-- `BuyerOrders.tsx` (line 84)
-- `SellerContext.tsx` (line 144)
+After checking the code, the BFF function is correctly querying products:
 
-**Solution**: Replace with soft state - set `sessionExpired = true` and show banner instead of forcing redirect.
-
-```typescript
-// BEFORE (WRONG - Forces logout)
-if (result.isUnauthorized) {
-  handleUnauthorized();
-  return;
-}
-
-// AFTER (CORRECT - Soft state)
-if (result.isUnauthorized) {
-  setSessionExpired(true);
-  setError('Session expired - please re-login');
-  return;
-}
+```text
+supabase
+  .from('seller_products')
+  .select('id, name, description, price, icon_url, ...')
+  .eq('seller_id', seller.id)
+  .eq('is_available', true)
+  .eq('is_approved', true)
 ```
 
-**Files to modify**:
-- `src/components/dashboard/BuyerDashboardHome.tsx`
-- `src/components/dashboard/BuyerWallet.tsx`
-- `src/components/dashboard/BuyerOrders.tsx`
-- `src/contexts/SellerContext.tsx`
+Database verification shows products exist with `is_available=true` and `is_approved=true`.
+
+The BFF function was just deployed. The issue is likely:
+1. **Edge function deployment delay** - functions take time to propagate
+2. **Fallback logic not triggering correctly** when BFF fails
+
+### Issue 2: Missing Marketplace Features
+
+The store page has a basic search input but lacks:
+- SearchScopeSelector (category dropdown in search)
+- VoiceSearchButton
+- ImageSearchButton  
+- SearchFiltersBar (price/rating/verified filters)
+- SearchSuggestions dropdown
+- MobileSearchOverlay for mobile
+- HotProductsSection, TopRatedSection, NewArrivalsSection
 
 ---
 
-## Fix 2: Update `api-fetch.ts` to Never Force Logout
+## Implementation Plan
 
-**Problem**: `handleUnauthorized()` function in `api-fetch.ts` calls `supabase.auth.signOut()` and redirects.
+### Phase 1: Fix Products Display
 
-**Solution**: Remove the auto-signout behavior. Return error state only - let UI decide what to do.
+**1.1 Redeploy and verify BFF function**
+- Ensure `bff-store-public` is deployed and accessible
+- Add better error logging
 
-```typescript
-// NEW - Soft unauthorized handler
-export function handleUnauthorized(): void {
-  // DO NOT call signOut() - this causes forced logout
-  // Just emit an event for UI to show soft banner
-  window.dispatchEvent(new CustomEvent('session-unauthorized'));
-  console.warn('[ApiFetch] Unauthorized - soft state triggered');
-}
-```
+**1.2 Improve fallback robustness in Store.tsx**
+- Ensure direct Supabase query runs when BFF fails
+- Add console logs to trace where products are lost
+- Handle empty product arrays gracefully
 
-**File to modify**: `src/lib/api-fetch.ts`
+**1.3 Update SellerProduct interface**
+- Ensure it includes `images` and `original_price` fields returned by BFF
 
----
+### Phase 2: Add Marketplace Search Features
 
-## Fix 3: Add Cached Data Fallback in Components
+**2.1 Add search hooks and components**
+Import and integrate existing marketplace components:
+- `useSearchSuggestions` hook
+- `useVoiceSearch` hook  
+- `SearchSuggestions` component
+- `VoiceSearchButton` component
+- `ImageSearchButton` component
+- `SearchFiltersBar` component
+- `MobileSearchOverlay` component
 
-**Problem**: When BFF fails (network error, timeout, 500), UI shows error with "Try Again" button. No cached data shown.
+**2.2 Update Store search bar design**
+Match the marketplace Amazon-style search:
+- Gray background SearchScopeSelector on left
+- Voice/image/clear buttons inside input
+- Black "Search" button on right
+- Filter bar below search
 
-**Solution**: Use React Query for automatic caching, or implement localStorage cache fallback.
+**2.3 Add discovery sections**
+Add marketplace-style sections for store products:
+- Hot products (top by sold_count)
+- New arrivals (sorted by created_at)
+- Top rated (when reviews exist)
 
-```typescript
-// In fetchData function:
-const fetchData = async () => {
-  setLoading(true);
-  
-  const result = await bffApi.getBuyerDashboard();
-  
-  if (result.error && !result.isUnauthorized) {
-    // Try to load from cache
-    const cached = localStorage.getItem('buyer_dashboard_cache');
-    if (cached) {
-      const cachedData = JSON.parse(cached);
-      setData(cachedData.data);
-      setError('Using cached data - some info may be outdated');
-    } else {
-      setError(result.error);
-    }
-    setLoading(false);
-    return;
-  }
-  
-  if (result.data) {
-    setData(result.data);
-    // Cache for offline use
-    localStorage.setItem('buyer_dashboard_cache', JSON.stringify({
-      data: result.data,
-      timestamp: Date.now()
-    }));
-  }
-  setLoading(false);
-};
-```
+### Phase 3: Mobile Optimization
 
-**Files to modify**:
-- `src/components/dashboard/BuyerDashboardHome.tsx`
-- `src/contexts/SellerContext.tsx`
+**3.1 Mobile search overlay**
+- "/" keyboard shortcut opens overlay
+- Full-screen search on mobile
+- Recent searches and suggestions
+
+**3.2 Filter improvements**
+- Price range filter
+- Rating filter
+- Verified toggle
 
 ---
 
-## Fix 4: Realtime Channel Resubscription on Token Refresh
-
-**Problem**: When `TOKEN_REFRESHED` event fires, existing realtime channels have stale tokens and stop receiving updates.
-
-**Solution**: Listen for `session-refreshed` event and resubscribe channels.
-
-```typescript
-// In SellerContext.tsx and BuyerDashboardHome.tsx:
-useEffect(() => {
-  const handleSessionRefresh = () => {
-    console.log('[Component] Session refreshed - resubscribing realtime');
-    // Remove and resubscribe all channels
-    supabase.removeAllChannels();
-    // Re-run the subscription setup
-    setupRealtimeSubscriptions();
-  };
-  
-  window.addEventListener('session-refreshed', handleSessionRefresh);
-  return () => window.removeEventListener('session-refreshed', handleSessionRefresh);
-}, []);
-```
-
-**Files to modify**:
-- `src/contexts/SellerContext.tsx`
-- `src/components/dashboard/BuyerDashboardHome.tsx`
-- `src/components/dashboard/BuyerWallet.tsx`
-
----
-
-## Fix 5: Enforce Mutation Lock in Purchase/Withdrawal Flows
-
-**Problem**: `canMutate` state exists in AuthContext but is not checked before sensitive operations.
-
-**Solution**: Add `canMutate` check before all write operations.
-
-```typescript
-// In purchase handler:
-const { canMutate, sessionVerified } = useAuthContext();
-
-const handlePurchase = async (product) => {
-  if (!canMutate) {
-    toast.error('Please wait - verifying your session...');
-    return;
-  }
-  
-  // Proceed with purchase...
-};
-
-// In UI:
-<Button 
-  disabled={!canMutate || purchasing}
-  onClick={() => handlePurchase(product)}
->
-  {!canMutate ? 'Verifying...' : 'Buy Now'}
-</Button>
-```
-
-**Files to modify**:
-- `src/pages/Store.tsx` (purchase flow)
-- `src/components/dashboard/BuyerWallet.tsx` (withdrawal flow)
-- `src/components/seller/SellerWallet.tsx` (seller withdrawal)
-
----
-
-## Fix 6: Add Session Expired Banner to Seller Dashboard
-
-**Problem**: Seller page has the banner but SellerContext doesn't propagate the expired state properly.
-
-**Solution**: Pass `setSessionExpired` from AuthContext into SellerContext's unauthorized handler.
-
-**Files to modify**:
-- `src/contexts/SellerContext.tsx`
-
----
-
-## Implementation Summary
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/lib/api-fetch.ts` | Remove `signOut()` call from `handleUnauthorized()` |
-| `src/components/dashboard/BuyerDashboardHome.tsx` | Remove `handleUnauthorized()`, add cache fallback, add realtime resubscription |
-| `src/components/dashboard/BuyerWallet.tsx` | Remove `handleUnauthorized()`, add `canMutate` check, add realtime resubscription |
-| `src/components/dashboard/BuyerOrders.tsx` | Remove `handleUnauthorized()`, add cache fallback |
-| `src/contexts/SellerContext.tsx` | Remove `handleUnauthorized()`, use `setSessionExpired`, add realtime resubscription |
-| `src/pages/Store.tsx` | Add `canMutate` check before purchase |
-| `src/components/seller/SellerWallet.tsx` | Add `canMutate` check before withdrawal |
+| `src/pages/Store.tsx` | Add marketplace search features, fix product loading, add filter state |
+| `supabase/functions/bff-store-public/index.ts` | Verify deployment, add error handling |
+| `src/components/store/StoreProductCard.tsx` | Ensure interface matches BFF response |
+| `src/components/store/StoreProductCardCompact.tsx` | Add original_price, images support |
 
 ---
 
-## Expected Results After Fix
+## Technical Details
 
-| Checklist Item | Current | After Fix |
-|----------------|---------|-----------|
-| #2 No Auto Logout | FAIL - `handleUnauthorized` forces logout | PASS - Soft banner only |
-| #3 12-Hour Session | PARTIAL - BFF 401 triggers logout | PASS - Grace window honored |
-| #10 DB Failure ≠ Logout | FAIL - Shows error | PASS - Shows cached data |
-| #12 Search Without DB | FAIL - Breaks | PASS - Uses cache |
-| #13 Realtime After Refresh | FAIL - Channels die | PASS - Channels resubscribe |
-| #14 Realtime After Token Refresh | FAIL - No updates | PASS - Auto-resubscribe |
-| #15 Network Offline | FAIL - Error shown | PASS - Cached UI |
-| #16 Session Expired (>12h) | FAIL - Redirect | PASS - Soft banner |
-| #17 Mutation Lock | FAIL - Actions allowed | PASS - Blocked until verified |
-| #18 Write Enable After Verify | PASS | PASS |
+### Updated SellerProduct Interface (Store.tsx)
 
----
-
-## Technical Architecture After Fix
-
-```text
-User Action (Purchase/Withdraw)
-       │
-       ▼
-Check canMutate state
-       │
-       ├─ false → Show "Verifying..." (blocked)
-       │
-       └─ true → Proceed with API call
-                    │
-                    ├─ Success → Update UI
-                    │
-                    ├─ 401 → Set sessionExpired = true
-                    │         Show soft banner
-                    │         DO NOT redirect
-                    │
-                    └─ Network error → Show cached data
-                                       Show "Using offline data" badge
+```typescript
+interface SellerProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  original_price: number | null;  // Added
+  icon_url: string | null;
+  images: string[] | null;        // Added
+  category_id: string | null;
+  is_available: boolean;
+  is_approved: boolean;
+  tags: string[] | null;
+  stock: number | null;
+  sold_count: number | null;
+  chat_allowed: boolean | null;
+  seller_id: string;
+  view_count: number | null;      // Added
+}
 ```
 
-This plan addresses ALL identified failures in your 18-point checklist by:
+### Search Features Integration
 
-1. **Never forcing logout** - Only soft banners
-2. **Honoring 12-hour session** - Server decides, not client
-3. **Caching data locally** - Works offline
-4. **Resubscribing realtime channels** - After token refresh
-5. **Locking mutations** - Until session verified
+```typescript
+// Add imports
+import { SearchSuggestions } from '@/components/marketplace/SearchSuggestions';
+import { VoiceSearchButton } from '@/components/marketplace/VoiceSearchButton';
+import { ImageSearchButton } from '@/components/marketplace/ImageSearchButton';
+import { SearchFiltersBar, FilterState } from '@/components/marketplace/SearchFiltersBar';
+import { MobileSearchOverlay } from '@/components/marketplace/MobileSearchOverlay';
+import { useSearchSuggestions } from '@/hooks/useSearchSuggestions';
+import { useVoiceSearch } from '@/hooks/useVoiceSearch';
+
+// Add state
+const [filterState, setFilterState] = useState<FilterState>({
+  priceMin: undefined,
+  priceMax: undefined,
+  minRating: null,
+  verifiedOnly: false,
+});
+const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+```
+
+### Search Bar Layout (matching marketplace)
+
+```text
++-------------------------------------------+
+| [Categories ▼] [Search input... 🎤 🖼️ ✕] [Search] |
++-------------------------------------------+
+| Filter by: [$Price ▼] [★ Rating ▼] [✓ Verified] [Clear] |
++-------------------------------------------+
+```
+
+---
+
+## Expected Outcome
+
+1. ✅ Products display correctly on store pages
+2. ✅ Search bar matches marketplace design with voice/image search
+3. ✅ Price, rating, and verified filters work
+4. ✅ Search suggestions show recent/trending/products
+5. ✅ Mobile search overlay for better UX
+6. ✅ Consistent design between store and marketplace
+
