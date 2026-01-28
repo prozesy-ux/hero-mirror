@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, ShoppingBag, Wallet, MessageSquare, Bell, Menu, ShoppingCart, Heart, BarChart3, ExternalLink, LayoutDashboard, FileText, User } from 'lucide-react';
+import { Sparkles, ShoppingBag, Wallet, CreditCard, MessageSquare, Bell, Menu, ShoppingCart, Heart, BarChart3, ExternalLink, LayoutDashboard, FileText, User } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -133,7 +133,7 @@ const MobileNavigation = () => {
   const bottomNavItems = [
     { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompt' },
     { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Market' },
-    { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
+    { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'Chat' },
   ];
 
@@ -200,15 +200,18 @@ const MobileNavigation = () => {
               
               {/* Bottom Section: Become a Seller + Ads Agency */}
               <div className="p-3 mt-auto absolute bottom-0 left-0 right-0 space-y-3">
-                {/* Become a Seller Button - Text only, Fiverr/Upwork style */}
+                {/* Become a Seller - Text link style */}
                 <button
                   onClick={() => {
                     setSidebarOpen(false);
                     navigate('/seller');
                   }}
-                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm tracking-wide rounded-xl transition-all shadow-lg shadow-emerald-500/25"
+                  className="w-full text-center py-2 text-sm transition-colors"
                 >
-                  Become a Seller
+                  <span className="text-gray-500">Want to sell?</span>{' '}
+                  <span className="font-medium text-emerald-600 hover:underline">
+                    Become a Seller →
+                  </span>
                 </button>
                 
                 {/* Ads Agency Card */}
