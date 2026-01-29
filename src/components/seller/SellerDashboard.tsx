@@ -8,33 +8,28 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AnnouncementBanner } from '@/components/ui/announcement-banner';
-import SellerLevelBadge from '@/components/seller/SellerLevelBadge';
-import SellerLevelProgress from '@/components/seller/SellerLevelProgress';
 import { 
+  LineChart,
+  Line,
   BarChart, 
   Bar, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer
+  ResponsiveContainer,
+  Legend
 } from 'recharts';
 import { 
   Package,
-  ShoppingBag,
-  DollarSign,
+  Truck,
+  Target,
   TrendingUp,
   TrendingDown,
-  ArrowRight,
-  ShieldCheck,
-  MessageSquare,
-  Award,
-  Star,
-  AlertTriangle,
   Download,
   Calendar as CalendarIcon
 } from 'lucide-react';
-import { format, subDays, eachDayOfInterval, isWithinInterval, startOfDay } from 'date-fns';
+import { format, subDays, eachDayOfInterval, isWithinInterval, startOfDay, subMonths, getMonth, getYear } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import {
   Select,
@@ -46,26 +41,15 @@ import {
 import { toast } from 'sonner';
 import { DateRange } from 'react-day-picker';
 
-interface TrustScore {
-  trust_score: number;
-  total_reports: number;
-  successful_orders: number;
-  buyer_approved_count: number;
-}
-
 const SellerDashboard = () => {
   const { profile, wallet, products, orders, loading } = useSellerContext();
   const { formatAmountOnly } = useCurrency();
-  const [trustScore, setTrustScore] = useState<TrustScore | null>(null);
   const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'custom'>('30d');
   const [dateRange, setDateRange] = useState<DateRange>({
     from: subDays(new Date(), 30),
     to: new Date()
   });
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [unreadMessages, setUnreadMessages] = useState(0);
-  const [averageRating, setAverageRating] = useState<number | null>(null);
-  const [reviewCount, setReviewCount] = useState(0);
   const navigate = useNavigate();
 
   // Update date range when period changes
@@ -84,71 +68,6 @@ const SellerDashboard = () => {
     }
   }, [period]);
 
-  useEffect(() => {
-    if (profile?.id) {
-      fetchTrustScore();
-      fetchQuickStats();
-    }
-  }, [profile?.id]);
-
-  const fetchQuickStats = async () => {
-    if (!profile?.id) return;
-    
-    // Fetch unread messages count
-    const { count: msgCount } = await supabase
-      .from('seller_chats')
-      .select('*', { count: 'exact', head: true })
-      .eq('seller_id', profile.id)
-      .eq('is_read', false)
-      .eq('sender_type', 'buyer');
-    
-    setUnreadMessages(msgCount || 0);
-    
-    // Fetch average rating from product reviews
-    const { data: ratingData } = await supabase
-      .from('product_reviews')
-      .select('rating, seller_products!inner(seller_id)')
-      .eq('seller_products.seller_id', profile.id);
-    
-    if (ratingData && ratingData.length > 0) {
-      const avg = ratingData.reduce((sum, r) => sum + r.rating, 0) / ratingData.length;
-      setAverageRating(avg);
-      setReviewCount(ratingData.length);
-    }
-  };
-
-  useEffect(() => {
-    if (!profile?.id) return;
-
-    const channel = supabase
-      .channel('trust-score-updates')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'seller_trust_scores',
-        filter: `seller_id=eq.${profile.id}`
-      }, () => {
-        fetchTrustScore();
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [profile?.id]);
-
-  const fetchTrustScore = async () => {
-    if (!profile?.id) return;
-    
-    const { data } = await supabase
-      .from('seller_trust_scores')
-      .select('trust_score, total_reports, successful_orders, buyer_approved_count')
-      .eq('seller_id', profile.id)
-      .single();
-    
-    if (data) {
-      setTrustScore(data);
-    }
-  };
-
   // Filter orders by date range
   const filteredOrders = useMemo(() => {
     if (!dateRange.from || !dateRange.to) return orders;
@@ -158,51 +77,166 @@ const SellerDashboard = () => {
     });
   }, [orders, dateRange]);
 
-  // Calculate stats from filtered orders
-  const todayStart = startOfDay(new Date());
-  const todayOrders = orders.filter(o => new Date(o.created_at) >= todayStart);
-  const todaySales = todayOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
-  const pendingOrders = filteredOrders.filter(o => o.status === 'pending').length;
-  const completedOrders = filteredOrders.filter(o => o.status === 'completed').length;
-  const refundedOrders = filteredOrders.filter(o => o.status === 'refunded').length;
+  // Calculate metrics from real data
+  const metrics = useMemo(() => {
+    const now = new Date();
+    const thisWeekStart = subDays(now, 7);
+    const lastWeekStart = subDays(now, 14);
+    const thisMonthStart = subMonths(now, 1);
+    const lastMonthStart = subMonths(now, 2);
 
-  // Chart data from filtered orders
-  const chartData = useMemo(() => {
-    if (!dateRange.from || !dateRange.to) return [];
-    const dateInterval = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
+    // This week's orders
+    const thisWeekOrders = orders.filter(o => new Date(o.created_at) >= thisWeekStart);
+    const lastWeekOrders = orders.filter(o => {
+      const d = new Date(o.created_at);
+      return d >= lastWeekStart && d < thisWeekStart;
+    });
 
-    return dateInterval.map(day => {
-      const dayStart = startOfDay(day);
-      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
-      
-      const dayOrders = filteredOrders.filter(order => {
-        const orderDate = new Date(order.created_at);
-        return isWithinInterval(orderDate, { start: dayStart, end: dayEnd });
+    // Revenue calculations
+    const totalRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
+    const thisWeekRevenue = thisWeekOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
+    const lastWeekRevenue = lastWeekOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
+    const revenueChange = lastWeekRevenue > 0 
+      ? ((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue) * 100 
+      : (thisWeekRevenue > 0 ? 100 : 0);
+
+    // Pending balance
+    const pendingBalance = wallet?.pending_balance || 0;
+    
+    // Orders count
+    const totalOrders = filteredOrders.length;
+    const thisWeekOrderCount = thisWeekOrders.length;
+    const lastWeekOrderCount = lastWeekOrders.length;
+    const ordersChange = lastWeekOrderCount > 0
+      ? ((thisWeekOrderCount - lastWeekOrderCount) / lastWeekOrderCount) * 100
+      : (thisWeekOrderCount > 0 ? 100 : 0);
+
+    // Products count
+    const activeProducts = products.filter(p => p.is_available && p.is_approved).length;
+
+    // Completion rate
+    const completedOrders = filteredOrders.filter(o => o.status === 'completed').length;
+    const completionRate = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
+
+    // Monthly data for line chart
+    const thisMonthOrders = orders.filter(o => new Date(o.created_at) >= thisMonthStart);
+    const lastMonthOrders = orders.filter(o => {
+      const d = new Date(o.created_at);
+      return d >= lastMonthStart && d < thisMonthStart;
+    });
+    const thisMonthRevenue = thisMonthOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
+    const lastMonthRevenue = lastMonthOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
+    const monthlyGrowth = lastMonthRevenue > 0
+      ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+      : (thisMonthRevenue > 0 ? 100 : 0);
+
+    // Top products by revenue
+    const productSales: Record<string, { name: string; revenue: number; count: number }> = {};
+    filteredOrders.forEach(order => {
+      const productId = order.product_id;
+      const productName = order.product?.name || 'Unknown';
+      if (!productSales[productId]) {
+        productSales[productId] = { name: productName, revenue: 0, count: 0 };
+      }
+      productSales[productId].revenue += Number(order.seller_earning);
+      productSales[productId].count += 1;
+    });
+    const topProducts = Object.values(productSales)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+    const maxProductRevenue = topProducts.length > 0 ? topProducts[0].revenue : 1;
+
+    // Top buyers
+    const buyerSales: Record<string, { email: string; revenue: number; orderCount: number }> = {};
+    filteredOrders.forEach(order => {
+      const buyerId = order.buyer_id;
+      const buyerEmail = order.buyer?.email || 'Unknown';
+      if (!buyerSales[buyerId]) {
+        buyerSales[buyerId] = { email: buyerEmail, revenue: 0, orderCount: 0 };
+      }
+      buyerSales[buyerId].revenue += Number(order.seller_earning);
+      buyerSales[buyerId].orderCount += 1;
+    });
+    const topBuyers = Object.values(buyerSales)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
+      .map(b => ({
+        ...b,
+        percentage: totalRevenue > 0 ? (b.revenue / totalRevenue) * 100 : 0
+      }));
+
+    // Order status breakdown
+    const statusBreakdown = {
+      pending: filteredOrders.filter(o => o.status === 'pending').length,
+      delivered: filteredOrders.filter(o => o.status === 'delivered').length,
+      completed: filteredOrders.filter(o => o.status === 'completed').length,
+      refunded: filteredOrders.filter(o => o.status === 'refunded').length
+    };
+    const statusTotal = Object.values(statusBreakdown).reduce((a, b) => a + b, 0) || 1;
+
+    // Monthly trend data
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentYear = getYear(now);
+    const lastYear = currentYear - 1;
+    
+    const monthlyTrend = monthNames.map((month, index) => {
+      const thisYearOrders = orders.filter(o => {
+        const d = new Date(o.created_at);
+        return getMonth(d) === index && getYear(d) === currentYear;
       });
-
+      const lastYearOrders = orders.filter(o => {
+        const d = new Date(o.created_at);
+        return getMonth(d) === index && getYear(d) === lastYear;
+      });
       return {
-        date: format(day, 'MMM d'),
-        sales: dayOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0),
-        orders: dayOrders.length
+        month,
+        thisYear: thisYearOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0),
+        lastYear: lastYearOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0)
       };
     });
-  }, [filteredOrders, dateRange]);
 
-  // Recent orders for table
-  const recentOrders = orders
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 5);
+    // Period comparison (quarters)
+    const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+    const periodData = quarters.map((q, i) => {
+      const startMonth = i * 3;
+      const endMonth = startMonth + 2;
+      const currentQuarterOrders = orders.filter(o => {
+        const d = new Date(o.created_at);
+        const m = getMonth(d);
+        return m >= startMonth && m <= endMonth && getYear(d) === currentYear;
+      });
+      const prevQuarterOrders = orders.filter(o => {
+        const d = new Date(o.created_at);
+        const m = getMonth(d);
+        return m >= startMonth && m <= endMonth && getYear(d) === lastYear;
+      });
+      return {
+        period: q,
+        currentPeriod: currentQuarterOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0),
+        previousPeriod: prevQuarterOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0)
+      };
+    });
 
-  // Low stock products
-  const lowStockProducts = products
-    .filter(p => (p.stock ?? 0) <= 5 && p.is_available)
-    .slice(0, 4);
-
-  // Best selling products
-  const bestSellers = products
-    .filter(p => p.sold_count > 0)
-    .sort((a, b) => b.sold_count - a.sold_count)
-    .slice(0, 5);
+    return {
+      totalRevenue,
+      revenueChange,
+      pendingBalance,
+      totalOrders,
+      ordersChange,
+      activeProducts,
+      completionRate,
+      thisMonthRevenue,
+      lastMonthRevenue,
+      monthlyGrowth,
+      topProducts,
+      maxProductRevenue,
+      topBuyers,
+      statusBreakdown,
+      statusTotal,
+      monthlyTrend,
+      periodData
+    };
+  }, [orders, filteredOrders, products, wallet]);
 
   // Export function
   const handleExport = () => {
@@ -212,7 +246,7 @@ const SellerDashboard = () => {
     }
 
     const csvContent = [
-      ['Order ID', 'Product', 'Amount ($)', 'Status', 'Date'].join(','),
+      ['Order ID', 'Product', 'Amount', 'Status', 'Date'].join(','),
       ...filteredOrders.map(order => [
         order.id.slice(0, 8),
         `"${order.product?.name || 'Unknown'}"`,
@@ -236,40 +270,24 @@ const SellerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl" />
+      <div className="p-4 lg:p-6 bg-slate-50 min-h-screen space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
-        <Skeleton className="h-80 rounded-2xl" />
+        <Skeleton className="h-80 rounded-xl" />
       </div>
     );
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge className="bg-amber-100 text-amber-700 border-0 text-[10px] font-semibold">Pending</Badge>;
-      case 'delivered':
-        return <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px] font-semibold">Delivered</Badge>;
-      case 'completed':
-        return <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-semibold">Completed</Badge>;
-      case 'refunded':
-        return <Badge className="bg-red-100 text-red-700 border-0 text-[10px] font-semibold">Refunded</Badge>;
-      default:
-        return <Badge className="bg-slate-100 text-slate-700 border-0 text-[10px] font-semibold">{status}</Badge>;
-    }
-  };
-
   return (
-    <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen space-y-6 seller-dashboard">
+    <div className="p-4 lg:p-6 bg-slate-50 min-h-screen space-y-6">
       {/* Announcements Banner */}
       <AnnouncementBanner audience="seller" />
-      {/* Dashboard Header - Filters Only */}
+
+      {/* Header - Filters Only */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
-        
-        {/* Date Filter + Period + Export */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Date Range Picker */}
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -322,7 +340,7 @@ const SellerDashboard = () => {
           {/* Export Button */}
           <Button 
             onClick={handleExport}
-            className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl h-9 px-4"
+            className="bg-orange-500 text-white hover:bg-orange-600 rounded-xl h-9 px-4"
           >
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -330,413 +348,396 @@ const SellerDashboard = () => {
         </div>
       </div>
 
-      {/* Stats Cards - 4 Column Grid with Folder Icons */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Today's Orders */}
-        <button 
-          onClick={() => navigate('/seller/orders')}
-          className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all text-left"
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Today's Orders</p>
-              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">{todayOrders.length}</p>
-              <div className="flex items-center gap-1.5 mt-2">
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-[11px] font-semibold text-emerald-600">+{pendingOrders} pending</span>
-              </div>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
-              <ShoppingBag className="h-6 w-6 text-orange-500" />
-            </div>
-          </div>
-        </button>
-
-        {/* Today's Sales */}
+      {/* Stat Cards Row - 5 Cards with Left Border Accent */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* Revenue */}
         <button 
           onClick={() => navigate('/seller/analytics')}
-          className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl p-4 border-l-4 border-l-orange-400 shadow-sm hover:shadow-md transition-all text-left"
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Today's Sales</p>
-              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">{formatAmountOnly(todaySales)}</p>
-              <div className="flex items-center gap-1.5 mt-2">
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-[11px] font-semibold text-emerald-600">{completedOrders} completed</span>
-              </div>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-emerald-500" />
-            </div>
+          <p className="text-[11px] text-slate-500 font-medium">Revenue</p>
+          <p className="text-2xl lg:text-[28px] font-bold text-slate-800 mt-1">
+            {formatAmountOnly(metrics.totalRevenue)}
+          </p>
+          <div className="flex items-center gap-1 mt-2 text-[11px]">
+            {metrics.revenueChange >= 0 ? (
+              <>
+                <TrendingUp className="h-3 w-3 text-emerald-500" />
+                <span className="text-emerald-600 font-medium">{metrics.revenueChange.toFixed(2)}%</span>
+              </>
+            ) : (
+              <>
+                <TrendingDown className="h-3 w-3 text-red-500" />
+                <span className="text-red-600 font-medium">{Math.abs(metrics.revenueChange).toFixed(2)}%</span>
+              </>
+            )}
+            <span className="text-slate-400">Than Last Week</span>
           </div>
         </button>
 
-        {/* Total Balance */}
+        {/* Pending Balance */}
         <button 
           onClick={() => navigate('/seller/wallet')}
-          className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl p-4 border-l-4 border-l-orange-400 shadow-sm hover:shadow-md transition-all text-left"
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Balance</p>
-              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">{formatAmountOnly(wallet?.balance || 0)}</p>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="text-[11px] font-medium text-slate-500">{formatAmountOnly(wallet?.pending_balance || 0)} pending</span>
-              </div>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-blue-500" />
-            </div>
+          <p className="text-[11px] text-slate-500 font-medium">Pending Balance</p>
+          <p className="text-2xl lg:text-[28px] font-bold text-slate-800 mt-1">
+            {formatAmountOnly(metrics.pendingBalance)}
+          </p>
+          <div className="flex items-center gap-1 mt-2 text-[11px]">
+            <TrendingUp className="h-3 w-3 text-emerald-500" />
+            <span className="text-emerald-600 font-medium">{formatAmountOnly(wallet?.balance || 0)}</span>
+            <span className="text-slate-400">Available</span>
           </div>
         </button>
 
-        {/* Returns & Refunds */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        {/* Total Orders */}
+        <button 
+          onClick={() => navigate('/seller/orders')}
+          className="bg-white rounded-xl p-4 border-l-4 border-l-orange-400 shadow-sm hover:shadow-md transition-all text-left"
+        >
+          <p className="text-[11px] text-slate-500 font-medium">Total Orders</p>
+          <p className="text-2xl lg:text-[28px] font-bold text-slate-800 mt-1">
+            {metrics.totalOrders.toLocaleString()}
+          </p>
+          <div className="flex items-center gap-1 mt-2 text-[11px]">
+            {metrics.ordersChange >= 0 ? (
+              <>
+                <TrendingUp className="h-3 w-3 text-emerald-500" />
+                <span className="text-emerald-600 font-medium">{metrics.ordersChange.toFixed(0)}</span>
+              </>
+            ) : (
+              <>
+                <TrendingDown className="h-3 w-3 text-red-500" />
+                <span className="text-red-600 font-medium">{Math.abs(metrics.ordersChange).toFixed(0)}</span>
+              </>
+            )}
+            <span className="text-slate-400">Than Last Week</span>
+          </div>
+        </button>
+
+        {/* Active Products */}
+        <button 
+          onClick={() => navigate('/seller/products')}
+          className="bg-white rounded-xl p-4 border-l-4 border-l-orange-400 shadow-sm hover:shadow-md transition-all text-left"
+        >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Returns & Refunds</p>
-              <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">{refundedOrders}</p>
-              <div className="flex items-center gap-1.5 mt-2">
-                {refundedOrders > 0 ? (
-                  <>
-                    <TrendingDown className="h-3.5 w-3.5 text-red-500" />
-                    <span className="text-[11px] font-semibold text-red-600">Needs attention</span>
-                  </>
-                ) : (
-                  <span className="text-[11px] font-semibold text-emerald-600">All clear!</span>
-                )}
-              </div>
+              <p className="text-[11px] text-slate-500 font-medium">Active Products</p>
+              <p className="text-2xl lg:text-[28px] font-bold text-slate-800 mt-1">
+                {metrics.activeProducts.toLocaleString()}
+              </p>
             </div>
-            <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center">
-              <Package className="h-6 w-6 text-red-500" />
+            <Truck className="h-5 w-5 text-orange-400" />
+          </div>
+          <div className="flex items-center gap-1 mt-2 text-[11px]">
+            <span className="text-slate-400">{products.length} total products</span>
+          </div>
+        </button>
+
+        {/* Completion Rate */}
+        <div className="bg-white rounded-xl p-4 border-l-4 border-l-orange-400 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[11px] text-slate-500 font-medium">Completion Rate</p>
+              <p className="text-2xl lg:text-[28px] font-bold text-slate-800 mt-1">
+                {metrics.completionRate.toFixed(0)}%
+              </p>
             </div>
+            <Target className="h-5 w-5 text-orange-400" />
+          </div>
+          <div className="flex items-center gap-1 mt-2 text-[11px]">
+            <TrendingUp className="h-3 w-3 text-emerald-500" />
+            <span className="text-emerald-600 font-medium">{metrics.statusBreakdown.completed} completed</span>
           </div>
         </div>
       </div>
 
-      {/* Seller Level Progress Section */}
-      {profile.level && (
-        <SellerLevelProgress 
-          currentLevel={profile.level}
-          totalOrders={profile.total_orders || 0}
-          avgRating={averageRating || 0}
-          totalRevenue={profile.total_sales || 0}
-        />
-      )}
-
-      {/* Main Content Row - Chart + Quick Stats */}
+      {/* Second Row - Order Status + Top Products + Top Buyers Horizontal Bars */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Sales Details Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
+        {/* Order Status Bar */}
+        <div className="bg-white rounded-xl p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-800 mb-4">Order Status Breakdown</h3>
+          <div className="h-6 bg-slate-100 rounded-full overflow-hidden flex">
+            {metrics.statusBreakdown.completed > 0 && (
+              <div 
+                className="h-full bg-emerald-500"
+                style={{ width: `${(metrics.statusBreakdown.completed / metrics.statusTotal) * 100}%` }}
+              />
+            )}
+            {metrics.statusBreakdown.delivered > 0 && (
+              <div 
+                className="h-full bg-blue-500"
+                style={{ width: `${(metrics.statusBreakdown.delivered / metrics.statusTotal) * 100}%` }}
+              />
+            )}
+            {metrics.statusBreakdown.pending > 0 && (
+              <div 
+                className="h-full bg-amber-500"
+                style={{ width: `${(metrics.statusBreakdown.pending / metrics.statusTotal) * 100}%` }}
+              />
+            )}
+            {metrics.statusBreakdown.refunded > 0 && (
+              <div 
+                className="h-full bg-red-500"
+                style={{ width: `${(metrics.statusBreakdown.refunded / metrics.statusTotal) * 100}%` }}
+              />
+            )}
           </div>
-          {/* Chart Legend */}
+          <div className="flex flex-wrap gap-4 mt-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-emerald-500" />
+              <span className="text-slate-600">Completed ({metrics.statusBreakdown.completed})</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-blue-500" />
+              <span className="text-slate-600">Delivered ({metrics.statusBreakdown.delivered})</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-amber-500" />
+              <span className="text-slate-600">Pending ({metrics.statusBreakdown.pending})</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <span className="text-slate-600">Refunded ({metrics.statusBreakdown.refunded})</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Performing Products - Horizontal Bar */}
+        <div className="bg-white rounded-xl p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-800 mb-4">Top Performing Products</h3>
+          <div className="space-y-3">
+            {metrics.topProducts.length > 0 ? (
+              metrics.topProducts.map((product, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs text-slate-600 w-24 truncate">{product.name}</span>
+                  <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full"
+                      style={{ width: `${(product.revenue / metrics.maxProductRevenue) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-slate-700 w-16 text-right">
+                    {formatAmountOnly(product.revenue)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-4">No sales data yet</p>
+            )}
+          </div>
+        </div>
+
+        {/* Top Buyers - Horizontal Bar */}
+        <div className="bg-white rounded-xl p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-800 mb-4">Top Buyers</h3>
+          <div className="space-y-3">
+            {metrics.topBuyers.length > 0 ? (
+              metrics.topBuyers.map((buyer, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs text-slate-600 w-24 truncate">{buyer.email.split('@')[0]}</span>
+                  <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full"
+                      style={{ width: `${buyer.percentage}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-slate-700 w-16 text-right">
+                    {formatAmountOnly(buyer.revenue)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-slate-400 text-center py-4">No buyers yet</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Third Row - Year Over Year Comparison Boxes */}
+      <div className="flex gap-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm flex-1">
+          <p className="text-xs text-slate-500 font-medium">Last Month</p>
+          <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(metrics.lastMonthRevenue)}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm flex-1">
+          <p className="text-xs text-slate-500 font-medium">This Month</p>
+          <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(metrics.thisMonthRevenue)}</p>
+          <div className="flex items-center gap-1 mt-1">
+            {metrics.monthlyGrowth >= 0 ? (
+              <>
+                <TrendingUp className="h-3 w-3 text-emerald-500" />
+                <span className="text-xs font-medium text-emerald-600">{metrics.monthlyGrowth.toFixed(2)}%</span>
+              </>
+            ) : (
+              <>
+                <TrendingDown className="h-3 w-3 text-red-500" />
+                <span className="text-xs font-medium text-red-600">{Math.abs(metrics.monthlyGrowth).toFixed(2)}%</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Fourth Row - Line Chart + Top Buyers Table */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Monthly Trend Line Chart */}
+        <div className="bg-white rounded-xl p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-800 mb-4">Year Over Year Growth</h3>
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-orange-500" />
-              <span className="text-xs text-slate-600">Revenue</span>
+              <span className="text-xs text-slate-600">This Year</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-slate-400" />
-              <span className="text-xs text-slate-600">Orders</span>
+              <span className="text-xs text-slate-600">Last Year</span>
             </div>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 11, fill: '#64748B' }} 
-                  axisLine={false} 
-                  tickLine={false}
-                  interval="preserveStartEnd"
-                />
+              <LineChart data={metrics.monthlyTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#64748B' }} />
                 <YAxis 
-                  tick={{ fontSize: 11, fill: '#64748B' }} 
-                  axisLine={false} 
-                  tickLine={false}
+                  tick={{ fontSize: 10, fill: '#64748B' }} 
                   tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v.toString()}
-                  width={45}
                 />
                 <Tooltip 
                   contentStyle={{ 
                     borderRadius: 12, 
                     border: 'none', 
                     boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                    padding: '12px 16px',
+                    padding: '12px 16px', 
                     fontSize: 12,
                     backgroundColor: 'white'
                   }}
-                  formatter={(value: number, name: string) => [
-                    formatAmountOnly(value), 
-                    name === 'sales' ? 'Revenue' : 'Orders'
-                  ]}
+                  formatter={(value: number) => [formatAmountOnly(value), '']}
                 />
-                <Bar dataKey="sales" fill="#F97316" radius={[6, 6, 0, 0]} />
+                <Line 
+                  type="monotone" 
+                  dataKey="thisYear" 
+                  stroke="#F97316" 
+                  strokeWidth={2} 
+                  dot={{ r: 4, fill: '#F97316' }}
+                  name="This Year"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="lastYear" 
+                  stroke="#94A3B8" 
+                  strokeWidth={2} 
+                  dot={{ r: 4, fill: '#94A3B8' }}
+                  name="Last Year"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Top Buyers Table */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <h3 className="text-sm font-semibold text-slate-800 p-4 border-b">Top Buyers</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-orange-50">
+                <tr>
+                  <th className="text-left p-3 text-xs font-semibold text-slate-600">Buyer</th>
+                  <th className="text-right p-3 text-xs font-semibold text-slate-600">Orders</th>
+                  <th className="text-right p-3 text-xs font-semibold text-slate-600">Revenue</th>
+                  <th className="text-right p-3 text-xs font-semibold text-slate-600">% of Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.topBuyers.length > 0 ? (
+                  metrics.topBuyers.map((buyer, i) => (
+                    <tr key={i} className="border-b border-slate-50">
+                      <td className="p-3 text-slate-700">{buyer.email}</td>
+                      <td className="p-3 text-right text-slate-600">{buyer.orderCount}</td>
+                      <td className="p-3 text-right font-medium text-slate-800">{formatAmountOnly(buyer.revenue)}</td>
+                      <td className="p-3 text-right">
+                        <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-medium">
+                          {buyer.percentage.toFixed(2)}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-center text-slate-400">No buyers yet</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Fifth Row - Grouped Bar Chart + Summary Stats */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Quarter Over Quarter Trend */}
+        <div className="bg-white rounded-xl p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-800 mb-4">Quarter Over Quarter Trend</h3>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-orange-500" />
+              <span className="text-xs text-slate-600">This Year</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-orange-200" />
+              <span className="text-xs text-slate-600">Last Year</span>
+            </div>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={metrics.periodData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                <XAxis dataKey="period" tick={{ fontSize: 10, fill: '#64748B' }} />
+                <YAxis 
+                  tick={{ fontSize: 10, fill: '#64748B' }} 
+                  tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v.toString()}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    borderRadius: 12, 
+                    border: 'none', 
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    padding: '12px 16px', 
+                    fontSize: 12,
+                    backgroundColor: 'white'
+                  }}
+                  formatter={(value: number) => [formatAmountOnly(value), '']}
+                />
+                <Bar dataKey="currentPeriod" fill="#F97316" radius={[4, 4, 0, 0]} name="This Year" />
+                <Bar dataKey="previousPeriod" fill="#FED7AA" radius={[4, 4, 0, 0]} name="Last Year" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <h3 className="text-base font-semibold text-slate-800 mb-5">Quick Stats</h3>
-          <div className="space-y-4">
-            {/* Products - Click to navigate */}
-            <button 
-              onClick={() => navigate('/seller/products')}
-              className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center">
-                  <Package className="h-5 w-5 text-violet-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-800">Products</p>
-                  <p className="text-xs text-slate-500">{products.filter(p => p.is_approved).length} live</p>
-                </div>
-              </div>
-              <span className="text-xl font-bold text-slate-800">{products.length}</span>
-            </button>
-
-            {/* Messages - Real unread count + click navigation */}
-            <button 
-              onClick={() => navigate('/seller/chat')}
-              className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <MessageSquare className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-800">Messages</p>
-                  <p className="text-xs text-slate-500">Unread chats</p>
-                </div>
-              </div>
-              <span className={`text-xl font-bold ${unreadMessages > 0 ? 'text-blue-600' : 'text-slate-800'}`}>
-                {unreadMessages}
-              </span>
-            </button>
-
-            {/* Success Rate - Click to analytics */}
-            <button 
-              onClick={() => navigate('/seller/analytics')}
-              className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                  <Award className="h-5 w-5 text-emerald-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-800">Success Rate</p>
-                  <p className="text-xs text-slate-500">Completion rate</p>
-                </div>
-              </div>
-              <span className="text-xl font-bold text-emerald-600">
-                {orders.length > 0 ? Math.round((completedOrders / orders.length) * 100) : 100}%
-              </span>
-            </button>
-
-            {/* Rating - Real average from reviews */}
-            <button 
-              onClick={() => navigate('/seller/products')}
-              className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <Star className="h-5 w-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-800">Rating</p>
-                  <p className="text-xs text-slate-500">{reviewCount} reviews</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                {averageRating ? (
-                  <>
-                    {[1, 2, 3, 4, 5].map(i => (
-                      <Star 
-                        key={i} 
-                        className={`h-4 w-4 ${i <= Math.round(averageRating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} 
-                      />
-                    ))}
-                  </>
-                ) : (
-                  <span className="text-sm text-slate-500">No reviews</span>
-                )}
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Secondary Content Row - Orders Table + Low Stock */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Order Details Table */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between p-5 border-b border-slate-100">
-            <div>
-              <h3 className="text-base font-semibold text-slate-800">Order Details</h3>
-              <p className="text-sm text-slate-500">Recent transactions</p>
+        {/* Order Summary Stats */}
+        <div className="bg-white rounded-xl p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-800 mb-4">Order Summary</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-50 rounded-lg p-4">
+              <p className="text-xs text-slate-500 font-medium">Total Revenue</p>
+              <p className="text-xl font-bold text-slate-800 mt-1">{formatAmountOnly(metrics.totalRevenue)}</p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate('/seller/orders')}
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
-            >
-              View All
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-4">Order ID</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-4">Product</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-4">Amount</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-4">Date</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-4">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {recentOrders.length > 0 ? recentOrders.map(order => (
-                  <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-4">
-                      <span className="text-sm font-medium text-slate-800">#{order.id.slice(0, 8)}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm text-slate-600 line-clamp-1">{order.product?.name || 'Unknown'}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm font-semibold text-slate-800">{formatAmountOnly(Number(order.seller_earning))}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm text-slate-500">{format(new Date(order.created_at), 'MMM d, HH:mm')}</span>
-                    </td>
-                    <td className="p-4">
-                      {getStatusBadge(order.status || 'pending')}
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={5} className="p-8 text-center text-slate-500">
-                      No orders yet
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Low Stock Alert */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-5">
-            <AlertTriangle className="w-5 h-5 text-amber-500" />
-            <h3 className="text-base font-semibold text-slate-800">Low Stock</h3>
-          </div>
-          {lowStockProducts.length > 0 ? (
-            <div className="space-y-3">
-              {lowStockProducts.map(product => (
-                <div key={product.id} className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl">
-                  <div className="w-10 h-10 rounded-lg bg-white border border-amber-200 flex items-center justify-center">
-                    <Package className="w-5 h-5 text-amber-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800 truncate">{product.name}</p>
-                    <p className="text-xs text-amber-600 font-semibold">{product.stock ?? 0} left</p>
-                  </div>
-                </div>
-              ))}
+            <div className="bg-slate-50 rounded-lg p-4">
+              <p className="text-xs text-slate-500 font-medium">Total Orders</p>
+              <p className="text-xl font-bold text-slate-800 mt-1">{metrics.totalOrders}</p>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">All products in stock</p>
+            <div className="bg-slate-50 rounded-lg p-4">
+              <p className="text-xs text-slate-500 font-medium">Available Balance</p>
+              <p className="text-xl font-bold text-slate-800 mt-1">{formatAmountOnly(wallet?.balance || 0)}</p>
             </div>
-          )}
+            <div className="bg-slate-50 rounded-lg p-4">
+              <p className="text-xs text-slate-500 font-medium">Pending Balance</p>
+              <p className="text-xl font-bold text-slate-800 mt-1">{formatAmountOnly(metrics.pendingBalance)}</p>
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Best Sellers Row */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="text-base font-semibold text-slate-800">Best Selling Products</h3>
-            <p className="text-sm text-slate-500">Top performers this period</p>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate('/seller/products')}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
-          >
-            View All
-            <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
-        
-        {bestSellers.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-3">#</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-3">Product</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-3">Sold</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-3">Price</th>
-                  <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide p-3">Rating</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {bestSellers.map((product, i) => (
-                  <tr key={product.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-3">
-                      <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
-                        {i + 1}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden">
-                          {product.icon_url ? (
-                            <img src={product.icon_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <Package className="w-5 h-5 text-slate-400" />
-                          )}
-                        </div>
-                        <span className="text-sm font-medium text-slate-800 line-clamp-1">{product.name}</span>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <span className="text-sm font-semibold text-slate-800">{product.sold_count}</span>
-                    </td>
-                    <td className="p-3">
-                      <span className="text-sm text-slate-600">{formatAmountOnly(product.price)}</span>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                        <span className="text-sm text-slate-600">4.5</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <Award className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm text-slate-500">No sales yet</p>
-          </div>
-        )}
       </div>
     </div>
   );
