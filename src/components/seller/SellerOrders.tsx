@@ -477,132 +477,119 @@ const SellerOrders = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Orders Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      {/* Orders List - Dokani Card Style */}
+      <div className="space-y-4">
         {filteredOrders.length === 0 ? (
-          <div className="p-12 text-center">
+          <div className="bg-white rounded-2xl p-12 text-center border border-slate-100">
             <Package className="h-12 w-12 text-slate-300 mx-auto mb-4" />
             <h3 className="font-semibold text-slate-900 mb-2">No orders found</h3>
             <p className="text-slate-500 text-sm">Try adjusting your filters</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-100">
-                <tr>
-                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4 w-10">
-                    <Checkbox
-                      checked={selectedOrders.size === filteredOrders.filter(o => o.status === 'pending').length && selectedOrders.size > 0}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </th>
-                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4">Order ID</th>
-                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4">Product</th>
-                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4 hidden md:table-cell">Buyer</th>
-                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4 hidden lg:table-cell">Order Date</th>
-                  <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4">Amount</th>
-                  <th className="text-center text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4">Status</th>
-                  <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wide px-5 py-4">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredOrders.map((order) => {
-                  const statusConfig = getStatusConfig(order.status);
-                  const StatusIcon = statusConfig.icon;
-                  const buyerEmailInput = (order as any).buyer_email_input;
+          filteredOrders.map((order) => {
+            const statusConfig = getStatusConfig(order.status);
+            const StatusIcon = statusConfig.icon;
+            const buyerEmailInput = (order as any).buyer_email_input;
 
-                  return (
-                    <tr key={order.id} className={`hover:bg-slate-50 transition-colors border-l-4 ${statusConfig.border}`}>
-                      <td className="px-5 py-4">
-                        {order.status === 'pending' && (
-                          <Checkbox
-                            checked={selectedOrders.has(order.id)}
-                            onCheckedChange={(checked) => handleSelectOrder(order.id, !!checked)}
-                          />
-                        )}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-sm font-mono font-medium text-slate-700">
-                          #{order.id.slice(-6).toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {order.product?.icon_url ? (
-                              <img src={order.product.icon_url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <Package className="w-5 h-5 text-slate-400" />
-                            )}
-                          </div>
-                          <span className="text-sm font-medium text-slate-700 truncate max-w-[150px]">
-                            {order.product?.name || 'Product'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 hidden md:table-cell">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-slate-600 truncate max-w-[150px]">
-                            {order.buyer?.email?.split('@')[0] || 'Buyer'}
-                          </span>
-                          {buyerEmailInput && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => copyToClipboard(buyerEmailInput)}
-                              className="h-6 w-6 p-0 text-blue-600"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 hidden lg:table-cell">
-                        <div>
-                          <span className="text-sm text-slate-700">{format(new Date(order.created_at), 'MMM d, yyyy')}</span>
-                          <span className="text-xs text-slate-400 block">{format(new Date(order.created_at), 'h:mm a')}</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <span className="text-sm font-semibold text-emerald-600">
-                          +{formatAmountOnly(Number(order.seller_earning))}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-center">
-                        <Badge className={`${statusConfig.bg} ${statusConfig.text} border-0 text-[10px] font-semibold`}>
-                          <StatusIcon className="w-3 h-3 mr-1" />
-                          {statusConfig.label}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        {order.status === 'pending' && (
-                          <Button
-                            size="sm"
-                            onClick={() => setSelectedOrder(order.id)}
-                            className="bg-emerald-500 hover:bg-emerald-600 rounded-lg text-xs"
-                          >
-                            <Send className="h-3.5 w-3.5 mr-1" />
-                            Deliver
-                          </Button>
-                        )}
-                        {order.status === 'delivered' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEditCredentials(order.id, order.credentials)}
-                            className="border-slate-200 text-slate-600 rounded-lg text-xs"
-                          >
-                            <Pencil className="h-3.5 w-3.5 mr-1" />
-                            Edit
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+            return (
+              <div key={order.id} className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+                {/* Order Header - Dokani Style */}
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="flex items-center gap-2 text-sm text-slate-600 flex-wrap">
+                    <span>Customer: <strong className="text-slate-800">{order.buyer?.email?.split('@')[0] || 'Buyer'}</strong></span>
+                    <span className="text-slate-300 hidden sm:inline">|</span>
+                    <span>Date: <strong className="text-slate-800">{format(new Date(order.created_at), 'dd MMM, yyyy')}</strong></span>
+                  </div>
+                  <span className="text-xs text-slate-500 font-mono">
+                    Order ID: #{order.id.slice(0, 8).toUpperCase()}
+                  </span>
+                </div>
+                
+                {/* Product Row */}
+                <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                  {/* Checkbox for pending orders */}
+                  {order.status === 'pending' && (
+                    <Checkbox
+                      checked={selectedOrders.has(order.id)}
+                      onCheckedChange={(checked) => handleSelectOrder(order.id, !!checked)}
+                      className="flex-shrink-0"
+                    />
+                  )}
+                  
+                  {/* Product Image */}
+                  <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {order.product?.icon_url ? (
+                      <img src={order.product.icon_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="w-6 h-6 text-slate-400" />
+                    )}
+                  </div>
+                  
+                  {/* Product Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-800 truncate">{order.product?.name || 'Product'}</p>
+                    <p className="text-sm text-slate-500">Quantity: 1</p>
+                    {buyerEmailInput && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-slate-400">{buyerEmailInput}</span>
+                        <Button size="sm" variant="ghost" onClick={() => copyToClipboard(buyerEmailInput)} className="h-5 w-5 p-0 text-blue-600">
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Price */}
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-bold text-lg text-slate-800">{formatAmountOnly(Number(order.amount))}</p>
+                    <p className="text-xs text-emerald-600">+{formatAmountOnly(Number(order.seller_earning))} earned</p>
+                  </div>
+                  
+                  {/* Status Badge */}
+                  <Badge className={`${statusConfig.bg} ${statusConfig.text} border-0 text-xs font-semibold flex-shrink-0`}>
+                    <StatusIcon className="w-3 h-3 mr-1" />
+                    {statusConfig.label}
+                  </Badge>
+                  
+                  {/* Actions */}
+                  <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
+                    {order.status === 'pending' && (
+                      <Button
+                        size="sm"
+                        onClick={() => setSelectedOrder(order.id)}
+                        className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                      >
+                        <Send className="h-4 w-4 mr-1" />
+                        Deliver
+                      </Button>
+                    )}
+                    {order.status === 'delivered' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEditCredentials(order.id, order.credentials)}
+                        className="flex-1 sm:flex-none border-emerald-500 text-emerald-600 rounded-lg hover:bg-emerald-50"
+                      >
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                    {order.status === 'completed' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyToClipboard(order.id)}
+                        className="flex-1 sm:flex-none text-slate-500 rounded-lg"
+                      >
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copy ID
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
 

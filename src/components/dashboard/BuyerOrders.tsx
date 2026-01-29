@@ -526,7 +526,7 @@ const BuyerOrders = () => {
         </div>
       </div>
 
-      {/* Orders List */}
+      {/* Orders List - Dokani Card Style */}
       <div className="space-y-4">
         {filteredOrders.length === 0 ? (
           <div className="bg-white rounded-2xl p-10 text-center border border-slate-100">
@@ -535,72 +535,90 @@ const BuyerOrders = () => {
           </div>
         ) : (
           filteredOrders.map((order) => (
-            <div key={order.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className="p-4 sm:p-5">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  {/* Product Info */}
-                  <div className="flex items-center gap-3 flex-1">
-                    {order.product?.icon_url ? (
-                      <img 
-                        src={order.product.icon_url} 
-                        alt="" 
-                        className="w-14 h-14 rounded-xl object-cover"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center">
-                        <Package className="w-6 h-6 text-slate-400" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-slate-800 truncate">{order.product?.name || 'Unknown Product'}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage src={order.seller?.store_logo_url || ''} />
-                          <AvatarFallback className="text-[10px] bg-slate-100">{order.seller?.store_name?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs text-slate-500">{order.seller?.store_name}</span>
-                      </div>
-                    </div>
+            <div key={order.id} className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+              {/* Order Header - Dokani Style */}
+              <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm text-slate-600 flex-wrap">
+                  <span>Seller: <strong className="text-slate-800">{order.seller?.store_name || 'Store'}</strong></span>
+                  <span className="text-slate-300 hidden sm:inline">|</span>
+                  <span>Date: <strong className="text-slate-800">{format(new Date(order.created_at), 'dd MMM, yyyy')}</strong></span>
+                </div>
+                <span className="text-xs text-slate-500 font-mono">
+                  Order ID: #{order.id.slice(0, 8).toUpperCase()}
+                </span>
+              </div>
+              
+              {/* Product Row */}
+              <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                {/* Product Image */}
+                {order.product?.icon_url ? (
+                  <img 
+                    src={order.product.icon_url} 
+                    alt="" 
+                    className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                    <Package className="w-6 h-6 text-slate-400" />
                   </div>
-
-                  {/* Order Details */}
-                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-slate-800">{formatAmountOnly(order.amount)}</p>
-                      <p className="text-xs text-slate-400">{format(new Date(order.created_at), 'MMM d, yyyy')}</p>
-                    </div>
-                    {getStatusBadge(order.status)}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedOrder(order)}
-                      className="rounded-lg"
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                      View
-                    </Button>
+                )}
+                
+                {/* Product Info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-slate-800 truncate">{order.product?.name || 'Unknown Product'}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={order.seller?.store_logo_url || ''} />
+                      <AvatarFallback className="text-[10px] bg-slate-100">{order.seller?.store_name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs text-slate-500">{order.seller?.store_name}</span>
                   </div>
+                  <p className="text-sm text-slate-500 mt-1">Quantity: 1</p>
                 </div>
 
-                {/* Action for delivered orders */}
-                {order.status === 'delivered' && !order.buyer_approved && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                    <div className="flex items-center justify-between">
+                {/* Price */}
+                <div className="text-right flex-shrink-0">
+                  <p className="text-lg font-bold text-slate-800">{formatAmountOnly(order.amount)}</p>
+                  <p className="text-xs text-slate-400">{format(new Date(order.created_at), 'h:mm a')}</p>
+                </div>
+                
+                {/* Status Badge */}
+                {getStatusBadge(order.status)}
+                
+                {/* Actions */}
+                <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedOrder(order)}
+                    className="flex-1 sm:flex-none rounded-lg"
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    View
+                  </Button>
+                </div>
+              </div>
+
+              {/* Action for delivered orders */}
+              {order.status === 'delivered' && !order.buyer_approved && (
+                <div className="px-4 pb-4">
+                  <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <p className="text-sm text-blue-700">Order delivered! Please confirm to release payment to seller.</p>
                       <Button
                         size="sm"
                         onClick={() => handleApproveDelivery(order.id)}
                         disabled={approving}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
                       >
                         Confirm Delivery
                       </Button>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           ))
         )}
