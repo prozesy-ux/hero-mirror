@@ -1,34 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Lock, CheckCircle, Shield, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Lock, CheckCircle, Shield, ArrowLeft, Loader2 } from 'lucide-react';
 import signinBackground from '@/assets/signin-background.webp';
 
 const ResetPassword = () => {
+  const [searchParams] = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Check if user has valid recovery session
+  // Get token from URL
+  const token = searchParams.get('token');
+
+  // Validate token exists on mount
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setError('Invalid or expired reset link. Please request a new password reset.');
-      }
-    };
-    checkSession();
-  }, []);
+    if (!token) {
+      setError('Invalid or missing reset link. Please request a new password reset.');
+      setValidating(false);
+      return;
+    }
+    // Token exists, allow form to show
+    setValidating(false);
+  }, [token]);
 
   const getPasswordStrength = (pass: string) => {
     let strength = 0;
@@ -66,9 +71,16 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      
+      // Call custom verify edge function
+      const { data, error } = await supabase.functions.invoke('verify-password-reset', {
+        body: { token, password }
+      });
+
       if (error) throw error;
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to reset password');
+      }
 
       setSuccess(true);
       toast({
@@ -77,17 +89,37 @@ const ResetPassword = () => {
       });
 
       // Redirect after 2 seconds
-      setTimeout(() => navigate('/dashboard'), 2000);
+      setTimeout(() => navigate('/signin'), 2000);
     } catch (err: any) {
-      toast({
-        title: "Reset failed",
-        description: err.message || "Failed to reset password. Please try again.",
-        variant: "destructive"
-      });
+      const errorMessage = err.message || "Failed to reset password. Please try again.";
+      
+      if (errorMessage.includes('expired')) {
+        setError('This reset link has expired. Please request a new one.');
+      } else if (errorMessage.includes('Invalid')) {
+        setError('Invalid reset link. Please request a new password reset.');
+      } else {
+        toast({
+          title: "Reset failed",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Loading state while validating
+  if (validating) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="flex items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <span className="text-muted-foreground">Validating reset link...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -98,10 +130,10 @@ const ResetPassword = () => {
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Password Reset Complete!</h1>
           <p className="text-muted-foreground mb-6">
-            Your password has been successfully updated. Redirecting to dashboard...
+            Your password has been successfully updated. Redirecting to sign in...
           </p>
-          <Button onClick={() => navigate('/dashboard')} className="w-full">
-            Go to Dashboard
+          <Button onClick={() => navigate('/signin')} className="w-full">
+            Go to Sign In
           </Button>
         </div>
       </div>
@@ -243,7 +275,14 @@ const ResetPassword = () => {
               className="w-full" 
               disabled={loading || password !== confirmPassword || password.length < 8}
             >
-              {loading ? 'Updating...' : 'Update Password'}
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update Password'
+              )}
             </Button>
           </form>
 

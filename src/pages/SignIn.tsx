@@ -155,8 +155,12 @@ const SignIn = () => {
 
     setResetLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+      // Use custom edge function for branded password reset email
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { 
+          email: resetEmail.trim(),
+          siteUrl: window.location.origin
+        }
       });
 
       if (error) throw error;
@@ -165,7 +169,10 @@ const SignIn = () => {
       setShowForgotPassword(false);
       setResetEmail("");
     } catch (error: any) {
-      toast.error(error.message || "Failed to send reset email");
+      // Always show success to prevent email enumeration
+      toast.success("If an account exists, a reset link has been sent.");
+      setShowForgotPassword(false);
+      setResetEmail("");
     } finally {
       setResetLoading(false);
     }
