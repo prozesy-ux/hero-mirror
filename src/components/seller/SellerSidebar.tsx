@@ -1,8 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ExternalLink, LayoutDashboard, Package, ShoppingCart, BarChart3, Warehouse, Users, Tag, FileText, Activity, MessageSquare, Wallet, Settings, Lightbulb, HelpCircle, Zap, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Package, ShoppingCart, BarChart2, Warehouse, Users, Mail, FileText, Activity, MessageSquare, CreditCard, Settings, HelpCircle, Zap, TrendingUp, ChevronDown } from 'lucide-react';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
-import metaLogo from '@/assets/meta-logo.png';
-import googleAdsLogo from '@/assets/google-ads-logo.png';
+import { useSellerContext } from '@/contexts/SellerContext';
+import uptozaLogo from '@/assets/uptoza-logo.png';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Tooltip,
   TooltipContent,
@@ -10,27 +11,31 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+// Gumroad-style navigation labels
 const navItems = [
-  { to: '/seller', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+  { to: '/seller', icon: Home, label: 'Home', exact: true },
   { to: '/seller/products', icon: Package, label: 'Products' },
-  { to: '/seller/orders', icon: ShoppingCart, label: 'Orders' },
-  { to: '/seller/flash-sales', icon: Zap, label: 'Flash Sales', badge: 'New' },
-  { to: '/seller/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/seller/product-analytics', icon: TrendingUp, label: 'Product Insights' },
-  { to: '/seller/inventory', icon: Warehouse, label: 'Inventory' },
+  { to: '/seller/orders', icon: ShoppingCart, label: 'Sales' },
   { to: '/seller/customers', icon: Users, label: 'Customers' },
-  { to: '/seller/marketing', icon: Tag, label: 'Marketing' },
+  { to: '/seller/flash-sales', icon: Zap, label: 'Flash Sales' },
+  { to: '/seller/analytics', icon: BarChart2, label: 'Analytics' },
+  { to: '/seller/product-analytics', icon: TrendingUp, label: 'Insights' },
+  { to: '/seller/wallet', icon: CreditCard, label: 'Payouts' },
+  { to: '/seller/marketing', icon: Mail, label: 'Emails' },
+  { to: '/seller/inventory', icon: Warehouse, label: 'Inventory' },
   { to: '/seller/reports', icon: FileText, label: 'Reports' },
   { to: '/seller/performance', icon: Activity, label: 'Performance' },
   { to: '/seller/chat', icon: MessageSquare, label: 'Chat' },
-  { to: '/seller/wallet', icon: Wallet, label: 'Wallet' },
-  { to: '/seller/feature-requests', icon: Lightbulb, label: 'Features' },
-  { to: '/seller/support', icon: HelpCircle, label: 'Support' },
+];
+
+const bottomNavItems = [
   { to: '/seller/settings', icon: Settings, label: 'Settings' },
+  { to: '/seller/support', icon: HelpCircle, label: 'Help' },
 ];
 
 const SellerSidebar = () => {
   const { isCollapsed, toggleSidebar } = useSellerSidebarContext();
+  const { profile } = useSellerContext();
   const location = useLocation();
 
   const isActive = (path: string, exact?: boolean) => {
@@ -41,12 +46,23 @@ const SellerSidebar = () => {
   return (
     <TooltipProvider>
       <aside 
-        className={`hidden lg:flex flex-col fixed left-0 top-16 bottom-0 z-40 bg-white border-r border-gray-200 transition-all duration-300 ${
-          isCollapsed ? 'w-[72px]' : 'w-60'
+        className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-50 bg-black transition-all duration-300 ${
+          isCollapsed ? 'w-[72px]' : 'w-[220px]'
         }`}
       >
-        {/* Navigation Links */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        {/* Logo Section */}
+        <div className={`h-16 flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-3' : 'px-5'}`}>
+          <Link to="/seller" className="flex items-center">
+            <img 
+              src={uptozaLogo} 
+              alt="Uptoza" 
+              className={`${isCollapsed ? 'h-8 w-8 object-contain' : 'h-7 w-auto'} brightness-0 invert`} 
+            />
+          </Link>
+        </div>
+
+        {/* Main Navigation */}
+        <nav className="flex-1 py-4 overflow-y-auto">
           {navItems.map((item) => {
             const active = isActive(item.to, item.exact);
             const Icon = item.icon;
@@ -57,16 +73,16 @@ const SellerSidebar = () => {
                   <TooltipTrigger asChild>
                     <Link
                       to={item.to}
-                      className={`flex items-center justify-center w-full p-3 rounded-xl transition-colors ${
+                      className={`flex items-center justify-center w-full py-2.5 transition-colors ${
                         active 
-                          ? 'bg-emerald-100 text-emerald-700' 
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          ? 'text-pink-400 bg-white/5' 
+                          : 'text-white/70 hover:text-white hover:bg-white/5'
                       }`}
                     >
-                      <Icon size={20} />
+                      <Icon size={18} strokeWidth={1.5} />
                     </Link>
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-gray-900 text-white border-0">
+                  <TooltipContent side="right" className="bg-white text-black border-0">
                     <p>{item.label}</p>
                   </TooltipContent>
                 </Tooltip>
@@ -77,42 +93,103 @@ const SellerSidebar = () => {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-colors ${
+                className={`flex items-center gap-3 px-5 py-2.5 text-[14px] transition-colors ${
                   active 
-                    ? 'bg-emerald-100 text-emerald-700 font-medium' 
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'text-pink-400 bg-white/5' 
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Icon size={20} />
-                <span className="text-sm flex-1">{item.label}</span>
-                {(item as any).badge && (
-                  <span className="text-[9px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full font-bold">
-                    {(item as any).badge}
-                  </span>
-                )}
+                <Icon size={18} strokeWidth={1.5} />
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
+        {/* Bottom Section */}
+        <div className="border-t border-white/10 py-3">
+          {/* Settings & Help */}
+          {bottomNavItems.map((item) => {
+            const active = isActive(item.to);
+            const Icon = item.icon;
 
-        {/* Collapse Toggle */}
-        <div className="p-3 border-t border-gray-100">
+            if (isCollapsed) {
+              return (
+                <Tooltip key={item.to} delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={item.to}
+                      className={`flex items-center justify-center w-full py-2.5 transition-colors ${
+                        active 
+                          ? 'text-pink-400 bg-white/5' 
+                          : 'text-white/70 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon size={18} strokeWidth={1.5} />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="bg-white text-black border-0">
+                    <p>{item.label}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex items-center gap-3 px-5 py-2.5 text-[14px] transition-colors ${
+                  active 
+                    ? 'text-pink-400 bg-white/5' 
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Icon size={18} strokeWidth={1.5} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+
+          {/* Collapse Toggle */}
           <button
             onClick={toggleSidebar}
-            className={`flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors ${
-              isCollapsed ? 'justify-center' : ''
+            className={`flex items-center gap-3 w-full py-2.5 text-white/50 hover:text-white hover:bg-white/5 transition-colors ${
+              isCollapsed ? 'justify-center' : 'px-5'
             }`}
           >
             {isCollapsed ? (
-              <ChevronRight size={18} />
+              <ChevronRight size={18} strokeWidth={1.5} />
             ) : (
               <>
-                <ChevronLeft size={18} />
-                <span className="text-sm">Collapse</span>
+                <ChevronLeft size={18} strokeWidth={1.5} />
+                <span className="text-[14px]">Collapse</span>
               </>
             )}
           </button>
+
+          {/* User Profile */}
+          <div className={`mt-2 pt-3 border-t border-white/10 ${isCollapsed ? 'px-3' : 'px-4'}`}>
+            <Link 
+              to="/seller/settings"
+              className={`flex items-center gap-3 py-2 rounded-lg hover:bg-white/5 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+            >
+              <Avatar className="h-8 w-8 ring-1 ring-white/20">
+                <AvatarImage src={profile?.store_logo_url || ''} />
+                <AvatarFallback className="bg-white/10 text-white text-xs font-medium">
+                  {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
+                </AvatarFallback>
+              </Avatar>
+              {!isCollapsed && (
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                  <p className="text-sm text-white font-medium truncate">
+                    {profile?.store_name || 'My Store'}
+                  </p>
+                  <ChevronDown className="w-4 h-4 text-white/50 flex-shrink-0" />
+                </div>
+              )}
+            </Link>
+          </div>
         </div>
       </aside>
     </TooltipProvider>

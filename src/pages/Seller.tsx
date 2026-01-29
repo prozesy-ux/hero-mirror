@@ -553,7 +553,7 @@ const SellerMainContent = () => {
     <main className={`
       min-h-screen bg-slate-50 transition-all duration-300
       pt-0 pb-20 lg:pb-0
-      lg:pt-16 ${isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-60'}
+      lg:pt-0 ${isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[220px]'}
     `}>
       <div className="p-3 sm:p-4 lg:p-6">
         <Routes>

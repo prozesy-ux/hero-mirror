@@ -137,19 +137,22 @@ const MobileNavigation = () => {
     { to: '/dashboard/chat', icon: MessageSquare, label: 'Chat' },
   ];
 
-  // Full sidebar nav items
+  // Full sidebar nav items - Gumroad style
   const sidebarNavItems = [
-    { to: '/dashboard/home', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
+    { to: '/dashboard/home', icon: LayoutDashboard, label: 'Home' },
     { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Marketplace' },
     { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
     { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
+    { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
     { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
     { to: '/dashboard/reports', icon: FileText, label: 'Reports' },
     { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
+  ];
+
+  const bottomSidebarItems = [
     { to: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'Support' },
-    { to: '/dashboard/profile', icon: User, label: 'Profile' },
+    { to: '/dashboard/profile', icon: User, label: 'Settings' },
   ];
 
   const isActive = (path: string) => location.pathname.startsWith(path);
@@ -167,53 +170,77 @@ const MobileNavigation = () => {
                 <span className="text-[10px] font-semibold">Menu</span>
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-white">
+            <SheetContent side="left" className="w-72 p-0 bg-white flex flex-col">
               {/* Logo */}
-              <div className="p-4 border-b border-gray-100">
+              <div className="p-4 border-b border-slate-100">
                 <Link to="/dashboard" onClick={() => setSidebarOpen(false)}>
                   <img src={theLogo} alt="Uptoza" className="h-8 w-auto" />
                 </Link>
               </div>
               
               {/* Navigation Links */}
-              <nav className="p-3 space-y-1">
-                {sidebarNavItems.map((item) => {
-                  const active = isActive(item.to);
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-colors ${
-                        active 
-                          ? 'bg-violet-100 text-violet-700 font-medium' 
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                      }`}
-                    >
-                      <Icon size={20} />
-                      <span className="text-sm">{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-              
-                {/* Bottom Section: Become a Seller */}
-                <div className="p-3 mt-auto absolute bottom-0 left-0 right-0">
-                  {/* Become a Seller - Text link style */}
+              <ScrollArea className="flex-1 py-4">
+                <nav>
+                  {sidebarNavItems.map((item) => {
+                    const active = isActive(item.to);
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`flex items-center gap-3 w-full px-5 py-2.5 text-[14px] transition-colors ${
+                          active 
+                            ? 'text-violet-600 bg-violet-50' 
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Icon size={18} strokeWidth={1.5} />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </nav>
+                
+                {/* Bottom section */}
+                <div className="border-t border-slate-100 mt-4 pt-4">
+                  {bottomSidebarItems.map((item) => {
+                    const active = isActive(item.to);
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`flex items-center gap-3 w-full px-5 py-2.5 text-[14px] transition-colors ${
+                          active 
+                            ? 'text-violet-600 bg-violet-50' 
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Icon size={18} strokeWidth={1.5} />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+                
+                {/* Become a Seller */}
+                <div className="px-5 py-4 border-t border-slate-100 mt-4">
                   <button
                     onClick={() => {
                       setSidebarOpen(false);
                       navigate('/seller');
                     }}
-                    className="w-full text-center py-2 text-sm transition-colors"
+                    className="w-full text-center text-sm transition-colors"
                   >
-                    <span className="text-gray-500">Want to sell?</span>{' '}
+                    <span className="text-slate-500">Want to sell?</span>{' '}
                     <span className="font-medium text-emerald-600 hover:underline">
                       Become a Seller →
                     </span>
                   </button>
                 </div>
+              </ScrollArea>
             </SheetContent>
           </Sheet>
           

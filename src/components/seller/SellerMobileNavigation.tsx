@@ -28,24 +28,26 @@ interface SellerNotification {
   link: string | null;
 }
 
-// Full sidebar nav items - synced with desktop SellerSidebar.tsx
+// Full sidebar nav items - synced with desktop SellerSidebar.tsx (Gumroad style)
 const sidebarNavItems = [
-  { to: '/seller', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+  { to: '/seller', icon: LayoutDashboard, label: 'Home', exact: true },
   { to: '/seller/products', icon: Package, label: 'Products' },
-  { to: '/seller/orders', icon: ShoppingCart, label: 'Orders' },
-  { to: '/seller/flash-sales', icon: Zap, label: 'Flash Sales', badge: 'New' },
-  { to: '/seller/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/seller/product-analytics', icon: TrendingUp, label: 'Product Insights' },
-  { to: '/seller/inventory', icon: Warehouse, label: 'Inventory' },
+  { to: '/seller/orders', icon: ShoppingCart, label: 'Sales' },
   { to: '/seller/customers', icon: Users, label: 'Customers' },
-  { to: '/seller/marketing', icon: Tag, label: 'Marketing' },
+  { to: '/seller/flash-sales', icon: Zap, label: 'Flash Sales' },
+  { to: '/seller/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/seller/product-analytics', icon: TrendingUp, label: 'Insights' },
+  { to: '/seller/wallet', icon: Wallet, label: 'Payouts' },
+  { to: '/seller/marketing', icon: Tag, label: 'Emails' },
+  { to: '/seller/inventory', icon: Warehouse, label: 'Inventory' },
   { to: '/seller/reports', icon: FileText, label: 'Reports' },
   { to: '/seller/performance', icon: Activity, label: 'Performance' },
   { to: '/seller/chat', icon: MessageSquare, label: 'Chat' },
-  { to: '/seller/wallet', icon: Wallet, label: 'Wallet' },
-  { to: '/seller/feature-requests', icon: Lightbulb, label: 'Features' },
-  { to: '/seller/support', icon: HelpCircle, label: 'Support' },
+];
+
+const bottomSidebarItems = [
   { to: '/seller/settings', icon: Settings, label: 'Settings' },
+  { to: '/seller/support', icon: HelpCircle, label: 'Help' },
 ];
 
 const SellerMobileNavigation = () => {
@@ -136,17 +138,17 @@ const SellerMobileNavigation = () => {
                 <span className="text-[10px] font-semibold">Menu</span>
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-white flex flex-col">
+            <SheetContent side="left" className="w-72 p-0 bg-black flex flex-col">
               {/* Logo */}
-              <div className="p-4 border-b border-slate-100">
+              <div className="p-4 border-b border-white/10">
                 <Link to="/seller" onClick={() => setSidebarOpen(false)}>
-                  <img src={theLogo} alt="Uptoza" className="h-8 w-auto" />
+                  <img src={theLogo} alt="Uptoza" className="h-8 w-auto brightness-0 invert" />
                 </Link>
               </div>
               
               {/* Navigation Links */}
-              <ScrollArea className="flex-1 p-3">
-                <nav className="space-y-1">
+              <ScrollArea className="flex-1 py-4">
+                <nav>
                   {sidebarNavItems.map((item) => {
                     const active = isActive(item.to, item.exact);
                     const Icon = item.icon;
@@ -155,23 +157,41 @@ const SellerMobileNavigation = () => {
                         key={item.to}
                         to={item.to}
                         onClick={() => setSidebarOpen(false)}
-                        className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-colors ${
+                        className={`flex items-center gap-3 w-full px-5 py-2.5 text-[14px] transition-colors ${
                           active 
-                            ? 'bg-emerald-100 text-emerald-700 font-medium' 
-                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            ? 'text-pink-400 bg-white/5' 
+                            : 'text-white/70 hover:text-white hover:bg-white/5'
                         }`}
                       >
-                        <Icon size={20} />
-                        <span className="text-sm flex-1">{item.label}</span>
-                        {(item as any).badge && (
-                          <span className="text-[9px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full font-bold">
-                            {(item as any).badge}
-                          </span>
-                        )}
+                        <Icon size={18} strokeWidth={1.5} />
+                        <span>{item.label}</span>
                       </Link>
                     );
                   })}
                 </nav>
+                
+                {/* Bottom section in mobile sheet */}
+                <div className="border-t border-white/10 mt-4 pt-4">
+                  {bottomSidebarItems.map((item) => {
+                    const active = isActive(item.to);
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`flex items-center gap-3 w-full px-5 py-2.5 text-[14px] transition-colors ${
+                          active 
+                            ? 'text-pink-400 bg-white/5' 
+                            : 'text-white/70 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        <Icon size={18} strokeWidth={1.5} />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
               </ScrollArea>
               
             </SheetContent>
