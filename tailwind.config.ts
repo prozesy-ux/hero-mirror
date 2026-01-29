@@ -13,12 +13,28 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        display: ['DM Sans', 'system-ui', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        
+        // Fiverr-inspired marketplace colors
+        marketplace: {
+          green: "hsl(var(--marketplace-green))",
+          "green-hover": "hsl(var(--marketplace-green-hover))",
+          "green-light": "hsl(var(--marketplace-green-light))",
+          navy: "hsl(var(--marketplace-navy))",
+          slate: "hsl(var(--marketplace-slate))",
+          orange: "hsl(var(--marketplace-orange))",
+          violet: "hsl(var(--marketplace-violet))",
+        },
+        
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -66,6 +82,15 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "2xl": "1rem",
+        "3xl": "1.5rem",
+      },
+      boxShadow: {
+        "gig": "0 1px 4px rgba(0, 0, 0, 0.04), 0 4px 10px rgba(0, 0, 0, 0.04)",
+        "gig-hover": "0 4px 16px rgba(0, 0, 0, 0.08), 0 8px 32px rgba(0, 0, 0, 0.06)",
+        "stat": "0 1px 3px rgba(0, 0, 0, 0.04)",
+        "stat-hover": "0 4px 12px rgba(0, 0, 0, 0.08)",
+        "card-premium": "0 2px 8px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06)",
       },
       keyframes: {
         "accordion-down": {
@@ -133,6 +158,10 @@ export default {
           "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
           "50%": { transform: "translateY(-8px) rotate(3deg)" },
         },
+        "image-zoom": {
+          "0%": { transform: "scale(1)" },
+          "100%": { transform: "scale(1.05)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -151,6 +180,7 @@ export default {
         "bounce-subtle": "bounce-subtle 2s ease-in-out infinite",
         "beam-pulse": "beam-pulse 2s ease-in-out infinite",
         "float-product": "float-product 3s ease-in-out infinite",
+        "image-zoom": "image-zoom 0.5s ease-out forwards",
       },
     },
   },
