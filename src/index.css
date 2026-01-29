@@ -577,8 +577,53 @@
     .store-product-grid {
       grid-template-columns: repeat(4, 1fr);
       gap: 20px;
-    }
   }
+}
+
+/* ==========================================
+   FIVERR/UPWORK STYLE TOAST ENHANCEMENTS
+   ========================================== */
+
+[data-sonner-toaster] {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+[data-sonner-toast] {
+  transition: all 0.2s ease-out;
+}
+
+[data-sonner-toast]:hover {
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.12);
+}
+
+[data-sonner-toast][data-type="success"] {
+  border-left: 3px solid #059669;
+}
+
+[data-sonner-toast][data-type="error"] {
+  border-left: 3px solid #DC2626;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  border-left: 3px solid #D97706;
+}
+
+[data-sonner-toast][data-type="info"] {
+  border-left: 3px solid #2563EB;
+}
+
+/* Close button styling */
+[data-sonner-toast] [data-close-button] {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+[data-sonner-toast]:hover [data-close-button] {
+  opacity: 1;
+}
 
   /* Mobile compact card styles */
   .store-card-compact {
