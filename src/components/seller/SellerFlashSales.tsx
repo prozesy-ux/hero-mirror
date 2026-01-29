@@ -271,7 +271,7 @@ const SellerFlashSales = () => {
           <p className="text-xs text-slate-400">Create your first flash sale to boost conversions</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-3 sm:gap-4">
           {flashSales.map((sale) => {
             const isActive = sale.is_active && new Date(sale.ends_at) > new Date();
             const isExpired = new Date(sale.ends_at) <= new Date();
@@ -279,47 +279,50 @@ const SellerFlashSales = () => {
             return (
               <div 
                 key={sale.id}
-                className={`p-4 rounded-xl border ${
+                className={`p-3 sm:p-4 rounded-xl border ${
                   isActive 
                     ? 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200' 
                     : 'bg-slate-50 border-slate-200'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                {/* Mobile: Vertical stack, Desktop: Horizontal */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  {/* Product Info */}
+                  <div className="flex items-center gap-3 min-w-0">
                     {sale.product?.icon_url ? (
                       <img 
                         src={sale.product.icon_url} 
                         alt={sale.product.name}
-                        className="w-12 h-12 rounded-lg object-cover"
+                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-lg bg-slate-200 flex items-center justify-center">
-                        <Package className="h-6 w-6 text-slate-400" />
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-slate-200 flex items-center justify-center flex-shrink-0">
+                        <Package className="h-5 w-5 sm:h-6 sm:w-6 text-slate-400" />
                       </div>
                     )}
-                    <div>
-                      <h3 className="font-semibold text-slate-900">{sale.product?.name}</h3>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-red-600 font-bold">${sale.sale_price.toFixed(2)}</span>
-                        <span className="text-slate-400 line-through text-sm">${sale.original_price.toFixed(2)}</span>
-                        <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-semibold">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-slate-900 text-sm sm:text-base truncate">{sale.product?.name}</h3>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="text-red-600 font-bold text-sm sm:text-base">${sale.sale_price.toFixed(2)}</span>
+                        <span className="text-slate-400 line-through text-xs sm:text-sm">${sale.original_price.toFixed(2)}</span>
+                        <span className="text-[10px] sm:text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-semibold">
                           {sale.discount_percentage}% OFF
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  {/* Stats Row - Horizontal on mobile */}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/50">
                     {isActive && (
-                      <FlashSaleCountdown endsAt={sale.ends_at} />
+                      <FlashSaleCountdown endsAt={sale.ends_at} className="scale-90 sm:scale-100" />
                     )}
                     {isExpired && (
-                      <span className="text-xs text-slate-500 bg-slate-200 px-2 py-1 rounded">
+                      <span className="text-[10px] sm:text-xs text-slate-500 bg-slate-200 px-2 py-1 rounded">
                         Expired
                       </span>
                     )}
-                    <div className="text-right text-xs text-slate-500">
+                    <div className="text-right text-[10px] sm:text-xs text-slate-500">
                       <div>{sale.sold_quantity} sold</div>
                       {sale.max_quantity && (
                         <div>of {sale.max_quantity}</div>
@@ -329,7 +332,7 @@ const SellerFlashSales = () => {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDeleteFlashSale(sale.id)}
-                      className="text-slate-400 hover:text-red-500"
+                      className="text-slate-400 hover:text-red-500 h-8 w-8 sm:h-9 sm:w-9"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

@@ -101,6 +101,19 @@ interface Category {
   color: string | null;
 }
 
+interface FlashSale {
+  id: string;
+  product_id: string;
+  discount_percentage: number;
+  original_price: number;
+  sale_price: number;
+  starts_at: string;
+  ends_at: string;
+  max_quantity: number | null;
+  sold_quantity: number;
+  is_active: boolean;
+}
+
 // Banner height mapping
 const bannerHeightClasses: Record<string, string> = {
   small: 'h-32 md:h-40',
@@ -120,6 +133,7 @@ const StoreContent = () => {
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [products, setProducts] = useState<SellerProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [flashSales, setFlashSales] = useState<FlashSale[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -339,11 +353,12 @@ const StoreContent = () => {
       }
 
       const data = await response.json();
-      console.log('[Store] BFF response:', { seller: data.seller?.store_name, productCount: data.products?.length });
+      console.log('[Store] BFF response:', { seller: data.seller?.store_name, productCount: data.products?.length, flashSalesCount: data.flashSales?.length });
       
       setSeller(data.seller as SellerProfile);
       setProducts(data.products || []);
       setCategories(data.categories || []);
+      setFlashSales(data.flashSales || []);
     } catch (error) {
       console.error('[Store] BFF fetch error:', error);
       // Fallback to direct query if BFF fails (during deployment)
@@ -935,6 +950,74 @@ const StoreContent = () => {
                       <span>{line}</span>
                     </p>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Flash Sales Section */}
+            {flashSales.length > 0 && (
+              <div className="mb-4 md:mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+                    <Zap className="h-3.5 w-3.5 text-white fill-white" />
+                  </div>
+                  <h2 className="text-base font-bold text-slate-900">Flash Deals</h2>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 hide-scrollbar snap-x snap-mandatory">
+                  {flashSales.map((sale) => {
+                    const saleProduct = products.find(p => p.id === sale.product_id);
+                    if (!saleProduct) return null;
+                    
+                    return (
+                      <div key={sale.id} className="flex-shrink-0 w-44 sm:w-52 snap-start">
+                        <div 
+                          onClick={() => setSelectedProduct(saleProduct)}
+                          className="group bg-white rounded-xl overflow-hidden border-2 border-red-200 shadow-sm hover:shadow-lg hover:border-red-300 transition-all cursor-pointer"
+                        >
+                          {/* Flash Sale Banner */}
+                          <div className="bg-gradient-to-r from-red-500 to-orange-500 py-1 px-2 flex items-center justify-between">
+                            <span className="text-white text-[10px] font-bold">⚡ FLASH SALE</span>
+                            <span className="text-white text-[10px] font-bold">{sale.discount_percentage}% OFF</span>
+                          </div>
+                          
+                          {/* Image */}
+                          <div className="relative aspect-square overflow-hidden bg-slate-50">
+                            {saleProduct.icon_url ? (
+                              <img 
+                                src={saleProduct.icon_url} 
+                                alt={saleProduct.name}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="h-10 w-10 text-slate-300" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Content */}
+                          <div className="p-2.5">
+                            <h3 className="font-semibold text-slate-900 text-xs leading-tight line-clamp-1 mb-1.5">
+                              {saleProduct.name}
+                            </h3>
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <span className="text-sm font-bold text-red-600">${sale.sale_price.toFixed(2)}</span>
+                              <span className="text-xs text-slate-400 line-through">${sale.original_price.toFixed(2)}</span>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePurchase(saleProduct);
+                              }}
+                              className="w-full py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-lg text-xs hover:from-red-600 hover:to-orange-600 active:scale-[0.98] transition-all"
+                            >
+                              Buy Now
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

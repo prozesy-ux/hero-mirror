@@ -60,8 +60,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch products and categories in parallel
-    const [productsResult, categoriesResult] = await Promise.all([
+    // Fetch products, categories, and flash sales in parallel
+    const now = new Date().toISOString();
+    const [productsResult, categoriesResult, flashSalesResult] = await Promise.all([
       supabase
         .from('seller_products')
         .select('id, name, description, price, icon_url, category_id, is_available, is_approved, tags, stock, sold_count, chat_allowed, seller_id, view_count, images')
@@ -74,6 +75,13 @@ Deno.serve(async (req) => {
         .select('id, name, icon, color')
         .eq('is_active', true)
         .order('display_order', { ascending: true }),
+      supabase
+        .from('flash_sales')
+        .select('id, product_id, discount_percentage, original_price, sale_price, starts_at, ends_at, max_quantity, sold_quantity, is_active')
+        .eq('seller_id', seller.id)
+        .eq('is_active', true)
+        .lte('starts_at', now)
+        .gt('ends_at', now),
     ]);
 
     if (productsResult.error) {
@@ -82,9 +90,13 @@ Deno.serve(async (req) => {
     if (categoriesResult.error) {
       console.error('[BFF-StorePublic] Categories query error:', categoriesResult.error);
     }
+    if (flashSalesResult.error) {
+      console.error('[BFF-StorePublic] Flash sales query error:', flashSalesResult.error);
+    }
 
     const products = productsResult.data || [];
     const categories = categoriesResult.data || [];
+    const flashSales = flashSalesResult.data || [];
 
     // Get product IDs and fetch reviews
     const productIds = products.map(p => p.id);
@@ -112,6 +124,7 @@ Deno.serve(async (req) => {
       },
       products,
       categories,
+      flashSales,
       cachedAt: new Date().toISOString(),
     };
 
