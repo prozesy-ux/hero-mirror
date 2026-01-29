@@ -318,11 +318,7 @@ const SellerOrders = () => {
   return (
     <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen seller-dashboard">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 seller-heading">Orders</h1>
-          <p className="text-sm text-slate-500">{filteredOrders.length} orders found</p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4 mb-6">
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 

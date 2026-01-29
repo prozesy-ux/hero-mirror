@@ -172,11 +172,7 @@ const SellerCustomers = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800">Customer Insights</h1>
-          <p className="text-sm text-slate-500">Understand your buyers and their behavior</p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={exportCustomers} className="bg-emerald-500 hover:bg-emerald-600 rounded-xl">
             <Download className="w-4 h-4 mr-2" />

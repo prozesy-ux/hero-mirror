@@ -123,14 +123,6 @@ const SellerProductAnalytics = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-blue-500" />
-          Product Analytics
-        </h2>
-        <p className="text-sm text-slate-500">Track views, clicks, and conversions for your products</p>
-      </div>
 
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

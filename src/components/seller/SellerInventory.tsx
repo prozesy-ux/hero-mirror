@@ -124,11 +124,7 @@ const SellerInventory = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800">Inventory Management</h1>
-          <p className="text-sm text-slate-500">Track and manage your product stock levels</p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => refreshProducts()} className="rounded-xl">
             <RefreshCw className="w-4 h-4 mr-2" />

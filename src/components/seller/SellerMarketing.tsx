@@ -197,11 +197,7 @@ const SellerMarketing = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800">Marketing Tools</h1>
-          <p className="text-sm text-slate-500">Create discount codes and promotions</p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-500 hover:bg-emerald-600 rounded-xl">
