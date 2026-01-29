@@ -11,8 +11,8 @@ import { AnnouncementBanner } from '@/components/ui/announcement-banner';
 import SellerLevelBadge from '@/components/seller/SellerLevelBadge';
 import SellerLevelProgress from '@/components/seller/SellerLevelProgress';
 import { 
-  AreaChart, 
-  Area, 
+  BarChart, 
+  Bar, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -429,18 +429,23 @@ const SellerDashboard = () => {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Sales Details Chart */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
+          </div>
+          {/* Chart Legend */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-orange-500" />
+              <span className="text-xs text-slate-600">Revenue</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-slate-400" />
+              <span className="text-xs text-slate-600">Orders</span>
+            </div>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="dashboardSalesGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                 <XAxis 
                   dataKey="date" 
@@ -453,27 +458,25 @@ const SellerDashboard = () => {
                   tick={{ fontSize: 11, fill: '#64748B' }} 
                   axisLine={false} 
                   tickLine={false}
-                  tickFormatter={v => formatAmountOnly(v)}
-                  width={50}
+                  tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v.toString()}
+                  width={45}
                 />
                 <Tooltip 
                   contentStyle={{ 
                     borderRadius: 12, 
                     border: 'none', 
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    padding: '12px 16px',
                     fontSize: 12,
                     backgroundColor: 'white'
                   }}
-                  formatter={(value: number) => [formatAmountOnly(value), 'Revenue']}
+                  formatter={(value: number, name: string) => [
+                    formatAmountOnly(value), 
+                    name === 'sales' ? 'Revenue' : 'Orders'
+                  ]}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="sales" 
-                  stroke="#3B82F6" 
-                  strokeWidth={2.5}
-                  fill="url(#dashboardSalesGradient)" 
-                />
-              </AreaChart>
+                <Bar dataKey="sales" fill="#F97316" radius={[6, 6, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>

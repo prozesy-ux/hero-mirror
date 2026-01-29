@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DateRange } from 'react-day-picker';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, BarChart, Bar } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, BarChart, Bar } from 'recharts';
 import { toast } from 'sonner';
 
 interface Order {
@@ -318,38 +318,42 @@ const BuyerAnalytics = () => {
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-slate-800">Spending Details</h3>
           </div>
+          {/* Chart Legend */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-orange-500" />
+              <span className="text-xs text-slate-600">Spending</span>
+            </div>
+          </div>
           {spendingByDay.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={spendingByDay}>
-                <defs>
-                  <linearGradient id="spendingGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#94A3B8" />
+              <BarChart data={spendingByDay}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} />
                 <YAxis 
-                  tick={{ fontSize: 11 }} 
-                  stroke="#94A3B8"
-                  tickFormatter={(value) => `${value}%`}
-                  domain={[0, 100]}
+                  tick={{ fontSize: 11, fill: '#64748B' }} 
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}k` : value.toString()}
                 />
                 <Tooltip 
-                  formatter={(value: any, name: any) => [
-                    name === 'percentage' ? `${value}%` : formatAmountOnly(value),
-                    name === 'percentage' ? 'Relative' : 'Amount'
+                  formatter={(value: any, name: any, props: any) => [
+                    formatAmountOnly(props.payload.amount),
+                    'Spending'
                   ]}
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0' }}
+                  contentStyle={{ 
+                    borderRadius: '12px', 
+                    border: 'none',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    padding: '12px 16px'
+                  }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="percentage" 
-                  stroke="#3B82F6" 
-                  strokeWidth={2}
-                  fill="url(#spendingGradient)" 
+                <Bar 
+                  dataKey="amount" 
+                  fill="#F97316" 
+                  radius={[6, 6, 0, 0]}
                 />
-              </AreaChart>
+              </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-[250px] flex items-center justify-center text-slate-400">

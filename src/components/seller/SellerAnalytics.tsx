@@ -402,19 +402,24 @@ const SellerAnalytics = () => {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Sales Details Chart - 2/3 width */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
+          </div>
+          {/* Chart Legend */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-orange-500" />
+              <span className="text-xs text-slate-600">Revenue</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-slate-400" />
+              <span className="text-xs text-slate-600">Orders</span>
+            </div>
           </div>
           
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={analyticsData.dailyData}>
-                <defs>
-                  <linearGradient id="analyticsSalesGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <BarChart data={analyticsData.dailyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                 <XAxis 
                   dataKey="date" 
@@ -427,7 +432,10 @@ const SellerAnalytics = () => {
                   tick={{ fontSize: 11, fill: '#64748B' }} 
                   axisLine={false} 
                   tickLine={false}
-                  tickFormatter={(v) => `${v.toFixed(0)}%`}
+                  tickFormatter={(v) => {
+                    const actualValue = (v / 100) * analyticsData.maxRevenue;
+                    return actualValue >= 1000 ? `${(actualValue/1000).toFixed(0)}k` : actualValue.toFixed(0);
+                  }}
                   domain={[0, 100]}
                   width={45}
                 />
@@ -435,7 +443,8 @@ const SellerAnalytics = () => {
                   contentStyle={{ 
                     borderRadius: 12, 
                     border: 'none', 
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)', 
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    padding: '12px 16px', 
                     fontSize: 12,
                     backgroundColor: 'white'
                   }} 
@@ -445,14 +454,12 @@ const SellerAnalytics = () => {
                   ]}
                   labelFormatter={(label) => label}
                 />
-                <Area 
-                  type="monotone" 
+                <Bar 
                   dataKey="percentage" 
-                  stroke="#3B82F6" 
-                  strokeWidth={2.5} 
-                  fill="url(#analyticsSalesGradient)" 
+                  fill="#F97316" 
+                  radius={[6, 6, 0, 0]} 
                 />
-              </AreaChart>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
