@@ -1,289 +1,312 @@
 
-# Seller Dashboard Redesign - ScatterPie Analytics Style
+# Reset Password Page Redesign - Match Sign In Dark Theme
 
 ## Overview
 
-This plan redesigns the Seller Dashboard to exactly match the ScatterPie Analytics reference image. Using only real outlet data from the existing BFF endpoints, no mock data.
+Redesign the Reset Password page and all its states (loading, success, error, form) to exactly match the Sign In page's dark theme styling. Replace default shadcn components with custom styled elements and use sonner toast for notifications.
 
 ---
 
-## Reference Image Analysis (ScatterPie Analytics)
+## Current vs Target Design
 
-### Top Row - 5 Stat Cards
-| Card | Label | Value Format | Icon | Change Indicator |
-|------|-------|--------------|------|------------------|
-| 1 | Revenue (in Lacs) | ₹ 1,7043.99 | None | ↘ 65.23% Than Last Week (red) |
-| 2 | Outstanding (in Lacs) | ₹ 3,348.78 | None | ↗ 65.23% Than Last Week (green) |
-| 3 | Target Quantity | ₹ 346,146 | None | No indicator |
-| 4 | Dispatch Quantity | 550,131 | Truck icon (left) | ↘ 5648 Than Last Week (red) |
-| 5 | Target Achieved | 159% | Target icon (left) | ↗ 0.00% Than Last Week |
+### Current Issues
+- Light background (`bg-background`) instead of black
+- Default shadcn Input/Button components with light styling
+- Generic foreground/muted colors
+- Uses shadcn `useToast` hook (gray/white toast)
+- Success/error states have light backgrounds
 
-**Stat Card Style:**
-- White background with subtle left border accent (coral/orange)
-- Small gray label at top (11px)
-- Large bold value (28-32px)
-- Green/red percentage change with arrow below
-
-### Second Row - 3 Section Cards
-| Section | Type | Style |
-|---------|------|-------|
-| Payment Deliquancy Bucket | Stacked horizontal bar | Orange gradient segments with legend |
-| Top Performing Distributor | Horizontal bar chart | Coral bars, labels on left, values on right |
-| Top Performing Salespersons | Horizontal bar chart | Coral bars, labels on left, values on right |
-
-### Third Row - Year Over Year Growth
-- Two white boxes side-by-side showing:
-  - FY 2019: 7,618
-  - FY 2020: 9,431 (with ↗ 23.80% green indicator)
-
-### Fourth Row - Multi-line Chart + Table
-| Section | Description |
-|---------|-------------|
-| Year Over Year Growth | Line chart with 3 series (FY 2018, FY 2019, FY 2020), circular markers, month labels |
-| Top 5 States | Table with columns: States, Dispatch Quantity, Revenue, Outstanding, % of Total Revenue |
-
-### Fifth Row - Grouped Bar Chart + Map
-| Section | Description |
-|---------|-------------|
-| Quarter Over Quarter trend | Grouped vertical bar chart with multiple quarters, legend on right |
-| Geographical Analysis | Map showing India with total stats |
+### Target Design (Matching Sign In)
+- Black background (`bg-black`)
+- Dark gray cards (`bg-gray-900/50`, `border border-gray-800`)
+- Purple accents (`bg-purple-600`, `text-purple-400`, `focus:border-purple-500`)
+- Custom dark inputs (`bg-black/50 border-gray-700`)
+- White text (`text-white`)
+- Uptoza logo in white rounded container
+- Use `sonner` toast for success/error messages
 
 ---
 
-## Files to Modify
+## File to Modify
 
-### `src/components/seller/SellerDashboard.tsx`
+### `src/pages/ResetPassword.tsx`
 
-**Complete redesign to match ScatterPie reference:**
+**Key Changes:**
 
-### 1. Top Stat Cards (5 cards in a row)
-
+### 1. Imports Update
 ```tsx
-{/* Stat Cards Row - 5 Cards */}
-<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-  {/* Revenue */}
-  <div className="bg-white rounded-xl p-4 border-l-4 border-l-orange-400 shadow-sm">
-    <p className="text-[11px] text-slate-500 font-medium">Revenue</p>
-    <p className="text-2xl lg:text-[28px] font-bold text-slate-800 mt-1">
-      {formatAmountOnly(totalRevenue)}
+// Remove
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+
+// Add
+import { toast } from 'sonner';
+import uptozaLogo from '@/assets/uptoza-logo.png';
+```
+
+### 2. Loading State (Validating)
+```tsx
+<div className="flex min-h-dvh flex-col items-center justify-center bg-black">
+  <div className="overflow-hidden rounded-2xl bg-white p-2 shadow-xl shadow-black/20 mb-6">
+    <img src={uptozaLogo} alt="Uptoza" className="h-12 w-auto rounded-xl" />
+  </div>
+  <div className="flex items-center gap-3 text-white">
+    <Loader2 className="h-5 w-5 animate-spin" />
+    <span className="text-lg font-medium">Validating reset link...</span>
+  </div>
+</div>
+```
+
+### 3. Success State
+```tsx
+<div className="flex min-h-dvh flex-col items-center justify-center bg-black p-4">
+  <div className="w-full max-w-md text-center">
+    <div className="overflow-hidden rounded-2xl bg-white p-2 shadow-xl shadow-black/20 mx-auto w-fit mb-6">
+      <img src={uptozaLogo} alt="Uptoza" className="h-10 w-auto rounded-xl" />
+    </div>
+    <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+      <CheckCircle className="w-8 h-8 text-emerald-400" />
+    </div>
+    <h1 className="text-2xl font-bold text-white mb-2">Password Reset Complete!</h1>
+    <p className="text-gray-400 mb-6">
+      Your password has been successfully updated. Redirecting to sign in...
     </p>
-    <div className="flex items-center gap-1 mt-2 text-[11px]">
-      {revenueChange >= 0 ? (
-        <>
-          <TrendingUp className="h-3 w-3 text-emerald-500" />
-          <span className="text-emerald-600 font-medium">{revenueChange.toFixed(2)}%</span>
-        </>
-      ) : (
-        <>
-          <TrendingDown className="h-3 w-3 text-red-500" />
-          <span className="text-red-600 font-medium">{Math.abs(revenueChange).toFixed(2)}%</span>
-        </>
-      )}
-      <span className="text-slate-400">Than Last Week</span>
-    </div>
+    <button
+      onClick={() => navigate('/signin')}
+      className="w-full rounded-lg bg-purple-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-purple-700"
+    >
+      Go to Sign In
+    </button>
   </div>
-  {/* ... 4 more similar cards */}
 </div>
 ```
 
-### 2. Horizontal Bar Charts - Top Performing Products/Buyers
-
+### 4. Error State
 ```tsx
-{/* Top Performing Products - Horizontal Bar */}
-<div className="bg-white rounded-xl p-5 shadow-sm">
-  <h3 className="text-sm font-semibold text-slate-800 mb-4">Top Performing Products</h3>
-  <div className="space-y-3">
-    {topProducts.map((product, i) => (
-      <div key={i} className="flex items-center gap-3">
-        <span className="text-xs text-slate-600 w-24 truncate">{product.name}</span>
-        <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full"
-            style={{ width: `${(product.revenue / maxRevenue) * 100}%` }}
-          />
-        </div>
-        <span className="text-xs font-semibold text-slate-700 w-16 text-right">
-          {formatAmountOnly(product.revenue)}
-        </span>
+<div className="flex min-h-dvh flex-col items-center justify-center bg-black p-4">
+  <div className="w-full max-w-md text-center">
+    <div className="overflow-hidden rounded-2xl bg-white p-2 shadow-xl shadow-black/20 mx-auto w-fit mb-6">
+      <img src={uptozaLogo} alt="Uptoza" className="h-10 w-auto rounded-xl" />
+    </div>
+    <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/20 flex items-center justify-center">
+      <Shield className="w-8 h-8 text-red-400" />
+    </div>
+    <h1 className="text-2xl font-bold text-white mb-2">Invalid Reset Link</h1>
+    <p className="text-gray-400 mb-6">{error}</p>
+    <button
+      onClick={() => navigate('/signin')}
+      className="w-full rounded-lg bg-purple-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-purple-700"
+    >
+      Back to Sign In
+    </button>
+  </div>
+</div>
+```
+
+### 5. Main Form Layout
+```tsx
+<div className="flex min-h-dvh flex-col lg:flex-row">
+  {/* Left Side - Background Image */}
+  <div className="relative hidden h-full min-h-dvh overflow-hidden lg:block lg:w-2/3">
+    <img src={signinBackground} alt="Background" className="absolute inset-0 h-full w-full object-cover" />
+    <div className="absolute inset-0 z-10 bg-gradient-to-br from-black/60 via-black/60 to-gray-900/60" />
+    <div className="absolute inset-0 z-10" style={{ backgroundImage: "radial-gradient(rgba(0, 0, 0, 0.15) 1px, transparent 0)", backgroundSize: "20px 20px" }} />
+    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-12 text-center">
+      <div className="space-y-3">
+        <h1 className="text-4xl font-light tracking-tight text-white drop-shadow-lg">Reset Your Password</h1>
+        <p className="text-xl font-medium text-white/90 drop-shadow-md">Create a strong password to secure your account</p>
       </div>
-    ))}
+    </div>
   </div>
-</div>
-```
 
-### 3. Year Over Year Comparison Boxes
+  {/* Right Side - Form */}
+  <div className="flex min-h-dvh w-full flex-col items-center bg-black text-white lg:w-1/3 lg:justify-center lg:p-8">
+    {/* Mobile Background */}
+    <div className="relative w-full overflow-hidden lg:hidden" style={{ minHeight: "180px" }}>
+      <img src={signinBackground} alt="Background" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black" />
+      <div className="relative z-10 flex h-full flex-col items-center justify-center p-8">
+        <h1 className="text-2xl font-light text-white">Reset Your Password</h1>
+      </div>
+    </div>
 
-```tsx
-{/* Year Over Year Growth Boxes */}
-<div className="flex gap-4">
-  <div className="bg-white rounded-xl p-4 shadow-sm flex-1">
-    <p className="text-xs text-slate-500 font-medium">Last Month</p>
-    <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(lastMonthRevenue)}</p>
-  </div>
-  <div className="bg-white rounded-xl p-4 shadow-sm flex-1">
-    <p className="text-xs text-slate-500 font-medium">This Month</p>
-    <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(thisMonthRevenue)}</p>
-    <div className="flex items-center gap-1 mt-1">
-      <TrendingUp className="h-3 w-3 text-emerald-500" />
-      <span className="text-xs font-medium text-emerald-600">{monthlyGrowth.toFixed(2)}%</span>
+    {/* Form Container */}
+    <div className="flex w-full max-w-sm flex-col items-center px-6 py-8 lg:px-0">
+      {/* Logo */}
+      <div className="mb-8 flex justify-center">
+        <div className="overflow-hidden rounded-2xl bg-white p-2 shadow-xl shadow-black/20">
+          <img src={uptozaLogo} alt="Uptoza" className="h-10 w-auto rounded-xl" />
+        </div>
+      </div>
+
+      {/* Back Button */}
+      <button onClick={() => navigate('/signin')} className="mb-6 flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm self-start">
+        <ArrowLeft size={16} />
+        Back to Sign In
+      </button>
+
+      {/* Form Card */}
+      <div className="w-full rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-purple-500/20 flex items-center justify-center">
+            <Lock className="w-7 h-7 text-purple-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Create New Password</h2>
+          <p className="text-gray-400 text-sm mt-2">Enter your new password below</p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Password Field */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-white">New Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter new password"
+                className="w-full rounded-lg border border-gray-700 bg-black/50 py-3 pl-10 pr-10 text-sm text-white placeholder:text-gray-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                required
+                minLength={8}
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            
+            {/* Password Strength Indicator */}
+            {password && (
+              <div className="mt-2 space-y-1">
+                <div className="flex gap-1">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i < passwordStrength ? strengthColors[passwordStrength - 1] : 'bg-gray-700'}`} />
+                  ))}
+                </div>
+                <p className={`text-xs ${strengthTextColors}`}>{strengthLabels[passwordStrength - 1] || 'Too weak'}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-white">Confirm Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                className="w-full rounded-lg border border-gray-700 bg-black/50 py-3 pl-10 pr-10 text-sm text-white placeholder:text-gray-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                required
+              />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {confirmPassword && password !== confirmPassword && (
+              <p className="mt-1 text-xs text-red-400">Passwords don't match</p>
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading || password !== confirmPassword || password.length < 8}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              'Update Password'
+            )}
+          </button>
+        </form>
+
+        {/* Password Requirements */}
+        <div className="mt-5 p-4 rounded-lg bg-gray-800/50 border border-gray-700">
+          <h4 className="text-xs font-medium text-white mb-2">Password requirements:</h4>
+          <ul className="text-xs text-gray-400 space-y-1">
+            <li className={password.length >= 8 ? 'text-emerald-400' : ''}>At least 8 characters</li>
+            <li className={/[a-z]/.test(password) && /[A-Z]/.test(password) ? 'text-emerald-400' : ''}>Upper and lowercase letters</li>
+            <li className={/\d/.test(password) ? 'text-emerald-400' : ''}>At least one number</li>
+            <li className={/[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-emerald-400' : ''}>At least one special character</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 ```
 
-### 4. Multi-Line Chart (Year Over Year Growth)
-
+### 6. Toast Notifications
+Replace `useToast` with `sonner`:
 ```tsx
-{/* Line Chart with Multiple Series */}
-<LineChart data={monthlyData}>
-  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-  <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#64748B' }} />
-  <YAxis tick={{ fontSize: 10, fill: '#64748B' }} tickFormatter={(v) => `${v/1000}k`} />
-  <Line type="monotone" dataKey="thisYear" stroke="#F97316" strokeWidth={2} dot={{ r: 4 }} />
-  <Line type="monotone" dataKey="lastYear" stroke="#94A3B8" strokeWidth={2} dot={{ r: 4 }} />
-</LineChart>
-```
+// Error toast
+toast.error("Passwords don't match", {
+  description: "Please make sure both passwords are the same."
+});
 
-### 5. Top Buyers Table
-
-```tsx
-{/* Top Buyers Table */}
-<div className="bg-white rounded-xl shadow-sm overflow-hidden">
-  <h3 className="text-sm font-semibold text-slate-800 p-4 border-b">Top Buyers</h3>
-  <table className="w-full text-sm">
-    <thead className="bg-orange-50">
-      <tr>
-        <th className="text-left p-3 text-xs font-semibold text-slate-600">Buyer</th>
-        <th className="text-right p-3 text-xs font-semibold text-slate-600">Orders</th>
-        <th className="text-right p-3 text-xs font-semibold text-slate-600">Revenue</th>
-        <th className="text-right p-3 text-xs font-semibold text-slate-600">% of Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      {topBuyers.map((buyer, i) => (
-        <tr key={i} className="border-b border-slate-50">
-          <td className="p-3 text-slate-700">{buyer.email}</td>
-          <td className="p-3 text-right text-slate-600">{buyer.orderCount}</td>
-          <td className="p-3 text-right font-medium text-slate-800">{formatAmountOnly(buyer.revenue)}</td>
-          <td className="p-3 text-right">
-            <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-medium">
-              {buyer.percentage.toFixed(2)}%
-            </span>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
-```
-
-### 6. Grouped Bar Chart (Period Comparison)
-
-```tsx
-{/* Grouped Bar Chart */}
-<BarChart data={periodData}>
-  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-  <XAxis dataKey="period" tick={{ fontSize: 10, fill: '#64748B' }} />
-  <YAxis tick={{ fontSize: 10, fill: '#64748B' }} tickFormatter={(v) => `${v/1000}k`} />
-  <Bar dataKey="currentPeriod" fill="#F97316" radius={[4, 4, 0, 0]} />
-  <Bar dataKey="previousPeriod" fill="#FED7AA" radius={[4, 4, 0, 0]} />
-</BarChart>
+// Success toast  
+toast.success("Password updated!", {
+  description: "Your password has been successfully reset."
+});
 ```
 
 ---
 
-## Data Sources (Real Outlet Data Only)
+## Design Specifications
 
-| Metric | Source |
-|--------|--------|
-| Total Revenue | `orders.reduce((sum, o) => sum + o.seller_earning, 0)` |
-| Total Orders | `orders.length` |
-| Pending Balance | `wallet?.pending_balance` |
-| Completed Orders | `orders.filter(o => o.status === 'completed').length` |
-| Top Products | Aggregated from `orders` grouped by `product_id` |
-| Top Buyers | Aggregated from `orders` grouped by `buyer_id` |
-| Monthly Trends | `orders` grouped by month |
-| Period Comparison | `orders` filtered by date ranges |
-
----
-
-## Color Palette (ScatterPie Reference)
-
+### Color Palette (Matching Sign In)
 | Element | Color |
 |---------|-------|
-| Primary Accent | `#F97316` (orange-500) |
-| Secondary Bar | `#FED7AA` (orange-200) |
-| Left Border Accent | `#FB923C` (orange-400) |
-| Positive Change | `#10B981` (emerald-500) |
-| Negative Change | `#EF4444` (red-500) |
-| Table Header BG | `#FFF7ED` (orange-50) |
-| Grid Lines | `#E2E8F0` (slate-200) |
+| Background | `bg-black` |
+| Card | `bg-gray-900/50 border-gray-800` |
+| Input | `bg-black/50 border-gray-700` |
+| Input Focus | `focus:border-purple-500 focus:ring-purple-500` |
+| Primary Button | `bg-purple-600 hover:bg-purple-700` |
+| Text Primary | `text-white` |
+| Text Secondary | `text-gray-400` |
+| Text Muted | `text-gray-500` |
+| Success Accent | `bg-emerald-500/20 text-emerald-400` |
+| Error Accent | `bg-red-500/20 text-red-400` |
+| Icon Accent | `bg-purple-500/20 text-purple-400` |
 
----
-
-## Typography (ScatterPie Reference)
-
+### Typography
 | Element | Style |
 |---------|-------|
-| Card Label | 11px, font-medium, text-slate-500 |
-| Card Value | 28px, font-bold, text-slate-800 |
-| Change Text | 11px, font-medium, with arrow icon |
-| Section Title | 14px, font-semibold, text-slate-800 |
-| Table Header | 12px, font-semibold, text-slate-600, uppercase |
-| Table Cell | 14px, text-slate-700 |
-
----
-
-## Layout Structure
-
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│  [Revenue]  [Pending]  [Orders]  [Products]  [Completion %]         │
-│   5 Stat Cards with left border accent                              │
-├─────────────────────────────────────────────────────────────────────┤
-│  [Order Status Bar]  │  [Top Products]  │  [Top Buyers]             │
-│   Stacked bar        │   Horizontal bar │   Horizontal bar          │
-├─────────────────────────────────────────────────────────────────────┤
-│  [Last Month] [This Month] ← Year comparison boxes                  │
-├─────────────────────────────────────────────────────────────────────┤
-│  [Monthly Trend Line Chart]          │  [Top Buyers Table]          │
-│   Multi-line with circular markers   │   With orange header         │
-├─────────────────────────────────────────────────────────────────────┤
-│  [Period Comparison Bar Chart]       │  [Order Summary Stats]       │
-│   Grouped vertical bars              │   2x2 grid with metrics      │
-└─────────────────────────────────────────────────────────────────────┘
-```
+| Page Title | `text-4xl font-light tracking-tight text-white` |
+| Card Title | `text-xl font-bold text-white` |
+| Labels | `text-sm font-medium text-white` |
+| Helper Text | `text-sm text-gray-400` |
+| Placeholder | `placeholder:text-gray-500` |
 
 ---
 
 ## Mobile Responsiveness
 
-| Breakpoint | Layout |
-|------------|--------|
-| Mobile (< 768px) | Stat cards: 2 columns, Charts: full width stacked |
-| Tablet (768-1024px) | Stat cards: 3 columns, Charts: 2 column grid |
-| Desktop (> 1024px) | Stat cards: 5 columns, Charts: 3 column grid |
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/components/seller/SellerDashboard.tsx` | Complete redesign with ScatterPie layout |
-| `src/components/seller/SellerAnalytics.tsx` | Add multi-line chart, update horizontal bars |
+- **Desktop (lg+)**: 2/3 background image left, 1/3 form right
+- **Mobile**: Full width with compact header background image
+- Same layout pattern as Sign In page
 
 ---
 
 ## Expected Outcome
 
 After implementation:
-1. 5 stat cards with left border accent (orange)
-2. Horizontal bar charts for top products and buyers
-3. Year-over-year comparison boxes
-4. Multi-line trend chart with circular markers
-5. Data table with orange header row
-6. Grouped bar chart for period comparison
-7. All real data from `useSellerContext()` - no mock data
-8. Fully responsive on mobile/tablet/desktop
-9. Exact color palette and typography from reference
+1. Reset Password page matches Sign In dark theme exactly
+2. All states (loading, success, error, form) use dark styling
+3. Uptoza logo displayed in all states
+4. Purple accents for buttons and focus states
+5. Sonner toast for notifications (consistent with Sign In)
+6. Password requirements box with dark styling
+7. Mobile-responsive matching Sign In layout
+8. No default shadcn component styling visible
