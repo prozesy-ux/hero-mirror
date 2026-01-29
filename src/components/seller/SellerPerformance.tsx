@@ -138,11 +138,6 @@ const SellerPerformance = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-slate-800">Performance Metrics</h1>
-        <p className="text-sm text-slate-500">Track your store's health and performance indicators</p>
-      </div>
 
       {/* Overall Health Score */}
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white">

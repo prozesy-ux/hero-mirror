@@ -266,23 +266,8 @@ const SellerDashboard = () => {
     <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen space-y-6 seller-dashboard">
       {/* Announcements Banner */}
       <AnnouncementBanner audience="seller" />
-      {/* Dashboard Header - Shopeers Style */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-xl font-bold text-slate-800 seller-heading">Dashboard</h1>
-          {profile.level && (
-            <SellerLevelBadge level={profile.level} size="md" />
-          )}
-          {trustScore && (
-            <Badge className={`px-2.5 py-1 text-xs font-semibold ${
-              trustScore.trust_score >= 90 ? 'bg-emerald-100 text-emerald-700' :
-              trustScore.trust_score >= 70 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-            }`}>
-              <ShieldCheck className="w-3 h-3 mr-1" />
-              {trustScore.trust_score}%
-            </Badge>
-          )}
-        </div>
+      {/* Dashboard Header - Filters Only */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
         
         {/* Date Filter + Period + Export */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -445,10 +430,7 @@ const SellerDashboard = () => {
         {/* Sales Details Chart */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
-              <p className="text-sm text-slate-500">Revenue over time</p>
-            </div>
+            <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">

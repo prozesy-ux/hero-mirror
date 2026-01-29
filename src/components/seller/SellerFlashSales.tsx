@@ -155,15 +155,7 @@ const SellerFlashSales = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Zap className="h-5 w-5 text-orange-500" />
-            Flash Sales
-          </h2>
-          <p className="text-sm text-slate-500">Create time-limited discounts to boost sales</p>
-        </div>
-
+      <div className="flex items-center justify-end">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2">
