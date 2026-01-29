@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -9,7 +9,6 @@ import { CurrencySelector } from '@/components/ui/currency-selector';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,17 +24,11 @@ import {
   LogOut, 
   Settings, 
   ChevronDown,
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  MessageSquare,
-  BarChart3,
   Share2,
   Lightbulb,
   BellRing,
   X
 } from 'lucide-react';
-import theLogo from '@/assets/the-logo.png';
 import ShareStoreModal from './ShareStoreModal';
 
 interface Notification {
@@ -48,28 +41,16 @@ interface Notification {
   link?: string;
 }
 
-const navItems = [
-  { path: '/seller', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { path: '/seller/products', label: 'Products', icon: Package },
-  { path: '/seller/orders', label: 'Orders', icon: ShoppingCart },
-  { path: '/seller/chat', label: 'Messages', icon: MessageSquare },
-  { path: '/seller/analytics', label: 'Analytics', icon: BarChart3 },
-];
-
 const SellerTopBar = () => {
   const { isCollapsed } = useSellerSidebarContext();
-  const { profile, wallet, orders } = useSellerContext();
+  const { profile, wallet } = useSellerContext();
   const { formatAmountOnly } = useCurrency();
   const { permission, isSubscribed, isLoading: pushLoading, subscribe, isSupported } = usePushNotifications();
-  const location = useLocation();
   const navigate = useNavigate();
   const [searchFocused, setSearchFocused] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadChats, setUnreadChats] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [pushBannerDismissed, setPushBannerDismissed] = useState(true);
-
-  const pendingOrders = orders.filter(o => o.status === 'pending').length;
 
   // Check if push banner was dismissed for sellers
   useEffect(() => {
@@ -118,41 +99,11 @@ const SellerTopBar = () => {
     return () => { supabase.removeChannel(channel); };
   }, [profile?.id]);
 
-  // Fetch unread chat count
-  useEffect(() => {
-    const fetchUnreadChats = async () => {
-      if (!profile?.id) return;
-
-      const { count } = await supabase
-        .from('seller_chats')
-        .select('*', { count: 'exact', head: true })
-        .eq('seller_id', profile.id)
-        .eq('sender_type', 'buyer')
-        .eq('is_read', false);
-
-      setUnreadChats(count || 0);
-    };
-
-    fetchUnreadChats();
-
-    const channel = supabase
-      .channel('seller-chats-count')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'seller_chats' }, fetchUnreadChats)
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [profile?.id]);
-
   const unreadNotifications = notifications.filter(n => !n.is_read).length;
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/');
-  };
-
-  const isActive = (path: string, exact?: boolean) => {
-    if (exact) return location.pathname === path;
-    return location.pathname.startsWith(path);
   };
 
   const markAsRead = async (id: string) => {
@@ -168,118 +119,83 @@ const SellerTopBar = () => {
 
   return (
     <header 
-      className={`fixed top-0 right-0 h-16 bg-white border-b border-slate-100 z-40 transition-all duration-300 hidden lg:flex items-center justify-between px-6 ${
+      className={`fixed top-0 right-0 h-14 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)] z-40 transition-all duration-300 hidden lg:flex items-center justify-between px-6 ${
         isCollapsed ? 'left-[72px]' : 'left-[240px]'
       }`}
     >
-      {/* Left Section - Logo & Search */}
-      <div className="flex items-center gap-6">
-        <Link to="/seller" className="flex items-center gap-2">
-          <img src={theLogo} alt="Logo" className="h-8 w-auto" />
-        </Link>
-
-        <div className={`relative transition-all duration-200 ${searchFocused ? 'w-80' : 'w-64'}`}>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      {/* Left Section - Search Only (Logo moved to sidebar) */}
+      <div className="flex items-center">
+        <div className={`relative transition-all duration-200 ${searchFocused ? 'w-96' : 'w-80'}`}>
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Search products, orders..."
-            className="pl-10 bg-slate-50 border-slate-200 focus:bg-white"
+            className="h-10 pl-11 pr-4 bg-slate-50/80 border-0 rounded-2xl text-[14px] placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 transition-all"
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
           />
         </div>
-
-        {/* Navigation Tabs */}
-        <nav className="flex items-center gap-1">
-          {navItems.map((item) => {
-            const active = isActive(item.path, item.exact);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  active 
-                    ? 'bg-emerald-50 text-emerald-700' 
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.label}</span>
-                {item.label === 'Orders' && pendingOrders > 0 && (
-                  <Badge className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs">
-                    {pendingOrders}
-                  </Badge>
-                )}
-                {item.label === 'Messages' && unreadChats > 0 && (
-                  <Badge className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs">
-                    {unreadChats}
-                  </Badge>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
       </div>
 
-      {/* Right Section - Share, Wallet, Notifications, Profile */}
-      <div className="flex items-center gap-4">
+      {/* Right Section - Currency, Share, Wallet, Notifications, Profile */}
+      <div className="flex items-center gap-3">
         {/* Currency Selector */}
         <CurrencySelector variant="minimal" />
 
         {/* Share Store Button */}
         <Button
-          variant="outline"
+          variant="ghost"
           onClick={() => setShowShareModal(true)}
-          className="gap-2 rounded-xl border-violet-200 text-violet-700 hover:bg-violet-50 hover:text-violet-800"
+          className="gap-2 h-10 px-4 rounded-xl text-violet-600 hover:bg-violet-50 hover:text-violet-700 font-medium"
         >
           <Share2 className="h-4 w-4" />
           <span className="hidden xl:inline">Share Store</span>
         </Button>
 
-        {/* Wallet Balance */}
+        {/* Wallet Balance - Premium Gradient Style */}
         <Link 
           to="/seller/wallet"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100/80 hover:border-emerald-200 transition-colors"
         >
           <Wallet className="h-4 w-4 text-emerald-600" />
-          <span className="font-semibold text-emerald-700">
+          <span className="text-[15px] font-bold text-emerald-700">
             {formatAmountOnly(Number(wallet?.balance || 0))}
           </span>
         </Link>
 
-        {/* Notifications */}
+        {/* Notifications - Clean Icon Button */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5 text-slate-600" />
+            <button className="relative w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition-colors">
+              <Bell className="h-[18px] w-[18px] text-slate-500" />
               {unreadNotifications > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center animate-pulse">
                   {unreadNotifications}
                 </span>
               )}
-            </Button>
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel className="flex items-center justify-between">
-              <span>Notifications</span>
+          <DropdownMenuContent align="end" className="w-80 rounded-xl shadow-lg border-slate-100">
+            <DropdownMenuLabel className="flex items-center justify-between py-3">
+              <span className="text-slate-900 font-semibold">Notifications</span>
               {unreadNotifications > 0 && (
                 <button 
                   onClick={markAllAsRead}
-                  className="text-xs text-emerald-600 hover:text-emerald-700"
+                  className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
                 >
                   Mark all read
                 </button>
               )}
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-slate-100" />
             {notifications.length === 0 ? (
-              <div className="p-4 text-center text-sm text-slate-500">
+              <div className="p-6 text-center text-sm text-slate-500">
                 No notifications yet
               </div>
             ) : (
               notifications.slice(0, 5).map((notification) => (
                 <DropdownMenuItem 
                   key={notification.id}
-                  className={`flex flex-col items-start gap-1 p-3 cursor-pointer ${
+                  className={`flex flex-col items-start gap-1 p-3 cursor-pointer rounded-lg mx-1 ${
                     !notification.is_read ? 'bg-emerald-50/50' : ''
                   }`}
                   onClick={() => {
@@ -287,7 +203,7 @@ const SellerTopBar = () => {
                     if (notification.link) navigate(notification.link);
                   }}
                 >
-                  <span className="font-medium text-sm">{notification.title}</span>
+                  <span className="font-medium text-sm text-slate-800">{notification.title}</span>
                   <span className="text-xs text-slate-500 line-clamp-2">{notification.message}</span>
                 </DropdownMenuItem>
               ))
@@ -295,27 +211,27 @@ const SellerTopBar = () => {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Profile Dropdown */}
+        {/* Profile Dropdown - Cleaner Avatar Style */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 px-2">
-              <Avatar className="h-8 w-8">
+            <button className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-xl hover:bg-slate-50 transition-colors">
+              <Avatar className="h-8 w-8 ring-2 ring-slate-100">
                 <AvatarImage src={profile?.store_logo_url || ''} />
-                <AvatarFallback className="bg-emerald-100 text-emerald-700 font-semibold">
+                <AvatarFallback className="bg-emerald-100 text-emerald-700 font-semibold text-sm">
                   {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
                 </AvatarFallback>
               </Avatar>
               <div className="hidden xl:flex flex-col items-start">
-                <span className="text-sm font-medium text-slate-900 max-w-[120px] truncate">
+                <span className="text-[14px] font-medium text-slate-800 max-w-[120px] truncate">
                   {profile?.store_name || 'My Store'}
                 </span>
-                <span className="text-xs text-slate-500">Seller</span>
+                <span className="text-[12px] text-slate-500">Seller</span>
               </div>
               <ChevronDown className="h-4 w-4 text-slate-400" />
-            </Button>
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg border-slate-100">
+            <DropdownMenuLabel className="py-3">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={profile?.store_logo_url || ''} />
@@ -324,36 +240,36 @@ const SellerTopBar = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{profile?.store_name}</p>
+                  <p className="font-medium text-slate-900">{profile?.store_name}</p>
                   <p className="text-xs text-slate-500">Seller Account</p>
                 </div>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-slate-100" />
             <DropdownMenuItem asChild>
-              <Link to="/seller/wallet" className="flex items-center gap-2 cursor-pointer">
-                <Wallet className="h-4 w-4" />
+              <Link to="/seller/wallet" className="flex items-center gap-2.5 cursor-pointer py-2.5 rounded-lg mx-1">
+                <Wallet className="h-4 w-4 text-slate-500" />
                 <span>Wallet</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/seller/settings" className="flex items-center gap-2 cursor-pointer">
-                <Settings className="h-4 w-4" />
+              <Link to="/seller/settings" className="flex items-center gap-2.5 cursor-pointer py-2.5 rounded-lg mx-1">
+                <Settings className="h-4 w-4 text-slate-500" />
                 <span>Settings</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/seller/feature-requests" className="flex items-center gap-2 cursor-pointer">
-                <Lightbulb className="h-4 w-4" />
+              <Link to="/seller/feature-requests" className="flex items-center gap-2.5 cursor-pointer py-2.5 rounded-lg mx-1">
+                <Lightbulb className="h-4 w-4 text-slate-500" />
                 <span>Feature Requests</span>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-slate-100" />
             <DropdownMenuItem 
               onClick={handleSignOut}
-              className="text-red-600 focus:text-red-600 cursor-pointer"
+              className="text-red-600 focus:text-red-600 cursor-pointer py-2.5 rounded-lg mx-1"
             >
-              <LogOut className="h-4 w-4 mr-2" />
+              <LogOut className="h-4 w-4 mr-2.5" />
               <span>Sign Out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
