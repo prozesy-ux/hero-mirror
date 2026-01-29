@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { bffApi } from '@/lib/api-fetch';
-import { Wallet, ShoppingBag, TrendingUp, Clock, Package, ArrowRight, Plus, Heart, Store, CheckCircle, AlertCircle, WifiOff } from 'lucide-react';
+import { Wallet, ShoppingBag, TrendingUp, Clock, Package, ArrowRight, Plus, Heart, Store, CheckCircle, AlertCircle, WifiOff, Zap, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import SessionExpiredBanner from '@/components/ui/session-expired-banner';
+import FlashSaleSection from '@/components/flash-sale/FlashSaleSection';
 
 interface Order {
   id: string;
@@ -216,6 +217,9 @@ const BuyerDashboardHome = () => {
           <Button size="sm" variant="ghost" onClick={fetchData} className="ml-auto">Refresh</Button>
         </div>
       )}
+
+      {/* Flash Deals Section */}
+      <FlashSaleSection className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm" />
       
       {/* Stats Cards - Real Data */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
