@@ -964,6 +964,36 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_tokens: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          token_hash: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          token_hash: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          token_hash?: string
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       payment_methods: {
         Row: {
           account_name: string | null
@@ -3084,6 +3114,7 @@ export type Database = {
       check_admin_rate_limit: { Args: { p_ip_address: string }; Returns: Json }
       clean_old_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
+      cleanup_expired_password_tokens: { Args: never; Returns: undefined }
       get_active_flash_sale: {
         Args: { p_product_id: string }
         Returns: {

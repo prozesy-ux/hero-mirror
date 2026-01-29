@@ -1,155 +1,54 @@
+# Current Project Status
 
-# Custom Password Reset Email via Resend
+## Completed Features
 
-## Overview
+### Flash Sales Integration ✅
+- **Store Page**: Flash deals section with horizontal scrolling above products
+- **Buyer Dashboard**: Flash deals section at the top
+- **BFF Store Public**: Fetches active flash sales in parallel with products
+- **New BFF Flash Sales**: Edge function aggregating all active flash sales
+- **Seller Mobile Optimization**: Flash sales management now responsive on mobile
 
-Currently, password reset emails are sent by the default system (`no-reply@auth.lovable.cloud`) using a basic template. This plan implements a custom password reset flow using your existing Resend email system with your professional Uptoza-branded templates.
+### Custom Password Reset via Resend ✅
+- **Database**: Created `password_reset_tokens` table for secure token storage
+- **send-password-reset**: Edge function that generates secure tokens and sends branded emails
+- **verify-password-reset**: Edge function that validates tokens and updates passwords
+- **SignIn.tsx**: Updated to use custom edge function instead of Supabase default
+- **ResetPassword.tsx**: Updated to handle custom token verification via URL param
 
----
-
-## Current Flow vs New Flow
-
-| Step | Current | New |
-|------|---------|-----|
-| User clicks "Forgot Password" | `supabase.auth.resetPasswordForEmail()` | Custom edge function |
-| Email sent from | `no-reply@auth.lovable.cloud` | `EMAIL_FROM_ADDRESS` via Resend |
-| Email template | Default Supabase template | Your custom `password_reset` template |
-| Token verification | Supabase built-in | Custom `password_reset_tokens` table |
-
----
-
-## Changes Required
-
-### 1. Database Table: `password_reset_tokens`
-
-Create a table to store secure reset tokens:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID | Primary key |
-| user_id | UUID | Reference to auth.users |
-| email | TEXT | User's email address |
-| token | TEXT | Secure random token (hashed) |
-| expires_at | TIMESTAMP | Expiry time (1 hour) |
-| used | BOOLEAN | Whether token has been used |
-| created_at | TIMESTAMP | Creation time |
-
-### 2. New Edge Function: `send-password-reset`
-
-Creates secure token, stores in database, sends branded email via Resend.
-
-**Flow:**
-1. Receive email address
-2. Look up user in auth.users
-3. Generate cryptographically secure token
-4. Store hashed token in `password_reset_tokens`
-5. Send email using your `password_reset` template via Resend
-6. Return success (always return success to prevent email enumeration)
-
-### 3. Update Edge Function: `verify-password-reset`
-
-Verifies token and updates password:
-
-**Flow:**
-1. Receive token and new password
-2. Look up token in database
-3. Verify not expired and not used
-4. Update user password via Admin API
-5. Mark token as used
-6. Return success
-
-### 4. Update SignIn.tsx
-
-Replace the current `handleForgotPassword` function:
-
-```tsx
-// Current (line 158-171)
-const { error } = await supabase.auth.resetPasswordForEmail(...)
-
-// New
-const { data, error } = await supabase.functions.invoke('send-password-reset', {
-  body: { email: resetEmail.trim() }
-});
+#### Password Reset Flow
 ```
-
-### 5. Update ResetPassword.tsx
-
-Update to handle custom token verification instead of relying on Supabase session:
-
-- Parse token from URL query parameter
-- Call `verify-password-reset` edge function with token and new password
-- Handle success/error states
-
----
-
-## Email Template Used
-
-Your existing `password_reset` template from `email-templates.ts` will be used:
-
-- Professional white design with Uptoza branding
-- Key icon header
-- "Reset Password" CTA button
-- 1-hour expiry notice
-- Sent from your verified domain via Resend
-
----
-
-## Files to Create/Modify
-
-| File | Action | Purpose |
-|------|--------|---------|
-| `supabase/functions/send-password-reset/index.ts` | CREATE | Generate token, send email via Resend |
-| `supabase/functions/verify-password-reset/index.ts` | CREATE | Verify token, update password |
-| `src/pages/SignIn.tsx` | EDIT | Use custom edge function for forgot password |
-| `src/pages/ResetPassword.tsx` | EDIT | Use custom token verification |
-| Database migration | CREATE | Add `password_reset_tokens` table |
-
----
-
-## Security Considerations
-
-1. **Token Hashing**: Tokens are hashed before storage (prevents database leak exposure)
-2. **Rate Limiting**: 3 requests per email per hour to prevent abuse
-3. **No Email Enumeration**: Always return success message regardless of whether email exists
-4. **1-Hour Expiry**: Short token lifetime for security
-5. **Single Use**: Tokens can only be used once
-6. **Secure Random**: Uses `crypto.randomUUID()` for token generation
-
----
-
-## Technical Details
-
-**Token Flow:**
-```text
-User enters email
+User clicks "Forgot Password" → SignIn.tsx
        ↓
 send-password-reset edge function
        ↓
-Generate secure token → Hash → Store in DB
+Generate secure token → Hash with SHA-256 → Store in DB
        ↓
-Send email via Resend with reset URL
+Send professional branded email via Resend (from your domain)
        ↓
 User clicks link → /reset-password?token=xxx
        ↓
+ResetPassword.tsx extracts token from URL
+       ↓
 verify-password-reset edge function
        ↓
-Validate token → Update password → Mark used
+Validate token (not expired, not used) → Update password via Admin API
        ↓
-Redirect to dashboard
+Mark token as used → Redirect to sign in
 ```
 
-**Reset URL Format:**
-```
-https://yoursite.com/reset-password?token=abc123def456...
-```
+#### Security Features
+- Tokens hashed before storage (SHA-256)
+- 1-hour expiration
+- Single use only
+- Rate limiting (3 requests per email per hour)
+- No email enumeration (always returns success)
+- Logged in email_logs table
 
 ---
 
-## Expected Outcome
+## Next Steps
 
-After implementation:
-1. Password reset emails come from your domain via Resend
-2. Emails use your professional Uptoza-branded template
-3. Full control over email content and styling
-4. All security emails consistent with your design system
-5. Email logs tracked in your `email_logs` table
+- Test password reset flow end-to-end
+- Verify emails arrive from your domain via Resend
+- Consider adding similar custom flow for email confirmation
