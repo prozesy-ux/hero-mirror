@@ -13,7 +13,7 @@ interface StatCardProps {
     label?: string;
     isPositive?: boolean;
   };
-  variant?: 'default' | 'gradient' | 'bordered' | 'minimal';
+  variant?: 'default' | 'accent' | 'minimal' | 'gradient';
   accentColor?: 'emerald' | 'violet' | 'blue' | 'orange' | 'pink' | 'amber';
   href?: string;
   onClick?: () => void;
@@ -22,46 +22,40 @@ interface StatCardProps {
 
 const accentColors = {
   emerald: {
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-600',
+    iconBg: 'bg-emerald-50',
+    iconText: 'text-emerald-600',
     border: 'border-l-emerald-500',
-    gradient: 'from-emerald-500/10 to-emerald-600/5',
-    hover: 'hover:border-emerald-200',
+    gradient: 'from-emerald-500 to-emerald-600',
   },
   violet: {
-    bg: 'bg-violet-50',
-    text: 'text-violet-600',
+    iconBg: 'bg-violet-50',
+    iconText: 'text-violet-600',
     border: 'border-l-violet-500',
-    gradient: 'from-violet-500/10 to-violet-600/5',
-    hover: 'hover:border-violet-200',
+    gradient: 'from-violet-500 to-violet-600',
   },
   blue: {
-    bg: 'bg-blue-50',
-    text: 'text-blue-600',
+    iconBg: 'bg-blue-50',
+    iconText: 'text-blue-600',
     border: 'border-l-blue-500',
-    gradient: 'from-blue-500/10 to-blue-600/5',
-    hover: 'hover:border-blue-200',
+    gradient: 'from-blue-500 to-blue-600',
   },
   orange: {
-    bg: 'bg-orange-50',
-    text: 'text-orange-600',
+    iconBg: 'bg-orange-50',
+    iconText: 'text-orange-600',
     border: 'border-l-orange-500',
-    gradient: 'from-orange-500/10 to-orange-600/5',
-    hover: 'hover:border-orange-200',
+    gradient: 'from-orange-500 to-orange-600',
   },
   pink: {
-    bg: 'bg-pink-50',
-    text: 'text-pink-600',
+    iconBg: 'bg-pink-50',
+    iconText: 'text-pink-600',
     border: 'border-l-pink-500',
-    gradient: 'from-pink-500/10 to-pink-600/5',
-    hover: 'hover:border-pink-200',
+    gradient: 'from-pink-500 to-pink-600',
   },
   amber: {
-    bg: 'bg-amber-50',
-    text: 'text-amber-600',
+    iconBg: 'bg-amber-50',
+    iconText: 'text-amber-600',
     border: 'border-l-amber-500',
-    gradient: 'from-amber-500/10 to-amber-600/5',
-    hover: 'hover:border-amber-200',
+    gradient: 'from-amber-500 to-amber-600',
   },
 };
 
@@ -83,45 +77,45 @@ const StatCard = ({
     <>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1">
+          <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">
             {label}
           </p>
-          <p className="text-[28px] font-bold text-slate-900 leading-none tracking-tight">
+          <p className="text-[32px] font-bold text-slate-900 leading-none tracking-tight">
             {value}
           </p>
           
           {/* Trend or SubValue */}
           {trend && (
-            <div className="flex items-center gap-1 mt-2">
+            <div className="flex items-center gap-1.5 mt-3">
               {trend.isPositive !== undefined ? (
                 trend.isPositive ? (
-                  <TrendingUp className="w-3 h-3 text-emerald-500" />
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
                 ) : (
-                  <TrendingDown className="w-3 h-3 text-red-500" />
+                  <TrendingDown className="w-3.5 h-3.5 text-red-500" />
                 )
               ) : trend.value >= 0 ? (
-                <TrendingUp className="w-3 h-3 text-emerald-500" />
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
               ) : (
-                <TrendingDown className="w-3 h-3 text-red-500" />
+                <TrendingDown className="w-3.5 h-3.5 text-red-500" />
               )}
               <span
                 className={cn(
-                  "text-[11px] font-medium",
+                  "text-[12px] font-medium",
                   (trend.isPositive ?? trend.value >= 0)
                     ? "text-emerald-600"
-                    : "text-red-600"
+                    : "text-red-500"
                 )}
               >
                 {trend.value >= 0 ? '+' : ''}{trend.value.toFixed(1)}%
               </span>
               {trend.label && (
-                <span className="text-[11px] text-slate-400">{trend.label}</span>
+                <span className="text-[12px] text-slate-400">{trend.label}</span>
               )}
             </div>
           )}
           
           {!trend && subValue && (
-            <p className="text-xs text-slate-500 mt-1">{subValue}</p>
+            <p className="text-[13px] text-slate-500 mt-2">{subValue}</p>
           )}
         </div>
 
@@ -130,10 +124,10 @@ const StatCard = ({
           <div
             className={cn(
               "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
-              colors.bg
+              colors.iconBg
             )}
           >
-            <div className={colors.text}>{icon}</div>
+            <div className={colors.iconText}>{icon}</div>
           </div>
         )}
       </div>
@@ -141,38 +135,80 @@ const StatCard = ({
   );
 
   const baseStyles = cn(
-    "rounded-xl p-5 transition-all duration-300",
+    "rounded-xl p-5 transition-all duration-200",
     onClick && "cursor-pointer",
     className
   );
 
   const variantStyles = {
     default: cn(
-      "bg-white border border-slate-100 shadow-stat",
-      "hover:shadow-stat-hover",
-      colors.hover
+      "bg-white border border-slate-100 shadow-card",
+      "hover:shadow-card-hover hover:border-slate-200"
     ),
-    gradient: cn(
-      "bg-gradient-to-br border",
-      colors.gradient,
-      `border-${accentColor}-500/20`
-    ),
-    bordered: cn(
-      "bg-white border-l-4 shadow-stat",
+    accent: cn(
+      "bg-white border border-slate-100 border-l-[3px] shadow-card",
       colors.border,
-      "hover:shadow-stat-hover"
+      "hover:shadow-card-hover"
     ),
     minimal: cn(
-      "bg-slate-50/80 hover:bg-slate-100/80"
+      "bg-white border border-slate-50",
+      "hover:border-slate-100 hover:shadow-card"
+    ),
+    gradient: cn(
+      "bg-gradient-to-br text-white border-0",
+      colors.gradient,
+      "shadow-card-elevated hover:shadow-lg"
     ),
   };
 
   const combinedStyles = cn(baseStyles, variantStyles[variant]);
 
+  // For gradient variant, override text colors
+  const contentWithGradientOverride = variant === 'gradient' ? (
+    <>
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-medium text-white/70 uppercase tracking-wide mb-1.5">
+            {label}
+          </p>
+          <p className="text-[32px] font-bold text-white leading-none tracking-tight">
+            {value}
+          </p>
+          
+          {trend && (
+            <div className="flex items-center gap-1.5 mt-3">
+              {(trend.isPositive ?? trend.value >= 0) ? (
+                <TrendingUp className="w-3.5 h-3.5 text-white/80" />
+              ) : (
+                <TrendingDown className="w-3.5 h-3.5 text-white/80" />
+              )}
+              <span className="text-[12px] font-medium text-white/90">
+                {trend.value >= 0 ? '+' : ''}{trend.value.toFixed(1)}%
+              </span>
+              {trend.label && (
+                <span className="text-[12px] text-white/60">{trend.label}</span>
+              )}
+            </div>
+          )}
+          
+          {!trend && subValue && (
+            <p className="text-[13px] text-white/70 mt-2">{subValue}</p>
+          )}
+        </div>
+
+        {icon && (
+          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+            <div className="text-white">{icon}</div>
+          </div>
+        )}
+      </div>
+    </>
+  ) : cardContent;
+
   if (href) {
     return (
       <Link to={href} className={combinedStyles}>
-        {cardContent}
+        {contentWithGradientOverride}
       </Link>
     );
   }
@@ -180,12 +216,12 @@ const StatCard = ({
   if (onClick) {
     return (
       <button onClick={onClick} className={cn(combinedStyles, "text-left w-full")}>
-        {cardContent}
+        {contentWithGradientOverride}
       </button>
     );
   }
 
-  return <div className={combinedStyles}>{cardContent}</div>;
+  return <div className={combinedStyles}>{contentWithGradientOverride}</div>;
 };
 
 export default StatCard;
