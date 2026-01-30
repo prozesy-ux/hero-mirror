@@ -1,6 +1,6 @@
 // App version - update this with each deployment to trigger cache clear
-// Bumped to 1.0.3 for world-class performance update
-export const APP_VERSION = '1.0.3';
+// Bumped to 1.0.4 for enterprise scaling (10M+ traffic support)
+export const APP_VERSION = '1.0.4';
 
 const VERSION_KEY = 'app_version';
 const CACHE_CLEARED_KEY = 'cache_cleared_at';
