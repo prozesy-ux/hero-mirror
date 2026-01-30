@@ -95,7 +95,7 @@ interface SellerProduct {
   seller_id: string;
   view_count?: number | null;
   product_type?: string | null;
-  type_metadata?: Record<string, any> | null;
+  type_metadata?: Record<string, any>;
 }
 
 interface Category {
@@ -399,10 +399,7 @@ const StoreContent = () => {
         ]);
 
         console.log('[Store] Direct query products:', productsResult.data?.length || 0);
-        if (productsResult.data) setProducts(productsResult.data.map(p => ({
-          ...p,
-          type_metadata: (typeof p.type_metadata === 'object' && p.type_metadata !== null) ? p.type_metadata as Record<string, any> : {}
-        })));
+        if (productsResult.data) setProducts(productsResult.data);
         if (categoriesResult.data) setCategories(categoriesResult.data);
       } catch (fallbackError) {
         console.error('[Store] Fallback also failed:', fallbackError);
