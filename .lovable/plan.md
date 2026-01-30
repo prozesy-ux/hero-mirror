@@ -1,181 +1,196 @@
 
-# Fix Store & Product URLs in Marketplace Section
+# Fix Seller Dashboard Reports & Product Analytics
 
-## Problem
+## Problem Summary
 
-When clicking on products in the marketplace section (Hot Products, New Arrivals, Top Rated), the URLs are either broken or navigating to the wrong format:
+The Seller Dashboard has two analytics components that need real data:
 
-1. **Quick View "View" button** navigates to `/dashboard/ai-accounts/product/{uuid}` instead of the SEO-friendly `/store/{store-slug}/product/{slug}`
-2. **Product sections don't fetch the `slug` field** from the database, so even if we try to use SEO URLs, we don't have the clean slug available
-3. **BFF edge function** may not be returning the `slug` field in product responses
+1. **SellerReports** - Already uses real data from `orders` and `products` via `useSellerContext()`. Working correctly.
 
-The expected format is:
-```
-/store/prozesy/product/netflix-cheap-monthly-account
-```
+2. **SellerProductAnalytics** - Fetches from `product_analytics` table which is **completely empty** (0 rows). The database functions `increment_seller_product_view` exist but are never called.
 
-But currently it's going to:
-```
-/dashboard/ai-accounts/product/f3b87674-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-```
+## Root Cause
 
-## Solution Overview
+The analytics pipeline is broken because:
+- Product views are not being tracked when users view products
+- Product clicks are not being tracked
+- Purchase events are not syncing to `product_analytics` table
+- The RPC functions `increment_seller_product_view` exist but are never invoked
 
-1. Update all marketplace product queries to include the `slug` field
-2. Update navigation logic to use the SEO-friendly URL format with `generateProductUrlWithFallback()`
-3. Update BFF edge function to include `slug` in responses
+## Solution
 
-## Technical Changes
+### Part 1: Track Product Views
 
-### 1. Update HotProductsSection.tsx
+When a user views a product (in store page modal or full view), call the database function to increment views.
 
-Add `slug` to the product interface and fetch queries:
+**Files to update:**
+- `src/pages/ProductFullView.tsx` - Call `increment_seller_product_view` when product loads
+- `src/pages/Store.tsx` - Call when product modal opens
+- `src/components/store/ProductDetailModal.tsx` - Track modal view
+
+### Part 2: Track Clicks from Marketplace
+
+When users click on products from marketplace sections (Hot Products, New Arrivals, Top Rated), track the click.
+
+**Files to update:**
+- `src/components/marketplace/HotProductsSection.tsx`
+- `src/components/marketplace/NewArrivalsSection.tsx`
+- `src/components/marketplace/TopRatedSection.tsx`
+
+### Part 3: Sync Purchase Data to Analytics
+
+Create a database trigger or update the purchase RPC to also insert/update `product_analytics` when an order is created.
+
+**Option A (Recommended):** Database trigger on `seller_orders` INSERT
+**Option B:** Update the `purchase_seller_product` RPC function
+
+### Part 4: Backfill Historical Data
+
+Create a one-time SQL migration to populate `product_analytics` from existing `seller_orders` data.
+
+## Technical Implementation
+
+### 1. View Tracking Hook/Utility
+
+Create a utility function to track product views:
 
 ```typescript
-interface HotProduct {
-  id: string;
-  name: string;
-  price: number;
-  icon_url: string | null;
-  slug: string | null;        // ADD THIS
-  sold_count: number;
-  // ... rest of fields
-}
+// src/lib/analytics-tracker.ts
+import { supabase } from '@/integrations/supabase/client';
 
-// In fetch query - add slug
-.select('id, name, price, icon_url, slug, sold_count, seller_profiles(store_name, store_slug)')
-```
-
-### 2. Update NewArrivalsSection.tsx
-
-Same pattern - add `slug` to interface and queries.
-
-### 3. Update TopRatedSection.tsx
-
-Same pattern - add `slug` to interface and queries.
-
-### 4. Update AIAccountsSection.tsx - Quick View Modal
-
-Change the "View" button navigation from:
-```typescript
-navigate(`/dashboard/ai-accounts/product/${quickViewProduct.data.id}`);
-```
-
-To:
-```typescript
-import { generateProductUrlWithFallback } from '@/lib/url-utils';
-
-// For seller products
-if (quickViewProduct.type === 'seller') {
-  const product = quickViewProduct.data as SellerProduct;
-  const storeSlug = product.seller_profiles?.store_slug;
-  if (storeSlug) {
-    navigate(generateProductUrlWithFallback(
-      storeSlug,
-      product.slug,
-      product.name,
-      product.id
-    ));
-    return;
+export const trackProductView = async (productId: string) => {
+  try {
+    await supabase.rpc('increment_seller_product_view', { p_product_id: productId });
+  } catch (error) {
+    console.error('[Analytics] Failed to track view:', error);
   }
-}
-// Fallback to internal route for AI accounts or products without store_slug
-navigate(`/dashboard/ai-accounts/product/${quickViewProduct.data.id}`);
-```
+};
 
-### 5. Update AIAccountsSection.tsx - Seller Details Modal
-
-Add a "View Full" button that navigates to the proper SEO URL:
-
-```typescript
-// Add onViewFull handler
-const handleViewFullSellerProduct = (product: SellerProduct) => {
-  if (product.seller_profiles?.store_slug) {
-    navigate(generateProductUrlWithFallback(
-      product.seller_profiles.store_slug,
-      (product as any).slug,
-      product.name,
-      product.id
-    ));
-  } else {
-    navigate(`/dashboard/ai-accounts/product/${product.id}`);
+export const trackProductClick = async (productId: string) => {
+  try {
+    await supabase.rpc('increment_product_click', { p_product_id: productId });
+  } catch (error) {
+    console.error('[Analytics] Failed to track click:', error);
   }
 };
 ```
 
-### 6. Update SellerProduct Interface in AIAccountsSection
+### 2. ProductFullView.tsx Changes
 
-Add `slug` to the SellerProduct interface:
+Add view tracking when product data is fetched:
 
 ```typescript
-interface SellerProduct {
-  id: string;
-  name: string;
-  slug?: string | null;      // ADD THIS
-  description: string | null;
-  // ... rest of fields
-}
+// After product data is loaded successfully
+useEffect(() => {
+  if (product?.id) {
+    trackProductView(product.id);
+  }
+}, [product?.id]);
 ```
 
-### 7. Update fetchSellerProducts Query
+### 3. Store.tsx - Product Modal View Tracking
 
-Add `slug` to the select:
+Track when product detail modal is opened:
 
 ```typescript
-const { data, error } = await supabase
-  .from('seller_products')
-  .select(`
-    id, name, slug, description, price, icon_url, ...
-  `)
+const handleProductClick = (product: SellerProduct) => {
+  setSelectedProduct(product);
+  trackProductView(product.id);
+};
 ```
 
-### 8. Update BFF Marketplace Home Edge Function
+### 4. Database Trigger for Purchase Analytics
 
-Ensure `slug` is included in all product queries:
+Create a trigger to automatically update `product_analytics` when orders are created:
 
-```typescript
-// In bff-marketplace-home/index.ts
-const { data: products } = await supabase
-  .from('seller_products')
-  .select('id, name, slug, price, icon_url, sold_count, seller_profiles(store_name, store_slug)')
+```sql
+CREATE OR REPLACE FUNCTION sync_order_to_analytics()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO product_analytics (product_id, date, views, clicks, purchases, revenue)
+  VALUES (NEW.product_id, CURRENT_DATE, 0, 0, 1, NEW.amount)
+  ON CONFLICT (product_id, date) 
+  DO UPDATE SET 
+    purchases = product_analytics.purchases + 1,
+    revenue = product_analytics.revenue + NEW.amount;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_sync_order_analytics
+AFTER INSERT ON seller_orders
+FOR EACH ROW
+EXECUTE FUNCTION sync_order_to_analytics();
 ```
 
-### 9. Update useMarketplaceData Hook
+### 5. Backfill Historical Orders
 
-Ensure the ProductSummary interface includes `slug`:
+One-time migration to populate analytics from existing orders:
 
-```typescript
-export interface ProductSummary {
-  id: string;
-  name: string;
-  slug: string | null;       // ADD THIS
-  price: number;
-  // ... rest of fields
-}
+```sql
+INSERT INTO product_analytics (product_id, date, views, clicks, purchases, revenue)
+SELECT 
+  product_id,
+  DATE(created_at) as date,
+  0 as views,
+  0 as clicks,
+  COUNT(*) as purchases,
+  SUM(amount) as revenue
+FROM seller_orders
+WHERE status IN ('completed', 'delivered')
+GROUP BY product_id, DATE(created_at)
+ON CONFLICT (product_id, date) 
+DO UPDATE SET 
+  purchases = EXCLUDED.purchases,
+  revenue = EXCLUDED.revenue;
+```
+
+### 6. Create Click Tracking RPC (if not exists)
+
+```sql
+CREATE OR REPLACE FUNCTION increment_product_click(p_product_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  INSERT INTO product_analytics (product_id, date, views, clicks, purchases, revenue)
+  VALUES (p_product_id, CURRENT_DATE, 0, 1, 0, 0)
+  ON CONFLICT (product_id, date) 
+  DO UPDATE SET clicks = product_analytics.clicks + 1;
+END;
+$$ LANGUAGE plpgsql;
 ```
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/marketplace/HotProductsSection.tsx` | Add `slug` to interface and queries |
-| `src/components/marketplace/NewArrivalsSection.tsx` | Add `slug` to interface and queries |
-| `src/components/marketplace/TopRatedSection.tsx` | Add `slug` to interface and queries |
-| `src/components/dashboard/AIAccountsSection.tsx` | Fix Quick View navigation, add `slug` to SellerProduct interface, update fetchSellerProducts |
-| `src/hooks/useMarketplaceData.ts` | Add `slug` to ProductSummary interface |
-| `supabase/functions/bff-marketplace-home/index.ts` | Include `slug` in product queries |
+| `src/lib/analytics-tracker.ts` | **NEW** - Create analytics tracking utilities |
+| `src/pages/ProductFullView.tsx` | Add view tracking on product load |
+| `src/pages/Store.tsx` | Track views when modal opens |
+| `src/components/marketplace/HotProductsSection.tsx` | Track clicks on product cards |
+| `src/components/marketplace/NewArrivalsSection.tsx` | Track clicks on product cards |
+| `src/components/marketplace/TopRatedSection.tsx` | Track clicks on product cards |
+| Database migration | Add trigger + backfill + click RPC |
 
 ## Expected Result
 
-After these changes:
+After implementation:
+- **Views** will increment when users view product details (modal or full page)
+- **Clicks** will increment when users click on products from marketplace sections
+- **Purchases** will auto-sync from `seller_orders` via database trigger
+- **Revenue** will be calculated from order amounts
+- **Historical data** will be backfilled from existing orders
+- **SellerProductAnalytics** component will show real metrics
 
-| Action | Before | After |
-|--------|--------|-------|
-| Click product in Hot Products | Opens modal only | Opens modal, "View Full" goes to `/store/prozesy/product/netflix-cheap` |
-| Click "View" in Quick View modal | `/dashboard/ai-accounts/product/{uuid}` | `/store/prozesy/product/netflix-cheap` |
-| Share product from marketplace | Broken or internal URL | Clean SEO URL like `/store/prozesy/product/netflix-cheap` |
+## Analytics Data Flow
 
-## Backward Compatibility
+```text
+User clicks product card (marketplace)
+    └──> trackProductClick(productId) ──> product_analytics.clicks++
 
-- Products without `slug` will fallback to legacy format (`name-slug-uuid-prefix`)
-- AI accounts (Uptoza products) will continue using the internal dashboard route since they don't have a store
+User opens product modal/page
+    └──> trackProductView(productId) ──> product_analytics.views++
+
+User completes purchase
+    └──> seller_orders INSERT
+         └──> Database trigger ──> product_analytics.purchases++, revenue++
+```
