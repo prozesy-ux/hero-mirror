@@ -40,13 +40,13 @@ import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatCo
 import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import { useIsMobile } from '@/hooks/use-mobile';
-// Marketplace search components
 import { SearchSuggestions } from '@/components/marketplace/SearchSuggestions';
 import { VoiceSearchButton } from '@/components/marketplace/VoiceSearchButton';
 import { ImageSearchButton } from '@/components/marketplace/ImageSearchButton';
 import { SearchFiltersBar, FilterState } from '@/components/marketplace/SearchFiltersBar';
 import { MobileSearchOverlay } from '@/components/marketplace/MobileSearchOverlay';
 import { useVoiceSearch } from '@/hooks/useVoiceSearch';
+import { generateProductUrl } from '@/lib/url-utils';
 
 interface SellerProfile {
   id: string;
@@ -1113,7 +1113,7 @@ const StoreContent = () => {
         onBuy={selectedProduct ? () => handlePurchase(selectedProduct) : undefined}
         onViewFull={selectedProduct ? () => {
           setSelectedProduct(null);
-          navigate(`/store/${storeSlug}/product/${selectedProduct.id}`);
+          navigate(generateProductUrl(storeSlug!, selectedProduct.name, selectedProduct.id));
         } : undefined}
         isLoggedIn={!!user}
         walletBalance={wallet?.balance}
