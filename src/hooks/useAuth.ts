@@ -11,6 +11,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable/index';
 import { markSessionStart, clearSessionTimestamp } from '@/lib/session-persistence';
 import { bffApi } from '@/lib/api-fetch';
 
@@ -204,14 +205,11 @@ export const useAuth = () => {
   };
 
   const signInWithGoogle = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        // Return to the current Sign In URL so post-auth redirect logic can run
-        redirectTo: window.location.href
-      }
+    // Use Lovable Cloud's managed OAuth for reliability
+    const result = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin + '/signin'
     });
-    return { data, error };
+    return { data: null, error: result.error || null };
   };
 
   return {
