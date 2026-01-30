@@ -15,7 +15,6 @@ const SignIn = () => {
   const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [oauthPending, setOauthPending] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
@@ -23,28 +22,6 @@ const SignIn = () => {
   const didAutoRedirect = useRef(false);
   const didProcessOAuth = useRef(false);
   const navigate = useNavigate();
-
-  // Handle OAuth token from URL hash (Google OAuth callback) - wait for SDK to process
-  useEffect(() => {
-    if (didProcessOAuth.current) return;
-    
-    const hash = window.location.hash;
-    if (!hash || hash.length < 10) return;
-    
-    // Check if hash contains access_token (OAuth callback)
-    if (hash.includes('access_token=')) {
-      didProcessOAuth.current = true;
-      console.log('[SignIn] OAuth tokens detected - waiting for SDK to process');
-      
-      // Clear the URL hash immediately (cosmetic only)
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      
-      // Mark as pending - don't navigate yet!
-      // The existing auto-redirect useEffect will handle navigation 
-      // once onAuthStateChange fires and user is set
-      setOauthPending(true);
-    }
-  }, []);
 
   // Handle post-auth redirect (for store purchases and chats)
   const handlePostAuthRedirect = () => {
@@ -175,21 +152,6 @@ const SignIn = () => {
       toast.error(error.message);
     }
   };
-
-  // Show clean transition during OAuth processing (1-2 seconds max)
-  if (oauthPending && !user) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-black">
-        <div className="overflow-hidden rounded-2xl bg-white p-2 shadow-xl shadow-black/20 mb-6">
-          <img src={uptozaLogo} alt="Uptoza" className="h-12 w-auto rounded-xl" />
-        </div>
-        <div className="flex items-center gap-3 text-white">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-lg font-medium">Signing you in...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
