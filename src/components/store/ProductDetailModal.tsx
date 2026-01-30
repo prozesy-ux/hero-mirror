@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import StarRating from '@/components/reviews/StarRating';
 import ImageGallery from '@/components/ui/image-gallery';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { trackProductView } from '@/lib/analytics-tracker';
 
 interface SellerProduct {
   id: string;
@@ -77,6 +78,15 @@ const ProductDetailModal = ({
   const [averageRating, setAverageRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
   const isMobile = useIsMobile();
+
+  // Track product view when modal opens (using ref to prevent duplicate tracking)
+  const viewTrackedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isDialogOpen && product?.id && viewTrackedRef.current !== product.id) {
+      viewTrackedRef.current = product.id;
+      trackProductView(product.id);
+    }
+  }, [isDialogOpen, product?.id]);
 
   useEffect(() => {
     if (product?.id) {

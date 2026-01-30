@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Flame, ChevronRight, Star, ShoppingCart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { trackProductClick } from '@/lib/analytics-tracker';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -150,7 +151,10 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
           <Card
             key={product.id}
             className="flex-shrink-0 w-40 cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 bg-card border-border"
-            onClick={() => onProductClick(product)}
+            onClick={() => {
+              trackProductClick(product.id);
+              onProductClick(product);
+            }}
           >
             <CardContent className="p-3">
               <div className="relative mb-2">

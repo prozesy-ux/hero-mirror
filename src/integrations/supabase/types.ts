@@ -3147,6 +3147,10 @@ export type Database = {
         Args: { p_account_id: string }
         Returns: undefined
       }
+      increment_product_click: {
+        Args: { p_product_id: string }
+        Returns: undefined
+      }
       increment_product_view: {
         Args: { p_product_id: string }
         Returns: undefined

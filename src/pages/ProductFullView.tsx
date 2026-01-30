@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { trackProductView } from '@/lib/analytics-tracker';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -82,6 +83,15 @@ const ProductFullViewContent = () => {
       fetchWallet();
     }
   }, [user]);
+
+  // Track product view when product loads (using ref to prevent duplicate tracking)
+  const viewTrackedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (product?.id && viewTrackedRef.current !== product.id) {
+      viewTrackedRef.current = product.id;
+      trackProductView(product.id);
+    }
+  }, [product?.id]);
 
   const fetchData = async () => {
     setLoading(true);
