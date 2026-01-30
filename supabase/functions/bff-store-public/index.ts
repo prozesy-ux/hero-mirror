@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { applyRateLimit, RATE_LIMITS, rateLimitHeaders, getClientIP, checkRateLimit } from '../_shared/rate-limiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +20,10 @@ Deno.serve(async (req) => {
   if (req.method === 'HEAD') {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
+
+  // Apply rate limiting
+  const rateLimitResponse = applyRateLimit(req, corsHeaders, RATE_LIMITS.store);
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const url = new URL(req.url);
@@ -65,7 +70,7 @@ Deno.serve(async (req) => {
     const [productsResult, categoriesResult, flashSalesResult] = await Promise.all([
       supabase
         .from('seller_products')
-        .select('id, name, description, price, icon_url, category_id, is_available, is_approved, tags, stock, sold_count, chat_allowed, seller_id, view_count, images')
+        .select('id, slug, name, description, price, icon_url, category_id, is_available, is_approved, tags, stock, sold_count, chat_allowed, seller_id, view_count, images, product_type')
         .eq('seller_id', seller.id)
         .eq('is_available', true)
         .eq('is_approved', true)
@@ -130,8 +135,16 @@ Deno.serve(async (req) => {
 
     console.log(`[BFF-StorePublic] Returning ${products.length} products for ${seller.store_name}`);
 
+    // Add rate limit headers
+    const clientIP = getClientIP(req);
+    const rateResult = checkRateLimit(clientIP, RATE_LIMITS.store);
+
     return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        ...rateLimitHeaders(rateResult),
+        'Content-Type': 'application/json' 
+      },
     });
   } catch (error) {
     console.error('[BFF-StorePublic] Error:', error);
