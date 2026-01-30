@@ -58,7 +58,7 @@ const BuyerWishlist = () => {
       if (item.product_type === 'seller') {
         const { data: product } = await supabase
           .from('seller_products')
-          .select('id, slug, name, price, icon_url, is_available, seller:seller_profiles(store_name, store_slug)')
+          .select('id, name, price, icon_url, is_available, seller:seller_profiles(store_name, store_slug)')
           .eq('id', item.product_id)
           .maybeSingle();
 
