@@ -15,6 +15,7 @@ interface WishlistItem {
   created_at: string;
   product?: {
     id: string;
+    slug?: string;
     name: string;
     price: number;
     icon_url: string | null;
@@ -57,7 +58,7 @@ const BuyerWishlist = () => {
       if (item.product_type === 'seller') {
         const { data: product } = await supabase
           .from('seller_products')
-          .select('id, name, price, icon_url, is_available, seller:seller_profiles(store_name, store_slug)')
+          .select('id, slug, name, price, icon_url, is_available, seller:seller_profiles(store_name, store_slug)')
           .eq('id', item.product_id)
           .maybeSingle();
 
@@ -180,7 +181,7 @@ const BuyerWishlist = () => {
                   <div className="flex gap-2">
                     {item.product?.seller?.store_slug && (
                       <Link 
-                        to={`/store/${item.product.seller.store_slug}/product/${item.product.id}`}
+                        to={`/store/${item.product.seller.store_slug}/product/${item.product.slug || item.product.id}`}
                         className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-700"
                       >
                         <ExternalLink className="w-4 h-4" />

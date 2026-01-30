@@ -29,7 +29,8 @@ import {
   Link2,
   X,
   Copy,
-  Images
+  Images,
+  Sparkles
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -39,7 +40,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import MultiImageUploader from './MultiImageUploader';
-
+import { ProductTypeSelector } from './ProductTypeSelector';
+import { getProductType } from '@/lib/product-types';
 interface Category {
   id: string;
   name: string;
@@ -57,6 +59,7 @@ interface ProductFormData {
   is_available: boolean;
   chat_allowed: boolean;
   requires_email: boolean;
+  product_type: string;
 }
 
 const initialFormData: ProductFormData = {
@@ -70,7 +73,8 @@ const initialFormData: ProductFormData = {
   images: [],
   is_available: true,
   chat_allowed: true,
-  requires_email: false
+  requires_email: false,
+  product_type: 'digital'
 };
 
 const popularTags = ['Digital', 'Premium', 'Instant Delivery', 'Lifetime', 'Subscription', 'API', 'Software', 'Course'];
@@ -118,7 +122,8 @@ const SellerProducts = () => {
           images: (product as any).images || [],
           is_available: product.is_available,
           chat_allowed: product.chat_allowed !== false,
-          requires_email: (product as any).requires_email || false
+          requires_email: (product as any).requires_email || false,
+          product_type: (product as any).product_type || 'digital'
         });
         setEditingProduct(productId);
       }
@@ -155,7 +160,8 @@ const SellerProducts = () => {
         images: formData.images,
         is_available: formData.is_available,
         chat_allowed: formData.chat_allowed,
-        requires_email: formData.requires_email
+        requires_email: formData.requires_email,
+        product_type: formData.product_type
       };
 
       if (editingProduct) {
@@ -521,6 +527,12 @@ const SellerProducts = () => {
             <DialogTitle className="seller-heading">{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Product Type Selector */}
+            <ProductTypeSelector
+              value={formData.product_type}
+              onChange={(type) => setFormData(prev => ({ ...prev, product_type: type }))}
+            />
+
             <div className="space-y-2">
               <Label htmlFor="name">Product Name *</Label>
               <Input
