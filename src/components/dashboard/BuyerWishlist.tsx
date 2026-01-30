@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { generateProductUrl } from '@/lib/url-utils';
 
 interface WishlistItem {
   id: string;
@@ -178,9 +179,9 @@ const BuyerWishlist = () => {
                   </span>
 
                   <div className="flex gap-2">
-                    {item.product?.seller?.store_slug && (
+                    {item.product?.seller?.store_slug && item.product?.name && (
                       <Link 
-                        to={`/store/${item.product.seller.store_slug}/product/${item.product.id}`}
+                        to={generateProductUrl(item.product.seller.store_slug, item.product.name, item.product.id)}
                         className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-700"
                       >
                         <ExternalLink className="w-4 h-4" />
