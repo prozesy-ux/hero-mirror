@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { deduplicatedFetch, REQUEST_KEYS } from '@/lib/query-deduplication';
 
 export interface ProductSummary {
   id: string;
@@ -41,47 +41,80 @@ export interface MarketplaceHomeData {
   cachedAt: string;
 }
 
-// In-memory cache
+// In-memory cache with tiered TTLs
 let cachedData: MarketplaceHomeData | null = null;
 let cacheTimestamp: number = 0;
-const CACHE_TTL = 60 * 1000; // 60 seconds
+
+// Tiered cache TTLs for enterprise scaling
+const CACHE_TIERS = {
+  fresh: 60 * 1000,      // 1 min - serve immediately
+  stale: 5 * 60 * 1000,  // 5 min - serve + revalidate in background
+  expired: 15 * 60 * 1000, // 15 min - force refresh
+};
 
 export function useMarketplaceData() {
   const [data, setData] = useState<MarketplaceHomeData | null>(cachedData);
   const [loading, setLoading] = useState(!cachedData);
   const [error, setError] = useState<string | null>(null);
+  const [isStale, setIsStale] = useState(false);
 
   const fetchData = useCallback(async (force = false) => {
-    // Return cached data if still valid
     const now = Date.now();
-    if (!force && cachedData && now - cacheTimestamp < CACHE_TTL) {
+    const age = now - cacheTimestamp;
+
+    // Fresh cache - use directly, no network
+    if (!force && cachedData && age < CACHE_TIERS.fresh) {
       setData(cachedData);
       setLoading(false);
+      setIsStale(false);
       return;
     }
 
-    // If we have stale cache, show it while fetching fresh
+    // Stale cache - show immediately, refresh in background
+    if (cachedData && age < CACHE_TIERS.stale) {
+      setData(cachedData);
+      setLoading(false);
+      setIsStale(true);
+      
+      // Background refresh (don't await)
+      backgroundRefresh();
+      return;
+    }
+
+    // Expired or no cache - show stale while fetching
     if (cachedData) {
       setData(cachedData);
+      setIsStale(true);
     }
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bff-marketplace-home`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
+      // Use deduplicated fetch to prevent duplicate requests
+      const result = await deduplicatedFetch<MarketplaceHomeData>(
+        REQUEST_KEYS.MARKETPLACE_HOME,
+        async () => {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bff-marketplace-home`,
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            // Check for rate limit
+            if (response.status === 429) {
+              const retryAfter = response.headers.get('Retry-After');
+              console.warn(`[useMarketplaceData] Rate limited, retry after ${retryAfter}s`);
+            }
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          return response.json();
         }
       );
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const result = await response.json();
       
       // Update cache
       cachedData = result;
@@ -89,12 +122,44 @@ export function useMarketplaceData() {
       
       setData(result);
       setError(null);
+      setIsStale(false);
     } catch (err) {
       console.error('[useMarketplaceData] Fetch error:', err);
       setError('Failed to load marketplace data');
       // Keep showing cached data if available
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  // Background refresh without blocking UI
+  const backgroundRefresh = useCallback(async () => {
+    try {
+      const result = await deduplicatedFetch<MarketplaceHomeData>(
+        REQUEST_KEYS.MARKETPLACE_HOME,
+        async () => {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bff-marketplace-home`,
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+            }
+          );
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        }
+      );
+      
+      cachedData = result;
+      cacheTimestamp = Date.now();
+      setData(result);
+      setIsStale(false);
+      console.log('[useMarketplaceData] Background refresh complete');
+    } catch (err) {
+      console.log('[useMarketplaceData] Background refresh failed, serving stale');
     }
   }, []);
 
@@ -109,6 +174,7 @@ export function useMarketplaceData() {
     data,
     loading,
     error,
+    isStale,
     refetch,
     // Expose individual sections for easy access
     categories: data?.categories || [],
@@ -122,22 +188,22 @@ export function useMarketplaceData() {
 // Prefetch function to call early (e.g., on route hover)
 export function prefetchMarketplaceData() {
   const now = Date.now();
-  if (!cachedData || now - cacheTimestamp >= CACHE_TTL) {
-    fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bff-marketplace-home`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-      }
-    )
-      .then(res => res.json())
-      .then(data => {
-        cachedData = data;
-        cacheTimestamp = Date.now();
-      })
-      .catch(() => {}); // Silent fail for prefetch
+  if (!cachedData || now - cacheTimestamp >= CACHE_TIERS.fresh) {
+    deduplicatedFetch(REQUEST_KEYS.MARKETPLACE_HOME, async () => {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bff-marketplace-home`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+      const data = await response.json();
+      cachedData = data;
+      cacheTimestamp = Date.now();
+      return data;
+    }).catch(() => {}); // Silent fail for prefetch
   }
 }

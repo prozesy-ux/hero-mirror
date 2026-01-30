@@ -273,6 +273,13 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ai_accounts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "mv_category_counts"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ai_tools: {
@@ -1168,6 +1175,13 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "popular_searches_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "mv_category_counts"
+            referencedColumns: ["id"]
+          },
         ]
       }
       product_analytics: {
@@ -1362,6 +1376,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "mv_category_counts"
             referencedColumns: ["id"]
           },
         ]
@@ -1657,6 +1678,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "search_history_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "mv_category_counts"
             referencedColumns: ["id"]
           },
         ]
@@ -2229,6 +2257,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "mv_category_counts"
             referencedColumns: ["id"]
           },
           {
@@ -2996,6 +3031,34 @@ export type Database = {
       }
     }
     Views: {
+      mv_category_counts: {
+        Row: {
+          color: string | null
+          display_order: number | null
+          icon: string | null
+          id: string | null
+          name: string | null
+          product_count: number | null
+        }
+        Relationships: []
+      }
+      mv_hot_products: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          icon_url: string | null
+          id: string | null
+          is_verified: boolean | null
+          name: string | null
+          price: number | null
+          product_type: string | null
+          seller_id: string | null
+          sold_count: number | null
+          store_name: string | null
+          view_count: number | null
+        }
+        Relationships: []
+      }
       payment_methods_public: {
         Row: {
           account_name: string | null
@@ -3172,6 +3235,7 @@ export type Database = {
         }
         Returns: Json
       }
+      refresh_marketplace_views: { Args: never; Returns: undefined }
       reset_admin_rate_limit: {
         Args: { p_ip_address: string }
         Returns: undefined
