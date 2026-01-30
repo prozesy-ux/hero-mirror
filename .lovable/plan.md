@@ -1,221 +1,207 @@
 
 
-# Marketplace Full View Update - Gumroad Style Design
+# Fix Marketplace Full View - Match Gumroad Design Exactly
 
-## Overview
+## Issues Identified
 
-Update the `/marketplace` section to:
-1. Use the **Uptoza logo** instead of "gumroad" text
-2. Keep all product viewing **within the marketplace** (no redirect to `/store` pages)
-3. Create a **Gumroad-style full view page** with image gallery, seller info, reviews, and purchase options
-4. Match the exact layout from the Gumroad reference screenshot
+Based on the Gumroad reference screenshot vs current implementation:
 
-## Reference Design Analysis (Gumroad Product Page)
+1. **Missing Full Header & Search Bar**: Current full view only has "Back to Marketplace" button - Gumroad keeps the complete header with logo, search bar, login buttons, and category pills
+2. **Product URL Showing**: The schema.org URL text (`https://schema.org/InStock`) shouldn't be visible to users - this is metadata that Gumroad displays but shouldn't be exposed
+3. **Design Mismatches**:
+   - Price needs green background badge (like Gumroad's `$400` green tag)
+   - "Add to cart" button styling needs adjustment
+   - Sales count layout needs info icon and proper styling
+   - Features box needs proper border and layout
+   - Missing proper border styling on all sections
 
-Based on the screenshot from `hftalgo.gumroad.com/l/minbot`:
+## Technical Changes
 
+### 1. Update MarketplaceProductFullView.tsx - Add Full Header
+
+**Current:**
 ```text
-+------------------------------------------------------------------+
-| HEADER: gumroad logo | [Search products...] | Log in | Start selling |
-+------------------------------------------------------------------+
-| CATEGORIES: All | Drawing | 3D | Design | Music | ...              |
-+------------------------------------------------------------------+
-|                                                                    |
-| [ IMAGE CAROUSEL with dots indicator ]                             |
-|                                                                    |
-+------------------------------------------------------------------+
-| Product Title                              |  [Add to cart]       |
-|                                            |  (ⓘ) 181 sales       |
-| [$400] https://schema... | HFT Algo        |  ----------------    |
-|        [Seller Avatar] [Seller Name]       |  Features box:       |
-|        ★★★★★ 11 ratings                    |  - Size: 45.5 KB     |
-|                                            |  [Add to wishlist]   |
-| DESCRIPTION TEXT...                        |  [Share icons]       |
-| - bullet points                            |  No refunds allowed  |
-| - links                                    |                      |
-|                                            |                      |
-+------------------------------------------------------------------+
-| RATINGS SECTION                                                    |
-| 11 ratings | 4.9 average                                          |
-| 5 stars ████████████████████ 91%                                  |
-| 4 stars ██ 9%                                                      |
-| 3 stars 0%                                                         |
-| 2 stars 0%                                                         |
-| 1 star  0%                                                         |
-+------------------------------------------------------------------+
-| REVIEWS                                                            |
-| [Avatar] Jameson Rikel                                            |
-| ★★★★★ "Works amazing with the provided..."                        |
-+------------------------------------------------------------------+
+┌─────────────────────────────────────────┐
+│ ← Back to Marketplace                   │
+├─────────────────────────────────────────┤
+│ [Image Carousel]                        │
 ```
 
-## Technical Implementation
+**Should be (like Gumroad):**
+```text
+┌─────────────────────────────────────────┐
+│ LOGO  [Search products...]  Login  Sell │
+├─────────────────────────────────────────┤
+│ All | Drawing | 3D | Design | Music ... │
+├─────────────────────────────────────────┤
+│ [Image Carousel]                        │
+```
 
-### 1. Update GumroadHeader.tsx - Use Uptoza Logo
+- Import and use `GumroadHeader` component at top
+- Add category pills row like on main marketplace page
+- Change "Back to Marketplace" from header to subtle link below image
+
+### 2. Fix Price Display - Green Badge Style
 
 **Current:**
 ```tsx
-<span className="text-[22px] font-black text-black tracking-tight lowercase">
-  gumroad
+<span className="text-3xl font-bold text-black">
+  ${product.price}
 </span>
 ```
 
-**Change to:**
+**Gumroad style:**
 ```tsx
-<img 
-  src="/src/assets/uptoza-logo.png" 
-  alt="Uptoza" 
-  className="h-8 w-auto"
-/>
+<div className="inline-flex items-center px-3 py-1.5 bg-emerald-500 text-white text-lg font-bold rounded">
+  ${product.price}
+</div>
 ```
 
-### 2. Create New MarketplaceProductFullView Component
+### 3. Remove Schema URL Display
 
-A new component that displays full product details in Gumroad style within the marketplace:
+The current implementation doesn't explicitly show the URL, but we need to ensure no raw URL/schema metadata is rendered. The Gumroad page shows:
+- Price in green box
+- `https://schema.org/InStock usd` (hidden metadata)
+- `HFT Algo` seller name
 
-**Layout Structure:**
-- Full-width image carousel at top with dot indicators
-- Two-column layout below:
-  - LEFT (60%): Product info, seller badge, rating summary, full description
-  - RIGHT (40%): Price box with "Add to cart" button, sales count, features, wishlist, share buttons
+We should NOT display any schema.org URLs - only show:
+- Price badge
+- Seller name with avatar
+- Rating stars
 
-**Features:**
-- Image gallery with carousel navigation
-- Seller avatar and name with verification badge
-- Star rating summary with review count
-- Full product description with markdown/HTML support
-- Product features/specifications box
-- "Add to cart" primary CTA button
-- Sales count indicator
-- Wishlist functionality
-- Share buttons (X/Twitter, Facebook)
-- Reviews section with rating breakdown
+### 4. Update Purchase Box Design
 
-### 3. Update Marketplace.tsx Flow
-
-**Current behavior:**
-- Quick View modal → "View Full" button → navigates to `/store/{storeSlug}/product/{productId}`
-
-**New behavior:**
-- Quick View modal → "View Full" button → shows inline full view OR modal within marketplace
-- All product viewing stays on `/marketplace`
-- No redirects to seller store pages
-
-**Implementation approach - In-page full view:**
-```tsx
-const [fullViewProduct, setFullViewProduct] = useState<Product | null>(null);
-
-// When showing full view
-if (fullViewProduct) {
-  return <MarketplaceProductFullView 
-    product={fullViewProduct} 
-    onBack={() => setFullViewProduct(null)}
-    onBuy={handleBuy}
-    onChat={handleChat}
-  />;
-}
+**Match Gumroad's right sidebar:**
+```text
+┌─────────────────────────────────┐
+│ [$400 green badge]              │
+│                                 │
+│ [Add to cart - pink button]    │
+│                                 │
+│ (i) 181 sales                   │
+├─────────────────────────────────┤
+│ Filtered and Unfiltered Algos,  │
+│ Dollar Bars, ATM Templates      │
+│                                 │
+│ Size        45.5 KB             │
+├─────────────────────────────────┤
+│ [Add to wishlist ▼]    [Share] │
+└─────────────────────────────────┘
 ```
 
-### 4. New Component: MarketplaceProductFullView.tsx
+- Price in green badge at top
+- "Add to cart" pink button full-width
+- Sales count with info icon
+- Features box with proper border
+- "Add to wishlist" with dropdown arrow
+- Share button on same row
 
-**Structure:**
+### 5. Update All Section Borders
+
+**Current:** `border-black/5` (very subtle)
+
+**Gumroad style:** `border border-black/10` (slightly visible but minimal)
+
+All white boxes should have consistent subtle borders.
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/marketplace/MarketplaceProductFullView.tsx` | Add full header, categories, fix price badge, update purchase box design, proper borders |
+
+## Detailed Design Updates
+
+### Header Section (New)
+- Import `GumroadHeader` component
+- Pass search state/handlers (can be read-only or functional)
+- Add categories row below header
+- Remove current "Back to Marketplace" from sticky header
+- Add subtle "← Back" link in left column below image
+
+### Left Column (Product Info)
+- Title: Keep `text-2xl lg:text-3xl font-bold`
+- Price badge: Green background (`bg-emerald-500`) inline
+- Seller row: Avatar + name + verified badge - NO schema URLs
+- Rating: Stars with count
+- Description: Preserved with `whitespace-pre-line`
+
+### Right Column (Purchase Box)
+- White background with `border border-black/10` 
+- Large pink "Add to cart" button (`bg-pink-400`)
+- Sales count: `(i) XXX sales` with info icon
+- Separator line
+- Features list with label "Includes:" or product-specific
+- Size/file info if available
+- Separator line
+- Wishlist button with dropdown chevron
+- Share button aligned right
+
+### Reviews Section
+- White background card with border
+- Rating breakdown bars
+- Review cards with avatars and verified badges
+
+## Visual Reference (Gumroad Layout)
+
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
-│ [← Back to Marketplace]  [Search...]                             │
+│ gumroad  │ [Search products _______________] │ Log in │ Selling │
+├──────────────────────────────────────────────────────────────────┤
+│ All │ Drawing & Painting │ 3D │ Design │ Music & Sound │ ...    │
 ├──────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │                                                            │  │
-│  │              IMAGE CAROUSEL (full width)                   │  │
-│  │              [○ ○ ●]  dot indicators                       │  │
-│  │                                                            │  │
+│  │                   FULL WIDTH IMAGE CAROUSEL                 │  │
+│  │                      [○ ● ○] dots                          │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
-│  ┌─────────────────────────────┐  ┌─────────────────────────┐   │
-│  │ PRODUCT TITLE               │  │ [$XX]                   │   │
-│  │                             │  │ [Add to cart - pink]    │   │
-│  │ [Avatar] Seller Name        │  │                         │   │
-│  │ ★★★★★ (XX ratings)          │  │ (ⓘ) XXX sales           │   │
-│  │                             │  │ ─────────────────────   │   │
-│  │ DESCRIPTION...              │  │ Includes:               │   │
-│  │ • Feature 1                 │  │ - Item 1                │   │
-│  │ • Feature 2                 │  │ - Item 2                │   │
-│  │ • Links                     │  │                         │   │
-│  │                             │  │ Size: XX KB             │   │
-│  │                             │  │                         │   │
-│  │                             │  │ [Add to wishlist ▼]     │   │
-│  │                             │  │ [Share icons]           │   │
-│  └─────────────────────────────┘  └─────────────────────────┘   │
+│  ┌─────────────────────────────────┐  ┌─────────────────────┐   │
+│  │ HFT NQ Minute Bot               │  │                     │   │
+│  │                                 │  │ [Add to cart]       │   │
+│  │ [$400]  HFT Algo                │  │ (pink button)       │   │
+│  │    [avatar] HFT Algo            │  │                     │   │
+│  │    ★★★★★ 11 ratings             │  │ (i) 181 sales       │   │
+│  │                                 │  │ ─────────────────   │   │
+│  │ **For Active Traders Only...**  │  │ Filtered and...     │   │
+│  │ View It In Action: [link]       │  │                     │   │
+│  │ ...description text...          │  │ Size    45.5 KB     │   │
+│  │                                 │  │ ─────────────────   │   │
+│  │                                 │  │ [Add to wishlist ▼] │   │
+│  │                                 │  │ [Share icons]       │   │
+│  └─────────────────────────────────┘  └─────────────────────┘   │
 │                                                                  │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │ RATINGS & REVIEWS                                          │  │
-│  │ XX ratings | X.X average                                   │  │
-│  │ 5 stars ████████████ XX%                                   │  │
-│  │ 4 stars ██ XX%                                             │  │
-│  │ 3 stars  X%                                                │  │
-│  │                                                            │  │
-│  │ [Review Card 1]                                            │  │
-│  │ [Review Card 2]                                            │  │
+│  │ Ratings                                                     │  │
+│  │ 11 ratings                                                  │  │
+│  │ 5 stars ████████████████████ 91%                           │  │
+│  │ 4 stars ██ 9%                                               │  │
+│  │ ...                                                         │  │
+│  │                                                             │  │
+│  │ Reviews:                                                    │  │
+│  │ [Avatar] Reviewer Name                                      │  │
+│  │ ★★★★★ "Review text..."                                     │  │
 │  └────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### 5. Data Fetching for Full View
+## Color/Styling Reference
 
-When opening full view, fetch complete product data:
-- Product details from `ai_accounts` or `seller_products`
-- Seller profile from `seller_profiles`
-- Reviews from `product_reviews`
-- Images array for gallery
+| Element | Style |
+|---------|-------|
+| Price badge | `bg-emerald-500 text-white px-3 py-1.5 rounded font-bold` |
+| Add to cart | `bg-pink-400 hover:bg-pink-500 text-black font-semibold w-full h-12 rounded-lg` |
+| Card borders | `border border-black/10 rounded-2xl` |
+| Section dividers | `border-t border-black/10` |
+| Info icon | `text-blue-500` or `text-black/40` |
+| Wishlist button | Text button with dropdown chevron |
 
-## Files to Create/Modify
+## Summary
 
-| File | Changes |
-|------|---------|
-| `src/components/marketplace/GumroadHeader.tsx` | Replace "gumroad" text with Uptoza logo image |
-| `src/components/marketplace/MarketplaceProductFullView.tsx` | **NEW** - Gumroad-style full product view |
-| `src/pages/Marketplace.tsx` | Add fullViewProduct state, show full view inline instead of redirect |
-| `src/components/marketplace/GumroadQuickViewModal.tsx` | Update "View Full" to set fullViewProduct instead of navigate |
-
-## Design Details
-
-### Color Palette (Matching Current Gumroad Style)
-- Background: `#F4F4F0` (cream) - page background
-- Cards/Boxes: `#FFFFFF` (white) with subtle borders
-- Primary CTA: `#FF90E8` (pink) - "Add to cart" button
-- Text: `#000000` (black), `#6B6B6B` (secondary gray)
-- Ratings: Yellow stars `#FACC15`
-- Success/Sales: `#10B981` (emerald)
-
-### Typography
-- Product title: `text-2xl font-bold` or larger
-- Price: `text-3xl font-bold` with green background badge
-- Description: `text-base` with `whitespace-pre-line` for line breaks
-- Reviews: `text-sm`
-
-### Image Carousel
-- Full-width with rounded corners
-- Dot indicators centered below
-- Swipe support for mobile
-- Thumbnails below on desktop
-
-### Right Sidebar Box
-- Sticky on scroll
-- White background with subtle border
-- Contains: Price, Add to cart, sales count, features, wishlist, share
-
-## Guest Checkout Flow (Unchanged)
-
-The existing guest checkout flow remains:
-1. Guest clicks "Add to cart" / "Buy"
-2. GuestCheckoutModal opens for email collection
-3. Redirects to Stripe checkout
-
-## Summary of Changes
-
-1. **Logo**: Swap "gumroad" text → Uptoza logo image
-2. **Full View**: Create in-marketplace full view instead of redirecting to `/store`
-3. **Design**: Match Gumroad's product page layout exactly
-4. **Reviews**: Integrate existing `ProductReviews` component
-5. **Gallery**: Use existing `ImageGallery` component with Gumroad styling
+1. Add full `GumroadHeader` with search to full view page
+2. Add category pills row for consistent navigation
+3. Fix price to use green badge style
+4. Remove any schema.org URL text display
+5. Update purchase box to match Gumroad exactly
+6. Apply consistent border styling to all sections
 
