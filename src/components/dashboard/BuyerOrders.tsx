@@ -3,6 +3,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { bffApi } from '@/lib/api-fetch';
+import { isSessionValid } from '@/lib/session-persistence';
 import { ShoppingBag, Package, Clock, CheckCircle, XCircle, Search, Eye, MessageSquare, Star, Calendar, ArrowUpDown, ArrowDown, ArrowUp, AlertCircle, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,6 +73,7 @@ const BuyerOrders = () => {
   const [approving, setApproving] = useState(false);
   const [sessionExpiredLocal, setSessionExpiredLocal] = useState(false);
   const [usingCachedData, setUsingCachedData] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   
   // Advanced filters
@@ -97,13 +99,35 @@ const BuyerOrders = () => {
   const fetchOrders = useCallback(async () => {
     if (!loading) setLoading(true);
     setError(null);
+    setIsReconnecting(false);
     
     const result = await bffApi.getBuyerDashboard();
     
-    // SOFT unauthorized handling
+    // SOFT RECONNECTING STATE
+    if (result.isReconnecting) {
+      setIsReconnecting(true);
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          const { data: cachedData } = JSON.parse(cached);
+          setOrders(cachedData);
+          setUsingCachedData(true);
+        } catch (e) { /* ignore */ }
+      }
+      setLoading(false);
+      setTimeout(() => fetchOrders(), 5000);
+      return;
+    }
+    
+    // UNAUTHORIZED: Check if truly expired
     if (result.isUnauthorized) {
-      setSessionExpiredLocal(true);
-      setSessionExpired?.(true);
+      if (!isSessionValid()) {
+        setSessionExpiredLocal(true);
+        setSessionExpired?.(true);
+      } else {
+        setIsReconnecting(true);
+        setTimeout(() => fetchOrders(), 5000);
+      }
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         try {
@@ -334,11 +358,20 @@ const BuyerOrders = () => {
 
   return (
     <div className="space-y-6">
-      {/* Session Expired Banner */}
-      {sessionExpiredLocal && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
+      {/* Session Expired Banner - only if truly expired */}
+      {sessionExpiredLocal && !isReconnecting && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
+      
+      {/* Reconnecting Notice */}
+      {isReconnecting && (
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <span>Reconnecting...</span>
+          <Button size="sm" variant="ghost" onClick={fetchOrders} className="ml-auto">Retry Now</Button>
+        </div>
+      )}
       
       {/* Cached Data Notice */}
-      {usingCachedData && (
+      {usingCachedData && !isReconnecting && (
         <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <WifiOff className="h-4 w-4" />
           <span>Using cached data</span>

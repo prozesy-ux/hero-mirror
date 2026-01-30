@@ -6,12 +6,14 @@
  * - Admin role caching
  * - Data prefetching on sign-in for instant page loads
  * - Token refresh event emission for realtime resubscription
+ * - OPTIMISTIC AUTH: Keeps last known session to survive transient nulls
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { markSessionStart, clearSessionTimestamp } from '@/lib/session-persistence';
+import { hasLocalSession, isDefinitelyExpired } from '@/lib/session-detector';
 import { bffApi } from '@/lib/api-fetch';
 
 interface Profile {
@@ -31,6 +33,10 @@ export const useAuth = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Keep last known good values to survive transient null states
+  const lastKnownUserRef = useRef<User | null>(null);
+  const lastKnownSessionRef = useRef<Session | null>(null);
 
   const checkAdminRole = async (userId: string) => {
     try {
@@ -99,13 +105,23 @@ export const useAuth = () => {
         }
         
         // Clear session timestamp and admin cache on signout
+        // ONLY clear state on explicit SIGNED_OUT event
         if (event === 'SIGNED_OUT') {
           clearSessionTimestamp();
-          const userId = session?.user?.id || user?.id;
+          const userId = session?.user?.id || user?.id || lastKnownUserRef.current?.id;
           if (userId) {
             sessionStorage.removeItem(`admin_${userId}`);
             console.log('[useAuth] Cleared admin cache for:', userId);
           }
+          // Clear last known values on explicit signout
+          lastKnownUserRef.current = null;
+          lastKnownSessionRef.current = null;
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setIsAdmin(false);
+          setLoading(false);
+          return;
         }
         
         // Clear admin cache on token refresh to force re-check
@@ -121,8 +137,25 @@ export const useAuth = () => {
           window.dispatchEvent(new CustomEvent('session-refreshed'));
         }
         
-        setSession(session);
-        setUser(session?.user ?? null);
+        // OPTIMISTIC UPDATE: Only update state if we have a real session
+        // If session is null but we have last known values, keep them (transient null)
+        if (session) {
+          setSession(session);
+          setUser(session.user);
+          lastKnownSessionRef.current = session;
+          lastKnownUserRef.current = session.user;
+        } else {
+          // Session is null - this could be INITIAL_SESSION with no session, or transient null
+          // Keep last known values if we have local tokens within grace period
+          if (hasLocalSession() && !isDefinitelyExpired()) {
+            console.log('[useAuth] Session null but within grace - keeping last known state');
+            // Don't clear state - keep the last known values
+          } else {
+            // Really no session and outside grace period
+            setSession(null);
+            setUser(null);
+          }
+        }
         
         if (session?.user) {
           // Check admin role (will re-fetch if cache was cleared)
@@ -139,9 +172,6 @@ export const useAuth = () => {
             
             setProfile(profileData);
           }, 0);
-        } else {
-          setProfile(null);
-          setIsAdmin(false);
         }
         
         setLoading(false);
@@ -214,16 +244,20 @@ export const useAuth = () => {
     return { data, error };
   };
 
+  // OPTIMISTIC AUTH: Consider authenticated if we have a session OR
+  // we have a local token that isn't definitely expired
+  const isAuthenticated = !!session || (hasLocalSession() && !isDefinitelyExpired());
+
   return {
-    user,
-    session,
+    user: user || lastKnownUserRef.current,
+    session: session || lastKnownSessionRef.current,
     profile,
     loading,
     signUp,
     signIn,
     signOut,
     signInWithGoogle,
-    isAuthenticated: !!session,
+    isAuthenticated,
     isPro: profile?.is_pro ?? false,
     isAdmin
   };

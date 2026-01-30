@@ -4,6 +4,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { bffApi } from '@/lib/api-fetch';
+import { isSessionValid } from '@/lib/session-persistence';
 import { 
   Wallet, ShoppingBag, TrendingUp, Clock, Package, ArrowRight, 
   Plus, Heart, Store, CheckCircle, AlertCircle, WifiOff, Zap, 
@@ -54,6 +55,7 @@ const BuyerDashboardHome = () => {
   const [error, setError] = useState<string | null>(null);
   const [sessionExpiredLocal, setSessionExpiredLocal] = useState(false);
   const [usingCachedData, setUsingCachedData] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const navigate = useNavigate();
 
@@ -74,12 +76,39 @@ const BuyerDashboardHome = () => {
   const fetchData = useCallback(async () => {
     if (!loading) setLoading(true);
     setError(null);
+    setIsReconnecting(false);
     
     const result = await bffApi.getBuyerDashboard();
     
+    // SOFT RECONNECTING STATE: If within 12h grace and just reconnecting
+    if (result.isReconnecting) {
+      setIsReconnecting(true);
+      // Keep existing data visible, show reconnecting notice
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          const { data: cachedData } = JSON.parse(cached);
+          setData(cachedData);
+          setUsingCachedData(true);
+        } catch (e) { /* ignore */ }
+      }
+      setLoading(false);
+      // Auto-retry in 5 seconds
+      setTimeout(() => fetchData(), 5000);
+      return;
+    }
+    
+    // UNAUTHORIZED: Check if truly expired or just transient
     if (result.isUnauthorized) {
-      setSessionExpiredLocal(true);
-      setSessionExpired?.(true);
+      // Only show expired banner if truly outside 12h window
+      if (!isSessionValid()) {
+        setSessionExpiredLocal(true);
+        setSessionExpired?.(true);
+      } else {
+        // Within 12h - treat as reconnecting, not expired
+        setIsReconnecting(true);
+        setTimeout(() => fetchData(), 5000);
+      }
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         try {
@@ -207,11 +236,22 @@ const BuyerDashboardHome = () => {
 
   return (
     <div className="space-y-6 p-4 lg:p-6 bg-slate-50/50 min-h-screen">
-      {/* Session Expired Banner */}
-      {sessionExpiredLocal && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
+      {/* Session Expired Banner - only show if truly expired */}
+      {sessionExpiredLocal && !isReconnecting && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
       
-      {/* Offline Notice */}
-      {usingCachedData && (
+      {/* Reconnecting Notice - soft state, not "expired" */}
+      {isReconnecting && (
+        <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <span>Reconnecting to server...</span>
+          <Button size="sm" variant="ghost" onClick={fetchData} className="ml-auto">
+            Retry Now
+          </Button>
+        </div>
+      )}
+      
+      {/* Offline/Cached Notice */}
+      {usingCachedData && !isReconnecting && (
         <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <WifiOff className="h-4 w-4" />
           <span>Using cached data - some info may be outdated</span>

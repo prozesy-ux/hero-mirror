@@ -1,6 +1,6 @@
 // Uptoza Service Worker - Performance + Push Notifications
-// Version for cache busting
-const CACHE_VERSION = 'v1.0.3';
+// Version for cache busting - MUST match APP_VERSION in cache-utils.ts
+const CACHE_VERSION = 'v1.0.4';
 const STATIC_CACHE = `uptoza-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `uptoza-dynamic-${CACHE_VERSION}`;
 const API_CACHE = `uptoza-api-${CACHE_VERSION}`;
@@ -15,10 +15,10 @@ const STATIC_ASSETS = [
 const CACHE_STRATEGIES = {
   // Cache first for static assets (JS, CSS, images)
   cacheFirst: ['assets/', '.js', '.css', '.woff2', '.png', '.jpg', '.webp', '.svg', '.avif'],
-  // Network first for API calls with stale-while-revalidate
-  staleWhileRevalidate: ['/functions/v1/bff-'],
-  // Network only for auth-related calls
-  networkOnly: ['/auth/', 'validate-session', 'admin-login'],
+  // Stale-while-revalidate ONLY for PUBLIC BFF endpoints (anonymous)
+  staleWhileRevalidate: ['/functions/v1/bff-marketplace-home', '/functions/v1/bff-store-public', '/functions/v1/bff-flash-sales'],
+  // Network only for auth-related calls AND authenticated BFF endpoints
+  networkOnly: ['/auth/', 'validate-session', 'admin-login', '/functions/v1/bff-buyer', '/functions/v1/bff-seller'],
 };
 
 // Install - cache critical assets
@@ -49,6 +49,7 @@ self.addEventListener('activate', (event) => {
 });
 
 // Fetch - smart caching strategies
+// CRITICAL: Never cache authenticated requests to prevent cross-user data leaks
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -59,13 +60,20 @@ self.addEventListener('fetch', (event) => {
   // Skip chrome-extension and other non-http(s) requests
   if (!url.protocol.startsWith('http')) return;
 
-  // Network only for auth
-  if (CACHE_STRATEGIES.networkOnly.some(pattern => url.pathname.includes(pattern))) {
+  // CRITICAL: If request has Authorization header, bypass cache entirely (network only)
+  // This prevents caching authenticated user data
+  if (request.headers.has('Authorization')) {
+    // Let the browser handle it naturally - no cache interception
     return;
   }
 
-  // Stale-while-revalidate for BFF API calls
-  if (CACHE_STRATEGIES.staleWhileRevalidate.some(pattern => url.pathname.includes(pattern))) {
+  // Network only for auth and authenticated BFF endpoints
+  if (CACHE_STRATEGIES.networkOnly.some(pattern => url.pathname.includes(pattern) || url.href.includes(pattern))) {
+    return;
+  }
+
+  // Stale-while-revalidate ONLY for PUBLIC BFF API calls (no auth header)
+  if (CACHE_STRATEGIES.staleWhileRevalidate.some(pattern => url.pathname.includes(pattern) || url.href.includes(pattern))) {
     event.respondWith(staleWhileRevalidate(request, API_CACHE));
     return;
   }
