@@ -217,6 +217,7 @@ export type Database = {
           name: string
           original_price: number | null
           price: number
+          product_type: string | null
           slug: string
           sold_count: number | null
           stock: number | null
@@ -239,6 +240,7 @@ export type Database = {
           name: string
           original_price?: number | null
           price?: number
+          product_type?: string | null
           slug?: string
           sold_count?: number | null
           stock?: number | null
@@ -261,6 +263,7 @@ export type Database = {
           name?: string
           original_price?: number | null
           price?: number
+          product_type?: string | null
           slug?: string
           sold_count?: number | null
           stock?: number | null
@@ -2204,12 +2207,14 @@ export type Database = {
           is_available: boolean | null
           name: string
           price: number
+          product_type: string | null
           requires_email: boolean | null
           seller_id: string
           slug: string
           sold_count: number | null
           stock: number | null
           tags: string[] | null
+          type_metadata: Json | null
           updated_at: string | null
           view_count: number | null
         }
@@ -2226,12 +2231,14 @@ export type Database = {
           is_available?: boolean | null
           name: string
           price?: number
+          product_type?: string | null
           requires_email?: boolean | null
           seller_id: string
           slug?: string
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
+          type_metadata?: Json | null
           updated_at?: string | null
           view_count?: number | null
         }
@@ -2248,12 +2255,14 @@ export type Database = {
           is_available?: boolean | null
           name?: string
           price?: number
+          product_type?: string | null
           requires_email?: boolean | null
           seller_id?: string
           slug?: string
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
+          type_metadata?: Json | null
           updated_at?: string | null
           view_count?: number | null
         }
@@ -3185,7 +3194,7 @@ export type Database = {
       cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
       cleanup_expired_password_tokens: { Args: never; Returns: undefined }
       generate_product_slug: {
-        Args: { product_name: string; seller_id?: string }
+        Args: { p_seller_id?: string; product_name: string }
         Returns: string
       }
       get_active_flash_sale: {
