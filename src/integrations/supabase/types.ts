@@ -2204,12 +2204,14 @@ export type Database = {
           is_available: boolean | null
           name: string
           price: number
+          product_type: string | null
           requires_email: boolean | null
           seller_id: string
           slug: string
           sold_count: number | null
           stock: number | null
           tags: string[] | null
+          type_metadata: Json | null
           updated_at: string | null
           view_count: number | null
         }
@@ -2226,12 +2228,14 @@ export type Database = {
           is_available?: boolean | null
           name: string
           price?: number
+          product_type?: string | null
           requires_email?: boolean | null
           seller_id: string
           slug?: string
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
+          type_metadata?: Json | null
           updated_at?: string | null
           view_count?: number | null
         }
@@ -2248,12 +2252,14 @@ export type Database = {
           is_available?: boolean | null
           name?: string
           price?: number
+          product_type?: string | null
           requires_email?: boolean | null
           seller_id?: string
           slug?: string
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
+          type_metadata?: Json | null
           updated_at?: string | null
           view_count?: number | null
         }

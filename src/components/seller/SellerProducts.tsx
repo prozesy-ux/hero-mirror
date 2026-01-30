@@ -39,6 +39,9 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import MultiImageUploader from './MultiImageUploader';
+import TypeMetadataFields from './TypeMetadataFields';
+import { PRODUCT_TYPES, getProductTypeConfig } from '@/lib/product-types';
+import { cn } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -57,6 +60,8 @@ interface ProductFormData {
   is_available: boolean;
   chat_allowed: boolean;
   requires_email: boolean;
+  product_type: string;
+  type_metadata: Record<string, any>;
 }
 
 const initialFormData: ProductFormData = {
@@ -70,7 +75,9 @@ const initialFormData: ProductFormData = {
   images: [],
   is_available: true,
   chat_allowed: true,
-  requires_email: false
+  requires_email: false,
+  product_type: 'other',
+  type_metadata: {}
 };
 
 const popularTags = ['Digital', 'Premium', 'Instant Delivery', 'Lifetime', 'Subscription', 'API', 'Software', 'Course'];
@@ -118,7 +125,9 @@ const SellerProducts = () => {
           images: (product as any).images || [],
           is_available: product.is_available,
           chat_allowed: product.chat_allowed !== false,
-          requires_email: (product as any).requires_email || false
+          requires_email: (product as any).requires_email || false,
+          product_type: (product as any).product_type || 'other',
+          type_metadata: (product as any).type_metadata || {}
         });
         setEditingProduct(productId);
       }
@@ -155,7 +164,9 @@ const SellerProducts = () => {
         images: formData.images,
         is_available: formData.is_available,
         chat_allowed: formData.chat_allowed,
-        requires_email: formData.requires_email
+        requires_email: formData.requires_email,
+        product_type: formData.product_type,
+        type_metadata: formData.type_metadata
       };
 
       if (editingProduct) {
@@ -521,6 +532,48 @@ const SellerProducts = () => {
             <DialogTitle className="seller-heading">{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Product Type Selector */}
+            <div className="space-y-2">
+              <Label>Product Type *</Label>
+              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                {Object.values(PRODUCT_TYPES).map((type) => {
+                  const Icon = type.icon;
+                  const isSelected = formData.product_type === type.id;
+                  return (
+                    <button
+                      key={type.id}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ 
+                        ...prev, 
+                        product_type: type.id,
+                        type_metadata: {}
+                      }))}
+                      className={cn(
+                        "p-2 rounded-xl border-2 transition-all flex flex-col items-center gap-1",
+                        isSelected 
+                          ? `${type.borderClass} ${type.bgClass}` 
+                          : "border-slate-200 hover:border-slate-300"
+                      )}
+                    >
+                      <Icon className={cn("w-4 h-4", isSelected ? type.textClass : 'text-slate-400')} />
+                      <span className={cn("text-[10px] font-medium text-center leading-tight", isSelected ? 'text-slate-900' : 'text-slate-600')}>
+                        {type.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Type-specific metadata fields */}
+            {formData.product_type && PRODUCT_TYPES[formData.product_type]?.metadataFields.length > 0 && (
+              <TypeMetadataFields
+                type={formData.product_type}
+                metadata={formData.type_metadata}
+                onChange={(metadata) => setFormData(prev => ({ ...prev, type_metadata: metadata }))}
+              />
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="name">Product Name *</Label>
               <Input
