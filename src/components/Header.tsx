@@ -14,11 +14,11 @@ const Header = () => {
           {/* Main Nav */}
           <nav className="hidden items-center gap-1 md:flex">
             <a
-              href="#"
+              href="/marketplace"
               className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               <Sparkles className="h-4 w-4" />
-              Create
+              Marketplace
             </a>
             <button className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
               <svg

@@ -2047,6 +2047,7 @@ export type Database = {
           created_at: string | null
           credentials: string | null
           delivered_at: string | null
+          guest_email: string | null
           id: string
           product_id: string
           seller_earning: number
@@ -2061,6 +2062,7 @@ export type Database = {
           created_at?: string | null
           credentials?: string | null
           delivered_at?: string | null
+          guest_email?: string | null
           id?: string
           product_id: string
           seller_earning: number
@@ -2075,6 +2077,7 @@ export type Database = {
           created_at?: string | null
           credentials?: string | null
           delivered_at?: string | null
+          guest_email?: string | null
           id?: string
           product_id?: string
           seller_earning?: number
