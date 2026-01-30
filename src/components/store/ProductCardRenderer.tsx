@@ -23,6 +23,7 @@ interface SellerProduct {
 interface ProductCardRendererProps {
   product: SellerProduct;
   storeName: string;
+  storeSlug?: string;
   hasEnoughBalance: boolean;
   isLoggedIn: boolean;
   purchasing: boolean;
@@ -34,6 +35,7 @@ interface ProductCardRendererProps {
 export function ProductCardRenderer({
   product,
   storeName,
+  storeSlug,
   hasEnoughBalance,
   isLoggedIn,
   purchasing,
@@ -44,6 +46,7 @@ export function ProductCardRenderer({
   const commonProps = {
     product,
     storeName,
+    storeSlug,
     hasEnoughBalance,
     isLoggedIn,
     purchasing,
