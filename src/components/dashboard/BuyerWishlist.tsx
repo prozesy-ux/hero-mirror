@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { buildProductUrl } from '@/lib/slug-utils';
 
 interface WishlistItem {
   id: string;
@@ -181,7 +182,10 @@ const BuyerWishlist = () => {
                   <div className="flex gap-2">
                     {item.product?.seller?.store_slug && (
                       <Link 
-                        to={`/store/${item.product.seller.store_slug}/product/${item.product.slug || item.product.id}`}
+                        to={buildProductUrl(
+                          { id: item.product.id, name: item.product.name, slug: item.product.slug },
+                          item.product.seller.store_slug
+                        )}
                         className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-700"
                       >
                         <ExternalLink className="w-4 h-4" />

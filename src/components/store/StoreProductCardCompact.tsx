@@ -1,5 +1,7 @@
 import { Star, Loader2, Package, Wallet } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { OptimizedImage } from '@/components/ui/optimized-image';
+import { buildProductUrl } from '@/lib/slug-utils';
 
 interface SellerProduct {
   id: string;
@@ -17,6 +19,7 @@ interface SellerProduct {
 
 interface StoreProductCardCompactProps {
   product: SellerProduct;
+  storeSlug?: string;
   hasEnoughBalance: boolean;
   isLoggedIn: boolean;
   purchasing: boolean;
@@ -26,16 +29,25 @@ interface StoreProductCardCompactProps {
 
 const StoreProductCardCompact = ({
   product,
+  storeSlug,
   hasEnoughBalance,
   isLoggedIn,
   purchasing,
   onView,
   onBuy,
 }: StoreProductCardCompactProps) => {
+  const productUrl = storeSlug ? buildProductUrl(product, storeSlug) : '#';
+
   return (
-    <div 
-      onClick={onView}
-      className="group bg-white rounded-xl overflow-hidden border border-slate-100 shadow-sm active:scale-[0.98] transition-all duration-150 cursor-pointer tap-feedback mobile-card-touch"
+    <Link 
+      to={productUrl}
+      className="group bg-white rounded-xl overflow-hidden border border-slate-100 shadow-sm active:scale-[0.98] transition-all duration-150 cursor-pointer tap-feedback mobile-card-touch block"
+      onClick={(e) => {
+        // Let buttons handle their own clicks
+        if ((e.target as HTMLElement).closest('button')) {
+          e.preventDefault();
+        }
+      }}
     >
       {/* Image - Square aspect for compact view */}
       <div className="relative aspect-square overflow-hidden">
@@ -99,7 +111,7 @@ const StoreProductCardCompact = ({
           )}
         </button>
       </div>
-    </div>
+    </Link>
   );
 };
 

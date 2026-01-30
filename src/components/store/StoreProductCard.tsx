@@ -1,5 +1,7 @@
 import { Star, MessageCircle, Eye, Wallet, Loader2, Package, TrendingUp, Store } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { OptimizedImage } from '@/components/ui/optimized-image';
+import { buildProductUrl } from '@/lib/slug-utils';
 
 interface SellerProduct {
   id: string;
@@ -18,6 +20,7 @@ interface SellerProduct {
 interface StoreProductCardProps {
   product: SellerProduct;
   storeName: string;
+  storeSlug?: string;
   hasEnoughBalance: boolean;
   isLoggedIn: boolean;
   purchasing: boolean;
@@ -29,6 +32,7 @@ interface StoreProductCardProps {
 const StoreProductCard = ({
   product,
   storeName,
+  storeSlug,
   hasEnoughBalance,
   isLoggedIn,
   purchasing,
@@ -37,9 +41,19 @@ const StoreProductCard = ({
   onBuy,
 }: StoreProductCardProps) => {
   const showChat = product.chat_allowed !== false;
+  const productUrl = storeSlug ? buildProductUrl(product, storeSlug) : '#';
 
   return (
-    <div className="group bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-200 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+    <Link 
+      to={productUrl}
+      className="group bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-200 hover:-translate-y-1 transition-all duration-300 cursor-pointer block"
+      onClick={(e) => {
+        // Let buttons handle their own clicks
+        if ((e.target as HTMLElement).closest('button')) {
+          e.preventDefault();
+        }
+      }}
+    >
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden">
         <OptimizedImage
@@ -161,7 +175,7 @@ const StoreProductCard = ({
           </button>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 
