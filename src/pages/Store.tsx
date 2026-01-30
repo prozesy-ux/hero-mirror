@@ -32,7 +32,6 @@ import { Instagram, Twitter, Youtube, Music } from 'lucide-react';
 import StoreSidebar from '@/components/store/StoreSidebar';
 import StoreProductCard from '@/components/store/StoreProductCard';
 import StoreProductCardCompact from '@/components/store/StoreProductCardCompact';
-import ProductCardRenderer from '@/components/store/ProductCardRenderer';
 import ProductDetailModal from '@/components/store/ProductDetailModal';
 import ShareStoreModal from '@/components/seller/ShareStoreModal';
 import MobileStoreHeader from '@/components/store/MobileStoreHeader';
@@ -94,8 +93,6 @@ interface SellerProduct {
   chat_allowed: boolean | null;
   seller_id: string;
   view_count?: number | null;
-  product_type?: string | null;
-  type_metadata?: Record<string, any>;
 }
 
 interface Category {
@@ -1054,18 +1051,29 @@ const StoreContent = () => {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4 lg:gap-5">
                 {filteredProducts.map(product => (
-                  <ProductCardRenderer
-                    key={product.id}
-                    product={product}
-                    storeName={seller.store_name}
-                    hasEnoughBalance={hasEnoughBalance(product.price)}
-                    isLoggedIn={!!user}
-                    purchasing={purchasing === product.id}
-                    isMobile={isMobile}
-                    onView={() => setSelectedProduct(product)}
-                    onBuy={() => handlePurchase(product)}
-                    onChat={() => handleChat(product)}
-                  />
+                  isMobile ? (
+                    <StoreProductCardCompact
+                      key={product.id}
+                      product={product}
+                      hasEnoughBalance={hasEnoughBalance(product.price)}
+                      isLoggedIn={!!user}
+                      purchasing={purchasing === product.id}
+                      onView={() => setSelectedProduct(product)}
+                      onBuy={() => handlePurchase(product)}
+                    />
+                  ) : (
+                    <StoreProductCard
+                      key={product.id}
+                      product={product}
+                      storeName={seller.store_name}
+                      hasEnoughBalance={hasEnoughBalance(product.price)}
+                      isLoggedIn={!!user}
+                      purchasing={purchasing === product.id}
+                      onChat={() => handleChat(product)}
+                      onView={() => setSelectedProduct(product)}
+                      onBuy={() => handlePurchase(product)}
+                    />
+                  )
                 ))}
               </div>
             )}
