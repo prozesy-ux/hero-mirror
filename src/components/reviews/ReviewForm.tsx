@@ -67,9 +67,9 @@ const ReviewForm = ({ productId, orderId, onSuccess, onCancel }: ReviewFormProps
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-xl p-5 border border-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-xl p-5 border border-black/20">
       <div>
-        <Label className="text-sm font-medium text-slate-700 mb-2 block">Your Rating</Label>
+        <Label className="text-sm font-medium text-black mb-2 block">Your Rating</Label>
         <StarRating
           rating={rating}
           interactive
@@ -79,7 +79,7 @@ const ReviewForm = ({ productId, orderId, onSuccess, onCancel }: ReviewFormProps
       </div>
 
       <div>
-        <Label htmlFor="review-title" className="text-sm font-medium text-slate-700 mb-2 block">
+        <Label htmlFor="review-title" className="text-sm font-medium text-black mb-2 block">
           Review Title (Optional)
         </Label>
         <Input
@@ -87,13 +87,13 @@ const ReviewForm = ({ productId, orderId, onSuccess, onCancel }: ReviewFormProps
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Summarize your experience"
-          className="border-slate-200 rounded-xl"
+          className="border-black/20 rounded-xl"
           maxLength={100}
         />
       </div>
 
       <div>
-        <Label htmlFor="review-content" className="text-sm font-medium text-slate-700 mb-2 block">
+        <Label htmlFor="review-content" className="text-sm font-medium text-black mb-2 block">
           Your Review
         </Label>
         <Textarea
@@ -102,10 +102,10 @@ const ReviewForm = ({ productId, orderId, onSuccess, onCancel }: ReviewFormProps
           onChange={(e) => setContent(e.target.value)}
           placeholder="Share your experience with this product..."
           rows={4}
-          className="border-slate-200 rounded-xl resize-none"
+          className="border-black/20 rounded-xl resize-none"
           maxLength={1000}
         />
-        <p className="text-xs text-slate-400 mt-1">{content.length}/1000</p>
+        <p className="text-xs text-black/40 mt-1">{content.length}/1000</p>
       </div>
 
       <div className="flex gap-3 pt-2">
@@ -114,7 +114,7 @@ const ReviewForm = ({ productId, orderId, onSuccess, onCancel }: ReviewFormProps
             type="button"
             variant="outline"
             onClick={onCancel}
-            className="flex-1 rounded-xl border-slate-200"
+            className="flex-1 rounded-xl border-black/20"
           >
             Cancel
           </Button>
@@ -122,7 +122,7 @@ const ReviewForm = ({ productId, orderId, onSuccess, onCancel }: ReviewFormProps
         <Button
           type="submit"
           disabled={submitting || rating === 0}
-          className="flex-1 bg-emerald-500 hover:bg-emerald-600 rounded-xl"
+          className="flex-1 bg-black hover:bg-black/90 text-white rounded-xl"
         >
           {submitting ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
