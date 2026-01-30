@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { FileText, Download, Calendar, TrendingUp, Package, ShoppingCart, DollarSign, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -69,6 +70,7 @@ const reportConfigs: ReportConfig[] = [
 
 const SellerReports = () => {
   const { orders, products, loading } = useSellerContext();
+  const { formatAmountOnly } = useCurrency();
   const [selectedReport, setSelectedReport] = useState<ReportType>('sales');
   const [dateRange, setDateRange] = useState<DateRange>({
     from: subDays(new Date(), 30),
@@ -125,10 +127,10 @@ const SellerReports = () => {
             o.status
           ]),
           summary: {
-            'Total Revenue': `₹${filteredOrders.reduce((sum, o) => sum + o.amount, 0)}`,
-            'Total Earnings': `₹${filteredOrders.reduce((sum, o) => sum + o.seller_earning, 0)}`,
+            'Total Revenue': formatAmountOnly(filteredOrders.reduce((sum, o) => sum + o.amount, 0)),
+            'Total Earnings': formatAmountOnly(filteredOrders.reduce((sum, o) => sum + o.seller_earning, 0)),
             'Total Orders': filteredOrders.length.toString(),
-            'Avg Order Value': `₹${filteredOrders.length > 0 ? Math.round(filteredOrders.reduce((sum, o) => sum + o.amount, 0) / filteredOrders.length) : 0}`
+            'Avg Order Value': formatAmountOnly(filteredOrders.length > 0 ? filteredOrders.reduce((sum, o) => sum + o.amount, 0) / filteredOrders.length : 0)
           }
         };
       
@@ -171,7 +173,7 @@ const SellerReports = () => {
             'Total Products': products.length.toString(),
             'Active': products.filter(p => p.is_available).length.toString(),
             'Out of Stock': products.filter(p => (p.stock ?? 0) === 0).length.toString(),
-            'Total Revenue': `₹${filteredOrders.reduce((sum, o) => sum + o.amount, 0)}`
+            'Total Revenue': formatAmountOnly(filteredOrders.reduce((sum, o) => sum + o.amount, 0))
           }
         };
       
@@ -202,8 +204,8 @@ const SellerReports = () => {
           summary: {
             'Total Customers': customerMap.size.toString(),
             'Repeat Customers': Array.from(customerMap.values()).filter(c => c.orders > 1).length.toString(),
-            'Total Revenue': `₹${filteredOrders.reduce((sum, o) => sum + o.amount, 0)}`,
-            'Avg Customer Value': `₹${customerMap.size > 0 ? Math.round(filteredOrders.reduce((sum, o) => sum + o.amount, 0) / customerMap.size) : 0}`
+            'Total Revenue': formatAmountOnly(filteredOrders.reduce((sum, o) => sum + o.amount, 0)),
+            'Avg Customer Value': formatAmountOnly(customerMap.size > 0 ? filteredOrders.reduce((sum, o) => sum + o.amount, 0) / customerMap.size : 0)
           }
         };
       
