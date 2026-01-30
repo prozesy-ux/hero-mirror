@@ -77,7 +77,6 @@ interface SellerProfile {
 
 interface SellerProduct {
   id: string;
-  slug?: string;
   name: string;
   description: string | null;
   price: number;
