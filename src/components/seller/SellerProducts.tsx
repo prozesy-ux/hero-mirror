@@ -221,10 +221,11 @@ const SellerProducts = () => {
     }
   };
 
-  const copyProductLink = async (productId: string, productName: string) => {
+  const copyProductLink = async (productId: string, productName: string, productSlug?: string | null) => {
     const storeSlug = (profile as any)?.store_slug || profile?.id;
-    // Use SEO-friendly URL for sharing
-    const url = getProductShareUrl(storeSlug, productName, productId);
+    // Use SEO-friendly URL for sharing - prefer database slug, fallback to legacy format
+    const slug = productSlug || `${productName.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)}-${productId.slice(0, 8)}`;
+    const url = getProductShareUrl(storeSlug, slug);
     try {
       await navigator.clipboard.writeText(url);
       toast.success(`Link copied for "${productName}"`);
@@ -432,7 +433,7 @@ const SellerProducts = () => {
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => copyProductLink(product.id, product.name)}
+                        onClick={() => copyProductLink(product.id, product.name, (product as any).slug)}
                         className="h-8 px-3 bg-white/90 hover:bg-white backdrop-blur-sm rounded-lg shadow-sm"
                       >
                         <Copy className="w-3.5 h-3.5 mr-1" />

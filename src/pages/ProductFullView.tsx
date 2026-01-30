@@ -29,13 +29,13 @@ import {
   getProductShareUrl, 
   isFullUUID, 
   extractIdFromSlug, 
-  normalizeProductName,
-  generateClientSlug
+  normalizeProductName
 } from '@/lib/url-utils';
 
 interface Product {
   id: string;
   name: string;
+  slug: string | null;
   description: string | null;
   price: number;
   icon_url: string | null;
@@ -103,24 +103,19 @@ const ProductFullViewContent = () => {
     // Smart product lookup with tiered strategy
     let productData = null;
 
-    // 1. Try exact UUID match (legacy URLs)
-    if (isFullUUID(productId!)) {
-      const { data } = await supabase
-        .from('seller_products')
-        .select('*')
-        .eq('id', productId)
-        .eq('seller_id', sellerData.id)
-        .maybeSingle();
-      
-      if (data) {
-        // Redirect legacy URL to SEO-friendly format
-        const seoUrl = generateProductUrl(storeSlug!, data.name, data.id);
-        navigate(seoUrl, { replace: true });
-        productData = data;
-      }
+    // 1. Try exact slug match (new clean URLs)
+    const { data: slugMatch } = await supabase
+      .from('seller_products')
+      .select('*')
+      .eq('seller_id', sellerData.id)
+      .eq('slug', productId)
+      .maybeSingle();
+    
+    if (slugMatch) {
+      productData = slugMatch;
     }
 
-    // 2. Try ID prefix match (SEO URLs)
+    // 2. Try ID prefix match (legacy URLs with -xxxxxxxx suffix)
     if (!productData) {
       const idPrefix = extractIdFromSlug(productId!);
       if (idPrefix) {
@@ -131,11 +126,35 @@ const ProductFullViewContent = () => {
           .ilike('id', `${idPrefix}%`)
           .maybeSingle();
         
-        if (data) productData = data;
+        if (data) {
+          // Redirect legacy URL to new clean URL
+          if (data.slug) {
+            navigate(`/store/${storeSlug}/product/${data.slug}`, { replace: true });
+          }
+          productData = data;
+        }
       }
     }
 
-    // 3. Fallback: Try matching by normalized name within store
+    // 3. Try exact UUID match (very old legacy URLs)
+    if (!productData && isFullUUID(productId!)) {
+      const { data } = await supabase
+        .from('seller_products')
+        .select('*')
+        .eq('id', productId)
+        .eq('seller_id', sellerData.id)
+        .maybeSingle();
+      
+      if (data) {
+        // Redirect legacy URL to SEO-friendly format
+        if (data.slug) {
+          navigate(`/store/${storeSlug}/product/${data.slug}`, { replace: true });
+        }
+        productData = data;
+      }
+    }
+
+    // 4. Fallback: Try matching by normalized name within store
     if (!productData) {
       const nameFromSlug = productId!.replace(/-[a-f0-9]{8}$/i, '').replace(/-/g, ' ');
       const { data: products } = await supabase
@@ -144,9 +163,17 @@ const ProductFullViewContent = () => {
         .eq('seller_id', sellerData.id)
         .eq('is_available', true);
       
-      productData = products?.find(p => 
+      const matchedProduct = products?.find(p => 
         normalizeProductName(p.name) === normalizeProductName(nameFromSlug)
-      ) || null;
+      );
+      
+      if (matchedProduct) {
+        // Redirect to clean URL if slug exists
+        if (matchedProduct.slug) {
+          navigate(`/store/${storeSlug}/product/${matchedProduct.slug}`, { replace: true });
+        }
+        productData = matchedProduct;
+      }
     }
 
     if (productData) {
@@ -247,9 +274,10 @@ const ProductFullViewContent = () => {
   };
 
   const handleShare = async () => {
-    // Generate SEO-friendly URL for sharing
-    const url = product && seller?.store_slug 
-      ? getProductShareUrl(seller.store_slug, product.name, product.id)
+    // Use clean slug for sharing
+    const slug = product?.slug || productId || '';
+    const url = seller?.store_slug 
+      ? getProductShareUrl(seller.store_slug, slug)
       : window.location.href;
     try {
       await navigator.clipboard.writeText(url);
@@ -473,7 +501,7 @@ const ProductFullViewContent = () => {
               {relatedProducts.map(related => (
                 <Link
                   key={related.id}
-                  to={generateProductUrl(storeSlug!, related.name, related.id)}
+                  to={generateProductUrl(storeSlug!, related.slug || related.id)}
                   className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="aspect-square bg-slate-50">
@@ -501,10 +529,12 @@ const ProductFullViewContent = () => {
   );
 };
 
-const ProductFullView = () => (
-  <FloatingChatProvider>
-    <ProductFullViewContent />
-  </FloatingChatProvider>
-);
+const ProductFullView = () => {
+  return (
+    <FloatingChatProvider>
+      <ProductFullViewContent />
+    </FloatingChatProvider>
+  );
+};
 
 export default ProductFullView;
