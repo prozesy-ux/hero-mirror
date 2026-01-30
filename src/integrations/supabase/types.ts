@@ -3193,15 +3193,10 @@ export type Database = {
       clean_old_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
       cleanup_expired_password_tokens: { Args: never; Returns: undefined }
-      generate_product_slug:
-        | {
-            Args: { existing_slug?: string; product_name: string }
-            Returns: string
-          }
-        | {
-            Args: { p_seller_id?: string; product_name: string }
-            Returns: string
-          }
+      generate_product_slug: {
+        Args: { p_seller_id?: string; product_name: string }
+        Returns: string
+      }
       get_active_flash_sale: {
         Args: { p_product_id: string }
         Returns: {
