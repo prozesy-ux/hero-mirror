@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import GumroadProductCard from './GumroadProductCard';
+import FeaturedBannerCard from './FeaturedBannerCard';
 
 interface Product {
   id: string;
   name: string;
+  description?: string | null;
   price: number;
   iconUrl: string | null;
   sellerName: string | null;
@@ -12,6 +13,8 @@ interface Product {
   storeSlug: string | null;
   isVerified: boolean;
   soldCount?: number;
+  rating?: number;
+  reviewCount?: number;
   type: 'ai' | 'seller';
 }
 
@@ -34,13 +37,11 @@ const FeaturedCarousel = ({
   const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Calculate visible cards based on screen size
+  // For banner cards, show 1 at a time on mobile, 2 on desktop
   const getVisibleCards = () => {
-    if (typeof window === 'undefined') return 4;
-    if (window.innerWidth < 640) return 1.5;
-    if (window.innerWidth < 768) return 2.5;
-    if (window.innerWidth < 1024) return 3;
-    return 4;
+    if (typeof window === 'undefined') return 2;
+    if (window.innerWidth < 768) return 1;
+    return 2;
   };
 
   const [visibleCards, setVisibleCards] = useState(getVisibleCards);
@@ -53,11 +54,11 @@ const FeaturedCarousel = ({
 
   // Auto-advance carousel
   useEffect(() => {
-    if (!autoPlay || isHovered || products.length <= Math.floor(visibleCards)) return;
+    if (!autoPlay || isHovered || products.length <= visibleCards) return;
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => {
-        const maxIndex = Math.max(0, products.length - Math.floor(visibleCards));
+        const maxIndex = Math.max(0, products.length - visibleCards);
         return prev >= maxIndex ? 0 : prev + 1;
       });
     }, autoPlayInterval);
@@ -65,7 +66,7 @@ const FeaturedCarousel = ({
     return () => clearInterval(interval);
   }, [autoPlay, autoPlayInterval, isHovered, products.length, visibleCards]);
 
-  const maxIndex = Math.max(0, products.length - Math.floor(visibleCards));
+  const maxIndex = Math.max(0, products.length - visibleCards);
   
   const handlePrev = () => {
     setCurrentIndex((prev) => Math.max(0, prev - 1));
@@ -77,29 +78,32 @@ const FeaturedCarousel = ({
 
   if (products.length === 0) return null;
 
+  const totalPages = Math.ceil(products.length / visibleCards);
+  const currentPage = Math.floor(currentIndex / visibleCards) + 1;
+
   return (
-    <section className="py-8">
+    <section className="py-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-black">{title}</h2>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-bold text-black">{title}</h2>
         
         {/* Pagination & Controls */}
         <div className="flex items-center gap-3">
           <span className="text-sm text-black/50">
-            {currentIndex + 1}/{Math.ceil(products.length / Math.floor(visibleCards))}
+            {currentPage}/{totalPages}
           </span>
           <div className="flex gap-1">
             <button
               onClick={handlePrev}
               disabled={currentIndex === 0}
-              className="p-2 rounded-full border-2 border-black/10 hover:border-black/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-full border border-black/10 hover:border-black/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-4 h-4 text-black" />
             </button>
             <button
               onClick={handleNext}
               disabled={currentIndex >= maxIndex}
-              className="p-2 rounded-full border-2 border-black/10 hover:border-black/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-full border border-black/10 hover:border-black/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronRight className="w-4 h-4 text-black" />
             </button>
@@ -107,7 +111,7 @@ const FeaturedCarousel = ({
         </div>
       </div>
 
-      {/* Carousel */}
+      {/* Carousel - Banner style cards */}
       <div 
         ref={containerRef}
         onMouseEnter={() => setIsHovered(true)}
@@ -126,17 +130,17 @@ const FeaturedCarousel = ({
               className="flex-shrink-0"
               style={{ width: `calc(${100 / visibleCards}% - ${((visibleCards - 1) * 16) / visibleCards}px)` }}
             >
-              <GumroadProductCard
+              <FeaturedBannerCard
                 id={product.id}
                 name={product.name}
+                description={product.description}
                 price={product.price}
                 iconUrl={product.iconUrl}
                 sellerName={product.sellerName}
                 sellerAvatar={product.sellerAvatar}
-                storeSlug={product.storeSlug}
                 isVerified={product.isVerified}
-                soldCount={product.soldCount}
-                type={product.type}
+                rating={product.rating}
+                reviewCount={product.reviewCount || product.soldCount}
                 onClick={() => onProductClick(product)}
               />
             </div>
@@ -146,14 +150,12 @@ const FeaturedCarousel = ({
 
       {/* Dots (mobile only) */}
       <div className="flex justify-center gap-1.5 mt-4 md:hidden">
-        {Array.from({ length: Math.ceil(products.length / Math.floor(visibleCards)) }).map((_, i) => (
+        {Array.from({ length: totalPages }).map((_, i) => (
           <button
             key={i}
-            onClick={() => setCurrentIndex(i * Math.floor(visibleCards))}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              Math.floor(currentIndex / Math.floor(visibleCards)) === i
-                ? 'bg-black'
-                : 'bg-black/20'
+            onClick={() => setCurrentIndex(i * visibleCards)}
+            className={`w-1.5 h-1.5 rounded-full transition-colors ${
+              currentPage - 1 === i ? 'bg-black' : 'bg-black/20'
             }`}
           />
         ))}

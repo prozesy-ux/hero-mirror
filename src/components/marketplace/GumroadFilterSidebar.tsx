@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Star, X } from 'lucide-react';
+import { ChevronDown, Star, X } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -41,6 +42,12 @@ const GumroadFilterSidebar = ({
   const [showAllTags, setShowAllTags] = useState(false);
   const [localPriceMin, setLocalPriceMin] = useState<string>(priceMin?.toString() || '');
   const [localPriceMax, setLocalPriceMax] = useState<string>(priceMax?.toString() || '');
+  const [openSections, setOpenSections] = useState({
+    categories: true,
+    tags: true,
+    price: true,
+    rating: true,
+  });
 
   const visibleTags = showAllTags ? availableTags : availableTags.slice(0, 8);
   
@@ -57,33 +64,41 @@ const GumroadFilterSidebar = ({
     );
   };
 
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
   return (
-    <aside className="w-full lg:w-64 flex-shrink-0 space-y-6">
+    <aside className="w-full lg:w-56 flex-shrink-0 space-y-4">
       {/* Clear Filters */}
       {hasActiveFilters && (
         <button
           onClick={onClearFilters}
-          className="flex items-center gap-2 text-sm font-medium text-black/60 hover:text-black transition-colors"
+          className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black transition-colors"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
           Clear all filters
         </button>
       )}
 
       {/* Categories */}
-      <Collapsible defaultOpen>
-        <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b-2 border-black">
-          <span className="text-sm font-bold text-black uppercase tracking-wide">Categories</span>
-          <ChevronDown className="w-4 h-4 text-black" />
+      <Collapsible open={openSections.categories} onOpenChange={() => toggleSection('categories')}>
+        <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-left">
+          <span className="text-sm font-medium text-black">Categories</span>
+          <ChevronDown className={cn(
+            "w-4 h-4 text-black/40 transition-transform duration-200",
+            openSections.categories && "rotate-180"
+          )} />
         </CollapsibleTrigger>
-        <CollapsibleContent className="pt-3 space-y-1">
+        <CollapsibleContent className="pt-1 space-y-0.5">
           <button
             onClick={() => onCategoryChange('all')}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={cn(
+              "w-full text-left px-2 py-1.5 rounded text-sm transition-colors",
               selectedCategory === 'all'
-                ? 'bg-black text-white'
-                : 'text-black/70 hover:bg-black/5'
-            }`}
+                ? 'text-black font-medium'
+                : 'text-black/60 hover:text-black'
+            )}
           >
             All Products
           </button>
@@ -91,135 +106,145 @@ const GumroadFilterSidebar = ({
             <button
               key={cat.id}
               onClick={() => onCategoryChange(cat.id)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-between ${
+              className={cn(
+                "w-full text-left px-2 py-1.5 rounded text-sm flex items-center justify-between transition-colors",
                 selectedCategory === cat.id
-                  ? 'bg-black text-white'
-                  : 'text-black/70 hover:bg-black/5'
-              }`}
+                  ? 'text-black font-medium'
+                  : 'text-black/60 hover:text-black'
+              )}
             >
               <span>{cat.name}</span>
               {cat.productCount !== undefined && (
-                <span className={`text-xs ${selectedCategory === cat.id ? 'text-white/60' : 'text-black/40'}`}>
-                  {cat.productCount}
-                </span>
+                <span className="text-xs text-black/40">{cat.productCount}</span>
               )}
             </button>
           ))}
         </CollapsibleContent>
       </Collapsible>
 
+      <div className="border-t border-black/5" />
+
       {/* Tags */}
       {availableTags.length > 0 && (
-        <Collapsible defaultOpen>
-          <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b-2 border-black">
-            <span className="text-sm font-bold text-black uppercase tracking-wide">Tags</span>
-            <ChevronDown className="w-4 h-4 text-black" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-3">
-            <div className="flex flex-wrap gap-2">
-              {visibleTags.map((tag) => (
+        <>
+          <Collapsible open={openSections.tags} onOpenChange={() => toggleSection('tags')}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-left">
+              <span className="text-sm font-medium text-black">Tags</span>
+              <ChevronDown className={cn(
+                "w-4 h-4 text-black/40 transition-transform duration-200",
+                openSections.tags && "rotate-180"
+              )} />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-1">
+              <div className="flex flex-wrap gap-1.5">
+                {visibleTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => onTagToggle(tag)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-full text-xs font-medium border transition-colors",
+                      selectedTags.includes(tag)
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white text-black/60 border-black/10 hover:border-black/30'
+                    )}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+              {availableTags.length > 8 && (
                 <button
-                  key={tag}
-                  onClick={() => onTagToggle(tag)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border-2 transition-colors ${
-                    selectedTags.includes(tag)
-                      ? 'bg-black text-white border-black'
-                      : 'bg-white text-black/70 border-black/10 hover:border-black/30'
-                  }`}
+                  onClick={() => setShowAllTags(!showAllTags)}
+                  className="mt-2 text-xs text-black/50 hover:text-black"
                 >
-                  #{tag}
+                  {showAllTags ? 'Show less' : `+${availableTags.length - 8} more`}
                 </button>
-              ))}
-            </div>
-            {availableTags.length > 8 && (
-              <button
-                onClick={() => setShowAllTags(!showAllTags)}
-                className="mt-3 text-sm font-medium text-pink-500 hover:text-pink-600 flex items-center gap-1"
-              >
-                {showAllTags ? (
-                  <>Show less <ChevronUp className="w-3 h-3" /></>
-                ) : (
-                  <>Show {availableTags.length - 8} more <ChevronDown className="w-3 h-3" /></>
-                )}
-              </button>
-            )}
-          </CollapsibleContent>
-        </Collapsible>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+          <div className="border-t border-black/5" />
+        </>
       )}
 
       {/* Price */}
-      <Collapsible defaultOpen>
-        <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b-2 border-black">
-          <span className="text-sm font-bold text-black uppercase tracking-wide">Price</span>
-          <ChevronDown className="w-4 h-4 text-black" />
+      <Collapsible open={openSections.price} onOpenChange={() => toggleSection('price')}>
+        <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-left">
+          <span className="text-sm font-medium text-black">Price</span>
+          <ChevronDown className={cn(
+            "w-4 h-4 text-black/40 transition-transform duration-200",
+            openSections.price && "rotate-180"
+          )} />
         </CollapsibleTrigger>
-        <CollapsibleContent className="pt-3 space-y-3">
+        <CollapsibleContent className="pt-1 space-y-2">
           <div className="flex items-center gap-2">
             <div className="flex-1 relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-black/40">$</span>
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-black/40">$</span>
               <input
                 type="number"
                 placeholder="Min"
                 value={localPriceMin}
                 onChange={(e) => setLocalPriceMin(e.target.value)}
-                className="w-full pl-7 pr-3 py-2 border-2 border-black/10 rounded-lg text-sm focus:border-black/30 focus:outline-none"
+                className="w-full pl-5 pr-2 py-1.5 border border-black/10 rounded text-sm focus:border-black/30 focus:outline-none"
               />
             </div>
-            <span className="text-black/30">—</span>
+            <span className="text-black/30 text-sm">–</span>
             <div className="flex-1 relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-black/40">$</span>
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-black/40">$</span>
               <input
                 type="number"
                 placeholder="Max"
                 value={localPriceMax}
                 onChange={(e) => setLocalPriceMax(e.target.value)}
-                className="w-full pl-7 pr-3 py-2 border-2 border-black/10 rounded-lg text-sm focus:border-black/30 focus:outline-none"
+                className="w-full pl-5 pr-2 py-1.5 border border-black/10 rounded text-sm focus:border-black/30 focus:outline-none"
               />
             </div>
           </div>
           <button
             onClick={handlePriceApply}
-            className="w-full py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-black/80 transition-colors"
+            className="w-full py-1.5 bg-black text-white text-xs font-medium rounded hover:bg-black/80 transition-colors"
           >
             Apply
           </button>
         </CollapsibleContent>
       </Collapsible>
 
+      <div className="border-t border-black/5" />
+
       {/* Rating */}
-      <Collapsible defaultOpen>
-        <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b-2 border-black">
-          <span className="text-sm font-bold text-black uppercase tracking-wide">Rating</span>
-          <ChevronDown className="w-4 h-4 text-black" />
+      <Collapsible open={openSections.rating} onOpenChange={() => toggleSection('rating')}>
+        <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-left">
+          <span className="text-sm font-medium text-black">Rating</span>
+          <ChevronDown className={cn(
+            "w-4 h-4 text-black/40 transition-transform duration-200",
+            openSections.rating && "rotate-180"
+          )} />
         </CollapsibleTrigger>
-        <CollapsibleContent className="pt-3 space-y-2">
+        <CollapsibleContent className="pt-1 space-y-1">
           {[4, 3, 2].map((rating) => (
             <button
               key={rating}
               onClick={() => onRatingChange(minRating === rating ? null : rating)}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={cn(
+                "w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors",
                 minRating === rating
-                  ? 'bg-black text-white'
-                  : 'text-black/70 hover:bg-black/5'
-              }`}
+                  ? 'text-black font-medium'
+                  : 'text-black/60 hover:text-black'
+              )}
             >
               <div className="flex items-center gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star
                     key={i}
-                    className={`w-3.5 h-3.5 ${
+                    className={cn(
+                      "w-3 h-3",
                       i < rating
-                        ? minRating === rating
-                          ? 'fill-white text-white'
-                          : 'fill-yellow-400 text-yellow-400'
-                        : minRating === rating
-                          ? 'text-white/40'
-                          : 'text-black/20'
-                    }`}
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-black/20'
+                    )}
                   />
                 ))}
               </div>
-              <span className="font-medium">{rating}+ stars</span>
+              <span>& up</span>
             </button>
           ))}
         </CollapsibleContent>
