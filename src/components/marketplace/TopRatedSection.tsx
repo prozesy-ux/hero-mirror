@@ -16,6 +16,7 @@ interface TopRatedProduct {
   avg_rating: number;
   review_count: number;
   seller_name?: string;
+  store_slug?: string;
 }
 
 interface TopRatedSectionProps {
@@ -65,7 +66,7 @@ export function TopRatedSection({ onProductClick, className }: TopRatedSectionPr
         // Fall back to featured products if no ratings
         const { data: featured } = await supabase
           .from('seller_products')
-          .select('id, name, price, icon_url, seller_profiles(store_name)')
+          .select('id, name, price, icon_url, seller_profiles(store_name, store_slug)')
           .eq('is_available', true)
           .eq('is_approved', true)
           .order('created_at', { ascending: false })
@@ -80,6 +81,7 @@ export function TopRatedSection({ onProductClick, className }: TopRatedSectionPr
             avg_rating: 4.5,
             review_count: 0,
             seller_name: p.seller_profiles?.store_name,
+            store_slug: p.seller_profiles?.store_slug,
           }))
         );
         setLoading(false);
@@ -89,7 +91,7 @@ export function TopRatedSection({ onProductClick, className }: TopRatedSectionPr
       // Fetch product details for top rated
       const { data: productData } = await supabase
         .from('seller_products')
-        .select('id, name, price, icon_url, seller_profiles(store_name)')
+        .select('id, name, price, icon_url, seller_profiles(store_name, store_slug)')
         .eq('is_available', true)
         .eq('is_approved', true)
         .in('id', topRatedIds.map(p => p.id));
@@ -106,6 +108,7 @@ export function TopRatedSection({ onProductClick, className }: TopRatedSectionPr
             avg_rating: Math.round(rating.avg * 10) / 10,
             review_count: rating.count,
             seller_name: (product as any).seller_profiles?.store_name,
+            store_slug: (product as any).seller_profiles?.store_slug,
           };
         })
         .filter(Boolean) as TopRatedProduct[];
