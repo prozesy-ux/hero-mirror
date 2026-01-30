@@ -1,238 +1,145 @@
 
+Goal
+- Stop the “Session Expired” banner from appearing after 5–10 minutes (especially after tab switch) and prevent dashboards from “dying” until the user manually logs in again.
+- Keep the “enterprise UX” rule: no forced logout/redirect unless user manually logs out or clears cookies.
 
-# Clean SEO-Friendly Product URLs - Remove UUID Suffix
+What is happening (root cause)
+1) Your dashboard components treat any “unauthorized” response as “session expired” immediately.
+   - Example: BuyerDashboardHome.tsx calls bffApi.getBuyerDashboard()
+   - If apiFetch can’t get a session from supabase.auth.getSession() (even temporarily), apiFetch returns:
+     - status 401, error “No active session”, isUnauthorized: true
+   - BuyerDashboardHome then calls setSessionExpired(true) and shows the Session Expired banner.
+   - This can happen during tab switching/backgrounding due to browser throttling, suspended storage access, token refresh race, or a transient “null session” from the SDK.
 
-## Current Issue
+2) Heartbeat doesn’t always protect you when session becomes temporarily null.
+   - useSessionHeartbeat only runs when isAuthenticated === true.
+   - isAuthenticated is currently computed as !!session in useAuth().
+   - So if session becomes null temporarily, heartbeat stops, and recovery doesn’t run.
 
-Your product URLs look like this:
-- `/store/prozesy/product/netflix-cheap-monthly-account-f3b87674`
-- `/store/prozesy/product/cheap-amazon-prime-account-10-3-months-2375cd90`
+3) Service Worker caching is risky for authenticated BFF endpoints.
+   - public/sw.js caches “/functions/v1/bff-” with stale-while-revalidate for all BFF endpoints.
+   - That pattern includes authenticated endpoints (buyer dashboard / wallet / seller dashboard).
+   - Even if you cache only “response.ok”, this can still cause “wrong/stale user data” risks and can produce confusing behavior after tab switch. It also makes debugging much harder.
 
-The `f3b87674` at the end is the first 8 characters of the product UUID. You want clean URLs like Amazon:
-- `/store/prozesy/product/netflix-cheap-monthly-account`
-- `/store/prozesy/product/cheap-amazon-prime-account-10-3-months`
+4) Cache version mismatch can amplify “first load” and “random break” issues.
+   - src/lib/cache-utils.ts APP_VERSION is 1.0.3
+   - public/sw.js CACHE_VERSION is v1.0.3
+   - Your memory says version moved beyond that before; any mismatch or stale SW can keep old runtime behavior around longer than expected.
 
-## Why The UUID Suffix Exists
+Permanent fix (high level)
+A) Make “optimistic auth” consistent everywhere:
+   - If a local auth token exists (localStorage) and the 12-hour window is still valid, the app should behave as logged-in even if supabase.auth.getSession() briefly returns null.
+   - Only treat as “expired” when BOTH are true:
+     - recovery fails AND
+     - user is beyond the 12-hour grace window (isSessionValid() === false)
 
-The UUID suffix was added to guarantee uniqueness - if a seller has two products with similar names, the suffix prevents URL conflicts. However, since URLs are scoped to a store (`/store/prozesy/...`), we can use a unique slug per seller instead.
+B) Make apiFetch resilient:
+   - If getSession() returns null, do not immediately return isUnauthorized.
+   - Instead:
+     1) attempt sessionRecovery.recover()
+     2) re-check getSession()
+     3) only then return unauthorized if truly unrecoverable AND out of 12h window
+   - This prevents false “session expired” after tab switch.
 
-## Solution: Database-Stored Unique Slugs
+C) Make Heartbeat independent from `!!session`:
+   - Heartbeat should run when either:
+     - user is authenticated by real session OR
+     - hasLocalSession() returns true (optimistic local token) and within grace
+   - That way, after tab switch, the heartbeat can restore the session in the background.
 
-### Overview
+D) Stop caching authenticated BFF requests in the Service Worker:
+   - If request includes Authorization header, bypass caching (network-only).
+   - Also optionally: remove/limit the “/functions/v1/bff-” caching pattern and instead cache only public BFF endpoints (marketplace/store) by explicit list.
 
-1. Add a `slug` column to the `seller_products` table
-2. Auto-generate unique slugs when products are created/updated
-3. Update URL generation to use the clean slug (no UUID)
-4. Update product lookup to find by slug within a store
+E) Add a “reconnect” state instead of “expired” for transient failures:
+   - On dashboard pages, if a request fails with 401/no-session but still within 12h window:
+     - show a small “Reconnecting…” notice
+     - trigger refreshSession()
+     - keep cached data visible
+     - do NOT show “Session Expired” banner
 
-### Changes
+Concrete implementation steps (files)
+1) Update apiFetch behavior (src/lib/api-fetch.ts)
+   - Change the “no session” branch:
+     - Current: immediately returns { status: 401, isUnauthorized: true, error: 'No active session' }
+     - New:
+       1) If no session, try sessionRecovery.recover()
+       2) If recover succeeded, retry getAccessToken and continue request
+       3) If recover failed:
+          - If isSessionValid() (within 12h window): return a non-unauthorized error like:
+            - status: 503 (or 0), isUnauthorized: false, error: 'Reconnecting…'
+            - This prevents UI from flipping to “expired”
+          - Else (12h expired): return isUnauthorized true (real expired)
+   - Add targeted logs:
+     - “[ApiFetch] getSession returned null, trying recovery…”
+     - “[ApiFetch] recovery failed but within 12h window; soft-failing without logout”
 
-#### 1. Database Migration
+2) Make “authenticated” state tolerant of transient null sessions (src/hooks/useAuth.ts and src/contexts/AuthContext.tsx)
+   - Keep the last known good session/user in state unless we receive SIGNED_OUT.
+   - Do not set user/session to null just because getSession() returns null once.
+   - Compute isAuthenticated as:
+     - `!!session || hasLocalSession()` (from src/lib/session-detector.ts)
+   - Ensure AuthProvider’s “sessionVerified” logic doesn’t incorrectly “unverify” on transient null.
 
-Add `slug` column to `seller_products` table with uniqueness per seller:
+3) Run heartbeat based on “optimistic auth”, not only `!!session` (src/hooks/useSessionHeartbeat.ts)
+   - Replace `if (!isAuthenticated) return;` with logic that includes:
+     - if hasLocalSession() and isSessionValid() => still run heartbeat
+   - When heartbeat finds no session:
+     - already tries sessionRecovery.recover()
+     - but today it returns early without updating UI if within 12h; we keep that,
+       but we must ensure components don’t interpret it as “expired”.
 
-```sql
--- Add slug column
-ALTER TABLE seller_products ADD COLUMN slug text;
+4) Fix dashboards that aggressively mark session expired (at least BuyerDashboardHome.tsx, BuyerOrders.tsx, SellerContext.tsx)
+   - Change unauthorized handling:
+     - If result.isUnauthorized:
+       - check isSessionValid()
+       - If within 12h window:
+         - do NOT call setSessionExpired(true)
+         - keep cached data
+         - show “Reconnecting…” + a button “Retry now” which triggers refreshSession() then fetchData()
+       - If outside 12h window:
+         - setSessionExpired(true) (current behavior)
+   - This prevents the fake “expired” banner when the tab returns and the SDK is still catching up.
 
--- Create unique index per seller
-CREATE UNIQUE INDEX seller_products_seller_slug_unique 
-ON seller_products(seller_id, slug) 
-WHERE slug IS NOT NULL;
+5) Service worker: stop caching authenticated requests (public/sw.js)
+   - In fetch handler, add:
+     - If request.headers has ‘Authorization’ OR url pathname includes “bff-buyer-” / “bff-seller-”:
+       - do not use cache; let it go network-only
+   - Keep caching for public endpoints:
+     - bff-marketplace-home
+     - bff-store-public
+   - This reduces weird “works then stops” behavior after tab switch and avoids cross-user caching risks.
 
--- Backfill existing products with slugs
-UPDATE seller_products 
-SET slug = LOWER(TRIM(
-  REGEXP_REPLACE(
-    REGEXP_REPLACE(
-      REGEXP_REPLACE(name, '[^\w\s-]', '', 'g'),
-      '[\s_-]+', '-', 'g'
-    ),
-    '^-+|-+$', '', 'g'
-  )
-));
+6) Align cache versions and force a clean update (src/lib/cache-utils.ts + public/sw.js)
+   - Bump APP_VERSION and CACHE_VERSION together (same new version string).
+   - This guarantees old SW + old cached bundles are discarded and everyone gets the fixed session logic.
 
--- Handle duplicates by appending numbers
--- (Will be done via a function/trigger for new products)
-```
+7) Add small diagnostics to confirm the fix
+   - Add console logs (kept minimal) in:
+     - useSessionHeartbeat heartbeat() when it sees no session and when recovery succeeds
+     - apiFetch when session is null and when recovery happens
+   - This will let us confirm the exact reason for any future session issue in one screenshot of the console.
 
-#### 2. Database Trigger for Auto-Slug Generation
+Testing plan (what we will verify)
+1) Login with Google.
+2) Open /dashboard/home and keep it open.
+3) Wait 10–15 minutes; switch tabs and return.
+4) Confirm:
+   - No forced logout
+   - No Session Expired banner during the first 12 hours
+   - Dashboard continues to fetch data after returning to the tab
+5) Simulate a network blip (toggle offline/online).
+6) Confirm:
+   - It shows cached data + “Reconnecting…”
+   - Auto-recovers without forcing sign-in.
 
-Create a function that generates unique slugs automatically:
+Expected outcome
+- Dashboard will not randomly show “Session Expired” after 5–10 minutes.
+- Tab switching will no longer break the session.
+- If the browser temporarily loses access to session data, the app will “self-heal” silently and keep working like Gmail/Upwork: only manual logout or cookie clear logs the user out.
 
-```sql
-CREATE OR REPLACE FUNCTION generate_product_slug()
-RETURNS TRIGGER AS $$
-DECLARE
-  base_slug text;
-  final_slug text;
-  counter integer := 0;
-BEGIN
-  -- Generate base slug from name
-  base_slug := LOWER(TRIM(
-    REGEXP_REPLACE(
-      REGEXP_REPLACE(
-        REGEXP_REPLACE(NEW.name, '[^\w\s-]', '', 'g'),
-        '[\s_-]+', '-', 'g'
-      ),
-      '^-+|-+$', '', 'g'
-    )
-  ));
-  
-  -- Limit length
-  base_slug := LEFT(base_slug, 50);
-  final_slug := base_slug;
-  
-  -- Check for uniqueness within seller, append number if needed
-  WHILE EXISTS (
-    SELECT 1 FROM seller_products 
-    WHERE seller_id = NEW.seller_id 
-    AND slug = final_slug 
-    AND id != COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::uuid)
-  ) LOOP
-    counter := counter + 1;
-    final_slug := base_slug || '-' || counter;
-  END LOOP;
-  
-  NEW.slug := final_slug;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER set_product_slug
-BEFORE INSERT OR UPDATE OF name ON seller_products
-FOR EACH ROW EXECUTE FUNCTION generate_product_slug();
-```
-
-#### 3. Update URL Utilities (`src/lib/url-utils.ts`)
-
-Simplify URL generation to use clean slugs:
-
-```typescript
-// NEW: Use pre-stored slug from database
-export function generateProductUrl(
-  storeSlug: string, 
-  productSlug: string  // Now expects the clean slug, not product name
-): string {
-  return `/store/${storeSlug}/product/${productSlug}`;
-}
-
-// Keep backward compatibility for client-side slug generation
-export function generateProductSlug(productName: string): string {
-  return productName
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 50);
-}
-
-// Legacy support: still extract ID if present
-export function extractIdFromSlug(urlSlug: string): string | null {
-  const match = urlSlug.match(/-([a-f0-9]{8})$/i);
-  return match ? match[1] : null;
-}
-```
-
-#### 4. Update Product Lookup (`src/pages/ProductFullView.tsx`)
-
-Change the lookup strategy:
-
-```typescript
-// New lookup priority:
-// 1. Exact slug match (new SEO URLs)
-// 2. ID prefix match (legacy URLs with -xxxxxxxx)
-// 3. Full UUID match (very old URLs)
-
-const fetchData = async () => {
-  // First get seller
-  const { data: sellerData } = await supabase
-    .from('seller_profiles')
-    .select('*')
-    .eq('store_slug', storeSlug)
-    .single();
-
-  // 1. Try exact slug match (new clean URLs)
-  let { data: productData } = await supabase
-    .from('seller_products')
-    .select('*')
-    .eq('seller_id', sellerData.id)
-    .eq('slug', productId)  // productId is now the slug
-    .maybeSingle();
-
-  // 2. Try ID prefix match (legacy URLs with -xxxxxxxx)
-  if (!productData) {
-    const idPrefix = extractIdFromSlug(productId);
-    if (idPrefix) {
-      const { data } = await supabase
-        .from('seller_products')
-        .select('*')
-        .eq('seller_id', sellerData.id)
-        .ilike('id', `${idPrefix}%`)
-        .maybeSingle();
-      
-      if (data) {
-        // Redirect legacy URL to new clean URL
-        navigate(`/store/${storeSlug}/product/${data.slug}`, { replace: true });
-        productData = data;
-      }
-    }
-  }
-
-  // 3. Full UUID match
-  if (!productData && isFullUUID(productId)) {
-    // ... existing logic with redirect
-  }
-};
-```
-
-#### 5. Update Components Using Product URLs
-
-Update all places that generate product URLs to use the stored slug:
-
-- `src/pages/Store.tsx` - Product detail modal "View Full" link
-- `src/pages/ProductFullView.tsx` - Related products links  
-- `src/components/dashboard/BuyerWishlist.tsx` - Wishlist links
-- `src/components/store/ProductDetailModal.tsx` - Share URLs
-- `supabase/functions/bff-store-public/index.ts` - Include slug in response
-
-#### 6. Update BFF Edge Function
-
-Include slug in the products response:
-
-```typescript
-// bff-store-public/index.ts
-const [productsResult, ...] = await Promise.all([
-  supabase
-    .from('seller_products')
-    .select('id, name, slug, description, price, icon_url, ...')
-    .eq('seller_id', seller.id)
-    ...
-]);
-```
-
-## Result
-
-| Before | After |
-|--------|-------|
-| `/store/prozesy/product/netflix-cheap-monthly-account-f3b87674` | `/store/prozesy/product/netflix-cheap-monthly-account` |
-| `/store/prozesy/product/cheap-amazon-prime-account-10-3-months-2375cd90` | `/store/prozesy/product/cheap-amazon-prime-account-10-3-months` |
-
-## Backward Compatibility
-
-- Old URLs with UUID suffix (`-f3b87674`) will automatically redirect to the new clean URL
-- Full UUID URLs will also redirect
-- No broken links for existing shared URLs
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| Database | Add `slug` column to `seller_products`, create trigger |
-| `src/lib/url-utils.ts` | Update URL generation functions |
-| `src/pages/ProductFullView.tsx` | Update lookup strategy |
-| `src/pages/Store.tsx` | Use slug instead of generating URL |
-| `src/components/dashboard/BuyerWishlist.tsx` | Use product slug |
-| `supabase/functions/bff-store-public/index.ts` | Include slug in response |
-
+Notes / constraints (honest)
+- True “forever login” across weeks/months depends on refresh-token policies controlled by the backend auth provider and user browser settings. But we can guarantee:
+  - No random logout in normal usage
+  - 12-hour grace enforced by your own UI rules
+  - Automatic self-recovery on tab switch and temporary session null states
