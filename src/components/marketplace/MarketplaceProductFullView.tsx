@@ -12,13 +12,15 @@ import {
   Twitter,
   Facebook,
   Link as LinkIcon,
-  Package
+  Package,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import GumroadHeader from './GumroadHeader';
 
 interface ProductFullViewProps {
   productId: string;
@@ -58,6 +60,19 @@ interface Review {
   isVerifiedPurchase: boolean;
 }
 
+// Category data for pills
+const categories = [
+  { id: 'all', name: 'All' },
+  { id: 'drawing', name: 'Drawing & Painting' },
+  { id: '3d', name: '3D' },
+  { id: 'design', name: 'Design' },
+  { id: 'music', name: 'Music & Sound' },
+  { id: 'software', name: 'Software' },
+  { id: 'gaming', name: 'Gaming' },
+  { id: 'education', name: 'Education' },
+  { id: 'business', name: 'Business' },
+];
+
 const MarketplaceProductFullView = ({
   productId,
   productType,
@@ -72,6 +87,7 @@ const MarketplaceProductFullView = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -252,6 +268,11 @@ const MarketplaceProductFullView = ({
     setTimeout(() => setBuying(false), 1000);
   };
 
+  const handleSearch = () => {
+    // Search functionality - goes back to marketplace with search
+    onBack();
+  };
+
   // Rating breakdown calculation
   const ratingBreakdown = {
     5: reviews.filter(r => r.rating === 5).length,
@@ -283,23 +304,43 @@ const MarketplaceProductFullView = ({
 
   return (
     <div className="min-h-screen bg-[#F4F4F0]">
-      {/* Back Button Header */}
-      <div className="sticky top-0 z-40 bg-white border-b border-black/5">
-        <div className="mx-auto max-w-screen-xl px-4 lg:px-6 py-3">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-sm font-medium text-black/70 hover:text-black transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Marketplace
-          </button>
+      {/* Full Header with Search */}
+      <GumroadHeader 
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearch={handleSearch}
+      />
+
+      {/* Category Pills */}
+      <div className="bg-white border-b border-black/5">
+        <div className="mx-auto max-w-screen-2xl px-4 lg:px-6">
+          <div className="flex items-center gap-1 py-2 overflow-x-auto scrollbar-hide">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={onBack}
+                className="px-4 py-1.5 text-sm font-medium text-black/70 hover:text-black whitespace-nowrap transition-colors rounded-full hover:bg-black/5"
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="mx-auto max-w-screen-xl px-4 lg:px-6 py-6">
+        {/* Back Link - Subtle */}
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black mb-4 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back to Marketplace
+        </button>
+
         {/* Image Carousel - Full Width */}
-        <div className="relative bg-white rounded-2xl overflow-hidden mb-6">
+        <div className="relative bg-white rounded-2xl overflow-hidden mb-6 border border-black/10">
           <AspectRatio ratio={16 / 9}>
             {product.images.length > 0 ? (
               <img
@@ -357,6 +398,11 @@ const MarketplaceProductFullView = ({
               {product.name}
             </h1>
 
+            {/* Price Badge - Green Gumroad Style */}
+            <div className="inline-flex items-center px-3 py-1.5 bg-emerald-500 text-white text-lg font-bold rounded mb-4">
+              ${product.price}
+            </div>
+
             {/* Seller Info */}
             <div className="flex items-center gap-3 mb-4">
               <Avatar className="h-10 w-10 border border-black/10">
@@ -402,7 +448,7 @@ const MarketplaceProductFullView = ({
             )}
 
             {/* Description */}
-            <div className="prose prose-sm max-w-none mb-8">
+            <div className="bg-white rounded-2xl p-6 border border-black/10 mb-6">
               <p className="text-black/70 whitespace-pre-line leading-relaxed" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 {product.description || 'No description available.'}
               </p>
@@ -424,9 +470,9 @@ const MarketplaceProductFullView = ({
 
             {/* Ratings & Reviews Section */}
             {(product.reviewCount > 0 || reviews.length > 0) && (
-              <div className="bg-white rounded-2xl p-6 mt-6">
+              <div className="bg-white rounded-2xl p-6 border border-black/10">
                 <h3 className="text-lg font-bold text-black mb-4">
-                  Ratings & Reviews
+                  Ratings
                 </h3>
 
                 {/* Rating Breakdown */}
@@ -477,69 +523,72 @@ const MarketplaceProductFullView = ({
                 </div>
 
                 {/* Reviews List */}
-                <div className="space-y-4">
-                  {reviews.map(review => (
-                    <div key={review.id} className="border-t border-black/5 pt-4">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-8 w-8">
-                          {review.buyerAvatar ? (
-                            <AvatarImage src={review.buyerAvatar} alt={review.buyerName} />
-                          ) : null}
-                          <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
-                            {review.buyerName.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm text-black">
-                              {review.buyerName}
-                            </span>
-                            {review.isVerifiedPurchase && (
-                              <span className="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                                Verified
+                {reviews.length > 0 && (
+                  <div className="space-y-4 border-t border-black/10 pt-4">
+                    <h4 className="text-sm font-semibold text-black">Reviews</h4>
+                    {reviews.map(review => (
+                      <div key={review.id} className="border-t border-black/5 pt-4 first:border-t-0 first:pt-0">
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-8 w-8">
+                            {review.buyerAvatar ? (
+                              <AvatarImage src={review.buyerAvatar} alt={review.buyerName} />
+                            ) : null}
+                            <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                              {review.buyerName.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm text-black">
+                                {review.buyerName}
                               </span>
-                            )}
+                              {review.isVerifiedPurchase && (
+                                <span className="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                  Verified
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-0.5 mt-0.5">
+                              {[1, 2, 3, 4, 5].map(i => (
+                                <Star
+                                  key={i}
+                                  className={`w-3 h-3 ${
+                                    i <= review.rating
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <p className="text-sm text-black/70 mt-2">
+                              {review.content}
+                            </p>
                           </div>
-                          <div className="flex items-center gap-0.5 mt-0.5">
-                            {[1, 2, 3, 4, 5].map(i => (
-                              <Star
-                                key={i}
-                                className={`w-3 h-3 ${
-                                  i <= review.rating
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-gray-300'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <p className="text-sm text-black/70 mt-2">
-                            {review.content}
-                          </p>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
 
           {/* Right Column - Purchase Box */}
           <div className="lg:w-[40%]">
-            <div className="lg:sticky lg:top-20 bg-white rounded-2xl p-6 border border-black/5">
-              {/* Price */}
+            <div className="lg:sticky lg:top-20 bg-white rounded-2xl p-6 border border-black/10">
+              {/* Price - Green Badge */}
               <div className="mb-4">
                 {product.originalPrice && product.originalPrice > product.price && (
                   <span className="text-sm text-black/50 line-through mr-2">
                     ${product.originalPrice}
                   </span>
                 )}
-                <span className="text-3xl font-bold text-black">
+                <div className="inline-flex items-center px-4 py-2 bg-emerald-500 text-white text-xl font-bold rounded">
                   ${product.price}
-                </span>
+                </div>
               </div>
 
-              {/* Add to Cart Button */}
+              {/* Add to Cart Button - Pink Gumroad style */}
               <Button
                 onClick={handleBuyClick}
                 disabled={buying}
@@ -561,38 +610,40 @@ const MarketplaceProductFullView = ({
                 </Button>
               )}
 
-              {/* Sales Count */}
+              {/* Sales Count with Info Icon */}
               <div className="flex items-center gap-2 text-sm text-black/60 mb-4 pb-4 border-b border-black/10">
-                <Info className="w-4 h-4" />
+                <Info className="w-4 h-4 text-blue-500" />
                 <span>{product.soldCount.toLocaleString()} sales</span>
               </div>
 
-              {/* Features */}
+              {/* Features Box */}
               {product.features.length > 0 && (
                 <div className="mb-4 pb-4 border-b border-black/10">
-                  <h4 className="text-sm font-medium text-black mb-2">Includes:</h4>
-                  <ul className="space-y-1">
-                    {product.features.map((feature, i) => (
-                      <li key={i} className="text-sm text-black/60 flex items-start gap-2">
-                        <span className="text-black/30">•</span>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-sm text-black/70 mb-3">
+                    {product.features.join(', ')}
+                  </p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-black/50">Size</span>
+                    <span className="text-black font-medium">Digital Download</span>
+                  </div>
                 </div>
               )}
 
-              {/* Wishlist */}
-              <button
-                onClick={handleWishlist}
-                className="flex items-center gap-2 text-sm text-black/60 hover:text-black w-full py-2 transition-colors"
-              >
-                <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-pink-500 text-pink-500' : ''}`} />
-                {isWishlisted ? 'Added to wishlist' : 'Add to wishlist'}
-              </button>
+              {/* Wishlist with Dropdown */}
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={handleWishlist}
+                  className="flex items-center gap-2 text-sm text-black/60 hover:text-black py-2 transition-colors"
+                >
+                  <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-pink-500 text-pink-500' : ''}`} />
+                  {isWishlisted ? 'Added to wishlist' : 'Add to wishlist'}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              </div>
 
-              {/* Share */}
-              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-black/10">
+              {/* Share Icons */}
+              <div className="flex items-center gap-3 pt-3 border-t border-black/10">
+                <span className="text-sm text-black/50">Share:</span>
                 <button
                   onClick={() => handleShare('twitter')}
                   className="p-2 text-black/40 hover:text-black transition-colors"
