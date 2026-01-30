@@ -340,7 +340,7 @@ const MarketplaceProductFullView = ({
         </button>
 
         {/* Image Carousel - Full Width */}
-        <div className="relative bg-white rounded-2xl overflow-hidden mb-6 border border-black/10">
+        <div className="relative bg-white rounded-2xl overflow-hidden mb-6 border border-black/20">
           <AspectRatio ratio={16 / 9}>
             {product.images.length > 0 ? (
               <img
@@ -349,8 +349,8 @@ const MarketplaceProductFullView = ({
                 className="w-full h-full object-contain bg-gray-50"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                <Package className="w-24 h-24 text-gray-300" />
+              <div className="w-full h-full flex items-center justify-center bg-black/5">
+                <Package className="w-24 h-24 text-black/20" />
               </div>
             )}
           </AspectRatio>
@@ -360,15 +360,15 @@ const MarketplaceProductFullView = ({
             <>
               <button
                 onClick={handlePrevImage}
-                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-md hover:bg-white transition-colors"
+                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white border border-black/20 rounded-full shadow-md hover:bg-black hover:text-white transition-colors"
               >
-                <ChevronLeft className="w-5 h-5 text-black" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={handleNextImage}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-md hover:bg-white transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white border border-black/20 rounded-full shadow-md hover:bg-black hover:text-white transition-colors"
               >
-                <ChevronRight className="w-5 h-5 text-black" />
+                <ChevronRight className="w-5 h-5" />
               </button>
             </>
           )}
@@ -380,8 +380,8 @@ const MarketplaceProductFullView = ({
                 <button
                   key={i}
                   onClick={() => setCurrentImageIndex(i)}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    i === currentImageIndex ? 'bg-black' : 'bg-black/30'
+                  className={`w-2.5 h-2.5 rounded-full transition-colors border border-black/20 ${
+                    i === currentImageIndex ? 'bg-black' : 'bg-white'
                   }`}
                 />
               ))}
@@ -398,18 +398,18 @@ const MarketplaceProductFullView = ({
               {product.name}
             </h1>
 
-            {/* Price Badge - Green Gumroad Style */}
-            <div className="inline-flex items-center px-3 py-1.5 bg-emerald-500 text-white text-lg font-bold rounded mb-4">
+            {/* Price Badge - Black Style */}
+            <div className="inline-flex items-center px-4 py-2 bg-black text-white text-xl font-bold rounded mb-4">
               ${product.price}
             </div>
 
             {/* Seller Info */}
             <div className="flex items-center gap-3 mb-4">
-              <Avatar className="h-10 w-10 border border-black/10">
+              <Avatar className="h-10 w-10 border-2 border-black/20">
                 {product.sellerAvatar ? (
                   <AvatarImage src={product.sellerAvatar} alt={product.sellerName || ''} />
                 ) : null}
-                <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-400 text-white text-sm font-bold">
+                <AvatarFallback className="bg-black/10 text-black text-sm font-bold">
                   {product.sellerName?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
@@ -418,7 +418,10 @@ const MarketplaceProductFullView = ({
                   {product.sellerName || 'Uptoza'}
                 </span>
                 {product.isVerified && (
-                  <BadgeCheck className="w-4 h-4 text-pink-500" />
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 border border-black rounded-full text-xs font-medium text-black">
+                    <BadgeCheck className="w-3 h-3" />
+                    Verified
+                  </span>
                 )}
               </div>
             </div>
@@ -432,8 +435,8 @@ const MarketplaceProductFullView = ({
                       key={i}
                       className={`w-4 h-4 ${
                         i <= Math.round(product.rating)
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300'
+                          ? 'fill-black text-black'
+                          : 'text-black/20'
                       }`}
                     />
                   ))}
@@ -448,7 +451,7 @@ const MarketplaceProductFullView = ({
             )}
 
             {/* Description */}
-            <div className="bg-white rounded-2xl p-6 border border-black/10 mb-6">
+            <div className="bg-white rounded-2xl p-6 border border-black/20 mb-6">
               <p className="text-black/70 whitespace-pre-line leading-relaxed" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 {product.description || 'No description available.'}
               </p>
@@ -460,7 +463,7 @@ const MarketplaceProductFullView = ({
                 {product.tags.map(tag => (
                   <span
                     key={tag}
-                    className="px-3 py-1 bg-black/5 text-black/70 text-sm rounded-full"
+                    className="px-3 py-1.5 bg-black/5 text-black/70 text-sm rounded-full border border-black/10"
                   >
                     {tag}
                   </span>
@@ -470,7 +473,7 @@ const MarketplaceProductFullView = ({
 
             {/* Ratings & Reviews Section */}
             {(product.reviewCount > 0 || reviews.length > 0) && (
-              <div className="bg-white rounded-2xl p-6 border border-black/10">
+              <div className="bg-white rounded-2xl p-6 border border-black/20">
                 <h3 className="text-lg font-bold text-black mb-4">
                   Ratings
                 </h3>
@@ -487,8 +490,8 @@ const MarketplaceProductFullView = ({
                           key={i}
                           className={`w-3 h-3 ${
                             i <= Math.round(product.rating)
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300'
+                              ? 'fill-black text-black'
+                              : 'text-black/20'
                           }`}
                         />
                       ))}
@@ -507,9 +510,9 @@ const MarketplaceProductFullView = ({
                       return (
                         <div key={stars} className="flex items-center gap-2">
                           <span className="text-xs text-black/50 w-12">{stars} stars</span>
-                          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="flex-1 h-2 bg-black/10 rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-yellow-400 rounded-full"
+                              className="h-full bg-black rounded-full"
                               style={{ width: `${percentage}%` }}
                             />
                           </div>
@@ -524,16 +527,16 @@ const MarketplaceProductFullView = ({
 
                 {/* Reviews List */}
                 {reviews.length > 0 && (
-                  <div className="space-y-4 border-t border-black/10 pt-4">
+                  <div className="space-y-4 border-t border-black/20 pt-4">
                     <h4 className="text-sm font-semibold text-black">Reviews</h4>
                     {reviews.map(review => (
-                      <div key={review.id} className="border-t border-black/5 pt-4 first:border-t-0 first:pt-0">
+                      <div key={review.id} className="border-t border-black/10 pt-4 first:border-t-0 first:pt-0">
                         <div className="flex items-start gap-3">
-                          <Avatar className="h-8 w-8">
+                          <Avatar className="h-8 w-8 border border-black/20">
                             {review.buyerAvatar ? (
                               <AvatarImage src={review.buyerAvatar} alt={review.buyerName} />
                             ) : null}
-                            <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                            <AvatarFallback className="bg-black/5 text-black text-xs">
                               {review.buyerName.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
@@ -543,7 +546,7 @@ const MarketplaceProductFullView = ({
                                 {review.buyerName}
                               </span>
                               {review.isVerifiedPurchase && (
-                                <span className="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                <span className="text-xs text-black bg-black/5 border border-black/20 px-1.5 py-0.5 rounded">
                                   Verified
                                 </span>
                               )}
@@ -554,8 +557,8 @@ const MarketplaceProductFullView = ({
                                   key={i}
                                   className={`w-3 h-3 ${
                                     i <= review.rating
-                                      ? 'fill-yellow-400 text-yellow-400'
-                                      : 'text-gray-300'
+                                      ? 'fill-black text-black'
+                                      : 'text-black/20'
                                   }`}
                                 />
                               ))}
@@ -575,35 +578,35 @@ const MarketplaceProductFullView = ({
 
           {/* Right Column - Purchase Box */}
           <div className="lg:w-[40%]">
-            <div className="lg:sticky lg:top-20 bg-white rounded-2xl p-6 border border-black/10">
-              {/* Price - Green Badge */}
+            <div className="lg:sticky lg:top-20 bg-white rounded-2xl p-6 border border-black/20">
+              {/* Price - Black Badge */}
               <div className="mb-4">
                 {product.originalPrice && product.originalPrice > product.price && (
                   <span className="text-sm text-black/50 line-through mr-2">
                     ${product.originalPrice}
                   </span>
                 )}
-                <div className="inline-flex items-center px-4 py-2 bg-emerald-500 text-white text-xl font-bold rounded">
+                <div className="inline-flex items-center px-4 py-2 bg-black text-white text-xl font-bold rounded">
                   ${product.price}
                 </div>
               </div>
 
-              {/* Add to Cart Button - Pink Gumroad style */}
+              {/* Add to Cart Button - Black */}
               <Button
                 onClick={handleBuyClick}
                 disabled={buying}
-                className="w-full h-12 bg-pink-400 hover:bg-pink-500 text-black font-semibold rounded-lg text-base mb-4"
+                className="w-full h-12 bg-black hover:bg-black/90 text-white font-semibold rounded-lg text-base mb-4"
               >
                 <ShoppingCart className="w-4 h-4 mr-2" />
                 {buying ? 'Processing...' : 'Add to cart'}
               </Button>
 
-              {/* Chat Button */}
+              {/* Chat Button - Outlined Black */}
               {product.storeSlug && (
                 <Button
                   onClick={onChat}
                   variant="outline"
-                  className="w-full h-10 rounded-lg border-black/20 text-black mb-4"
+                  className="w-full h-10 rounded-lg border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors mb-4"
                 >
                   <MessageCircle className="w-4 h-4 mr-2" />
                   {isAuthenticated ? 'Chat with Seller' : 'Login to Chat'}
@@ -611,14 +614,14 @@ const MarketplaceProductFullView = ({
               )}
 
               {/* Sales Count with Info Icon */}
-              <div className="flex items-center gap-2 text-sm text-black/60 mb-4 pb-4 border-b border-black/10">
-                <Info className="w-4 h-4 text-blue-500" />
+              <div className="flex items-center gap-2 text-sm text-black/60 mb-4 pb-4 border-b border-black/20">
+                <Info className="w-4 h-4 text-black/40" />
                 <span>{product.soldCount.toLocaleString()} sales</span>
               </div>
 
               {/* Features Box */}
               {product.features.length > 0 && (
-                <div className="mb-4 pb-4 border-b border-black/10">
+                <div className="mb-4 pb-4 border-b border-black/20">
                   <p className="text-sm text-black/70 mb-3">
                     {product.features.join(', ')}
                   </p>
@@ -635,14 +638,14 @@ const MarketplaceProductFullView = ({
                   onClick={handleWishlist}
                   className="flex items-center gap-2 text-sm text-black/60 hover:text-black py-2 transition-colors"
                 >
-                  <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-pink-500 text-pink-500' : ''}`} />
+                  <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-black text-black' : ''}`} />
                   {isWishlisted ? 'Added to wishlist' : 'Add to wishlist'}
                   <ChevronDown className="w-3 h-3" />
                 </button>
               </div>
 
               {/* Share Icons */}
-              <div className="flex items-center gap-3 pt-3 border-t border-black/10">
+              <div className="flex items-center gap-3 pt-3 border-t border-black/20">
                 <span className="text-sm text-black/50">Share:</span>
                 <button
                   onClick={() => handleShare('twitter')}
