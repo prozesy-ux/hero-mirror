@@ -1,154 +1,142 @@
 
-Goal
-- Fix the publish failure: `ERROR: 23505 could not create unique index "idx_ai_accounts_slug" … Key (slug)=() is duplicated` while keeping existing Live products.
-- Do it in a way that works reliably on a “fresh” Live database (where slug columns don’t exist yet) and does not rely on later “fix” migrations that never get a chance to run.
+## Complete Diagnosis & Fix Plan
 
-What’s actually failing (confirmed)
-- The first slug migration that runs is:
-  - `supabase/migrations/20260130061249_d2b3378b-5dea-4f83-9f16-1e6d3d7efc52.sql`
-- That migration:
-  1) Adds `slug` columns
-  2) Populates slugs with `UPDATE ... SET slug = generate_product_slug(...)`
-  3) Creates `idx_ai_accounts_slug` unique index
-  4) Sets `DEFAULT ''` and `NOT NULL`
-- The failure message indicates duplicates for the empty string `''`, meaning multiple rows end up with an empty slug at index-creation time, OR the migration makes it easy to produce empty slugs later (via `DEFAULT ''`).
+### Problem Summary
 
-Key bugs / high-risk patterns inside 20260130061249
-1) Non-deterministic per-row uniqueness inside one UPDATE statement:
-   - `UPDATE ai_accounts SET slug = generate_product_slug(name, NULL) WHERE slug IS NULL;`
-   - In a single UPDATE statement, each row’s uniqueness check can be evaluated against a snapshot that doesn’t include other rows’ freshly-updated slugs, so duplicates can slip through in practice.
-2) A logic bug in the function for seller_products:
-   - `WHERE sp.slug = final_slug AND sp.seller_id = generate_product_slug.seller_id`
-   - That should compare to the function argument, not `generate_product_slug.seller_id`.
-3) Setting `slug DEFAULT ''` (empty string) is dangerous:
-   - Makes empty strings common (and duplicates inevitable), and directly matches the error signature `Key (slug)=()`.
+Your production site (uptoza.com) shows "Something went wrong" because **publishing keeps failing**. The publish process cannot apply database migrations to your Live environment due to a bug in migration `20260130061249`.
 
-Constraints / reality about “going back in history”
-- If you “Restore History” to a point before these migrations existed, it can work, but it may also remove unrelated changes you want to keep.
-- The most reliable fix (without losing other work) is to directly fix the migration files that are causing the failure. This is safe because migrations are the source of truth for what gets applied on publish.
+### Root Cause
 
-Plan A (recommended): Rework the existing migrations so publish succeeds
-This plan keeps your product data and avoids needing support intervention.
+The first slug migration (`20260130061249`) generates duplicate slugs when multiple products share the same name (e.g., "Netflix Cheap Monthly Account"). The migration uses a loop-based uniqueness check that doesn't work correctly within a single `UPDATE` statement - each row sees the same database snapshot, so multiple rows get the same slug.
 
-Step 1 — Restore the auto-generated types file via History (user approved this)
-Why:
-- `src/integrations/supabase/types.ts` should never be manually edited. If it was edited, it can cause frontend build/type failures and confusion.
-Action:
-- Use History restore to revert ONLY the edit that modified `src/integrations/supabase/types.ts` (restore to the point right before that file was changed).
-- After restoring, re-check that your UI still compiles in Preview.
+When Postgres tries to create the unique index `idx_ai_accounts_slug`, it finds duplicates and fails with:
+```
+ERROR: 23505 could not create unique index
+Key (slug)=() is duplicated
+```
 
-Step 2 — Fix the FIRST failing migration (20260130061249) so it is deterministic and never creates empty slugs
-Edits to `supabase/migrations/20260130061249_d2b3378b-5dea-4f83-9f16-1e6d3d7efc52.sql`:
+### Current Database State
 
-2.1 Remove the risky uniqueness-by-loop approach for backfilling existing rows
-- Keep a slug-normalization helper (optional), but do not rely on “check table then increment” inside the same UPDATE for bulk backfill.
-- Replace the two backfill updates with a deterministic CTE strategy:
-  - For ai_accounts (global uniqueness):
-    - Compute `base_slug` from `name` (fall back to `product`)
-    - Apply `row_number() over (partition by base_slug order by id)` to suffix `-2`, `-3`, ...
-    - Write slug in one deterministic pass
-  - For seller_products (uniqueness per seller_id):
-    - Partition by `(seller_id, base_slug)` so each seller’s product names remain unique within the seller
+| Environment | ai_accounts.slug | seller_products.slug |
+|-------------|------------------|---------------------|
+| Test        | ✅ Exists (unique) | ❌ Does NOT exist   |
+| Production  | ✅ Exists (unique) | ❌ Does NOT exist   |
 
-2.2 Normalize empty/whitespace slugs before index creation
-- Add defensive updates before creating the indexes:
-  - `UPDATE ... SET slug = NULL WHERE slug IS NULL OR btrim(slug) = '' ...`
-  - This prevents accidental empty-string collisions.
+Your Test environment was manually fixed, but production is stuck waiting for migrations to complete.
 
-2.3 Add a non-null fallback for any rows still missing slug
-- Final fallback:
-  - `product-` + first 8 chars of UUID
-- This guarantees there are no NULL/empty slugs before constraints/indexes.
+### Why Later Fix Migrations Don't Help
 
-2.4 Do NOT set `DEFAULT ''` for slug
-- Remove:
-  - `ALTER TABLE ... ALTER COLUMN slug SET DEFAULT '';`
-- Keep `NOT NULL` after backfill, but no empty-string default.
+Migration `20260130083543` contains the correct deterministic fix using `ROW_NUMBER() OVER (PARTITION BY base_slug ORDER BY id)`, but migrations run in timestamp order. Since `20260130061249` fails first, the fix never executes.
 
-2.5 Fix the seller_id comparison bug if you keep the function for per-row inserts
-- If we keep a slug-generation function for inserts/updates, correct the seller clause to:
-  - `WHERE sp.slug = final_slug AND sp.seller_id = seller_id`
-  - or rename function param to `p_seller_id` and use that explicitly.
+---
 
-2.6 Adjust triggers to be safe
-- Create a trigger function that only generates slug when NEW.slug is NULL/blank.
-- Trigger should run on BOTH INSERT and UPDATE (optional, but recommended for safety).
-- Ensure it uses the corrected function or a simplified slug generation approach.
+## The Fix
 
-Step 3 — Make later slug migrations non-conflicting (so they don’t re-break publish)
-Right now, many later migrations also drop/create the same indexes and set defaults again, including:
-- `20260130075808...`
-- `20260130081643...`
-- `20260130081840...`
-- `20260130082450...`
-- `20260130083543...`
+### Step 1: Rewrite Migration `20260130061249` In-Place
 
-We need to ensure only one “source of truth” remains, otherwise later migrations can reintroduce the same problem.
+Replace the broken loop-based slug generation with deterministic window functions:
 
-3.1 Choose ONE canonical slug migration approach
-- After we fix 20260130061249 properly, the later slug migrations should become safe no-ops or be removed from the chain.
-- Practical approach:
-  - Convert the later slug migrations into “guarded” migrations:
-    - If the `slug` columns and `idx_ai_accounts_slug` already exist, skip all work.
-    - If they don’t exist, do minimal “ensure objects exist” without touching defaults and without recreating indexes unnecessarily.
+**Changes to make:**
+1. Remove the `generate_product_slug` function call from bulk UPDATE statements
+2. Use CTE with `ROW_NUMBER()` to guarantee unique suffixes in one pass:
+```text
+┌─────────────────────────────────────────────────────────┐
+│ WITH slug_base AS (                                     │
+│   SELECT id, base_slug FROM ai_accounts                 │
+│ ),                                                      │
+│ slug_ranked AS (                                        │
+│   SELECT id, base_slug,                                 │
+│     ROW_NUMBER() OVER (PARTITION BY base_slug ORDER BY id) AS rn │
+│   FROM slug_base                                        │
+│ )                                                       │
+│ UPDATE ai_accounts a                                    │
+│ SET slug = CASE WHEN rn=1 THEN base_slug                │
+│                 ELSE base_slug || '-' || rn END         │
+│ FROM slug_ranked r WHERE a.id = r.id;                   │
+└─────────────────────────────────────────────────────────┘
+```
+3. Remove `ALTER COLUMN slug SET DEFAULT ''` (this creates empty-string duplicates)
+4. Keep the trigger function for future inserts
 
-3.2 Specifically remove re-introducing `DEFAULT ''`
-- In `20260130082450...` and any others, remove:
-  - `ALTER COLUMN slug SET DEFAULT ''`
-- If they must remain, change them to:
-  - Only set NOT NULL if needed and do not set default.
+### Step 2: Neutralize Later Conflicting Migrations
 
-3.3 Prevent duplicate index recreation
-- Change later migrations so they do NOT drop/recreate `idx_ai_accounts_slug` if it already exists.
-- This avoids hitting errors again and keeps migrations idempotent.
+Migrations `20260130075808`, `20260130081643`, `20260130081840`, `20260130082450` may try to:
+- Re-create indexes that already exist (causing errors)
+- Re-set `DEFAULT ''` (reintroducing the bug)
 
-3.4 Decide what to do with 20260130083543 (the “complete rewrite”)
-- If 20260130061249 becomes correct and self-contained, 20260130083543 becomes redundant and risky because it drops/recreates many objects.
-- We will either:
-  - Turn 20260130083543 into a no-op guarded migration, or
-  - Limit it to ONLY add missing `product_type` indexes (if needed) and do nothing slug-related.
+**Changes to make:**
+- Wrap all object creation in `IF NOT EXISTS` guards
+- Remove any `SET DEFAULT ''` statements
+- Ensure they become safe no-ops if objects already exist
 
-Step 4 — Validate by simulating the migration order mentally (and with a quick scan)
-- Ensure 20260130061249:
-  - Backfills deterministic slugs
-  - Creates unique indexes only after slugs are guaranteed non-empty and unique
-  - Does not set `DEFAULT ''`
-- Ensure subsequent migrations:
-  - Don’t recreate the slug indexes or defaults
-  - Don’t reintroduce empty strings
+### Step 3: Simplify Migration `20260130083543`
 
-Step 5 — Publish again
-Expected result:
-- The publish workflow applies migrations successfully (no more 23505).
-- Live ends with:
-  - `ai_accounts.slug` NOT NULL, non-empty, globally unique
-  - `seller_products.slug` NOT NULL, non-empty, unique per seller_id
-  - No empty-string defaults that can re-trigger this in the future
+Since the first migration will now be correct:
+- Keep only the `product_type` column additions
+- Remove all slug-related logic (already handled)
+- Add guards for all index creation
 
-Why this will work (plain English)
-- The “row_number suffix” method guarantees uniqueness even when many products have the exact same name.
-- Removing `DEFAULT ''` prevents creating lots of empty slugs in the future.
-- Making later migrations no-ops prevents them from undoing the fix.
+### Step 4: Bump Cache Version
 
-What I need from you (very small)
-- Confirm you want Plan A (edit migrations in-place) rather than restoring far back in History and losing unrelated work.
-  - Since you already approved “History restore is okay,” we’ll still only use History specifically to revert the generated types file edit—not to roll back your whole project.
+Update `src/lib/cache-utils.ts`:
+```typescript
+export const APP_VERSION = '1.0.5';
+```
 
-Technical appendix (what the deterministic backfill looks like)
-- ai_accounts (global uniqueness):
-  - base_slug = slugified(name) or 'product'
-  - rn = row_number partition by base_slug
-  - slug = base_slug if rn=1 else base_slug||'-'||rn
-- seller_products (per seller uniqueness):
-  - same, but partition by (seller_id, base_slug)
+This forces all users to clear their cached assets after publish succeeds.
 
-Risks & mitigations
-- Risk: Later migrations undo the fix (recreate defaults/indexes).
-  - Mitigation: Guard or remove the conflicting parts so they can’t override.
-- Risk: Some names slugify to empty (symbols-only).
-  - Mitigation: base_slug fallback to 'product' + UUID-based fallback.
+---
 
-Definition of “Done”
-- Publish completes successfully without the 23505 error.
-- Live site loads and product pages still work (existing products preserved).
-- New inserts/updates automatically get valid slugs (no empty strings).
+## Technical Details
+
+### What Each Fixed Migration Will Do
+
+| Migration | Purpose | Action |
+|-----------|---------|--------|
+| `20260130061249` | Add slugs | Deterministic backfill with `ROW_NUMBER()`, create unique indexes |
+| `20260130075808-082450` | Legacy attempts | Safe no-ops (check if exists first) |
+| `20260130083543` | Product type | Add product_type column and index only |
+
+### Why This Will Work
+
+1. **Deterministic uniqueness**: `ROW_NUMBER()` assigns `base-slug`, `base-slug-2`, `base-slug-3` within a single statement - no race conditions
+2. **No empty defaults**: Removing `DEFAULT ''` prevents future duplicates
+3. **Idempotent later migrations**: Guards prevent "object already exists" errors
+4. **Cache invalidation**: Version bump clears stale assets
+
+---
+
+## Verification Steps After Fix
+
+1. Publish will succeed (migrations apply to Live)
+2. Run verification query on Live:
+```sql
+SELECT slug, COUNT(*) FROM ai_accounts GROUP BY slug HAVING COUNT(*) > 1;
+-- Should return 0 rows
+```
+3. Test account creation flow end-to-end
+4. Confirm uptoza.com loads without "Something went wrong"
+
+---
+
+## Files to Modify
+
+1. `supabase/migrations/20260130061249_d2b3378b-5dea-4f83-9f16-1e6d3d7efc52.sql` - Complete rewrite
+2. `supabase/migrations/20260130075808_e0d9e4a5-b230-4e1b-b4e0-b537ffe0c285.sql` - Add guards
+3. `supabase/migrations/20260130081643_ed8786d8-192d-4991-8a67-cea7c4d5bba5.sql` - Add guards
+4. `supabase/migrations/20260130081840_1ed46374-1312-4818-a11e-074f7cb28f58.sql` - Add guards
+5. `supabase/migrations/20260130082450_2647891f-4137-4dd1-849a-5abb85947118.sql` - Add guards
+6. `supabase/migrations/20260130083543_301f760c-7436-40a7-9df9-740b8f9900f8.sql` - Simplify to product_type only
+7. `src/lib/cache-utils.ts` - Bump version to 1.0.5
+
+---
+
+## Timeline
+
+| Step | Duration |
+|------|----------|
+| Edit migrations | ~5 minutes |
+| Publish | ~2 minutes |
+| Verify | ~2 minutes |
+
+**Total: ~10 minutes to full resolution**. Must flow url is product name like ChatGPT /chatgpt account
