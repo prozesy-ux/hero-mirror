@@ -57,7 +57,7 @@ const App = () => (
                   <Store />
                 </Suspense>
               } />
-              <Route path="/store/:storeSlug/product/:productId" element={
+              <Route path="/store/:storeSlug/product/:productSlug" element={
                 <Suspense fallback={<AppShell variant="store" />}>
                   <ProductFullView />
                 </Suspense>

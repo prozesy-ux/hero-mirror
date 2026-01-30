@@ -217,6 +217,7 @@ export type Database = {
           name: string
           original_price: number | null
           price: number
+          slug: string
           sold_count: number | null
           stock: number | null
           tags: string[] | null
@@ -238,6 +239,7 @@ export type Database = {
           name: string
           original_price?: number | null
           price?: number
+          slug?: string
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
@@ -259,6 +261,7 @@ export type Database = {
           name?: string
           original_price?: number | null
           price?: number
+          slug?: string
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
@@ -2203,6 +2206,7 @@ export type Database = {
           price: number
           requires_email: boolean | null
           seller_id: string
+          slug: string
           sold_count: number | null
           stock: number | null
           tags: string[] | null
@@ -2224,6 +2228,7 @@ export type Database = {
           price?: number
           requires_email?: boolean | null
           seller_id: string
+          slug?: string
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
@@ -2245,6 +2250,7 @@ export type Database = {
           price?: number
           requires_email?: boolean | null
           seller_id?: string
+          slug?: string
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
@@ -3178,6 +3184,10 @@ export type Database = {
       clean_old_rate_limits: { Args: never; Returns: undefined }
       cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
       cleanup_expired_password_tokens: { Args: never; Returns: undefined }
+      generate_product_slug: {
+        Args: { product_name: string; seller_id?: string }
+        Returns: string
+      }
       get_active_flash_sale: {
         Args: { p_product_id: string }
         Returns: {

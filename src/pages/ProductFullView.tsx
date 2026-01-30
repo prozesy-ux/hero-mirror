@@ -28,6 +28,7 @@ import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 interface Product {
   id: string;
   name: string;
+  slug?: string;
   description: string | null;
   price: number;
   icon_url: string | null;
@@ -49,7 +50,7 @@ interface Seller {
 }
 
 const ProductFullViewContent = () => {
-  const { storeSlug, productId } = useParams<{ storeSlug: string; productId: string }>();
+  const { storeSlug, productSlug } = useParams<{ storeSlug: string; productSlug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { openChat } = useFloatingChat();
@@ -64,10 +65,10 @@ const ProductFullViewContent = () => {
   const [reviewCount, setReviewCount] = useState(0);
 
   useEffect(() => {
-    if (storeSlug && productId) {
+    if (storeSlug && productSlug) {
       fetchData();
     }
-  }, [storeSlug, productId]);
+  }, [storeSlug, productSlug]);
 
   useEffect(() => {
     if (user) {
@@ -92,25 +93,36 @@ const ProductFullViewContent = () => {
 
     setSeller(sellerData);
 
-    // Fetch product
-    const { data: productData } = await supabase
+    // Check if productSlug looks like a UUID (for backward compatibility)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productSlug || '');
+    
+    // Fetch product by slug or ID (backward compatibility)
+    const productQuery = supabase
       .from('seller_products')
       .select('*')
-      .eq('id', productId)
-      .eq('seller_id', sellerData.id)
-      .single();
+      .eq('seller_id', sellerData.id);
+    
+    const { data: productData } = isUUID
+      ? await productQuery.eq('id', productSlug).single()
+      : await productQuery.eq('slug', productSlug).single();
 
     if (productData) {
+      // If accessed by UUID, redirect to slug URL for SEO
+      if (isUUID && productData.slug) {
+        navigate(`/store/${storeSlug}/product/${productData.slug}`, { replace: true });
+        return;
+      }
+      
       setProduct(productData);
 
       // Fetch related products
       const { data: relatedData } = await supabase
         .from('seller_products')
-        .select('*')
+        .select('*, slug')
         .eq('seller_id', sellerData.id)
         .eq('is_available', true)
         .eq('is_approved', true)
-        .neq('id', productId)
+        .neq('id', productData.id)
         .limit(4);
 
       setRelatedProducts(relatedData || []);
@@ -119,7 +131,7 @@ const ProductFullViewContent = () => {
       const { data: reviewData } = await supabase
         .from('product_reviews')
         .select('rating')
-        .eq('product_id', productId);
+        .eq('product_id', productData.id);
 
       if (reviewData && reviewData.length > 0) {
         const avg = reviewData.reduce((sum, r) => sum + r.rating, 0) / reviewData.length;
@@ -421,7 +433,7 @@ const ProductFullViewContent = () => {
               {relatedProducts.map(related => (
                 <Link
                   key={related.id}
-                  to={`/store/${storeSlug}/product/${related.id}`}
+                  to={`/store/${storeSlug}/product/${related.slug || related.id}`}
                   className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="aspect-square bg-slate-50">
