@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { bffApi } from '@/lib/api-fetch';
+import { isSessionValid } from '@/lib/session-persistence';
 import { toast } from 'sonner';
 
 // Cache key for offline fallback
@@ -137,6 +138,7 @@ export const SellerProvider = ({
   const [error, setError] = useState<string | null>(null);
   const [sessionExpiredLocal, setSessionExpiredLocal] = useState(false);
   const [usingCachedData, setUsingCachedData] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   
   // Refs for realtime channels
   const ordersChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -167,17 +169,43 @@ export const SellerProvider = ({
   const refreshAll = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setIsReconnecting(false);
 
     try {
       const result = await bffApi.getSellerDashboard();
 
-      // SOFT unauthorized handling - no redirect, just show banner
+      // SOFT RECONNECTING STATE
+      if (result.isReconnecting) {
+        console.log('[SellerContext] Reconnecting - soft state (no logout)');
+        setIsReconnecting(true);
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          try {
+            const { data: cachedData } = JSON.parse(cached);
+            if (cachedData.wallet) setWallet(cachedData.wallet);
+            if (cachedData.products) setProducts(cachedData.products);
+            if (cachedData.orders) setOrders(cachedData.orders);
+            if (cachedData.withdrawals) setWithdrawals(cachedData.withdrawals);
+            setUsingCachedData(true);
+          } catch (e) { /* ignore */ }
+        }
+        setLoading(false);
+        setTimeout(() => refreshAll(), 5000);
+        return;
+      }
+
+      // UNAUTHORIZED: Check if truly expired
       if (result.isUnauthorized) {
-        console.log('[SellerContext] Unauthorized - showing soft banner (no redirect)');
-        setSessionExpiredLocal(true);
-        setSessionExpired?.(true);
+        if (!isSessionValid()) {
+          console.log('[SellerContext] Truly unauthorized - showing soft banner');
+          setSessionExpiredLocal(true);
+          setSessionExpired?.(true);
+        } else {
+          console.log('[SellerContext] Unauthorized but within 12h - reconnecting');
+          setIsReconnecting(true);
+          setTimeout(() => refreshAll(), 5000);
+        }
         
-        // Try to show cached data
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
           try {

@@ -7,11 +7,14 @@
  * - Request timeouts (no infinite loading)
  * - 401 handling with automatic refresh retry
  * - Request queuing during token refresh (prevents race conditions)
- * - Clean error states
+ * - Resilient to transient session null states (NO immediate unauthorized)
+ * - 12-hour grace window enforcement
  */
 
 import { supabase } from '@/integrations/supabase/client';
 import { sessionRecovery } from '@/lib/session-recovery';
+import { isSessionValid } from '@/lib/session-persistence';
+import { hasLocalSession } from '@/lib/session-detector';
 
 const API_TIMEOUT = 15000; // 15 seconds max
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -35,6 +38,7 @@ export interface ApiFetchResult<T> {
   error: string | null;
   status: number;
   isUnauthorized: boolean;
+  isReconnecting?: boolean; // NEW: soft transient failure state
 }
 
 /**
@@ -119,6 +123,12 @@ async function refreshSessionWithQueue(): Promise<string | null> {
 
 /**
  * Main API fetch function with timeout, auth, and retry logic
+ * 
+ * CRITICAL: This function is RESILIENT to transient null sessions.
+ * - If getSession() returns null, we attempt recovery BEFORE returning unauthorized.
+ * - If recovery fails but we're within the 12h grace window, we return a soft error
+ *   (isReconnecting: true) instead of isUnauthorized: true.
+ * - This prevents dashboard pages from showing "Session Expired" during tab switch.
  */
 export async function apiFetch<T = any>(
   endpoint: string,
@@ -133,13 +143,42 @@ export async function apiFetch<T = any>(
   // Get current access token
   let accessToken = await getAccessToken();
   
+  // RESILIENT NULL SESSION HANDLING
   if (!accessToken) {
-    return {
-      data: null,
-      error: 'No active session',
-      status: 401,
-      isUnauthorized: true
-    };
+    console.log('[ApiFetch] getSession returned null, trying recovery...');
+    
+    // Attempt recovery before giving up
+    const recovered = await sessionRecovery.recover();
+    
+    if (recovered) {
+      // Recovery succeeded - get new token and continue
+      accessToken = await getAccessToken();
+      console.log('[ApiFetch] Recovery succeeded, got new token');
+    }
+    
+    if (!accessToken) {
+      // Recovery failed - check 12h grace window
+      if (hasLocalSession() && isSessionValid()) {
+        // Still within 12h window - soft fail, NOT unauthorized
+        console.log('[ApiFetch] Recovery failed but within 12h window - soft failing (no logout)');
+        return {
+          data: null,
+          error: 'Reconnecting...',
+          status: 503,
+          isUnauthorized: false,
+          isReconnecting: true
+        };
+      }
+      
+      // Truly expired (12h+ since login) - return unauthorized
+      console.log('[ApiFetch] No session and outside 12h window - truly unauthorized');
+      return {
+        data: null,
+        error: 'Session expired',
+        status: 401,
+        isUnauthorized: true
+      };
+    }
   }
 
   // Build full URL

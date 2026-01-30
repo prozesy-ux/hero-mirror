@@ -16,10 +16,11 @@
  * 5. Cleans up stale admin cache on session changes
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { isSessionValid } from '@/lib/session-persistence';
+import { hasLocalSession } from '@/lib/session-detector';
 import { sessionRecovery } from '@/lib/session-recovery';
 
 const HEARTBEAT_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -160,10 +161,14 @@ export const useSessionHeartbeat = () => {
     return success;
   }, [setSessionWarning]);
 
+  // OPTIMISTIC HEARTBEAT: Run when authenticated OR when local session exists within grace
+  // This allows heartbeat to recover sessions even when isAuthenticated temporarily goes false
+  const shouldRunHeartbeat = isAuthenticated || (hasLocalSession() && isSessionValid());
+
   // Main interval effect
   useEffect(() => {
-    if (!isAuthenticated) {
-      // Clear interval when not authenticated
+    if (!shouldRunHeartbeat) {
+      // Clear interval when truly not authenticated
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -191,11 +196,11 @@ export const useSessionHeartbeat = () => {
         intervalRef.current = null;
       }
     };
-  }, [isAuthenticated, heartbeat, getNextInterval]);
+  }, [shouldRunHeartbeat, heartbeat, getNextInterval]);
 
-  // Tab visibility change handler
+  // Tab visibility change handler - use optimistic check
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!shouldRunHeartbeat) return;
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -206,11 +211,11 @@ export const useSessionHeartbeat = () => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isAuthenticated, heartbeat]);
+  }, [shouldRunHeartbeat, heartbeat]);
 
-  // Network online handler
+  // Network online handler - use optimistic check
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!shouldRunHeartbeat) return;
 
     const handleOnline = () => {
       console.log('[Heartbeat] Network reconnected - revalidating session');
@@ -220,7 +225,7 @@ export const useSessionHeartbeat = () => {
 
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
-  }, [isAuthenticated, heartbeat]);
+  }, [shouldRunHeartbeat, heartbeat]);
 
   return { refreshSession };
 };
