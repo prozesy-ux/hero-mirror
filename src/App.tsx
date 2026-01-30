@@ -22,6 +22,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const Store = lazy(() => import("./pages/Store"));
 const ProductFullView = lazy(() => import("./pages/ProductFullView"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,11 @@ const App = () => (
             <RoutePrefetcher />
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/marketplace" element={
+                <Suspense fallback={<AppShell />}>
+                  <Marketplace />
+                </Suspense>
+              } />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/signup" element={<SignIn />} />
               <Route path="/reset-password" element={
