@@ -1,512 +1,257 @@
 
-# Enterprise Scaling Implementation - COMPLETED ✅
-## 10 Million Daily Traffic + 5 Million Users with Zero Downtime
 
-### Implementation Status
+# Toast/Notification Design Redesign - Fiverr/Upwork Style
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| 1. DB Indexes | ✅ Done | 7 targeted indexes created |
-| 2. Materialized Views | ✅ Done | mv_hot_products, mv_category_counts |
-| 3. BFF Optimization | ✅ Done | Using MVs with fallback |
-| 4. Rate Limiting | ✅ Done | 200 req/min marketplace, 100 store, 60 search |
-| 5. Connection Pooling | ⚠️ Config | Supavisor enabled by default |
-| 6. Client Caching | ✅ Done | Tiered TTL + deduplication |
-| 7. SW Optimization | ✅ Done | Cache pruning + background sync |
+## Overview
 
-### Manual Refresh Note
-pg_cron not available. Refresh materialized views via:
-| Peak Requests/Second | ~1,160 | 10x average for spikes |
-| DB Queries/Request | ~3-5 | Typical BFF patterns |
-| Peak DB Queries/Sec | ~5,800 | Could overwhelm Postgres |
+Redesign the toast notification system to match professional marketplace platforms like Fiverr and Upwork. Replace the current generic sonner styling with a premium, minimal notification design featuring:
+- Clean, minimal cards with subtle shadows
+- Color-coded icons (green checkmark for success, red X for error)
+- Smooth slide-in animations
+- Professional typography
+- Positioned in top-right corner
 
 ---
 
-## Current Architecture Strengths
+## Current Implementation
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Cloudflare CDN | Ready | Edge caching configured |
-| BFF Pattern | Ready | Aggregated endpoints reduce calls |
-| Service Worker | Ready | Offline + cache-first for assets |
-| Edge Function Caching | Ready | `max-age=300` for public data |
-| In-Memory Client Cache | Ready | 60s TTL in hooks |
-| Session Management | Ready | 12-hour grace period |
+The project uses **Sonner** library for toasts via `src/components/ui/sonner.tsx`. Example usage in `SignIn.tsx`:
+- `toast.success("Welcome back!")` - on successful login
+- `toast.error(error.message)` - on errors
 
 ---
 
-## Scaling Implementation (7 Phases)
+## Fiverr/Upwork Toast Design Analysis
 
-### Phase 1: Database Performance Indexes
-
-**Files: New Migration**
-
-Add targeted indexes for high-traffic queries:
-
-```sql
--- Hot query indexes for marketplace
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_ai_accounts_available_category 
-ON ai_accounts(category_id, sold_count DESC) WHERE is_available = true;
-
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_products_available_approved 
-ON seller_products(category_id, sold_count DESC) 
-WHERE is_available = true AND is_approved = true;
-
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_seller_status 
-ON seller_orders(seller_id, status, created_at DESC);
-
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_search_history_user_recent 
-ON search_history(user_id, created_at DESC);
-
--- Covering index for popular searches (avoid table lookup)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_popular_searches_ranking 
-ON popular_searches(search_count DESC) 
-INCLUDE (query, is_trending);
-```
+| Element | Fiverr/Upwork Style |
+|---------|---------------------|
+| Position | Top-right corner, 16-20px from edges |
+| Background | White, subtle shadow |
+| Border | None or very subtle (1px gray) |
+| Radius | 8-12px rounded |
+| Padding | 16px horizontal, 12-14px vertical |
+| Icon | Colored circle with white icon (green/red/blue) |
+| Title | 14-15px, semi-bold, dark text |
+| Description | 13px, regular weight, muted text |
+| Close Button | Small X, appears on hover |
+| Animation | Smooth slide-in from right |
+| Width | 360-400px |
+| Duration | 4-5 seconds |
 
 ---
 
-### Phase 2: Materialized Views for Hot Data
+## Design Specifications
 
-**Files: New Migration**
+### Color Scheme (Matching Marketplace Theme)
 
-Pre-compute expensive aggregations:
+| Type | Icon BG | Icon | Text |
+|------|---------|------|------|
+| Success | `#059669` (emerald-600) | White checkmark | Dark slate |
+| Error | `#DC2626` (red-600) | White X | Dark slate |
+| Info | `#2563EB` (blue-600) | White info | Dark slate |
+| Warning | `#D97706` (amber-600) | White alert | Dark slate |
 
-```sql
--- Materialized view: Hot products (refreshes every 5 min via pg_cron)
-CREATE MATERIALIZED VIEW IF NOT EXISTS mv_hot_products AS
-SELECT 
-  'ai' as product_type,
-  id, name, price, icon_url, sold_count, view_count, created_at, category_id,
-  NULL as seller_id, NULL as store_name
-FROM ai_accounts 
-WHERE is_available = true
-UNION ALL
-SELECT 
-  'seller' as product_type,
-  sp.id, sp.name, sp.price, sp.icon_url, sp.sold_count, sp.view_count, sp.created_at, sp.category_id,
-  sp.seller_id, s.store_name
-FROM seller_products sp
-JOIN seller_profiles s ON sp.seller_id = s.id
-WHERE sp.is_available = true AND sp.is_approved = true
-ORDER BY sold_count DESC
-LIMIT 100;
+### Typography
+- Title: `text-[15px] font-semibold text-slate-800`
+- Description: `text-[13px] font-normal text-slate-500`
 
--- Unique index for fast refresh
-CREATE UNIQUE INDEX ON mv_hot_products(product_type, id);
-
--- Materialized view: Category product counts
-CREATE MATERIALIZED VIEW IF NOT EXISTS mv_category_counts AS
-SELECT 
-  c.id,
-  c.name,
-  c.icon,
-  c.color,
-  c.display_order,
-  COALESCE(ai_count.cnt, 0) + COALESCE(seller_count.cnt, 0) as product_count
-FROM categories c
-LEFT JOIN (
-  SELECT category_id, COUNT(*) as cnt 
-  FROM ai_accounts WHERE is_available = true GROUP BY category_id
-) ai_count ON c.id = ai_count.category_id
-LEFT JOIN (
-  SELECT category_id, COUNT(*) as cnt 
-  FROM seller_products WHERE is_available = true AND is_approved = true GROUP BY category_id
-) seller_count ON c.id = seller_count.category_id
-WHERE c.is_active = true
-ORDER BY c.display_order;
-
-CREATE UNIQUE INDEX ON mv_category_counts(id);
-
--- Refresh function (call every 5 minutes via pg_cron)
-CREATE OR REPLACE FUNCTION refresh_marketplace_views() 
-RETURNS void AS $$
-BEGIN
-  REFRESH MATERIALIZED VIEW CONCURRENTLY mv_hot_products;
-  REFRESH MATERIALIZED VIEW CONCURRENTLY mv_category_counts;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-```
+### Spacing
+- Toast Padding: `px-4 py-3`
+- Icon Size: 20px in 32px circle
+- Gap between icon and text: 12px
 
 ---
 
-### Phase 3: Optimized BFF Edge Functions
+## Files to Modify
 
-**File: `supabase/functions/bff-marketplace-home/index.ts`**
+### 1. `src/components/ui/sonner.tsx`
 
-Replace current queries with materialized views:
+**Complete redesign with Fiverr/Upwork styling:**
 
-```typescript
-// BEFORE: Multiple parallel queries
-const [categoriesResult, aiAccountsResult, sellerProductsResult] = await Promise.all([...]);
+```tsx
+import { Toaster as Sonner, toast } from "sonner";
 
-// AFTER: Single materialized view query
-const [categoriesResult, hotProductsResult] = await Promise.all([
-  supabase.from('mv_category_counts').select('*'),
-  supabase.from('mv_hot_products').select('*').limit(50),
-]);
+type ToasterProps = React.ComponentProps<typeof Sonner>;
 
-// Process hot, top-rated, new arrivals from single result
-const allProducts = hotProductsResult.data || [];
-const hotProducts = allProducts.slice(0, 10);
-const topRated = [...allProducts].sort((a, b) => b.view_count - a.view_count).slice(0, 10);
-// ...
-```
-
-**Benefits:**
-- Reduces 4 queries → 2 queries
-- Materialized views are pre-computed
-- Sub-10ms response time
-
----
-
-### Phase 4: Rate Limiting Edge Function
-
-**File: `supabase/functions/rate-limit-check/index.ts`**
-
-Protect public endpoints from abuse:
-
-```typescript
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = { 'Access-Control-Allow-Origin': '*', ... };
-
-// In-memory rate limit cache (edge function instance level)
-const rateLimits = new Map<string, { count: number; resetAt: number }>();
-
-export async function checkRateLimit(
-  identifier: string, // IP or user ID
-  limit: number = 100, // requests per window
-  windowMs: number = 60000 // 1 minute
-): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
-  const now = Date.now();
-  const entry = rateLimits.get(identifier);
-  
-  if (!entry || entry.resetAt < now) {
-    rateLimits.set(identifier, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, remaining: limit - 1, resetAt: now + windowMs };
-  }
-  
-  if (entry.count >= limit) {
-    return { allowed: false, remaining: 0, resetAt: entry.resetAt };
-  }
-  
-  entry.count++;
-  return { allowed: true, remaining: limit - entry.count, resetAt: entry.resetAt };
-}
-
-// Apply to all public endpoints
-// marketplace: 200 req/min
-// search: 60 req/min
-// store: 100 req/min
-```
-
-**Integration:**
-Update each BFF function to call rate limiter before processing:
-
-```typescript
-const clientIP = req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || 'unknown';
-const rateCheck = await checkRateLimit(clientIP, 200, 60000);
-
-if (!rateCheck.allowed) {
-  return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-    status: 429,
-    headers: { 
-      ...corsHeaders, 
-      'Retry-After': String(Math.ceil((rateCheck.resetAt - Date.now()) / 1000)) 
-    }
-  });
-}
-```
-
----
-
-### Phase 5: Connection Pooling & DB Optimization
-
-**Supabase Settings (via Dashboard/Support):**
-
-```text
-1. Enable Supavisor (Connection Pooler)
-   - Transaction mode for edge functions
-   - Session mode for realtime
-   
-2. Postgres Settings
-   - max_connections: 400 (request increase)
-   - shared_buffers: 2GB
-   - effective_cache_size: 6GB
-   - work_mem: 64MB
-   - random_page_cost: 1.1 (for SSD)
-```
-
-**Edge Function Connection Optimization:**
-
-```typescript
-// Use single connection pattern in BFF
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  db: { 
-    schema: 'public',
-    poolMode: 'transaction' // Enable pooling
-  },
-  global: {
-    headers: { 
-      'x-connection-preference': 'pool' 
-    }
-  }
-});
-```
-
----
-
-### Phase 6: Enhanced Client-Side Caching
-
-**File: `src/hooks/useMarketplaceData.ts`**
-
-Upgrade from 60s to intelligent tiered caching:
-
-```typescript
-// Tiered cache with different TTLs
-const CACHE_TIERS = {
-  hot: 60 * 1000,        // 1 min - frequently changing
-  categories: 5 * 60 * 1000, // 5 min - rarely changes
-  featured: 2 * 60 * 1000,   // 2 min - semi-static
+const Toaster = ({ ...props }: ToasterProps) => {
+  return (
+    <Sonner
+      position="top-right"
+      offset={20}
+      gap={12}
+      duration={4000}
+      visibleToasts={4}
+      closeButton
+      className="toaster group"
+      toastOptions={{
+        classNames: {
+          toast:
+            "group toast bg-white border border-slate-200 shadow-lg shadow-black/5 rounded-xl px-4 py-3 w-[380px] flex items-start gap-3",
+          title: "text-[15px] font-semibold text-slate-800",
+          description: "text-[13px] text-slate-500 mt-0.5",
+          actionButton: "bg-emerald-600 text-white text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-emerald-700",
+          cancelButton: "bg-slate-100 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-slate-200",
+          closeButton: "bg-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg",
+          success: "border-emerald-100",
+          error: "border-red-100", 
+          warning: "border-amber-100",
+          info: "border-blue-100",
+        },
+      }}
+      icons={{
+        success: (
+          <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ),
+        error: (
+          <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        ),
+        warning: (
+          <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+        ),
+        info: (
+          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        ),
+      }}
+      {...props}
+    />
+  );
 };
 
-// Add stale-while-revalidate pattern
-const [data, setData] = useState<MarketplaceHomeData | null>(cachedData);
-const [isStale, setIsStale] = useState(false);
-
-const fetchData = useCallback(async (force = false) => {
-  const now = Date.now();
-  const age = now - cacheTimestamp;
-  
-  // Fresh cache - use directly
-  if (!force && cachedData && age < CACHE_TIERS.hot) {
-    setData(cachedData);
-    setLoading(false);
-    return;
-  }
-  
-  // Stale cache - show immediately, refresh in background
-  if (cachedData) {
-    setData(cachedData);
-    setIsStale(true);
-    setLoading(false);
-  }
-  
-  // Background refresh
-  try {
-    const response = await fetch(...);
-    // Update cache...
-    setIsStale(false);
-  } catch (err) {
-    // Keep stale data on error
-    console.log('[Cache] Network error, serving stale data');
-  }
-}, []);
-```
-
-**File: `src/lib/query-deduplication.ts`**
-
-Prevent duplicate concurrent requests:
-
-```typescript
-const pendingRequests = new Map<string, Promise<any>>();
-
-export async function deduplicatedFetch<T>(
-  key: string,
-  fetcher: () => Promise<T>
-): Promise<T> {
-  // Return existing promise if request is in-flight
-  if (pendingRequests.has(key)) {
-    return pendingRequests.get(key)!;
-  }
-  
-  const promise = fetcher().finally(() => {
-    pendingRequests.delete(key);
-  });
-  
-  pendingRequests.set(key, promise);
-  return promise;
-}
-
-// Usage in hooks:
-const fetchData = () => deduplicatedFetch('marketplace-home', async () => {
-  const response = await fetch(...);
-  return response.json();
-});
+export { Toaster, toast };
 ```
 
 ---
 
-### Phase 7: Service Worker Optimization
+### 2. `src/index.css` - Add Toast Animation Enhancements
 
-**File: `public/sw.js`**
+Add custom CSS for smoother animations and hover states:
 
-Enhanced caching strategy for 10M traffic:
-
-```javascript
-// Increase cache limits for high traffic
-const MAX_CACHE_SIZE = 100; // Max entries per cache
-
-// Prune old entries when limit reached
-async function pruneCache(cacheName, maxItems) {
-  const cache = await caches.open(cacheName);
-  const keys = await cache.keys();
-  
-  if (keys.length > maxItems) {
-    const toDelete = keys.slice(0, keys.length - maxItems);
-    await Promise.all(toDelete.map(key => cache.delete(key)));
-  }
+```css
+/* Fiverr/Upwork Style Toast Enhancements */
+[data-sonner-toaster] {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
 }
 
-// Add background sync for offline purchases
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-purchases') {
-    event.waitUntil(syncPendingPurchases());
-  }
-});
+[data-sonner-toast] {
+  transition: all 0.2s ease-out;
+}
 
-async function syncPendingPurchases() {
-  const pending = await getPendingPurchases(); // from IndexedDB
-  for (const purchase of pending) {
-    await fetch('/functions/v1/process-purchase', {
-      method: 'POST',
-      body: JSON.stringify(purchase)
-    });
-  }
+[data-sonner-toast]:hover {
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.12);
+}
+
+[data-sonner-toast][data-type="success"] {
+  border-left: 3px solid #059669;
+}
+
+[data-sonner-toast][data-type="error"] {
+  border-left: 3px solid #DC2626;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  border-left: 3px solid #D97706;
+}
+
+[data-sonner-toast][data-type="info"] {
+  border-left: 3px solid #2563EB;
+}
+
+/* Close button styling */
+[data-sonner-toast] [data-close-button] {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+[data-sonner-toast]:hover [data-close-button] {
+  opacity: 1;
 }
 ```
 
 ---
 
-## Monitoring & Alerting
-
-**File: `supabase/functions/health-check/index.ts`**
-
-Create health endpoint for uptime monitoring:
-
-```typescript
-Deno.serve(async (req) => {
-  const start = Date.now();
-  
-  try {
-    // Check DB connectivity
-    const { data, error } = await supabase
-      .from('categories')
-      .select('id')
-      .limit(1);
-    
-    const dbLatency = Date.now() - start;
-    
-    if (error) throw error;
-    
-    return new Response(JSON.stringify({
-      status: 'healthy',
-      db: { latency: dbLatency, connected: true },
-      timestamp: new Date().toISOString(),
-      version: '1.0.3'
-    }), { status: 200 });
-    
-  } catch (error) {
-    return new Response(JSON.stringify({
-      status: 'degraded',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    }), { status: 503 });
-  }
-});
-```
-
----
-
-## Scaling Architecture Diagram
+## Visual Design (Before vs After)
 
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                         TRAFFIC FLOW                                │
-└─────────────────────────────────────────────────────────────────────┘
-
-   Users (10M/day)
-         │
-         ▼
-┌─────────────────┐    Cache Hit (~70%)     ┌──────────────────┐
-│  Cloudflare CDN │ ─────────────────────▶  │  Cached Response │
-│  (Edge Cache)   │                         │  < 50ms          │
-└────────┬────────┘                         └──────────────────┘
-         │ Cache Miss (~30%)
-         ▼
-┌─────────────────┐    Rate Limited?        ┌──────────────────┐
-│  Rate Limiter   │ ─────────────────────▶  │  429 Response    │
-│  (Edge Function)│                         │  Retry-After     │
-└────────┬────────┘                         └──────────────────┘
-         │ Allowed
-         ▼
-┌─────────────────┐
-│  BFF Functions  │
-│  - marketplace  │
-│  - seller       │
-│  - store        │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐                         ┌──────────────────┐
-│   Supavisor     │◀───────────────────────▶│  Postgres DB     │
-│   (Pooler)      │    Transaction Mode     │  + Materialized  │
-│   400 conns     │                         │    Views         │
-└─────────────────┘                         └──────────────────┘
+BEFORE (Generic):                    AFTER (Fiverr/Upwork Style):
+┌─────────────────────────┐          ┌────────────────────────────────────┐
+│ Welcome back!           │          │ ┌──┐                           [X] │
+│                         │          │ │✓ │  Welcome back!                │
+│                         │          │ └──┘  You are now signed in        │
+└─────────────────────────┘          └────────────────────────────────────┘
+                                      ↑
+                                      Green circle with white checkmark
+                                      + Colored left border accent
 ```
 
 ---
 
-## Expected Performance Results
+## Toast Types Preview
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Marketplace Load | ~200ms | ~50ms | 4x faster |
-| DB Queries/Request | 4-5 | 1-2 | 60% reduction |
-| Peak Capacity | ~2M/day | ~15M/day | 7.5x increase |
-| Edge Cache Hit Rate | ~40% | ~70% | 75% improvement |
-| P99 Latency | ~800ms | ~150ms | 5x improvement |
-| Uptime Target | 99.5% | 99.99% | 4-nines |
+**Success Toast:**
+```text
+┌─────────────────────────────────────────┐
+│ [✓]  Welcome back!                      │
+│      You are now signed in              │
+└─────────────────────────────────────────┘
+  ↑ Emerald circle + emerald left border
+```
 
----
+**Error Toast:**
+```text
+┌─────────────────────────────────────────┐
+│ [✗]  Authentication failed              │
+│      Invalid email or password          │
+└─────────────────────────────────────────┘
+  ↑ Red circle + red left border
+```
 
-## Files to Modify/Create Summary
-
-| File | Action | Purpose |
-|------|--------|---------|
-| New Migration | Create | Database indexes + materialized views |
-| `bff-marketplace-home/index.ts` | Modify | Use materialized views |
-| `_shared/rate-limiter.ts` | Create | Shared rate limiting logic |
-| `bff-marketplace-search/index.ts` | Modify | Add rate limiting |
-| `bff-store-public/index.ts` | Modify | Add rate limiting |
-| `src/hooks/useMarketplaceData.ts` | Modify | Tiered caching + stale-while-revalidate |
-| `src/lib/query-deduplication.ts` | Create | Request deduplication |
-| `public/sw.js` | Modify | Cache pruning + background sync |
-| `health-check/index.ts` | Create | Uptime monitoring endpoint |
-
----
-
-## Implementation Priority
-
-| Phase | Effort | Impact | Priority |
-|-------|--------|--------|----------|
-| 1. DB Indexes | Low | High | P0 - Do First |
-| 2. Materialized Views | Medium | Very High | P0 - Do First |
-| 3. BFF Optimization | Low | High | P1 - Week 1 |
-| 4. Rate Limiting | Medium | Critical | P1 - Week 1 |
-| 5. Connection Pooling | Config | High | P1 - Week 1 |
-| 6. Client Caching | Medium | Medium | P2 - Week 2 |
-| 7. SW Optimization | Low | Medium | P2 - Week 2 |
+**Info Toast:**
+```text
+┌─────────────────────────────────────────┐
+│ [i]  Order updated!                     │
+│      Check your orders page             │
+└─────────────────────────────────────────┘
+  ↑ Blue circle + blue left border
+```
 
 ---
 
-## Zero Downtime Strategy
+## Files Summary
 
-1. **Database changes**: All indexes use `CONCURRENTLY` - no locks
-2. **Materialized views**: Non-blocking creation
-3. **Edge functions**: Automatic blue-green deployment
-4. **Client code**: Service worker serves cached version during deploy
-5. **Rollback**: Git revert triggers automatic redeploy
+| File | Changes |
+|------|---------|
+| `src/components/ui/sonner.tsx` | Complete redesign with Fiverr/Upwork styling, custom icons, position, animations |
+| `src/index.css` | Add toast enhancement CSS for borders, shadows, hover states |
 
-This architecture can handle **10M+ daily visitors** with sub-100ms response times and 99.99% uptime.
+---
+
+## Expected Outcome
+
+After implementation:
+1. Toasts appear in top-right corner with smooth slide-in animation
+2. Each toast type has distinct colored circular icon with white symbol
+3. Clean white background with subtle shadow and colored left border
+4. Professional typography matching marketplace design system
+5. Close button appears on hover
+6. 4-second duration with smooth fade-out
+7. Matches Fiverr/Upwork professional notification design
+

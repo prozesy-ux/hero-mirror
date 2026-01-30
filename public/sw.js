@@ -1,14 +1,9 @@
-// Uptoza Service Worker - Enterprise Performance + Push Notifications
-// Version for cache busting - Enterprise scaling for 10M+ traffic
-const CACHE_VERSION = 'v1.0.4';
+// Uptoza Service Worker - Performance + Push Notifications
+// Version for cache busting
+const CACHE_VERSION = 'v1.0.3';
 const STATIC_CACHE = `uptoza-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `uptoza-dynamic-${CACHE_VERSION}`;
 const API_CACHE = `uptoza-api-${CACHE_VERSION}`;
-
-// Cache size limits for high traffic
-const MAX_STATIC_ENTRIES = 100;
-const MAX_DYNAMIC_ENTRIES = 50;
-const MAX_API_ENTRIES = 30;
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
@@ -23,12 +18,12 @@ const CACHE_STRATEGIES = {
   // Network first for API calls with stale-while-revalidate
   staleWhileRevalidate: ['/functions/v1/bff-'],
   // Network only for auth-related calls
-  networkOnly: ['/auth/', 'validate-session', 'admin-login', 'send-otp', 'verify-otp'],
+  networkOnly: ['/auth/', 'validate-session', 'admin-login'],
 };
 
 // Install - cache critical assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker v1.0.4');
+  console.log('[SW] Installing service worker');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => cache.addAll(STATIC_ASSETS))
@@ -52,22 +47,6 @@ self.addEventListener('activate', (event) => {
     }).then(() => self.clients.claim())
   );
 });
-
-// Prune cache to maintain size limits
-async function pruneCache(cacheName, maxItems) {
-  try {
-    const cache = await caches.open(cacheName);
-    const keys = await cache.keys();
-    
-    if (keys.length > maxItems) {
-      console.log(`[SW] Pruning ${cacheName}: ${keys.length} -> ${maxItems}`);
-      const toDelete = keys.slice(0, keys.length - maxItems);
-      await Promise.all(toDelete.map(key => cache.delete(key)));
-    }
-  } catch (error) {
-    console.warn('[SW] Prune cache error:', error);
-  }
-}
 
 // Fetch - smart caching strategies
 self.addEventListener('fetch', (event) => {
@@ -101,7 +80,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(networkFirst(request, DYNAMIC_CACHE));
 });
 
-// Cache first strategy with size limit
+// Cache first strategy
 async function cacheFirst(request, cacheName) {
   const cached = await caches.match(request);
   if (cached) {
@@ -113,8 +92,6 @@ async function cacheFirst(request, cacheName) {
     if (response.ok) {
       const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
-      // Prune in background
-      pruneCache(cacheName, MAX_STATIC_ENTRIES);
     }
     return response;
   } catch (error) {
@@ -123,15 +100,13 @@ async function cacheFirst(request, cacheName) {
   }
 }
 
-// Network first strategy with size limit
+// Network first strategy
 async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
-      // Prune in background
-      pruneCache(cacheName, MAX_DYNAMIC_ENTRIES);
     }
     return response;
   } catch (error) {
@@ -143,147 +118,21 @@ async function networkFirst(request, cacheName) {
   }
 }
 
-// Stale-while-revalidate strategy with size limit
+// Stale-while-revalidate strategy
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
   
-  // Fetch in background with timeout
-  const fetchPromise = fetchWithTimeout(request, 10000).then((response) => {
+  // Fetch in background
+  const fetchPromise = fetch(request).then((response) => {
     if (response.ok) {
       cache.put(request, response.clone());
-      // Prune in background
-      pruneCache(cacheName, MAX_API_ENTRIES);
     }
     return response;
   }).catch(() => cached);
 
   // Return cached immediately, or wait for network
   return cached || fetchPromise;
-}
-
-// Fetch with timeout for reliability
-async function fetchWithTimeout(request, timeoutMs) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  
-  try {
-    const response = await fetch(request, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
-  }
-}
-
-// Background sync for offline purchases
-self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync:', event.tag);
-  
-  if (event.tag === 'sync-purchases') {
-    event.waitUntil(syncPendingPurchases());
-  }
-  
-  if (event.tag === 'sync-analytics') {
-    event.waitUntil(syncPendingAnalytics());
-  }
-});
-
-// Sync pending purchases from IndexedDB
-async function syncPendingPurchases() {
-  try {
-    // Get pending purchases from IndexedDB
-    const pending = await getPendingItems('purchases');
-    
-    for (const purchase of pending) {
-      try {
-        await fetch('/functions/v1/process-purchase', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(purchase),
-        });
-        await removePendingItem('purchases', purchase.id);
-      } catch (error) {
-        console.error('[SW] Sync purchase failed:', error);
-      }
-    }
-  } catch (error) {
-    console.error('[SW] Sync purchases error:', error);
-  }
-}
-
-// Sync pending analytics
-async function syncPendingAnalytics() {
-  try {
-    const pending = await getPendingItems('analytics');
-    
-    if (pending.length > 0) {
-      await fetch('/functions/v1/batch-analytics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ events: pending }),
-      });
-      
-      for (const item of pending) {
-        await removePendingItem('analytics', item.id);
-      }
-    }
-  } catch (error) {
-    console.error('[SW] Sync analytics error:', error);
-  }
-}
-
-// IndexedDB helpers for offline sync
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('uptoza-offline', 1);
-    
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains('purchases')) {
-        db.createObjectStore('purchases', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('analytics')) {
-        db.createObjectStore('analytics', { keyPath: 'id' });
-      }
-    };
-  });
-}
-
-async function getPendingItems(storeName) {
-  try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, 'readonly');
-      const store = transaction.objectStore(storeName);
-      const request = store.getAll();
-      
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-  } catch {
-    return [];
-  }
-}
-
-async function removePendingItem(storeName, id) {
-  try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.delete(id);
-      
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  } catch {
-    // Ignore errors
-  }
 }
 
 // Push notification handling
@@ -377,6 +226,11 @@ self.addEventListener('notificationclose', (event) => {
   console.log('[SW] Notification closed:', event);
 });
 
+// Background sync for offline actions
+self.addEventListener('sync', (event) => {
+  console.log('[SW] Background sync:', event.tag);
+});
+
 // Message handling for cache control
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') {
@@ -386,12 +240,5 @@ self.addEventListener('message', (event) => {
     caches.keys().then((keys) => {
       keys.forEach((key) => caches.delete(key));
     });
-  }
-  if (event.data === 'pruneAllCaches') {
-    Promise.all([
-      pruneCache(STATIC_CACHE, MAX_STATIC_ENTRIES),
-      pruneCache(DYNAMIC_CACHE, MAX_DYNAMIC_ENTRIES),
-      pruneCache(API_CACHE, MAX_API_ENTRIES),
-    ]);
   }
 });
