@@ -1113,7 +1113,8 @@ const StoreContent = () => {
         onBuy={selectedProduct ? () => handlePurchase(selectedProduct) : undefined}
         onViewFull={selectedProduct ? () => {
           setSelectedProduct(null);
-          navigate(`/store/${storeSlug}/product/${selectedProduct.id}`);
+          const seoUrl = `/store/${storeSlug}/product/${selectedProduct.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)}-${selectedProduct.id.slice(0, 8)}`;
+          navigate(seoUrl);
         } : undefined}
         isLoggedIn={!!user}
         walletBalance={wallet?.balance}

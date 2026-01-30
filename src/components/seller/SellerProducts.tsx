@@ -39,6 +39,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import MultiImageUploader from './MultiImageUploader';
+import { getProductShareUrl } from '@/lib/url-utils';
 
 interface Category {
   id: string;
@@ -222,7 +223,8 @@ const SellerProducts = () => {
 
   const copyProductLink = async (productId: string, productName: string) => {
     const storeSlug = (profile as any)?.store_slug || profile?.id;
-    const url = `${window.location.origin}/store/${storeSlug}/product/${productId}`;
+    // Use SEO-friendly URL for sharing
+    const url = getProductShareUrl(storeSlug, productName, productId);
     try {
       await navigator.clipboard.writeText(url);
       toast.success(`Link copied for "${productName}"`);

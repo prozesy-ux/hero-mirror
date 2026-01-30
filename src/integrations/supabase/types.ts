@@ -217,6 +217,8 @@ export type Database = {
           name: string
           original_price: number | null
           price: number
+          product_type: string | null
+          slug: string | null
           sold_count: number | null
           stock: number | null
           tags: string[] | null
@@ -238,6 +240,8 @@ export type Database = {
           name: string
           original_price?: number | null
           price?: number
+          product_type?: string | null
+          slug?: string | null
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
@@ -259,6 +263,8 @@ export type Database = {
           name?: string
           original_price?: number | null
           price?: number
+          product_type?: string | null
+          slug?: string | null
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null

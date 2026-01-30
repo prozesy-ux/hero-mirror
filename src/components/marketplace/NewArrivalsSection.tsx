@@ -16,6 +16,7 @@ interface NewProduct {
   icon_url: string | null;
   created_at: string;
   seller_name?: string;
+  store_slug?: string;
   type: 'ai' | 'seller';
 }
 
@@ -40,7 +41,7 @@ export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSec
       const [sellerResult, aiResult] = await Promise.all([
         supabase
           .from('seller_products')
-          .select('id, name, price, icon_url, created_at, seller_profiles(store_name)')
+          .select('id, name, price, icon_url, created_at, seller_profiles(store_name, store_slug)')
           .eq('is_available', true)
           .eq('is_approved', true)
           .gte('created_at', sevenDaysAgo)
@@ -63,6 +64,7 @@ export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSec
           icon_url: p.icon_url,
           created_at: p.created_at,
           seller_name: p.seller_profiles?.store_name,
+          store_slug: p.seller_profiles?.store_slug,
           type: 'seller' as const,
         })),
         ...(aiResult.data || []).map((p: any) => ({

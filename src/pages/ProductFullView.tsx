@@ -24,6 +24,14 @@ import StarRating from '@/components/reviews/StarRating';
 import ImageGallery from '@/components/ui/image-gallery';
 import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatContext';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
+import { 
+  generateProductUrl, 
+  getProductShareUrl, 
+  isFullUUID, 
+  extractIdFromSlug, 
+  normalizeProductName,
+  generateClientSlug
+} from '@/lib/url-utils';
 
 interface Product {
   id: string;
@@ -78,7 +86,7 @@ const ProductFullViewContent = () => {
   const fetchData = async () => {
     setLoading(true);
 
-    // Fetch seller
+    // Fetch seller first
     const { data: sellerData } = await supabase
       .from('seller_profiles')
       .select('*')
@@ -92,13 +100,54 @@ const ProductFullViewContent = () => {
 
     setSeller(sellerData);
 
-    // Fetch product
-    const { data: productData } = await supabase
-      .from('seller_products')
-      .select('*')
-      .eq('id', productId)
-      .eq('seller_id', sellerData.id)
-      .single();
+    // Smart product lookup with tiered strategy
+    let productData = null;
+
+    // 1. Try exact UUID match (legacy URLs)
+    if (isFullUUID(productId!)) {
+      const { data } = await supabase
+        .from('seller_products')
+        .select('*')
+        .eq('id', productId)
+        .eq('seller_id', sellerData.id)
+        .maybeSingle();
+      
+      if (data) {
+        // Redirect legacy URL to SEO-friendly format
+        const seoUrl = generateProductUrl(storeSlug!, data.name, data.id);
+        navigate(seoUrl, { replace: true });
+        productData = data;
+      }
+    }
+
+    // 2. Try ID prefix match (SEO URLs)
+    if (!productData) {
+      const idPrefix = extractIdFromSlug(productId!);
+      if (idPrefix) {
+        const { data } = await supabase
+          .from('seller_products')
+          .select('*')
+          .eq('seller_id', sellerData.id)
+          .ilike('id', `${idPrefix}%`)
+          .maybeSingle();
+        
+        if (data) productData = data;
+      }
+    }
+
+    // 3. Fallback: Try matching by normalized name within store
+    if (!productData) {
+      const nameFromSlug = productId!.replace(/-[a-f0-9]{8}$/i, '').replace(/-/g, ' ');
+      const { data: products } = await supabase
+        .from('seller_products')
+        .select('*')
+        .eq('seller_id', sellerData.id)
+        .eq('is_available', true);
+      
+      productData = products?.find(p => 
+        normalizeProductName(p.name) === normalizeProductName(nameFromSlug)
+      ) || null;
+    }
 
     if (productData) {
       setProduct(productData);
@@ -110,7 +159,7 @@ const ProductFullViewContent = () => {
         .eq('seller_id', sellerData.id)
         .eq('is_available', true)
         .eq('is_approved', true)
-        .neq('id', productId)
+        .neq('id', productData.id)
         .limit(4);
 
       setRelatedProducts(relatedData || []);
@@ -119,7 +168,7 @@ const ProductFullViewContent = () => {
       const { data: reviewData } = await supabase
         .from('product_reviews')
         .select('rating')
-        .eq('product_id', productId);
+        .eq('product_id', productData.id);
 
       if (reviewData && reviewData.length > 0) {
         const avg = reviewData.reduce((sum, r) => sum + r.rating, 0) / reviewData.length;
@@ -198,7 +247,10 @@ const ProductFullViewContent = () => {
   };
 
   const handleShare = async () => {
-    const url = window.location.href;
+    // Generate SEO-friendly URL for sharing
+    const url = product && seller?.store_slug 
+      ? getProductShareUrl(seller.store_slug, product.name, product.id)
+      : window.location.href;
     try {
       await navigator.clipboard.writeText(url);
       toast.success('Link copied!');
@@ -421,7 +473,7 @@ const ProductFullViewContent = () => {
               {relatedProducts.map(related => (
                 <Link
                   key={related.id}
-                  to={`/store/${storeSlug}/product/${related.id}`}
+                  to={generateProductUrl(storeSlug!, related.name, related.id)}
                   className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="aspect-square bg-slate-50">
