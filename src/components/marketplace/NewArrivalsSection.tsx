@@ -8,7 +8,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { OptimizedImage } from '@/components/ui/optimized-image';
-import { generateProductUrl } from '@/lib/url-utils';
 
 interface NewProduct {
   id: string;
@@ -17,7 +16,6 @@ interface NewProduct {
   icon_url: string | null;
   created_at: string;
   seller_name?: string;
-  seller_slug?: string;
   type: 'ai' | 'seller';
 }
 
@@ -42,7 +40,7 @@ export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSec
       const [sellerResult, aiResult] = await Promise.all([
         supabase
           .from('seller_products')
-          .select('id, name, price, icon_url, created_at, seller_profiles(store_name, store_slug)')
+          .select('id, name, price, icon_url, created_at, seller_profiles(store_name)')
           .eq('is_available', true)
           .eq('is_approved', true)
           .gte('created_at', sevenDaysAgo)
@@ -65,7 +63,6 @@ export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSec
           icon_url: p.icon_url,
           created_at: p.created_at,
           seller_name: p.seller_profiles?.store_name,
-          seller_slug: p.seller_profiles?.store_slug,
           type: 'seller' as const,
         })),
         ...(aiResult.data || []).map((p: any) => ({

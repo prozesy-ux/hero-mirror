@@ -24,7 +24,6 @@ import StarRating from '@/components/reviews/StarRating';
 import ImageGallery from '@/components/ui/image-gallery';
 import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatContext';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
-import { extractIdFromSlug, isFullUUID, generateProductUrl, getProductShareUrl } from '@/lib/url-utils';
 
 interface Product {
   id: string;
@@ -79,7 +78,7 @@ const ProductFullViewContent = () => {
   const fetchData = async () => {
     setLoading(true);
 
-    // Fetch seller first
+    // Fetch seller
     const { data: sellerData } = await supabase
       .from('seller_profiles')
       .select('*')
@@ -93,39 +92,13 @@ const ProductFullViewContent = () => {
 
     setSeller(sellerData);
 
-    // Smart product lookup with tiered strategy
-    let productData = null;
-
-    // 1. Check if it's a full UUID (legacy URL)
-    if (isFullUUID(productId!)) {
-      const { data } = await supabase
-        .from('seller_products')
-        .select('*')
-        .eq('id', productId)
-        .eq('seller_id', sellerData.id)
-        .single();
-      productData = data;
-
-      // Redirect legacy UUID URLs to SEO-friendly format
-      if (productData) {
-        const seoUrl = generateProductUrl(storeSlug!, productData.name, productData.id);
-        navigate(seoUrl, { replace: true });
-        return;
-      }
-    } else {
-      // 2. Extract ID prefix from SEO slug
-      const idPrefix = extractIdFromSlug(productId!);
-      
-      if (idPrefix) {
-        const { data } = await supabase
-          .from('seller_products')
-          .select('*')
-          .eq('seller_id', sellerData.id)
-          .ilike('id', `${idPrefix}%`)
-          .single();
-        productData = data;
-      }
-    }
+    // Fetch product
+    const { data: productData } = await supabase
+      .from('seller_products')
+      .select('*')
+      .eq('id', productId)
+      .eq('seller_id', sellerData.id)
+      .single();
 
     if (productData) {
       setProduct(productData);
@@ -137,7 +110,7 @@ const ProductFullViewContent = () => {
         .eq('seller_id', sellerData.id)
         .eq('is_available', true)
         .eq('is_approved', true)
-        .neq('id', productData.id)
+        .neq('id', productId)
         .limit(4);
 
       setRelatedProducts(relatedData || []);
@@ -146,7 +119,7 @@ const ProductFullViewContent = () => {
       const { data: reviewData } = await supabase
         .from('product_reviews')
         .select('rating')
-        .eq('product_id', productData.id);
+        .eq('product_id', productId);
 
       if (reviewData && reviewData.length > 0) {
         const avg = reviewData.reduce((sum, r) => sum + r.rating, 0) / reviewData.length;
@@ -225,8 +198,7 @@ const ProductFullViewContent = () => {
   };
 
   const handleShare = async () => {
-    if (!product || !storeSlug) return;
-    const url = getProductShareUrl(storeSlug, product.name, product.id);
+    const url = window.location.href;
     try {
       await navigator.clipboard.writeText(url);
       toast.success('Link copied!');
@@ -449,7 +421,7 @@ const ProductFullViewContent = () => {
               {relatedProducts.map(related => (
                 <Link
                   key={related.id}
-                  to={generateProductUrl(storeSlug!, related.name, related.id)}
+                  to={`/store/${storeSlug}/product/${related.id}`}
                   className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="aspect-square bg-slate-50">

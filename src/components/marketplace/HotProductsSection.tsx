@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { OptimizedImage } from '@/components/ui/optimized-image';
-import { generateProductUrl } from '@/lib/url-utils';
 
 interface HotProduct {
   id: string;
@@ -16,7 +15,6 @@ interface HotProduct {
   icon_url: string | null;
   sold_count: number;
   seller_name?: string;
-  seller_slug?: string;
   type: 'ai' | 'seller';
 }
 
@@ -38,7 +36,7 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
       // Get products with most purchases in recent orders
       const { data: orderData } = await supabase
         .from('seller_orders')
-        .select('product_id, seller_products(id, name, price, icon_url, sold_count, seller_profiles(store_name, store_slug))')
+        .select('product_id, seller_products(id, name, price, icon_url, sold_count, seller_profiles(store_name))')
         .eq('status', 'completed')
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false })
@@ -68,7 +66,6 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
           icon_url: data.product.icon_url,
           sold_count: data.product.sold_count || data.count,
           seller_name: data.product.seller_profiles?.store_name,
-          seller_slug: data.product.seller_profiles?.store_slug,
           type: 'seller' as const,
         }));
 
@@ -76,7 +73,7 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
       if (hotProducts.length < 6) {
         const { data: topSelling } = await supabase
           .from('seller_products')
-          .select('id, name, price, icon_url, sold_count, seller_profiles(store_name, store_slug)')
+          .select('id, name, price, icon_url, sold_count, seller_profiles(store_name)')
           .eq('is_available', true)
           .eq('is_approved', true)
           .order('sold_count', { ascending: false })
@@ -91,7 +88,6 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
               icon_url: p.icon_url,
               sold_count: p.sold_count || 0,
               seller_name: p.seller_profiles?.store_name,
-              seller_slug: p.seller_profiles?.store_slug,
               type: 'seller',
             });
           }
