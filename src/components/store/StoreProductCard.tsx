@@ -3,6 +3,7 @@ import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface SellerProduct {
   id: string;
+  slug?: string;
   name: string;
   description: string | null;
   price: number;
