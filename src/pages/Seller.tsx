@@ -100,15 +100,13 @@ const SellerAuthForm = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   const handleGoogleAuth = async () => {
-    // Override to redirect back to /seller instead of /dashboard
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/seller`
-      }
+    // Use Lovable Cloud's managed OAuth for reliability
+    const { lovable } = await import('@/integrations/lovable/index');
+    const result = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: `${window.location.origin}/seller`
     });
-    if (error) {
-      toast.error(error.message);
+    if (result.error) {
+      toast.error(result.error.message);
     }
   };
 

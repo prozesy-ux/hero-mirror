@@ -55,6 +55,20 @@ const SignIn = () => {
     }
   }, []);
 
+  // Safety timeout for OAuth processing - prevents infinite loading
+  useEffect(() => {
+    if (!oauthProcessing) return;
+    
+    // Safety timeout - if OAuth doesn't complete in 10s, clear loading
+    const timeout = setTimeout(() => {
+      console.warn('[SignIn] OAuth processing timeout - clearing loading state');
+      setOauthProcessing(false);
+      toast.error("Sign-in timed out. Please try again.");
+    }, 10000);
+    
+    return () => clearTimeout(timeout);
+  }, [oauthProcessing]);
+
   // Handle post-auth redirect (for store purchases and chats)
   const handlePostAuthRedirect = () => {
     // Priority 1: Check for pending purchase - redirect to marketplace
@@ -103,11 +117,21 @@ const SignIn = () => {
   useEffect(() => {
     if (didAutoRedirect.current) return;
     if (authLoading) return;
-    if (!user) return;
+    
+    if (!user) {
+      // Auth finished loading but no user - clear OAuth processing
+      if (oauthProcessing) {
+        console.log('[SignIn] Auth loaded without user - clearing OAuth state');
+        setOauthProcessing(false);
+      }
+      return;
+    }
 
+    // User exists, proceed with redirect
     didAutoRedirect.current = true;
+    setOauthProcessing(false); // Clear OAuth state before redirect
     handlePostAuthRedirect();
-  }, [user, authLoading]);
+  }, [user, authLoading, oauthProcessing]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,8 +209,8 @@ const SignIn = () => {
     }
   };
 
-  // Show OAuth processing screen
-  if (oauthProcessing || (authLoading && window.location.hash.includes('access_token'))) {
+  // Show OAuth processing screen - only if actively processing AND hash is present
+  if (oauthProcessing) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-black">
         <div className="overflow-hidden rounded-2xl bg-white p-2 shadow-xl shadow-black/20 mb-6">
