@@ -53,11 +53,13 @@ const GumroadHeader = ({ searchQuery, onSearchChange, onSearch }: GumroadHeaderP
     <header className="sticky top-0 z-50 w-full bg-white border-b border-black/5">
       <div className="mx-auto max-w-screen-2xl px-4 lg:px-6">
         <div className="flex items-center justify-between h-14 gap-4">
-          {/* Logo - Gumroad style bold wordmark */}
+          {/* Logo - Uptoza */}
           <Link to="/" className="flex-shrink-0">
-            <span className="text-[22px] font-black text-black tracking-tight lowercase">
-              gumroad
-            </span>
+            <img 
+              src="/src/assets/uptoza-logo.png" 
+              alt="Uptoza" 
+              className="h-8 w-auto"
+            />
           </Link>
 
           {/* Search Bar - Desktop - Pill style */}

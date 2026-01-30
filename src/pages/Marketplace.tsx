@@ -10,6 +10,7 @@ import FeaturedCarousel from '@/components/marketplace/FeaturedCarousel';
 import GumroadFilterSidebar from '@/components/marketplace/GumroadFilterSidebar';
 import GumroadQuickViewModal from '@/components/marketplace/GumroadQuickViewModal';
 import GuestCheckoutModal from '@/components/marketplace/GuestCheckoutModal';
+import MarketplaceProductFullView from '@/components/marketplace/MarketplaceProductFullView';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Types
@@ -59,6 +60,9 @@ const Marketplace = () => {
   // Modal state
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [guestCheckoutProduct, setGuestCheckoutProduct] = useState<Product | null>(null);
+  
+  // Full view state - shows product details inline without redirecting
+  const [fullViewProduct, setFullViewProduct] = useState<{ id: string; type: 'ai' | 'seller' } | null>(null);
 
   // Combine all products for grid display
   const allProducts = useMemo(() => {
@@ -202,11 +206,44 @@ const Marketplace = () => {
   const handleViewFull = useCallback(() => {
     if (!quickViewProduct) return;
 
-    if (quickViewProduct.storeSlug) {
-      navigate(`/store/${quickViewProduct.storeSlug}/product/${quickViewProduct.id}`);
-    }
+    // Show full view inline within marketplace instead of navigating to /store
+    setFullViewProduct({ id: quickViewProduct.id, type: quickViewProduct.type });
     setQuickViewProduct(null);
-  }, [quickViewProduct, navigate]);
+  }, [quickViewProduct]);
+
+  const handleFullViewBuy = useCallback(() => {
+    if (!fullViewProduct) return;
+
+    // Find the product data to open guest checkout or redirect
+    const product = allProducts.find(p => p.id === fullViewProduct.id);
+    if (product) {
+      if (user) {
+        if (product.storeSlug) {
+          navigate(`/store/${product.storeSlug}`);
+        } else {
+          navigate('/dashboard');
+        }
+      } else {
+        setGuestCheckoutProduct(product);
+      }
+    }
+    setFullViewProduct(null);
+  }, [fullViewProduct, allProducts, user, navigate]);
+
+  const handleFullViewChat = useCallback(() => {
+    if (!fullViewProduct) return;
+
+    const product = allProducts.find(p => p.id === fullViewProduct.id);
+    if (user) {
+      if (product?.storeSlug) {
+        navigate(`/store/${product.storeSlug}?chat=${product.id}`);
+      }
+    } else {
+      toast.info('Please sign in to chat with sellers');
+      navigate('/signin');
+    }
+    setFullViewProduct(null);
+  }, [fullViewProduct, allProducts, user, navigate]);
 
   const handleGuestCheckout = useCallback(async (email: string) => {
     if (!guestCheckoutProduct) return;
@@ -266,6 +303,20 @@ const Marketplace = () => {
     setMinRating(null);
     setSearchQuery('');
   }, []);
+
+  // If showing full view, render the full product view component
+  if (fullViewProduct) {
+    return (
+      <MarketplaceProductFullView
+        productId={fullViewProduct.id}
+        productType={fullViewProduct.type}
+        onBack={() => setFullViewProduct(null)}
+        onBuy={handleFullViewBuy}
+        onChat={handleFullViewChat}
+        isAuthenticated={!!user}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F4F4F0]">
