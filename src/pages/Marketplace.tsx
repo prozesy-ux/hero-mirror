@@ -1,8 +1,7 @@
-import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Sparkles, Clock, Filter, X } from 'lucide-react';
+import { Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useMarketplaceData } from '@/hooks/useMarketplaceData';
 import GumroadHeader from '@/components/marketplace/GumroadHeader';
@@ -25,12 +24,14 @@ interface Product {
   storeSlug: string | null;
   isVerified: boolean;
   soldCount?: number;
+  rating?: number;
+  reviewCount?: number;
   type: 'ai' | 'seller';
   tags?: string[];
   categoryId?: string | null;
 }
 
-type SortOption = 'curated' | 'trending' | 'best_sellers' | 'new';
+type SortOption = 'trending' | 'best_sellers' | 'new';
 
 const Marketplace = () => {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ const Marketplace = () => {
   const [priceMin, setPriceMin] = useState<number | undefined>();
   const [priceMax, setPriceMax] = useState<number | undefined>();
   const [minRating, setMinRating] = useState<number | null>(null);
-  const [sortOption, setSortOption] = useState<SortOption>('curated');
+  const [sortOption, setSortOption] = useState<SortOption>('trending');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Modal state
@@ -105,7 +106,6 @@ const Marketplace = () => {
   // Extract all available tags
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>();
-    // Tags from data would go here - for now return common ones
     ['AI', 'Productivity', 'Design', 'Marketing', 'Business', 'Education', 'Social Media', 'Video'].forEach(t => tagSet.add(t));
     return Array.from(tagSet);
   }, []);
@@ -121,11 +121,6 @@ const Marketplace = () => {
         p.name.toLowerCase().includes(query) ||
         p.sellerName?.toLowerCase().includes(query)
       );
-    }
-
-    // Category filter
-    if (selectedCategory !== 'all') {
-      // Would need categoryId in data - for now skip
     }
 
     // Price filter
@@ -145,20 +140,17 @@ const Marketplace = () => {
       case 'new':
         // Already sorted by newest from newArrivals
         break;
-      case 'curated':
-      default:
-        // Default order
-        break;
     }
 
     return result;
-  }, [allProducts, searchQuery, selectedCategory, priceMin, priceMax, sortOption]);
+  }, [allProducts, searchQuery, priceMin, priceMax, sortOption]);
 
   // Featured products for carousel
   const featuredProducts = useMemo(() => {
     return hotProducts.slice(0, 8).map(p => ({
       id: p.id,
       name: p.name,
+      description: null as string | null,
       price: p.price,
       iconUrl: p.iconUrl,
       sellerName: p.sellerName,
@@ -182,15 +174,12 @@ const Marketplace = () => {
     if (!quickViewProduct) return;
 
     if (user) {
-      // Logged in - redirect to store page for wallet-based checkout
       if (quickViewProduct.storeSlug) {
         navigate(`/store/${quickViewProduct.storeSlug}`);
       } else {
-        // AI account - go to dashboard
         navigate('/dashboard');
       }
     } else {
-      // Guest checkout
       setGuestCheckoutProduct(quickViewProduct);
     }
     setQuickViewProduct(null);
@@ -200,12 +189,10 @@ const Marketplace = () => {
     if (!quickViewProduct) return;
 
     if (user) {
-      // Logged in - navigate to store with chat
       if (quickViewProduct.storeSlug) {
         navigate(`/store/${quickViewProduct.storeSlug}?chat=${quickViewProduct.id}`);
       }
     } else {
-      // Prompt to sign in
       toast.info('Please sign in to chat with sellers');
       navigate('/signin');
     }
@@ -224,8 +211,6 @@ const Marketplace = () => {
   const handleGuestCheckout = useCallback(async (email: string) => {
     if (!guestCheckoutProduct) return;
 
-    // For guest checkout, we'll use Stripe directly
-    // Create a Stripe checkout session
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-guest-checkout`,
@@ -250,8 +235,6 @@ const Marketplace = () => {
       }
 
       const { url } = await response.json();
-      
-      // Redirect to Stripe
       window.location.href = url;
     } catch (error) {
       console.error('Guest checkout error:', error);
@@ -293,16 +276,16 @@ const Marketplace = () => {
         onSearch={handleSearch}
       />
 
-      {/* Category Pills */}
-      <div className="border-b border-black/10 bg-[#F4F4F0]">
-        <div className="mx-auto max-w-screen-2xl px-4">
-          <div className="flex items-center gap-2 py-3 overflow-x-auto hide-scrollbar">
+      {/* Category Pills - Gumroad style: outlined active, plain text inactive */}
+      <div className="border-b border-black/5 bg-white">
+        <div className="mx-auto max-w-screen-2xl px-4 lg:px-6">
+          <div className="flex items-center gap-1 py-2.5 overflow-x-auto hide-scrollbar">
             <button
               onClick={() => setSelectedCategory('all')}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 selectedCategory === 'all'
-                  ? 'bg-black text-white'
-                  : 'bg-white text-black/70 border border-black/10 hover:border-black/30'
+                  ? 'border border-black text-black'
+                  : 'text-black/60 hover:text-black'
               }`}
             >
               All
@@ -311,10 +294,10 @@ const Marketplace = () => {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                   selectedCategory === cat.id
-                    ? 'bg-black text-white'
-                    : 'bg-white text-black/70 border border-black/10 hover:border-black/30'
+                    ? 'border border-black text-black'
+                    : 'text-black/60 hover:text-black'
                 }`}
               >
                 {cat.name}
@@ -325,8 +308,8 @@ const Marketplace = () => {
       </div>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-screen-2xl px-4 py-8">
-        {/* Featured Carousel */}
+      <main className="mx-auto max-w-screen-2xl px-4 lg:px-6 py-6">
+        {/* Featured Carousel - Banner style */}
         {featuredProducts.length > 0 && !searchQuery && selectedCategory === 'all' && (
           <FeaturedCarousel
             products={featuredProducts}
@@ -335,30 +318,28 @@ const Marketplace = () => {
           />
         )}
 
-        {/* Curated Section Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-8">
-          <h2 className="text-2xl font-bold text-black">
+        {/* Section Header with Sort Tabs */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5 mt-6">
+          <h2 className="text-lg font-bold text-black">
             {searchQuery ? `Results for "${searchQuery}"` : 'Curated for you'}
           </h2>
 
-          {/* Sort Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+          {/* Sort Tabs - Gumroad style: simple text links */}
+          <div className="flex items-center gap-1">
             {[
-              { value: 'curated' as SortOption, label: 'Curated', icon: Sparkles },
-              { value: 'trending' as SortOption, label: 'Trending', icon: TrendingUp },
-              { value: 'best_sellers' as SortOption, label: 'Best Sellers', icon: TrendingUp },
-              { value: 'new' as SortOption, label: 'Hot & New', icon: Clock },
-            ].map(({ value, label, icon: Icon }) => (
+              { value: 'trending' as SortOption, label: 'Trending' },
+              { value: 'best_sellers' as SortOption, label: 'Best Sellers' },
+              { value: 'new' as SortOption, label: 'Hot & New' },
+            ].map(({ value, label }) => (
               <button
                 key={value}
                 onClick={() => setSortOption(value)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                   sortOption === value
-                    ? 'bg-black text-white'
-                    : 'text-black/60 hover:text-black'
+                    ? 'border border-black text-black'
+                    : 'text-black/50 hover:text-black'
                 }`}
               >
-                <Icon className="w-4 h-4" />
                 {label}
               </button>
             ))}
@@ -370,7 +351,7 @@ const Marketplace = () => {
           {/* Mobile Filter Toggle */}
           <button
             onClick={() => setShowMobileFilters(true)}
-            className="lg:hidden fixed bottom-6 right-6 z-40 p-4 bg-black text-white rounded-full shadow-lg"
+            className="lg:hidden fixed bottom-6 right-6 z-40 p-3 bg-black text-white rounded-full shadow-lg"
           >
             <Filter className="w-5 h-5" />
           </button>
@@ -378,9 +359,9 @@ const Marketplace = () => {
           {/* Mobile Filter Overlay */}
           {showMobileFilters && (
             <div className="lg:hidden fixed inset-0 z-50 bg-black/50">
-              <div className="absolute right-0 top-0 bottom-0 w-80 bg-[#F4F4F0] p-6 overflow-y-auto">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold text-black">Filters</h3>
+              <div className="absolute right-0 top-0 bottom-0 w-72 bg-white p-5 overflow-y-auto">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-base font-bold text-black">Filters</h3>
                   <button onClick={() => setShowMobileFilters(false)}>
                     <X className="w-5 h-5 text-black" />
                   </button>
@@ -421,34 +402,32 @@ const Marketplace = () => {
             />
           </div>
 
-          {/* Product Grid */}
+          {/* Product Grid - Gumroad style minimal cards */}
           <div className="flex-1">
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="bg-white rounded-xl overflow-hidden">
-                    <Skeleton className="aspect-[16/10]" />
-                    <div className="p-4 space-y-3">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-5 w-full" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {Array.from({ length: 15 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-lg overflow-hidden">
+                    <Skeleton className="aspect-square" />
+                    <div className="p-3 space-y-2">
+                      <Skeleton className="h-4 w-full" />
                       <Skeleton className="h-4 w-16" />
-                      <Skeleton className="h-6 w-20" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-lg text-black/50">No products found</p>
+                <p className="text-base text-black/50">No products found</p>
                 <button
                   onClick={handleClearFilters}
-                  className="mt-4 text-sm font-medium text-pink-500 hover:text-pink-600"
+                  className="mt-3 text-sm font-medium text-black/70 hover:text-black"
                 >
                   Clear all filters
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {filteredProducts.map((product) => (
                   <GumroadProductCard
                     key={product.id}
@@ -490,7 +469,7 @@ const Marketplace = () => {
           name: guestCheckoutProduct.name,
           price: guestCheckoutProduct.price,
           iconUrl: guestCheckoutProduct.iconUrl,
-          sellerId: '', // Not needed for display
+          sellerId: '',
           sellerName: guestCheckoutProduct.sellerName,
         } : null}
         onCheckout={handleGuestCheckout}
