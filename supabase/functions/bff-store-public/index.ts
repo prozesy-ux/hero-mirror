@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     const [productsResult, categoriesResult, flashSalesResult] = await Promise.all([
       supabase
         .from('seller_products')
-        .select('id, slug, name, description, price, icon_url, category_id, is_available, is_approved, tags, stock, sold_count, chat_allowed, seller_id, view_count, images')
+        .select('id, slug, name, description, price, icon_url, category_id, is_available, is_approved, tags, stock, sold_count, chat_allowed, seller_id, view_count, images, product_type')
         .eq('seller_id', seller.id)
         .eq('is_available', true)
         .eq('is_approved', true)
