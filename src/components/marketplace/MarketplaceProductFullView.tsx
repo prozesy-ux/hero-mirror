@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   ArrowLeft, 
   Star, 
@@ -14,7 +14,6 @@ import {
   Link as LinkIcon,
   Package,
   ChevronDown,
-  Copy,
   Filter,
   ThumbsUp,
   Edit3
@@ -32,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from 'date-fns';
+import ReviewForm from '@/components/reviews/ReviewForm';
 
 interface ProductFullViewProps {
   productId: string;
@@ -107,6 +107,7 @@ const MarketplaceProductFullView = ({
   const [sortBy, setSortBy] = useState<'recent' | 'helpful'>('recent');
   const [filterRating, setFilterRating] = useState<number | null>(null);
   const [helpfulClicked, setHelpfulClicked] = useState<Set<string>>(new Set());
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -301,13 +302,6 @@ const MarketplaceProductFullView = ({
     onBack();
   };
 
-  const handleCopyProductUrl = () => {
-    if (product?.slug) {
-      const url = `${window.location.origin}/product/${product.slug}`;
-      navigator.clipboard.writeText(url);
-      toast.success('Product link copied!');
-    }
-  };
 
   const handleHelpful = async (reviewId: string) => {
     if (helpfulClicked.has(reviewId)) return;
@@ -495,7 +489,7 @@ const MarketplaceProductFullView = ({
 
               {/* Rating Summary */}
               {product.reviewCount > 0 && (
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2">
                   <div className="flex items-center gap-0.5">
                     {[1, 2, 3, 4, 5].map(i => (
                       <Star
@@ -514,25 +508,6 @@ const MarketplaceProductFullView = ({
                   <span className="text-sm text-black/50">
                     ({product.reviewCount} ratings)
                   </span>
-                </div>
-              )}
-
-              {/* Product URL Display */}
-              {product.slug && (
-                <div className="flex items-center gap-2 bg-black/5 border border-black/20 rounded-xl p-3">
-                  <LinkIcon className="w-4 h-4 text-black/50 flex-shrink-0" />
-                  <span className="text-sm text-black/70 flex-1 truncate font-mono">
-                    uptoza.com/product/{product.slug}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCopyProductUrl}
-                    className="h-7 px-2 text-black/60 hover:text-black hover:bg-black/10"
-                  >
-                    <Copy className="w-3.5 h-3.5 mr-1" />
-                    Copy
-                  </Button>
                 </div>
               )}
             </div>
@@ -626,11 +601,11 @@ const MarketplaceProductFullView = ({
                   {/* Write Review Button */}
                   {isAuthenticated && (
                     <Button
-                      onClick={() => toast.info('Review form coming soon!')}
+                      onClick={() => setShowReviewForm(!showReviewForm)}
                       className="bg-black hover:bg-black/90 text-white rounded-lg text-sm h-9"
                     >
                       <Edit3 className="w-3.5 h-3.5 mr-1.5" />
-                      Write a Review
+                      {showReviewForm ? 'Cancel' : 'Write a Review'}
                     </Button>
                   )}
                   
@@ -666,6 +641,22 @@ const MarketplaceProductFullView = ({
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+
+              {/* Review Form */}
+              {showReviewForm && isAuthenticated && (
+                <div className="mb-4">
+                  <ReviewForm
+                    productId={productId}
+                    orderId=""
+                    onSuccess={() => {
+                      setShowReviewForm(false);
+                      // Trigger re-fetch by updating a state
+                      window.location.reload();
+                    }}
+                    onCancel={() => setShowReviewForm(false)}
+                  />
+                </div>
+              )}
 
               {/* Reviews List */}
               {filteredReviews.length > 0 ? (

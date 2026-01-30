@@ -75,9 +75,9 @@ const StarRating = ({
                 className={cn(
                   sizeClasses[size],
                   'transition-colors',
-                  isFilled && 'fill-amber-400 text-amber-400',
-                  isHalfFilled && 'fill-amber-400/50 text-amber-400',
-                  !isFilled && !isHalfFilled && 'fill-slate-200 text-slate-200'
+                  isFilled && 'fill-black text-black',
+                  isHalfFilled && 'fill-black/50 text-black',
+                  !isFilled && !isHalfFilled && 'fill-black/20 text-black/20'
                 )}
               />
             </button>
@@ -85,7 +85,7 @@ const StarRating = ({
         })}
       </div>
       {showValue && (
-        <span className="text-sm font-medium text-slate-700 ml-1">
+        <span className="text-sm font-medium text-black ml-1">
           {rating.toFixed(1)}
         </span>
       )}
