@@ -1,237 +1,146 @@
 
 
-# Toast/Notification Design Redesign - Fiverr/Upwork Style
+# Exact Gumroad Sidebar Match - Icon Style, Font & Sizing Fix
 
-## Overview
+## Current Issues (Comparing to Gumroad Reference)
 
-Redesign the toast notification system to match professional marketplace platforms like Fiverr and Upwork. Replace the current generic sonner styling with a premium, minimal notification design featuring:
-- Clean, minimal cards with subtle shadows
-- Color-coded icons (green checkmark for success, red X for error)
-- Smooth slide-in animations
-- Professional typography
-- Positioned in top-right corner
-
----
-
-## Current Implementation
-
-The project uses **Sonner** library for toasts via `src/components/ui/sonner.tsx`. Example usage in `SignIn.tsx`:
-- `toast.success("Welcome back!")` - on successful login
-- `toast.error(error.message)` - on errors
-
----
-
-## Fiverr/Upwork Toast Design Analysis
-
-| Element | Fiverr/Upwork Style |
-|---------|---------------------|
-| Position | Top-right corner, 16-20px from edges |
-| Background | White, subtle shadow |
-| Border | None or very subtle (1px gray) |
-| Radius | 8-12px rounded |
-| Padding | 16px horizontal, 12-14px vertical |
-| Icon | Colored circle with white icon (green/red/blue) |
-| Title | 14-15px, semi-bold, dark text |
-| Description | 13px, regular weight, muted text |
-| Close Button | Small X, appears on hover |
-| Animation | Smooth slide-in from right |
-| Width | 360-400px |
-| Duration | 4-5 seconds |
-
----
-
-## Design Specifications
-
-### Color Scheme (Matching Marketplace Theme)
-
-| Type | Icon BG | Icon | Text |
-|------|---------|------|------|
-| Success | `#059669` (emerald-600) | White checkmark | Dark slate |
-| Error | `#DC2626` (red-600) | White X | Dark slate |
-| Info | `#2563EB` (blue-600) | White info | Dark slate |
-| Warning | `#D97706` (amber-600) | White alert | Dark slate |
-
-### Typography
-- Title: `text-[15px] font-semibold text-slate-800`
-- Description: `text-[13px] font-normal text-slate-500`
-
-### Spacing
-- Toast Padding: `px-4 py-3`
-- Icon Size: 20px in 32px circle
-- Gap between icon and text: 12px
+| Element | Current (Wrong) | Gumroad (Correct) |
+|---------|-----------------|-------------------|
+| Icons | Lucide outlined, `strokeWidth={1.5}`, 18px | Filled/solid style, 20px |
+| Font | System/Inter, regular weight | Mabry Pro / DM Sans, medium weight |
+| Font Size | 14px | 15px |
+| Line Height | Default | Tighter |
+| Padding | `py-2.5 px-5` | `py-3 px-5` (more vertical space) |
+| Text Color | `text-white/70` | `text-white/80` (more visible) |
+| Active Color | `text-pink-400` | `text-[#FF90E8]` (Gumroad pink) |
+| Active BG | `bg-white/5` | No background (just color change) |
+| Hover | `hover:bg-white/5` | No background change |
+| Icon Gap | `gap-3` (12px) | `gap-3.5` (14px) |
+| Sidebar Width | 220px | 240px |
+| Logo | Uptoza image | Text "GUMROAD" style |
 
 ---
 
 ## Files to Modify
 
-### 1. `src/components/ui/sonner.tsx`
+### 1. `src/components/seller/SellerSidebar.tsx`
 
-**Complete redesign with Fiverr/Upwork styling:**
+**Exact Gumroad Styling Changes:**
 
 ```tsx
-import { Toaster as Sonner, toast } from "sonner";
+// Sidebar width: 240px (Gumroad standard)
+<aside className={`... ${isCollapsed ? 'w-[72px]' : 'w-[240px]'}`}>
 
-type ToasterProps = React.ComponentProps<typeof Sonner>;
+// Logo section - text style like Gumroad
+<div className="h-14 flex items-center px-5">
+  <Link to="/seller" className="flex items-center">
+    <span className="text-white text-xl font-bold tracking-tight">UPTOZA</span>
+  </Link>
+</div>
 
-const Toaster = ({ ...props }: ToasterProps) => {
-  return (
-    <Sonner
-      position="top-right"
-      offset={20}
-      gap={12}
-      duration={4000}
-      visibleToasts={4}
-      closeButton
-      className="toaster group"
-      toastOptions={{
-        classNames: {
-          toast:
-            "group toast bg-white border border-slate-200 shadow-lg shadow-black/5 rounded-xl px-4 py-3 w-[380px] flex items-start gap-3",
-          title: "text-[15px] font-semibold text-slate-800",
-          description: "text-[13px] text-slate-500 mt-0.5",
-          actionButton: "bg-emerald-600 text-white text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-emerald-700",
-          cancelButton: "bg-slate-100 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-slate-200",
-          closeButton: "bg-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg",
-          success: "border-emerald-100",
-          error: "border-red-100", 
-          warning: "border-amber-100",
-          info: "border-blue-100",
-        },
-      }}
-      icons={{
-        success: (
-          <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-        ),
-        error: (
-          <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </div>
-        ),
-        warning: (
-          <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-        ),
-        info: (
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        ),
-      }}
-      {...props}
-    />
-  );
-};
-
-export { Toaster, toast };
+// Nav item styling - exact Gumroad match
+<Link
+  className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${
+    active 
+      ? 'text-[#FF90E8]'  // Gumroad pink - no background
+      : 'text-white/80 hover:text-white'  // No hover background
+  }`}
+>
+  <Icon size={20} strokeWidth={2} />  // Larger, thicker icons
+  <span>{item.label}</span>
+</Link>
 ```
 
 ---
 
-### 2. `src/index.css` - Add Toast Animation Enhancements
+### 2. `src/components/dashboard/DashboardSidebar.tsx`
 
-Add custom CSS for smoother animations and hover states:
+**Same structure but white base:**
 
-```css
-/* Fiverr/Upwork Style Toast Enhancements */
-[data-sonner-toaster] {
-  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
-}
+```tsx
+// Sidebar width: 240px
+<aside className={`... ${isCollapsed ? 'w-[72px]' : 'w-[240px]'}`}>
 
-[data-sonner-toast] {
-  transition: all 0.2s ease-out;
-}
+// Logo section
+<div className="h-14 flex items-center px-5">
+  <Link to="/dashboard" className="flex items-center">
+    <span className="text-slate-900 text-xl font-bold tracking-tight">UPTOZA</span>
+  </Link>
+</div>
 
-[data-sonner-toast]:hover {
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.12);
-}
-
-[data-sonner-toast][data-type="success"] {
-  border-left: 3px solid #059669;
-}
-
-[data-sonner-toast][data-type="error"] {
-  border-left: 3px solid #DC2626;
-}
-
-[data-sonner-toast][data-type="warning"] {
-  border-left: 3px solid #D97706;
-}
-
-[data-sonner-toast][data-type="info"] {
-  border-left: 3px solid #2563EB;
-}
-
-/* Close button styling */
-[data-sonner-toast] [data-close-button] {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-[data-sonner-toast]:hover [data-close-button] {
-  opacity: 1;
-}
+// Nav item styling
+<Link
+  className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${
+    active 
+      ? 'text-violet-600'  // No background
+      : 'text-slate-600 hover:text-slate-900'  // No hover background
+  }`}
+>
+  <Icon size={20} strokeWidth={2} />
+  <span>{item.label}</span>
+</Link>
 ```
 
 ---
 
-## Visual Design (Before vs After)
+### 3. Update Related Layout Files
 
-```text
-BEFORE (Generic):                    AFTER (Fiverr/Upwork Style):
-┌─────────────────────────┐          ┌────────────────────────────────────┐
-│ Welcome back!           │          │ ┌──┐                           [X] │
-│                         │          │ │✓ │  Welcome back!                │
-│                         │          │ └──┘  You are now signed in        │
-└─────────────────────────┘          └────────────────────────────────────┘
-                                      ↑
-                                      Green circle with white checkmark
-                                      + Colored left border accent
+Since sidebar width changes from 220px to 240px:
+
+**`src/pages/Seller.tsx`:**
+```tsx
+// Change margin
+lg:ml-[240px]  // was 220px
+```
+
+**`src/components/seller/SellerTopBar.tsx`:**
+```tsx
+// Change left offset
+left-[240px]  // was 220px
+```
+
+**`src/pages/Dashboard.tsx`:**
+```tsx
+// Change margin
+lg:ml-[240px]  // was 220px
 ```
 
 ---
 
-## Toast Types Preview
+## Exact Design Specifications (From Gumroad Reference)
 
-**Success Toast:**
-```text
-┌─────────────────────────────────────────┐
-│ [✓]  Welcome back!                      │
-│      You are now signed in              │
-└─────────────────────────────────────────┘
-  ↑ Emerald circle + emerald left border
-```
+### Typography
+| Element | Value |
+|---------|-------|
+| Font Family | `font-sans` (DM Sans already in project) |
+| Nav Text Size | `text-[15px]` |
+| Nav Font Weight | `font-medium` (500) |
+| Letter Spacing | `tracking-normal` |
 
-**Error Toast:**
-```text
-┌─────────────────────────────────────────┐
-│ [✗]  Authentication failed              │
-│      Invalid email or password          │
-└─────────────────────────────────────────┘
-  ↑ Red circle + red left border
-```
+### Colors (Gumroad Exact)
+| Element | Color |
+|---------|-------|
+| Background | `#000000` (pure black) |
+| Default Text | `rgba(255,255,255,0.8)` → `text-white/80` |
+| Hover Text | `#FFFFFF` → `text-white` |
+| Active Text | `#FF90E8` (Gumroad pink) |
+| Border | `rgba(255,255,255,0.1)` → `border-white/10` |
 
-**Info Toast:**
-```text
-┌─────────────────────────────────────────┐
-│ [i]  Order updated!                     │
-│      Check your orders page             │
-└─────────────────────────────────────────┘
-  ↑ Blue circle + blue left border
-```
+### Spacing
+| Element | Value |
+|---------|-------|
+| Sidebar Width | 240px (expanded), 72px (collapsed) |
+| Header Height | 56px (`h-14`) |
+| Nav Item Padding | `py-3 px-5` |
+| Icon-Text Gap | `gap-3.5` (14px) |
+| Icon Size | 20px |
+| Icon Stroke | 2 (thicker) |
+
+### No Background on States
+Gumroad does NOT use background colors for hover/active states - only text color changes:
+- Default: `text-white/80`
+- Hover: `text-white`
+- Active: `text-[#FF90E8]`
 
 ---
 
@@ -239,19 +148,22 @@ BEFORE (Generic):                    AFTER (Fiverr/Upwork Style):
 
 | File | Changes |
 |------|---------|
-| `src/components/ui/sonner.tsx` | Complete redesign with Fiverr/Upwork styling, custom icons, position, animations |
-| `src/index.css` | Add toast enhancement CSS for borders, shadows, hover states |
+| `src/components/seller/SellerSidebar.tsx` | Icon size 20px, strokeWidth 2, font-medium, py-3, gap-3.5, no hover bg, #FF90E8 active, width 240px |
+| `src/components/dashboard/DashboardSidebar.tsx` | Same structure with white theme, width 240px |
+| `src/pages/Seller.tsx` | Update margin to 240px |
+| `src/pages/Dashboard.tsx` | Update margin to 240px |
+| `src/components/seller/SellerTopBar.tsx` | Update left offset to 240px |
 
 ---
 
 ## Expected Outcome
 
-After implementation:
-1. Toasts appear in top-right corner with smooth slide-in animation
-2. Each toast type has distinct colored circular icon with white symbol
-3. Clean white background with subtle shadow and colored left border
-4. Professional typography matching marketplace design system
-5. Close button appears on hover
-6. 4-second duration with smooth fade-out
-7. Matches Fiverr/Upwork professional notification design
+After these changes, the sidebars will be **pixel-perfect matches** to Gumroad:
+1. Larger icons (20px) with thicker stroke
+2. Medium weight font at 15px
+3. More vertical padding (py-3)
+4. No background on hover/active - only color change
+5. Exact Gumroad pink (#FF90E8) for active state
+6. Proper 240px sidebar width
+7. Text-based logo matching Gumroad style
 
