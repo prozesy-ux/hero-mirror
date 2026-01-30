@@ -12,6 +12,7 @@ import { OptimizedImage } from '@/components/ui/optimized-image';
 interface NewProduct {
   id: string;
   name: string;
+  slug: string | null;
   price: number;
   icon_url: string | null;
   created_at: string;
@@ -41,7 +42,7 @@ export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSec
       const [sellerResult, aiResult] = await Promise.all([
         supabase
           .from('seller_products')
-          .select('id, name, price, icon_url, created_at, seller_profiles(store_name, store_slug)')
+          .select('id, name, slug, price, icon_url, created_at, seller_profiles(store_name, store_slug)')
           .eq('is_available', true)
           .eq('is_approved', true)
           .gte('created_at', sevenDaysAgo)
@@ -49,7 +50,7 @@ export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSec
           .limit(8),
         supabase
           .from('ai_accounts')
-          .select('id, name, price, icon_url, created_at')
+          .select('id, name, slug, price, icon_url, created_at')
           .eq('is_available', true)
           .gte('created_at', sevenDaysAgo)
           .order('created_at', { ascending: false })
@@ -60,6 +61,7 @@ export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSec
         ...(sellerResult.data || []).map((p: any) => ({
           id: p.id,
           name: p.name,
+          slug: p.slug,
           price: p.price,
           icon_url: p.icon_url,
           created_at: p.created_at,
@@ -70,6 +72,7 @@ export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSec
         ...(aiResult.data || []).map((p: any) => ({
           id: p.id,
           name: p.name,
+          slug: p.slug,
           price: p.price,
           icon_url: p.icon_url,
           created_at: p.created_at,
