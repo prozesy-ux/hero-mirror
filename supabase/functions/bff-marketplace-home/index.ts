@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
       // AI Accounts (for hot, trending, new)
       supabase
         .from('ai_accounts')
-        .select('id, name, price, icon_url, is_trending, is_featured, created_at, view_count, sold_count, category_id')
+        .select('id, name, slug, price, icon_url, is_trending, is_featured, created_at, view_count, sold_count, category_id')
         .eq('is_available', true)
         .order('created_at', { ascending: false })
         .limit(50),
@@ -47,8 +47,8 @@ Deno.serve(async (req) => {
       supabase
         .from('seller_products')
         .select(`
-          id, name, price, icon_url, is_approved, is_available, created_at, sold_count, view_count, category_id,
-          seller_profiles!inner(id, store_name, is_verified)
+          id, name, slug, price, icon_url, is_approved, is_available, created_at, sold_count, view_count, category_id,
+          seller_profiles!inner(id, store_name, store_slug, is_verified)
         `)
         .eq('is_available', true)
         .eq('is_approved', true)
@@ -79,6 +79,7 @@ Deno.serve(async (req) => {
       ...(aiAccountsResult.data || []).map(p => ({
         id: p.id,
         name: p.name,
+        slug: p.slug || null,
         price: p.price,
         iconUrl: p.icon_url,
         soldCount: p.sold_count || 0,
@@ -86,11 +87,13 @@ Deno.serve(async (req) => {
         createdAt: p.created_at,
         type: 'ai' as const,
         sellerName: null,
+        storeSlug: null,
         isVerified: true,
       })),
       ...(sellerProductsResult.data || []).map(p => ({
         id: p.id,
         name: p.name,
+        slug: p.slug || null,
         price: p.price,
         iconUrl: p.icon_url,
         soldCount: p.sold_count || 0,
@@ -98,6 +101,7 @@ Deno.serve(async (req) => {
         createdAt: p.created_at,
         type: 'seller' as const,
         sellerName: (p.seller_profiles as any)?.store_name || null,
+        storeSlug: (p.seller_profiles as any)?.store_slug || null,
         isVerified: (p.seller_profiles as any)?.is_verified || false,
       })),
     ];

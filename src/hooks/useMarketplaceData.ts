@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface ProductSummary {
   id: string;
   name: string;
+  slug: string | null;
   price: number;
   iconUrl: string | null;
   soldCount: number;
@@ -11,6 +12,7 @@ export interface ProductSummary {
   createdAt: string;
   type: 'ai' | 'seller';
   sellerName: string | null;
+  storeSlug: string | null;
   isVerified: boolean;
 }
 

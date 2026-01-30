@@ -18,6 +18,7 @@ import { useSearchSuggestions, SearchSuggestion } from '@/hooks/useSearchSuggest
 import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { useMarketplaceData } from '@/hooks/useMarketplaceData';
 import { sendEmail } from '@/lib/email-sender';
+import { generateProductUrlWithFallback } from '@/lib/url-utils';
 import { HotProductsSection } from '@/components/marketplace/HotProductsSection';
 import { TopRatedSection } from '@/components/marketplace/TopRatedSection';
 import { NewArrivalsSection } from '@/components/marketplace/NewArrivalsSection';
@@ -46,6 +47,7 @@ interface AIAccount {
 interface SellerProduct {
   id: string;
   name: string;
+  slug: string | null;
   description: string | null;
   price: number;
   icon_url: string | null;
@@ -61,6 +63,7 @@ interface SellerProduct {
   seller_profiles: {
     id: string;
     store_name: string;
+    store_slug: string | null;
     store_logo_url: string | null;
     is_verified: boolean;
   } | null;
@@ -573,7 +576,7 @@ const AIAccountsSection = () => {
       error
     } = await supabase.from('seller_products').select(`
         *,
-        seller_profiles (id, store_name, store_logo_url, is_verified)
+        seller_profiles (id, store_name, store_slug, store_logo_url, is_verified)
       `).eq('is_available', true).eq('is_approved', true).order('created_at', {
       ascending: false
     });
@@ -2095,6 +2098,21 @@ const AIAccountsSection = () => {
                   {/* Full View Button */}
                   <button onClick={() => {
                 setShowQuickViewModal(false);
+                // Use SEO-friendly URL for seller products
+                if (quickViewProduct.type === 'seller') {
+                  const product = quickViewProduct.data as SellerProduct;
+                  const storeSlug = product.seller_profiles?.store_slug;
+                  if (storeSlug) {
+                    navigate(generateProductUrlWithFallback(
+                      storeSlug,
+                      product.slug,
+                      product.name,
+                      product.id
+                    ));
+                    return;
+                  }
+                }
+                // Fallback to internal route for AI accounts or products without store_slug
                 navigate(`/dashboard/ai-accounts/product/${quickViewProduct.data.id}`);
               }} className="flex-1 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm">
                     <Eye size={16} />

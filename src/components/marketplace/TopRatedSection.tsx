@@ -11,6 +11,7 @@ import { OptimizedImage } from '@/components/ui/optimized-image';
 interface TopRatedProduct {
   id: string;
   name: string;
+  slug: string | null;
   price: number;
   icon_url: string | null;
   avg_rating: number;
@@ -66,7 +67,7 @@ export function TopRatedSection({ onProductClick, className }: TopRatedSectionPr
         // Fall back to featured products if no ratings
         const { data: featured } = await supabase
           .from('seller_products')
-          .select('id, name, price, icon_url, seller_profiles(store_name, store_slug)')
+          .select('id, name, slug, price, icon_url, seller_profiles(store_name, store_slug)')
           .eq('is_available', true)
           .eq('is_approved', true)
           .order('created_at', { ascending: false })
@@ -76,6 +77,7 @@ export function TopRatedSection({ onProductClick, className }: TopRatedSectionPr
           (featured || []).map((p: any) => ({
             id: p.id,
             name: p.name,
+            slug: p.slug,
             price: p.price,
             icon_url: p.icon_url,
             avg_rating: 4.5,
@@ -91,7 +93,7 @@ export function TopRatedSection({ onProductClick, className }: TopRatedSectionPr
       // Fetch product details for top rated
       const { data: productData } = await supabase
         .from('seller_products')
-        .select('id, name, price, icon_url, seller_profiles(store_name, store_slug)')
+        .select('id, name, slug, price, icon_url, seller_profiles(store_name, store_slug)')
         .eq('is_available', true)
         .eq('is_approved', true)
         .in('id', topRatedIds.map(p => p.id));
@@ -103,6 +105,7 @@ export function TopRatedSection({ onProductClick, className }: TopRatedSectionPr
           return {
             id: product.id,
             name: product.name,
+            slug: (product as any).slug,
             price: product.price,
             icon_url: product.icon_url,
             avg_rating: Math.round(rating.avg * 10) / 10,
