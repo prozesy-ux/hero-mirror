@@ -1,98 +1,238 @@
 
 
-# Fix SignIn Page Infinite Loading After Google OAuth
+# Clean SEO-Friendly Product URLs - Remove UUID Suffix
 
-## Problem Identified
+## Current Issue
 
-The SignIn page gets stuck on "Signing you in..." forever because:
+Your product URLs look like this:
+- `/store/prozesy/product/netflix-cheap-monthly-account-f3b87674`
+- `/store/prozesy/product/cheap-amazon-prime-account-10-3-months-2375cd90`
 
-1. Google OAuth returns to `/signin#access_token=...&refresh_token=...`
-2. SignIn.tsx detects the hash and immediately clears it using `window.history.replaceState()`
-3. This destroys the tokens **before** Supabase SDK can read them
-4. Supabase SDK never receives the tokens → `onAuthStateChange` never fires
-5. User state remains `null` forever → stuck on loading screen
+The `f3b87674` at the end is the first 8 characters of the product UUID. You want clean URLs like Amazon:
+- `/store/prozesy/product/netflix-cheap-monthly-account`
+- `/store/prozesy/product/cheap-amazon-prime-account-10-3-months`
 
-## Why Seller Page Works
+## Why The UUID Suffix Exists
 
-The Seller page doesn't have this OAuth hash handling code. It lets Supabase SDK naturally process the tokens from the URL hash, so authentication completes successfully.
+The UUID suffix was added to guarantee uniqueness - if a seller has two products with similar names, the suffix prevents URL conflicts. However, since URLs are scoped to a store (`/store/prozesy/...`), we can use a unique slug per seller instead.
 
-## Solution
+## Solution: Database-Stored Unique Slugs
 
-Remove the custom OAuth hash detection entirely. Let Supabase SDK handle it automatically - it already does this correctly!
+### Overview
 
-### Changes to `src/pages/SignIn.tsx`:
+1. Add a `slug` column to the `seller_products` table
+2. Auto-generate unique slugs when products are created/updated
+3. Update URL generation to use the clean slug (no UUID)
+4. Update product lookup to find by slug within a store
 
-1. **Remove the `oauthPending` state** - not needed anymore
-2. **Remove the OAuth hash detection useEffect** - Supabase handles this automatically
-3. **Remove the loading screen block** - no more manual OAuth tracking
-4. **Keep the existing auto-redirect logic** - it will work naturally once Supabase processes tokens
+### Changes
 
-```text
-Before (broken):
-- Detect hash → clear hash → set pending → wait forever
+#### 1. Database Migration
 
-After (working):
-- Supabase SDK automatically detects hash
-- SDK processes tokens internally
-- onAuthStateChange fires SIGNED_IN
-- useAuth sets user state
-- Existing auto-redirect navigates to dashboard
+Add `slug` column to `seller_products` table with uniqueness per seller:
+
+```sql
+-- Add slug column
+ALTER TABLE seller_products ADD COLUMN slug text;
+
+-- Create unique index per seller
+CREATE UNIQUE INDEX seller_products_seller_slug_unique 
+ON seller_products(seller_id, slug) 
+WHERE slug IS NOT NULL;
+
+-- Backfill existing products with slugs
+UPDATE seller_products 
+SET slug = LOWER(TRIM(
+  REGEXP_REPLACE(
+    REGEXP_REPLACE(
+      REGEXP_REPLACE(name, '[^\w\s-]', '', 'g'),
+      '[\s_-]+', '-', 'g'
+    ),
+    '^-+|-+$', '', 'g'
+  )
+));
+
+-- Handle duplicates by appending numbers
+-- (Will be done via a function/trigger for new products)
 ```
 
-### Technical Changes:
+#### 2. Database Trigger for Auto-Slug Generation
 
-**DELETE** (lines 18, 27-47):
-```typescript
-// DELETE: const [oauthPending, setOauthPending] = useState(false);
+Create a function that generates unique slugs automatically:
 
-// DELETE: The entire OAuth hash detection useEffect
-useEffect(() => {
-  if (didProcessOAuth.current) return;
-  const hash = window.location.hash;
-  // ... all of this
-}, []);
+```sql
+CREATE OR REPLACE FUNCTION generate_product_slug()
+RETURNS TRIGGER AS $$
+DECLARE
+  base_slug text;
+  final_slug text;
+  counter integer := 0;
+BEGIN
+  -- Generate base slug from name
+  base_slug := LOWER(TRIM(
+    REGEXP_REPLACE(
+      REGEXP_REPLACE(
+        REGEXP_REPLACE(NEW.name, '[^\w\s-]', '', 'g'),
+        '[\s_-]+', '-', 'g'
+      ),
+      '^-+|-+$', '', 'g'
+    )
+  ));
+  
+  -- Limit length
+  base_slug := LEFT(base_slug, 50);
+  final_slug := base_slug;
+  
+  -- Check for uniqueness within seller, append number if needed
+  WHILE EXISTS (
+    SELECT 1 FROM seller_products 
+    WHERE seller_id = NEW.seller_id 
+    AND slug = final_slug 
+    AND id != COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::uuid)
+  ) LOOP
+    counter := counter + 1;
+    final_slug := base_slug || '-' || counter;
+  END LOOP;
+  
+  NEW.slug := final_slug;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_product_slug
+BEFORE INSERT OR UPDATE OF name ON seller_products
+FOR EACH ROW EXECUTE FUNCTION generate_product_slug();
 ```
 
-**DELETE** (lines 179-192):
+#### 3. Update URL Utilities (`src/lib/url-utils.ts`)
+
+Simplify URL generation to use clean slugs:
+
 ```typescript
-// DELETE: The oauthPending loading screen
-if (oauthPending && !user) {
-  return (
-    <div className="flex min-h-dvh...">
-      ...Signing you in...
-    </div>
-  );
+// NEW: Use pre-stored slug from database
+export function generateProductUrl(
+  storeSlug: string, 
+  productSlug: string  // Now expects the clean slug, not product name
+): string {
+  return `/store/${storeSlug}/product/${productSlug}`;
+}
+
+// Keep backward compatibility for client-side slug generation
+export function generateProductSlug(productName: string): string {
+  return productName
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50);
+}
+
+// Legacy support: still extract ID if present
+export function extractIdFromSlug(urlSlug: string): string | null {
+  const match = urlSlug.match(/-([a-f0-9]{8})$/i);
+  return match ? match[1] : null;
 }
 ```
 
-**KEEP**:
-- The `didProcessOAuth` ref (for safety, though not strictly needed)
-- The auto-redirect useEffect that checks `user` and `authLoading`
-- All form handling code
+#### 4. Update Product Lookup (`src/pages/ProductFullView.tsx`)
 
-## Expected Flow After Fix
+Change the lookup strategy:
 
-```text
-1. User clicks "Continue with Google"
-2. Redirects to Google OAuth
-3. Google returns with #access_token=...
-4. Supabase SDK detects hash automatically
-5. SDK processes tokens, stores in localStorage
-6. onAuthStateChange fires SIGNED_IN
-7. useAuth sets user state, authLoading becomes false
-8. Auto-redirect useEffect triggers → handlePostAuthRedirect()
-9. User lands on dashboard
+```typescript
+// New lookup priority:
+// 1. Exact slug match (new SEO URLs)
+// 2. ID prefix match (legacy URLs with -xxxxxxxx)
+// 3. Full UUID match (very old URLs)
+
+const fetchData = async () => {
+  // First get seller
+  const { data: sellerData } = await supabase
+    .from('seller_profiles')
+    .select('*')
+    .eq('store_slug', storeSlug)
+    .single();
+
+  // 1. Try exact slug match (new clean URLs)
+  let { data: productData } = await supabase
+    .from('seller_products')
+    .select('*')
+    .eq('seller_id', sellerData.id)
+    .eq('slug', productId)  // productId is now the slug
+    .maybeSingle();
+
+  // 2. Try ID prefix match (legacy URLs with -xxxxxxxx)
+  if (!productData) {
+    const idPrefix = extractIdFromSlug(productId);
+    if (idPrefix) {
+      const { data } = await supabase
+        .from('seller_products')
+        .select('*')
+        .eq('seller_id', sellerData.id)
+        .ilike('id', `${idPrefix}%`)
+        .maybeSingle();
+      
+      if (data) {
+        // Redirect legacy URL to new clean URL
+        navigate(`/store/${storeSlug}/product/${data.slug}`, { replace: true });
+        productData = data;
+      }
+    }
+  }
+
+  // 3. Full UUID match
+  if (!productData && isFullUUID(productId)) {
+    // ... existing logic with redirect
+  }
+};
 ```
+
+#### 5. Update Components Using Product URLs
+
+Update all places that generate product URLs to use the stored slug:
+
+- `src/pages/Store.tsx` - Product detail modal "View Full" link
+- `src/pages/ProductFullView.tsx` - Related products links  
+- `src/components/dashboard/BuyerWishlist.tsx` - Wishlist links
+- `src/components/store/ProductDetailModal.tsx` - Share URLs
+- `supabase/functions/bff-store-public/index.ts` - Include slug in response
+
+#### 6. Update BFF Edge Function
+
+Include slug in the products response:
+
+```typescript
+// bff-store-public/index.ts
+const [productsResult, ...] = await Promise.all([
+  supabase
+    .from('seller_products')
+    .select('id, name, slug, description, price, icon_url, ...')
+    .eq('seller_id', seller.id)
+    ...
+]);
+```
+
+## Result
+
+| Before | After |
+|--------|-------|
+| `/store/prozesy/product/netflix-cheap-monthly-account-f3b87674` | `/store/prozesy/product/netflix-cheap-monthly-account` |
+| `/store/prozesy/product/cheap-amazon-prime-account-10-3-months-2375cd90` | `/store/prozesy/product/cheap-amazon-prime-account-10-3-months` |
+
+## Backward Compatibility
+
+- Old URLs with UUID suffix (`-f3b87674`) will automatically redirect to the new clean URL
+- Full UUID URLs will also redirect
+- No broken links for existing shared URLs
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/SignIn.tsx` | Remove oauthPending state, OAuth hash effect, and loading screen |
-
-## Summary
-
-The fix is simple: **stop interfering with Supabase's token processing**. 
-
-The custom OAuth handling was destroying the tokens before Supabase could read them. By removing this code, we let Supabase do its job automatically. The existing auto-redirect logic will handle navigation once authentication completes.
+| Database | Add `slug` column to `seller_products`, create trigger |
+| `src/lib/url-utils.ts` | Update URL generation functions |
+| `src/pages/ProductFullView.tsx` | Update lookup strategy |
+| `src/pages/Store.tsx` | Use slug instead of generating URL |
+| `src/components/dashboard/BuyerWishlist.tsx` | Use product slug |
+| `supabase/functions/bff-store-public/index.ts` | Include slug in response |
 
