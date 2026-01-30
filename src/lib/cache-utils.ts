@@ -1,6 +1,6 @@
 // App version - update this with each deployment to trigger cache clear
-// Bumped to 1.0.4 for enterprise scaling (10M+ traffic support)
-export const APP_VERSION = '1.0.4';
+// Bumped to 1.0.5 for slug migration fix
+export const APP_VERSION = '1.0.5';
 
 const VERSION_KEY = 'app_version';
 const CACHE_CLEARED_KEY = 'cache_cleared_at';

@@ -93,32 +93,21 @@ const ProductFullViewContent = () => {
 
     setSeller(sellerData);
 
-    // Check if productSlug looks like a UUID (for backward compatibility)
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productSlug || '');
-    
-    // Fetch product by slug or ID (backward compatibility)
+    // Fetch product by ID (slug column not yet in production for seller_products)
     const productQuery = supabase
       .from('seller_products')
       .select('*')
       .eq('seller_id', sellerData.id);
     
-    const { data: productData } = isUUID
-      ? await productQuery.eq('id', productSlug).single()
-      : await productQuery.eq('slug', productSlug).single();
+    const { data: productData } = await productQuery.eq('id', productSlug).maybeSingle();
 
     if (productData) {
-      // If accessed by UUID, redirect to slug URL for SEO
-      if (isUUID && productData.slug) {
-        navigate(`/store/${storeSlug}/product/${productData.slug}`, { replace: true });
-        return;
-      }
-      
       setProduct(productData);
 
       // Fetch related products
       const { data: relatedData } = await supabase
         .from('seller_products')
-        .select('*, slug')
+        .select('*')
         .eq('seller_id', sellerData.id)
         .eq('is_available', true)
         .eq('is_approved', true)
