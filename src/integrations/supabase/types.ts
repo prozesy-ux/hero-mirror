@@ -2181,6 +2181,7 @@ export type Database = {
           price: number
           requires_email: boolean | null
           seller_id: string
+          slug: string | null
           sold_count: number | null
           stock: number | null
           tags: string[] | null
@@ -2202,6 +2203,7 @@ export type Database = {
           price?: number
           requires_email?: boolean | null
           seller_id: string
+          slug?: string | null
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
@@ -2223,6 +2225,7 @@ export type Database = {
           price?: number
           requires_email?: boolean | null
           seller_id?: string
+          slug?: string | null
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null

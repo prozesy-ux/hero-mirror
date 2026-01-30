@@ -78,6 +78,7 @@ interface SellerProfile {
 interface SellerProduct {
   id: string;
   name: string;
+  slug?: string | null;
   description: string | null;
   price: number;
   original_price?: number | null;
@@ -1113,8 +1114,9 @@ const StoreContent = () => {
         onBuy={selectedProduct ? () => handlePurchase(selectedProduct) : undefined}
         onViewFull={selectedProduct ? () => {
           setSelectedProduct(null);
-          const seoUrl = `/store/${storeSlug}/product/${selectedProduct.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)}-${selectedProduct.id.slice(0, 8)}`;
-          navigate(seoUrl);
+          // Use clean slug from database, fallback to legacy format if not available
+          const slug = (selectedProduct as any).slug || `${selectedProduct.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)}-${selectedProduct.id.slice(0, 8)}`;
+          navigate(`/store/${storeSlug}/product/${slug}`);
         } : undefined}
         isLoggedIn={!!user}
         walletBalance={wallet?.balance}
