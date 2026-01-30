@@ -1,230 +1,181 @@
 
-# Public Marketplace Section - Gumroad Style
 
-## Overview
+# Refactor /Marketplace to Match Gumroad Design Exactly
 
-Create a new public `/marketplace` route that displays all seller products in a Gumroad-inspired design, accessible to anyone without requiring login. This page will offer all the discovery, search, and checkout features currently available in the authenticated AI Accounts section, but optimized for guest users with a refined Gumroad aesthetic.
+## Current State vs Gumroad Reference
 
-## Reference Design Analysis (Gumroad Discover)
+Based on the screenshot from Gumroad's Discover page, there are significant design differences that need to be addressed:
 
-Based on the screenshot:
+### Header Differences
 
-```text
-+------------------------------------------------------------------+
-| HEADER: Logo | [Search products...] | Log in | Start selling     |
-+------------------------------------------------------------------+
-| CATEGORIES: All | Drawing | 3D | Design | Music | Education | ...  |
-+------------------------------------------------------------------+
-|                                                                    |
-| Featured products (Carousel)                                       |
-| [Card 1] [Card 2] [Card 3] [Card 4]                    1/8  < >  |
-+------------------------------------------------------------------+
-|                                                                    |
-| "Curated for you"             Trending | Best Sellers | Hot & New |
-+------------------------------------------------------------------+
-| SIDEBAR           |  PRODUCT GRID                                  |
-| - Filters         |  [Card] [Card] [Card] [Card]                  |
-| - Tags            |  [Card] [Card] [Card] [Card]                  |
-| - Contains        |  [Card] [Card] [Card] [Card]                  |
-| - Price           |                                                |
-| - Rating          |                                                |
-+------------------------------------------------------------------+
-```
+| Element | Current | Gumroad Reference |
+|---------|---------|-------------------|
+| Logo | Text "Uptoza" (text-xl font-bold) | Bold custom wordmark font (larger, ~26px) |
+| Search bar | Rounded-lg with bg-white, border-2 | Rounded-full pill shape, subtle gray border |
+| Search height | py-2.5 (~40px) | Taller input (~48px) |
+| Login button | Plain text link | Outlined rounded button |
+| Start selling | bg-black rounded-lg | bg-black rounded-full pill |
+| Background | #F4F4F0 cream | Pure white header on cream page |
 
-**Key Gumroad Design Elements:**
-- Warm cream/beige background (#F4F4F0)
-- Bold black text, minimal icons
-- Product cards: Large image, seller avatar row, title, star rating, "Starting at $X"
-- Category pills in horizontal scroll
-- Collapsible filter sidebar with Tags, Contains, Price, Rating
-- Featured carousel at top
+### Category Pills Row
 
-## Technical Approach
+| Element | Current | Gumroad Reference |
+|---------|---------|-------------------|
+| Active pill | bg-black text-white | Outlined black border pill (not filled) |
+| Inactive pills | White with border | Plain text without border |
+| Pill style | rounded-full solid | rounded-full with thin border |
 
-### 1. New Page: `src/pages/Marketplace.tsx`
+### Featured Carousel (Big Difference)
 
-A standalone public page (no login required) that:
-- Uses the existing `bff-marketplace-home` edge function for data
-- Implements Gumroad's cream/beige color scheme
-- Features a horizontal category scroller
-- Includes featured products carousel
-- Provides full filtering sidebar (tags, price, rating)
-- Shows product grid with Gumroad-style cards
-
-### 2. Guest Checkout Flow
-
-For purchases without login:
-1. Guest clicks "Buy" on a product
-2. System shows a checkout modal requesting:
-   - Email address (for delivery)
-   - Optional: Name
-3. Creates a guest order record with the provided email
-4. Redirects to wallet top-up page with "guest checkout" mode
-5. After payment, delivers product via email
-
-**Guest Checkout Database Changes:**
-- Add `guest_email` column to `seller_orders` table
-- Create guest-specific order flow in the `purchase_seller_product` function
-
-### 3. New Components
-
-| Component | Purpose |
-|-----------|---------|
-| `src/pages/Marketplace.tsx` | Main public marketplace page |
-| `src/components/marketplace/GumroadHeader.tsx` | Gumroad-style minimal header |
-| `src/components/marketplace/GumroadProductCard.tsx` | Product card matching Gumroad design |
-| `src/components/marketplace/FeaturedCarousel.tsx` | Horizontal featured products carousel |
-| `src/components/marketplace/GumroadFilterSidebar.tsx` | Collapsible filter sidebar |
-| `src/components/marketplace/GuestCheckoutModal.tsx` | Email collection for guest purchases |
-
-### 4. Routing Changes
-
-Update `src/App.tsx` to add:
-```typescript
-<Route path="/marketplace" element={
-  <Suspense fallback={<AppShell />}>
-    <Marketplace />
-  </Suspense>
-} />
-```
-
-No authentication required - fully public access.
-
-## UI/UX Details
-
-### Color Palette (Gumroad Style)
-- **Background**: `#F4F4F0` (warm cream)
-- **Cards**: Pure white with subtle shadow
-- **Primary CTA**: `#FF90E8` (pink) for guest checkout
-- **Secondary**: Black for text, dark gray for borders
-- **Accent**: Category pills with rounded-full style
-
-### Header Design
-```text
-[Uptoza Logo]  [Search products _______ ] [🔍]  [Sign in] [Start selling]
-```
-- Fixed at top, minimal height (56px)
-- Search bar prominent in center
-- Sign in as text link, not required
-
-### Product Card Design (Gumroad Style)
-```text
-+---------------------------+
-| [Product Image 16:10]    |
-+---------------------------+
-| [Avatar] Seller Name Level|
-+---------------------------+
-| Product Title (2 lines)   |
-| ★ 4.9 (1.2k)              |
-+---------------------------+
-| Starting at    $49        |
-+---------------------------+
-```
-
-### Featured Carousel
-- Horizontal scroll with peek (shows partial next card)
-- Auto-advancement every 5 seconds
-- Dots or 1/8 pagination indicator
-- Arrow navigation on desktop
+| Element | Current | Gumroad Reference |
+|---------|---------|-------------------|
+| Card layout | Standard product cards | Large horizontal cards with image LEFT, content RIGHT |
+| Card style | White rounded-xl small | Wide banner-style with image:content ratio ~40:60 |
+| Rating display | Small inline | Pill badge with star icon and count |
+| Price display | "Starting at $X" small | Bold "$X+ a month" or "$X" in bottom-left corner |
 
 ### Filter Sidebar
-- Collapsible accordion sections
-- Tags: Expandable list with "Show more"
-- Contains: File type filters (PDF, ZIP, etc.)
-- Price: Min/Max input fields with $ prefix
-- Rating: Star-based filter (4+, 3+, 2+)
 
-## Guest Checkout Implementation
+| Element | Current | Gumroad Reference |
+|---------|---------|-------------------|
+| Section headers | UPPERCASE bold, black border-b | Normal case, with chevron arrows |
+| Accordion icons | ChevronDown only | Chevron that rotates when collapsed |
+| Filter sections | Categories, Tags, Price, Rating | Filters, Tags, Contains, Price, Rating |
+| Style | Heavy black borders | Light, minimal borders |
 
-### Step 1: Email Collection Modal
-When guest clicks Buy:
+### Product Grid Cards
+
+| Element | Current | Gumroad Reference |
+|---------|---------|-------------------|
+| Card border | border-2 border-black/5 | Very subtle or no visible border |
+| Image aspect | 16:10 | Square-ish ~4:3 or 1:1 |
+| Seller row | Below image with avatar | No seller row visible on grid cards |
+| Rating | Stars with number | Not shown on grid cards |
+| Price | "Starting at $X" | Just product name, no price on grid initially |
+| Hover | shadow-lg, -translate-y-1 | Subtle hover state |
+
+### Sort Tabs
+
+| Element | Current | Gumroad Reference |
+|---------|---------|-------------------|
+| Style | Pill buttons with icons | Simple text links, active has outline |
+| Position | Right of "Curated for you" | Right side, cleaner layout |
+| Labels | Curated, Trending, Best Sellers, Hot & New | Trending, Best Sellers, Hot & New |
+
+## Implementation Plan
+
+### 1. Update GumroadHeader.tsx
+
+**Changes:**
+- Pure white background instead of cream (#FFFFFF)
+- Logo: Bolder, larger font (text-2xl tracking-tight)
+- Search bar: Rounded-full pill shape, taller (h-12), lighter border
+- Login: Outlined rounded-full button style
+- Start selling: Rounded-full pill button
+
 ```text
-+-------------------------------------+
-| 🛒 Complete Your Purchase          |
-+-------------------------------------+
-| [Product Name] - $XX                |
-|                                     |
-| Enter your email to receive:        |
-| [email@example.com____________]     |
-|                                     |
-| [Continue to Payment]               |
-| [Sign in for faster checkout]       |
-+-------------------------------------+
+┌──────────────────────────────────────────────────────────────────┐
+│ gumroad  │ [🔍 Search products...                   ] │ Log in │ Start selling │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-### Step 2: Payment Options
-- Stripe Checkout (redirect to Stripe, no wallet needed)
-- Or: Create guest wallet with email, top up via existing flow
+### 2. Update Category Pills in Marketplace.tsx
 
-### Step 3: Order Confirmation
-- Send order confirmation email
-- Show "Check your email for delivery" message
-- Seller receives notification with buyer email
+**Changes:**
+- Active category: Outlined black border, NOT filled
+- Inactive: Plain text without background/border
+- Simpler styling to match reference
 
-### Database Changes Required
-```sql
--- Add guest email support to seller_orders
-ALTER TABLE seller_orders ADD COLUMN guest_email TEXT DEFAULT NULL;
+### 3. Create New FeaturedProductBanner.tsx
 
--- Create index for guest order lookups
-CREATE INDEX idx_seller_orders_guest_email ON seller_orders(guest_email) WHERE guest_email IS NOT NULL;
+Gumroad's featured section uses large horizontal banner cards, not standard product cards. Each featured item shows:
+- Large image on LEFT (~40% width)
+- Content on RIGHT with title, description, seller avatar + name, price badge, rating badge
+
+**New component layout:**
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│ [      IMAGE       ] │  Title of Product                        │
+│ [                  ] │  Description text here...                │
+│ [                  ] │  [Avatar] Seller Name                    │
+│ [                  ] │  [$10+ a month]        [★ 4.9 (17.5K)]   │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-## Files to Create/Modify
+### 4. Update GumroadFilterSidebar.tsx
 
-### New Files
-| File | Description |
-|------|-------------|
-| `src/pages/Marketplace.tsx` | Main marketplace page with Gumroad design |
-| `src/components/marketplace/GumroadHeader.tsx` | Minimal public header |
-| `src/components/marketplace/GumroadProductCard.tsx` | Product card component |
-| `src/components/marketplace/FeaturedCarousel.tsx` | Featured products carousel |
-| `src/components/marketplace/GumroadFilterSidebar.tsx` | Collapsible filter sidebar |
-| `src/components/marketplace/GuestCheckoutModal.tsx` | Guest email checkout modal |
+**Changes:**
+- Remove heavy black borders
+- Use lighter section dividers
+- Change section headers to normal case (not UPPERCASE)
+- Add "Filters" as first expandable section header
+- Use cleaner chevron rotation on expand/collapse
+- Adjust spacing to be more minimal
 
-### Modified Files
+### 5. Update GumroadProductCard.tsx
+
+**Changes:**
+- Remove visible border (or make ultra-subtle)
+- Remove seller avatar row
+- Remove rating/review count
+- Remove "sold" count
+- Keep: Image, Title, Price only
+- More minimal hover state
+- Image aspect closer to square
+
+### 6. Update Sort Tabs in Marketplace.tsx
+
+**Changes:**
+- Remove icons from sort buttons
+- Use simple text links with outline for active state
+- Remove "Curated" option (not in Gumroad)
+- Just: Trending | Best Sellers | Hot & New
+
+### 7. Typography & Spacing
+
+**Font updates:**
+- Use system font stack or add Mabry Pro-like font
+- Bolder headings (font-bold or font-black)
+- Larger section titles
+
+## Files to Modify
+
 | File | Changes |
 |------|---------|
-| `src/App.tsx` | Add `/marketplace` route |
-| `src/components/Header.tsx` | Add "Marketplace" nav link |
+| `src/components/marketplace/GumroadHeader.tsx` | White bg, pill search, outlined buttons |
+| `src/pages/Marketplace.tsx` | Category pills, sort tabs, section layout |
+| `src/components/marketplace/GumroadProductCard.tsx` | Minimal card, no seller/rating |
+| `src/components/marketplace/GumroadFilterSidebar.tsx` | Lighter style, normal case headers |
+| `src/components/marketplace/FeaturedCarousel.tsx` | Update to use banner-style cards |
 
-### Database Migration
-- Add `guest_email` column to `seller_orders`
+## New Component
 
-## Feature Parity with AI Accounts Section
+| File | Description |
+|------|-------------|
+| `src/components/marketplace/FeaturedBannerCard.tsx` | Large horizontal card for featured products |
 
-All features from the authenticated marketplace will be available:
+## Visual Summary
 
-| Feature | Implementation |
-|---------|----------------|
-| Search | Full-text with voice & image search |
-| Categories | Horizontal scroller + sidebar filter |
-| Hot Products | Same BFF endpoint, carousel display |
-| Top Rated | Same ranking algorithm |
-| New Arrivals | Last 7 days filter |
-| Price Filter | Min/Max input in sidebar |
-| Rating Filter | Star-based selection |
-| Tag Filter | Tag chips with toggle |
-| Product Modal | Quick view with Chat/View/Buy actions |
-| Chat with Seller | Redirects to sign-in (guest can't chat) |
-| Purchase | Guest checkout with email |
-| Wishlist | Sign in required (show prompt) |
+### Before (Current)
+- Cream header with small logo
+- Standard product cards everywhere
+- Heavy black filter borders
+- Complex product cards with ratings
 
-## Implementation Summary
+### After (Gumroad Style)
+- White header bar, pill-shaped search
+- Large horizontal banner cards for featured
+- Minimal filter sidebar
+- Simple product cards (image + title)
+- Outlined category pills for active state
 
-1. **Create `src/pages/Marketplace.tsx`** - Main Gumroad-style marketplace
-2. **Create Gumroad UI components** - Header, cards, carousel, sidebar
-3. **Implement guest checkout modal** - Email collection before purchase
-4. **Add database column** - `guest_email` on `seller_orders`
-5. **Update routing** - Add `/marketplace` public route
-6. **Add navigation** - Link from main header
+## Color Reference (Gumroad)
+- Page background: `#F4F4F0` (cream) - Already correct
+- Header: `#FFFFFF` (white)
+- Cards: `#FFFFFF` (white)
+- Primary text: `#000000` (black)
+- Secondary text: `#6B6B6B` (gray)
+- Borders: `rgba(0,0,0,0.1)` (very light)
+- Active pill: Black outline on white
+- Price badge: White with subtle border
 
-## Expected Result
-
-After implementation:
-- `/marketplace` is publicly accessible without login
-- Gumroad-inspired warm cream design with bold typography
-- Full product discovery (search, filters, categories)
-- Guest checkout allows email-based purchases
-- Existing users can sign in for wallet-based checkout
-- Sellers receive orders with buyer email for delivery
