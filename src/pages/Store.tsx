@@ -77,7 +77,6 @@ interface SellerProfile {
 
 interface SellerProduct {
   id: string;
-  slug?: string;
   name: string;
   description: string | null;
   price: number;
@@ -1055,7 +1054,6 @@ const StoreContent = () => {
                     <StoreProductCardCompact
                       key={product.id}
                       product={product}
-                      storeSlug={storeSlug}
                       hasEnoughBalance={hasEnoughBalance(product.price)}
                       isLoggedIn={!!user}
                       purchasing={purchasing === product.id}
@@ -1067,7 +1065,6 @@ const StoreContent = () => {
                       key={product.id}
                       product={product}
                       storeName={seller.store_name}
-                      storeSlug={storeSlug}
                       hasEnoughBalance={hasEnoughBalance(product.price)}
                       isLoggedIn={!!user}
                       purchasing={purchasing === product.id}

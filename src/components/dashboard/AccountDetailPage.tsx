@@ -13,7 +13,6 @@ import geminiLogo from '@/assets/gemini-logo.avif';
 interface AIAccount {
   id: string;
   name: string;
-  slug?: string;
   description: string | null;
   price: number;
   icon_url: string | null;
@@ -30,7 +29,7 @@ const getPurchaseCount = (accountId: string) => {
 };
 
 const AccountDetailPage = () => {
-  const { accountSlug } = useParams<{ accountSlug: string }>();
+  const { accountId } = useParams<{ accountId: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   
@@ -40,10 +39,10 @@ const AccountDetailPage = () => {
   const [purchasing, setPurchasing] = useState(false);
 
   useEffect(() => {
-    if (accountSlug) {
+    if (accountId) {
       fetchAccount();
     }
-  }, [accountSlug]);
+  }, [accountId]);
 
   useEffect(() => {
     if (user) {
@@ -52,22 +51,16 @@ const AccountDetailPage = () => {
   }, [user]);
 
   const fetchAccount = async () => {
-    // Check if accountSlug looks like a UUID (for backward compatibility)
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(accountSlug || '');
-    
-    const { data, error } = isUUID
-      ? await supabase.from('ai_accounts').select('*').eq('id', accountSlug).maybeSingle()
-      : await supabase.from('ai_accounts').select('*').eq('slug', accountSlug).maybeSingle();
+    const { data, error } = await supabase
+      .from('ai_accounts')
+      .select('*')
+      .eq('id', accountId)
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching account:', error);
       toast.error('Failed to load account details');
     } else if (data) {
-      // If accessed by UUID, redirect to slug URL for SEO
-      if (isUUID && data.slug) {
-        navigate(`/dashboard/ai-accounts/${data.slug}`, { replace: true });
-        return;
-      }
       setAccount(data);
     }
     setLoading(false);

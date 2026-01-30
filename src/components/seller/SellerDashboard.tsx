@@ -299,7 +299,7 @@ const SellerDashboard = () => {
           icon={<DollarSign className="w-6 h-6" />}
           trend={{ value: metrics.revenueChange, label: 'vs last week' }}
           accentColor="emerald"
-          variant="accent"
+          variant="bordered"
           onClick={() => navigate('/seller/analytics')}
         />
         <StatCard
@@ -308,7 +308,7 @@ const SellerDashboard = () => {
           icon={<DollarSign className="w-6 h-6" />}
           subValue={`${formatAmountOnly(metrics.pendingBalance)} pending`}
           accentColor="blue"
-          variant="accent"
+          variant="bordered"
           onClick={() => navigate('/seller/wallet')}
         />
         <StatCard
@@ -317,7 +317,7 @@ const SellerDashboard = () => {
           icon={<ShoppingCart className="w-6 h-6" />}
           trend={{ value: metrics.ordersChange, label: 'vs last week' }}
           accentColor="violet"
-          variant="accent"
+          variant="bordered"
           onClick={() => navigate('/seller/orders')}
         />
         <StatCard
@@ -326,7 +326,7 @@ const SellerDashboard = () => {
           icon={<Package className="w-6 h-6" />}
           subValue={`${products.length} total`}
           accentColor="orange"
-          variant="accent"
+          variant="bordered"
           onClick={() => navigate('/seller/products')}
         />
       </div>
@@ -334,14 +334,14 @@ const SellerDashboard = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Link to="/seller/orders">
-          <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-card hover:shadow-card-hover hover:border-slate-200 transition-all cursor-pointer group">
+          <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-stat hover:shadow-stat-hover transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-amber-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-800">Pending Orders</p>
-                <p className="text-xs text-slate-400">Needs attention</p>
+                <p className="text-xs text-slate-500">Needs attention</p>
               </div>
               <span className="text-2xl font-bold text-amber-600">{pendingOrdersCount}</span>
             </div>
@@ -349,14 +349,14 @@ const SellerDashboard = () => {
         </Link>
 
         <Link to="/seller/flash-sales">
-          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-xl p-4 text-white shadow-card-elevated hover:shadow-lg transition-all cursor-pointer group">
+          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-xl p-4 text-white hover:shadow-lg transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-white/20 flex items-center justify-center">
                 <Zap className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-sm font-semibold">Flash Sales</p>
-                <p className="text-xs text-white/70">Create offers</p>
+                <p className="text-xs text-white/80">Create offers</p>
               </div>
               <ChevronRight className="w-5 h-5 ml-auto opacity-60 group-hover:translate-x-1 transition-transform" />
             </div>
@@ -364,23 +364,24 @@ const SellerDashboard = () => {
         </Link>
 
         <Link to="/seller/chat">
-          <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-card hover:shadow-card-hover hover:border-slate-200 transition-all cursor-pointer group">
+          <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-stat hover:shadow-stat-hover transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
                 <MessageSquare className="w-5 h-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-800">Messages</p>
-                <p className="text-xs text-slate-400">Chat with buyers</p>
+                <p className="text-xs text-slate-500">Chat with buyers</p>
               </div>
               <ChevronRight className="w-5 h-5 ml-auto text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" />
             </div>
           </div>
         </Link>
 
-        <button 
+        <Button 
           onClick={handleExport}
-          className="bg-white rounded-xl p-4 border border-slate-100 shadow-card hover:shadow-card-hover hover:border-slate-200 transition-all cursor-pointer group text-left w-full"
+          variant="outline"
+          className="bg-white border-slate-200 rounded-xl h-auto p-4 justify-start hover:bg-slate-50"
         >
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
@@ -388,114 +389,112 @@ const SellerDashboard = () => {
             </div>
             <div className="text-left">
               <p className="text-sm font-medium text-slate-800">Export Report</p>
-              <p className="text-xs text-slate-400">Download CSV</p>
+              <p className="text-xs text-slate-500">Download CSV</p>
             </div>
           </div>
-        </button>
+        </Button>
       </div>
 
       {/* Performance Metrics Row */}
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Completion Rate */}
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-card hover:shadow-card-hover transition-shadow">
+        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-stat">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">Completion Rate</h3>
-            <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <Target className="w-4 h-4 text-emerald-600" />
-            </div>
+            <h3 className="text-sm font-semibold text-slate-800">Completion Rate</h3>
+            <Target className="w-5 h-5 text-emerald-500" />
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[36px] font-bold text-slate-900 leading-none">{metrics.completionRate.toFixed(0)}%</span>
-            <span className="text-[13px] text-slate-400">completed</span>
+          <div className="flex items-end gap-2">
+            <span className="text-4xl font-bold text-slate-900">{metrics.completionRate.toFixed(0)}%</span>
+            <span className="text-sm text-slate-500 mb-1">of orders completed</span>
           </div>
-          <div className="mt-4 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-500"
               style={{ width: `${metrics.completionRate}%` }}
             />
           </div>
         </div>
 
         {/* Order Status */}
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-card hover:shadow-card-hover transition-shadow">
-          <h3 className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-4">Order Status</h3>
+        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-stat">
+          <h3 className="text-sm font-semibold text-slate-800 mb-4">Order Status</h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span className="text-[13px] text-slate-500">Completed</span>
-              <span className="text-[13px] font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.completed}</span>
+              <div className="w-3 h-3 rounded-full bg-emerald-500" />
+              <span className="text-xs text-slate-600">Completed</span>
+              <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.completed}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-              <span className="text-[13px] text-slate-500">Delivered</span>
-              <span className="text-[13px] font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.delivered}</span>
+              <div className="w-3 h-3 rounded-full bg-blue-500" />
+              <span className="text-xs text-slate-600">Delivered</span>
+              <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.delivered}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <span className="text-[13px] text-slate-500">Pending</span>
-              <span className="text-[13px] font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.pending}</span>
+              <div className="w-3 h-3 rounded-full bg-amber-500" />
+              <span className="text-xs text-slate-600">Pending</span>
+              <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.pending}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-              <span className="text-[13px] text-slate-500">Refunded</span>
-              <span className="text-[13px] font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.refunded}</span>
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <span className="text-xs text-slate-600">Refunded</span>
+              <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.refunded}</span>
             </div>
           </div>
         </div>
 
         {/* Month Summary */}
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-card hover:shadow-card-hover transition-shadow">
-          <h3 className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-4">Monthly Comparison</h3>
+        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-stat">
+          <h3 className="text-sm font-semibold text-slate-800 mb-4">Monthly Comparison</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-slate-400">Last Month</span>
-              <span className="text-lg font-bold text-slate-700">{formatAmountOnly(metrics.lastMonthRevenue)}</span>
+              <span className="text-sm text-slate-500">Last Month</span>
+              <span className="text-lg font-semibold text-slate-800">{formatAmountOnly(metrics.lastMonthRevenue)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-slate-400">This Month</span>
-              <span className="text-lg font-bold text-emerald-600">{formatAmountOnly(metrics.thisMonthRevenue)}</span>
+              <span className="text-sm text-slate-500">This Month</span>
+              <span className="text-lg font-semibold text-emerald-600">{formatAmountOnly(metrics.thisMonthRevenue)}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Revenue Chart */}
-      <div className="bg-white rounded-xl border border-slate-100 shadow-card overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-slate-100">
-          <h3 className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">Revenue Trend</h3>
+      <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-stat">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-slate-900">Revenue Trend</h3>
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-            <span className="text-[12px] text-slate-500">Revenue</span>
+            <div className="w-3 h-3 rounded-full bg-emerald-500" />
+            <span className="text-xs text-slate-600">Revenue</span>
           </div>
         </div>
-        <div className="h-64 p-4">
+        <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={metrics.dailyData}>
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/>
+                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
                   <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
               <XAxis 
                 dataKey="date" 
-                tick={{ fontSize: 11, fill: '#94A3B8' }}
+                tick={{ fontSize: 11, fill: '#64748B' }}
                 tickLine={false}
-                axisLine={{ stroke: '#F1F5F9' }}
+                axisLine={{ stroke: '#E2E8F0' }}
               />
               <YAxis 
-                tick={{ fontSize: 11, fill: '#94A3B8' }} 
+                tick={{ fontSize: 11, fill: '#64748B' }} 
                 tickFormatter={(v) => v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`}
                 tickLine={false}
                 axisLine={false}
               />
               <Tooltip 
                 contentStyle={{ 
-                  borderRadius: 10, 
-                  border: '1px solid #F1F5F9', 
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  padding: '10px 14px', 
+                  borderRadius: 12, 
+                  border: 'none', 
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+                  padding: '12px 16px', 
                   fontSize: 13,
                   backgroundColor: 'white'
                 }}
@@ -514,73 +513,73 @@ const SellerDashboard = () => {
       </div>
 
       {/* Top Products & Recent Orders */}
-      <div className="grid lg:grid-cols-2 gap-4">
+      <div className="grid lg:grid-cols-2 gap-6">
         {/* Top Products */}
-        <div className="bg-white rounded-xl border border-slate-100 shadow-card">
+        <div className="bg-white rounded-xl border border-slate-100 shadow-stat">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
-            <h3 className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">Top Products</h3>
-            <Link to="/seller/product-analytics" className="text-[12px] text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5 font-medium">
-              View All <ChevronRight className="w-3.5 h-3.5" />
+            <h3 className="text-base font-semibold text-slate-900">Top Products</h3>
+            <Link to="/seller/product-analytics" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+              View All <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
           <div className="p-4 space-y-3">
             {metrics.topProducts.length > 0 ? (
               metrics.topProducts.map((product, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <span className="text-[13px] text-slate-600 w-1/3 truncate">{product.name}</span>
-                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <span className="text-sm text-slate-600 w-1/3 truncate">{product.name}</span>
+                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-emerald-500 rounded-full"
+                      className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
                       style={{ width: `${(product.revenue / metrics.maxProductRevenue) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[13px] font-semibold text-slate-700 w-20 text-right">
+                  <span className="text-sm font-semibold text-slate-700 w-20 text-right">
                     {formatAmountOnly(product.revenue)}
                   </span>
                 </div>
               ))
             ) : (
-              <p className="text-[13px] text-slate-400 text-center py-8">No sales data yet</p>
+              <p className="text-sm text-slate-400 text-center py-8">No sales data yet</p>
             )}
           </div>
         </div>
 
         {/* Recent Orders */}
-        <div className="bg-white rounded-xl border border-slate-100 shadow-card">
+        <div className="bg-white rounded-xl border border-slate-100 shadow-stat">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
-            <h3 className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">Recent Orders</h3>
-            <Link to="/seller/orders" className="text-[12px] text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5 font-medium">
-              View All <ChevronRight className="w-3.5 h-3.5" />
+            <h3 className="text-base font-semibold text-slate-900">Recent Orders</h3>
+            <Link to="/seller/orders" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+              View All <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
           {recentOrders.length > 0 ? (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-slate-100">
               {recentOrders.map((order) => (
                 <div 
                   key={order.id} 
-                  className="flex items-center gap-3 p-4 hover:bg-slate-50/50 transition-colors cursor-pointer"
+                  className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors cursor-pointer"
                   onClick={() => navigate('/seller/orders')}
                 >
-                  <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-                    <Package className="w-4 h-4 text-slate-500" />
+                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                    <Package className="w-5 h-5 text-slate-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-slate-800 truncate">
+                    <p className="text-sm font-medium text-slate-800 truncate">
                       {order.product?.name || 'Order'}
                     </p>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-xs text-slate-500">
                       {format(new Date(order.created_at), 'MMM d, h:mm a')}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-[13px] font-semibold text-slate-800">
+                    <p className="text-sm font-semibold text-slate-800">
                       {formatAmountOnly(order.seller_earning)}
                     </p>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                      order.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
-                      order.status === 'pending' ? 'bg-amber-50 text-amber-600' :
-                      order.status === 'delivered' ? 'bg-blue-50 text-blue-600' :
-                      'bg-slate-50 text-slate-600'
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      order.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                      order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                      order.status === 'delivered' ? 'bg-blue-100 text-blue-700' :
+                      'bg-slate-100 text-slate-700'
                     }`}>
                       {order.status}
                     </span>
@@ -590,8 +589,8 @@ const SellerDashboard = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12">
-              <ShoppingCart className="w-9 h-9 text-slate-200 mb-3" />
-              <p className="text-[13px] text-slate-400">No orders yet</p>
+              <ShoppingCart className="w-10 h-10 text-slate-300 mb-3" />
+              <p className="text-sm text-slate-400">No orders yet</p>
             </div>
           )}
         </div>

@@ -1,136 +1,169 @@
 
 
-## Fix Sign-In Loading Issues
+# Exact Gumroad Sidebar Match - Icon Style, Font & Sizing Fix
 
-### Problems Identified
+## Current Issues (Comparing to Gumroad Reference)
 
-Based on my analysis of the codebase, there are **3 critical issues** causing the infinite loading state on sign-in:
+| Element | Current (Wrong) | Gumroad (Correct) |
+|---------|-----------------|-------------------|
+| Icons | Lucide outlined, `strokeWidth={1.5}`, 18px | Filled/solid style, 20px |
+| Font | System/Inter, regular weight | Mabry Pro / DM Sans, medium weight |
+| Font Size | 14px | 15px |
+| Line Height | Default | Tighter |
+| Padding | `py-2.5 px-5` | `py-3 px-5` (more vertical space) |
+| Text Color | `text-white/70` | `text-white/80` (more visible) |
+| Active Color | `text-pink-400` | `text-[#FF90E8]` (Gumroad pink) |
+| Active BG | `bg-white/5` | No background (just color change) |
+| Hover | `hover:bg-white/5` | No background change |
+| Icon Gap | `gap-3` (12px) | `gap-3.5` (14px) |
+| Sidebar Width | 220px | 240px |
+| Logo | Uptoza image | Text "GUMROAD" style |
 
-| Issue | Location | Description |
-|-------|----------|-------------|
-| 1. OAuth processing stuck | `SignIn.tsx:189` | `oauthProcessing` state never gets cleared after OAuth callback |
-| 2. No safety timeout | `SignIn.tsx` | If auth state change never fires, loading screen stays forever |
-| 3. Missing redirect timeout | `SignIn.tsx` | After successful OAuth, navigation can fail silently |
+---
 
-### Root Cause Analysis
+## Files to Modify
 
-```text
-User clicks "Sign in with Google"
-        ↓
-Google OAuth redirects back with #access_token=...
-        ↓
-SignIn.tsx detects hash, sets oauthProcessing = true ← NEVER CLEARED
-        ↓
-Supabase SDK processes token (supposed to fire onAuthStateChange)
-        ↓
-If onAuthStateChange doesn't fire (race condition) → INFINITE LOADING
-        ↓
-User refreshes → hash is gone, but oauthProcessing ref is stale
+### 1. `src/components/seller/SellerSidebar.tsx`
+
+**Exact Gumroad Styling Changes:**
+
+```tsx
+// Sidebar width: 240px (Gumroad standard)
+<aside className={`... ${isCollapsed ? 'w-[72px]' : 'w-[240px]'}`}>
+
+// Logo section - text style like Gumroad
+<div className="h-14 flex items-center px-5">
+  <Link to="/seller" className="flex items-center">
+    <span className="text-white text-xl font-bold tracking-tight">UPTOZA</span>
+  </Link>
+</div>
+
+// Nav item styling - exact Gumroad match
+<Link
+  className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${
+    active 
+      ? 'text-[#FF90E8]'  // Gumroad pink - no background
+      : 'text-white/80 hover:text-white'  // No hover background
+  }`}
+>
+  <Icon size={20} strokeWidth={2} />  // Larger, thicker icons
+  <span>{item.label}</span>
+</Link>
 ```
 
-The `didProcessOAuth.current = true` is set but never reset. On refresh, the component re-mounts with `didProcessOAuth.current = false`, BUT the `oauthProcessing` state from line 189 check `(authLoading && window.location.hash.includes('access_token'))` can still show loading if `authLoading` is true and there's timing issues.
+---
 
-### The Fix
+### 2. `src/components/dashboard/DashboardSidebar.tsx`
 
-#### 1. Add Safety Timeout for OAuth Processing (`SignIn.tsx`)
+**Same structure but white base:**
 
-Add a 10-second timeout that clears the OAuth processing state if auth doesn't complete:
+```tsx
+// Sidebar width: 240px
+<aside className={`... ${isCollapsed ? 'w-[72px]' : 'w-[240px]'}`}>
 
-```typescript
-// After setting oauthProcessing = true
-useEffect(() => {
-  if (!oauthProcessing) return;
-  
-  // Safety timeout - if OAuth doesn't complete in 10s, clear loading
-  const timeout = setTimeout(() => {
-    console.warn('[SignIn] OAuth processing timeout - clearing loading state');
-    setOauthProcessing(false);
-  }, 10000);
-  
-  return () => clearTimeout(timeout);
-}, [oauthProcessing]);
+// Logo section
+<div className="h-14 flex items-center px-5">
+  <Link to="/dashboard" className="flex items-center">
+    <span className="text-slate-900 text-xl font-bold tracking-tight">UPTOZA</span>
+  </Link>
+</div>
+
+// Nav item styling
+<Link
+  className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${
+    active 
+      ? 'text-violet-600'  // No background
+      : 'text-slate-600 hover:text-slate-900'  // No hover background
+  }`}
+>
+  <Icon size={20} strokeWidth={2} />
+  <span>{item.label}</span>
+</Link>
 ```
 
-#### 2. Clear OAuth State After Auth State Change (`SignIn.tsx`)
+---
 
-Ensure `oauthProcessing` is set to false when auth completes successfully:
+### 3. Update Related Layout Files
 
-```typescript
-// In the auto-redirect useEffect
-useEffect(() => {
-  if (didAutoRedirect.current) return;
-  if (authLoading) return;
-  if (!user) {
-    // Auth finished loading but no user - clear OAuth processing
-    if (oauthProcessing) {
-      console.log('[SignIn] Auth loaded without user - clearing OAuth state');
-      setOauthProcessing(false);
-    }
-    return;
-  }
+Since sidebar width changes from 220px to 240px:
 
-  // User exists, proceed with redirect
-  didAutoRedirect.current = true;
-  setOauthProcessing(false); // ← ADD THIS
-  handlePostAuthRedirect();
-}, [user, authLoading, oauthProcessing]);
+**`src/pages/Seller.tsx`:**
+```tsx
+// Change margin
+lg:ml-[240px]  // was 220px
 ```
 
-#### 3. Fix OAuth Processing Check Logic (`SignIn.tsx`)
-
-Change line 189 to be more robust:
-
-```typescript
-// Current (buggy):
-if (oauthProcessing || (authLoading && window.location.hash.includes('access_token'))) {
-
-// Fixed:
-if (oauthProcessing && window.location.hash.includes('access_token')) {
+**`src/components/seller/SellerTopBar.tsx`:**
+```tsx
+// Change left offset
+left-[240px]  // was 220px
 ```
 
-The `authLoading` check can trigger false positives when the page loads without a hash.
-
-#### 4. Use Lovable Cloud's Managed OAuth
-
-The project is using `supabase.auth.signInWithOAuth` directly instead of the managed `lovable.auth.signInWithOAuth`. This needs to be configured:
-
-**Files to Update:**
-- `src/hooks/useAuth.ts` - Update `signInWithGoogle` function
-- `src/pages/Seller.tsx` - Update `handleGoogleAuth` function
-
-After running the `supabase--configure-social-auth` tool, the code will use:
-
-```typescript
-import { lovable } from "@/integrations/lovable/index";
-
-const signInWithGoogle = async () => {
-  const { error } = await lovable.auth.signInWithOAuth("google", {
-    redirect_uri: window.location.origin,
-  });
-  return { data: null, error };
-};
+**`src/pages/Dashboard.tsx`:**
+```tsx
+// Change margin
+lg:ml-[240px]  // was 220px
 ```
 
-### Files to Modify
+---
+
+## Exact Design Specifications (From Gumroad Reference)
+
+### Typography
+| Element | Value |
+|---------|-------|
+| Font Family | `font-sans` (DM Sans already in project) |
+| Nav Text Size | `text-[15px]` |
+| Nav Font Weight | `font-medium` (500) |
+| Letter Spacing | `tracking-normal` |
+
+### Colors (Gumroad Exact)
+| Element | Color |
+|---------|-------|
+| Background | `#000000` (pure black) |
+| Default Text | `rgba(255,255,255,0.8)` → `text-white/80` |
+| Hover Text | `#FFFFFF` → `text-white` |
+| Active Text | `#FF90E8` (Gumroad pink) |
+| Border | `rgba(255,255,255,0.1)` → `border-white/10` |
+
+### Spacing
+| Element | Value |
+|---------|-------|
+| Sidebar Width | 240px (expanded), 72px (collapsed) |
+| Header Height | 56px (`h-14`) |
+| Nav Item Padding | `py-3 px-5` |
+| Icon-Text Gap | `gap-3.5` (14px) |
+| Icon Size | 20px |
+| Icon Stroke | 2 (thicker) |
+
+### No Background on States
+Gumroad does NOT use background colors for hover/active states - only text color changes:
+- Default: `text-white/80`
+- Hover: `text-white`
+- Active: `text-[#FF90E8]`
+
+---
+
+## Files Summary
 
 | File | Changes |
 |------|---------|
-| `src/pages/SignIn.tsx` | Add safety timeout, fix OAuth processing logic, clear state on redirect |
-| `src/hooks/useAuth.ts` | Use `lovable.auth.signInWithOAuth` for Google (after tool config) |
-| `src/pages/Seller.tsx` | Update Google auth to use managed OAuth |
+| `src/components/seller/SellerSidebar.tsx` | Icon size 20px, strokeWidth 2, font-medium, py-3, gap-3.5, no hover bg, #FF90E8 active, width 240px |
+| `src/components/dashboard/DashboardSidebar.tsx` | Same structure with white theme, width 240px |
+| `src/pages/Seller.tsx` | Update margin to 240px |
+| `src/pages/Dashboard.tsx` | Update margin to 240px |
+| `src/components/seller/SellerTopBar.tsx` | Update left offset to 240px |
 
-### Implementation Steps
+---
 
-1. **Configure Lovable Cloud OAuth** - Run the configuration tool to generate the lovable integration
-2. **Update SignIn.tsx** - Add safety timeout and fix OAuth processing logic
-3. **Update useAuth.ts** - Switch to managed Google OAuth
-4. **Update Seller.tsx** - Switch to managed Google OAuth for seller flow
+## Expected Outcome
 
-### Expected Result
-
-After implementation:
-- OAuth loading screen has 10-second safety timeout
-- Loading state clears properly after auth completes or fails
-- Google OAuth uses Lovable Cloud's managed solution for reliability
-- Page refresh after OAuth won't show infinite loading
+After these changes, the sidebars will be **pixel-perfect matches** to Gumroad:
+1. Larger icons (20px) with thicker stroke
+2. Medium weight font at 15px
+3. More vertical padding (py-3)
+4. No background on hover/active - only color change
+5. Exact Gumroad pink (#FF90E8) for active state
+6. Proper 240px sidebar width
+7. Text-based logo matching Gumroad style
 

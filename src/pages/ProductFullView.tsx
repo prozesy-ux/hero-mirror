@@ -24,12 +24,10 @@ import StarRating from '@/components/reviews/StarRating';
 import ImageGallery from '@/components/ui/image-gallery';
 import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatContext';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
-import { isUUID, extractIdFromSlug, generateSlug, buildProductUrl } from '@/lib/slug-utils';
 
 interface Product {
   id: string;
   name: string;
-  slug?: string;
   description: string | null;
   price: number;
   icon_url: string | null;
@@ -51,7 +49,7 @@ interface Seller {
 }
 
 const ProductFullViewContent = () => {
-  const { storeSlug, productSlug } = useParams<{ storeSlug: string; productSlug: string }>();
+  const { storeSlug, productId } = useParams<{ storeSlug: string; productId: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { openChat } = useFloatingChat();
@@ -66,10 +64,10 @@ const ProductFullViewContent = () => {
   const [reviewCount, setReviewCount] = useState(0);
 
   useEffect(() => {
-    if (storeSlug && productSlug) {
+    if (storeSlug && productId) {
       fetchData();
     }
-  }, [storeSlug, productSlug]);
+  }, [storeSlug, productId]);
 
   useEffect(() => {
     if (user) {
@@ -94,66 +92,16 @@ const ProductFullViewContent = () => {
 
     setSeller(sellerData);
 
-    // Smart product lookup based on productSlug format
-    let productData = null;
-
-    // Strategy 1: If it looks like a full UUID, try direct ID match
-    if (productSlug && isUUID(productSlug)) {
-      const { data } = await supabase
-        .from('seller_products')
-        .select('*')
-        .eq('seller_id', sellerData.id)
-        .eq('id', productSlug)
-        .maybeSingle();
-      productData = data;
-    }
-
-    // Strategy 2: Extract ID prefix from slug and try ILIKE match
-    if (!productData && productSlug) {
-      const idPrefix = extractIdFromSlug(productSlug);
-      if (idPrefix) {
-        const { data } = await supabase
-          .from('seller_products')
-          .select('*')
-          .eq('seller_id', sellerData.id)
-          .ilike('id', `${idPrefix}%`)
-          .maybeSingle();
-        productData = data;
-      }
-    }
-
-    // Strategy 3: Try matching by generated slug from name
-    if (!productData && productSlug) {
-      const { data: allProducts } = await supabase
-        .from('seller_products')
-        .select('*')
-        .eq('seller_id', sellerData.id)
-        .eq('is_available', true)
-        .eq('is_approved', true);
-
-      if (allProducts) {
-        // Normalize the incoming slug for comparison
-        const normalizedSlug = productSlug.toLowerCase().replace(/-[a-f0-9]{8}$/, '');
-        
-        productData = allProducts.find(p => {
-          const productBaseSlug = generateSlug(p.name);
-          return productBaseSlug === normalizedSlug || 
-                 generateSlug(p.name) + '-' + p.id.substring(0, 8) === productSlug;
-        }) || null;
-      }
-    }
+    // Fetch product
+    const { data: productData } = await supabase
+      .from('seller_products')
+      .select('*')
+      .eq('id', productId)
+      .eq('seller_id', sellerData.id)
+      .single();
 
     if (productData) {
       setProduct(productData);
-
-      // Redirect to canonical SEO URL if using old UUID format
-      if (productSlug && isUUID(productSlug) && storeSlug) {
-        const canonicalUrl = buildProductUrl(productData, storeSlug);
-        const currentPath = `/store/${storeSlug}/product/${productSlug}`;
-        if (canonicalUrl !== currentPath) {
-          navigate(canonicalUrl, { replace: true });
-        }
-      }
 
       // Fetch related products
       const { data: relatedData } = await supabase
@@ -162,7 +110,7 @@ const ProductFullViewContent = () => {
         .eq('seller_id', sellerData.id)
         .eq('is_available', true)
         .eq('is_approved', true)
-        .neq('id', productData.id)
+        .neq('id', productId)
         .limit(4);
 
       setRelatedProducts(relatedData || []);
@@ -171,7 +119,7 @@ const ProductFullViewContent = () => {
       const { data: reviewData } = await supabase
         .from('product_reviews')
         .select('rating')
-        .eq('product_id', productData.id);
+        .eq('product_id', productId);
 
       if (reviewData && reviewData.length > 0) {
         const avg = reviewData.reduce((sum, r) => sum + r.rating, 0) / reviewData.length;
@@ -466,14 +414,14 @@ const ProductFullViewContent = () => {
         </div>
 
         {/* Related Products */}
-        {relatedProducts.length > 0 && storeSlug && (
+        {relatedProducts.length > 0 && (
           <div className="mt-12">
             <h2 className="text-xl font-bold text-slate-900 mb-6">More from this seller</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {relatedProducts.map(related => (
                 <Link
                   key={related.id}
-                  to={buildProductUrl(related, storeSlug)}
+                  to={`/store/${storeSlug}/product/${related.id}`}
                   className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="aspect-square bg-slate-50">
