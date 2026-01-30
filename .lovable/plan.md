@@ -1,181 +1,221 @@
 
 
-# Refactor /Marketplace to Match Gumroad Design Exactly
+# Marketplace Full View Update - Gumroad Style Design
 
-## Current State vs Gumroad Reference
+## Overview
 
-Based on the screenshot from Gumroad's Discover page, there are significant design differences that need to be addressed:
+Update the `/marketplace` section to:
+1. Use the **Uptoza logo** instead of "gumroad" text
+2. Keep all product viewing **within the marketplace** (no redirect to `/store` pages)
+3. Create a **Gumroad-style full view page** with image gallery, seller info, reviews, and purchase options
+4. Match the exact layout from the Gumroad reference screenshot
 
-### Header Differences
+## Reference Design Analysis (Gumroad Product Page)
 
-| Element | Current | Gumroad Reference |
-|---------|---------|-------------------|
-| Logo | Text "Uptoza" (text-xl font-bold) | Bold custom wordmark font (larger, ~26px) |
-| Search bar | Rounded-lg with bg-white, border-2 | Rounded-full pill shape, subtle gray border |
-| Search height | py-2.5 (~40px) | Taller input (~48px) |
-| Login button | Plain text link | Outlined rounded button |
-| Start selling | bg-black rounded-lg | bg-black rounded-full pill |
-| Background | #F4F4F0 cream | Pure white header on cream page |
-
-### Category Pills Row
-
-| Element | Current | Gumroad Reference |
-|---------|---------|-------------------|
-| Active pill | bg-black text-white | Outlined black border pill (not filled) |
-| Inactive pills | White with border | Plain text without border |
-| Pill style | rounded-full solid | rounded-full with thin border |
-
-### Featured Carousel (Big Difference)
-
-| Element | Current | Gumroad Reference |
-|---------|---------|-------------------|
-| Card layout | Standard product cards | Large horizontal cards with image LEFT, content RIGHT |
-| Card style | White rounded-xl small | Wide banner-style with image:content ratio ~40:60 |
-| Rating display | Small inline | Pill badge with star icon and count |
-| Price display | "Starting at $X" small | Bold "$X+ a month" or "$X" in bottom-left corner |
-
-### Filter Sidebar
-
-| Element | Current | Gumroad Reference |
-|---------|---------|-------------------|
-| Section headers | UPPERCASE bold, black border-b | Normal case, with chevron arrows |
-| Accordion icons | ChevronDown only | Chevron that rotates when collapsed |
-| Filter sections | Categories, Tags, Price, Rating | Filters, Tags, Contains, Price, Rating |
-| Style | Heavy black borders | Light, minimal borders |
-
-### Product Grid Cards
-
-| Element | Current | Gumroad Reference |
-|---------|---------|-------------------|
-| Card border | border-2 border-black/5 | Very subtle or no visible border |
-| Image aspect | 16:10 | Square-ish ~4:3 or 1:1 |
-| Seller row | Below image with avatar | No seller row visible on grid cards |
-| Rating | Stars with number | Not shown on grid cards |
-| Price | "Starting at $X" | Just product name, no price on grid initially |
-| Hover | shadow-lg, -translate-y-1 | Subtle hover state |
-
-### Sort Tabs
-
-| Element | Current | Gumroad Reference |
-|---------|---------|-------------------|
-| Style | Pill buttons with icons | Simple text links, active has outline |
-| Position | Right of "Curated for you" | Right side, cleaner layout |
-| Labels | Curated, Trending, Best Sellers, Hot & New | Trending, Best Sellers, Hot & New |
-
-## Implementation Plan
-
-### 1. Update GumroadHeader.tsx
-
-**Changes:**
-- Pure white background instead of cream (#FFFFFF)
-- Logo: Bolder, larger font (text-2xl tracking-tight)
-- Search bar: Rounded-full pill shape, taller (h-12), lighter border
-- Login: Outlined rounded-full button style
-- Start selling: Rounded-full pill button
+Based on the screenshot from `hftalgo.gumroad.com/l/minbot`:
 
 ```text
++------------------------------------------------------------------+
+| HEADER: gumroad logo | [Search products...] | Log in | Start selling |
++------------------------------------------------------------------+
+| CATEGORIES: All | Drawing | 3D | Design | Music | ...              |
++------------------------------------------------------------------+
+|                                                                    |
+| [ IMAGE CAROUSEL with dots indicator ]                             |
+|                                                                    |
++------------------------------------------------------------------+
+| Product Title                              |  [Add to cart]       |
+|                                            |  (ⓘ) 181 sales       |
+| [$400] https://schema... | HFT Algo        |  ----------------    |
+|        [Seller Avatar] [Seller Name]       |  Features box:       |
+|        ★★★★★ 11 ratings                    |  - Size: 45.5 KB     |
+|                                            |  [Add to wishlist]   |
+| DESCRIPTION TEXT...                        |  [Share icons]       |
+| - bullet points                            |  No refunds allowed  |
+| - links                                    |                      |
+|                                            |                      |
++------------------------------------------------------------------+
+| RATINGS SECTION                                                    |
+| 11 ratings | 4.9 average                                          |
+| 5 stars ████████████████████ 91%                                  |
+| 4 stars ██ 9%                                                      |
+| 3 stars 0%                                                         |
+| 2 stars 0%                                                         |
+| 1 star  0%                                                         |
++------------------------------------------------------------------+
+| REVIEWS                                                            |
+| [Avatar] Jameson Rikel                                            |
+| ★★★★★ "Works amazing with the provided..."                        |
++------------------------------------------------------------------+
+```
+
+## Technical Implementation
+
+### 1. Update GumroadHeader.tsx - Use Uptoza Logo
+
+**Current:**
+```tsx
+<span className="text-[22px] font-black text-black tracking-tight lowercase">
+  gumroad
+</span>
+```
+
+**Change to:**
+```tsx
+<img 
+  src="/src/assets/uptoza-logo.png" 
+  alt="Uptoza" 
+  className="h-8 w-auto"
+/>
+```
+
+### 2. Create New MarketplaceProductFullView Component
+
+A new component that displays full product details in Gumroad style within the marketplace:
+
+**Layout Structure:**
+- Full-width image carousel at top with dot indicators
+- Two-column layout below:
+  - LEFT (60%): Product info, seller badge, rating summary, full description
+  - RIGHT (40%): Price box with "Add to cart" button, sales count, features, wishlist, share buttons
+
+**Features:**
+- Image gallery with carousel navigation
+- Seller avatar and name with verification badge
+- Star rating summary with review count
+- Full product description with markdown/HTML support
+- Product features/specifications box
+- "Add to cart" primary CTA button
+- Sales count indicator
+- Wishlist functionality
+- Share buttons (X/Twitter, Facebook)
+- Reviews section with rating breakdown
+
+### 3. Update Marketplace.tsx Flow
+
+**Current behavior:**
+- Quick View modal → "View Full" button → navigates to `/store/{storeSlug}/product/{productId}`
+
+**New behavior:**
+- Quick View modal → "View Full" button → shows inline full view OR modal within marketplace
+- All product viewing stays on `/marketplace`
+- No redirects to seller store pages
+
+**Implementation approach - In-page full view:**
+```tsx
+const [fullViewProduct, setFullViewProduct] = useState<Product | null>(null);
+
+// When showing full view
+if (fullViewProduct) {
+  return <MarketplaceProductFullView 
+    product={fullViewProduct} 
+    onBack={() => setFullViewProduct(null)}
+    onBuy={handleBuy}
+    onChat={handleChat}
+  />;
+}
+```
+
+### 4. New Component: MarketplaceProductFullView.tsx
+
+**Structure:**
+```text
 ┌──────────────────────────────────────────────────────────────────┐
-│ gumroad  │ [🔍 Search products...                   ] │ Log in │ Start selling │
+│ [← Back to Marketplace]  [Search...]                             │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │                                                            │  │
+│  │              IMAGE CAROUSEL (full width)                   │  │
+│  │              [○ ○ ●]  dot indicators                       │  │
+│  │                                                            │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─────────────────────────────┐  ┌─────────────────────────┐   │
+│  │ PRODUCT TITLE               │  │ [$XX]                   │   │
+│  │                             │  │ [Add to cart - pink]    │   │
+│  │ [Avatar] Seller Name        │  │                         │   │
+│  │ ★★★★★ (XX ratings)          │  │ (ⓘ) XXX sales           │   │
+│  │                             │  │ ─────────────────────   │   │
+│  │ DESCRIPTION...              │  │ Includes:               │   │
+│  │ • Feature 1                 │  │ - Item 1                │   │
+│  │ • Feature 2                 │  │ - Item 2                │   │
+│  │ • Links                     │  │                         │   │
+│  │                             │  │ Size: XX KB             │   │
+│  │                             │  │                         │   │
+│  │                             │  │ [Add to wishlist ▼]     │   │
+│  │                             │  │ [Share icons]           │   │
+│  └─────────────────────────────┘  └─────────────────────────┘   │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ RATINGS & REVIEWS                                          │  │
+│  │ XX ratings | X.X average                                   │  │
+│  │ 5 stars ████████████ XX%                                   │  │
+│  │ 4 stars ██ XX%                                             │  │
+│  │ 3 stars  X%                                                │  │
+│  │                                                            │  │
+│  │ [Review Card 1]                                            │  │
+│  │ [Review Card 2]                                            │  │
+│  └────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### 2. Update Category Pills in Marketplace.tsx
+### 5. Data Fetching for Full View
 
-**Changes:**
-- Active category: Outlined black border, NOT filled
-- Inactive: Plain text without background/border
-- Simpler styling to match reference
+When opening full view, fetch complete product data:
+- Product details from `ai_accounts` or `seller_products`
+- Seller profile from `seller_profiles`
+- Reviews from `product_reviews`
+- Images array for gallery
 
-### 3. Create New FeaturedProductBanner.tsx
-
-Gumroad's featured section uses large horizontal banner cards, not standard product cards. Each featured item shows:
-- Large image on LEFT (~40% width)
-- Content on RIGHT with title, description, seller avatar + name, price badge, rating badge
-
-**New component layout:**
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ [      IMAGE       ] │  Title of Product                        │
-│ [                  ] │  Description text here...                │
-│ [                  ] │  [Avatar] Seller Name                    │
-│ [                  ] │  [$10+ a month]        [★ 4.9 (17.5K)]   │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### 4. Update GumroadFilterSidebar.tsx
-
-**Changes:**
-- Remove heavy black borders
-- Use lighter section dividers
-- Change section headers to normal case (not UPPERCASE)
-- Add "Filters" as first expandable section header
-- Use cleaner chevron rotation on expand/collapse
-- Adjust spacing to be more minimal
-
-### 5. Update GumroadProductCard.tsx
-
-**Changes:**
-- Remove visible border (or make ultra-subtle)
-- Remove seller avatar row
-- Remove rating/review count
-- Remove "sold" count
-- Keep: Image, Title, Price only
-- More minimal hover state
-- Image aspect closer to square
-
-### 6. Update Sort Tabs in Marketplace.tsx
-
-**Changes:**
-- Remove icons from sort buttons
-- Use simple text links with outline for active state
-- Remove "Curated" option (not in Gumroad)
-- Just: Trending | Best Sellers | Hot & New
-
-### 7. Typography & Spacing
-
-**Font updates:**
-- Use system font stack or add Mabry Pro-like font
-- Bolder headings (font-bold or font-black)
-- Larger section titles
-
-## Files to Modify
+## Files to Create/Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/marketplace/GumroadHeader.tsx` | White bg, pill search, outlined buttons |
-| `src/pages/Marketplace.tsx` | Category pills, sort tabs, section layout |
-| `src/components/marketplace/GumroadProductCard.tsx` | Minimal card, no seller/rating |
-| `src/components/marketplace/GumroadFilterSidebar.tsx` | Lighter style, normal case headers |
-| `src/components/marketplace/FeaturedCarousel.tsx` | Update to use banner-style cards |
+| `src/components/marketplace/GumroadHeader.tsx` | Replace "gumroad" text with Uptoza logo image |
+| `src/components/marketplace/MarketplaceProductFullView.tsx` | **NEW** - Gumroad-style full product view |
+| `src/pages/Marketplace.tsx` | Add fullViewProduct state, show full view inline instead of redirect |
+| `src/components/marketplace/GumroadQuickViewModal.tsx` | Update "View Full" to set fullViewProduct instead of navigate |
 
-## New Component
+## Design Details
 
-| File | Description |
-|------|-------------|
-| `src/components/marketplace/FeaturedBannerCard.tsx` | Large horizontal card for featured products |
+### Color Palette (Matching Current Gumroad Style)
+- Background: `#F4F4F0` (cream) - page background
+- Cards/Boxes: `#FFFFFF` (white) with subtle borders
+- Primary CTA: `#FF90E8` (pink) - "Add to cart" button
+- Text: `#000000` (black), `#6B6B6B` (secondary gray)
+- Ratings: Yellow stars `#FACC15`
+- Success/Sales: `#10B981` (emerald)
 
-## Visual Summary
+### Typography
+- Product title: `text-2xl font-bold` or larger
+- Price: `text-3xl font-bold` with green background badge
+- Description: `text-base` with `whitespace-pre-line` for line breaks
+- Reviews: `text-sm`
 
-### Before (Current)
-- Cream header with small logo
-- Standard product cards everywhere
-- Heavy black filter borders
-- Complex product cards with ratings
+### Image Carousel
+- Full-width with rounded corners
+- Dot indicators centered below
+- Swipe support for mobile
+- Thumbnails below on desktop
 
-### After (Gumroad Style)
-- White header bar, pill-shaped search
-- Large horizontal banner cards for featured
-- Minimal filter sidebar
-- Simple product cards (image + title)
-- Outlined category pills for active state
+### Right Sidebar Box
+- Sticky on scroll
+- White background with subtle border
+- Contains: Price, Add to cart, sales count, features, wishlist, share
 
-## Color Reference (Gumroad)
-- Page background: `#F4F4F0` (cream) - Already correct
-- Header: `#FFFFFF` (white)
-- Cards: `#FFFFFF` (white)
-- Primary text: `#000000` (black)
-- Secondary text: `#6B6B6B` (gray)
-- Borders: `rgba(0,0,0,0.1)` (very light)
-- Active pill: Black outline on white
-- Price badge: White with subtle border
+## Guest Checkout Flow (Unchanged)
+
+The existing guest checkout flow remains:
+1. Guest clicks "Add to cart" / "Buy"
+2. GuestCheckoutModal opens for email collection
+3. Redirects to Stripe checkout
+
+## Summary of Changes
+
+1. **Logo**: Swap "gumroad" text → Uptoza logo image
+2. **Full View**: Create in-marketplace full view instead of redirecting to `/store`
+3. **Design**: Match Gumroad's product page layout exactly
+4. **Reviews**: Integrate existing `ProductReviews` component
+5. **Gallery**: Use existing `ImageGallery` component with Gumroad styling
 
