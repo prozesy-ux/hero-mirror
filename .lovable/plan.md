@@ -1,157 +1,199 @@
 
-# Unify Product Full View Design Across All Views
+
+# Marketplace Search & Logo Enhancement Plan
 
 ## Overview
 
-Align the product full view design across three locations to match the recently updated `/marketplace` full view design:
+This plan addresses 5 improvements across the marketplace and store search experience:
 
-1. **`/store/:storeSlug` (Store.tsx)** - Uses `ProductDetailModal` (bottom sheet/dialog)
-2. **`/dashboard/marketplace` (AIAccountsSection.tsx)** - Uses inline modals
-3. **`/dashboard/marketplace/product/:productId` (ProductFullViewPage.tsx)** - Uses separate page component
+1. **New Logo**: Replace the current logo with the uploaded transparent-background version
+2. **Logo Sizing**: Increase logo size for better visibility
+3. **Search Bar Full Width**: Expand search bar to take more horizontal space
+4. **Voice Search Fix**: Address microphone not working
+5. **Search Box Design**: Unified, premium search design across all locations
 
-All will adopt the **70/30 horizontal split layout** with:
-- Left (70%): Medium-height image gallery with `object-contain`
-- Right (30%): Sticky purchase box with price, buttons, and actions
-- Below: Combined title/description/seller info section + Reviews
-
-## Current State vs Target State
-
-| Component | Current Layout | Target Layout |
-|-----------|---------------|---------------|
-| ProductDetailModal (Store) | Drawer/Dialog, vertical stack | Same design as marketplace full view |
-| ProductFullViewPage (Dashboard) | Two-column with sidebar | 70/30 split, unified info box |
-| AIAccountsSection modals | Basic dialog modals | Link to ProductFullViewPage instead |
-
-## Visual Layout Target
-
-```text
-Both /store and /dashboard/marketplace/product views will have:
-
-┌─────────────────────────────────────────────────────────────────────────┐
-│  HEADER (Store header or Dashboard topbar)                              │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌────────────────────────────────────────┐  ┌───────────────────────┐  │
-│  │                                        │  │  PURCHASE BOX (30%)   │  │
-│  │          IMAGE GALLERY                 │  │                       │  │
-│  │            (70%)                       │  │  $Price (black badge) │  │
-│  │                                        │  │                       │  │
-│  │     h-[350px] / h-[450px]              │  │  [Add to cart]        │  │
-│  │     object-contain                     │  │  [Chat with Seller]   │  │
-│  │                                        │  │                       │  │
-│  │                                        │  │  Sales count          │  │
-│  │                                        │  │  Features             │  │
-│  │                                        │  │  Wishlist             │  │
-│  │                                        │  │  Share icons          │  │
-│  └────────────────────────────────────────┘  └───────────────────────┘  │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  UNIFIED INFO BOX                                                 │   │
-│  │  Title / Seller / Rating                                          │   │
-│  │  ────────────────────────────────────────                        │   │
-│  │  Description text                                                 │   │
-│  │  [Tags]                                                           │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  REVIEWS (with always-visible Write Review button)                │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-## Implementation Plan
-
-### File 1: `src/components/dashboard/ProductFullViewPage.tsx`
-
-**Current State**: Uses a two-column layout with sidebar categories on left and product details on right
-
-**Changes**:
-1. Remove the left sidebar with categories (not needed on product detail page)
-2. Implement 70/30 horizontal split layout matching `MarketplaceProductFullView`
-3. Replace `ImageGallery` with fixed-height container (h-[350px] mobile, h-[450px] desktop)
-4. Add sticky purchase box on right (30%) with:
-   - Black price badge
-   - "Add to cart" button (black)
-   - "Chat with Seller" button (outlined)
-   - Sales count, features, wishlist, share icons
-5. Merge Title/Seller/Description into single unified container below split
-6. Add always-visible "Write a Review" button with toast prompt for guests
-7. Apply monochrome styling: `bg-white`, `border-black/20`, `text-black`
-
-### File 2: `src/pages/ProductFullView.tsx` (Store product full view)
-
-**Current State**: Uses a two-column 50/50 grid layout with emerald/violet theme
-
-**Changes**:
-1. Convert to 70/30 horizontal split layout
-2. Replace `ImageGallery` component usage with fixed-height container
-3. Create sticky purchase box on right (30%) matching marketplace design
-4. Merge product info sections into single unified container
-5. Apply monochrome/enterprise styling to match marketplace
-6. Add rating breakdown and review controls with always-visible "Write a Review" button
-
-### File 3: `src/components/store/ProductDetailModal.tsx`
-
-**Current State**: Uses Drawer (mobile) and Dialog (desktop) with vertical layout
-
-**Changes**:
-1. For desktop Dialog: Convert to 70/30 horizontal layout inside the modal
-2. Keep mobile Drawer as vertical stack (bottom sheet works better vertically)
-3. Update styling to match marketplace enterprise aesthetic
-4. Add "Write a Review" button (visible to all, prompts sign-in for guests)
-
-### File 4: `src/components/dashboard/AIAccountsSection.tsx`
-
-**Current State**: Has its own modals for viewing product details
-
-**Changes**:
-1. Update quick view modal to navigate to `/dashboard/marketplace/product/:productId` for full view
-2. Remove inline product detail modals, use ProductFullViewPage instead
-3. Keep quick view for preview, full view for detailed page
-
-## Styling Specifications
-
-| Element | Style |
-|---------|-------|
-| Background | `bg-white` or `bg-[#F4F4F0]` (Gumroad cream) |
-| Borders | `border-black/20` |
-| Text Primary | `text-black` |
-| Text Secondary | `text-black/70`, `text-black/50` |
-| Price Badge | `bg-black text-white` |
-| Primary Button | `bg-black hover:bg-black/90 text-white` |
-| Outline Button | `border-2 border-black hover:bg-black hover:text-white` |
-| Image Container | `h-[350px] lg:h-[450px] object-contain bg-gray-50` |
-| Cards/Containers | `rounded-2xl p-6` |
-
-## Review Section Updates (All Views)
-
-All product full views will include:
-1. Rating breakdown with clickable filter bars
-2. Sort dropdown (Most Recent / Most Helpful)
-3. **Always visible** "Write a Review" button:
-   - Authenticated: Toggle review form
-   - Guest: `toast.info('Please sign in to write a review')`
-4. Review list with:
-   - Buyer avatar, name, verified badge
-   - Star rating
-   - Review content
-   - Helpful button
-   - Seller response (if any)
-
-## Technical Summary
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `ProductFullViewPage.tsx` | Full redesign to 70/30 split, unified info box, reviews with public Write Review |
-| `ProductFullView.tsx` (Store) | Full redesign to 70/30 split, monochrome styling, reviews section |
-| `ProductDetailModal.tsx` | Desktop: 70/30 layout in dialog; Mobile: vertical drawer |
-| `AIAccountsSection.tsx` | Quick view opens modal, "View Full" navigates to ProductFullViewPage |
+| `src/assets/uptoza-logo-new.png` | Copy uploaded logo to project |
+| `src/components/marketplace/GumroadHeader.tsx` | New logo, bigger size, full-width search, improved design |
+| `src/pages/Store.tsx` | Improved search bar design matching marketplace |
+| `src/components/dashboard/AIAccountsSection.tsx` | Improved search bar design |
+| `src/components/marketplace/VoiceSearchButton.tsx` | Better visibility and click area |
 
-## Mobile Responsiveness
+## Visual Design Target
 
-On mobile (`< lg` breakpoint):
-- Layout stacks vertically: Image (full width) -> Purchase box -> Info -> Reviews
-- Image height: `h-[350px]` with `object-contain`
-- Bottom sheet drawer retained for `ProductDetailModal`
-- Touch-friendly buttons with proper spacing
+```text
+BEFORE (Current Header):
+┌─────────────────────────────────────────────────────────────────────────┐
+│ [Small Logo]  [──────── Search (max-w-2xl) ────────]  [EN] [$] [Login] │
+└─────────────────────────────────────────────────────────────────────────┘
+
+AFTER (New Header):
+┌─────────────────────────────────────────────────────────────────────────┐
+│ [BIGGER LOGO]   [─────────────── Full Width Search ───────────────────] │
+│    h-12          Voice/Image icons more prominent, better styling       │
+│                 [EN] [$] [Login] [Sell] (compact right section)         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+## Implementation Details
+
+### 1. Copy New Logo to Project
+
+Copy the uploaded transparent logo to `src/assets/uptoza-logo-new.png` and use ES6 import for proper bundling.
+
+### 2. GumroadHeader.tsx - Major Updates
+
+**Logo Changes:**
+```tsx
+// Import the new transparent logo
+import uptozaLogo from '@/assets/uptoza-logo-new.png';
+
+// Increase size from h-10 to h-12
+<img 
+  src={uptozaLogo} 
+  alt="Uptoza" 
+  className="h-12 w-auto"
+/>
+```
+
+**Search Bar Full Width:**
+```tsx
+// Change from max-w-2xl to max-w-4xl for more width
+<form className="hidden md:flex flex-1 max-w-4xl items-stretch relative">
+```
+
+**Improved Search Container Styling:**
+```tsx
+<div className="flex-1 flex items-stretch bg-white rounded-xl border-2 border-black/15 overflow-hidden focus-within:border-black/40 focus-within:ring-2 focus-within:ring-black/10 focus-within:shadow-lg transition-all">
+  ...
+</div>
+```
+
+**Voice Search Button - More Visible:**
+```tsx
+<div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+  <VoiceSearchButton
+    isListening={isListening}
+    isSupported={voiceSupported}
+    error={null}
+    onStart={startListening}
+    onStop={stopListening}
+    className="h-8 w-8 opacity-70 hover:opacity-100"  // Larger, more visible
+  />
+  <ImageSearchButton
+    onSearchResult={(result) => onSearchChange(result)}
+    className="h-8 w-8 opacity-70 hover:opacity-100"
+  />
+</div>
+```
+
+### 3. Voice Search Fix
+
+The voice search hook is correctly implemented. The issue is likely:
+1. Browser permissions not granted
+2. Not on HTTPS (required for microphone)
+3. Button too small/invisible
+
+**VoiceSearchButton.tsx Updates:**
+- Increase default size from tiny icon to visible button
+- Add clear visual feedback when listening
+- Show error state more prominently
+- Make button more accessible with larger click area
+
+```tsx
+// Make button larger and more visible
+<Button
+  type="button"
+  variant={isListening ? 'default' : 'ghost'}
+  size={size}
+  onClick={isListening ? onStop : onStart}
+  className={cn(
+    'transition-all duration-200 min-w-[32px] min-h-[32px]',
+    isListening && 'bg-red-500 hover:bg-red-600 text-white animate-pulse',
+    !isListening && 'text-black/50 hover:text-black hover:bg-black/5',
+    error && 'text-red-500',
+    className
+  )}
+>
+```
+
+### 4. Store.tsx - Search Bar Enhancement
+
+Match the marketplace design:
+```tsx
+// Update search container styling
+<div className="flex items-stretch bg-white border-2 border-slate-200 rounded-xl overflow-hidden shadow-sm focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-100 focus-within:shadow-md transition-all">
+  ...
+</div>
+
+// Make voice button more visible
+<VoiceSearchButton
+  isListening={isListening}
+  isSupported={voiceSupported}
+  error={voiceError}
+  onStart={startListening}
+  onStop={stopListening}
+  className="h-9 w-9 text-slate-500 hover:text-slate-700"
+/>
+```
+
+### 5. AIAccountsSection.tsx - Dashboard Marketplace Search
+
+Same improvements:
+```tsx
+// Improved search container
+<div className="flex-1 flex items-stretch bg-white rounded-xl border-2 border-gray-200 overflow-hidden focus-within:border-gray-400 focus-within:ring-2 focus-within:ring-gray-100 focus-within:shadow-md transition-all">
+  ...
+</div>
+
+// Larger, more visible voice/image buttons
+<VoiceSearchButton
+  isListening={isListening}
+  isSupported={voiceSupported}
+  error={voiceError}
+  onStart={startListening}
+  onStop={stopListening}
+  className="h-9 w-9"
+/>
+```
+
+## Unified Search Design Specs
+
+| Element | Style |
+|---------|-------|
+| Container | `rounded-xl border-2 border-black/15` |
+| Focus State | `focus-within:border-black/40 focus-within:shadow-lg` |
+| Input Padding | `pl-12 pr-28 py-3.5` (room for icons) |
+| Voice Button | `h-9 w-9 min-w-[36px]` (larger click area) |
+| Image Button | `h-9 w-9 min-w-[36px]` |
+| Search Icon | `absolute left-4 w-5 h-5` |
+| Submit Button | `bg-black text-white px-6 font-semibold` |
+
+## Voice Search Troubleshooting
+
+The current implementation is correct, but users may experience issues because:
+
+1. **HTTPS Required**: Voice API only works over secure connections (your preview URLs are HTTPS, so this should be fine)
+2. **Browser Permissions**: User must grant microphone access when prompted
+3. **Browser Support**: Works in Chrome, Edge, Safari - may not work in Firefox
+
+The fix focuses on making the button:
+- More visible (larger size)
+- Better feedback when active (red pulsing)
+- Clear error state display
+
+## Summary
+
+| Change | Description |
+|--------|-------------|
+| New Logo | Transparent background, ES6 import |
+| Logo Size | `h-10` → `h-12` |
+| Search Width | `max-w-2xl` → `max-w-4xl` |
+| Search Style | `rounded-xl`, thicker border, shadow on focus |
+| Voice Button | Larger (h-9 w-9), better visibility, clear states |
+| Image Button | Same size increase |
+| Consistency | Same design across GumroadHeader, Store, AIAccountsSection |
+
