@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.verify-guest-payment]
 verify_jwt = false
+
+[functions.create-guest-razorpay]
+verify_jwt = false
+
+[functions.verify-guest-razorpay]
+verify_jwt = false
+
+[functions.create-guest-manual-order]
+verify_jwt = false
