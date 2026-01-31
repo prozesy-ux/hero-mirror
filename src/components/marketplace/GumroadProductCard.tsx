@@ -26,7 +26,7 @@ const GumroadProductCard = ({
   return (
     <button
       onClick={onClick}
-      className="group w-full text-left bg-white rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md"
+      className="group w-full text-left bg-white rounded-xl overflow-hidden border border-black/10 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5"
     >
       {/* Product Image - Square-ish aspect ratio */}
       <div className="relative overflow-hidden bg-gray-100">

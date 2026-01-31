@@ -130,23 +130,23 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
   }
 
   return (
-    <div className={cn("space-y-4 py-8", className)}>
-      <div className="flex items-center justify-between">
+    <div className={cn("border border-black/10 rounded-xl p-4 bg-white", className)}>
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-black/70" />
-          <h3 className="text-lg font-semibold text-black">Hot Right Now</h3>
-          <span className="text-xs text-black/50 font-medium">Trending</span>
+          <Flame className="h-4 w-4 text-orange-500" />
+          <h3 className="text-sm font-semibold text-black">Hot Right Now</h3>
+          <span className="text-[10px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full font-medium">Trending</span>
         </div>
-        <Button variant="ghost" size="sm" className="text-muted-foreground">
-          View All <ChevronRight className="h-4 w-4 ml-1" />
+        <Button variant="ghost" size="sm" className="text-black/50 hover:text-black text-xs h-7">
+          View All <ChevronRight className="h-3 w-3 ml-0.5" />
         </Button>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+      <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
         {products.map((product) => (
           <Card
             key={product.id}
-            className="flex-shrink-0 w-40 cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 bg-card border-border"
+            className="flex-shrink-0 w-36 cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 bg-white border border-black/10 hover:border-black/20"
             onClick={() => {
               trackProductClick(product.id);
               onProductClick(product);
