@@ -271,7 +271,7 @@ const BuyerDashboardHome = () => {
         </div>
         <div className="flex gap-2">
           <Button 
-            onClick={() => navigate('/dashboard/ai-accounts')}
+            onClick={() => navigate('/dashboard/marketplace')}
             className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
           >
             <Store className="w-4 h-4 mr-2" />
@@ -335,7 +335,7 @@ const BuyerDashboardHome = () => {
         </Link>
 
         {/* Browse Marketplace */}
-        <Link to="/dashboard/ai-accounts">
+        <Link to="/dashboard/marketplace">
           <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-stat hover:shadow-stat-hover transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-xl bg-blue-50 flex items-center justify-center">
@@ -389,7 +389,7 @@ const BuyerDashboardHome = () => {
               Start exploring our marketplace to find the perfect products for your needs.
             </p>
             <Button 
-              onClick={() => navigate('/dashboard/ai-accounts')}
+              onClick={() => navigate('/dashboard/marketplace')}
               className="bg-emerald-500 hover:bg-emerald-600 text-white"
             >
               Browse Marketplace

@@ -266,9 +266,9 @@ const DashboardTopBar = ({ sidebarCollapsed = false }: DashboardTopBarProps) => 
               Prompts
             </Link>
             <Link
-              to="/dashboard/ai-accounts"
+              to="/dashboard/marketplace"
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                location.pathname === '/dashboard/ai-accounts'
+                location.pathname === '/dashboard/marketplace'
                   ? 'bg-violet-100 text-violet-700'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
