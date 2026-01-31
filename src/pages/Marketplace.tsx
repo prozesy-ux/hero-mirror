@@ -394,7 +394,7 @@ const Marketplace = () => {
   // Show loading state while finding product by URL slug
   if (urlProductLoading) {
     return (
-      <div className="min-h-screen bg-[#F4F4F0] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="animate-pulse text-black/50">Loading product...</div>
       </div>
     );
@@ -415,7 +415,7 @@ const Marketplace = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F4F0]">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <GumroadHeader
         searchQuery={searchQuery}

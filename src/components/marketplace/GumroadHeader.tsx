@@ -3,7 +3,10 @@ import { Search, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { VoiceSearchButton } from './VoiceSearchButton';
 import { ImageSearchButton } from './ImageSearchButton';
+import { SearchScopeSelector, SearchScope } from './SearchScopeSelector';
+import { MarketplaceSearchSuggestions } from './MarketplaceSearchSuggestions';
 import { useVoiceSearch } from '@/hooks/useVoiceSearch';
+import { useSearchSuggestions, SearchSuggestion } from '@/hooks/useSearchSuggestions';
 
 interface GumroadHeaderProps {
   searchQuery: string;
@@ -13,7 +16,31 @@ interface GumroadHeaderProps {
 
 const GumroadHeader = ({ searchQuery, onSearchChange, onSearch }: GumroadHeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchScope, setSearchScope] = useState<SearchScope>('all');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLFormElement>(null);
+
+  // Search suggestions hook
+  const {
+    suggestions,
+    isLoading: suggestionsLoading,
+    isOpen: suggestionsOpen,
+    open: openSuggestions,
+    close: closeSuggestions,
+    setQuery: setSuggestionsQuery,
+    setScope: setSuggestionsScope,
+    clearRecentSearches,
+  } = useSearchSuggestions();
+
+  // Sync query to suggestions hook
+  useEffect(() => {
+    setSuggestionsQuery(searchQuery);
+  }, [searchQuery, setSuggestionsQuery]);
+
+  // Sync scope to suggestions hook
+  useEffect(() => {
+    setSuggestionsScope(searchScope);
+  }, [searchScope, setSuggestionsScope]);
 
   // Voice search integration
   const handleVoiceResult = useCallback((text: string) => {
@@ -46,57 +73,102 @@ const GumroadHeader = ({ searchQuery, onSearchChange, onSearch }: GumroadHeaderP
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    closeSuggestions();
     onSearch();
   };
 
+  const handleSuggestionSelect = useCallback((suggestion: SearchSuggestion) => {
+    onSearchChange(suggestion.text);
+    closeSuggestions();
+    onSearch();
+  }, [onSearchChange, closeSuggestions, onSearch]);
+
+  const handleInputFocus = useCallback(() => {
+    openSuggestions();
+  }, [openSuggestions]);
+
   return (
-    <header className="sticky top-0 z-50 w-full bg-white border-b border-black/5">
+    <header className="sticky top-0 z-50 w-full bg-white border-b border-black/10">
       <div className="mx-auto max-w-screen-2xl px-4 lg:px-6">
-        <div className="flex items-center justify-between h-14 gap-4">
-          {/* Logo - Uptoza */}
+        <div className="flex items-center justify-between h-16 gap-4">
+          {/* Logo - Bigger */}
           <Link to="/" className="flex-shrink-0">
             <img 
               src="/src/assets/uptoza-logo.png" 
               alt="Uptoza" 
-              className="h-8 w-auto"
+              className="h-10 w-auto"
             />
           </Link>
 
-          {/* Search Bar - Desktop - Pill style */}
+          {/* Search Bar - Desktop - Amazon/Fiverr style with black border */}
           <form 
             onSubmit={handleSearchSubmit}
-            className="hidden md:flex flex-1 max-w-xl items-center"
+            className="hidden md:flex flex-1 max-w-2xl items-stretch relative"
+            ref={searchContainerRef}
           >
-            <div className="relative flex-1 flex items-center bg-white border border-black/10 rounded-full overflow-hidden focus-within:border-black/30 focus-within:ring-1 focus-within:ring-black/10 transition-all">
-              <Search className="w-4 h-4 text-black/40 ml-4" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search products"
-                className="flex-1 px-3 py-3 text-sm text-black placeholder-black/40 bg-transparent outline-none"
-              />
+            <div className="flex-1 flex items-stretch bg-white rounded-lg border border-black/20 overflow-hidden focus-within:border-black/40 focus-within:ring-2 focus-within:ring-black/10 transition-all">
+              {/* Scope Selector - Left side with gray bg */}
+              <div className="border-r border-black/20">
+                <SearchScopeSelector 
+                  value={searchScope} 
+                  onChange={setSearchScope}
+                  className="rounded-none"
+                />
+              </div>
               
-              {/* Voice Search */}
-              <VoiceSearchButton
-                isListening={isListening}
-                isSupported={voiceSupported}
-                error={null}
-                onStart={startListening}
-                onStop={stopListening}
-                className="mr-1 opacity-60 hover:opacity-100"
-              />
+              {/* Search Input - Center */}
+              <div className="relative flex-1 flex items-center">
+                <Search className="absolute left-3 w-4 h-4 text-black/40" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  onFocus={handleInputFocus}
+                  placeholder="Search products, sellers..."
+                  className="w-full pl-10 pr-20 py-3 text-sm text-black placeholder-black/40 bg-white outline-none"
+                />
+                
+                {/* Voice + Image Search - Inside input, right side */}
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                  <VoiceSearchButton
+                    isListening={isListening}
+                    isSupported={voiceSupported}
+                    error={null}
+                    onStart={startListening}
+                    onStop={stopListening}
+                    className="opacity-50 hover:opacity-100"
+                  />
+                  <ImageSearchButton
+                    onSearchResult={(result) => onSearchChange(result)}
+                    className="opacity-50 hover:opacity-100"
+                  />
+                </div>
+              </div>
               
-              {/* Image Search */}
-              <ImageSearchButton
-                onSearchResult={(result) => onSearchChange(result)}
-                className="mr-3 opacity-60 hover:opacity-100"
-              />
+              {/* Search Button - Right side with black bg */}
+              <button 
+                type="submit"
+                className="px-5 py-3 bg-black text-white font-medium hover:bg-black/90 transition-colors flex items-center gap-2"
+              >
+                <Search size={16} />
+                <span className="hidden lg:inline">Search</span>
+              </button>
             </div>
+
+            {/* Search Suggestions Dropdown */}
+            <MarketplaceSearchSuggestions
+              query={searchQuery}
+              suggestions={suggestions}
+              isLoading={suggestionsLoading}
+              isOpen={suggestionsOpen}
+              onClose={closeSuggestions}
+              onSelect={handleSuggestionSelect}
+              onClearRecent={clearRecentSearches}
+            />
           </form>
 
-          {/* Right Actions - Gumroad style */}
+          {/* Right Actions */}
           <div className="hidden md:flex items-center gap-2">
             <Link 
               to="/signin" 
@@ -106,7 +178,7 @@ const GumroadHeader = ({ searchQuery, onSearchChange, onSearch }: GumroadHeaderP
             </Link>
             <Link 
               to="/seller" 
-              className="px-4 py-2 text-sm font-medium text-white bg-black rounded-full hover:bg-black/80 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-black rounded-full hover:bg-black/90 transition-colors"
             >
               Start selling
             </Link>
@@ -121,20 +193,28 @@ const GumroadHeader = ({ searchQuery, onSearchChange, onSearch }: GumroadHeaderP
           </button>
         </div>
 
-        {/* Mobile Search - Pill style */}
+        {/* Mobile Search - Updated style */}
         <form 
           onSubmit={handleSearchSubmit}
           className="md:hidden pb-3"
         >
-          <div className="flex items-center bg-white border border-black/10 rounded-full overflow-hidden">
-            <Search className="w-4 h-4 text-black/40 ml-4" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search products"
-              className="flex-1 px-3 py-2.5 text-sm text-black placeholder-black/40 bg-transparent outline-none"
-            />
+          <div className="flex items-stretch bg-white border border-black/20 rounded-lg overflow-hidden">
+            <div className="relative flex-1 flex items-center">
+              <Search className="absolute left-3 w-4 h-4 text-black/40" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="Search products..."
+                className="w-full pl-10 pr-4 py-2.5 text-sm text-black placeholder-black/40 bg-white outline-none"
+              />
+            </div>
+            <button 
+              type="submit"
+              className="px-4 py-2.5 bg-black text-white"
+            >
+              <Search size={16} />
+            </button>
           </div>
         </form>
 
