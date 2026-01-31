@@ -1,225 +1,173 @@
 
-
-# Marketplace Product Full View - Horizontal Split Design
+# Marketplace Full View Enhancements
 
 ## Overview
 
-Redesign the marketplace product full view page to use a horizontal 70/30 split layout where the image gallery sits on the left (70%) and the price/purchase box sits on the right (30%), with medium-height images instead of full-height display.
+Three improvements to the marketplace product full view page:
+
+1. **Header**: Add language selector and currency converter to the public marketplace header (matching dashboard header)
+2. **Title + Description**: Merge into a single container (currently separate boxes)
+3. **Review Create Option**: Make "Write a Review" button visible to all users (currently hidden for non-authenticated users)
 
 ## Current State vs Target State
 
-| Element | Current Layout | Target Layout |
-|---------|---------------|---------------|
-| Image Position | Full width at top, 16:9 aspect ratio | Left side, 70% width |
-| Purchase Box | Right column below image (40%) | Right side, 30% width, aligned with image |
-| Layout Flow | Vertical (image → two columns) | Horizontal (image left + purchase right) |
-| Image Height | Full 16:9 aspect ratio (tall) | Medium height, object-contain centered |
-| Product Info | Left column 60% | Below the image/purchase split |
+| Element | Current | Target |
+|---------|---------|--------|
+| Header | Only search, login, seller buttons | Add currency selector (like dashboard) |
+| Title Box | Separate container | Merged with description in one box |
+| Description Box | Separate container | Merged with title in one box |
+| Write Review | Only visible when logged in | Visible to all (shows login prompt if not authenticated) |
 
-## Visual Layout Diagram
+## Visual Layout
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│  HEADER + CATEGORY PILLS                                                 │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌────────────────────────────────────────┐  ┌───────────────────────┐  │
-│  │                                        │  │  PURCHASE BOX (30%)   │  │
-│  │          IMAGE GALLERY                 │  │                       │  │
-│  │            (70%)                       │  │  $Price (black badge) │  │
-│  │                                        │  │                       │  │
-│  │     ← prev     [●○○]     next →        │  │  [Add to cart]        │  │
-│  │                                        │  │  [Chat with Seller]   │  │
-│  │    Medium height, object-contain       │  │                       │  │
-│  │                                        │  │  Sales count          │  │
-│  │                                        │  │  Features             │  │
-│  │                                        │  │  Wishlist             │  │
-│  │                                        │  │  Share icons          │  │
-│  └────────────────────────────────────────┘  └───────────────────────┘  │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  TITLE / PRICE / SELLER INFO (Title Box)                         │   │
-│  │  Product Name                                                     │   │
-│  │  Seller Avatar + Name + Verified Badge                           │   │
-│  │  Rating Summary                                                   │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  DESCRIPTION (Full Width)                                         │   │
-│  │  Description text + Tags                                          │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  RATINGS & REVIEWS (Full Width)                                   │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+BEFORE:
+┌─────────────────────────────────────────────────────────────┐
+│  [Logo]  [Search Bar]           [Login] [Sell]              │
+└─────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│  Title / Seller / Rating Box                                │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│  Description Box (separate)                                 │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│  Reviews (Write Review only for logged in users)            │
+└────────────────────────────────────────────────────────────┘
+
+
+AFTER:
+┌─────────────────────────────────────────────────────────────┐
+│  [Logo]  [Search Bar]    [🇺🇸 USD ▼] [Login] [Sell]         │
+└─────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│  Title / Seller / Rating                                    │
+│  ─────────────────────────────────────────────────────────  │
+│  Description                                                │
+│  Description text here...                                   │
+│  [Tags]                                                     │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│  Reviews                                                    │
+│  [Write a Review] ← Always visible, prompts login if needed │
+└────────────────────────────────────────────────────────────┘
 ```
 
 ## Implementation Details
 
-### File to Modify
-`src/components/marketplace/MarketplaceProductFullView.tsx`
+### 1. GumroadHeader.tsx - Add Currency Selector
 
-### Key Changes
+Add CurrencySelector and CurrencyContext to the public marketplace header:
 
-**1. Horizontal Split Container (70/30)**
+**Changes:**
+- Import `CurrencyProvider` and `CurrencySelector` components
+- Add currency selector dropdown between search bar and login button
+- Use the "minimal" variant to match enterprise styling
+
+**Position:**
 ```jsx
-{/* 70/30 Image + Purchase Split */}
-<div className="flex flex-col lg:flex-row gap-6 mb-6">
-  {/* Image Gallery - 70% */}
-  <div className="lg:w-[70%]">
-    <div className="bg-white rounded-2xl overflow-hidden border border-black/20">
-      {/* Medium height image - max-h-[500px] */}
-      <div className="relative h-[400px] lg:h-[500px]">
-        <img 
-          src={...} 
-          className="w-full h-full object-contain bg-gray-50"
-        />
-        {/* Navigation arrows */}
-        {/* Dot indicators */}
-      </div>
-      {/* Thumbnail strip if multiple images */}
+{/* Right Actions */}
+<div className="hidden md:flex items-center gap-2">
+  <CurrencySelector variant="minimal" />  {/* NEW */}
+  <Link to="/signin" ...>Log in</Link>
+  <Link to="/seller" ...>Start selling</Link>
+</div>
+```
+
+### 2. MarketplaceProductFullView.tsx - Merge Title + Description
+
+Combine the two separate containers into one unified box:
+
+**Current structure (lines 558-638):**
+- Title/Seller/Rating Box (lines 561-614)
+- Description Box (lines 616-638)
+
+**New structure:**
+```jsx
+{/* Combined Title + Description Section */}
+<div className="bg-white rounded-2xl border border-black/20 p-6">
+  {/* Title */}
+  <h1 className="text-2xl lg:text-3xl font-bold text-black mb-4">
+    {product.name}
+  </h1>
+
+  {/* Seller Info */}
+  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-black/10">
+    {/* Avatar, seller name, verified badge */}
+  </div>
+
+  {/* Rating Summary */}
+  {product.reviewCount > 0 && (
+    <div className="flex items-center gap-2 mb-4 pb-4 border-b border-black/10">
+      {/* Stars, rating, count */}
     </div>
-  </div>
+  )}
 
-  {/* Purchase Box - 30% */}
-  <div className="lg:w-[30%]">
-    <div className="lg:sticky lg:top-20 bg-white rounded-2xl p-6 border border-black/20">
-      {/* Price, buttons, features, share */}
-    </div>
-  </div>
-</div>
-```
-
-**2. Remove AspectRatio for Controlled Height**
-
-Current:
-```jsx
-<AspectRatio ratio={16 / 9}>
-  <img ... />
-</AspectRatio>
-```
-
-Updated:
-```jsx
-<div className="relative h-[400px] lg:h-[500px]">
-  <img 
-    className="w-full h-full object-contain bg-gray-50"
-  />
-</div>
-```
-
-**3. Move Product Info Section Below**
-
-The title/seller/description sections become full-width containers below the 70/30 split:
-
-```jsx
-{/* Product Info - Full Width Below */}
-<div className="space-y-6">
-  {/* Title/Price/Seller Container */}
-  <div className="bg-white rounded-2xl border border-black/20 p-6">
-    <h1>Product Name</h1>
-    {/* Seller info */}
-    {/* Rating summary */}
-  </div>
-
-  {/* Description Container */}
-  <div className="bg-white rounded-2xl border border-black/20 p-6">
-    {/* Description + Tags */}
-  </div>
-
-  {/* Reviews Container */}
-  <div className="bg-white rounded-2xl border border-black/20 p-6">
-    {/* Reviews section */}
-  </div>
-</div>
-```
-
-**4. Mobile Responsive**
-
-On mobile, the layout stacks vertically:
-- Image gallery (full width)
-- Purchase box (full width)
-- Product info sections (full width)
-
-### Complete Layout Structure
-
-```jsx
-<div className="mx-auto max-w-screen-xl px-4 lg:px-6 py-6">
+  {/* Description Header */}
+  <h3 className="text-lg font-bold text-black pb-2 mb-3">
+    Description
+  </h3>
   
-  {/* TOP: 70/30 Split - Image + Purchase */}
-  <div className="flex flex-col lg:flex-row gap-6 mb-6">
-    
-    {/* LEFT: Image Gallery (70%) */}
-    <div className="lg:w-[70%]">
-      <div className="bg-white rounded-2xl overflow-hidden border border-black/20">
-        <div className="relative h-[350px] lg:h-[450px]">
-          {/* Image with object-contain */}
-          {/* Navigation arrows */}
-          {/* Dot indicators */}
-        </div>
-        {/* Thumbnail strip */}
-      </div>
-    </div>
+  {/* Description Text */}
+  <p className="text-black/70 whitespace-pre-line leading-relaxed">
+    {product.description}
+  </p>
 
-    {/* RIGHT: Purchase Box (30%) */}
-    <div className="lg:w-[30%]">
-      <div className="lg:sticky lg:top-20 bg-white rounded-2xl p-5 border border-black/20 h-fit">
-        {/* Price badge */}
-        {/* Add to cart button */}
-        {/* Chat button */}
-        {/* Sales count */}
-        {/* Features */}
-        {/* Wishlist */}
-        {/* Share icons */}
-      </div>
+  {/* Tags */}
+  {product.tags.length > 0 && (
+    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-black/10">
+      {/* Tag chips */}
     </div>
-  </div>
-
-  {/* BELOW: Product Info Sections (Full Width) */}
-  <div className="space-y-6">
-    {/* Title/Seller/Rating Box */}
-    <div className="bg-white rounded-2xl border border-black/20 p-6">
-      ...
-    </div>
-
-    {/* Description Box */}
-    <div className="bg-white rounded-2xl border border-black/20 p-6">
-      ...
-    </div>
-
-    {/* Reviews Box */}
-    <div className="bg-white rounded-2xl border border-black/20 p-6">
-      ...
-    </div>
-  </div>
+  )}
 </div>
 ```
 
-### Image Height Specifications
+### 3. MarketplaceProductFullView.tsx - Always Show Write Review Button
 
-| Device | Image Container Height |
-|--------|----------------------|
-| Mobile | 350px |
-| Desktop (lg+) | 450px |
-| Max height | 500px (object-contain ensures image fits) |
+Change the review button to always be visible, with different behavior based on auth status:
 
-### Technical Specifications
+**Current (line 703-711):**
+```jsx
+{isAuthenticated && (
+  <Button onClick={() => setShowReviewForm(!showReviewForm)}>
+    Write a Review
+  </Button>
+)}
+```
 
-- Remove `AspectRatio` component wrapping the image
-- Use fixed height with `object-contain` for proper sizing
-- Image thumbnails remain below main image (if multiple images)
-- Purchase box uses `sticky` positioning to stay visible while scrolling
-- All monochrome styling (border-black/20) maintained
-- Mobile layout stacks vertically with proper spacing
+**Updated:**
+```jsx
+<Button
+  onClick={() => {
+    if (isAuthenticated) {
+      setShowReviewForm(!showReviewForm);
+    } else {
+      toast.info('Please sign in to write a review');
+      // Or navigate to signin
+    }
+  }}
+  className="bg-black hover:bg-black/90 text-white rounded-lg text-sm h-9"
+>
+  <Edit3 className="w-3.5 h-3.5 mr-1.5" />
+  {showReviewForm && isAuthenticated ? 'Cancel' : 'Write a Review'}
+</Button>
+```
 
-## Summary
+## Files to Modify
 
-This redesign creates a clean horizontal 70/30 split at the top with:
-- **Left (70%)**: Medium-height image gallery with proper contain sizing
-- **Right (30%)**: Sticky purchase box with price, buttons, and actions
-- **Below**: Full-width product info sections (title, description, reviews)
+| File | Changes |
+|------|---------|
+| `src/components/marketplace/GumroadHeader.tsx` | Add CurrencySelector import and component in header |
+| `src/components/marketplace/MarketplaceProductFullView.tsx` | Merge title + description boxes, always show Write Review button |
 
-The result matches enterprise patterns from Gumroad and similar platforms where the image and purchase action are side-by-side for quick scanning and conversion.
+## Technical Notes
 
+- CurrencyContext is already available at app level (used by dashboard)
+- CurrencySelector component already exists with "minimal" variant perfect for headers
+- The Write Review button will show login prompt via toast when user is not authenticated
+- Single container reduces visual noise and follows enterprise patterns (Amazon, Gumroad) miss languege selctor 
