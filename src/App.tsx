@@ -51,6 +51,11 @@ const App = () => (
                   <Marketplace />
                 </Suspense>
               } />
+              <Route path="/marketplace/:productSlug" element={
+                <Suspense fallback={<AppShell />}>
+                  <Marketplace />
+                </Suspense>
+              } />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/signup" element={<SignIn />} />
               <Route path="/reset-password" element={
