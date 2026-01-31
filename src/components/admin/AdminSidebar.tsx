@@ -27,7 +27,8 @@ import {
   TrendingUp,
   Tag,
   Megaphone,
-  ClipboardList
+  ClipboardList,
+  Search
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -131,6 +132,7 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
     const navItems = [
       { icon: <LayoutDashboard size={22} />, label: 'Dashboard', to: '/admin' },
       { icon: <TrendingUp size={22} />, label: 'Analytics', to: '/admin/analytics' },
+      { icon: <Search size={22} />, label: 'SEO & Marketing', to: '/admin/seo' },
       { icon: <FileText size={22} />, label: 'Prompts', to: '/admin/prompts' },
       { icon: <FolderOpen size={22} />, label: 'Categories', to: '/admin/categories' },
       { icon: <Users size={22} />, label: 'Users', to: '/admin/users' },

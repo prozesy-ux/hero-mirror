@@ -2700,6 +2700,51 @@ export type Database = {
           },
         ]
       }
+      seo_settings: {
+        Row: {
+          google_indexing_enabled: boolean | null
+          google_service_account_email: string | null
+          google_service_account_key: string | null
+          id: string
+          indexnow_enabled: boolean | null
+          indexnow_key: string | null
+          og_image_url: string | null
+          robots_txt_content: string | null
+          site_description: string | null
+          site_title: string | null
+          twitter_handle: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          google_indexing_enabled?: boolean | null
+          google_service_account_email?: string | null
+          google_service_account_key?: string | null
+          id?: string
+          indexnow_enabled?: boolean | null
+          indexnow_key?: string | null
+          og_image_url?: string | null
+          robots_txt_content?: string | null
+          site_description?: string | null
+          site_title?: string | null
+          twitter_handle?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          google_indexing_enabled?: boolean | null
+          google_service_account_email?: string | null
+          google_service_account_key?: string | null
+          id?: string
+          indexnow_enabled?: boolean | null
+          indexnow_key?: string | null
+          og_image_url?: string | null
+          robots_txt_content?: string | null
+          site_description?: string | null
+          site_title?: string | null
+          twitter_handle?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       support_messages: {
         Row: {
           created_at: string | null
@@ -2724,6 +2769,39 @@ export type Database = {
           message?: string
           sender_type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      url_indexing_history: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          id: string
+          response_data: Json | null
+          search_engine: string
+          status: string
+          submitted_by: string | null
+          url: string
+        }
+        Insert: {
+          action_type?: string
+          created_at?: string | null
+          id?: string
+          response_data?: Json | null
+          search_engine: string
+          status?: string
+          submitted_by?: string | null
+          url: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          id?: string
+          response_data?: Json | null
+          search_engine?: string
+          status?: string
+          submitted_by?: string | null
+          url?: string
         }
         Relationships: []
       }
