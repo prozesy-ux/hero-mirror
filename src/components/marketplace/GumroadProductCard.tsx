@@ -15,14 +15,6 @@ interface GumroadProductCardProps {
   soldCount?: number;
   type: 'ai' | 'seller';
   onClick: () => void;
-  // Additional props for mini view modal
-  description?: string | null;
-  tags?: string[] | null;
-  chatAllowed?: boolean;
-  onBuy?: () => void;
-  onChat?: () => void;
-  onViewFull?: () => void;
-  isAuthenticated?: boolean;
 }
 
 const GumroadProductCard = ({
@@ -37,7 +29,7 @@ const GumroadProductCard = ({
       className="group w-full text-left bg-white rounded-xl overflow-hidden border border-black/10 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5"
     >
       {/* Product Image - Square-ish aspect ratio */}
-      <div className="relative overflow-hidden bg-muted">
+      <div className="relative overflow-hidden bg-gray-100">
         <AspectRatio ratio={1}>
           {iconUrl ? (
             <img
@@ -56,12 +48,12 @@ const GumroadProductCard = ({
       {/* Content - Minimal Gumroad style */}
       <div className="p-3">
         {/* Title */}
-        <h3 className="text-sm font-medium text-foreground line-clamp-2 mb-1 min-h-[2.5rem] leading-tight">
+        <h3 className="text-sm font-medium text-black line-clamp-2 mb-1 min-h-[2.5rem] leading-tight">
           {name}
         </h3>
 
         {/* Price - Simple */}
-        <span className="text-sm font-semibold text-foreground">${price.toFixed(0)}</span>
+        <span className="text-sm font-semibold text-black">${price.toFixed(0)}</span>
       </div>
     </button>
   );

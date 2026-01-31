@@ -23,10 +23,6 @@ interface StoreProductCardProps {
   onChat: () => void;
   onView: () => void;
   onBuy: () => void;
-  // Additional props for mini view modal (passed to parent)
-  sellerAvatar?: string | null;
-  storeSlug?: string | null;
-  isVerified?: boolean;
 }
 
 const StoreProductCard = ({

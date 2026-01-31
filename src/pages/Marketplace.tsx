@@ -12,7 +12,6 @@ import GumroadFilterSidebar from '@/components/marketplace/GumroadFilterSidebar'
 import GumroadQuickViewModal from '@/components/marketplace/GumroadQuickViewModal';
 import GuestPaymentModal from '@/components/marketplace/GuestPaymentModal';
 import MarketplaceProductFullView from '@/components/marketplace/MarketplaceProductFullView';
-import MiniViewModal from '@/components/marketplace/MiniViewModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { slugify } from '@/lib/url-utils';
@@ -65,7 +64,6 @@ const Marketplace = () => {
 
   // Modal state
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const [miniViewProduct, setMiniViewProduct] = useState<Product | null>(null);
   const [guestCheckoutProduct, setGuestCheckoutProduct] = useState<Product | null>(null);
   
   // URL-based full view state
@@ -322,7 +320,7 @@ const Marketplace = () => {
   }, []);
 
   const handleProductClick = useCallback((product: Product) => {
-    setMiniViewProduct(product);
+    setQuickViewProduct(product);
   }, []);
 
   const handleBuy = useCallback(() => {
@@ -621,42 +619,11 @@ const Marketplace = () => {
                     price={product.price}
                     iconUrl={product.iconUrl}
                     sellerName={product.sellerName}
-                    sellerAvatar={product.sellerAvatar}
                     storeSlug={product.storeSlug}
                     isVerified={product.isVerified}
                     soldCount={product.soldCount}
-                    rating={product.rating}
-                    reviewCount={product.reviewCount}
                     type={product.type}
-                    description={product.description}
-                    tags={product.tags}
                     onClick={() => handleProductClick(product)}
-                    onBuy={() => {
-                      if (user) {
-                        if (product.storeSlug) {
-                          navigate(`/store/${product.storeSlug}`);
-                        } else {
-                          navigate('/dashboard');
-                        }
-                      } else {
-                        setGuestCheckoutProduct(product);
-                      }
-                    }}
-                    onChat={() => {
-                      if (user) {
-                        if (product.storeSlug) {
-                          navigate(`/store/${product.storeSlug}?chat=${product.id}`);
-                        }
-                      } else {
-                        toast.info('Please sign in to chat with sellers');
-                        navigate('/signin');
-                      }
-                    }}
-                    onViewFull={() => {
-                      const slug = slugify(product.name);
-                      navigate(`/marketplace/${slug}`);
-                    }}
-                    isAuthenticated={!!user}
                   />
                 ))}
               </div>
@@ -665,46 +632,7 @@ const Marketplace = () => {
         </div>
       </main>
 
-      {/* Mini View Modal - Quick preview when clicking card */}
-      <MiniViewModal
-        product={miniViewProduct}
-        isOpen={!!miniViewProduct}
-        onClose={() => setMiniViewProduct(null)}
-        onBuy={() => {
-          if (!miniViewProduct) return;
-          if (user) {
-            if (miniViewProduct.storeSlug) {
-              navigate(`/store/${miniViewProduct.storeSlug}`);
-            } else {
-              navigate('/dashboard');
-            }
-          } else {
-            setGuestCheckoutProduct(miniViewProduct);
-          }
-          setMiniViewProduct(null);
-        }}
-        onChat={() => {
-          if (!miniViewProduct) return;
-          if (user) {
-            if (miniViewProduct.storeSlug) {
-              navigate(`/store/${miniViewProduct.storeSlug}?chat=${miniViewProduct.id}`);
-            }
-          } else {
-            toast.info('Please sign in to chat with sellers');
-            navigate('/signin');
-          }
-          setMiniViewProduct(null);
-        }}
-        onViewFull={() => {
-          if (!miniViewProduct) return;
-          const slug = slugify(miniViewProduct.name);
-          navigate(`/marketplace/${slug}`);
-          setMiniViewProduct(null);
-        }}
-        isAuthenticated={!!user}
-      />
-
-      {/* Quick View Modal (legacy - kept for compatibility) */}
+      {/* Quick View Modal */}
       <GumroadQuickViewModal
         open={!!quickViewProduct}
         onOpenChange={(open) => !open && setQuickViewProduct(null)}
