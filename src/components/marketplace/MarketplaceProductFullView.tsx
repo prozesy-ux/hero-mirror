@@ -558,7 +558,7 @@ const MarketplaceProductFullView = ({
         {/* BELOW: Product Info Sections (Full Width) */}
         <div className="space-y-6">
           
-          {/* Title/Price/Seller Section */}
+          {/* Combined Title + Description Section */}
           <div className="bg-white rounded-2xl border border-black/20 p-6">
             {/* Title */}
             <h1 className="text-2xl lg:text-3xl font-bold text-black mb-4">
@@ -590,7 +590,7 @@ const MarketplaceProductFullView = ({
 
             {/* Rating Summary */}
             {product.reviewCount > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-4 pb-4 border-b border-black/10">
                 <div className="flex items-center gap-0.5">
                   {[1, 2, 3, 4, 5].map(i => (
                     <Star
@@ -611,18 +611,18 @@ const MarketplaceProductFullView = ({
                 </span>
               </div>
             )}
-          </div>
 
-          {/* Description Section */}
-          <div className="bg-white rounded-2xl border border-black/20 p-6">
-            <h3 className="text-lg font-bold text-black pb-3 mb-4 border-b border-black/20">
+            {/* Description Header */}
+            <h3 className="text-lg font-bold text-black pb-2 mb-3">
               Description
             </h3>
+            
+            {/* Description Text */}
             <p className="text-black/70 whitespace-pre-line leading-relaxed" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               {product.description || 'No description available.'}
             </p>
 
-            {/* Tags inside description */}
+            {/* Tags */}
             {product.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-black/10">
                 {product.tags.map(tag => (
@@ -699,16 +699,20 @@ const MarketplaceProductFullView = ({
             {/* Review Controls */}
             <div className="flex items-center justify-between pt-4 border-t border-black/20 mb-4">
               <div className="flex items-center gap-2">
-                {/* Write Review Button */}
-                {isAuthenticated && (
-                  <Button
-                    onClick={() => setShowReviewForm(!showReviewForm)}
-                    className="bg-black hover:bg-black/90 text-white rounded-lg text-sm h-9"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 mr-1.5" />
-                    {showReviewForm ? 'Cancel' : 'Write a Review'}
-                  </Button>
-                )}
+                {/* Write Review Button - Always visible */}
+                <Button
+                  onClick={() => {
+                    if (isAuthenticated) {
+                      setShowReviewForm(!showReviewForm);
+                    } else {
+                      toast.info('Please sign in to write a review');
+                    }
+                  }}
+                  className="bg-black hover:bg-black/90 text-white rounded-lg text-sm h-9"
+                >
+                  <Edit3 className="w-3.5 h-3.5 mr-1.5" />
+                  {showReviewForm && isAuthenticated ? 'Cancel' : 'Write a Review'}
+                </Button>
                 
                 {/* Active Filter */}
                 {filterRating && (
