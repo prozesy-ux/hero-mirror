@@ -390,7 +390,7 @@ const MarketplaceProductFullView = ({
           
           {/* LEFT: Image Gallery (70%) */}
           <div className="lg:w-[70%]">
-            <div className="bg-white rounded-2xl overflow-hidden border border-black/20">
+            <div className="bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm">
               {/* Medium height image container */}
               <div className="relative h-[350px] lg:h-[450px]">
                 {product.images.length > 0 ? (
@@ -460,7 +460,7 @@ const MarketplaceProductFullView = ({
 
           {/* RIGHT: Purchase Box (30%) */}
           <div className="lg:w-[30%]">
-            <div className="lg:sticky lg:top-20 bg-white rounded-2xl p-5 border border-black/20 h-fit">
+            <div className="lg:sticky lg:top-20 bg-white rounded-2xl p-5 border border-black/10 shadow-sm h-fit">
               {/* Price - Black Badge */}
               <div className="mb-4">
                 {product.originalPrice && product.originalPrice > product.price && (

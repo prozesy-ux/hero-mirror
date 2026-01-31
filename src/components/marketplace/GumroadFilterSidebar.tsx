@@ -69,7 +69,7 @@ const GumroadFilterSidebar = ({
   };
 
   return (
-    <aside className="w-full lg:w-56 flex-shrink-0 space-y-4">
+    <aside className="w-full lg:w-56 flex-shrink-0 border border-black/10 rounded-xl p-4 bg-white h-fit sticky top-4 space-y-4">
       {/* Clear Filters */}
       {hasActiveFilters && (
         <button

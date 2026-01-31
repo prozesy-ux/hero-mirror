@@ -499,31 +499,33 @@ const Marketplace = () => {
           />
         )}
 
-        {/* Section Header with Sort Tabs */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5 mt-6">
-          <h2 className="text-lg font-bold text-black">
-            {searchQuery ? `Results for "${searchQuery}"` : 'Curated for you'}
-          </h2>
+        {/* Section Header with Sort Tabs - Bordered Container */}
+        <div className="border border-black/10 rounded-xl p-4 bg-white mt-6 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <h2 className="text-lg font-bold text-black">
+              {searchQuery ? `Results for "${searchQuery}"` : 'Curated for you'}
+            </h2>
 
-          {/* Sort Tabs - Gumroad style: simple text links */}
-          <div className="flex items-center gap-1">
-            {[
-              { value: 'trending' as SortOption, label: 'Trending' },
-              { value: 'best_sellers' as SortOption, label: 'Best Sellers' },
-              { value: 'new' as SortOption, label: 'Hot & New' },
-            ].map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setSortOption(value)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  sortOption === value
-                    ? 'border border-black text-black'
-                    : 'text-black/50 hover:text-black'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            {/* Sort Tabs - Bordered pills */}
+            <div className="flex items-center gap-1">
+              {[
+                { value: 'trending' as SortOption, label: 'Trending' },
+                { value: 'best_sellers' as SortOption, label: 'Best Sellers' },
+                { value: 'new' as SortOption, label: 'Hot & New' },
+              ].map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setSortOption(value)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                    sortOption === value
+                      ? 'bg-black text-white'
+                      : 'text-black/50 hover:text-black border border-black/10'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
