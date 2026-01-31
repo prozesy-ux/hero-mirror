@@ -89,7 +89,9 @@ serve(async (req) => {
       'platform_announcements',
       'buyer_payment_accounts',
       'buyer_withdrawals',
-      'withdrawal_method_config'
+      'withdrawal_method_config',
+      'seo_settings',
+      'url_indexing_history'
     ];
 
     if (!allowedTables.includes(table)) {

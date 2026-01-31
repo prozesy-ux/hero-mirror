@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.create-guest-manual-order]
 verify_jwt = false
+
+[functions.seo-indexnow-submit]
+verify_jwt = false
+
+[functions.seo-google-indexing]
+verify_jwt = false

@@ -17,6 +17,7 @@ import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import AdminAuditLogs from '@/components/admin/AdminAuditLogs';
 import AdminAnnouncements from '@/components/admin/AdminAnnouncements';
 import AdminCoupons from '@/components/admin/AdminCoupons';
+import SEOManagement from '@/components/admin/SEOManagement';
 import { AdminDataProvider, useAdminDataContext } from '@/contexts/AdminDataContext';
 import { useState, useEffect } from 'react';
 import { Loader2, Lock, User, ArrowLeft, Eye, EyeOff, FileText, Users as UsersIcon, Crown, DollarSign } from 'lucide-react';
@@ -112,6 +113,7 @@ const AdminContent = () => {
         <Routes>
           <Route index element={<AdminDashboard />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="seo" element={<SEOManagement />} />
           <Route path="prompts" element={<PromptsManagement />} />
           <Route path="categories" element={<CategoriesManagement />} />
           <Route path="users" element={<UsersManagement />} />
