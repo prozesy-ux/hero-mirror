@@ -202,7 +202,7 @@ const ProductFullViewPage = () => {
     setPurchasing(true);
     // Purchase logic would be implemented here
     toast.success('Redirecting to purchase...');
-    navigate('/dashboard/ai-accounts');
+    navigate('/dashboard/marketplace');
     setPurchasing(false);
   };
 
@@ -231,11 +231,11 @@ const ProductFullViewPage = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(`/dashboard/ai-accounts?search=${encodeURIComponent(searchQuery)}`);
+    navigate(`/dashboard/marketplace?search=${encodeURIComponent(searchQuery)}`);
   };
 
   const handleCategoryClick = (categoryId: string) => {
-    navigate(`/dashboard/ai-accounts?category=${categoryId}`);
+    navigate(`/dashboard/marketplace?category=${categoryId}`);
   };
 
   if (loading) {
@@ -253,7 +253,7 @@ const ProductFullViewPage = () => {
         <h2 className="text-xl font-bold text-gray-900 mb-2">Product Not Found</h2>
         <p className="text-gray-500 mb-4">The product you're looking for doesn't exist.</p>
         <button
-          onClick={() => navigate('/dashboard/ai-accounts')}
+          onClick={() => navigate('/dashboard/marketplace')}
           className="px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition-colors"
         >
           Back to Marketplace
@@ -277,7 +277,7 @@ const ProductFullViewPage = () => {
         <div className="flex items-center gap-4">
           {/* Back Button */}
           <button
-            onClick={() => navigate('/dashboard/ai-accounts')}
+            onClick={() => navigate('/dashboard/marketplace')}
             className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
           >
             <ArrowLeft size={18} />

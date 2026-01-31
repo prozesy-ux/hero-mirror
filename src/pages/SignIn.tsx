@@ -29,7 +29,7 @@ const SignIn = () => {
     const pendingPurchase = localStorage.getItem('pendingPurchase');
     if (pendingPurchase) {
       // Don't remove pendingPurchase - AIAccountsSection will handle it and show product modal
-      navigate('/dashboard/ai-accounts');
+      navigate('/dashboard/marketplace');
       return;
     }
 
@@ -37,7 +37,7 @@ const SignIn = () => {
     const pendingChat = localStorage.getItem('pendingChat');
     if (pendingChat) {
       // Don't remove pendingChat - AIAccountsSection will handle it and open chat
-      navigate('/dashboard/ai-accounts');
+      navigate('/dashboard/marketplace');
       return;
     }
 

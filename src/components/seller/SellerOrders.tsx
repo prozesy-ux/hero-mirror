@@ -170,7 +170,7 @@ const SellerOrders = () => {
         type: 'delivery',
         title: 'Order Delivered!',
         message: `Your order for ${order.product?.name || 'Product'} has been delivered. Check credentials and approve.`,
-        link: '/dashboard/ai-accounts?tab=purchases',
+        link: '/dashboard/marketplace?tab=purchases',
         is_read: false
       });
 
@@ -246,7 +246,7 @@ const SellerOrders = () => {
         type: 'update',
         title: 'Credentials Updated',
         message: `Seller updated credentials for ${order.product?.name || 'Product'}`,
-        link: '/dashboard/ai-accounts?tab=purchases',
+        link: '/dashboard/marketplace?tab=purchases',
         is_read: false
       });
 

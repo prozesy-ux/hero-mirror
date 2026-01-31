@@ -14,7 +14,7 @@ import {
 // Gumroad-style navigation labels for buyer
 const navItems = [
   { to: '/dashboard/home', icon: Home, label: 'Home' },
-  { to: '/dashboard/ai-accounts', icon: Store, label: 'Marketplace' },
+  { to: '/dashboard/marketplace', icon: Store, label: 'Marketplace' },
   { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
   { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
   { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },

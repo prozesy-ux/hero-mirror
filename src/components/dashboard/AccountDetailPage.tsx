@@ -146,7 +146,7 @@ const AccountDetailPage = () => {
       }
 
       toast.success('Purchase successful! Account credentials will be delivered soon.');
-      navigate('/dashboard/ai-accounts?tab=purchases');
+      navigate('/dashboard/marketplace?tab=purchases');
     } catch (error: any) {
       console.error('Purchase error:', error);
       toast.error(error.message || 'Failed to complete purchase');
@@ -172,7 +172,7 @@ const AccountDetailPage = () => {
         <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">Account Not Found</h3>
         <p className="text-gray-500 mb-6">The account you're looking for doesn't exist.</p>
         <button
-          onClick={() => navigate('/dashboard/ai-accounts')}
+          onClick={() => navigate('/dashboard/marketplace')}
           className="bg-gray-900 text-white font-semibold px-6 py-3 rounded-xl hover:bg-gray-800 transition-all inline-flex items-center gap-2"
         >
           <ArrowLeft size={18} />
@@ -189,7 +189,7 @@ const AccountDetailPage = () => {
     <div className="animate-fade-up max-w-4xl mx-auto">
       {/* Back Button */}
       <button
-        onClick={() => navigate('/dashboard/ai-accounts')}
+        onClick={() => navigate('/dashboard/marketplace')}
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 font-medium transition-colors group"
       >
         <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />

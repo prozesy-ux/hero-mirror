@@ -47,9 +47,9 @@ const DashboardContent = () => {
           <Route path="prompts" element={<PromptsGrid />} />
           <Route path="favorites" element={<Navigate to="/dashboard/prompts" replace />} />
           <Route path="tools" element={<Navigate to="/dashboard/prompts" replace />} />
-          <Route path="ai-accounts" element={<AIAccountsSection />} />
-          <Route path="ai-accounts/:accountId" element={<AccountDetailPage />} />
-          <Route path="ai-accounts/product/:productId" element={<ProductFullViewPage />} />
+          <Route path="marketplace" element={<AIAccountsSection />} />
+          <Route path="marketplace/:accountId" element={<AccountDetailPage />} />
+          <Route path="marketplace/product/:productId" element={<ProductFullViewPage />} />
           <Route path="billing" element={<BillingSection />} />
           <Route path="wallet" element={<BuyerWallet />} />
           <Route path="orders" element={<BuyerOrders />} />

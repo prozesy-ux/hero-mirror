@@ -114,7 +114,7 @@ const BuyerWishlist = () => {
           <Heart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-800 mb-2">Your wishlist is empty</h3>
           <p className="text-slate-500 mb-6">Save products you're interested in to buy later</p>
-          <Link to="/dashboard/ai-accounts">
+          <Link to="/dashboard/marketplace">
             <Button className="bg-violet-600 hover:bg-violet-700">
               Browse Products
             </Button>

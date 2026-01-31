@@ -132,7 +132,7 @@ const MobileNavigation = () => {
   // Bottom nav items (limited for mobile)
   const bottomNavItems = [
     { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompt' },
-    { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Market' },
+    { to: '/dashboard/marketplace', icon: ShoppingBag, label: 'Market' },
     { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'Chat' },
   ];
@@ -140,7 +140,7 @@ const MobileNavigation = () => {
   // Full sidebar nav items - Gumroad style
   const sidebarNavItems = [
     { to: '/dashboard/home', icon: LayoutDashboard, label: 'Home' },
-    { to: '/dashboard/ai-accounts', icon: ShoppingBag, label: 'Marketplace' },
+    { to: '/dashboard/marketplace', icon: ShoppingBag, label: 'Marketplace' },
     { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
     { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
     { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
