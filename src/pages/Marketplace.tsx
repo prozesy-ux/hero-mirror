@@ -4,7 +4,6 @@ import { Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { CurrencyProvider } from '@/contexts/CurrencyContext';
-import { FloatingChatProvider, useFloatingChat } from '@/contexts/FloatingChatContext';
 import { useMarketplaceData } from '@/hooks/useMarketplaceData';
 import GumroadHeader from '@/components/marketplace/GumroadHeader';
 import GumroadProductCard from '@/components/marketplace/GumroadProductCard';
@@ -13,7 +12,6 @@ import GumroadFilterSidebar from '@/components/marketplace/GumroadFilterSidebar'
 import GumroadQuickViewModal from '@/components/marketplace/GumroadQuickViewModal';
 import GuestPaymentModal from '@/components/marketplace/GuestPaymentModal';
 import MarketplaceProductFullView from '@/components/marketplace/MarketplaceProductFullView';
-import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { slugify } from '@/lib/url-utils';
@@ -39,12 +37,11 @@ interface Product {
 
 type SortOption = 'trending' | 'best_sellers' | 'new';
 
-const MarketplaceContent = () => {
+const Marketplace = () => {
   const navigate = useNavigate();
   const { productSlug } = useParams<{ productSlug: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuthContext();
-  const { openChat } = useFloatingChat();
   
   // Data from BFF
   const {
@@ -74,37 +71,6 @@ const MarketplaceContent = () => {
   const [urlProductLoading, setUrlProductLoading] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
 
-  // Helper to fetch seller info and open chat
-  const openChatWithProduct = useCallback(async (product: Product) => {
-    if (!product.storeSlug) {
-      toast.error('Chat not available for this product');
-      return;
-    }
-
-    try {
-      const { data: seller } = await supabase
-        .from('seller_profiles')
-        .select('id, store_name')
-        .eq('store_slug', product.storeSlug)
-        .single();
-
-      if (seller) {
-        openChat({
-          sellerId: seller.id,
-          sellerName: seller.store_name,
-          productId: product.id,
-          productName: product.name,
-          type: 'seller'
-        });
-      } else {
-        toast.error('Could not find seller');
-      }
-    } catch (error) {
-      console.error('Error opening chat:', error);
-      toast.error('Could not open chat');
-    }
-  }, [openChat]);
-
   // Handle payment success from Stripe redirect
   useEffect(() => {
     const purchaseStatus = searchParams.get('purchase');
@@ -114,6 +80,7 @@ const MarketplaceContent = () => {
       verifyGuestPurchase(sessionId);
     } else if (purchaseStatus === 'cancelled') {
       toast.error('Payment was cancelled');
+      // Clear the URL params
       setSearchParams({});
     }
   }, [searchParams]);
@@ -136,6 +103,7 @@ const MarketplaceContent = () => {
       const data = await response.json();
 
       if (data.success) {
+        // If new user with session, auto sign in
         if (data.isNewUser && data.session) {
           await supabase.auth.setSession({
             access_token: data.session.access_token,
@@ -145,6 +113,8 @@ const MarketplaceContent = () => {
         } else {
           toast.success('Purchase complete! Check your email for order details.');
         }
+
+        // Navigate to dashboard purchases
         navigate('/dashboard/marketplace?tab=purchases');
       } else if (data.alreadyProcessed) {
         toast.info('This order was already processed.');
@@ -172,6 +142,7 @@ const MarketplaceContent = () => {
     const findProductBySlug = async () => {
       setUrlProductLoading(true);
       try {
+        // Try seller_products first (by slug or name match)
         const { data: sellerProduct } = await supabase
           .from('seller_products')
           .select('id, name, slug')
@@ -186,6 +157,7 @@ const MarketplaceContent = () => {
           return;
         }
 
+        // Try matching by slugified name for seller products
         const { data: sellerProducts } = await supabase
           .from('seller_products')
           .select('id, name')
@@ -198,6 +170,7 @@ const MarketplaceContent = () => {
           return;
         }
 
+        // Try ai_accounts by slug
         const { data: aiAccount } = await supabase
           .from('ai_accounts')
           .select('id, name, slug')
@@ -212,6 +185,7 @@ const MarketplaceContent = () => {
           return;
         }
 
+        // Try matching by slugified name for AI accounts
         const { data: aiAccounts } = await supabase
           .from('ai_accounts')
           .select('id, name')
@@ -224,6 +198,7 @@ const MarketplaceContent = () => {
           return;
         }
 
+        // No product found
         setUrlProduct(null);
         toast.error('Product not found');
         navigate('/marketplace');
@@ -281,31 +256,6 @@ const MarketplaceContent = () => {
     return products;
   }, [hotProducts, topRated, newArrivals]);
 
-  // Handle pending chat restoration after sign-in
-  useEffect(() => {
-    if (!user) return;
-
-    const pendingChat = localStorage.getItem('pendingChat');
-    if (!pendingChat) return;
-
-    try {
-      const data = JSON.parse(pendingChat);
-      
-      if (!data.returnUrl?.includes('/marketplace')) return;
-      
-      localStorage.removeItem('pendingChat');
-      
-      const product = allProducts.find(p => p.id === data.productId);
-      if (product?.storeSlug) {
-        openChatWithProduct(product);
-        toast.success('Chat is now open!');
-      }
-    } catch (e) {
-      console.error('Failed to restore pending chat:', e);
-      localStorage.removeItem('pendingChat');
-    }
-  }, [user, allProducts, openChatWithProduct]);
-
   // Extract all available tags
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -317,6 +267,7 @@ const MarketplaceContent = () => {
   const filteredProducts = useMemo(() => {
     let result = [...allProducts];
 
+    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(p => 
@@ -325,6 +276,7 @@ const MarketplaceContent = () => {
       );
     }
 
+    // Price filter
     if (priceMin !== undefined) {
       result = result.filter(p => p.price >= priceMin);
     }
@@ -332,12 +284,14 @@ const MarketplaceContent = () => {
       result = result.filter(p => p.price <= priceMax);
     }
 
+    // Sort
     switch (sortOption) {
       case 'trending':
       case 'best_sellers':
         result.sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0));
         break;
       case 'new':
+        // Already sorted by newest from newArrivals
         break;
     }
 
@@ -388,23 +342,20 @@ const MarketplaceContent = () => {
     if (!quickViewProduct) return;
 
     if (user) {
-      openChatWithProduct(quickViewProduct);
+      if (quickViewProduct.storeSlug) {
+        navigate(`/store/${quickViewProduct.storeSlug}?chat=${quickViewProduct.id}`);
+      }
     } else {
-      localStorage.setItem('pendingChat', JSON.stringify({
-        productId: quickViewProduct.id,
-        productName: quickViewProduct.name,
-        storeSlug: quickViewProduct.storeSlug,
-        returnUrl: '/marketplace'
-      }));
       toast.info('Please sign in to chat with sellers');
       navigate('/signin');
     }
     setQuickViewProduct(null);
-  }, [quickViewProduct, user, navigate, openChatWithProduct]);
+  }, [quickViewProduct, user, navigate]);
 
   const handleViewFull = useCallback(() => {
     if (!quickViewProduct) return;
 
+    // Navigate to URL-based product view
     const slug = slugify(quickViewProduct.name);
     navigate(`/marketplace/${slug}`);
     setQuickViewProduct(null);
@@ -413,6 +364,7 @@ const MarketplaceContent = () => {
   const handleFullViewBuy = useCallback(() => {
     if (!urlProduct) return;
 
+    // Find the product data to open guest checkout or redirect
     const product = allProducts.find(p => p.id === urlProduct.id);
     if (product) {
       if (user) {
@@ -430,25 +382,21 @@ const MarketplaceContent = () => {
     }
   }, [urlProduct, allProducts, user, navigate]);
 
-  const handleFullViewChat = useCallback(async () => {
+  const handleFullViewChat = useCallback(() => {
     if (!urlProduct) return;
 
     const product = allProducts.find(p => p.id === urlProduct.id);
     if (user) {
       if (product?.storeSlug) {
-        await openChatWithProduct(product);
+        navigate(`/store/${product.storeSlug}?chat=${product.id}`);
       }
     } else {
-      localStorage.setItem('pendingChat', JSON.stringify({
-        productId: product?.id,
-        productName: product?.name,
-        storeSlug: product?.storeSlug,
-        returnUrl: window.location.pathname
-      }));
       toast.info('Please sign in to chat with sellers');
       navigate('/signin');
     }
-  }, [urlProduct, allProducts, user, navigate, openChatWithProduct]);
+  }, [urlProduct, allProducts, user, navigate]);
+
+  // Guest checkout now handled by GuestPaymentModal component
 
   const handleTagToggle = useCallback((tag: string) => {
     setSelectedTags(prev => 
@@ -475,16 +423,18 @@ const MarketplaceContent = () => {
   // Show loading state while finding product by URL slug
   if (urlProductLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-pulse text-black/50">Loading product...</div>
-      </div>
+      <CurrencyProvider>
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="animate-pulse text-black/50">Loading product...</div>
+        </div>
+      </CurrencyProvider>
     );
   }
 
   // If URL has productSlug and we found the product, show full view
   if (productSlug && urlProduct) {
     return (
-      <>
+      <CurrencyProvider>
         <MarketplaceProductFullView
           productId={urlProduct.id}
           productType={urlProduct.type}
@@ -493,13 +443,12 @@ const MarketplaceContent = () => {
           onChat={handleFullViewChat}
           isAuthenticated={!!user}
         />
-        <FloatingChatWidget />
-      </>
+      </CurrencyProvider>
     );
   }
 
   return (
-    <>
+    <CurrencyProvider>
       <div className="min-h-screen bg-white">
         {/* Header */}
         <GumroadHeader
@@ -706,20 +655,6 @@ const MarketplaceContent = () => {
         } : null}
       />
       </div>
-      
-      {/* Floating Chat Widget */}
-      <FloatingChatWidget />
-    </>
-  );
-};
-
-// Main Marketplace component with providers
-const Marketplace = () => {
-  return (
-    <CurrencyProvider>
-      <FloatingChatProvider>
-        <MarketplaceContent />
-      </FloatingChatProvider>
     </CurrencyProvider>
   );
 };
