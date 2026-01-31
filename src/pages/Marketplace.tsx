@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -12,6 +12,8 @@ import GumroadQuickViewModal from '@/components/marketplace/GumroadQuickViewModa
 import GuestCheckoutModal from '@/components/marketplace/GuestCheckoutModal';
 import MarketplaceProductFullView from '@/components/marketplace/MarketplaceProductFullView';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
+import { slugify } from '@/lib/url-utils';
 
 // Types
 interface Product {
@@ -36,6 +38,7 @@ type SortOption = 'trending' | 'best_sellers' | 'new';
 
 const Marketplace = () => {
   const navigate = useNavigate();
+  const { productSlug } = useParams<{ productSlug: string }>();
   const { user } = useAuthContext();
   
   // Data from BFF
@@ -61,8 +64,90 @@ const Marketplace = () => {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [guestCheckoutProduct, setGuestCheckoutProduct] = useState<Product | null>(null);
   
-  // Full view state - shows product details inline without redirecting
-  const [fullViewProduct, setFullViewProduct] = useState<{ id: string; type: 'ai' | 'seller' } | null>(null);
+  // URL-based full view state
+  const [urlProduct, setUrlProduct] = useState<{ id: string; type: 'ai' | 'seller' } | null>(null);
+  const [urlProductLoading, setUrlProductLoading] = useState(false);
+
+  // Find product by slug when URL has productSlug
+  useEffect(() => {
+    if (!productSlug) {
+      setUrlProduct(null);
+      return;
+    }
+
+    const findProductBySlug = async () => {
+      setUrlProductLoading(true);
+      try {
+        // Try seller_products first (by slug or name match)
+        const { data: sellerProduct } = await supabase
+          .from('seller_products')
+          .select('id, name, slug')
+          .or(`slug.eq.${productSlug}`)
+          .eq('is_approved', true)
+          .limit(1)
+          .maybeSingle();
+
+        if (sellerProduct) {
+          setUrlProduct({ id: sellerProduct.id, type: 'seller' });
+          setUrlProductLoading(false);
+          return;
+        }
+
+        // Try matching by slugified name for seller products
+        const { data: sellerProducts } = await supabase
+          .from('seller_products')
+          .select('id, name')
+          .eq('is_approved', true);
+
+        const matchedSeller = sellerProducts?.find(p => slugify(p.name) === productSlug);
+        if (matchedSeller) {
+          setUrlProduct({ id: matchedSeller.id, type: 'seller' });
+          setUrlProductLoading(false);
+          return;
+        }
+
+        // Try ai_accounts by slug
+        const { data: aiAccount } = await supabase
+          .from('ai_accounts')
+          .select('id, name, slug')
+          .or(`slug.eq.${productSlug}`)
+          .eq('is_available', true)
+          .limit(1)
+          .maybeSingle();
+
+        if (aiAccount) {
+          setUrlProduct({ id: aiAccount.id, type: 'ai' });
+          setUrlProductLoading(false);
+          return;
+        }
+
+        // Try matching by slugified name for AI accounts
+        const { data: aiAccounts } = await supabase
+          .from('ai_accounts')
+          .select('id, name')
+          .eq('is_available', true);
+
+        const matchedAI = aiAccounts?.find(p => slugify(p.name) === productSlug);
+        if (matchedAI) {
+          setUrlProduct({ id: matchedAI.id, type: 'ai' });
+          setUrlProductLoading(false);
+          return;
+        }
+
+        // No product found
+        setUrlProduct(null);
+        toast.error('Product not found');
+        navigate('/marketplace');
+      } catch (error) {
+        console.error('Error finding product by slug:', error);
+        setUrlProduct(null);
+      } finally {
+        setUrlProductLoading(false);
+      }
+    };
+
+    findProductBySlug();
+  }, [productSlug, navigate]);
 
   // Combine all products for grid display
   const allProducts = useMemo(() => {
@@ -206,16 +291,17 @@ const Marketplace = () => {
   const handleViewFull = useCallback(() => {
     if (!quickViewProduct) return;
 
-    // Show full view inline within marketplace instead of navigating to /store
-    setFullViewProduct({ id: quickViewProduct.id, type: quickViewProduct.type });
+    // Navigate to URL-based product view
+    const slug = slugify(quickViewProduct.name);
+    navigate(`/marketplace/${slug}`);
     setQuickViewProduct(null);
-  }, [quickViewProduct]);
+  }, [quickViewProduct, navigate]);
 
   const handleFullViewBuy = useCallback(() => {
-    if (!fullViewProduct) return;
+    if (!urlProduct) return;
 
     // Find the product data to open guest checkout or redirect
-    const product = allProducts.find(p => p.id === fullViewProduct.id);
+    const product = allProducts.find(p => p.id === urlProduct.id);
     if (product) {
       if (user) {
         if (product.storeSlug) {
@@ -225,15 +311,17 @@ const Marketplace = () => {
         }
       } else {
         setGuestCheckoutProduct(product);
+        navigate('/marketplace');
       }
+    } else {
+      navigate('/marketplace');
     }
-    setFullViewProduct(null);
-  }, [fullViewProduct, allProducts, user, navigate]);
+  }, [urlProduct, allProducts, user, navigate]);
 
   const handleFullViewChat = useCallback(() => {
-    if (!fullViewProduct) return;
+    if (!urlProduct) return;
 
-    const product = allProducts.find(p => p.id === fullViewProduct.id);
+    const product = allProducts.find(p => p.id === urlProduct.id);
     if (user) {
       if (product?.storeSlug) {
         navigate(`/store/${product.storeSlug}?chat=${product.id}`);
@@ -242,8 +330,7 @@ const Marketplace = () => {
       toast.info('Please sign in to chat with sellers');
       navigate('/signin');
     }
-    setFullViewProduct(null);
-  }, [fullViewProduct, allProducts, user, navigate]);
+  }, [urlProduct, allProducts, user, navigate]);
 
   const handleGuestCheckout = useCallback(async (email: string) => {
     if (!guestCheckoutProduct) return;
@@ -304,13 +391,22 @@ const Marketplace = () => {
     setSearchQuery('');
   }, []);
 
-  // If showing full view, render the full product view component
-  if (fullViewProduct) {
+  // Show loading state while finding product by URL slug
+  if (urlProductLoading) {
+    return (
+      <div className="min-h-screen bg-[#F4F4F0] flex items-center justify-center">
+        <div className="animate-pulse text-black/50">Loading product...</div>
+      </div>
+    );
+  }
+
+  // If URL has productSlug and we found the product, show full view
+  if (productSlug && urlProduct) {
     return (
       <MarketplaceProductFullView
-        productId={fullViewProduct.id}
-        productType={fullViewProduct.type}
-        onBack={() => setFullViewProduct(null)}
+        productId={urlProduct.id}
+        productType={urlProduct.type}
+        onBack={() => navigate('/marketplace')}
         onBuy={handleFullViewBuy}
         onChat={handleFullViewChat}
         isAuthenticated={!!user}

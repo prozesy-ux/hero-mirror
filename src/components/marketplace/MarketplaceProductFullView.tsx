@@ -352,10 +352,6 @@ const MarketplaceProductFullView = ({
     return (
       <div className="min-h-screen bg-[#F4F4F0] flex flex-col items-center justify-center gap-4">
         <p className="text-black/50">Product not found</p>
-        <Button onClick={onBack} variant="outline" className="rounded-full">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Marketplace
-        </Button>
       </div>
     );
   }
@@ -388,14 +384,6 @@ const MarketplaceProductFullView = ({
 
       {/* Main Content */}
       <div className="mx-auto max-w-screen-xl px-4 lg:px-6 py-6">
-        {/* Back Link - Subtle */}
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black mb-4 transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Marketplace
-        </button>
 
         {/* Image Carousel - Full Width */}
         <div className="relative bg-white rounded-2xl overflow-hidden mb-6 border border-black/20">
