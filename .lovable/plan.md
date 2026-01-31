@@ -1,215 +1,363 @@
 
 
-# Guest Checkout with Auto Account Creation
+# Comprehensive Payment Model Design for Guest Checkout
 
-## Overview
+## Executive Summary
 
-When a guest purchases a product on `/marketplace`, they will:
-1. Enter their email in the checkout modal
-2. Complete payment via Stripe
-3. After payment success, automatically get an account created with their email
-4. Be redirected to the dashboard where they can see their purchase
+After deep research into your codebase, I'll design a complete payment flow for `/marketplace` that:
+1. Shows ALL available payment methods to guest users (Stripe, Razorpay, bKash, etc.)
+2. Collects email during checkout
+3. After successful payment, auto-creates account and redirects to dashboard
+4. Works seamlessly whether user has existing account or not
 
-This follows the Gumroad model where the checkout email becomes the user account.
+## Current State Analysis
 
-## Current State
+### What Exists Now
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `GuestCheckoutModal` | Exists | Collects email and redirects to payment |
-| `create-guest-checkout` edge function | Missing | Referenced in code but doesn't exist |
-| `verify-guest-payment` edge function | Missing | Needs to create account and order |
-| `seller_orders.guest_email` column | Exists | Can store guest email for orders |
-| Success redirect handling | Missing | No page to handle guest payment success |
+| Component | Status | Gap |
+|-----------|--------|-----|
+| `GuestCheckoutModal` | Exists | Only collects email, then Stripe-only |
+| `create-guest-checkout` | Exists | Only creates Stripe session |
+| `verify-guest-payment` | Exists | Only verifies Stripe, creates account |
+| `payment_methods` table | 6 methods | Not shown to guests |
 
-## User Flow
+### Available Payment Methods (from database)
+
+| Code | Name | Type | Currency |
+|------|------|------|----------|
+| `stripe` | Stripe | Automatic | USD |
+| `razorpay` | Razorpay | Automatic | INR |
+| `bkash` | bKash | Manual | BDT |
+| `nagad` | Nagad | Manual | BDT |
+| `jazzcash` | JazzCash | Manual | PKR |
+| `binance` | Binance (Crypto) | Manual | USD |
+
+### Current Flow Issues
 
 ```text
-User Journey:
-1. Guest browses /marketplace
-   → Clicks "Buy" on a product
+Current Guest Flow (Limited):
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 1. Guest clicks "Buy" on /marketplace                                   │
+│ 2. GuestCheckoutModal opens → Enter email only                          │
+│ 3. Redirects to Stripe Checkout (only payment option)                   │
+│ 4. After payment → verify-guest-payment → account created               │
+│ 5. Auto-login → Redirect to /dashboard/marketplace?tab=purchases        │
+└─────────────────────────────────────────────────────────────────────────┘
 
-2. GuestCheckoutModal opens
-   → User enters email: "user@example.com"
-   → Clicks "Continue to Payment"
-
-3. Edge Function: create-guest-checkout
-   → Creates Stripe Checkout session
-   → Stores: productId, email, price, sellerId in session metadata
-   → Returns Stripe checkout URL
-
-4. User pays on Stripe Checkout
-   → Stripe redirects to: /marketplace?purchase=success&session_id={ID}
-
-5. Marketplace.tsx detects success params
-   → Calls verify-guest-payment edge function
-
-6. Edge Function: verify-guest-payment
-   → Verifies Stripe session is paid
-   → Checks if account exists with email:
-      - If YES: Use existing account
-      - If NO: Create account with random password
-   → Creates seller_order with buyer_id
-   → Credits seller pending balance
-   → Returns: { success, userId, orderId, isNewUser, tempPassword? }
-
-7. Frontend handles response:
-   → If new user: Auto sign in and redirect to dashboard
-   → Shows toast: "Account created! Check email for password"
-   → Navigates to /dashboard/marketplace?tab=purchases
+Problem: Guests can ONLY use Stripe. No bKash, Razorpay, UPI, etc.
 ```
 
-## Implementation Plan
+### Logged-in User Flow (Complete)
 
-### 1. Create Edge Function: `create-guest-checkout`
+```text
+Logged-in User Flow (Full Options):
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 1. User browses /dashboard/marketplace OR /store/{slug}                 │
+│ 2. Clicks "Buy" → Checks wallet balance                                 │
+│ 3. If insufficient: Redirects to /dashboard/billing                     │
+│ 4. Billing shows ALL payment methods (Stripe, Razorpay, bKash, etc.)    │
+│ 5. User tops up wallet → Uses balance to buy                            │
+│ 6. Purchase uses atomic RPC `purchase_seller_product`                   │
+└─────────────────────────────────────────────────────────────────────────┘
 
-Creates a Stripe Checkout session for guest purchase.
-
-**Location:** `supabase/functions/create-guest-checkout/index.ts`
-
-**Logic:**
-- Accept: `productId`, `productName`, `price`, `guestEmail`, `productType`, `sellerId`
-- Look up seller_id from product if not provided
-- Create Stripe Checkout session with:
-  - `customer_email`: guest's email
-  - `mode: "payment"`
-  - `success_url`: `/marketplace?purchase=success&session_id={CHECKOUT_SESSION_ID}`
-  - `cancel_url`: `/marketplace?purchase=cancelled`
-  - Metadata: all product and guest info for verification
-
-### 2. Create Edge Function: `verify-guest-payment`
-
-Verifies payment and creates user account + order.
-
-**Location:** `supabase/functions/verify-guest-payment/index.ts`
-
-**Logic:**
-1. Retrieve Stripe session by `session_id`
-2. Verify `payment_status === 'paid'`
-3. Extract metadata: email, productId, sellerId, price
-4. Check for existing user by email:
-   ```typescript
-   const { data: existingUser } = await adminClient.auth.admin.getUserByEmail(email);
-   ```
-5. If no user exists, create one:
-   ```typescript
-   const tempPassword = crypto.randomUUID().slice(0, 12);
-   const { data: newUser } = await adminClient.auth.admin.createUser({
-     email,
-     password: tempPassword,
-     email_confirm: true, // Auto-confirm since they verified via payment
-   });
-   ```
-6. Create `seller_order` record with `buyer_id`
-7. Add to seller's pending balance
-8. Send welcome email with temp password (if new user)
-9. Send order confirmation email
-10. Return `{ userId, orderId, isNewUser, accessToken? }`
-
-### 3. Update `Marketplace.tsx` - Handle Payment Success
-
-Add URL parameter detection and verification flow.
-
-**Changes:**
-- Detect `?purchase=success&session_id=...` in URL
-- Call `verify-guest-payment` edge function
-- If new user, sign them in automatically
-- Navigate to `/dashboard/marketplace?tab=purchases`
-- Show appropriate toast messages
-
-**Code pattern (similar to BillingSection):**
-```typescript
-useEffect(() => {
-  const purchaseStatus = searchParams.get('purchase');
-  const sessionId = searchParams.get('session_id');
-  
-  if (purchaseStatus === 'success' && sessionId) {
-    verifyGuestPurchase(sessionId);
-  }
-}, [searchParams]);
-
-const verifyGuestPurchase = async (sessionId: string) => {
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-guest-payment`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': ... },
-      body: JSON.stringify({ session_id: sessionId })
-    }
-  );
-  
-  const data = await response.json();
-  
-  if (data.success) {
-    if (data.isNewUser && data.session) {
-      // Auto sign in the new user
-      await supabase.auth.setSession(data.session);
-    }
-    toast.success('Purchase complete! Check your email for order details.');
-    navigate('/dashboard/marketplace?tab=purchases');
-  }
-};
+Problem: Requires account AND wallet top-up before purchase.
 ```
 
-### 4. Update `supabase/config.toml` - Configure New Functions
+## Proposed New Flow
 
-Add JWT verification disabled for guest checkout:
-```toml
-[functions.create-guest-checkout]
-verify_jwt = false
+### Guest Checkout with Full Payment Options
 
-[functions.verify-guest-payment]
-verify_jwt = false
+```text
+New Guest Flow (Full Payment Options):
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 1. Guest browses /marketplace                                           │
+│ 2. Clicks "Buy" on product                                              │
+│ 3. NEW: GuestPaymentModal opens                                         │
+│    ├── Shows product summary (name, price, image)                       │
+│    ├── Email input field                                                │
+│    └── Payment method tabs (like BillingSection):                       │
+│        ├── Stripe (Automatic - Card)                                    │
+│        ├── Razorpay (Automatic - UPI/Cards) ← NEW for guests           │
+│        ├── bKash (Manual - QR/Send Money) ← NEW for guests             │
+│        ├── Nagad (Manual) ← NEW for guests                             │
+│        ├── JazzCash (Manual) ← NEW for guests                          │
+│        └── Binance (Manual - Crypto) ← NEW for guests                  │
+│                                                                         │
+│ 4. User selects payment method + enters email                           │
+│                                                                         │
+│ 5a. AUTOMATIC (Stripe/Razorpay):                                        │
+│     → Create checkout session with email                                │
+│     → Redirect to payment gateway                                       │
+│     → On success: verify → create account → create order → auto-login   │
+│                                                                         │
+│ 5b. MANUAL (bKash/Nagad/etc.):                                          │
+│     → Show payment instructions + QR code                               │
+│     → User enters transaction ID                                        │
+│     → Create pending order + pending account                            │
+│     → Admin approves → account activated → email with password          │
+│     → User can login after admin approval                               │
+│                                                                         │
+│ 6. Auto-redirect to /dashboard/marketplace?tab=purchases                │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Database Changes
+## Component Architecture
 
-**None required!** The `seller_orders` table already has:
-- `buyer_id` (UUID) - will be the auto-created user ID
-- `guest_email` (string) - can store original email for reference
-- All necessary columns for order tracking
-
-## Files to Create
+### New Files to Create
 
 | File | Purpose |
 |------|---------|
-| `supabase/functions/create-guest-checkout/index.ts` | Create Stripe session for guest |
-| `supabase/functions/verify-guest-payment/index.ts` | Verify payment, create user, create order |
+| `src/components/marketplace/GuestPaymentModal.tsx` | New modal with full payment options |
+| `supabase/functions/create-guest-razorpay/index.ts` | Razorpay order for guests |
+| `supabase/functions/verify-guest-razorpay/index.ts` | Verify Razorpay + create account |
+| `supabase/functions/create-guest-manual-order/index.ts` | Create pending order for manual payments |
 
-## Files to Modify
+### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `supabase/config.toml` | Add function configs |
-| `src/pages/Marketplace.tsx` | Add payment success detection and verification |
+| `src/pages/Marketplace.tsx` | Replace `GuestCheckoutModal` with `GuestPaymentModal` |
+| `src/components/marketplace/GuestCheckoutModal.tsx` | REPLACE with new multi-payment modal |
+| `supabase/config.toml` | Add new edge function configs |
+
+## Detailed Implementation
+
+### 1. GuestPaymentModal Component
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ 🛒 Complete Your Purchase                                           │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ ┌───────────┐                                                           │
+│ │  [Image]  │  Netflix Premium                                         │
+│ │           │  by Premium Store                                        │
+│ └───────────┘  $9.99                                                   │
+│                                                                         │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ 📧 Email (for delivery)                                              │ │
+│ │ ┌─────────────────────────────────────────────────────────────────┐ │ │
+│ │ │ you@example.com                                                 │ │ │
+│ │ └─────────────────────────────────────────────────────────────────┘ │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ Select Payment Method                                                │ │
+│ │ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐          │ │
+│ │ │ Stripe  │ │Razorpay │ │  bKash  │ │  Nagad  │ │ Binance │          │ │
+│ │ │  ✓      │ │         │ │         │ │         │ │         │          │ │
+│ │ └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘          │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │                  [ Pay $9.99 with Stripe ]                          │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ Already have an account? Sign in                                       │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 2. Edge Function: create-guest-razorpay
+
+Creates Razorpay order for guest checkout:
+
+**Input:**
+```json
+{
+  "productId": "uuid",
+  "productName": "Netflix Premium",
+  "price": 9.99,
+  "guestEmail": "user@example.com",
+  "productType": "seller"
+}
+```
+
+**Output:**
+```json
+{
+  "order_id": "order_xyz",
+  "key_id": "rzp_live_xxx",
+  "amount": 90800,
+  "currency": "INR",
+  "guestToken": "encrypted_session_data"
+}
+```
+
+### 3. Edge Function: verify-guest-razorpay
+
+Verifies Razorpay payment and creates account:
+
+**Input:**
+```json
+{
+  "razorpay_order_id": "order_xyz",
+  "razorpay_payment_id": "pay_abc",
+  "razorpay_signature": "sig_123",
+  "guestToken": "encrypted_session_data"
+}
+```
+
+**Logic:**
+1. Verify signature using secret
+2. Decrypt guestToken to get email, productId, etc.
+3. Check/create user account
+4. Create seller_order
+5. Generate auth session
+6. Return session for auto-login
+
+### 4. Edge Function: create-guest-manual-order
+
+For manual payments (bKash, Nagad, etc.):
+
+**Input:**
+```json
+{
+  "productId": "uuid",
+  "productName": "Netflix Premium",
+  "price": 9.99,
+  "guestEmail": "user@example.com",
+  "productType": "seller",
+  "paymentMethod": "bkash",
+  "transactionId": "TXN123456"
+}
+```
+
+**Logic:**
+1. Create user with `email_confirmed: false`
+2. Create `seller_order` with status `pending_payment`
+3. Create `wallet_transaction` with status `pending`
+4. Return order ID for tracking
+5. Admin approves → triggers account activation email
+
+### 5. Database Changes
+
+Add new status for guest orders:
+
+```sql
+-- Add guest_payment_status to seller_orders
+ALTER TABLE public.seller_orders 
+ADD COLUMN IF NOT EXISTS payment_gateway TEXT,
+ADD COLUMN IF NOT EXISTS gateway_transaction_id TEXT;
+
+-- Create guest_pending_orders table for manual payments
+CREATE TABLE IF NOT EXISTS public.guest_pending_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  product_id UUID NOT NULL,
+  product_type TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  payment_method TEXT NOT NULL,
+  transaction_id TEXT,
+  status TEXT DEFAULT 'pending', -- pending, approved, rejected
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  approved_at TIMESTAMPTZ,
+  user_id UUID, -- Set when account is created
+  order_id UUID -- Set when order is created
+);
+
+-- Index for admin lookups
+CREATE INDEX idx_guest_pending_orders_status ON guest_pending_orders(status);
+```
+
+## User Experience Flows
+
+### Flow A: Automatic Payment (Stripe/Razorpay)
+
+```text
+Time: 0s    Guest clicks "Buy"
+Time: 1s    GuestPaymentModal opens
+Time: 5s    Guest enters email + selects Stripe
+Time: 6s    Click "Pay $9.99"
+Time: 7s    Redirected to Stripe Checkout
+Time: 30s   Completes payment
+Time: 31s   Redirected to /marketplace?purchase=success
+Time: 32s   verify-guest-payment runs
+            → Creates account (temp password)
+            → Creates order
+            → Returns auth session
+Time: 33s   Frontend: supabase.auth.setSession()
+Time: 34s   Redirect to /dashboard/marketplace?tab=purchases
+Time: 35s   User sees their purchase ✓
+            Email received with password
+```
+
+### Flow B: Manual Payment (bKash/Nagad)
+
+```text
+Time: 0s    Guest clicks "Buy"
+Time: 1s    GuestPaymentModal opens
+Time: 5s    Guest enters email + selects bKash
+Time: 6s    Modal shows bKash QR code + account number
+Time: 30s   Guest sends money via bKash app
+Time: 60s   Guest enters transaction ID in modal
+Time: 61s   create-guest-manual-order runs
+            → Creates pending record
+            → Shows confirmation to user
+Time: 62s   Toast: "Order submitted! You'll receive email once approved"
+            Email: "Order pending approval"
+
+--- Admin Action (minutes to hours later) ---
+
+Admin sees pending order in admin panel
+Admin verifies bKash payment
+Admin clicks "Approve"
+            → Creates user account
+            → Creates seller_order
+            → Sends password email
+
+User receives email with password
+User logs in to see purchase
+```
 
 ## Security Considerations
 
 | Risk | Mitigation |
 |------|------------|
-| Session hijacking | Verify session was just paid, use email from Stripe (not user input) |
-| Duplicate orders | Check if session already processed (idempotency) |
-| Account takeover | Email used in Stripe Checkout is trusted (Stripe handles validation) |
-| Password exposure | Temp password sent only via email, user prompted to change |
+| Email spoofing | For auto-payments: email comes from Stripe/Razorpay (trusted) |
+| Duplicate orders | Unique index on `stripe_session_id` and `gateway_transaction_id` |
+| Manual payment fraud | Admin verification required before account creation |
+| Token tampering | Encrypt guest session data with server-side secret |
+| Rate limiting | Max 5 guest checkout attempts per email per hour |
 
-## Email Templates Needed
+## Admin Panel Updates
 
-1. **Welcome + Order Confirmation (New User)**
-   - Subject: "Welcome! Your order is confirmed"
-   - Body: Temp password, order details, next steps
+Add new section for guest order approvals:
 
-2. **Order Confirmation (Existing User)**
-   - Subject: "Order confirmed - {product name}"
-   - Body: Order details, login prompt
+```text
+Admin Panel → Orders → Guest Pending
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Pending Guest Orders                                          Filter ▼ │
+├─────────────────────────────────────────────────────────────────────────┤
+│ Email            │ Product      │ Amount │ Method │ TXN ID   │ Action  │
+├──────────────────┼──────────────┼────────┼────────┼──────────┼─────────┤
+│ user@gmail.com   │ Netflix Pre  │ ৳1209  │ bKash  │ TXN12345 │ [✓] [✗] │
+│ test@example.com │ ChatGPT Pro  │ ৳605   │ Nagad  │ NAG98765 │ [✓] [✗] │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ## Summary
 
-| Step | Component | Action |
-|------|-----------|--------|
-| 1 | `create-guest-checkout` | Creates Stripe session with product + email metadata |
-| 2 | Stripe Checkout | User pays, redirects to `/marketplace?purchase=success` |
-| 3 | `Marketplace.tsx` | Detects success, calls verify function |
-| 4 | `verify-guest-payment` | Creates user if needed, creates order, returns session |
-| 5 | `Marketplace.tsx` | Signs in user, redirects to dashboard |
-| 6 | Dashboard | Shows purchase in orders tab |
+| Feature | Before | After |
+|---------|--------|-------|
+| Guest payment methods | Stripe only | All 6 methods |
+| Email collection | Yes | Yes |
+| Auto account creation | Stripe only | All automatic methods |
+| Manual payment support | No | Yes (with admin approval) |
+| Razorpay for guests | No | Yes |
+| bKash/Nagad for guests | No | Yes |
+| Dashboard redirect | Yes | Yes |
+| Password email | Yes | Yes |
+
+## Implementation Order
+
+1. Create `GuestPaymentModal` component with multi-payment UI
+2. Create `create-guest-razorpay` edge function
+3. Create `verify-guest-razorpay` edge function
+4. Create `create-guest-manual-order` edge function
+5. Add database migration for new columns/table
+6. Update `Marketplace.tsx` to use new modal
+7. Add admin panel section for guest order approval
+8. Test all payment flows end-to-end
 
