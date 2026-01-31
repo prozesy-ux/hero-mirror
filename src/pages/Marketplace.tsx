@@ -9,7 +9,7 @@ import GumroadProductCard from '@/components/marketplace/GumroadProductCard';
 import FeaturedCarousel from '@/components/marketplace/FeaturedCarousel';
 import GumroadFilterSidebar from '@/components/marketplace/GumroadFilterSidebar';
 import GumroadQuickViewModal from '@/components/marketplace/GumroadQuickViewModal';
-import GuestCheckoutModal from '@/components/marketplace/GuestCheckoutModal';
+import GuestPaymentModal from '@/components/marketplace/GuestPaymentModal';
 import MarketplaceProductFullView from '@/components/marketplace/MarketplaceProductFullView';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
@@ -395,42 +395,7 @@ const Marketplace = () => {
     }
   }, [urlProduct, allProducts, user, navigate]);
 
-  const handleGuestCheckout = useCallback(async (email: string) => {
-    if (!guestCheckoutProduct) return;
-
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-guest-checkout`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            productId: guestCheckoutProduct.id,
-            productName: guestCheckoutProduct.name,
-            price: guestCheckoutProduct.price,
-            guestEmail: email,
-            productType: guestCheckoutProduct.type,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to create checkout session');
-      }
-
-      const { url } = await response.json();
-      window.location.href = url;
-    } catch (error) {
-      console.error('Guest checkout error:', error);
-      toast.error('Unable to process checkout. Please try signing in.');
-      navigate('/signin');
-    }
-
-    setGuestCheckoutProduct(null);
-  }, [guestCheckoutProduct, navigate]);
+  // Guest checkout now handled by GuestPaymentModal component
 
   const handleTagToggle = useCallback((tag: string) => {
     setSelectedTags(prev => 
@@ -670,8 +635,8 @@ const Marketplace = () => {
         isAuthenticated={!!user}
       />
 
-      {/* Guest Checkout Modal */}
-      <GuestCheckoutModal
+      {/* Guest Payment Modal */}
+      <GuestPaymentModal
         open={!!guestCheckoutProduct}
         onOpenChange={(open) => !open && setGuestCheckoutProduct(null)}
         product={guestCheckoutProduct ? {
@@ -679,10 +644,9 @@ const Marketplace = () => {
           name: guestCheckoutProduct.name,
           price: guestCheckoutProduct.price,
           iconUrl: guestCheckoutProduct.iconUrl,
-          sellerId: '',
           sellerName: guestCheckoutProduct.sellerName,
+          type: guestCheckoutProduct.type,
         } : null}
-        onCheckout={handleGuestCheckout}
       />
     </div>
   );

@@ -907,6 +907,63 @@ export type Database = {
           },
         ]
       }
+      guest_pending_orders: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          approved_at: string | null
+          created_at: string | null
+          email: string
+          id: string
+          order_id: string | null
+          payment_method: string
+          product_id: string
+          product_name: string
+          product_type: string
+          rejected_at: string | null
+          seller_id: string | null
+          status: string | null
+          transaction_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          approved_at?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          order_id?: string | null
+          payment_method: string
+          product_id: string
+          product_name: string
+          product_type: string
+          rejected_at?: string | null
+          seller_id?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          approved_at?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          order_id?: string | null
+          payment_method?: string
+          product_id?: string
+          product_name?: string
+          product_type?: string
+          rejected_at?: string | null
+          seller_id?: string | null
+          status?: string | null
+          transaction_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       login_history: {
         Row: {
           device_info: string | null
@@ -2047,8 +2104,10 @@ export type Database = {
           created_at: string | null
           credentials: string | null
           delivered_at: string | null
+          gateway_transaction_id: string | null
           guest_email: string | null
           id: string
+          payment_gateway: string | null
           product_id: string
           seller_earning: number
           seller_id: string
@@ -2063,8 +2122,10 @@ export type Database = {
           created_at?: string | null
           credentials?: string | null
           delivered_at?: string | null
+          gateway_transaction_id?: string | null
           guest_email?: string | null
           id?: string
+          payment_gateway?: string | null
           product_id: string
           seller_earning: number
           seller_id: string
@@ -2079,8 +2140,10 @@ export type Database = {
           created_at?: string | null
           credentials?: string | null
           delivered_at?: string | null
+          gateway_transaction_id?: string | null
           guest_email?: string | null
           id?: string
+          payment_gateway?: string | null
           product_id?: string
           seller_earning?: number
           seller_id?: string
