@@ -1073,6 +1073,9 @@ const StoreContent = () => {
                       onChat={() => handleChat(product)}
                       onView={() => setSelectedProduct(product)}
                       onBuy={() => handlePurchase(product)}
+                      sellerAvatar={seller.store_logo_url}
+                      storeSlug={seller.store_slug}
+                      isVerified={seller.is_verified}
                     />
                   )
                 ))}

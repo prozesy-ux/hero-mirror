@@ -1,5 +1,8 @@
 import { Store } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
+import { useIsMobile } from '@/hooks/use-mobile';
+import ProductHoverPreview from './ProductHoverPreview';
 
 interface GumroadProductCardProps {
   id: string;
@@ -15,15 +18,41 @@ interface GumroadProductCardProps {
   soldCount?: number;
   type: 'ai' | 'seller';
   onClick: () => void;
+  // Hover preview props
+  description?: string | null;
+  tags?: string[] | null;
+  chatAllowed?: boolean;
+  onBuy?: () => void;
+  onChat?: () => void;
+  onViewFull?: () => void;
+  isAuthenticated?: boolean;
 }
 
 const GumroadProductCard = ({
+  id,
   name,
   price,
   iconUrl,
+  sellerName,
+  sellerAvatar,
+  storeSlug,
+  isVerified,
+  rating,
+  reviewCount,
+  soldCount,
+  type,
   onClick,
+  description,
+  tags,
+  chatAllowed,
+  onBuy,
+  onChat,
+  onViewFull,
+  isAuthenticated = false,
 }: GumroadProductCardProps) => {
-  return (
+  const isMobile = useIsMobile();
+
+  const CardContent = () => (
     <button
       onClick={onClick}
       className="group w-full text-left bg-white rounded-xl overflow-hidden border border-black/10 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5"
@@ -56,6 +85,51 @@ const GumroadProductCard = ({
         <span className="text-sm font-semibold text-black">${price.toFixed(0)}</span>
       </div>
     </button>
+  );
+
+  // On mobile, just render the card without hover
+  if (isMobile) {
+    return <CardContent />;
+  }
+
+  // On desktop, wrap with HoverCard
+  return (
+    <HoverCard openDelay={300} closeDelay={150}>
+      <HoverCardTrigger asChild>
+        <div>
+          <CardContent />
+        </div>
+      </HoverCardTrigger>
+      <HoverCardContent
+        side="right"
+        align="start"
+        sideOffset={8}
+        className="w-auto p-0 border border-black/10 shadow-xl rounded-xl"
+      >
+        <ProductHoverPreview
+          product={{
+            id,
+            name,
+            description,
+            price,
+            iconUrl,
+            sellerName,
+            sellerAvatar,
+            storeSlug,
+            isVerified,
+            soldCount,
+            rating,
+            reviewCount,
+            tags,
+            chatAllowed,
+          }}
+          onBuy={onBuy || (() => {})}
+          onChat={onChat || (() => {})}
+          onViewFull={onViewFull || onClick}
+          isAuthenticated={isAuthenticated}
+        />
+      </HoverCardContent>
+    </HoverCard>
   );
 };
 

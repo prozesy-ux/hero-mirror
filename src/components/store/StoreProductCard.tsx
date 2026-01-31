@@ -1,5 +1,8 @@
 import { Star, MessageCircle, Eye, Wallet, Loader2, Package, TrendingUp, Store } from 'lucide-react';
 import { OptimizedImage } from '@/components/ui/optimized-image';
+import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
+import { useIsMobile } from '@/hooks/use-mobile';
+import ProductHoverPreview from '@/components/marketplace/ProductHoverPreview';
 
 interface SellerProduct {
   id: string;
@@ -23,6 +26,10 @@ interface StoreProductCardProps {
   onChat: () => void;
   onView: () => void;
   onBuy: () => void;
+  // Additional props for hover preview
+  sellerAvatar?: string | null;
+  storeSlug?: string | null;
+  isVerified?: boolean;
 }
 
 const StoreProductCard = ({
@@ -34,10 +41,14 @@ const StoreProductCard = ({
   onChat,
   onView,
   onBuy,
+  sellerAvatar,
+  storeSlug,
+  isVerified = false,
 }: StoreProductCardProps) => {
+  const isMobile = useIsMobile();
   const showChat = product.chat_allowed !== false;
 
-  return (
+  const CardContent = () => (
     <div className="group bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-200 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden">
@@ -161,6 +172,49 @@ const StoreProductCard = ({
         </div>
       </div>
     </div>
+  );
+
+  // On mobile, just render the card without hover
+  if (isMobile) {
+    return <CardContent />;
+  }
+
+  // On desktop, wrap with HoverCard
+  return (
+    <HoverCard openDelay={300} closeDelay={150}>
+      <HoverCardTrigger asChild>
+        <div>
+          <CardContent />
+        </div>
+      </HoverCardTrigger>
+      <HoverCardContent
+        side="right"
+        align="start"
+        sideOffset={8}
+        className="w-auto p-0 border border-black/10 shadow-xl rounded-xl"
+      >
+        <ProductHoverPreview
+          product={{
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            iconUrl: product.icon_url,
+            sellerName: storeName,
+            sellerAvatar,
+            storeSlug,
+            isVerified,
+            soldCount: product.sold_count || 0,
+            tags: product.tags,
+            chatAllowed: product.chat_allowed ?? true,
+          }}
+          onBuy={onBuy}
+          onChat={onChat}
+          onViewFull={onView}
+          isAuthenticated={isLoggedIn}
+        />
+      </HoverCardContent>
+    </HoverCard>
   );
 };
 
