@@ -619,11 +619,42 @@ const Marketplace = () => {
                     price={product.price}
                     iconUrl={product.iconUrl}
                     sellerName={product.sellerName}
+                    sellerAvatar={product.sellerAvatar}
                     storeSlug={product.storeSlug}
                     isVerified={product.isVerified}
                     soldCount={product.soldCount}
+                    rating={product.rating}
+                    reviewCount={product.reviewCount}
                     type={product.type}
+                    description={product.description}
+                    tags={product.tags}
                     onClick={() => handleProductClick(product)}
+                    onBuy={() => {
+                      if (user) {
+                        if (product.storeSlug) {
+                          navigate(`/store/${product.storeSlug}`);
+                        } else {
+                          navigate('/dashboard');
+                        }
+                      } else {
+                        setGuestCheckoutProduct(product);
+                      }
+                    }}
+                    onChat={() => {
+                      if (user) {
+                        if (product.storeSlug) {
+                          navigate(`/store/${product.storeSlug}?chat=${product.id}`);
+                        }
+                      } else {
+                        toast.info('Please sign in to chat with sellers');
+                        navigate('/signin');
+                      }
+                    }}
+                    onViewFull={() => {
+                      const slug = slugify(product.name);
+                      navigate(`/marketplace/${slug}`);
+                    }}
+                    isAuthenticated={!!user}
                   />
                 ))}
               </div>
