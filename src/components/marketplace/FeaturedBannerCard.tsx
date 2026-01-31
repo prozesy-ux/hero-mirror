@@ -36,7 +36,7 @@ const FeaturedBannerCard = ({
   return (
     <button
       onClick={onClick}
-      className="w-full flex bg-white rounded-xl border border-black/10 overflow-hidden transition-all duration-200 hover:shadow-xl hover:border-black/15 hover:scale-[1.01] text-left"
+      className="w-full flex bg-white rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg text-left"
     >
       {/* Left - Image (~40% width) */}
       <div className="w-[40%] flex-shrink-0 relative overflow-hidden bg-gray-100">

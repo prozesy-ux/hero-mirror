@@ -84,7 +84,7 @@ const GumroadFilterSidebar = ({
       {/* Categories */}
       <Collapsible open={openSections.categories} onOpenChange={() => toggleSection('categories')}>
         <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-left">
-          <span className="text-sm font-medium text-black">Categories</span>
+          <span className="text-sm font-semibold text-black uppercase tracking-wide">Categories</span>
           <ChevronDown className={cn(
             "w-4 h-4 text-black/40 transition-transform duration-200",
             openSections.categories && "rotate-180"
@@ -122,14 +122,14 @@ const GumroadFilterSidebar = ({
         </CollapsibleContent>
       </Collapsible>
 
-      <div className="border-t border-black/5" />
+      <div className="h-6" />
 
       {/* Tags */}
       {availableTags.length > 0 && (
         <>
           <Collapsible open={openSections.tags} onOpenChange={() => toggleSection('tags')}>
             <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-left">
-              <span className="text-sm font-medium text-black">Tags</span>
+              <span className="text-sm font-semibold text-black uppercase tracking-wide">Tags</span>
               <ChevronDown className={cn(
                 "w-4 h-4 text-black/40 transition-transform duration-200",
                 openSections.tags && "rotate-180"
@@ -162,14 +162,14 @@ const GumroadFilterSidebar = ({
               )}
             </CollapsibleContent>
           </Collapsible>
-          <div className="border-t border-black/5" />
+          <div className="h-6" />
         </>
       )}
 
       {/* Price */}
       <Collapsible open={openSections.price} onOpenChange={() => toggleSection('price')}>
         <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-left">
-          <span className="text-sm font-medium text-black">Price</span>
+          <span className="text-sm font-semibold text-black uppercase tracking-wide">Price</span>
           <ChevronDown className={cn(
             "w-4 h-4 text-black/40 transition-transform duration-200",
             openSections.price && "rotate-180"
@@ -208,12 +208,12 @@ const GumroadFilterSidebar = ({
         </CollapsibleContent>
       </Collapsible>
 
-      <div className="border-t border-black/5" />
+      <div className="h-6" />
 
       {/* Rating */}
       <Collapsible open={openSections.rating} onOpenChange={() => toggleSection('rating')}>
         <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-left">
-          <span className="text-sm font-medium text-black">Rating</span>
+          <span className="text-sm font-semibold text-black uppercase tracking-wide">Rating</span>
           <ChevronDown className={cn(
             "w-4 h-4 text-black/40 transition-transform duration-200",
             openSections.rating && "rotate-180"

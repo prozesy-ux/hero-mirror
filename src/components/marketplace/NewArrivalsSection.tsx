@@ -111,16 +111,12 @@ export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSec
   }
 
   return (
-    <div className={cn("space-y-4 p-6 bg-gradient-to-r from-green-50/50 to-white rounded-2xl border border-black/5", className)}>
+    <div className={cn("space-y-4 py-8", className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-green-500/10">
-            <Sparkles className="h-5 w-5 text-green-500" />
-          </div>
-          <h3 className="text-lg font-semibold">New Arrivals</h3>
-          <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600">
-            Fresh
-          </Badge>
+          <Sparkles className="h-5 w-5 text-black/70" />
+          <h3 className="text-lg font-semibold text-black">New Arrivals</h3>
+          <span className="text-xs text-black/50 font-medium">Fresh</span>
         </div>
         <Button variant="ghost" size="sm" className="text-muted-foreground">
           View All <ChevronRight className="h-4 w-4 ml-1" />

@@ -146,16 +146,12 @@ export function TopRatedSection({ onProductClick, className }: TopRatedSectionPr
   }
 
   return (
-    <div className={cn("space-y-4 p-6 bg-gradient-to-r from-yellow-50/50 to-white rounded-2xl border border-black/5", className)}>
+    <div className={cn("space-y-4 py-8", className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-yellow-500/10">
-            <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-          </div>
-          <h3 className="text-lg font-semibold">Top Rated</h3>
-          <Badge variant="secondary" className="text-xs">
-            ⭐ 4.5+
-          </Badge>
+          <Star className="h-5 w-5 text-black/70" />
+          <h3 className="text-lg font-semibold text-black">Top Rated</h3>
+          <span className="text-xs text-black/50 font-medium">4.5+ stars</span>
         </div>
         <Button variant="ghost" size="sm" className="text-muted-foreground">
           View All <ChevronRight className="h-4 w-4 ml-1" />
