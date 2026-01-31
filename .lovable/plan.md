@@ -1,230 +1,212 @@
 
-
-# Marketplace Enterprise Design Overhaul
+# Dashboard Marketplace Section Design Overhaul
 
 ## Overview
 
-Transform the marketplace to a clean, enterprise-level design following Google, Amazon, Upwork, and Gumroad patterns - pure white backgrounds, no colorful section borders, minimalist black-based typography, and proper visual flow.
+Align the dashboard marketplace (`/dashboard/marketplace`) design with the clean, enterprise-level aesthetic of the public marketplace (`/marketplace`). The goal is to create visual consistency across the platform, using pure white backgrounds, minimal borders, and typography-based hierarchy following Google, Amazon, Upwork, and Gumroad patterns.
 
-## Current State vs Target State
+## Current State Analysis
 
-| Element | Current Issue | Target (Enterprise) |
-|---------|---------------|---------------------|
-| Page Background | Gradient `from-white via-gray-50/50 to-white` | Pure `bg-white` |
-| Section Backgrounds | Colored gradients (`orange-50`, `yellow-50`, `green-50`) | Pure `bg-white` |
-| Section Borders | `border border-black/5` on all sections | No borders, use spacing + typography hierarchy |
-| Cards | `border border-black/5` with hover borders | Clean minimal, subtle shadow only on hover |
-| Visual Hierarchy | Color-based section differentiation | Typography + spacing based hierarchy |
+| Element | Dashboard Marketplace (Current) | Public Marketplace (Target) |
+|---------|--------------------------------|----------------------------|
+| Background | `bg-gradient-to-br from-gray-50 via-gray-100/50 to-white` | Pure `bg-white` |
+| Tab Navigation | Heavy `border-gray-200 shadow-md` container | Minimal, no container needed |
+| Search Bar | Complex Amazon-style with scope selector | Same clean style (keep) |
+| Product Cards | `border-gray-200 shadow-md hover:shadow-xl` | Minimal `hover:shadow-md` only |
+| Seller Badges | Colored gradients (`violet-500`, `emerald-500`) | Clean, minimal badges |
+| Category Sidebar | `border-gray-200 shadow-sm` containers | No borders, spacing-based |
+| Discovery Sections | Using old colored styles from updates | Pure white, typography hierarchy |
 
-## Design Principles (Enterprise Standard)
+## Design Changes
 
+### 1. Main Layout (`Dashboard.tsx`)
+
+**Change main content background:**
 ```text
-Google/Amazon/Upwork Pattern:
-┌─────────────────────────────────────────────────────────────┐
-│  Pure white background throughout                           │
-│  No colored section backgrounds                             │
-│  No visible borders between sections                        │
-│  Hierarchy through:                                         │
-│    - Typography size/weight                                 │
-│    - Whitespace/spacing                                     │
-│    - Subtle shadows on interactive elements                 │
-│  Black/gray text only - no colored badges                   │
-└─────────────────────────────────────────────────────────────┘
+Current: bg-gradient-to-br from-gray-50 via-gray-100/50 to-white
+Updated: bg-white
 ```
 
-## Implementation Details
+### 2. Tab Navigation (`AIAccountsSection.tsx`)
 
-### 1. Marketplace.tsx - Main Page
-
-**Current:**
-```jsx
-<div className="min-h-screen bg-gradient-to-b from-white via-gray-50/50 to-white">
-```
-
-**Updated:**
-```jsx
-<div className="min-h-screen bg-white">
-```
-
-### 2. FeaturedCarousel.tsx - Featured Section
-
-**Current:**
-```jsx
-<section className="py-6 px-6 bg-gradient-to-r from-gray-50/80 to-white rounded-2xl border border-black/5">
-```
-
-**Updated:**
-```jsx
-<section className="py-8">
-```
-
-### 3. GumroadProductCard.tsx - Product Cards
-
-**Current:**
-```jsx
-<button className="group w-full text-left bg-white rounded-xl border border-black/5 
-  overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-black/10 hover:scale-[1.01]">
-```
-
-**Updated:**
-```jsx
-<button className="group w-full text-left bg-white rounded-lg 
-  overflow-hidden transition-all duration-200 hover:shadow-md">
-```
-
-### 4. GumroadFilterSidebar.tsx - Left Sidebar
-
-**Current:** Uses `border-black/5` dividers
-
-**Updated:**
-- Remove border dividers
-- Use spacing between filter groups
-- Bold section headers with proper weight hierarchy
-- Black text for active states, gray for inactive
-
-```jsx
-// Section header
-<span className="text-sm font-semibold text-black tracking-wide uppercase">Categories</span>
-
-// Category items - no backgrounds, just text
-<button className={cn(
-  "w-full text-left py-2 text-sm transition-colors",
-  selectedCategory === cat.id
-    ? 'text-black font-medium'
-    : 'text-black/60 hover:text-black'
-)}>
-```
-
-### 5. HotProductsSection.tsx - Remove Colored Styling
-
-**Current:**
-```jsx
-<div className={cn("space-y-4 p-6 bg-gradient-to-r from-orange-50/50 to-white rounded-2xl border border-black/5", className)}>
-```
-
-**Updated:**
-```jsx
-<div className={cn("space-y-4 py-8", className)}>
-```
-
-**Remove:**
-- Orange gradient background
-- Border styling
-- Orange badges with emojis
-- Use clean black/gray badge instead
-
-### 6. TopRatedSection.tsx - Remove Colored Styling
-
-**Current:**
-```jsx
-<div className={cn("space-y-4 p-6 bg-gradient-to-r from-yellow-50/50 to-white rounded-2xl border border-black/5", className)}>
-```
-
-**Updated:**
-```jsx
-<div className={cn("space-y-4 py-8", className)}>
-```
-
-### 7. NewArrivalsSection.tsx - Remove Colored Styling
-
-**Current:**
-```jsx
-<div className={cn("space-y-4 p-6 bg-gradient-to-r from-green-50/50 to-white rounded-2xl border border-black/5", className)}>
-```
-
-**Updated:**
-```jsx
-<div className={cn("space-y-4 py-8", className)}>
-```
-
-### 8. FeaturedBannerCard.tsx - Simplify
-
-**Current:**
-```jsx
-<button className="w-full flex bg-white rounded-xl border border-black/10 overflow-hidden 
-  transition-all duration-200 hover:shadow-xl hover:border-black/15 hover:scale-[1.01] text-left">
-```
-
-**Updated:**
-```jsx
-<button className="w-full flex bg-white rounded-lg overflow-hidden 
-  transition-all duration-200 hover:shadow-lg text-left">
-```
-
-## Visual Hierarchy (Enterprise Pattern)
-
+**Simplify tab bar:**
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│  HEADER (white, clean border-bottom only)                   │
-└─────────────────────────────────────────────────────────────┘
-│  CATEGORY PILLS (minimal, black outlined active)            │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                                                              │
-│  Featured products          (Bold heading, no section box)  │
-│  ┌──────────────┐  ┌──────────────┐                         │
-│  │   Banner     │  │   Banner     │                         │
-│  │   Card       │  │   Card       │                         │
-│  └──────────────┘  └──────────────┘                         │
-│                                                              │
-│  ┌───────────┐  Curated for you    (Section heading)        │
-│  │ SIDEBAR   │  Trending | Best Sellers | Hot & New         │
-│  │           │                                               │
-│  │ Categories│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐         │
-│  │ (bold)    │  │    │ │    │ │    │ │    │ │    │         │
-│  │ - All     │  │Card│ │Card│ │Card│ │Card│ │Card│         │
-│  │ - AI      │  │    │ │    │ │    │ │    │ │    │         │
-│  │ - Design  │  └────┘ └────┘ └────┘ └────┘ └────┘         │
-│  │           │                                               │
-│  │ Tags      │  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐         │
-│  │ (bold)    │  │    │ │    │ │    │ │    │ │    │         │
-│  │           │  │Card│ │Card│ │Card│ │Card│ │Card│         │
-│  │ Price     │  │    │ │    │ │    │ │    │ │    │         │
-│  │ (bold)    │  └────┘ └────┘ └────┘ └────┘ └────┘         │
-│  │           │                                               │
-│  │ Rating    │                                               │
-│  └───────────┘                                               │
-│                                                              │
-│  bg: pure white throughout                                  │
-│  borders: none (use spacing instead)                        │
-│  cards: minimal, shadow on hover only                       │
-└─────────────────────────────────────────────────────────────┘
+Current: bg-white rounded-xl border border-gray-200 shadow-md
+Updated: No container, just inline tabs with border-bottom active state
 ```
+
+**Tab buttons - Gumroad style:**
+```text
+Active: text-black font-semibold border-b-2 border-black
+Inactive: text-black/50 hover:text-black
+```
+
+### 3. Product Cards (`AIAccountsSection.tsx`)
+
+**Remove heavy styling:**
+```text
+Current:
+- border border-gray-200 shadow-md
+- hover:shadow-xl hover:border-gray-300 hover:-translate-y-1
+- Gradient badges (violet/purple, emerald)
+
+Updated:
+- No border, subtle rounded corners
+- hover:shadow-md only
+- Clean minimal badges (just store name, no gradient)
+```
+
+### 4. Marketplace Sidebar (`MarketplaceSidebar.tsx`)
+
+**Remove container borders:**
+```text
+Current: border border-gray-200 shadow-sm
+Updated: No borders, use spacing and bold headers
+```
+
+**Section headers - Enterprise style:**
+```text
+Current: bg-gray-50 border-b with icon
+Updated: Just bold uppercase text, spacing below
+```
+
+### 5. Discovery Sections
+
+Update `CategoryBrowser`, `HotProductsSection`, `TopRatedSection`, `NewArrivalsSection` to use:
+- Pure white backgrounds (already updated in public marketplace)
+- No section borders
+- Simple black section headers
+- Clean card styling
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/Marketplace.tsx` | Remove gradient background, use `bg-white` |
-| `src/components/marketplace/GumroadProductCard.tsx` | Remove border, keep subtle hover shadow |
-| `src/components/marketplace/GumroadFilterSidebar.tsx` | Remove border dividers, use spacing + bold headers |
-| `src/components/marketplace/FeaturedCarousel.tsx` | Remove gradient/border container |
-| `src/components/marketplace/FeaturedBannerCard.tsx` | Remove border, simplify hover |
-| `src/components/marketplace/HotProductsSection.tsx` | Remove orange styling, pure white |
-| `src/components/marketplace/TopRatedSection.tsx` | Remove yellow styling, pure white |
-| `src/components/marketplace/NewArrivalsSection.tsx` | Remove green styling, pure white |
+| `src/pages/Dashboard.tsx` | Change main content background to `bg-white` |
+| `src/components/dashboard/AIAccountsSection.tsx` | Simplify tabs, clean product cards, remove gradients |
+| `src/components/dashboard/MarketplaceSidebar.tsx` | Remove borders, use typography hierarchy |
 
-## Design Comparison
+## Visual Comparison
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| Page BG | Gradient | Pure white |
-| Section containers | Colored gradients + borders | No containers, use spacing |
-| Card borders | `border-black/5` | None (shadow on hover) |
-| Section badges | Colored (orange, yellow, green) | Minimal black/gray |
-| Filter dividers | `border-black/5` lines | Spacing only |
-| Typography | Mixed weights | Clear hierarchy (semibold headers) |
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  BEFORE (Dashboard Marketplace)                              │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ [Browse] [Purchases] [Stats]    ← Heavy bordered box │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌────────────┐  ┌─────────────────────────────────────┐    │
+│  │ SIDEBAR    │  │  Cards with shadows + borders       │    │
+│  │ border box │  │  ┌─────┐ ┌─────┐ ┌─────┐            │    │
+│  │ + shadow   │  │  │░░░░░│ │░░░░░│ │░░░░░│            │    │
+│  └────────────┘  │  │Violet│ │Green │ │Blue │           │    │
+│                  │  │Badge │ │Badge │ │Badge │          │    │
+│  bg: gradient    │  └─────┘ └─────┘ └─────┘            │    │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│  AFTER (Enterprise Style)                                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Browse   Purchases   Stats    ← Simple underline tabs      │
+│  ─────                                                       │
+│                                                              │
+│  CATEGORIES      Curated for you                             │
+│                                                              │
+│  All Products    ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐        │
+│  AI             │    │ │    │ │    │ │    │ │    │        │
+│  Design         │Card│ │Card│ │Card│ │Card│ │Card│        │
+│  Marketing      │    │ │    │ │    │ │    │ │    │        │
+│                 └────┘ └────┘ └────┘ └────┘ └────┘        │
+│  PRICE                                                       │
+│  $0 ──○── $100   Minimal shadows on hover only              │
+│                                                              │
+│  bg: pure white                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Detailed Implementation
+
+### Dashboard.tsx Changes
+
+```tsx
+// Change from gradient to white
+<main className={`pb-24 lg:pb-0 pt-0 lg:pt-16 min-h-screen bg-white transition-all duration-300 ...`}>
+```
+
+### AIAccountsSection.tsx Changes
+
+**Tab navigation:**
+```tsx
+// Remove container box
+<div className="mb-6 border-b border-black/10">
+  <div className="flex gap-6">
+    <button className={`pb-3 font-medium transition-colors ${
+      activeTab === 'browse' 
+        ? 'text-black border-b-2 border-black' 
+        : 'text-black/50 hover:text-black'
+    }`}>
+```
+
+**Product cards:**
+```tsx
+// Simplify card styling
+<div className="group bg-white rounded-lg overflow-hidden 
+  transition-all duration-200 hover:shadow-md cursor-pointer">
+
+// Simplify badges
+<div className="absolute top-3 left-3 px-2.5 py-1 bg-black text-white 
+  rounded-full text-xs font-medium">
+  Uptoza
+</div>
+```
+
+**Seller product cards:**
+```tsx
+// Remove emerald border and gradient
+<div className="group bg-white rounded-lg overflow-hidden 
+  transition-all duration-200 hover:shadow-md cursor-pointer">
+
+// Minimal seller badge
+<div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur 
+  border border-black/10 text-black rounded-full text-xs font-medium">
+  {product.seller_profiles?.store_name}
+</div>
+```
+
+### MarketplaceSidebar.tsx Changes
+
+**Remove container styling:**
+```tsx
+// Trending section - no border container
+<div className="mb-6">
+  <h3 className="text-xs font-semibold text-black/50 uppercase tracking-wide mb-3">
+    Trending Now
+  </h3>
+  <div className="space-y-2">
+    {/* Items without borders */}
+  </div>
+</div>
+
+// Categories section
+<div className="mb-6">
+  <h3 className="text-xs font-semibold text-black/50 uppercase tracking-wide mb-3">
+    Categories
+  </h3>
+  <div className="space-y-1">
+    {/* Simple text links, active = black, inactive = black/50 */}
+  </div>
+</div>
+```
 
 ## Summary
 
-This redesign transforms the marketplace from a "colorful section boxes" approach to a clean, enterprise-level layout matching Google, Amazon, Upwork, and Gumroad:
+This plan transforms the dashboard marketplace from a heavy, bordered design to a clean, enterprise-level interface matching the public marketplace:
 
-- Pure white backgrounds everywhere
-- No visible section borders or colored containers
-- Visual hierarchy through typography and spacing
+- Pure white backgrounds throughout
+- No box containers for tabs or sidebar sections
 - Minimal card styling with subtle hover shadows
-- Black-based color scheme for text and interactive elements
-- Clean, professional, distraction-free browsing experience
-
+- Typography-based hierarchy using font weight and color
+- Consistent monochrome (black/white) badge system
+- Unified visual language across public and authenticated views
