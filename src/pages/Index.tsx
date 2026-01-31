@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
+import SEOHead from "@/components/seo/SEOHead";
 
 // Lazy load below-fold components for faster First Contentful Paint
 const AsSeenIn = lazy(() => import("@/components/AsSeenIn"));
@@ -17,9 +18,35 @@ const SectionPlaceholder = () => (
   <div className="min-h-[200px] bg-background" />
 );
 
+// JSON-LD Organization schema for home page
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Uptoza",
+  "url": "https://uptoza.com",
+  "logo": "https://uptoza.com/favicon.png",
+  "description": "Uptoza powers global digital commerce. A unified platform for digital products, premium services, and AI-driven solutions. Trusted by creators and businesses worldwide.",
+  "sameAs": [
+    "https://twitter.com/Uptoza"
+  ],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer support",
+    "availableLanguage": ["English"]
+  }
+};
+
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Uptoza | The Digital Commerce Platform"
+        description="Uptoza powers global digital commerce. A unified platform for digital products, premium services, and AI-driven solutions. Trusted by creators and businesses worldwide."
+        canonicalUrl="https://uptoza.com/"
+        ogImage="https://uptoza.com/og-image.png"
+        type="website"
+        jsonLd={organizationSchema}
+      />
       <Header />
       <main>
         {/* Above the fold - loaded immediately */}
