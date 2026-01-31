@@ -12,7 +12,7 @@ interface GuestCheckoutRequest {
   productId: string;
   productName: string;
   price: number;
-  guestEmail: string;
+  guestEmail?: string; // Optional - Stripe will collect if not provided
   productType: 'ai' | 'seller';
   sellerId?: string;
 }
@@ -26,8 +26,8 @@ serve(async (req) => {
   try {
     const { productId, productName, price, guestEmail, productType, sellerId }: GuestCheckoutRequest = await req.json();
 
-    // Validate required fields
-    if (!productId || !productName || !price || !guestEmail) {
+    // Validate required fields (email is now optional - Stripe collects it)
+    if (!productId || !productName || !price) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -65,7 +65,8 @@ serve(async (req) => {
 
     // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
-      customer_email: guestEmail,
+      // Only pre-fill email if provided, otherwise Stripe will collect it
+      ...(guestEmail && { customer_email: guestEmail }),
       line_items: [
         {
           price_data: {
@@ -85,7 +86,7 @@ serve(async (req) => {
         productId,
         productName,
         productType,
-        guestEmail,
+        guestEmail: guestEmail || '', // May be empty - will get from session.customer_email
         sellerId: resolvedSellerId || '',
         priceAmount: price.toString(),
       },

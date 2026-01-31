@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   ShoppingBag, Mail, Lock, Loader2, CreditCard, 
-  AlertCircle, Check, ExternalLink, Copy 
+  AlertCircle, ExternalLink, Copy 
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
@@ -83,7 +83,6 @@ const GuestPaymentModal = ({
   const [selectedMethod, setSelectedMethod] = useState<string>('stripe');
   const [transactionId, setTransactionId] = useState('');
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
-  const [step, setStep] = useState<'email' | 'payment'>('email');
 
   // Load payment methods
   useEffect(() => {
@@ -123,7 +122,6 @@ const GuestPaymentModal = ({
   // Reset state when modal closes
   useEffect(() => {
     if (!open) {
-      setStep('email');
       setEmail('');
       setEmailError(null);
       setTransactionId('');
@@ -131,35 +129,31 @@ const GuestPaymentModal = ({
     }
   }, [open]);
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const result = emailSchema.safeParse(email);
-    if (!result.success) {
-      setEmailError(result.error.errors[0].message);
-      return;
-    }
-    
-    setStep('payment');
-  };
+  const currentMethod = paymentMethods.find(m => m.code === selectedMethod);
+  const isManualPayment = currentMethod && !currentMethod.is_automatic;
 
   const handlePayment = async () => {
     if (!product) return;
 
-    const result = emailSchema.safeParse(email);
-    if (!result.success) {
-      setEmailError(result.error.errors[0].message);
-      setStep('email');
-      return;
+    // For manual payments, validate email
+    if (isManualPayment) {
+      const result = emailSchema.safeParse(email);
+      if (!result.success) {
+        setEmailError(result.error.errors[0].message);
+        return;
+      }
+
+      if (!transactionId.trim()) {
+        toast.error('Please enter your transaction ID');
+        return;
+      }
     }
 
     setLoading(true);
 
     try {
-      const currentMethod = paymentMethods.find(m => m.code === selectedMethod);
-
       if (selectedMethod === 'stripe') {
-        // Stripe checkout
+        // Stripe checkout - email collected on Stripe Checkout page
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-guest-checkout`,
           {
@@ -172,8 +166,8 @@ const GuestPaymentModal = ({
               productId: product.id,
               productName: product.name,
               price: product.price,
-              guestEmail: email,
               productType: product.type,
+              // No guestEmail - Stripe will collect it
             }),
           }
         );
@@ -186,7 +180,7 @@ const GuestPaymentModal = ({
         window.location.href = url;
         
       } else if (selectedMethod === 'razorpay') {
-        // Razorpay checkout
+        // Razorpay checkout - email collected in Razorpay popup
         if (!razorpayLoaded) {
           toast.error('Payment system is loading. Please try again.');
           setLoading(false);
@@ -205,8 +199,8 @@ const GuestPaymentModal = ({
               productId: product.id,
               productName: product.name,
               price: product.price,
-              guestEmail: email,
               productType: product.type,
+              // No guestEmail - Razorpay will collect it
             }),
           }
         );
@@ -227,7 +221,7 @@ const GuestPaymentModal = ({
           name: 'Uptoza',
           description: `Purchase: ${product.name}`,
           order_id: data.order_id,
-          prefill: { email },
+          // No prefill email - let user enter in Razorpay popup
           handler: async (response: { 
             razorpay_order_id: string; 
             razorpay_payment_id: string; 
@@ -292,13 +286,7 @@ const GuestPaymentModal = ({
         return;
 
       } else {
-        // Manual payment (bKash, Nagad, etc.)
-        if (!transactionId.trim()) {
-          toast.error('Please enter your transaction ID');
-          setLoading(false);
-          return;
-        }
-
+        // Manual payment (bKash, Nagad, etc.) - email required in modal
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-guest-manual-order`,
           {
@@ -340,8 +328,6 @@ const GuestPaymentModal = ({
     toast.success('Copied to clipboard');
   };
 
-  const currentMethod = paymentMethods.find(m => m.code === selectedMethod);
-
   if (!product) return null;
 
   return (
@@ -382,191 +368,167 @@ const GuestPaymentModal = ({
             </div>
           </div>
 
-          {/* Step 1: Email */}
-          {step === 'email' && (
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
+          {/* Payment Methods */}
+          <div>
+            <label className="block text-sm font-medium text-black mb-3">
+              Select Payment Method
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {paymentMethods.map((method) => (
+                <button
+                  key={method.id}
+                  onClick={() => setSelectedMethod(method.code)}
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${
+                    selectedMethod === method.code
+                      ? 'border-pink-500 bg-pink-50'
+                      : 'border-black/10 hover:border-black/20'
+                  }`}
+                >
+                  {method.icon_url ? (
+                    <img 
+                      src={method.icon_url} 
+                      alt={method.name}
+                      className="h-6 w-auto mx-auto mb-1.5 object-contain"
+                    />
+                  ) : (
+                    <CreditCard className="h-6 w-6 mx-auto mb-1.5 text-black/40" />
+                  )}
+                  <p className="text-xs font-medium text-black truncate">{method.name}</p>
+                  {method.currency_code && method.currency_code !== 'USD' && (
+                    <p className="text-[10px] text-black/50">
+                      {formatLocalAmount(product.price, method)}
+                    </p>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Automatic Payment Note */}
+          {currentMethod?.is_automatic && (
+            <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+              <p className="text-sm text-blue-700 flex items-center gap-2">
+                <ExternalLink className="w-4 h-4" />
+                You'll enter your email on the secure payment page
+              </p>
+            </div>
+          )}
+
+          {/* Manual Payment Section - Email + Instructions */}
+          {isManualPayment && (
+            <div className="space-y-4">
+              {/* Email Input - Only for manual payments */}
               <div>
                 <label className="block text-sm font-medium text-black mb-2">
-                  Enter your email to receive the product
+                  <Mail className="w-4 h-4 inline mr-1.5" />
+                  Email (for account and delivery)
                 </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/30" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
-                    placeholder="you@example.com"
-                    className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl text-black placeholder-black/40 focus:outline-none transition-colors ${
-                      emailError
-                        ? 'border-red-300 focus:border-red-500'
-                        : 'border-black/10 focus:border-pink-500'
-                    }`}
-                  />
-                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                  placeholder="you@example.com"
+                  className={`w-full px-4 py-3 border-2 rounded-xl text-black placeholder-black/40 focus:outline-none transition-colors ${
+                    emailError
+                      ? 'border-red-300 focus:border-red-500'
+                      : 'border-black/10 focus:border-pink-500'
+                  }`}
+                />
                 {emailError && (
                   <p className="mt-1.5 text-sm text-red-500">{emailError}</p>
                 )}
-                <p className="mt-2 text-xs text-black/50 flex items-center gap-1">
-                  <Lock className="w-3 h-3" />
-                  Your email is used to deliver the product and create your account
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                disabled={!email}
-                className="w-full py-3.5 bg-pink-500 text-white font-semibold rounded-xl hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Continue to Payment
-              </button>
-            </form>
-          )}
-
-          {/* Step 2: Payment Method Selection */}
-          {step === 'payment' && (
-            <div className="space-y-4">
-              {/* Email Display */}
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-600" />
-                  <span className="text-sm text-green-700">{email}</span>
-                </div>
-                <button 
-                  onClick={() => setStep('email')}
-                  className="text-xs text-green-600 hover:underline"
-                >
-                  Change
-                </button>
-              </div>
-
-              {/* Payment Methods */}
-              <div>
-                <label className="block text-sm font-medium text-black mb-3">
-                  Select Payment Method
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {paymentMethods.map((method) => (
-                    <button
-                      key={method.id}
-                      onClick={() => setSelectedMethod(method.code)}
-                      className={`p-3 rounded-xl border-2 transition-all text-center ${
-                        selectedMethod === method.code
-                          ? 'border-pink-500 bg-pink-50'
-                          : 'border-black/10 hover:border-black/20'
-                      }`}
-                    >
-                      {method.icon_url ? (
-                        <img 
-                          src={method.icon_url} 
-                          alt={method.name}
-                          className="h-6 w-auto mx-auto mb-1.5 object-contain"
-                        />
-                      ) : (
-                        <CreditCard className="h-6 w-6 mx-auto mb-1.5 text-black/40" />
-                      )}
-                      <p className="text-xs font-medium text-black truncate">{method.name}</p>
-                      {method.currency_code && method.currency_code !== 'USD' && (
-                        <p className="text-[10px] text-black/50">
-                          {formatLocalAmount(product.price, method)}
-                        </p>
-                      )}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               {/* Manual Payment Instructions */}
-              {currentMethod && !currentMethod.is_automatic && (
-                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-amber-800">Manual Payment</p>
-                      <p className="text-sm text-amber-700">
-                        Send {formatLocalAmount(product.price, currentMethod)} to the account below, then enter your transaction ID.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Account Details */}
-                  {currentMethod.account_number && (
-                    <div className="bg-white p-3 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-black/50">Account Number</p>
-                          <p className="font-mono font-semibold">{currentMethod.account_number}</p>
-                          {currentMethod.account_name && (
-                            <p className="text-sm text-black/60">{currentMethod.account_name}</p>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => copyToClipboard(currentMethod.account_number!)}
-                          className="p-2 hover:bg-black/5 rounded-lg transition-colors"
-                        >
-                          <Copy className="w-4 h-4 text-black/40" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* QR Code */}
-                  {currentMethod.qr_image_url && (
-                    <div className="flex justify-center">
-                      <img 
-                        src={currentMethod.qr_image_url} 
-                        alt="Payment QR Code"
-                        className="w-32 h-32 rounded-lg border border-black/10"
-                      />
-                    </div>
-                  )}
-
-                  {/* Instructions */}
-                  {currentMethod.instructions && (
-                    <p className="text-sm text-amber-700">{currentMethod.instructions}</p>
-                  )}
-
-                  {/* Transaction ID Input */}
+              <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 space-y-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <label className="block text-sm font-medium text-amber-800 mb-2">
-                      Transaction ID
-                    </label>
-                    <input
-                      type="text"
-                      value={transactionId}
-                      onChange={(e) => setTransactionId(e.target.value)}
-                      placeholder="Enter your transaction ID"
-                      className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl focus:outline-none focus:border-amber-400"
-                    />
+                    <p className="font-medium text-amber-800">Manual Payment</p>
+                    <p className="text-sm text-amber-700">
+                      Send {formatLocalAmount(product.price, currentMethod)} to the account below, then enter your transaction ID.
+                    </p>
                   </div>
                 </div>
-              )}
 
-              {/* Pay Button */}
-              <button
-                onClick={handlePayment}
-                disabled={loading || (!currentMethod?.is_automatic && !transactionId.trim())}
-                className="w-full py-3.5 bg-pink-500 text-white font-semibold rounded-xl hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : currentMethod?.is_automatic ? (
-                  <>Pay {formatLocalAmount(product.price, currentMethod)}</>
-                ) : (
-                  <>Submit Order</>
+                {/* Account Details */}
+                {currentMethod.account_number && (
+                  <div className="bg-white p-3 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-black/50">Account Number</p>
+                        <p className="font-mono font-semibold">{currentMethod.account_number}</p>
+                        {currentMethod.account_name && (
+                          <p className="text-sm text-black/60">{currentMethod.account_name}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(currentMethod.account_number!)}
+                        className="p-2 hover:bg-black/5 rounded-lg transition-colors"
+                      >
+                        <Copy className="w-4 h-4 text-black/40" />
+                      </button>
+                    </div>
+                  </div>
                 )}
-              </button>
 
-              {/* Automatic payment note */}
-              {currentMethod?.is_automatic && (
-                <p className="text-xs text-center text-black/50 flex items-center justify-center gap-1">
-                  <ExternalLink className="w-3 h-3" />
-                  You'll be redirected to complete payment securely
-                </p>
-              )}
+                {/* QR Code */}
+                {currentMethod.qr_image_url && (
+                  <div className="flex justify-center">
+                    <img 
+                      src={currentMethod.qr_image_url} 
+                      alt="Payment QR Code"
+                      className="w-32 h-32 rounded-lg border border-black/10"
+                    />
+                  </div>
+                )}
+
+                {/* Instructions */}
+                {currentMethod.instructions && (
+                  <p className="text-sm text-amber-700">{currentMethod.instructions}</p>
+                )}
+
+                {/* Transaction ID Input */}
+                <div>
+                  <label className="block text-sm font-medium text-amber-800 mb-2">
+                    Transaction ID
+                  </label>
+                  <input
+                    type="text"
+                    value={transactionId}
+                    onChange={(e) => setTransactionId(e.target.value)}
+                    placeholder="Enter your transaction ID"
+                    className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+              </div>
             </div>
+          )}
+
+          {/* Pay Button */}
+          <button
+            onClick={handlePayment}
+            disabled={loading || (isManualPayment && (!email || !transactionId.trim()))}
+            className="w-full py-3.5 bg-pink-500 text-white font-semibold rounded-xl hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Processing...
+              </>
+            ) : currentMethod?.is_automatic ? (
+              <>Pay {formatLocalAmount(product.price, currentMethod)}</>
+            ) : (
+              <>Submit Order</>
+            )}
+          </button>
+
+          {/* Automatic payment note */}
+          {currentMethod?.is_automatic && (
+            <p className="text-xs text-center text-black/50 flex items-center justify-center gap-1">
+              <Lock className="w-3 h-3" />
+              Secure payment - your account will be created automatically
+            </p>
           )}
 
           {/* Sign In Alternative */}
