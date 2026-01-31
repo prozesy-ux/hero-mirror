@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.seo-google-indexing]
 verify_jwt = false
+
+[functions.sitemap-generate]
+verify_jwt = false
