@@ -130,7 +130,7 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-4 p-6 bg-gradient-to-r from-orange-50/50 to-white rounded-2xl border border-black/5", className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-orange-500/10">
