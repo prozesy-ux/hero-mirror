@@ -1,199 +1,225 @@
 
 
-# Marketplace Search & Logo Enhancement Plan
+# Marketplace Redesign: Clean Modern Layout
 
 ## Overview
 
-This plan addresses 5 improvements across the marketplace and store search experience:
+This plan addresses multiple UI/UX improvements to create a cleaner, more modern marketplace design that aligns with top marketplaces (Amazon, Etsy, Fiverr style):
 
-1. **New Logo**: Replace the current logo with the uploaded transparent-background version
-2. **Logo Sizing**: Increase logo size for better visibility
-3. **Search Bar Full Width**: Expand search bar to take more horizontal space
-4. **Voice Search Fix**: Address microphone not working
-5. **Search Box Design**: Unified, premium search design across all locations
+1. **Remove** "Browse by Category" section from marketplace
+2. **Remove** tab sections (browser, purchases, statistics)
+3. **Redesign** Trending/Top/Categories/Price/Reviews sections with bordered cards
+4. **Modernize** Hot & Top sections with space-efficient design
+5. **Add borders** to product cards
+6. **Unify** product full view design (marketplace, dashboard, store) to match store mini view design
 
-## Files to Modify
+## Current State Analysis
 
-| File | Changes |
-|------|---------|
-| `src/assets/uptoza-logo-new.png` | Copy uploaded logo to project |
-| `src/components/marketplace/GumroadHeader.tsx` | New logo, bigger size, full-width search, improved design |
-| `src/pages/Store.tsx` | Improved search bar design matching marketplace |
-| `src/components/dashboard/AIAccountsSection.tsx` | Improved search bar design |
-| `src/components/marketplace/VoiceSearchButton.tsx` | Better visibility and click area |
+| Component | Current Issue |
+|-----------|--------------|
+| Marketplace.tsx | Has cluttered sections, category pills, tabs for sorting |
+| GumroadProductCard | No visible border - too minimal |
+| HotProductsSection/TopRatedSection | Takes too much vertical space, old card design |
+| MarketplaceProductFullView | Different styling from store view |
+| ProductFullViewPage (Dashboard) | Different styling from store view |
+| ProductDetailModal (Store) | Has the "clean" mini view design we want to replicate |
 
 ## Visual Design Target
 
 ```text
-BEFORE (Current Header):
-┌─────────────────────────────────────────────────────────────────────────┐
-│ [Small Logo]  [──────── Search (max-w-2xl) ────────]  [EN] [$] [Login] │
-└─────────────────────────────────────────────────────────────────────────┘
-
-AFTER (New Header):
-┌─────────────────────────────────────────────────────────────────────────┐
-│ [BIGGER LOGO]   [─────────────── Full Width Search ───────────────────] │
-│    h-12          Voice/Image icons more prominent, better styling       │
-│                 [EN] [$] [Login] [Sell] (compact right section)         │
-└─────────────────────────────────────────────────────────────────────────┘
+MARKETPLACE LAYOUT (Clean & Modern)
++------------------------------------------------------------------+
+| [LOGO]         [------------------ SEARCH ------------------]    |
++------------------------------------------------------------------+
+| All | AI Tools | Design | Marketing | Education | ... (pills)    |
++------------------------------------------------------------------+
+|                                                                   |
+| +-----------------------------+  +-----------------------------+  |
+| |     FEATURED CAROUSEL       |  |     FEATURED CAROUSEL       |  |
+| |       (keep as-is)          |  |       (keep as-is)          |  |
+| +-----------------------------+  +-----------------------------+  |
+|                                                                   |
+| +--[BORDERED SECTION]------------------------------------------+ |
+| | Trending | Hot & New | Top Rated | Price: Low-High | Reviews | |
+| +--------------------------------------------------------------+ |
+|                                                                   |
+| +--[BORDERED PRODUCT CARDS - Grid]-----------------------------+ |
+| | +--------+  +--------+  +--------+  +--------+  +--------+   | |
+| | | Image  |  | Image  |  | Image  |  | Image  |  | Image  |   | |
+| | | Border |  | Border |  | Border |  | Border |  | Border |   | |
+| | | $XX    |  | $XX    |  | $XX    |  | $XX    |  | $XX    |   | |
+| | +--------+  +--------+  +--------+  +--------+  +--------+   | |
+| +--------------------------------------------------------------+ |
++------------------------------------------------------------------+
 ```
 
-## Implementation Details
+## Implementation Plan
 
-### 1. Copy New Logo to Project
+### Phase 1: Marketplace.tsx - Remove Sections & Add Bordered Container
 
-Copy the uploaded transparent logo to `src/assets/uptoza-logo-new.png` and use ES6 import for proper bundling.
+**File**: `src/pages/Marketplace.tsx`
 
-### 2. GumroadHeader.tsx - Major Updates
+**Changes**:
+1. Remove `CategoryBrowser` component usage (if present)
+2. Keep category pills at top (simple navigation)
+3. Remove separate tab sections for "browser, purchases, statistics"
+4. Wrap sorting options in a bordered container
+5. Add bordered section styling for product grid
 
-**Logo Changes:**
+**Before** (lines 502-528):
 ```tsx
-// Import the new transparent logo
-import uptozaLogo from '@/assets/uptoza-logo-new.png';
-
-// Increase size from h-10 to h-12
-<img 
-  src={uptozaLogo} 
-  alt="Uptoza" 
-  className="h-12 w-auto"
-/>
+{/* Section Header with Sort Tabs */}
+<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5 mt-6">
+  <h2 className="text-lg font-bold text-black">...
 ```
 
-**Search Bar Full Width:**
+**After**:
 ```tsx
-// Change from max-w-2xl to max-w-4xl for more width
-<form className="hidden md:flex flex-1 max-w-4xl items-stretch relative">
+{/* Section Header with Sort Tabs - Bordered Container */}
+<div className="border border-black/10 rounded-xl p-4 mb-6 mt-6 bg-white">
+  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <h2 className="text-lg font-bold text-black">...
 ```
 
-**Improved Search Container Styling:**
+### Phase 2: GumroadProductCard.tsx - Add Border Design
+
+**File**: `src/components/marketplace/GumroadProductCard.tsx`
+
+**Changes**:
+1. Add visible border to card container
+2. Match store card styling (emerald hover border)
+3. Add subtle shadow for depth
+
+**Before** (line 27-29):
 ```tsx
-<div className="flex-1 flex items-stretch bg-white rounded-xl border-2 border-black/15 overflow-hidden focus-within:border-black/40 focus-within:ring-2 focus-within:ring-black/10 focus-within:shadow-lg transition-all">
-  ...
-</div>
-```
-
-**Voice Search Button - More Visible:**
-```tsx
-<div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-  <VoiceSearchButton
-    isListening={isListening}
-    isSupported={voiceSupported}
-    error={null}
-    onStart={startListening}
-    onStop={stopListening}
-    className="h-8 w-8 opacity-70 hover:opacity-100"  // Larger, more visible
-  />
-  <ImageSearchButton
-    onSearchResult={(result) => onSearchChange(result)}
-    className="h-8 w-8 opacity-70 hover:opacity-100"
-  />
-</div>
-```
-
-### 3. Voice Search Fix
-
-The voice search hook is correctly implemented. The issue is likely:
-1. Browser permissions not granted
-2. Not on HTTPS (required for microphone)
-3. Button too small/invisible
-
-**VoiceSearchButton.tsx Updates:**
-- Increase default size from tiny icon to visible button
-- Add clear visual feedback when listening
-- Show error state more prominently
-- Make button more accessible with larger click area
-
-```tsx
-// Make button larger and more visible
-<Button
-  type="button"
-  variant={isListening ? 'default' : 'ghost'}
-  size={size}
-  onClick={isListening ? onStop : onStart}
-  className={cn(
-    'transition-all duration-200 min-w-[32px] min-h-[32px]',
-    isListening && 'bg-red-500 hover:bg-red-600 text-white animate-pulse',
-    !isListening && 'text-black/50 hover:text-black hover:bg-black/5',
-    error && 'text-red-500',
-    className
-  )}
+<button
+  onClick={onClick}
+  className="group w-full text-left bg-white rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md"
 >
 ```
 
-### 4. Store.tsx - Search Bar Enhancement
-
-Match the marketplace design:
+**After**:
 ```tsx
-// Update search container styling
-<div className="flex items-stretch bg-white border-2 border-slate-200 rounded-xl overflow-hidden shadow-sm focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-100 focus-within:shadow-md transition-all">
-  ...
-</div>
-
-// Make voice button more visible
-<VoiceSearchButton
-  isListening={isListening}
-  isSupported={voiceSupported}
-  error={voiceError}
-  onStart={startListening}
-  onStop={stopListening}
-  className="h-9 w-9 text-slate-500 hover:text-slate-700"
-/>
+<button
+  onClick={onClick}
+  className="group w-full text-left bg-white rounded-xl overflow-hidden border border-black/10 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5"
+>
 ```
 
-### 5. AIAccountsSection.tsx - Dashboard Marketplace Search
+### Phase 3: Hot/Top/New Sections - Space-Efficient Modern Design
 
-Same improvements:
+**File**: `src/components/marketplace/HotProductsSection.tsx`
+**File**: `src/components/marketplace/TopRatedSection.tsx`  
+**File**: `src/components/marketplace/NewArrivalsSection.tsx`
+
+**Changes**:
+1. Remove separate section headers (will be inline with grid)
+2. Add bordered container around each section
+3. Reduce padding/margins for compact layout
+4. Cards get border styling matching GumroadProductCard
+
+**New compact card design within horizontal scroll**:
 ```tsx
-// Improved search container
-<div className="flex-1 flex items-stretch bg-white rounded-xl border-2 border-gray-200 overflow-hidden focus-within:border-gray-400 focus-within:ring-2 focus-within:ring-gray-100 focus-within:shadow-md transition-all">
-  ...
+<div className="border border-black/10 rounded-xl p-4 bg-white">
+  <div className="flex items-center justify-between mb-3">
+    <div className="flex items-center gap-2">
+      <Icon className="h-4 w-4 text-black/70" />
+      <h3 className="text-sm font-semibold text-black">Section Name</h3>
+    </div>
+    <Button variant="ghost" size="sm">View All</Button>
+  </div>
+  {/* Horizontal scroll of compact cards */}
 </div>
-
-// Larger, more visible voice/image buttons
-<VoiceSearchButton
-  isListening={isListening}
-  isSupported={voiceSupported}
-  error={voiceError}
-  onStart={startListening}
-  onStop={stopListening}
-  className="h-9 w-9"
-/>
 ```
 
-## Unified Search Design Specs
+### Phase 4: Product Full View - Match Store Mini View Design
 
-| Element | Style |
-|---------|-------|
-| Container | `rounded-xl border-2 border-black/15` |
-| Focus State | `focus-within:border-black/40 focus-within:shadow-lg` |
-| Input Padding | `pl-12 pr-28 py-3.5` (room for icons) |
-| Voice Button | `h-9 w-9 min-w-[36px]` (larger click area) |
-| Image Button | `h-9 w-9 min-w-[36px]` |
-| Search Icon | `absolute left-4 w-5 h-5` |
-| Submit Button | `bg-black text-white px-6 font-semibold` |
+The store's `ProductDetailModal` has a clean, minimal design that should be replicated:
 
-## Voice Search Troubleshooting
+**File**: `src/components/marketplace/MarketplaceProductFullView.tsx`
 
-The current implementation is correct, but users may experience issues because:
+**Changes**:
+1. Simplify layout to match store modal aesthetic
+2. Keep 70/30 split but with cleaner styling
+3. Remove heavy borders, use subtle shadows
+4. Match button styling (emerald/black hybrid)
 
-1. **HTTPS Required**: Voice API only works over secure connections (your preview URLs are HTTPS, so this should be fine)
-2. **Browser Permissions**: User must grant microphone access when prompted
-3. **Browser Support**: Works in Chrome, Edge, Safari - may not work in Firefox
+**Key styling from Store modal to adopt**:
+```tsx
+// Clean card styling
+className="bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm"
 
-The fix focuses on making the button:
-- More visible (larger size)
-- Better feedback when active (red pulsing)
-- Clear error state display
+// Price badge - simple black
+className="px-3 py-1 bg-black text-white text-lg font-bold rounded"
 
-## Summary
+// Action buttons - matching store
+className="w-full h-11 bg-black hover:bg-black/90 text-white font-semibold rounded-lg"
+```
 
-| Change | Description |
-|--------|-------------|
-| New Logo | Transparent background, ES6 import |
-| Logo Size | `h-10` → `h-12` |
-| Search Width | `max-w-2xl` → `max-w-4xl` |
-| Search Style | `rounded-xl`, thicker border, shadow on focus |
-| Voice Button | Larger (h-9 w-9), better visibility, clear states |
-| Image Button | Same size increase |
-| Consistency | Same design across GumroadHeader, Store, AIAccountsSection |
+**File**: `src/components/dashboard/ProductFullViewPage.tsx`
+
+**Same changes as MarketplaceProductFullView** - ensure consistency with:
+- Same border styling: `border border-black/10`
+- Same card containers: `rounded-2xl shadow-sm`
+- Same button design
+- Removed heavy `border-black/20` replaced with lighter `border-black/10`
+
+### Phase 5: Sidebar Filter - Add Bordered Design
+
+**File**: `src/components/marketplace/GumroadFilterSidebar.tsx`
+
+**Changes**:
+1. Wrap entire sidebar in bordered container
+2. Section headers with subtle separators
+3. Cleaner filter controls
+
+```tsx
+<aside className="w-56 flex-shrink-0 border border-black/10 rounded-xl p-4 bg-white h-fit sticky top-4">
+```
+
+## Styling Specifications
+
+| Element | Current | New Style |
+|---------|---------|-----------|
+| Product Card | No border | `border border-black/10 rounded-xl shadow-sm` |
+| Section Container | Plain | `border border-black/10 rounded-xl p-4 bg-white` |
+| Sort Tabs Container | Inline | Bordered container with pills inside |
+| Full View Cards | `border-black/20` | `border-black/10` (lighter) |
+| Hover States | `hover:shadow-md` | `hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5` |
+
+## Files to Modify
+
+| File | Primary Changes |
+|------|----------------|
+| `src/pages/Marketplace.tsx` | Remove category browser, add bordered sections |
+| `src/components/marketplace/GumroadProductCard.tsx` | Add border, improve hover |
+| `src/components/marketplace/HotProductsSection.tsx` | Bordered container, compact layout |
+| `src/components/marketplace/TopRatedSection.tsx` | Bordered container, compact layout |
+| `src/components/marketplace/NewArrivalsSection.tsx` | Bordered container, compact layout |
+| `src/components/marketplace/MarketplaceProductFullView.tsx` | Match store modal design |
+| `src/components/dashboard/ProductFullViewPage.tsx` | Match store modal design |
+| `src/components/marketplace/GumroadFilterSidebar.tsx` | Bordered container |
+
+## Technical Summary
+
+1. **Remove CategoryBrowser** - Not currently used in Marketplace.tsx (it's imported but the file shows no usage in the visible code, confirm and clean up)
+
+2. **Remove Tab Sections** - The "Trending | Best Sellers | Hot & New" tabs at lines 508-527 will be redesigned into a bordered filter container
+
+3. **Bordered Design System**:
+   - All cards: `border border-black/10 rounded-xl`
+   - All sections: `border border-black/10 rounded-xl p-4 bg-white`
+   - Hover: `hover:border-black/20 hover:shadow-lg`
+
+4. **Full View Consistency**:
+   - MarketplaceProductFullView matches ProductDetailModal (store)
+   - ProductFullViewPage (dashboard) matches the same design
+   - Lighter borders, subtle shadows, clean buttons
+
+## Mobile Considerations
+
+- Bordered sections stack vertically
+- Cards retain rounded corners and borders
+- Touch-friendly spacing maintained (min 44px tap targets)
+- Horizontal scroll sections remain functional
 
