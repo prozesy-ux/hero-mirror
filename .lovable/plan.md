@@ -1,225 +1,305 @@
 
 
-# Marketplace Redesign: Clean Modern Layout
+# Hover-Based Mini View Implementation
 
 ## Overview
 
-This plan addresses multiple UI/UX improvements to create a cleaner, more modern marketplace design that aligns with top marketplaces (Amazon, Etsy, Fiverr style):
+Transform product cards across all views (Marketplace, Dashboard Marketplace, and Store) to show a mini preview on hover instead of requiring a "View" button click. The hover preview will use the same clean design as the Store's `ProductDetailModal`.
 
-1. **Remove** "Browse by Category" section from marketplace
-2. **Remove** tab sections (browser, purchases, statistics)
-3. **Redesign** Trending/Top/Categories/Price/Reviews sections with bordered cards
-4. **Modernize** Hot & Top sections with space-efficient design
-5. **Add borders** to product cards
-6. **Unify** product full view design (marketplace, dashboard, store) to match store mini view design
+## Current Behavior vs Target Behavior
 
-## Current State Analysis
-
-| Component | Current Issue |
-|-----------|--------------|
-| Marketplace.tsx | Has cluttered sections, category pills, tabs for sorting |
-| GumroadProductCard | No visible border - too minimal |
-| HotProductsSection/TopRatedSection | Takes too much vertical space, old card design |
-| MarketplaceProductFullView | Different styling from store view |
-| ProductFullViewPage (Dashboard) | Different styling from store view |
-| ProductDetailModal (Store) | Has the "clean" mini view design we want to replicate |
+| Current | Target |
+|---------|--------|
+| User clicks product card | Hover shows mini preview |
+| "View" button opens modal | No "View" button needed |
+| Different quick view designs | Same design across all 3 views |
+| Click to see details | Hover to see details, click to buy/view full |
 
 ## Visual Design Target
 
 ```text
-MARKETPLACE LAYOUT (Clean & Modern)
-+------------------------------------------------------------------+
-| [LOGO]         [------------------ SEARCH ------------------]    |
-+------------------------------------------------------------------+
-| All | AI Tools | Design | Marketing | Education | ... (pills)    |
-+------------------------------------------------------------------+
-|                                                                   |
-| +-----------------------------+  +-----------------------------+  |
-| |     FEATURED CAROUSEL       |  |     FEATURED CAROUSEL       |  |
-| |       (keep as-is)          |  |       (keep as-is)          |  |
-| +-----------------------------+  +-----------------------------+  |
-|                                                                   |
-| +--[BORDERED SECTION]------------------------------------------+ |
-| | Trending | Hot & New | Top Rated | Price: Low-High | Reviews | |
-| +--------------------------------------------------------------+ |
-|                                                                   |
-| +--[BORDERED PRODUCT CARDS - Grid]-----------------------------+ |
-| | +--------+  +--------+  +--------+  +--------+  +--------+   | |
-| | | Image  |  | Image  |  | Image  |  | Image  |  | Image  |   | |
-| | | Border |  | Border |  | Border |  | Border |  | Border |   | |
-| | | $XX    |  | $XX    |  | $XX    |  | $XX    |  | $XX    |   | |
-| | +--------+  +--------+  +--------+  +--------+  +--------+   | |
-| +--------------------------------------------------------------+ |
-+------------------------------------------------------------------+
+PRODUCT CARD HOVER BEHAVIOR
+                                          
++------------+     HOVER     +----------------------------------------+
+|   Image    |  --------->   |  MINI PREVIEW POPOVER                  |
+|   $XX      |               |  ┌────────────────┬──────────────────┐ |
++------------+               |  │     IMAGE      │   SELLER INFO    │ |
+                             |  │   (square)     │   Name + Badge   │ |
+                             |  │                │                  │ |
+                             |  │                │   PRODUCT TITLE  │ |
+                             |  │                │   $Price         │ |
+                             |  │                │   Rating + Sold  │ |
+                             |  │                │                  │ |
+                             |  │                │   [Buy Now] btn  │ |
+                             |  │                │   [Chat] btn     │ |
+                             |  └────────────────┴──────────────────┘ |
+                             |                                        |
+                             +----------------------------------------+
 ```
 
 ## Implementation Plan
 
-### Phase 1: Marketplace.tsx - Remove Sections & Add Bordered Container
+### Phase 1: Create ProductHoverPreview Component
 
-**File**: `src/pages/Marketplace.tsx`
+**New File**: `src/components/marketplace/ProductHoverPreview.tsx`
 
-**Changes**:
-1. Remove `CategoryBrowser` component usage (if present)
-2. Keep category pills at top (simple navigation)
-3. Remove separate tab sections for "browser, purchases, statistics"
-4. Wrap sorting options in a bordered container
-5. Add bordered section styling for product grid
+A reusable hover preview component matching the Store's modal design:
 
-**Before** (lines 502-528):
 ```tsx
-{/* Section Header with Sort Tabs */}
-<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5 mt-6">
-  <h2 className="text-lg font-bold text-black">...
+interface ProductHoverPreviewProps {
+  product: {
+    id: string;
+    name: string;
+    description?: string | null;
+    price: number;
+    iconUrl: string | null;
+    sellerName: string | null;
+    sellerAvatar?: string | null;
+    storeSlug: string | null;
+    isVerified: boolean;
+    soldCount?: number;
+    tags?: string[] | null;
+  };
+  onBuy: () => void;
+  onChat: () => void;
+  onViewFull: () => void;
+  isAuthenticated: boolean;
+}
 ```
 
-**After**:
-```tsx
-{/* Section Header with Sort Tabs - Bordered Container */}
-<div className="border border-black/10 rounded-xl p-4 mb-6 mt-6 bg-white">
-  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-    <h2 className="text-lg font-bold text-black">...
-```
+**Design matching Store modal**:
+- 50/50 horizontal split (image left, content right)
+- Black price badge
+- Black "Buy Now" button
+- Outlined "Chat" button
+- Seller avatar with verified badge
+- Rating stars + sold count
+- Subtle animations on open
 
-### Phase 2: GumroadProductCard.tsx - Add Border Design
+### Phase 2: Update GumroadProductCard.tsx
 
 **File**: `src/components/marketplace/GumroadProductCard.tsx`
 
 **Changes**:
-1. Add visible border to card container
-2. Match store card styling (emerald hover border)
-3. Add subtle shadow for depth
+1. Wrap card in `HoverCard` component from Radix UI
+2. Card becomes the trigger
+3. Hover shows the `ProductHoverPreview` popover
+4. Click still opens quick view modal (for mobile fallback)
 
-**Before** (line 27-29):
 ```tsx
-<button
-  onClick={onClick}
-  className="group w-full text-left bg-white rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md"
->
+import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
+import ProductHoverPreview from './ProductHoverPreview';
+
+// New props needed
+interface GumroadProductCardProps {
+  // ... existing props
+  onBuy?: () => void;
+  onChat?: () => void;
+  onViewFull?: () => void;
+  isAuthenticated?: boolean;
+  // Product details for hover preview
+  description?: string | null;
+  sellerAvatar?: string | null;
+  soldCount?: number;
+  tags?: string[] | null;
+}
+
+const GumroadProductCard = ({ ... }) => {
+  return (
+    <HoverCard openDelay={200} closeDelay={100}>
+      <HoverCardTrigger asChild>
+        <button className="group w-full text-left ...">
+          {/* Existing card content */}
+        </button>
+      </HoverCardTrigger>
+      <HoverCardContent 
+        side="right" 
+        align="start" 
+        className="w-[400px] p-0 border-black/10 shadow-xl"
+      >
+        <ProductHoverPreview 
+          product={...}
+          onBuy={onBuy}
+          onChat={onChat}
+          onViewFull={onViewFull}
+          isAuthenticated={isAuthenticated}
+        />
+      </HoverCardContent>
+    </HoverCard>
+  );
+};
 ```
 
-**After**:
-```tsx
-<button
-  onClick={onClick}
-  className="group w-full text-left bg-white rounded-xl overflow-hidden border border-black/10 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5"
->
-```
+### Phase 3: Update Marketplace.tsx
 
-### Phase 3: Hot/Top/New Sections - Space-Efficient Modern Design
-
-**File**: `src/components/marketplace/HotProductsSection.tsx`
-**File**: `src/components/marketplace/TopRatedSection.tsx`  
-**File**: `src/components/marketplace/NewArrivalsSection.tsx`
+**File**: `src/pages/Marketplace.tsx`
 
 **Changes**:
-1. Remove separate section headers (will be inline with grid)
-2. Add bordered container around each section
-3. Reduce padding/margins for compact layout
-4. Cards get border styling matching GumroadProductCard
+1. Pass additional props to `GumroadProductCard` (description, seller avatar, etc.)
+2. Pass action handlers (onBuy, onChat, onViewFull)
+3. Remove dependence on QuickViewModal for hover interactions (keep for mobile)
 
-**New compact card design within horizontal scroll**:
 ```tsx
-<div className="border border-black/10 rounded-xl p-4 bg-white">
-  <div className="flex items-center justify-between mb-3">
-    <div className="flex items-center gap-2">
-      <Icon className="h-4 w-4 text-black/70" />
-      <h3 className="text-sm font-semibold text-black">Section Name</h3>
-    </div>
-    <Button variant="ghost" size="sm">View All</Button>
-  </div>
-  {/* Horizontal scroll of compact cards */}
-</div>
+<GumroadProductCard
+  key={product.id}
+  id={product.id}
+  name={product.name}
+  price={product.price}
+  iconUrl={product.iconUrl}
+  sellerName={product.sellerName}
+  sellerAvatar={product.sellerAvatar}
+  storeSlug={product.storeSlug}
+  isVerified={product.isVerified}
+  soldCount={product.soldCount}
+  description={product.description}
+  tags={product.tags}
+  type={product.type}
+  onClick={() => handleProductClick(product)}
+  onBuy={() => handleBuy(product)}
+  onChat={() => handleChat(product)}
+  onViewFull={() => handleViewFull(product)}
+  isAuthenticated={!!user}
+/>
 ```
 
-### Phase 4: Product Full View - Match Store Mini View Design
+### Phase 4: Update StoreProductCard.tsx
 
-The store's `ProductDetailModal` has a clean, minimal design that should be replicated:
-
-**File**: `src/components/marketplace/MarketplaceProductFullView.tsx`
+**File**: `src/components/store/StoreProductCard.tsx`
 
 **Changes**:
-1. Simplify layout to match store modal aesthetic
-2. Keep 70/30 split but with cleaner styling
-3. Remove heavy borders, use subtle shadows
-4. Match button styling (emerald/black hybrid)
+1. Wrap card in `HoverCard` component
+2. Show same `ProductHoverPreview` on hover
+3. Maintain existing button actions for mobile/click
 
-**Key styling from Store modal to adopt**:
 ```tsx
-// Clean card styling
-className="bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm"
+import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
+import ProductHoverPreview from '@/components/marketplace/ProductHoverPreview';
 
-// Price badge - simple black
-className="px-3 py-1 bg-black text-white text-lg font-bold rounded"
+// Add seller info props
+interface StoreProductCardProps {
+  // ... existing
+  sellerAvatar?: string | null;
+  storeSlug?: string | null;
+  isVerified?: boolean;
+  onViewFull?: () => void;
+  isAuthenticated?: boolean;
+}
 
-// Action buttons - matching store
-className="w-full h-11 bg-black hover:bg-black/90 text-white font-semibold rounded-lg"
+const StoreProductCard = ({ ... }) => {
+  return (
+    <HoverCard openDelay={200} closeDelay={100}>
+      <HoverCardTrigger asChild>
+        <div className="group bg-white rounded-2xl ...">
+          {/* Existing card content */}
+        </div>
+      </HoverCardTrigger>
+      <HoverCardContent 
+        side="right" 
+        align="start" 
+        className="w-[400px] p-0 border-black/10 shadow-xl"
+      >
+        <ProductHoverPreview ... />
+      </HoverCardContent>
+    </HoverCard>
+  );
+};
 ```
 
-**File**: `src/components/dashboard/ProductFullViewPage.tsx`
+### Phase 5: Update Store.tsx
 
-**Same changes as MarketplaceProductFullView** - ensure consistency with:
-- Same border styling: `border border-black/10`
-- Same card containers: `rounded-2xl shadow-sm`
-- Same button design
-- Removed heavy `border-black/20` replaced with lighter `border-black/10`
-
-### Phase 5: Sidebar Filter - Add Bordered Design
-
-**File**: `src/components/marketplace/GumroadFilterSidebar.tsx`
+**File**: `src/pages/Store.tsx`
 
 **Changes**:
-1. Wrap entire sidebar in bordered container
-2. Section headers with subtle separators
-3. Cleaner filter controls
+1. Pass seller profile info to `StoreProductCard`
+2. Pass action handlers for hover preview
+3. Keep `ProductDetailModal` for when user clicks "View Full" from hover
 
-```tsx
-<aside className="w-56 flex-shrink-0 border border-black/10 rounded-xl p-4 bg-white h-fit sticky top-4">
+### Phase 6: Update AIAccountsSection.tsx (Dashboard Marketplace)
+
+**File**: `src/components/dashboard/AIAccountsSection.tsx`
+
+**Changes**:
+1. Use same `GumroadProductCard` with hover preview
+2. Pass all required props for hover functionality
+3. Navigate to full view page on "View Full" click
+
+## ProductHoverPreview Design Specs
+
+| Element | Style |
+|---------|-------|
+| Container | `w-[400px] bg-white rounded-xl overflow-hidden border border-black/10 shadow-xl` |
+| Layout | Horizontal 50/50 split on desktop |
+| Image | `aspect-square object-contain bg-gray-50` |
+| Price Badge | `bg-black text-white px-3 py-1.5 rounded text-lg font-bold` |
+| Buy Button | `bg-black hover:bg-black/90 text-white w-full h-10` |
+| Chat Button | `border-2 border-black text-black hover:bg-black hover:text-white w-full h-9` |
+| Seller Info | Avatar + name + verified badge in row |
+| Title | `text-lg font-bold text-black line-clamp-2` |
+| Description | `text-sm text-black/60 line-clamp-2` |
+| Stats | `text-xs text-black/50` - sold count, rating |
+
+## Unified Flow Across All Views
+
+```text
+1. MARKETPLACE (/marketplace)
+   - GumroadProductCard with HoverCard
+   - Hover -> ProductHoverPreview
+   - Click "View Full" -> Navigate to /marketplace/product/:id
+
+2. DASHBOARD MARKETPLACE (/dashboard/marketplace)  
+   - Same GumroadProductCard with HoverCard
+   - Hover -> ProductHoverPreview
+   - Click "View Full" -> Navigate to /dashboard/marketplace/product/:id
+
+3. STORE (/store/:slug)
+   - StoreProductCard with HoverCard
+   - Hover -> ProductHoverPreview (same design)
+   - Click "View Full" -> Open ProductDetailModal or navigate to full view
 ```
 
-## Styling Specifications
+## Mobile Handling
 
-| Element | Current | New Style |
-|---------|---------|-----------|
-| Product Card | No border | `border border-black/10 rounded-xl shadow-sm` |
-| Section Container | Plain | `border border-black/10 rounded-xl p-4 bg-white` |
-| Sort Tabs Container | Inline | Bordered container with pills inside |
-| Full View Cards | `border-black/20` | `border-black/10` (lighter) |
-| Hover States | `hover:shadow-md` | `hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5` |
+On mobile devices (touch screens):
+- HoverCard doesn't work well with touch
+- Keep click-to-open modal behavior
+- Detect mobile and skip HoverCard wrapper
+- Use existing quick view modal pattern
+
+```tsx
+const isMobile = useIsMobile();
+
+if (isMobile) {
+  return <button onClick={onClick}>...</button>;
+}
+
+return (
+  <HoverCard>
+    <HoverCardTrigger asChild>
+      <button>...</button>
+    </HoverCardTrigger>
+    <HoverCardContent>
+      <ProductHoverPreview />
+    </HoverCardContent>
+  </HoverCard>
+);
+```
 
 ## Files to Modify
 
-| File | Primary Changes |
-|------|----------------|
-| `src/pages/Marketplace.tsx` | Remove category browser, add bordered sections |
-| `src/components/marketplace/GumroadProductCard.tsx` | Add border, improve hover |
-| `src/components/marketplace/HotProductsSection.tsx` | Bordered container, compact layout |
-| `src/components/marketplace/TopRatedSection.tsx` | Bordered container, compact layout |
-| `src/components/marketplace/NewArrivalsSection.tsx` | Bordered container, compact layout |
-| `src/components/marketplace/MarketplaceProductFullView.tsx` | Match store modal design |
-| `src/components/dashboard/ProductFullViewPage.tsx` | Match store modal design |
-| `src/components/marketplace/GumroadFilterSidebar.tsx` | Bordered container |
+| File | Changes |
+|------|---------|
+| `src/components/marketplace/ProductHoverPreview.tsx` | NEW - Reusable hover preview component |
+| `src/components/marketplace/GumroadProductCard.tsx` | Add HoverCard wrapper, new props |
+| `src/pages/Marketplace.tsx` | Pass additional props to cards |
+| `src/components/store/StoreProductCard.tsx` | Add HoverCard wrapper |
+| `src/pages/Store.tsx` | Pass seller info to cards |
+| `src/components/dashboard/AIAccountsSection.tsx` | Use updated GumroadProductCard |
 
-## Technical Summary
+## Summary
 
-1. **Remove CategoryBrowser** - Not currently used in Marketplace.tsx (it's imported but the file shows no usage in the visible code, confirm and clean up)
-
-2. **Remove Tab Sections** - The "Trending | Best Sellers | Hot & New" tabs at lines 508-527 will be redesigned into a bordered filter container
-
-3. **Bordered Design System**:
-   - All cards: `border border-black/10 rounded-xl`
-   - All sections: `border border-black/10 rounded-xl p-4 bg-white`
-   - Hover: `hover:border-black/20 hover:shadow-lg`
-
-4. **Full View Consistency**:
-   - MarketplaceProductFullView matches ProductDetailModal (store)
-   - ProductFullViewPage (dashboard) matches the same design
-   - Lighter borders, subtle shadows, clean buttons
-
-## Mobile Considerations
-
-- Bordered sections stack vertically
-- Cards retain rounded corners and borders
-- Touch-friendly spacing maintained (min 44px tap targets)
-- Horizontal scroll sections remain functional
+1. **New Component**: `ProductHoverPreview` - unified hover preview design
+2. **HoverCard Integration**: Wrap product cards with Radix HoverCard
+3. **Same Design**: All 3 views use identical hover preview
+4. **Mobile Fallback**: Keep click-to-modal behavior on touch devices
+5. **Design Match**: Preview matches Store's ProductDetailModal style
 
