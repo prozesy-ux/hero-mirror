@@ -37,9 +37,9 @@ export function VoiceSearchButton({
               variant="ghost"
               size={size}
               disabled
-              className={cn('text-muted-foreground/50', className)}
+              className={cn('text-muted-foreground/50 min-w-[36px] min-h-[36px]', className)}
             >
-              <MicOff className="h-4 w-4" />
+              <MicOff className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -60,24 +60,25 @@ export function VoiceSearchButton({
             size={size}
             onClick={isListening ? onStop : onStart}
             className={cn(
-              'transition-all duration-200',
-              isListening && 'bg-destructive hover:bg-destructive/90 text-destructive-foreground animate-pulse',
-              error && 'text-destructive',
+              'transition-all duration-200 min-w-[36px] min-h-[36px]',
+              isListening && 'bg-red-500 hover:bg-red-600 text-white animate-pulse',
+              !isListening && 'text-black/50 hover:text-black hover:bg-black/5',
+              error && 'text-red-500',
               className
             )}
           >
             {isListening ? (
               <div className="relative">
-                <Mic className="h-4 w-4" />
-                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-white animate-ping" />
+                <Mic className="h-5 w-5" />
+                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-white animate-ping" />
               </div>
             ) : (
-              <Mic className="h-4 w-4" />
+              <Mic className="h-5 w-5" />
             )}
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{isListening ? 'Click to stop' : error || 'Voice search'}</p>
+          <p>{isListening ? 'Click to stop listening' : error || 'Voice search (click to speak)'}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -1179,12 +1179,12 @@ const AIAccountsSection = () => {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0 w-full overflow-hidden">
-            {/* Desktop Search Bar - Amazon Style */}
+            {/* Desktop Search Bar - Premium Design */}
             <div className="hidden lg:block mb-6">
               {/* Search Container */}
-              <div className="flex items-stretch bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+              <div className="flex items-stretch bg-white rounded-xl border-2 border-black/15 overflow-hidden focus-within:border-black/40 focus-within:ring-2 focus-within:ring-black/10 focus-within:shadow-lg transition-all">
                 {/* Category Dropdown - Left */}
-                <div className="border-r border-gray-200">
+                <div className="border-r border-black/15">
                   <SearchScopeSelector
                     value={searchScope}
                     onChange={setSearchScope}
@@ -1193,7 +1193,7 @@ const AIAccountsSection = () => {
                 
                 {/* Search Input - Center */}
                 <div className="relative flex-1">
-                  <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                  <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40 z-10" />
                   <input 
                     ref={searchInputRef}
                     type="text" 
@@ -1207,7 +1207,7 @@ const AIAccountsSection = () => {
                       }
                     }}
                     placeholder={isListening ? 'Listening...' : 'Search products, sellers, or "under $20"...'}
-                    className="w-full h-full pl-12 pr-28 py-3.5 bg-white border-0 text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0" 
+                    className="w-full h-full pl-12 pr-28 py-3.5 bg-white border-0 text-base text-black placeholder-black/40 focus:outline-none focus:ring-0" 
                   />
                   
                   {/* Action buttons inside input */}
@@ -1217,6 +1217,7 @@ const AIAccountsSection = () => {
                         setSearchQuery(text);
                         openSuggestions();
                       }}
+                      className="h-9 w-9"
                     />
                     <VoiceSearchButton
                       isListening={isListening}
@@ -1224,6 +1225,7 @@ const AIAccountsSection = () => {
                       error={voiceError}
                       onStart={startListening}
                       onStop={stopListening}
+                      className="h-9 w-9"
                     />
                     {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
                       <button 
@@ -1233,9 +1235,9 @@ const AIAccountsSection = () => {
                           setCategoryFilter('all');
                           closeSuggestions();
                         }} 
-                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-black/5 rounded-lg transition-colors"
                       >
-                        <X size={18} className="text-gray-500" />
+                        <X size={18} className="text-black/40" />
                       </button>
                     )}
                   </div>
@@ -1264,7 +1266,7 @@ const AIAccountsSection = () => {
                       closeSuggestions();
                     }
                   }}
-                  className="px-6 py-3.5 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
+                  className="px-6 py-3.5 bg-black text-white font-semibold hover:bg-black/90 transition-colors flex items-center gap-2"
                 >
                   <Search size={18} />
                   <span>Search</span>

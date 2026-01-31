@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Search, Menu, X, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import uptozaLogo from '@/assets/uptoza-logo-new.png';
 import { VoiceSearchButton } from './VoiceSearchButton';
 import { ImageSearchButton } from './ImageSearchButton';
 import { SearchScopeSelector, SearchScope } from './SearchScopeSelector';
@@ -102,21 +103,21 @@ const GumroadHeader = ({ searchQuery, onSearchChange, onSearch }: GumroadHeaderP
           {/* Logo - Bigger */}
           <Link to="/" className="flex-shrink-0">
             <img 
-              src="/src/assets/uptoza-logo.png" 
+              src={uptozaLogo} 
               alt="Uptoza" 
-              className="h-10 w-auto"
+              className="h-12 w-auto"
             />
           </Link>
 
-          {/* Search Bar - Desktop - Amazon/Fiverr style with black border */}
+          {/* Search Bar - Desktop - Full Width Premium Design */}
           <form 
             onSubmit={handleSearchSubmit}
-            className="hidden md:flex flex-1 max-w-2xl items-stretch relative"
+            className="hidden md:flex flex-1 max-w-4xl items-stretch relative"
             ref={searchContainerRef}
           >
-            <div className="flex-1 flex items-stretch bg-white rounded-lg border border-black/20 overflow-hidden focus-within:border-black/40 focus-within:ring-2 focus-within:ring-black/10 transition-all">
+            <div className="flex-1 flex items-stretch bg-white rounded-xl border-2 border-black/15 overflow-hidden focus-within:border-black/40 focus-within:ring-2 focus-within:ring-black/10 focus-within:shadow-lg transition-all">
               {/* Scope Selector - Left side with gray bg */}
-              <div className="border-r border-black/20">
+              <div className="border-r border-black/15">
                 <SearchScopeSelector 
                   value={searchScope} 
                   onChange={setSearchScope}
@@ -126,7 +127,7 @@ const GumroadHeader = ({ searchQuery, onSearchChange, onSearch }: GumroadHeaderP
               
               {/* Search Input - Center */}
               <div className="relative flex-1 flex items-center">
-                <Search className="absolute left-3 w-4 h-4 text-black/40" />
+                <Search className="absolute left-4 w-5 h-5 text-black/40" />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -134,22 +135,22 @@ const GumroadHeader = ({ searchQuery, onSearchChange, onSearch }: GumroadHeaderP
                   onChange={(e) => onSearchChange(e.target.value)}
                   onFocus={handleInputFocus}
                   placeholder="Search products, sellers..."
-                  className="w-full pl-10 pr-20 py-3 text-sm text-black placeholder-black/40 bg-white outline-none"
+                  className="w-full pl-12 pr-24 py-3.5 text-sm text-black placeholder-black/40 bg-white outline-none"
                 />
                 
                 {/* Voice + Image Search - Inside input, right side */}
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   <VoiceSearchButton
                     isListening={isListening}
                     isSupported={voiceSupported}
                     error={null}
                     onStart={startListening}
                     onStop={stopListening}
-                    className="opacity-50 hover:opacity-100"
+                    className="h-9 w-9"
                   />
                   <ImageSearchButton
                     onSearchResult={(result) => onSearchChange(result)}
-                    className="opacity-50 hover:opacity-100"
+                    className="h-9 w-9"
                   />
                 </div>
               </div>
@@ -157,9 +158,9 @@ const GumroadHeader = ({ searchQuery, onSearchChange, onSearch }: GumroadHeaderP
               {/* Search Button - Right side with black bg */}
               <button 
                 type="submit"
-                className="px-5 py-3 bg-black text-white font-medium hover:bg-black/90 transition-colors flex items-center gap-2"
+                className="px-6 py-3.5 bg-black text-white font-semibold hover:bg-black/90 transition-colors flex items-center gap-2"
               >
-                <Search size={16} />
+                <Search size={18} />
                 <span className="hidden lg:inline">Search</span>
               </button>
             </div>
