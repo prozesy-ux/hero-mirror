@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -39,6 +39,7 @@ type SortOption = 'trending' | 'best_sellers' | 'new';
 const Marketplace = () => {
   const navigate = useNavigate();
   const { productSlug } = useParams<{ productSlug: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuthContext();
   
   // Data from BFF
@@ -67,6 +68,68 @@ const Marketplace = () => {
   // URL-based full view state
   const [urlProduct, setUrlProduct] = useState<{ id: string; type: 'ai' | 'seller' } | null>(null);
   const [urlProductLoading, setUrlProductLoading] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+
+  // Handle payment success from Stripe redirect
+  useEffect(() => {
+    const purchaseStatus = searchParams.get('purchase');
+    const sessionId = searchParams.get('session_id');
+
+    if (purchaseStatus === 'success' && sessionId && !verifyingPayment) {
+      verifyGuestPurchase(sessionId);
+    } else if (purchaseStatus === 'cancelled') {
+      toast.error('Payment was cancelled');
+      // Clear the URL params
+      setSearchParams({});
+    }
+  }, [searchParams]);
+
+  const verifyGuestPurchase = async (sessionId: string) => {
+    setVerifyingPayment(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-guest-payment`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ session_id: sessionId }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // If new user with session, auto sign in
+        if (data.isNewUser && data.session) {
+          await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
+          toast.success('Account created! Check your email for your password.');
+        } else {
+          toast.success('Purchase complete! Check your email for order details.');
+        }
+
+        // Navigate to dashboard purchases
+        navigate('/dashboard/marketplace?tab=purchases');
+      } else if (data.alreadyProcessed) {
+        toast.info('This order was already processed.');
+        navigate('/dashboard/marketplace?tab=purchases');
+      } else {
+        toast.error(data.error || 'Failed to verify payment');
+        setSearchParams({});
+      }
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      toast.error('Failed to verify payment. Please contact support.');
+      setSearchParams({});
+    } finally {
+      setVerifyingPayment(false);
+    }
+  };
 
   // Find product by slug when URL has productSlug
   useEffect(() => {

@@ -1,1 +1,7 @@
 project_id = "abpbafflztnmyixumaqi"
+
+[functions.create-guest-checkout]
+verify_jwt = false
+
+[functions.verify-guest-payment]
+verify_jwt = false
