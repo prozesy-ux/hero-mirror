@@ -82,7 +82,7 @@ const FeaturedCarousel = ({
   const currentPage = Math.floor(currentIndex / visibleCards) + 1;
 
   return (
-    <section className="py-6">
+    <section className="py-6 px-6 bg-gradient-to-r from-gray-50/80 to-white rounded-2xl border border-black/5">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-xl font-bold text-black">{title}</h2>

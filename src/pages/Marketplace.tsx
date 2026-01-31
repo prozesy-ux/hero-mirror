@@ -443,7 +443,7 @@ const Marketplace = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/50 to-white">
       {/* Header */}
       <GumroadHeader
         searchQuery={searchQuery}
