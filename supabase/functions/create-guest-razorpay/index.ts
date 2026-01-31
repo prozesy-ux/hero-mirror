@@ -11,7 +11,7 @@ interface GuestRazorpayRequest {
   productId: string;
   productName: string;
   price: number;
-  guestEmail: string;
+  guestEmail?: string; // Optional - Razorpay popup will collect it
   productType: 'ai' | 'seller';
 }
 
@@ -24,19 +24,10 @@ serve(async (req) => {
   try {
     const { productId, productName, price, guestEmail, productType }: GuestRazorpayRequest = await req.json();
 
-    // Validate required fields
-    if (!productId || !productName || !price || !guestEmail) {
+    // Validate required fields (email is now optional - Razorpay collects it)
+    if (!productId || !productName || !price) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(guestEmail)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid email format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -116,14 +107,15 @@ serve(async (req) => {
     const orderData = await orderResponse.json();
 
     // Create encrypted token with session data for verification
+    // Email may be empty - will be fetched from Razorpay API after payment
     const guestToken = btoa(JSON.stringify({
-      email: guestEmail,
+      email: guestEmail || '', // May be empty
       productId,
       productType,
       sellerId,
       price,
       productName,
-      orderId: orderData.id,
+      razorpayOrderId: orderData.id,
       timestamp: Date.now(),
     }));
 

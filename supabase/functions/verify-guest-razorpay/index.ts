@@ -14,6 +14,36 @@ interface VerifyRequest {
   guestToken: string;
 }
 
+// Fetch email from Razorpay payment details
+async function fetchEmailFromRazorpay(paymentId: string): Promise<string | null> {
+  const razorpayKeyId = Deno.env.get("RAZORPAY_KEY_ID");
+  const razorpayKeySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+  
+  if (!razorpayKeyId || !razorpayKeySecret) {
+    return null;
+  }
+
+  try {
+    const auth = btoa(`${razorpayKeyId}:${razorpayKeySecret}`);
+    const response = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}`, {
+      headers: {
+        "Authorization": `Basic ${auth}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Failed to fetch payment details from Razorpay");
+      return null;
+    }
+
+    const paymentData = await response.json();
+    return paymentData.email || null;
+  } catch (error) {
+    console.error("Error fetching email from Razorpay:", error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -74,9 +104,23 @@ serve(async (req) => {
       );
     }
 
-    const { email, productId, productType, sellerId, price, productName } = tokenData;
+    let { email, productId, productType, sellerId, price, productName } = tokenData;
 
-    if (!email || !productId) {
+    // If email is not in token, fetch from Razorpay API
+    if (!email) {
+      console.log("Email not in token, fetching from Razorpay API...");
+      email = await fetchEmailFromRazorpay(razorpay_payment_id);
+      
+      if (!email) {
+        return new Response(
+          JSON.stringify({ error: "Could not retrieve email from payment" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log("Email fetched from Razorpay:", email);
+    }
+
+    if (!productId) {
       return new Response(
         JSON.stringify({ error: "Invalid session data" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
