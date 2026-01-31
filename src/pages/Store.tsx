@@ -788,14 +788,14 @@ const StoreContent = () => {
           <div className="flex-1 min-w-0 w-full">
             {/* Search Bar - Amazon-style with marketplace features */}
             <div className="mb-3 md:mb-4">
-              {/* Desktop Search Bar */}
+              {/* Desktop Search Bar - Premium Design */}
               <div className="hidden md:block relative">
-                <div className="flex items-stretch bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-emerald-200 focus-within:border-emerald-300">
+                <div className="flex items-stretch bg-white rounded-xl border-2 border-black/15 overflow-hidden focus-within:border-black/40 focus-within:ring-2 focus-within:ring-black/10 focus-within:shadow-lg transition-all">
                   {/* Category Selector */}
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="bg-slate-100 border-r border-slate-200 px-3 py-3 text-sm font-medium text-slate-700 focus:outline-none cursor-pointer hover:bg-slate-200 transition-colors"
+                    className="bg-gray-100 border-r border-black/15 px-4 py-3.5 text-sm font-medium text-black/70 focus:outline-none cursor-pointer hover:bg-gray-200 transition-colors"
                   >
                     <option value="all">All Categories</option>
                     {categories.map(cat => (
@@ -805,6 +805,7 @@ const StoreContent = () => {
 
                   {/* Search Input */}
                   <div className="flex-1 relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-black/40" />
                     <input
                       ref={searchInputRef}
                       type="text"
@@ -820,29 +821,29 @@ const StoreContent = () => {
                         setTimeout(() => setShowSuggestions(false), 200);
                       }}
                       placeholder="Search products in this store..."
-                      className="w-full py-3 px-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none"
+                      className="w-full py-3.5 pl-12 pr-28 text-sm text-black placeholder-black/40 focus:outline-none"
                     />
                     
                     {/* Action buttons inside input */}
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                       <VoiceSearchButton
                         isListening={isListening}
                         isSupported={voiceSupported}
                         error={voiceError}
                         onStart={startListening}
                         onStop={stopListening}
-                        className="h-8 w-8"
+                        className="h-9 w-9"
                       />
                       <ImageSearchButton
                         onSearchResult={handleImageSearchResult}
-                        className="h-8 w-8"
+                        className="h-9 w-9"
                       />
                       {searchQuery && (
                         <button
                           onClick={() => setSearchQuery('')}
-                          className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                          className="p-1.5 hover:bg-black/5 rounded-lg transition-colors"
                         >
-                          <X size={16} className="text-slate-400" />
+                          <X size={16} className="text-black/40" />
                         </button>
                       )}
                     </div>
@@ -851,7 +852,7 @@ const StoreContent = () => {
                   {/* Search Button */}
                   <button
                     onClick={handleSearch}
-                    className="bg-slate-900 hover:bg-slate-800 text-white px-6 font-semibold text-sm transition-colors flex items-center gap-2"
+                    className="bg-black hover:bg-black/90 text-white px-6 font-semibold text-sm transition-colors flex items-center gap-2"
                   >
                     <Search size={18} />
                     Search
