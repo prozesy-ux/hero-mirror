@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { TrendingUp, Flame, Tag, ChevronRight, Sparkles, Menu } from 'lucide-react';
+import { TrendingUp, ChevronRight, Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { PriceFilterSidebar } from '@/components/marketplace/PriceFilterSidebar';
 import { RatingFilter } from '@/components/marketplace/RatingFilter';
@@ -125,41 +125,44 @@ const SidebarContent = ({
   }, [isPaused, trendingAccounts.length]);
 
   return (
-    <div className="h-full flex flex-col gap-4 overflow-hidden">
+    <div className="h-full flex flex-col gap-6 overflow-hidden">
       {/* Price Filter */}
       {onPriceChange && (
-        <PriceFilterSidebar
-          minPrice={priceRange?.min || 0}
-          maxPrice={priceRange?.max || 100}
-          onPriceChange={onPriceChange}
-        />
+        <div className="flex-shrink-0">
+          <h3 className="text-xs font-semibold text-black/50 uppercase tracking-wide mb-3">Price Range</h3>
+          <PriceFilterSidebar
+            minPrice={priceRange?.min || 0}
+            maxPrice={priceRange?.max || 100}
+            onPriceChange={onPriceChange}
+          />
+        </div>
       )}
 
       {/* Rating Filter */}
       {onRatingChange && (
-        <RatingFilter
-          value={minRating ?? null}
-          onChange={onRatingChange}
-        />
+        <div className="flex-shrink-0">
+          <h3 className="text-xs font-semibold text-black/50 uppercase tracking-wide mb-3">Rating</h3>
+          <RatingFilter
+            value={minRating ?? null}
+            onChange={onRatingChange}
+          />
+        </div>
       )}
 
       {/* Trending Section */}
       {trendingAccounts.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex-shrink-0">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
-            <Flame className="w-4 h-4 text-gray-700" />
-            <h3 className="font-semibold text-gray-900 text-sm">Trending Now</h3>
-          </div>
+        <div className="flex-shrink-0">
+          <h3 className="text-xs font-semibold text-black/50 uppercase tracking-wide mb-3">Trending Now</h3>
           <div
             ref={trendingRef}
-            className="max-h-48 overflow-y-auto scrollbar-hide"
+            className="max-h-48 overflow-y-auto scrollbar-hide space-y-1"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
             {trendingAccounts.map((account) => (
               <div
                 key={account.id}
-                className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
+                className="flex items-center gap-3 p-2 hover:bg-black/5 cursor-pointer transition-colors rounded-lg"
                 onClick={() => onAccountClick(account)}
               >
                 {account.icon_url ? (
@@ -169,20 +172,20 @@ const SidebarContent = ({
                     className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
-                    <TrendingUp className="w-5 h-5 text-gray-600" />
+                  <div className="w-10 h-10 rounded-lg bg-black/5 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-5 h-5 text-black/40" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{account.name}</p>
+                  <p className="text-sm font-medium text-black truncate">{account.name}</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-900 font-bold text-sm">${account.price}</span>
+                    <span className="text-black font-semibold text-sm">${account.price}</span>
                     {account.original_price && account.original_price > account.price && (
-                      <span className="text-xs text-gray-400 line-through">${account.original_price}</span>
+                      <span className="text-xs text-black/40 line-through">${account.original_price}</span>
                     )}
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <ChevronRight className="w-4 h-4 text-black/30 flex-shrink-0" />
               </div>
             ))}
           </div>
@@ -190,22 +193,19 @@ const SidebarContent = ({
       )}
 
       {/* Categories Section */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <Sparkles className="w-4 h-4 text-gray-700" />
-          <h3 className="font-semibold text-gray-900 text-sm">Categories</h3>
-        </div>
-        <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 flex flex-col">
+        <h3 className="text-xs font-semibold text-black/50 uppercase tracking-wide mb-3">Categories</h3>
+        <div className="flex-1 overflow-y-auto space-y-1">
           {/* All Category */}
           <button
             onClick={() => onCategorySelect('all')}
-            className={`w-full px-3 py-2.5 text-left transition-all border-l-3 ${
+            className={`w-full py-2 text-left text-sm transition-colors ${
               selectedCategory === 'all'
-                ? 'bg-gray-100 border-l-gray-900 font-semibold'
-                : 'border-l-transparent hover:bg-gray-50'
+                ? 'text-black font-medium'
+                : 'text-black/60 hover:text-black'
             }`}
           >
-            <span className="text-sm text-gray-900">All Products</span>
+            All Products
           </button>
 
           {/* Dynamic Categories - Names Only */}
@@ -213,13 +213,13 @@ const SidebarContent = ({
             <button
               key={category.id}
               onClick={() => onCategorySelect(category.id)}
-              className={`w-full px-3 py-2.5 text-left transition-all border-l-3 ${
+              className={`w-full py-2 text-left text-sm transition-colors ${
                 selectedCategory === category.id
-                  ? `bg-gray-100 border-l-gray-900 font-semibold`
-                  : 'border-l-transparent hover:bg-gray-50'
+                  ? 'text-black font-medium'
+                  : 'text-black/60 hover:text-black'
               }`}
             >
-              <span className="text-sm text-gray-900">{category.name}</span>
+              {category.name}
             </button>
           ))}
         </div>
@@ -227,27 +227,22 @@ const SidebarContent = ({
 
       {/* Tags Section */}
       {allTags.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex-shrink-0">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
-            <Tag className="w-4 h-4 text-gray-700" />
-            <h3 className="font-semibold text-gray-900 text-sm">Popular Tags</h3>
-          </div>
-          <div className="p-4">
-            <div className="flex flex-wrap gap-2">
-              {allTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => onTagSelect(tag)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                    selectedTags.includes(tag)
-                      ? 'bg-gray-900 text-white border-gray-900'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-900'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
+        <div className="flex-shrink-0">
+          <h3 className="text-xs font-semibold text-black/50 uppercase tracking-wide mb-3">Popular Tags</h3>
+          <div className="flex flex-wrap gap-2">
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => onTagSelect(tag)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  selectedTags.includes(tag)
+                    ? 'bg-black text-white'
+                    : 'bg-black/5 text-black/70 hover:bg-black/10'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
           </div>
         </div>
       )}

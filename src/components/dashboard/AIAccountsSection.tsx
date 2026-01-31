@@ -1092,25 +1092,23 @@ const AIAccountsSection = () => {
       </div>;
   }
   return <div className="animate-fade-up">
-      {/* Tab Navigation - Low text on mobile, icon + short label */}
-      <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-gray-200 shadow-md">
-        <div className="flex gap-0.5 sm:gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
-          <button onClick={() => setActiveTab('browse')} className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${activeTab === 'browse' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'}`}>
+      {/* Tab Navigation - Enterprise Gumroad style */}
+      <div className="mb-6 border-b border-black/10">
+        <div className="flex gap-6 overflow-x-auto hide-scrollbar">
+          <button onClick={() => setActiveTab('browse')} className={`pb-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'browse' ? 'text-black border-b-2 border-black' : 'text-black/50 hover:text-black'}`}>
             <ShoppingCart size={16} />
-            <span className="sm:hidden">Shop</span>
-            <span className="hidden sm:inline">Browse</span>
+            <span>Browse</span>
           </button>
-          <button onClick={() => setActiveTab('purchases')} className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${activeTab === 'purchases' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'}`}>
+          <button onClick={() => setActiveTab('purchases')} className={`pb-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'purchases' ? 'text-black border-b-2 border-black' : 'text-black/50 hover:text-black'}`}>
             <Package size={16} />
-            <span className="sm:hidden">Orders</span>
-            <span className="hidden sm:inline">Purchases</span>
-            {purchases.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${activeTab === 'purchases' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'}`}>
+            <span>Purchases</span>
+            {purchases.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${activeTab === 'purchases' ? 'bg-black text-white' : 'bg-black/10 text-black/70'}`}>
                 {purchases.length}
               </span>}
           </button>
-          <button onClick={() => setActiveTab('stats')} className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 min-h-[40px] ${activeTab === 'stats' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'}`}>
+          <button onClick={() => setActiveTab('stats')} className={`pb-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'stats' ? 'text-black border-b-2 border-black' : 'text-black/50 hover:text-black'}`}>
             <BarChart3 size={16} />
-            <span className="hidden sm:inline">Stats</span>
+            <span>Stats</span>
           </button>
         </div>
       </div>
@@ -1381,16 +1379,15 @@ const AIAccountsSection = () => {
               </div> : <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
                 {filteredAccounts.map(account => {
             const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
-            return <div key={account.id} className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+            return <div key={account.id} className="group bg-white rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer">
                       {/* Image */}
-                      <div className="relative aspect-[4/3] overflow-hidden">
-                        {account.icon_url ? <img src={account.icon_url} alt={account.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+                        {account.icon_url ? <img src={account.icon_url} alt={account.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                             <img src={getProductImage(account.category)} alt={account.name} className="h-20 w-20 object-contain" />
                           </div>}
 
-                        {/* Uptoza Badge - Admin Products */}
-                        <div className="absolute top-3 left-3 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
-                          <span className="w-2 h-2 rounded-full bg-white/80" />
+                        {/* Uptoza Badge - Minimal black */}
+                        <div className="absolute top-3 left-3 px-2.5 py-1 bg-black text-white rounded-full text-xs font-medium">
                           Uptoza
                         </div>
 
