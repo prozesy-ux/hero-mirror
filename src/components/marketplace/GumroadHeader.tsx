@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, Menu, X } from 'lucide-react';
+import { Search, Menu, X, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { VoiceSearchButton } from './VoiceSearchButton';
 import { ImageSearchButton } from './ImageSearchButton';
@@ -7,6 +7,14 @@ import { SearchScopeSelector, SearchScope } from './SearchScopeSelector';
 import { MarketplaceSearchSuggestions } from './MarketplaceSearchSuggestions';
 import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { useSearchSuggestions, SearchSuggestion } from '@/hooks/useSearchSuggestions';
+import { CurrencySelector } from '@/components/ui/currency-selector';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from '@/components/ui/button';
 
 interface GumroadHeaderProps {
   searchQuery: string;
@@ -169,7 +177,34 @@ const GumroadHeader = ({ searchQuery, onSearchChange, onSearch }: GumroadHeaderP
           </form>
 
           {/* Right Actions */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-3">
+            {/* Language Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-9 px-2 text-black/70 hover:text-black hover:bg-black/5 rounded-lg">
+                  <Globe className="w-4 h-4 mr-1" />
+                  <span className="text-sm">EN</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-white min-w-[140px]">
+                <DropdownMenuItem className="cursor-pointer rounded-lg">
+                  <span className="mr-2">🇺🇸</span> English
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer rounded-lg">
+                  <span className="mr-2">🇧🇩</span> বাংলা
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer rounded-lg">
+                  <span className="mr-2">🇮🇳</span> हिंदी
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer rounded-lg">
+                  <span className="mr-2">🇪🇸</span> Español
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Currency Selector */}
+            <CurrencySelector variant="minimal" />
+
             <Link 
               to="/signin" 
               className="px-4 py-2 text-sm font-medium text-black border border-black/20 rounded-full hover:border-black/40 transition-colors"
