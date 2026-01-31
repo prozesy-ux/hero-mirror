@@ -12,6 +12,40 @@ function base64urlEncode(data: Uint8Array): string {
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+type GoogleServiceAccountJson = {
+  client_email?: string;
+  private_key?: string;
+};
+
+function isLikelyJson(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  return trimmed.startsWith('{') && trimmed.endsWith('}');
+}
+
+function extractGoogleServiceAccountCredentials(input: string): {
+  email?: string;
+  privateKeyPEM?: string;
+} {
+  // The admin panel may store either:
+  // 1) a raw PEM private key
+  // 2) the full service-account JSON string (common copy/paste)
+  if (!isLikelyJson(input)) {
+    return { privateKeyPEM: input };
+  }
+
+  try {
+    const parsed = JSON.parse(input) as GoogleServiceAccountJson;
+    return {
+      email: parsed.client_email,
+      privateKeyPEM: parsed.private_key,
+    };
+  } catch {
+    // If it looks like JSON but parsing fails, treat as raw key
+    return { privateKeyPEM: input };
+  }
+}
+
 // Create JWT for Google API authentication
 async function createJWT(email: string, privateKeyPEM: string): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
@@ -35,19 +69,28 @@ async function createJWT(email: string, privateKeyPEM: string): Promise<string> 
   const signingInput = `${headerB64}.${payloadB64}`;
 
   // Import the private key - handle various formats
-  // First, handle escaped newlines from JSON storage
-  let cleanedKey = privateKeyPEM
-    .replace(/\\n/g, '\n')  // Convert escaped newlines to actual newlines
+  // - Escaped newlines ("\\n") stored in DB
+  // - Standard PEM header/footer
+  const cleanedKey = privateKeyPEM
+    .replace(/\\n/g, '\n')
     .replace(/-----BEGIN PRIVATE KEY-----/g, '')
     .replace(/-----END PRIVATE KEY-----/g, '')
-    .replace(/[\r\n\s]/g, '');  // Remove all whitespace including newlines
-  
-  // Validate base64 characters
-  if (!/^[A-Za-z0-9+/=]+$/.test(cleanedKey)) {
-    throw new Error('Invalid private key format - contains non-base64 characters');
+    .replace(/[\r\n\s]/g, '');
+
+  // Guardrail: make the error actionable
+  if (!cleanedKey) {
+    throw new Error('Google service account private key is empty after cleaning');
   }
-  
-  const binaryKey = Uint8Array.from(atob(cleanedKey), c => c.charCodeAt(0));
+
+  // Validate base64 characters before decoding to avoid InvalidCharacterError
+  if (!/^[A-Za-z0-9+/=]+$/.test(cleanedKey)) {
+    throw new Error(
+      'Google service account private key is not valid base64. ' +
+        'If you pasted the full JSON, ensure it is saved as JSON in settings (we will extract private_key).'
+    );
+  }
+
+  const binaryKey = Uint8Array.from(atob(cleanedKey), (c) => c.charCodeAt(0));
   
   const key = await crypto.subtle.importKey(
     'pkcs8',
@@ -173,9 +216,23 @@ serve(async (req) => {
 
     const { google_service_account_email, google_service_account_key } = settings;
 
-    if (!google_service_account_email || !google_service_account_key) {
+    if (!google_service_account_key) {
       return new Response(
         JSON.stringify({ error: 'Google service account credentials not configured' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const extracted = extractGoogleServiceAccountCredentials(google_service_account_key);
+    const finalEmail = google_service_account_email || extracted.email;
+    const finalPrivateKey = extracted.privateKeyPEM;
+
+    if (!finalEmail || !finalPrivateKey) {
+      return new Response(
+        JSON.stringify({
+          error: 'Google service account credentials not configured',
+          details: 'Missing client_email and/or private_key (PEM) in settings',
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -183,7 +240,7 @@ serve(async (req) => {
     console.log('Creating JWT for Google Indexing API...');
     
     // Create JWT and get access token
-    const jwt = await createJWT(google_service_account_email, google_service_account_key);
+    const jwt = await createJWT(finalEmail, finalPrivateKey);
     const accessToken = await getAccessToken(jwt);
 
     console.log('Access token obtained, submitting URLs...');
