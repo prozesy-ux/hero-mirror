@@ -34,13 +34,20 @@ async function createJWT(email: string, privateKeyPEM: string): Promise<string> 
   const payloadB64 = base64urlEncode(encoder.encode(JSON.stringify(payload)));
   const signingInput = `${headerB64}.${payloadB64}`;
 
-  // Import the private key
-  const pemContents = privateKeyPEM
-    .replace(/-----BEGIN PRIVATE KEY-----/, '')
-    .replace(/-----END PRIVATE KEY-----/, '')
-    .replace(/\s/g, '');
+  // Import the private key - handle various formats
+  // First, handle escaped newlines from JSON storage
+  let cleanedKey = privateKeyPEM
+    .replace(/\\n/g, '\n')  // Convert escaped newlines to actual newlines
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/[\r\n\s]/g, '');  // Remove all whitespace including newlines
   
-  const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
+  // Validate base64 characters
+  if (!/^[A-Za-z0-9+/=]+$/.test(cleanedKey)) {
+    throw new Error('Invalid private key format - contains non-base64 characters');
+  }
+  
+  const binaryKey = Uint8Array.from(atob(cleanedKey), c => c.charCodeAt(0));
   
   const key = await crypto.subtle.importKey(
     'pkcs8',
