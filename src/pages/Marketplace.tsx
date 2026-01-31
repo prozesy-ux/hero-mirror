@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import { useMarketplaceData } from '@/hooks/useMarketplaceData';
 import GumroadHeader from '@/components/marketplace/GumroadHeader';
 import GumroadProductCard from '@/components/marketplace/GumroadProductCard';
@@ -422,34 +423,39 @@ const Marketplace = () => {
   // Show loading state while finding product by URL slug
   if (urlProductLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-pulse text-black/50">Loading product...</div>
-      </div>
+      <CurrencyProvider>
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="animate-pulse text-black/50">Loading product...</div>
+        </div>
+      </CurrencyProvider>
     );
   }
 
   // If URL has productSlug and we found the product, show full view
   if (productSlug && urlProduct) {
     return (
-      <MarketplaceProductFullView
-        productId={urlProduct.id}
-        productType={urlProduct.type}
-        onBack={() => navigate('/marketplace')}
-        onBuy={handleFullViewBuy}
-        onChat={handleFullViewChat}
-        isAuthenticated={!!user}
-      />
+      <CurrencyProvider>
+        <MarketplaceProductFullView
+          productId={urlProduct.id}
+          productType={urlProduct.type}
+          onBack={() => navigate('/marketplace')}
+          onBuy={handleFullViewBuy}
+          onChat={handleFullViewChat}
+          isAuthenticated={!!user}
+        />
+      </CurrencyProvider>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <GumroadHeader
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onSearch={handleSearch}
-      />
+    <CurrencyProvider>
+      <div className="min-h-screen bg-white">
+        {/* Header */}
+        <GumroadHeader
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearch={handleSearch}
+        />
 
       {/* Category Pills - Gumroad style: outlined active, plain text inactive */}
       <div className="border-b border-black/5 bg-white">
@@ -648,7 +654,8 @@ const Marketplace = () => {
           type: guestCheckoutProduct.type,
         } : null}
       />
-    </div>
+      </div>
+    </CurrencyProvider>
   );
 };
 
