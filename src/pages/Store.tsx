@@ -33,6 +33,7 @@ import StoreSidebar from '@/components/store/StoreSidebar';
 import StoreProductCard from '@/components/store/StoreProductCard';
 import StoreProductCardCompact from '@/components/store/StoreProductCardCompact';
 import ProductDetailModal from '@/components/store/ProductDetailModal';
+import MiniViewModal from '@/components/marketplace/MiniViewModal';
 import ShareStoreModal from '@/components/seller/ShareStoreModal';
 import MobileStoreHeader from '@/components/store/MobileStoreHeader';
 import StoreCategoryChips from '@/components/store/StoreCategoryChips';
@@ -140,6 +141,7 @@ const StoreContent = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<SellerProduct | null>(null);
+  const [miniViewProduct, setMiniViewProduct] = useState<SellerProduct | null>(null);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -1059,7 +1061,7 @@ const StoreContent = () => {
                       hasEnoughBalance={hasEnoughBalance(product.price)}
                       isLoggedIn={!!user}
                       purchasing={purchasing === product.id}
-                      onView={() => setSelectedProduct(product)}
+                      onView={() => setMiniViewProduct(product)}
                       onBuy={() => handlePurchase(product)}
                     />
                   ) : (
@@ -1071,7 +1073,7 @@ const StoreContent = () => {
                       isLoggedIn={!!user}
                       purchasing={purchasing === product.id}
                       onChat={() => handleChat(product)}
-                      onView={() => setSelectedProduct(product)}
+                      onView={() => setMiniViewProduct(product)}
                       onBuy={() => handlePurchase(product)}
                       sellerAvatar={seller.store_logo_url}
                       storeSlug={seller.store_slug}
@@ -1103,7 +1105,46 @@ const StoreContent = () => {
         onImageSearchResult={handleImageSearchResult}
       />
 
-      {/* Product Details Modal */}
+      {/* Mini View Modal - Quick preview when clicking View */}
+      <MiniViewModal
+        product={miniViewProduct ? {
+          id: miniViewProduct.id,
+          name: miniViewProduct.name,
+          description: miniViewProduct.description,
+          price: miniViewProduct.price,
+          iconUrl: miniViewProduct.icon_url,
+          sellerName: seller?.store_name || null,
+          sellerAvatar: seller?.store_logo_url || null,
+          storeSlug: seller?.store_slug || null,
+          isVerified: seller?.is_verified || false,
+          soldCount: miniViewProduct.sold_count || 0,
+          tags: miniViewProduct.tags,
+          chatAllowed: miniViewProduct.chat_allowed ?? true,
+        } : null}
+        isOpen={!!miniViewProduct}
+        onClose={() => setMiniViewProduct(null)}
+        onBuy={() => {
+          if (miniViewProduct) {
+            setMiniViewProduct(null);
+            handlePurchase(miniViewProduct);
+          }
+        }}
+        onChat={() => {
+          if (miniViewProduct) {
+            setMiniViewProduct(null);
+            handleChat(miniViewProduct);
+          }
+        }}
+        onViewFull={() => {
+          if (miniViewProduct) {
+            setMiniViewProduct(null);
+            setSelectedProduct(miniViewProduct);
+          }
+        }}
+        isAuthenticated={!!user}
+      />
+
+      {/* Product Details Modal - Full view */}
       <ProductDetailModal
         product={selectedProduct}
         seller={seller ? {
