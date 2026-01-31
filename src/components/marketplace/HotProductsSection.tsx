@@ -130,16 +130,12 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
   }
 
   return (
-    <div className={cn("space-y-4 p-6 bg-gradient-to-r from-orange-50/50 to-white rounded-2xl border border-black/5", className)}>
+    <div className={cn("space-y-4 py-8", className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-orange-500/10">
-            <Flame className="h-5 w-5 text-orange-500" />
-          </div>
-          <h3 className="text-lg font-semibold">Hot Right Now</h3>
-          <Badge variant="secondary" className="text-xs">
-            Trending
-          </Badge>
+          <Flame className="h-5 w-5 text-black/70" />
+          <h3 className="text-lg font-semibold text-black">Hot Right Now</h3>
+          <span className="text-xs text-black/50 font-medium">Trending</span>
         </div>
         <Button variant="ghost" size="sm" className="text-muted-foreground">
           View All <ChevronRight className="h-4 w-4 ml-1" />
