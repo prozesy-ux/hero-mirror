@@ -1,6 +1,42 @@
+import { useState, useEffect } from "react";
 import { ChevronDown, Sparkles, Users } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Category {
+  id: string;
+  name: string;
+}
 
 const Header = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from("categories")
+        .select("id, name")
+        .eq("is_active", true)
+        .order("display_order")
+        .limit(15);
+      setCategories(data || []);
+    };
+    fetchCategories();
+  }, []);
+
+  // Static items + dynamic categories
+  const staticItems = [
+    { name: "Featured", href: "/marketplace?filter=featured" },
+    { name: "Hot", href: "/marketplace?filter=hot" },
+    { name: "New", href: "/marketplace?filter=new" },
+  ];
+
+  const categoryItems = categories.map((c) => ({
+    name: c.name,
+    href: `/marketplace?category=${c.id}`,
+  }));
+
+  const menuItems = [...staticItems, ...categoryItems];
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background">
       <div className="mx-auto flex h-14 max-w-screen-2xl items-center justify-between px-4">
@@ -69,38 +105,17 @@ const Header = () => {
         </a>
       </div>
 
-      {/* Secondary Nav - Categories */}
+      {/* Secondary Nav - Dynamic Categories */}
       <div className="border-t border-border/50">
         <div className="mx-auto max-w-screen-2xl overflow-x-auto px-4">
           <nav className="flex items-center gap-1 py-2">
-            {[
-              "Featured",
-              "Hot",
-              "New",
-              "Top",
-              "Video",
-              "SeedEdit",
-              "Nano Banana",
-              "FLUX",
-              "Sora",
-              "Veo",
-              "ChatGPT Image",
-              "Midjourney",
-              "Stable Diffusion",
-              "Portraits",
-              "Photography",
-              "Anime",
-              "Fashion",
-              "Concept Art",
-              "Architecture",
-              "Landscapes",
-            ].map((item) => (
+            {menuItems.map((item) => (
               <a
-                key={item}
-                href="#"
+                key={item.name}
+                href={item.href}
                 className="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
-                {item}
+                {item.name}
               </a>
             ))}
           </nav>
