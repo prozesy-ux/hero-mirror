@@ -30,6 +30,7 @@ import { useFloatingChat } from '@/contexts/FloatingChatContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +39,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from 'date-fns';
 import ReviewForm from '@/components/reviews/ReviewForm';
+import StarRating from '@/components/reviews/StarRating';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SellerProduct {
   id: string;
@@ -59,6 +62,7 @@ interface SellerProduct {
     store_name: string;
     store_logo_url: string | null;
     is_verified: boolean;
+    total_orders?: number;
   } | null;
 }
 
@@ -97,6 +101,7 @@ const ProductFullViewPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { openChat } = useFloatingChat();
+  const isMobile = useIsMobile();
 
   const [product, setProduct] = useState<SellerProduct | AIAccount | null>(null);
   const [isSellerProduct, setIsSellerProduct] = useState(false);
@@ -366,6 +371,7 @@ const ProductFullViewPage = () => {
   const aiAccount = !isSellerProduct ? (product as AIAccount) : null;
   const productImages = getProductImages();
   const soldCount = isSellerProduct ? (sellerProduct?.sold_count || 0) : Math.floor(Math.random() * 500) + 100;
+  const showChat = isSellerProduct ? sellerProduct?.chat_allowed !== false : aiAccount?.chat_allowed !== false;
 
   const ratingBreakdown = {
     5: reviews.filter(r => r.rating === 5).length,
@@ -384,6 +390,228 @@ const ProductFullViewPage = () => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
+  // Mobile Layout - Vertical stack with sticky actions
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-white">
+        {/* Image Gallery - 280px height like store modal */}
+        <div className="relative h-[280px]">
+          {productImages.length > 0 ? (
+            <img
+              src={productImages[currentImageIndex]}
+              alt={product.name}
+              className="w-full h-full object-contain bg-gray-50"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-black/5">
+              <Package className="w-16 h-16 text-black/20" />
+            </div>
+          )}
+
+          {/* Back button on image */}
+          <button
+            onClick={() => navigate('/dashboard/marketplace')}
+            className="absolute top-3 left-3 p-2 bg-white/90 border border-black/10 rounded-full shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4 text-black" />
+          </button>
+
+          {/* Navigation arrows */}
+          {productImages.length > 1 && (
+            <>
+              <button
+                onClick={handlePrevImage}
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-white border border-black/20 rounded-full shadow-md"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleNextImage}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white border border-black/20 rounded-full shadow-md"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </>
+          )}
+
+          {/* Dot indicators */}
+          {productImages.length > 1 && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
+              {productImages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentImageIndex(i)}
+                  className={`w-2 h-2 rounded-full border border-black/20 ${
+                    i === currentImageIndex ? 'bg-black' : 'bg-white'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-3 pb-24">
+          {/* Seller Info - rounded bg-black/5 box like store modal */}
+          <div className="flex items-center gap-2.5 p-2.5 bg-black/5 rounded-xl">
+            <Avatar className="w-8 h-8 border border-black/10">
+              {isSellerProduct && sellerProduct?.seller_profiles?.store_logo_url ? (
+                <AvatarImage src={sellerProduct.seller_profiles.store_logo_url} />
+              ) : null}
+              <AvatarFallback className="bg-black text-white font-bold text-xs">
+                {isSellerProduct && sellerProduct?.seller_profiles
+                  ? sellerProduct.seller_profiles.store_name.charAt(0)
+                  : 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-black text-sm truncate">
+                  {isSellerProduct && sellerProduct?.seller_profiles
+                    ? sellerProduct.seller_profiles.store_name
+                    : 'Uptoza'}
+                </span>
+                {((isSellerProduct && sellerProduct?.seller_profiles?.is_verified) || !isSellerProduct) && (
+                  <BadgeCheck className="w-3.5 h-3.5 text-black flex-shrink-0" />
+                )}
+              </div>
+              <p className="text-[10px] text-black/50">{soldCount} orders</p>
+            </div>
+          </div>
+
+          {/* Product Title & Price */}
+          <div>
+            <h3 className="text-lg font-bold text-black leading-tight">{product.name}</h3>
+            <div className="flex items-center gap-3 mt-1.5">
+              {aiAccount?.original_price && aiAccount.original_price > aiAccount.price && (
+                <span className="text-sm text-black/50 line-through">${aiAccount.original_price}</span>
+              )}
+              <span className="px-3 py-1 bg-black text-white text-lg font-bold rounded">
+                ${product.price.toFixed(2)}
+              </span>
+              {reviewCount > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-black/60">
+                  <StarRating rating={averageRating} size="sm" />
+                  <span>({reviewCount})</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tags */}
+          {product.tags && product.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {product.tags.map(tag => (
+                <Badge key={tag} variant="secondary" className="rounded-full bg-black/5 text-black/70 text-[10px] px-2 py-0.5 border border-black/10">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* Description */}
+          {product.description && (
+            <p className="text-xs text-black/70 leading-relaxed whitespace-pre-line" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              {product.description}
+            </p>
+          )}
+
+          {/* Stats */}
+          <div className="flex items-center gap-4 py-2 border-t border-b border-black/10">
+            <div className="flex items-center gap-1.5 text-xs text-black/50">
+              <Users className="w-3.5 h-3.5" />
+              <span>{soldCount} sold</span>
+            </div>
+            {user && wallet && (
+              <div className="flex items-center gap-1.5 text-xs text-black/50">
+                <span>Balance: ${wallet.balance.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Trust Badges - Same as store modal */}
+          <div className="flex flex-wrap gap-1.5">
+            <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
+              <ShieldCheck size={10} />
+              <span>Secure</span>
+            </div>
+            <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
+              <Zap size={10} />
+              <span>Instant</span>
+            </div>
+            <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
+              <Clock size={10} />
+              <span>24/7</span>
+            </div>
+          </div>
+
+          {/* Reviews Section - Mobile */}
+          {reviewCount > 0 && (
+            <div className="pt-4 border-t border-black/10">
+              <h3 className="text-sm font-bold text-black mb-3">Reviews ({reviewCount})</h3>
+              <div className="space-y-3">
+                {filteredReviews.slice(0, 3).map(review => (
+                  <div key={review.id} className="border-b border-black/10 pb-3 last:border-b-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Avatar className="h-6 w-6 border border-black/10">
+                        {review.buyerAvatar ? (
+                          <AvatarImage src={review.buyerAvatar} alt={review.buyerName} />
+                        ) : null}
+                        <AvatarFallback className="bg-black/5 text-black text-[10px] font-semibold">
+                          {review.buyerName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-medium text-black">{review.buyerName}</span>
+                      {review.isVerifiedPurchase && (
+                        <span className="text-[10px] text-black bg-black/5 px-1 py-0.5 rounded">Verified</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 mb-1">
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <Star
+                          key={i}
+                          className={`w-3 h-3 ${i <= review.rating ? 'fill-black text-black' : 'text-black/20'}`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-black/70 line-clamp-2">{review.content}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons - Fixed at bottom with safe-area-bottom */}
+        <div className="fixed bottom-0 left-0 right-0 flex gap-2 px-4 pb-4 pt-2 bg-white border-t border-black/10 safe-area-bottom z-50">
+          {showChat && (
+            <Button
+              variant="outline"
+              onClick={handleChat}
+              className="flex-1 rounded-xl border-2 border-black text-black hover:bg-black hover:text-white text-xs h-11"
+            >
+              <MessageCircle className="w-4 h-4 mr-1.5" />
+              Chat
+            </Button>
+          )}
+          <Button
+            onClick={handlePurchase}
+            disabled={purchasing}
+            className="flex-1 rounded-xl bg-black hover:bg-black/90 text-white text-xs h-11"
+          >
+            {purchasing ? (
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+            ) : (
+              <ShoppingCart className="w-4 h-4 mr-1.5" />
+            )}
+            {hasEnoughBalance ? 'Buy Now' : 'Top Up'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop Layout - 70/30 split
   return (
     <div className="min-h-screen bg-white">
       {/* Header with Back Button */}
@@ -408,7 +636,7 @@ const ProductFullViewPage = () => {
           {/* LEFT: Image Gallery (70%) */}
           <div className="lg:w-[70%]">
             <div className="bg-white rounded-2xl overflow-hidden border border-black/10 shadow-sm">
-              {/* Medium height image container */}
+              {/* Image container */}
               <div className="relative h-[350px] lg:h-[450px]">
                 {productImages.length > 0 ? (
                   <img
@@ -477,7 +705,7 @@ const ProductFullViewPage = () => {
 
           {/* RIGHT: Purchase Box (30%) */}
           <div className="lg:w-[30%]">
-            <div className="lg:sticky lg:top-20 bg-white rounded-2xl p-5 border border-black/10 shadow-sm h-fit">
+            <div className="lg:sticky lg:top-20 bg-white rounded-2xl p-5 border border-black/20 shadow-sm h-fit">
               {/* Price - Black Badge */}
               <div className="mb-4">
                 {aiAccount?.original_price && aiAccount.original_price > aiAccount.price && (
@@ -515,7 +743,7 @@ const ProductFullViewPage = () => {
               </Button>
 
               {/* Chat Button - Outlined Black */}
-              {(isSellerProduct ? sellerProduct?.chat_allowed !== false : aiAccount?.chat_allowed !== false) && (
+              {showChat && (
                 <Button
                   onClick={handleChat}
                   variant="outline"
@@ -532,20 +760,20 @@ const ProductFullViewPage = () => {
                 <span>{soldCount.toLocaleString()} sales</span>
               </div>
 
-              {/* Features Box */}
+              {/* Features Box - Same as store modal */}
               <div className="mb-4 pb-4 border-b border-black/20">
-                <div className="flex flex-wrap gap-2">
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-black/5 rounded text-xs text-black/70">
-                    <ShieldCheck size={12} />
-                    <span>Secure Payment</span>
+                <div className="flex flex-wrap gap-1.5">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
+                    <ShieldCheck size={10} />
+                    <span>Secure</span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-black/5 rounded text-xs text-black/70">
-                    <Zap size={12} />
-                    <span>Instant Delivery</span>
+                  <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
+                    <Zap size={10} />
+                    <span>Instant</span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-black/5 rounded text-xs text-black/70">
-                    <Clock size={12} />
-                    <span>24/7 Support</span>
+                  <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
+                    <Clock size={10} />
+                    <span>24/7</span>
                   </div>
                 </div>
               </div>
@@ -899,10 +1127,10 @@ const ProductFullViewPage = () => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 bg-black/5 rounded-xl">
-                <Star className="w-10 h-10 text-black/20 mx-auto mb-2" />
-                <p className="text-black/50 font-medium">No reviews yet</p>
-                <p className="text-sm text-black/40">Be the first to review this product</p>
+              <div className="text-center py-8">
+                <Star className="w-12 h-12 text-black/20 mx-auto mb-3" />
+                <h4 className="font-medium text-black mb-1">No reviews yet</h4>
+                <p className="text-sm text-black/50">Be the first to review this product</p>
               </div>
             )}
           </div>
