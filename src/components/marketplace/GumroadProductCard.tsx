@@ -1,4 +1,4 @@
-import { Store } from 'lucide-react';
+import { Store, Star } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface GumroadProductCardProps {
@@ -21,6 +21,9 @@ const GumroadProductCard = ({
   name,
   price,
   iconUrl,
+  sellerName,
+  rating,
+  reviewCount,
   onClick,
 }: GumroadProductCardProps) => {
   return (
@@ -45,15 +48,37 @@ const GumroadProductCard = ({
         </AspectRatio>
       </div>
 
-      {/* Content - Minimal Gumroad style */}
+      {/* Content */}
       <div className="p-3">
         {/* Title */}
         <h3 className="text-sm font-medium text-black line-clamp-2 mb-1 min-h-[2.5rem] leading-tight">
           {name}
         </h3>
 
-        {/* Price - Simple */}
-        <span className="text-sm font-semibold text-black">${price.toFixed(0)}</span>
+        {/* Store Name */}
+        {sellerName && (
+          <p className="text-xs text-black/50 mb-2 truncate">by {sellerName}</p>
+        )}
+
+        {/* Price + Rating Row */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-semibold text-black">${price.toFixed(0)}</span>
+          
+          {/* Rating or New badge */}
+          {rating && rating > 0 ? (
+            <div className="flex items-center gap-1">
+              <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+              <span className="text-xs font-medium text-black">{rating.toFixed(1)}</span>
+              {reviewCount && reviewCount > 0 && (
+                <span className="text-xs text-black/40">({reviewCount})</span>
+              )}
+            </div>
+          ) : (
+            <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-medium">
+              New
+            </span>
+          )}
+        </div>
       </div>
     </button>
   );
