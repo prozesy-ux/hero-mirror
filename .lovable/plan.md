@@ -1,118 +1,124 @@
 
 
-# Apply Gumroad Neo-Brutalist Card Design to Seller Products
+# Apply Gumroad Neo-Brutalist Card Design to Buyer Dashboard
 
 ## Overview
 
-Update the Seller Products page to match Gumroad's neo-brutalist design system with bold black borders, offset shadows, and interactive hover effects. Also remove extra spacing and clean up the banner styling.
+Update all Buyer Dashboard pages to match the same neo-brutalist design system from the Seller Products page (`/seller`). This includes bold black borders, offset shadows, interactive hover effects, and the warm cream background.
 
-## Reference Design Analysis
+## Design System Reference
 
-From the Gumroad code provided:
+From the Seller Products implementation:
 - **Border**: `border-2 border-black` (solid black, not translucent)
-- **Shadow**: `box-shadow: 4px 4px 0px 0px rgba(0,0,0,1)` (neo-brutalism offset)
-- **Hover**: `hover:shadow-none hover:translate-x-1 hover:translate-y-1` (moves into shadow)
-- **Background**: Page uses `bg-[#FBF8F3]` (warm cream color)
+- **Shadow**: `shadow-neobrutalism` (4px 4px 0px black offset)
+- **Hover**: `hover:shadow-none hover:translate-x-1 hover:translate-y-1` (shifts into shadow)
+- **Background**: `bg-[#FBF8F3]` (warm cream color)
 
-## Implementation
+## Files to Update
 
-### Step 1: Add Neo-Brutalism CSS Utility
+### 1. `src/components/marketplace/StatCard.tsx`
+Update the shared StatCard component to support neo-brutalist variant
 
-**File:** `src/index.css`
+**Changes:**
+- Add new `variant="neobrutalism"` option
+- Solid black border (`border-2 border-black`)
+- Add `shadow-neobrutalism` class
+- Interactive hover effect
 
-Add the shadow utility class:
-```css
-.shadow-neobrutalism {
-  box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
-}
+### 2. `src/components/dashboard/BuyerDashboardHome.tsx`
+Main buyer dashboard home page
+
+**Changes:**
+- Page background: `bg-[#FBF8F3]` instead of `bg-slate-50/50`
+- Stats row cards: Use neo-brutalist StatCard variant
+- Quick action cards: Apply `border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1`
+- Recent orders section: Neo-brutalist container
+- Quick stats section: Neo-brutalist cards
+
+### 3. `src/components/dashboard/BuyerOrders.tsx`
+Orders listing page
+
+**Changes:**
+- Stats cards (lines 384-442): Apply `border-2 border-black rounded-lg shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1`
+- Filters container: Neo-brutalist styling
+- Order cards: Neo-brutalist borders and hover
+
+### 4. `src/components/dashboard/BuyerWallet.tsx`
+Wallet management page
+
+**Changes:**
+- Apply neo-brutalist cards to wallet sections
+- Stats cards and method cards with black borders and offset shadow
+
+### 5. `src/components/dashboard/BuyerAnalytics.tsx`
+Analytics page
+
+**Changes:**
+- Page background: `bg-[#FBF8F3]`
+- Stats cards (lines 248-311): Apply neo-brutalist styling
+- Chart containers: Neo-brutalist cards
+
+### 6. `src/components/dashboard/BuyerNotifications.tsx`
+Notifications page
+
+**Changes:**
+- Empty state card: Neo-brutalist styling
+- Notification items: Neo-brutalist borders and hover
+
+## Implementation Details
+
+### Card Styling Pattern
+
+**Current (Soft/Minimal):**
+```tsx
+<div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
 ```
 
-### Step 2: Update Banner (Remove Extra Styling)
-
-**File:** `src/components/seller/SellerProducts.tsx`
-
-Current (lines 291-298):
+**New (Neo-Brutalist):**
 ```tsx
-<div className="mb-8 border-2 border-dashed border-black/10 rounded-lg overflow-hidden bg-white p-4">
-  <img src={gumroadBanner} ... />
-</div>
+<div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
 ```
 
-New:
+### Page Background Pattern
+
+**Current:**
 ```tsx
-<div className="mb-4">
-  <img 
-    src={gumroadBanner} 
-    alt="Start creating and selling" 
-    className="w-full h-auto object-contain rounded-xl shadow-lg"
-  />
-</div>
+<div className="space-y-6 p-4 lg:p-6 bg-slate-50/50 min-h-screen">
 ```
 
-### Step 3: Update Stats Cards (Neo-Brutalist Style)
-
-Current (lines 301-314):
+**New:**
 ```tsx
-<div className="bg-white border-2 border-black/10 rounded-lg p-5">
+<div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
 ```
 
-New:
+### StatCard Component Enhancement
+
+Add neo-brutalist variant to the shared StatCard component:
+
 ```tsx
-<div className="bg-white border-2 border-black rounded-lg p-5 shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-```
-
-### Step 4: Update Product Cards (Neo-Brutalist Style)
-
-Current (lines 348-351):
-```tsx
-<div className="bg-white border-2 border-black/10 rounded-lg overflow-hidden group hover:border-black/20 transition-colors">
-```
-
-New:
-```tsx
-<div className="bg-white border-2 border-black rounded-lg overflow-hidden group shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
-```
-
-### Step 5: Update Search Input
-
-Current (line 325):
-```tsx
-className="pl-11 bg-white border-2 border-black/10 rounded-lg h-12 focus:border-black transition-colors"
-```
-
-New:
-```tsx
-className="pl-11 bg-white border-2 border-black rounded-lg h-12 shadow-neobrutalism focus:shadow-none focus:translate-x-0.5 focus:translate-y-0.5 transition-all"
-```
-
-### Step 6: Update Page Background
-
-Current (line 290):
-```tsx
-<div className="p-6 lg:p-8 bg-white min-h-screen">
-```
-
-New:
-```tsx
-<div className="p-6 lg:p-8 bg-[#FBF8F3] min-h-screen">
+neobrutalism: cn(
+  "bg-white border-2 border-black rounded-lg shadow-neobrutalism",
+  "hover:shadow-none hover:translate-x-1 hover:translate-y-1",
+  "transition-all cursor-pointer"
+),
 ```
 
 ## Visual Changes Summary
 
 | Element | Before | After |
 |---------|--------|-------|
-| Page Background | `bg-white` | `bg-[#FBF8F3]` (cream) |
-| Banner | Dashed border, padding | Clean with subtle shadow |
-| Card Border | `border-black/10` (light) | `border-black` (solid) |
-| Card Shadow | None | `4px 4px 0px black` |
-| Card Hover | Border darkens | Translates into shadow |
-| Spacing | `mb-8` on banner | `mb-4` (reduced) |
+| Page Background | `bg-slate-50/50` | `bg-[#FBF8F3]` (cream) |
+| Card Border | `border border-slate-100` | `border-2 border-black` |
+| Card Shadow | `shadow-sm` | `shadow-neobrutalism` |
+| Card Corners | `rounded-2xl` | `rounded-lg` |
+| Card Hover | Subtle color change | Translates into shadow |
+| Interactive | Static | Cards shift on hover |
 
 ## Result
 
-- Neo-brutalist Gumroad aesthetic with bold black borders
-- Interactive hover effects (cards shift when hovered)
-- Warm cream background matching Gumroad's design
-- Clean banner without unnecessary container styling
-- Reduced spacing between sections
+- Consistent neo-brutalist Gumroad aesthetic across both Seller and Buyer dashboards
+- Bold, high-contrast cards with solid black borders
+- Interactive hover effects that feel tactile
+- Warm cream background matching Gumroad's design language
+- Unified design system throughout the platform
 
