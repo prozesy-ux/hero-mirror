@@ -335,13 +335,13 @@ const BuyerOrders = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl" />
+            <Skeleton key={i} className="h-28 rounded-2xl border-2 border-black" />
           ))}
         </div>
-        <Skeleton className="h-96 rounded-2xl" />
+        <Skeleton className="h-96 rounded-2xl border-2 border-black" />
       </div>
     );
   }
@@ -357,7 +357,7 @@ const BuyerOrders = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
       {/* Session Expired Banner - only if truly expired */}
       {sessionExpiredLocal && !isReconnecting && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
       

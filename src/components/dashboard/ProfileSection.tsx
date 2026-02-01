@@ -497,7 +497,7 @@ const ProfileSection = () => {
   const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4 pb-8 animate-fade-up">
+    <div className="max-w-2xl mx-auto space-y-4 pb-8 animate-fade-up p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}

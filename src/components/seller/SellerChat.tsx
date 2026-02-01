@@ -234,11 +234,11 @@ const SellerChat = () => {
 
   if (loading) {
     return (
-      <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
-        <Skeleton className="h-8 w-32 mb-6" />
+      <div className="p-6 lg:p-8 bg-[#FBF8F3] min-h-screen">
+        <Skeleton className="h-8 w-32 mb-6 border-2 border-black" />
         <div className="grid grid-cols-3 gap-4 h-[calc(100vh-180px)]">
-          <Skeleton className="col-span-1 rounded-xl" />
-          <Skeleton className="col-span-2 rounded-xl" />
+          <Skeleton className="col-span-1 rounded-xl border-2 border-black" />
+          <Skeleton className="col-span-2 rounded-xl border-2 border-black" />
         </div>
       </div>
     );
@@ -247,7 +247,7 @@ const SellerChat = () => {
 
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 bg-slate-50 min-h-screen">
+    <div className="p-3 sm:p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
       {/* Unread Badge */}
       {totalUnread > 0 && (
         <div className="flex justify-end mb-3 sm:mb-4">
