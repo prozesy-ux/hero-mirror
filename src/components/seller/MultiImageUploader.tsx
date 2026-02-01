@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { prepareImageForUpload, formatFileSize, calculateSavings } from '@/lib/image-optimizer';
+import { prepareImageForUpload, calculateSavings } from '@/lib/image-optimizer';
 
 interface MultiImageUploaderProps {
   images: string[];
@@ -67,7 +67,6 @@ const MultiImageUploader = ({
     setLastCompression(null);
 
     try {
-      // Compress image before upload
       const { file: compressedFile, originalSize, compressedSize } = await prepareImageForUpload(file, 'product');
       const { percentage } = calculateSavings(originalSize, compressedSize);
       setLastCompression({ percentage });
@@ -146,12 +145,12 @@ const MultiImageUploader = ({
   };
 
   return (
-    <div className="space-y-3">
-      <Label className="text-slate-700">Product Images</Label>
+    <div className="space-y-4">
+      <Label className="text-sm font-bold text-black">Product Images</Label>
       
-      {/* Image Grid */}
+      {/* Image Grid - 4 columns */}
       {images.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-3">
           {images.map((img, index) => (
             <div
               key={index}
@@ -161,10 +160,10 @@ const MultiImageUploader = ({
               onDrop={() => handleDrop(index)}
               onDragEnd={() => { setDraggedIndex(null); setDragOverIndex(null); }}
               className={cn(
-                'relative aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-move group',
+                'relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-move group bg-gray-50',
                 draggedIndex === index ? 'opacity-50 scale-95' : '',
-                dragOverIndex === index ? 'border-emerald-500 border-dashed' : 'border-slate-200',
-                index === 0 ? 'ring-2 ring-emerald-500 ring-offset-2' : ''
+                dragOverIndex === index ? 'border-black border-dashed' : 'border-black/10',
+                index === 0 ? 'border-black' : ''
               )}
             >
               <img
@@ -177,15 +176,15 @@ const MultiImageUploader = ({
               
               {/* Primary Badge */}
               {index === 0 && (
-                <div className="absolute top-1 left-1 bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                <div className="absolute top-1.5 left-1.5 bg-black text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 uppercase">
                   <Star className="w-2.5 h-2.5 fill-current" />
                   Main
                 </div>
               )}
               
               {/* Overlay with actions */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                <div className="absolute top-1 left-1">
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                <div className="absolute top-1.5 left-1.5">
                   <GripVertical className="w-4 h-4 text-white/80" />
                 </div>
                 
@@ -193,21 +192,19 @@ const MultiImageUploader = ({
                   <Button
                     type="button"
                     size="sm"
-                    variant="secondary"
                     onClick={(e) => { e.stopPropagation(); setPrimaryImage(index); }}
-                    className="h-7 text-xs bg-white/90 hover:bg-white"
+                    className="h-7 text-xs bg-white text-black hover:bg-gray-100 rounded"
                   >
                     <Star className="w-3 h-3 mr-1" />
-                    Set Main
+                    Main
                   </Button>
                 )}
                 
                 <Button
                   type="button"
                   size="icon"
-                  variant="destructive"
                   onClick={(e) => { e.stopPropagation(); removeImage(index); }}
-                  className="h-7 w-7"
+                  className="h-7 w-7 bg-white text-black hover:bg-red-500 hover:text-white rounded"
                 >
                   <X className="w-3 h-3" />
                 </Button>
@@ -219,25 +216,25 @@ const MultiImageUploader = ({
 
       {/* Upload & URL Input */}
       {images.length < maxImages && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {/* File Upload Button */}
           <div 
             onClick={() => fileInputRef.current?.click()}
             className={cn(
-              'border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors',
-              uploading ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+              'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors',
+              uploading ? 'border-black/30 bg-gray-50' : 'border-black/20 hover:border-black bg-white'
             )}
           >
             {uploading ? (
-              <div className="flex flex-col items-center gap-1">
-                <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
-                <p className="text-sm text-emerald-600">Optimizing & uploading...</p>
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-6 h-6 text-black animate-spin" />
+                <p className="text-sm font-medium text-black">Optimizing & uploading...</p>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-1">
-                <Upload className="w-6 h-6 text-slate-400" />
-                <p className="text-sm text-slate-600">Click to upload image</p>
-                <p className="text-xs text-slate-400">Auto-optimized to WebP</p>
+              <div className="flex flex-col items-center gap-2">
+                <Upload className="w-6 h-6 text-gray-400" />
+                <p className="text-sm font-medium text-black">Click to upload image</p>
+                <p className="text-xs text-gray-500">Auto-optimized to WebP</p>
               </div>
             )}
           </div>
@@ -245,20 +242,20 @@ const MultiImageUploader = ({
           {/* URL Input */}
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Or paste image URL..."
-                className="pl-9 border-slate-200 rounded-xl"
+                className="pl-10 border-2 border-black/10 rounded-lg focus:border-black transition-colors"
               />
             </div>
             <Button
               type="button"
               onClick={addImage}
               disabled={!imageUrl.trim()}
-              className="bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 rounded-xl"
+              className="bg-black text-white hover:bg-black/90 rounded-lg px-4"
             >
               <Plus className="w-4 h-4 mr-1" />
               Add
@@ -269,22 +266,22 @@ const MultiImageUploader = ({
 
       {/* Empty State */}
       {images.length === 0 && !uploading && (
-        <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center bg-slate-50/50">
-          <ImageIcon className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-          <p className="text-sm text-slate-500">Add up to {maxImages} product images</p>
-          <p className="text-xs text-slate-400 mt-1">First image will be the main image</p>
+        <div className="border-2 border-dashed border-black/20 rounded-lg p-8 text-center bg-gray-50">
+          <ImageIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-sm font-medium text-gray-600">Add up to {maxImages} product images</p>
+          <p className="text-xs text-gray-400 mt-1">First image will be the main image</p>
         </div>
       )}
 
       {/* Last compression info */}
       {lastCompression && (
-        <div className="flex items-center gap-1.5 text-xs text-emerald-600">
-          <CheckCircle2 size={12} />
+        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+          <CheckCircle2 size={14} className="text-black" />
           <span>Last image: {lastCompression.percentage}% compression savings</span>
         </div>
       )}
 
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-gray-500">
         {images.length}/{maxImages} images • Drag to reorder • First image is main
       </p>
 

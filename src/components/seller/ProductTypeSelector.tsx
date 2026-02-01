@@ -29,10 +29,10 @@ const ProductTypeSelector = ({
             type="button"
             onClick={() => onTypeSelect(type.id)}
             className={cn(
-              "relative flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-200 text-center group",
+              "relative flex flex-col items-center p-4 rounded-lg border-2 transition-all duration-200 text-center group bg-white",
               isSelected
-                ? "border-black bg-white shadow-lg scale-[1.02]"
-                : `${type.color} hover:border-black/30 hover:shadow-md`
+                ? "border-black"
+                : "border-black/10 hover:border-black/30"
             )}
           >
             {/* Selection indicator */}
@@ -52,16 +52,21 @@ const ProductTypeSelector = ({
             </div>
             
             <span className={cn(
-              "text-sm font-semibold",
-              isSelected ? "text-black" : "text-black/70"
+              "text-sm font-bold",
+              isSelected ? "text-black" : "text-gray-700"
             )}>
               {type.name}
             </span>
             
             {!compact && (
-              <span className="text-xs text-black/50 mt-1 line-clamp-2">
+              <span className="text-xs text-gray-500 mt-1 line-clamp-2">
                 {type.description}
               </span>
+            )}
+            
+            {/* Underline indicator for selected */}
+            {isSelected && (
+              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-black rounded-full" />
             )}
           </button>
         );
