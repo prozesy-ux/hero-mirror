@@ -3,7 +3,6 @@ import { Flame, ChevronRight, Star, ShoppingCart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackProductClick } from '@/lib/analytics-tracker';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -111,14 +110,14 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
 
   if (loading) {
     return (
-      <div className={cn("space-y-4", className)}>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-6 w-6 rounded" />
-          <Skeleton className="h-6 w-32" />
+      <div className={cn("border border-black/10 rounded-xl p-4 bg-white", className)}>
+        <div className="flex items-center gap-2 mb-4">
+          <Skeleton className="h-5 w-5 rounded" />
+          <Skeleton className="h-5 w-32" />
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-40 w-36 flex-shrink-0 rounded-lg" />
+        <div className="flex gap-3 overflow-x-auto pb-1">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-[180px] w-[130px] flex-shrink-0 rounded-lg" />
           ))}
         </div>
       </div>
@@ -130,49 +129,62 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
   }
 
   return (
-    <div className={cn("border border-orange-200 rounded-xl p-4 bg-gradient-to-br from-orange-50 via-amber-50 to-white", className)}>
-      <div className="flex items-center justify-between mb-3">
+    <div className={cn("border border-black/10 rounded-xl p-4 bg-white", className)}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Flame className="h-5 w-5 text-orange-500" />
-          <h3 className="text-sm font-bold text-black">Hot Right Now</h3>
-          <span className="text-[10px] px-2 py-0.5 bg-orange-500 text-white rounded-full font-semibold">🔥 Trending</span>
+          <h3 className="text-base font-bold text-black">Hot Right Now</h3>
+          <span className="text-xs px-2 py-0.5 bg-orange-500 text-white rounded-full font-medium">
+            Trending
+          </span>
         </div>
-        <Button variant="ghost" size="sm" className="text-orange-600 hover:text-orange-700 hover:bg-orange-100 text-xs h-7">
-          View All <ChevronRight className="h-3 w-3 ml-0.5" />
+        <Button variant="link" className="text-blue-500 hover:text-blue-600 text-sm p-0 h-auto">
+          View All <ChevronRight className="h-4 w-4 ml-0.5" />
         </Button>
       </div>
 
+      {/* Horizontal Scrolling Cards */}
       <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
         {products.map((product) => (
           <Card
             key={product.id}
-            className="flex-shrink-0 w-36 cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 bg-white border border-black/10 hover:border-black/20"
+            className="flex-shrink-0 w-[130px] cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 bg-white border border-black/10 hover:border-black/20"
             onClick={() => {
               trackProductClick(product.id);
               onProductClick(product);
             }}
           >
-            <CardContent className="p-3">
+            <CardContent className="p-2.5">
+              {/* Image with Badge */}
               <div className="relative mb-2">
                 <OptimizedImage
                   src={product.icon_url}
                   alt={product.name}
-                  className="w-full h-24 rounded-md"
-                  aspectRatio="auto"
-                  fallbackIcon={<ShoppingCart className="h-8 w-8 text-primary/50" />}
+                  className="w-full aspect-square rounded-md"
+                  aspectRatio="square"
+                  fallbackIcon={<ShoppingCart className="h-8 w-8 text-muted-foreground" />}
                 />
-                <Badge className="absolute top-1 right-1 bg-orange-500 text-white text-[10px] px-1.5">
-                  🔥 Hot
-                </Badge>
+                {/* Hot Badge - Top Left */}
+                <div className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 font-medium">
+                  <Flame className="h-2.5 w-2.5" />
+                  Hot
+                </div>
               </div>
-              <h4 className="font-medium text-sm truncate">{product.name}</h4>
+              
+              {/* Title */}
+              <h4 className="font-medium text-xs text-black truncate">{product.name}</h4>
+              
+              {/* Seller Name */}
               {product.seller_name && (
-                <p className="text-xs text-muted-foreground truncate">{product.seller_name}</p>
+                <p className="text-[10px] text-black/50 truncate mt-0.5">{product.seller_name}</p>
               )}
+              
+              {/* Price and Sold Count Row */}
               <div className="flex items-center justify-between mt-2">
-                <span className="font-bold text-primary">${product.price.toFixed(2)}</span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                <span className="font-bold text-sm text-emerald-500">${product.price.toFixed(2)}</span>
+                <span className="text-[10px] text-black/50 flex items-center gap-0.5">
+                  <Star className="h-2.5 w-2.5 fill-orange-400 text-orange-400" />
                   {product.sold_count} sold
                 </span>
               </div>
