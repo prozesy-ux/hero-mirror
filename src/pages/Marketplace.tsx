@@ -314,12 +314,11 @@ const Marketplace = () => {
   // Handle buy from hover card
   const handleHoverBuy = useCallback((product: Product) => {
     if (user) {
-      if (product.storeSlug) {
-        navigate(`/store/${product.storeSlug}`);
-      } else {
-        navigate('/dashboard');
-      }
+      // For logged in users, navigate to marketplace full view to complete purchase
+      const slug = slugify(product.name);
+      navigate(`/marketplace/${slug}`);
     } else {
+      // For guests, open the guest payment modal
       setGuestCheckoutProduct(product);
     }
   }, [user, navigate]);

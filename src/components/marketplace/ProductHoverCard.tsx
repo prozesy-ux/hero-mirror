@@ -14,7 +14,8 @@ import {
   Zap,
   Clock,
   Loader2,
-  Users
+  Users,
+  Eye
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import StarRating from '@/components/reviews/StarRating';
@@ -275,7 +276,20 @@ const ProductHoverCard = ({
             ) : (
               <ShoppingCart className="w-4 h-4 mr-2" />
             )}
-            {isAuthenticated && !hasEnoughBalance ? 'Top Up & Buy' : 'Buy Now'}
+            BUY NOW
+          </Button>
+
+          {/* Full View Button */}
+          <Button
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              navigate(`/marketplace/${slugify(product.name)}`);
+            }}
+            variant="outline"
+            className="w-full h-10 rounded-lg border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors mb-3 text-sm"
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            Full View
           </Button>
 
           {/* Chat Button */}
