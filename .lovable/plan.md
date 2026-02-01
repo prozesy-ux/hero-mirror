@@ -1,85 +1,90 @@
 
-Goal
-- Prevent the centered hover preview from closing while the user is moving the mouse from the product card (trigger) to the centered preview (content), even if they move a bit slowly.
-- Keep the “move away to close” behavior (no need to click) once the user is not in that travel window.
+# Add Hover Preview to All Product Sections
 
-What’s happening now (root cause)
-- After the preview opens, the screen has a backdrop overlay.
-- When the user leaves the trigger card to move toward the centered preview, their mouse necessarily passes over the backdrop first.
-- Our current logic starts the close timer as soon as the mouse enters the backdrop.
-- If the user takes longer than closeDelay (300ms) to reach the centered content, the preview closes “too fast”.
-- This matches your report: first 1–2 hovers feel OK, then later hovers you notice the premature closing (usually because the mouse movement timing varies).
+## Problem Summary
 
-Design approach (best UX compromise)
-Add a short “travel grace period” after the preview opens (or after leaving the trigger), during which the backdrop will NOT start the close timer. This gives users time to move from the trigger card to the centered content without the preview closing.
+The hover preview (`CenteredHoverPreview`) is currently only implemented on:
+- Main product grid in `/marketplace` (via `ProductHoverCard`)
+- Store page product cards (via `StoreProductHoverCard`)
 
-After the grace period:
-- Backdrop hover will start close timer as it does now (so moving away closes naturally).
-- Content hover will cancel close timer.
+It is **missing** from:
+1. `/dashboard/marketplace` product cards in `AIAccountsSection`
+2. Discovery sections: Hot Right Now, Top Rated, New Arrivals (used in both `/marketplace` and `/dashboard/marketplace`)
 
-Implementation details
+## Solution Overview
 
-1) Update `src/components/ui/CenteredHoverPreview.tsx` to track a travel grace window
-- Add a ref like:
-  - `const lastOpenAtRef = useRef<number>(0);`
-  - (Optionally also `lastTriggerLeaveAtRef`, but “lastOpenAt” is often enough.)
-- When opening (`handleOpen`), set `lastOpenAtRef.current = Date.now()`.
+Wrap all product cards with the existing `ProductHoverCard` component to provide consistent hover preview behavior across the platform.
 
-2) Add a prop (optional) or constant for the grace duration
-- Add a new optional prop:
-  - `travelGraceMs?: number` (default: 450–600ms)
-- Keep existing defaults:
-  - `openDelay = 400`
-  - `closeDelay = 300` (or slightly higher if needed)
-- Recommended defaults:
-  - `travelGraceMs = 600`
-  - `closeDelay = 350` (small bump for forgiveness)
+## Files to Modify
 
-3) Modify backdrop mouse-enter close behavior
-Current behavior:
-- Backdrop `onMouseEnter` immediately starts the close timer.
+### 1. HotProductsSection.tsx
+- Wrap each product `Card` with `ProductHoverCard`
+- Pass the same hover content design used elsewhere
 
-New behavior:
-- In `handleBackdropMouseEnter`, check if we’re inside the grace window:
-  - `if (Date.now() - lastOpenAtRef.current < travelGraceMs) return;`
-- Only start the close timer if we’re outside the grace window.
+### 2. TopRatedSection.tsx
+- Wrap each product `Card` with `ProductHoverCard`
+- Convert product data to the format expected by `ProductHoverCard`
 
-This preserves:
-- “Move away closes” once the preview has been open for a moment.
-This fixes:
-- “Closes too fast” while traveling to the centered preview.
+### 3. NewArrivalsSection.tsx
+- Wrap each product `Card` with `ProductHoverCard`
+- Handle both AI and seller product types
 
-4) Keep content handlers as-is
-- `handleContentMouseEnter` cancels timers
-- `handleContentMouseLeave` starts close timer
+### 4. AIAccountsSection.tsx (dashboard/marketplace)
+- Wrap the product cards (lines 1377-1471 for AI accounts, lines 1473+ for seller products) with `ProductHoverCard`
+- This is the main product grid in the dashboard marketplace
 
-5) Verify callers don’t override with too-aggressive delays
-- `ProductHoverCard` and `StoreProductHoverCard` already removed `closeDelay={150}` (good).
-- We’ll avoid adding any new overrides unless you want different behavior per page.
+## Technical Approach
 
-Acceptance tests (what you should test end-to-end)
-1) Marketplace (/marketplace/chatgpt):
-   - Hover product card, then move slowly to the centered preview.
-   - Expected: preview stays open and does not close while traveling.
-2) After preview is open for >0.6s:
-   - Move mouse off the preview onto the dark backdrop and wait.
-   - Expected: preview closes after closeDelay.
-3) Repeat hover on 5–10 products:
-   - Expected: no “after 1–2 hovers it breaks” behavior.
-4) Store page:
-   - Same behavior as marketplace.
-5) Confirm clicks still work:
-   - Clicking backdrop closes immediately.
-   - Escape closes immediately.
+For discovery sections (Hot, Top Rated, New Arrivals):
 
-Files to change
-- src/components/ui/CenteredHoverPreview.tsx
-  - Add `travelGraceMs` (optional prop)
-  - Track open timestamp
-  - Gate backdrop close-timer start by grace window
+```typescript
+// Before:
+<Card onClick={() => onProductClick(product)}>
+  {/* card content */}
+</Card>
 
-Notes / edge cases considered
-- This solution avoids making the overlay “sticky” again (still closes when you move away after the grace window).
-- It directly targets the travel gap problem without reintroducing flicker.
-- If you still see “too fast” after this, we can increase `travelGraceMs` to ~800ms or raise `closeDelay` slightly (but grace window is the key).
+// After:
+<ProductHoverCard
+  product={{
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    iconUrl: product.icon_url,
+    sellerName: product.seller_name || null,
+    storeSlug: product.store_slug || null,
+    isVerified: false,
+    soldCount: product.sold_count,
+    type: product.type,
+  }}
+  onBuy={() => {/* handle buy */}}
+  onChat={() => {/* handle chat */}}
+  isAuthenticated={!!user}
+>
+  <Card className="...">
+    {/* existing card content */}
+  </Card>
+</ProductHoverCard>
+```
 
+## New Prop Requirements
+
+The discovery sections currently only receive `onProductClick`. They will need additional props:
+- `onBuy?: (product) => void` - For the Buy button in hover preview
+- `onChat?: (product) => void` - For the Chat button in hover preview
+- `isAuthenticated?: boolean` - To show correct button states
+
+## Changes Summary
+
+| File | Change |
+|------|--------|
+| `HotProductsSection.tsx` | Add `ProductHoverCard` wrapper, add new props |
+| `TopRatedSection.tsx` | Add `ProductHoverCard` wrapper, add new props |
+| `NewArrivalsSection.tsx` | Add `ProductHoverCard` wrapper, add new props |
+| `AIAccountsSection.tsx` | Wrap product cards with `ProductHoverCard` |
+| `Marketplace.tsx` | Pass `onBuy`, `onChat`, `isAuthenticated` to discovery sections |
+
+## Result
+
+- Hovering any product card (in any section, on any page) will show the centered hover preview
+- Same design language across all product sections
+- Mobile users will navigate directly on tap (hover is disabled on mobile)
