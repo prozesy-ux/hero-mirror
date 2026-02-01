@@ -97,7 +97,7 @@ interface Review {
 }
 
 const ProductFullViewPage = () => {
-  const { productId } = useParams<{ productId: string }>();
+  const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { openChat } = useFloatingChat();
@@ -119,10 +119,10 @@ const ProductFullViewPage = () => {
   const [reviewCount, setReviewCount] = useState(0);
 
   useEffect(() => {
-    if (productId) {
+    if (productSlug) {
       fetchProduct();
     }
-  }, [productId]);
+  }, [productSlug]);
 
   useEffect(() => {
     if (user) {
@@ -131,37 +131,52 @@ const ProductFullViewPage = () => {
   }, [user]);
 
   const fetchProduct = async () => {
-    if (!productId) return;
+    if (!productSlug) return;
     setLoading(true);
 
+    // Determine if param is UUID or slug
+    const isUUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(productSlug);
+
     // Try seller products first
-    const { data: sellerProduct, error: sellerError } = await supabase
+    let sellerQuery = supabase
       .from('seller_products')
       .select(`
         *,
         seller_profiles (id, store_name, store_logo_url, is_verified)
-      `)
-      .eq('id', productId)
-      .single();
+      `);
+    
+    if (isUUID) {
+      sellerQuery = sellerQuery.eq('id', productSlug);
+    } else {
+      sellerQuery = sellerQuery.eq('slug', productSlug);
+    }
+
+    const { data: sellerProduct, error: sellerError } = await sellerQuery.single();
 
     if (!sellerError && sellerProduct) {
       setProduct(sellerProduct as SellerProduct);
       setIsSellerProduct(true);
-      await fetchReviews(productId);
+      await fetchReviews(sellerProduct.id);
       setLoading(false);
       return;
     }
 
-    // Try AI accounts
-    const { data: aiAccount, error: aiError } = await supabase
-      .from('ai_accounts')
-      .select('*')
-      .eq('id', productId)
-      .single();
+    // Try AI accounts (by ID or slug)
+    let aiQuery = supabase.from('ai_accounts').select('*');
+    
+    if (isUUID) {
+      aiQuery = aiQuery.eq('id', productSlug);
+    } else {
+      aiQuery = aiQuery.eq('slug', productSlug);
+    }
+
+    const { data: aiAccount, error: aiError } = await aiQuery.single();
 
     if (!aiError && aiAccount) {
       setProduct(aiAccount as AIAccount);
       setIsSellerProduct(false);
+      setLoading(false);
+      return;
     }
 
     setLoading(false);
@@ -1029,14 +1044,14 @@ const ProductFullViewPage = () => {
             </div>
 
             {/* Review Form */}
-            {showReviewForm && user && productId && (
+            {showReviewForm && user && product && (
               <div className="mb-4">
                 <ReviewForm
-                  productId={productId}
+                  productId={product.id}
                   orderId=""
                   onSuccess={() => {
                     setShowReviewForm(false);
-                    fetchReviews(productId);
+                    fetchReviews(product.id);
                   }}
                   onCancel={() => setShowReviewForm(false)}
                 />

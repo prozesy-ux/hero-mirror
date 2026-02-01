@@ -49,7 +49,7 @@ const DashboardContent = () => {
           <Route path="tools" element={<Navigate to="/dashboard/prompts" replace />} />
           <Route path="marketplace" element={<AIAccountsSection />} />
           <Route path="marketplace/:accountId" element={<AccountDetailPage />} />
-          <Route path="marketplace/product/:productId" element={<ProductFullViewPage />} />
+          <Route path="marketplace/product/:productSlug" element={<ProductFullViewPage />} />
           <Route path="billing" element={<BillingSection />} />
           <Route path="wallet" element={<BuyerWallet />} />
           <Route path="orders" element={<BuyerOrders />} />
