@@ -22,6 +22,7 @@ import { generateProductUrlWithFallback } from '@/lib/url-utils';
 import { HotProductsSection } from '@/components/marketplace/HotProductsSection';
 import { TopRatedSection } from '@/components/marketplace/TopRatedSection';
 import { NewArrivalsSection } from '@/components/marketplace/NewArrivalsSection';
+import QuickViewModal from '@/components/marketplace/QuickViewModal';
 // CategoryBrowser removed per redesign
 
 // Import real product images
@@ -2022,115 +2023,62 @@ const AIAccountsSection = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Quick View Modal */}
-      <Dialog open={showQuickViewModal} onOpenChange={setShowQuickViewModal}>
-        <DialogContent className="max-w-sm p-0 overflow-hidden bg-white border-gray-200">
-          {quickViewProduct && <>
-              {/* Product Image */}
-              <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200">
-                {quickViewProduct.data.icon_url ? <img src={quickViewProduct.data.icon_url} alt={quickViewProduct.data.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
-                    <Package className="h-16 w-16 text-gray-300" />
-                  </div>}
-                {/* Badge */}
-                {quickViewProduct.type === 'seller' ? <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
-                    <Store size={12} />
-                    {(quickViewProduct.data as SellerProduct).seller_profiles?.store_name || 'Seller'}
-                  </div> : <div className="absolute top-3 left-3 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
-                    <span className="w-2 h-2 rounded-full bg-white/80" />
-                    Uptoza
-                  </div>}
-              </div>
-
-              {/* Content */}
-              <div className="p-5">
-                <h3 className="font-bold text-gray-900 text-lg mb-2">{quickViewProduct.data.name}</h3>
-                
-                {/* Price */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-700">
-                    <Check size={14} />
-                    ${quickViewProduct.data.price}
-                  </span>
-                </div>
-
-                {/* Description */}
-                <p className="text-sm text-gray-600 mb-4 line-clamp-4 whitespace-pre-line" style={{
-              fontFamily: 'system-ui, -apple-system, sans-serif'
-            }}>
-                  {quickViewProduct.data.description || 'No description available'}
-                </p>
-
-                {/* Action Buttons - 1 Row */}
-                <div className="flex items-center gap-2">
-                  {/* Chat Button */}
-                  {quickViewProduct.data.chat_allowed !== false && <button onClick={() => {
-                setShowQuickViewModal(false);
-                if (quickViewProduct.type === 'seller') {
-                  const product = quickViewProduct.data as SellerProduct;
-                  openChat({
-                    sellerId: product.seller_id,
-                    sellerName: product.seller_profiles?.store_name || 'Seller',
-                    productId: product.id,
-                    productName: product.name,
-                    type: 'seller'
-                  });
-                } else {
-                  openChat({
-                    sellerId: 'support',
-                    sellerName: 'Uptoza Support',
-                    productId: quickViewProduct.data.id,
-                    productName: quickViewProduct.data.name,
-                    type: 'support'
-                  });
-                }
-              }} className={`flex-1 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-sm ${quickViewProduct.type === 'seller' ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700' : 'bg-violet-100 hover:bg-violet-200 text-violet-700'}`}>
-                      <MessageCircle size={16} />
-                      Chat
-                    </button>}
-
-                  {/* Full View Button */}
-                  <button onClick={() => {
-                setShowQuickViewModal(false);
-                // Use SEO-friendly URL for seller products
-                if (quickViewProduct.type === 'seller') {
-                  const product = quickViewProduct.data as SellerProduct;
-                  const storeSlug = product.seller_profiles?.store_slug;
-                  if (storeSlug) {
-                    navigate(generateProductUrlWithFallback(
-                      storeSlug,
-                      product.slug,
-                      product.name,
-                      product.id
-                    ));
-                    return;
-                  }
-                }
-                // Fallback to internal route for AI accounts or products without store_slug
-                navigate(`/dashboard/ai-accounts/product/${quickViewProduct.data.id}`);
-              }} className="flex-1 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm">
-                    <Eye size={16} />
-                    View
-                  </button>
-
-                  {/* Buy Now Button */}
-                  <button onClick={() => {
-                setShowQuickViewModal(false);
-                if (quickViewProduct.type === 'seller') {
-                  handleSellerProductPurchase(quickViewProduct.data as SellerProduct);
-                } else {
-                  handlePurchase(quickViewProduct.data as AIAccount);
-                }
-              }} disabled={purchasing === quickViewProduct.data.id} className="flex-1 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-yellow-400 hover:bg-yellow-500 text-black text-sm">
-                    {purchasing === quickViewProduct.data.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <>
-                        <ShoppingCart size={16} />
-                        Buy
-                      </>}
-                  </button>
-                </div>
-              </div>
-            </>}
-        </DialogContent>
-      </Dialog>
+      {/* Quick View Modal - Store-matching design */}
+      <QuickViewModal
+        open={showQuickViewModal}
+        onOpenChange={setShowQuickViewModal}
+        productType={quickViewProduct?.type || 'account'}
+        product={quickViewProduct?.data || null}
+        purchasing={purchasing === quickViewProduct?.data?.id}
+        walletBalance={wallet?.balance || 0}
+        isLoggedIn={!!user}
+        onChat={() => {
+          setShowQuickViewModal(false);
+          if (quickViewProduct?.type === 'seller') {
+            const product = quickViewProduct.data as SellerProduct;
+            openChat({
+              sellerId: product.seller_id,
+              sellerName: product.seller_profiles?.store_name || 'Seller',
+              productId: product.id,
+              productName: product.name,
+              type: 'seller'
+            });
+          } else {
+            openChat({
+              sellerId: 'support',
+              sellerName: 'Uptoza Support',
+              productId: quickViewProduct?.data.id || '',
+              productName: quickViewProduct?.data.name || '',
+              type: 'support'
+            });
+          }
+        }}
+        onBuy={() => {
+          setShowQuickViewModal(false);
+          if (quickViewProduct?.type === 'seller') {
+            handleSellerProductPurchase(quickViewProduct.data as SellerProduct);
+          } else if (quickViewProduct) {
+            handlePurchase(quickViewProduct.data as AIAccount);
+          }
+        }}
+        onViewFull={() => {
+          setShowQuickViewModal(false);
+          if (quickViewProduct?.type === 'seller') {
+            const product = quickViewProduct.data as SellerProduct;
+            const storeSlug = product.seller_profiles?.store_slug;
+            if (storeSlug) {
+              navigate(generateProductUrlWithFallback(
+                storeSlug,
+                product.slug,
+                product.name,
+                product.id
+              ));
+              return;
+            }
+          }
+          navigate(`/dashboard/ai-accounts/product/${quickViewProduct?.data.id}`);
+        }}
+      />
 
       {/* Insufficient Funds Modal */}
       {insufficientFundsModal.show && <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
