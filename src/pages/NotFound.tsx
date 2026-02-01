@@ -38,7 +38,7 @@ const NotFound = () => {
     };
   }, []);
 
-  // Render video frames to canvas
+  // Render video frames to canvas - full screen
   useEffect(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -52,10 +52,29 @@ const NotFound = () => {
     const renderFrame = () => {
       if (video.paused || video.ended) return;
       
-      canvas.width = video.videoWidth || 400;
-      canvas.height = video.videoHeight || 400;
+      // Set canvas to window size for full-screen rendering
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
       
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Calculate dimensions to cover the canvas while maintaining aspect ratio
+      const videoAspect = video.videoWidth / video.videoHeight;
+      const canvasAspect = canvas.width / canvas.height;
+      
+      let drawWidth, drawHeight, drawX, drawY;
+      
+      if (canvasAspect > videoAspect) {
+        drawWidth = canvas.width;
+        drawHeight = canvas.width / videoAspect;
+        drawX = 0;
+        drawY = (canvas.height - drawHeight) / 2;
+      } else {
+        drawHeight = canvas.height;
+        drawWidth = canvas.height * videoAspect;
+        drawX = (canvas.width - drawWidth) / 2;
+        drawY = 0;
+      }
+      
+      ctx.drawImage(video, drawX, drawY, drawWidth, drawHeight);
       animationId = requestAnimationFrame(renderFrame);
     };
 
@@ -68,12 +87,21 @@ const NotFound = () => {
       video.play().catch(() => {});
     };
 
+    const handleResize = () => {
+      if (canvas) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+    };
+
     video.addEventListener('play', handlePlay);
     video.addEventListener('canplay', handleCanPlay);
+    window.addEventListener('resize', handleResize);
 
     return () => {
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('canplay', handleCanPlay);
+      window.removeEventListener('resize', handleResize);
       if (animationId) cancelAnimationFrame(animationId);
     };
   }, []);
@@ -87,7 +115,7 @@ const NotFound = () => {
 
   return (
     <div 
-      className="min-h-screen flex flex-col items-center justify-center px-4 select-none" 
+      className="min-h-screen flex flex-col items-center justify-center px-4 select-none relative overflow-hidden" 
       style={{ backgroundColor: '#1a1a1a' }}
       onContextMenu={preventInteraction}
     >
@@ -104,120 +132,126 @@ const NotFound = () => {
         onContextMenu={preventInteraction}
       />
 
-      {/* Animated Canvas Element - Seamlessly Blended */}
+      {/* LAYER 1: Full-screen video canvas background */}
       <div 
-        className="relative mb-8 group"
-        onContextMenu={preventInteraction}
-        onDragStart={preventInteraction}
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{ backgroundColor: '#1a1a1a' }}
       >
-        {/* Outer glow effect */}
-        <div className="absolute inset-0 w-80 h-80 md:w-96 md:h-96 -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 bg-gradient-radial from-purple-500/20 via-transparent to-transparent blur-3xl animate-pulse pointer-events-none" />
-        
-        {/* Secondary glow */}
-        <div className="absolute inset-0 w-64 h-64 md:w-80 md:h-80 -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 bg-gradient-radial from-teal-400/15 via-transparent to-transparent blur-2xl animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
-        
-        {/* Canvas container with seamless blend */}
-        <div className="relative w-64 h-64 md:w-80 md:h-80">
-          {/* Multi-layer gradient masks for seamless edges */}
-          
-          {/* Top fade */}
-          <div className="absolute inset-x-0 top-0 h-24 z-20 pointer-events-none" style={{
-            background: 'linear-gradient(to bottom, #1a1a1a 0%, #1a1a1a 20%, transparent 100%)'
-          }} />
-          
-          {/* Bottom fade */}
-          <div className="absolute inset-x-0 bottom-0 h-24 z-20 pointer-events-none" style={{
-            background: 'linear-gradient(to top, #1a1a1a 0%, #1a1a1a 20%, transparent 100%)'
-          }} />
-          
-          {/* Left fade */}
-          <div className="absolute inset-y-0 left-0 w-24 z-20 pointer-events-none" style={{
-            background: 'linear-gradient(to right, #1a1a1a 0%, #1a1a1a 20%, transparent 100%)'
-          }} />
-          
-          {/* Right fade */}
-          <div className="absolute inset-y-0 right-0 w-24 z-20 pointer-events-none" style={{
-            background: 'linear-gradient(to left, #1a1a1a 0%, #1a1a1a 20%, transparent 100%)'
-          }} />
-          
-          {/* Corner vignettes */}
-          <div className="absolute inset-0 z-20 pointer-events-none" style={{
-            background: 'radial-gradient(ellipse at center, transparent 30%, #1a1a1a 85%)'
-          }} />
-          
-          {/* Outer soft edge */}
-          <div className="absolute -inset-8 z-10 pointer-events-none" style={{
-            background: 'radial-gradient(ellipse at center, transparent 40%, #1a1a1a 70%)'
-          }} />
-          
-          {/* The canvas - renders video frames */}
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full object-cover pointer-events-none"
-            style={{ 
-              mixBlendMode: 'screen',
-              filter: 'contrast(1.15) saturate(1.3) brightness(1.05)',
-              opacity: isLoaded ? 1 : 0,
-              transition: 'opacity 0.5s ease-in-out'
-            }}
-            onContextMenu={preventInteraction}
-            onDragStart={preventInteraction}
-          />
-          
-          {/* Invisible protection overlay */}
-          <div 
-            className="absolute inset-0 z-30" 
-            style={{ backgroundColor: 'transparent' }}
-            onContextMenu={preventInteraction}
-            onDragStart={preventInteraction}
-            onMouseDown={preventInteraction}
-          />
-        </div>
-        
-        {/* Floating particles effect */}
-        <div className="absolute top-1/4 left-0 w-2 h-2 rounded-full bg-purple-400/40 animate-ping pointer-events-none" style={{ animationDuration: '3s' }} />
-        <div className="absolute top-1/2 right-0 w-1.5 h-1.5 rounded-full bg-teal-400/40 animate-ping pointer-events-none" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
-        <div className="absolute bottom-1/4 left-1/4 w-1 h-1 rounded-full bg-pink-400/40 animate-ping pointer-events-none" style={{ animationDuration: '4s', animationDelay: '1s' }} />
-        <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 rounded-full bg-cyan-400/30 animate-ping pointer-events-none" style={{ animationDuration: '3.5s', animationDelay: '1.5s' }} />
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full"
+          style={{ 
+            mixBlendMode: 'luminosity',
+            filter: 'brightness(0.45) contrast(1.25) saturate(0.7) blur(0.5px)',
+            opacity: isLoaded ? 0.55 : 0,
+            transition: 'opacity 1s ease-in-out'
+          }}
+          onContextMenu={preventInteraction}
+          onDragStart={preventInteraction}
+        />
       </div>
 
-      {/* Content */}
-      <div className="text-center max-w-lg animate-fade-up">
+      {/* LAYER 2: Radial vignette overlay - spotlight effect */}
+      <div 
+        className="fixed inset-0 z-[1] pointer-events-none"
+        style={{
+          background: `radial-gradient(
+            ellipse 80% 70% at 50% 45%,
+            transparent 0%,
+            transparent 15%,
+            rgba(26, 26, 26, 0.4) 35%,
+            rgba(26, 26, 26, 0.75) 55%,
+            #1a1a1a 80%
+          )`
+        }}
+      />
+
+      {/* LAYER 3: Edge fade overlays for perfect blend */}
+      <div 
+        className="fixed inset-0 z-[2] pointer-events-none"
+        style={{
+          background: `
+            linear-gradient(to bottom, #1a1a1a 0%, transparent 15%, transparent 85%, #1a1a1a 100%),
+            linear-gradient(to right, #1a1a1a 0%, transparent 10%, transparent 90%, #1a1a1a 100%)
+          `
+        }}
+      />
+
+      {/* LAYER 4: Subtle animated glow effects */}
+      <div className="fixed inset-0 z-[3] pointer-events-none overflow-hidden">
+        {/* Center glow */}
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full animate-pulse"
+          style={{
+            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 70%)',
+            animationDuration: '4s'
+          }}
+        />
+        {/* Secondary glow */}
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full animate-pulse"
+          style={{
+            background: 'radial-gradient(circle, rgba(45, 212, 191, 0.06) 0%, transparent 70%)',
+            animationDuration: '3s',
+            animationDelay: '1.5s'
+          }}
+        />
+        
+        {/* Floating particles */}
+        <div className="absolute top-1/4 left-1/4 w-1.5 h-1.5 rounded-full bg-purple-400/30 animate-ping" style={{ animationDuration: '3s' }} />
+        <div className="absolute top-1/3 right-1/4 w-1 h-1 rounded-full bg-teal-400/25 animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+        <div className="absolute bottom-1/3 left-1/3 w-1 h-1 rounded-full bg-pink-400/20 animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }} />
+        <div className="absolute top-2/3 right-1/3 w-1.5 h-1.5 rounded-full bg-cyan-400/20 animate-ping" style={{ animationDuration: '3.5s', animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/5 w-0.5 h-0.5 rounded-full bg-violet-300/25 animate-ping" style={{ animationDuration: '5s', animationDelay: '0.8s' }} />
+        <div className="absolute bottom-1/4 right-1/5 w-1 h-1 rounded-full bg-emerald-400/15 animate-ping" style={{ animationDuration: '4.5s', animationDelay: '1.2s' }} />
+      </div>
+
+      {/* LAYER 5: Full-page protection overlay */}
+      <div 
+        className="fixed inset-0 z-[4]" 
+        style={{ backgroundColor: 'transparent' }}
+        onContextMenu={preventInteraction}
+        onDragStart={preventInteraction}
+        onMouseDown={preventInteraction}
+      />
+
+      {/* LAYER 6: Content - above all overlays */}
+      <div className="relative z-10 text-center max-w-lg animate-fade-up">
         {/* Heading */}
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 drop-shadow-lg">
           Looking for something?
         </h1>
         
         {/* Subtext with Links */}
-        <p className="text-gray-400 text-base md:text-lg mb-8 leading-relaxed">
+        <p className="text-gray-300 text-base md:text-lg mb-8 leading-relaxed drop-shadow-md">
           We can't find this page. But we can help you find:{" "}
           <Link 
             to="/dashboard/marketplace" 
-            className="text-green-500 hover:text-green-400 underline underline-offset-2 transition-colors"
+            className="text-green-400 hover:text-green-300 underline underline-offset-2 transition-colors"
           >
             browse products
           </Link>
           ,{" "}
           <Link 
             to="/seller" 
-            className="text-green-500 hover:text-green-400 underline underline-offset-2 transition-colors"
+            className="text-green-400 hover:text-green-300 underline underline-offset-2 transition-colors"
           >
             become a seller
           </Link>
           {" "}or{" "}
           <Link 
             to="/dashboard/chat" 
-            className="text-green-500 hover:text-green-400 underline underline-offset-2 transition-colors"
+            className="text-green-400 hover:text-green-300 underline underline-offset-2 transition-colors"
           >
             get help
           </Link>
           .
         </p>
         
-        {/* Go to Homepage Button - Upwork Green */}
+        {/* Go to Homepage Button */}
         <Link to="/">
           <Button 
-            className="px-8 py-3 text-base font-semibold rounded-full transition-all duration-200 hover:scale-105"
+            className="px-8 py-3 text-base font-semibold rounded-full transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
             style={{ 
               backgroundColor: '#14a800', 
               color: 'white',
@@ -231,9 +265,9 @@ const NotFound = () => {
       </div>
 
       {/* Footer Info */}
-      <div className="absolute bottom-8 text-center text-gray-500 text-sm">
+      <div className="absolute bottom-8 text-center text-gray-500 text-sm z-10">
         <p className="mb-1">
-          Error 404 (N) • Route: <span className="font-mono">{location.pathname}</span>
+          Error 404 (N) • Route: <span className="font-mono text-gray-400">{location.pathname}</span>
         </p>
         <p>© 2024 - 2025 Uptoza</p>
       </div>
