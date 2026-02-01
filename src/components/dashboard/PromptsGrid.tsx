@@ -397,92 +397,93 @@ const PromptsGrid = () => {
 
   return (
     <div className="space-y-6 lg:space-y-8 section-prompts animate-fade-up">
-      {/* Tab Navigation with Integrated Search */}
-      <div className="bg-white rounded-2xl p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
-          {/* Tab buttons - Horizontal scroll on mobile */}
-          <div className="flex gap-1 lg:gap-2 overflow-x-auto hide-scrollbar">
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'all'
-                  ? 'bg-gray-900 text-white shadow-lg'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
-              }`}
-            >
-              <Layers size={14} />
-              <span className="hidden sm:inline">Browse</span> Prompts
-            </button>
-            <button
-              onClick={() => setActiveTab('trending')}
-              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'trending'
-                  ? 'bg-gray-900 text-white shadow-lg'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
-              }`}
-            >
-              <TrendingUp size={14} />
-              Trending
-              {trendingPrompts.length > 0 && (
-                <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
-                  activeTab === 'trending' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
-                }`}>
-                  {trendingPrompts.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('saved')}
-              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'saved'
-                  ? 'bg-gray-900 text-white shadow-lg'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
-              }`}
-            >
-              <Bookmark size={14} />
-              Saved
-              {favoritePrompts.length > 0 && (
-                <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
-                  activeTab === 'saved' ? 'bg-white text-gray-900' : 'bg-gray-200 text-gray-700'
-                }`}>
-                  {favoritePrompts.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('categories')}
-              className={`px-3 lg:px-6 py-2 lg:py-3.5 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'categories'
-                  ? 'bg-gray-900 text-white shadow-lg'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
-              }`}
-            >
-              <FolderOpen size={14} />
-              Categories
-            </button>
-          </div>
+      {/* Tab Navigation - Gumroad Style Underline Tabs */}
+      <div className="mb-6 border-b border-black/10">
+        <div className="flex gap-6 overflow-x-auto hide-scrollbar">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`pb-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'all'
+                ? 'text-black border-b-2 border-black'
+                : 'text-black/50 hover:text-black'
+            }`}
+          >
+            <Layers size={16} />
+            <span>Prompts</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('trending')}
+            className={`pb-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'trending'
+                ? 'text-black border-b-2 border-black'
+                : 'text-black/50 hover:text-black'
+            }`}
+          >
+            <TrendingUp size={16} />
+            <span>Trending</span>
+            {trendingPrompts.length > 0 && (
+              <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
+                activeTab === 'trending' ? 'bg-black text-white' : 'bg-black/10 text-black/70'
+              }`}>
+                {trendingPrompts.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('saved')}
+            className={`pb-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'saved'
+                ? 'text-black border-b-2 border-black'
+                : 'text-black/50 hover:text-black'
+            }`}
+          >
+            <Bookmark size={16} />
+            <span>Saved</span>
+            {favoritePrompts.length > 0 && (
+              <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
+                activeTab === 'saved' ? 'bg-black text-white' : 'bg-black/10 text-black/70'
+              }`}>
+                {favoritePrompts.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('categories')}
+            className={`pb-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'categories'
+                ? 'text-black border-b-2 border-black'
+                : 'text-black/50 hover:text-black'
+            }`}
+          >
+            <FolderOpen size={16} />
+            <span>Categories</span>
+          </button>
+        </div>
+      </div>
 
-          {/* Search Box - Integrated into Tab Bar */}
-          <div className="relative w-full lg:w-64">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      {/* Search Bar - Separate Section Below Tabs */}
+      {activeTab === 'all' && (
+        <div className="mb-6">
+          <div className="relative max-w-md">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40" />
             <input
               type="text"
               placeholder="Search prompts..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all"
+              className="w-full pl-11 pr-10 py-3 bg-white border-2 border-black/15 rounded-xl text-sm text-black placeholder-black/40 focus:outline-none focus:border-black/30 transition-all"
             />
             {localSearch && (
               <button
                 onClick={() => setLocalSearch('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-black/5 transition-colors"
               >
-                <X size={12} className="text-gray-500" />
+                <X size={14} className="text-black/50" />
               </button>
             )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* All Prompts Tab - Marketplace Layout with Sidebar */}
       {activeTab === 'all' && (
