@@ -22,7 +22,7 @@ import { generateProductUrlWithFallback } from '@/lib/url-utils';
 import { HotProductsSection } from '@/components/marketplace/HotProductsSection';
 import { TopRatedSection } from '@/components/marketplace/TopRatedSection';
 import { NewArrivalsSection } from '@/components/marketplace/NewArrivalsSection';
-import { CategoryBrowser } from '@/components/marketplace/CategoryBrowser';
+// CategoryBrowser removed per redesign
 
 // Import real product images
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
@@ -1301,11 +1301,6 @@ const AIAccountsSection = () => {
             {/* Discovery Sections - Only show when no active search/filters */}
             {searchQuery.length === 0 && selectedTags.length === 0 && categoryFilter === 'all' && (
               <div className="space-y-8 mb-8">
-                {/* Category Browser */}
-                <CategoryBrowser
-                  onCategoryClick={(categoryId) => setCategoryFilter(categoryId)}
-                  selectedCategory={categoryFilter}
-                />
 
                 {/* Hot Products */}
                 <HotProductsSection
@@ -1381,7 +1376,7 @@ const AIAccountsSection = () => {
               </div> : <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
                 {filteredAccounts.map(account => {
             const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
-            return <div key={account.id} className="group bg-white rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer">
+            return <div key={account.id} className="group w-full text-left bg-white rounded-xl overflow-hidden border border-black/10 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5 cursor-pointer">
                       {/* Image */}
                       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
                         {account.icon_url ? <img src={account.icon_url} alt={account.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -1425,8 +1420,7 @@ const AIAccountsSection = () => {
 
                         {/* Price Badge */}
                         <div className="mb-2 flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-100 text-emerald-700">
-                            <Check size={10} />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-sm font-semibold bg-black text-white">
                             ${account.price}
                           </span>
                           {account.original_price && account.original_price > account.price && <span className="text-[10px] sm:text-xs text-gray-400 line-through">${account.original_price}</span>}
@@ -1483,7 +1477,7 @@ const AIAccountsSection = () => {
             return matchesSearch && matchesCategory && matchesTags;
           }).map(product => {
             const hasEnoughBalance = (wallet?.balance || 0) >= product.price;
-            return <div key={`seller-${product.id}`} className="group bg-white rounded-2xl overflow-hidden border-2 border-emerald-200 shadow-md hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+            return <div key={`seller-${product.id}`} className="group w-full text-left bg-white rounded-xl overflow-hidden border border-black/10 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5 cursor-pointer">
                       {/* Image */}
                       <div className="relative aspect-[4/3] overflow-hidden">
                         {product.icon_url ? <img src={product.icon_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -1491,7 +1485,7 @@ const AIAccountsSection = () => {
                           </div>}
 
                         {/* Seller Badge */}
-                        <div className="absolute top-3 left-3 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                        <div className="absolute top-3 left-3 px-2.5 py-1 bg-black text-white rounded-full text-xs font-medium flex items-center gap-1">
                           <Store size={12} />
                           {product.seller_profiles?.store_name || 'Seller'}
                         </div>
@@ -1508,8 +1502,8 @@ const AIAccountsSection = () => {
                         <p className="hidden sm:block text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">{product.description || 'Premium account from verified seller'}</p>
                         
                         <div className="mb-2 sm:mb-3 flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-100 text-emerald-700">
-                            <Check size={10} className="sm:w-3 sm:h-3" />${product.price}
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-sm font-semibold bg-black text-white">
+                            ${product.price}
                           </span>
                         </div>
 
@@ -1531,7 +1525,7 @@ const AIAccountsSection = () => {
                       productName: product.name,
                       type: 'seller'
                     });
-                  }} className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-emerald-100 hover:bg-emerald-200 text-emerald-700 min-h-[44px]">
+                  }} className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-black/5 hover:bg-black/10 text-black min-h-[44px]">
                               <MessageCircle size={16} className="sm:w-4 sm:h-4" />
                               <span className="hidden sm:inline text-sm">Chat</span>
                             </button>}
