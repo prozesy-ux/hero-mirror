@@ -1,107 +1,116 @@
 
-## Goal
-Make the product hover preview always appear perfectly centered on the screen (and not get cut off) no matter where the product card is on the page (top/middle/bottom).
 
-## Why it’s still not working (root cause)
-Even though we set `position: fixed` on `HoverCardContent`, Radix HoverCard uses an internal Popper wrapper:
+# Fix Hover Preview Flickering Issue
 
-- Radix creates an outer wrapper `<div data-radix-popper-content-wrapper ... style="transform: translate(...)" />`
-- That wrapper has a `transform`, and **any parent with `transform` changes how `position: fixed` behaves** (it can behave like it’s fixed relative to that transformed wrapper, not the viewport).
-- Result: the preview can be **offset from center** and can get **cut off**, especially when you are near the bottom or after scroll.
+## Problem
 
-So: the issue is not only `side/align` props. It’s the Popper wrapper transform.
+The hover preview is flickering (opening and closing repeatedly) because:
 
-## Solution approach (guaranteed center)
-Stop using Radix HoverCard/Popper for these “centered preview” product hovers, and replace it with a simple custom hover system that:
+1. When mouse leaves the trigger card, a 150ms close timer starts
+2. The preview appears in screen center (not near the trigger), so there's a gap
+3. As the mouse travels from the trigger toward the centered preview, it's over the **backdrop** (not the content)
+4. The backdrop doesn't cancel the close timer
+5. Result: Preview closes before mouse can reach it, then re-opens when mouse hits another card
 
-- Opens on mouse hover (desktop only)
-- Renders the preview using a Portal directly to `document.body`
-- Uses a single fixed-position container centered with:
-  - `position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);`
-- Adds safe sizing so it never gets cut off:
-  - `max-width: 95vw`
-  - `max-height: 90vh`
-  - `overflow: auto`
+```text
+Current behavior:
+┌─────────────────────────────────────────────────────────────┐
+│                     BACKDROP (bg-black/20)                  │
+│                                                             │
+│                    ┌─────────────────┐                      │
+│                    │   Preview Box   │ ← only this cancels  │
+│                    │                 │   close timer        │
+│                    └─────────────────┘                      │
+│                           ↑                                 │
+│           mouse travels here (over backdrop)                │
+│           close timer KEEPS RUNNING! ← Problem              │
+│                           ↑                                 │
+│  ┌────┐                                                     │
+│  │Card│ ← mouse leaves here, close timer starts             │
+│  └────┘                                                     │
+└─────────────────────────────────────────────────────────────┘
+```
 
-This avoids all Popper transforms entirely.
+## Solution
 
-## Implementation steps (what I will change)
+Treat the entire overlay (backdrop + content) as a single hover zone. When mouse is anywhere inside the portal (backdrop OR content), cancel the close timer.
 
-### 1) Create a reusable “centered hover preview” component
-Create a new component (recommended location):
-- `src/components/ui/CenteredHoverPreview.tsx`
+```text
+Fixed behavior:
+┌─────────────────────────────────────────────────────────────┐
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │           ENTIRE OVERLAY = hover zone                 │  │
+│  │                                                       │  │
+│  │              ┌─────────────────┐                      │  │
+│  │              │   Preview Box   │                      │  │
+│  │              └─────────────────┘                      │  │
+│  │                                                       │  │
+│  │    Mouse anywhere here = stays open                   │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                             │
+│  ┌────┐                                                     │
+│  │Card│                                                     │
+│  └────┘                                                     │
+└─────────────────────────────────────────────────────────────┘
+```
 
-Behavior:
-- Props:
-  - `children` (the product card)
-  - `content` (the preview UI to show)
-  - `openDelay` (default 350–400ms)
-  - `closeDelay` (default 150ms)
-  - `disabled` (true on mobile)
-- Desktop interactions:
-  - `onMouseEnter` → start open timer
-  - `onMouseLeave` → start close timer
-  - Keep open when hovering over the preview itself
-  - `Escape` closes
-  - Optional: click outside closes (recommended)
-- Render:
-  - Use `createPortal(content, document.body)`
-  - Wrapper: `fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2`
-  - Sizing: `w-[700px] max-w-[95vw] max-h-[90vh] overflow-auto`
-  - Very high z-index: `z-[9999]`
-  - Background must be solid (not transparent): `bg-white`
+## Technical Changes
 
-Why this fixes your complaint:
-- No Popper wrapper
-- No transform-based offset
-- Always centered, always constrained to viewport
+### Update CenteredHoverPreview.tsx
 
-### 2) Replace Radix HoverCard usage in marketplace product hover
-Update:
-- `src/components/marketplace/ProductHoverCard.tsx`
+1. **Wrap backdrop + content in a single container** with hover handlers
+2. **Add onMouseEnter to the outer wrapper** to cancel close timer when mouse enters the overlay area
+3. **Only close on explicit actions**: clicking backdrop, pressing Escape, or clicking X button
+4. **Remove onMouseLeave from content** (no auto-close when leaving content)
 
-Changes:
-- Remove:
-  - `HoverCard`, `HoverCardTrigger`, `HoverCardContent` usage
-- Wrap the existing `children` and the existing `HoverContent` inside `CenteredHoverPreview`
-- Keep the current behavior:
-  - Mobile: tap navigates, no hover preview
-  - Desktop: hover opens centered preview
-  - Clicking the card still navigates (if `navigateOnClick` is true)
-  - Buttons inside preview (Buy/Chat) keep working (still use `stopPropagation()`)
+```typescript
+// Current structure (problematic):
+{isOpen && createPortal(
+  <>
+    <div className="backdrop" onClick={handleClose} />  // No hover handling
+    <div onMouseEnter={cancel} onMouseLeave={close}>    // Only this cancels
+      {content}
+    </div>
+  </>,
+  document.body
+)}
 
-### 3) Replace Radix HoverCard usage in store product hover
-Update:
-- `src/components/store/StoreProductHoverCard.tsx`
+// Fixed structure:
+{isOpen && createPortal(
+  <div 
+    className="fixed inset-0 z-[9998]"
+    onMouseEnter={handleOverlayMouseEnter}  // Cancel close timer
+  >
+    <div className="backdrop" onClick={handleClose} />
+    <div className="centered-content">
+      {content}
+    </div>
+  </div>,
+  document.body
+)}
+```
 
-Same replacement as marketplace:
-- Use `CenteredHoverPreview` for desktop
-- Keep mobile behavior unchanged
+### Key behavior changes:
 
-### 4) Keep `src/components/ui/hover-card.tsx` as-is (or simplify later)
-After the above change, the product preview feature will no longer depend on Radix HoverCard positioning.
-We can leave `hover-card.tsx` intact for other small hover tooltips in the app.
+| Action | Before | After |
+|--------|--------|-------|
+| Mouse leaves trigger | Starts 150ms close timer | Same (starts timer) |
+| Mouse enters backdrop area | Timer keeps running | Timer cancelled |
+| Mouse enters content | Timer cancelled | Timer cancelled |
+| Mouse leaves content | Starts close timer | No effect |
+| Mouse leaves overlay entirely | N/A | Starts close timer |
+| Click backdrop | Closes | Closes |
+| Press Escape | Closes | Closes |
 
-(Optionally later: we can remove the `fixed-center` hacks because they won’t be used anymore.)
+## Files to Modify
 
-## Acceptance checks (what you should see)
-1) Scroll to the very bottom and hover any product card:
-   - Preview opens in the exact center (same spot every time)
-2) Hover cards at top/middle/bottom:
-   - Always same centered position
-3) On smaller screens (desktop resized):
-   - Preview stays within viewport (no cut off); scroll appears inside the preview if needed
-4) Clicking Buy/Chat:
-   - Preview does not jump/move
-5) Mobile:
-   - No hover preview; tap navigates as before
+| File | Changes |
+|------|---------|
+| `src/components/ui/CenteredHoverPreview.tsx` | Wrap portal content in single hover container |
 
-## Files involved
-- NEW: `src/components/ui/CenteredHoverPreview.tsx`
-- UPDATE: `src/components/marketplace/ProductHoverCard.tsx`
-- UPDATE: `src/components/store/StoreProductHoverCard.tsx`
+## Result
 
-## Risk / trade-offs
-- Slightly more custom code, but far more predictable than Popper for a forced-centered preview.
-- This change is limited only to the product preview hover system, so it won’t affect other dropdowns/menus/tooltips.
+- No more flickering when moving mouse from card to preview
+- Preview stays open while mouse is anywhere in the overlay
+- Clean close behavior: click backdrop, press Escape, or move mouse completely out
 
