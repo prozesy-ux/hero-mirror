@@ -1,8 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Package, ShoppingCart, BarChart2, Warehouse, Users, Mail, FileText, Activity, MessageSquare, CreditCard, Settings, HelpCircle, Zap, TrendingUp, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import { useSellerContext } from '@/contexts/SellerContext';
-import uptozaLogo from '@/assets/uptoza-logo.png';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Tooltip,
@@ -10,27 +9,28 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { GUMROAD_ICONS, GumroadIcon } from '@/components/icons/GumroadIcons';
 
-// Gumroad-style navigation labels
+// Gumroad-style navigation labels with custom icons
 const navItems = [
-  { to: '/seller', icon: Home, label: 'Home', exact: true },
-  { to: '/seller/products', icon: Package, label: 'Products' },
-  { to: '/seller/orders', icon: ShoppingCart, label: 'Sales' },
-  { to: '/seller/customers', icon: Users, label: 'Customers' },
-  { to: '/seller/flash-sales', icon: Zap, label: 'Flash Sales' },
-  { to: '/seller/analytics', icon: BarChart2, label: 'Analytics' },
-  { to: '/seller/product-analytics', icon: TrendingUp, label: 'Insights' },
-  { to: '/seller/wallet', icon: CreditCard, label: 'Payouts' },
-  { to: '/seller/marketing', icon: Mail, label: 'Emails' },
-  { to: '/seller/inventory', icon: Warehouse, label: 'Inventory' },
-  { to: '/seller/reports', icon: FileText, label: 'Reports' },
-  { to: '/seller/performance', icon: Activity, label: 'Performance' },
-  { to: '/seller/chat', icon: MessageSquare, label: 'Chat' },
+  { to: '/seller', iconSrc: GUMROAD_ICONS.home, label: 'Home', exact: true },
+  { to: '/seller/products', iconSrc: GUMROAD_ICONS.products, label: 'Products' },
+  { to: '/seller/orders', iconSrc: GUMROAD_ICONS.sales, label: 'Sales' },
+  { to: '/seller/customers', iconSrc: GUMROAD_ICONS.customers, label: 'Customers' },
+  { to: '/seller/flash-sales', iconSrc: GUMROAD_ICONS.flashSales, label: 'Flash Sales' },
+  { to: '/seller/analytics', iconSrc: GUMROAD_ICONS.analytics, label: 'Analytics' },
+  { to: '/seller/product-analytics', iconSrc: GUMROAD_ICONS.insights, label: 'Insights' },
+  { to: '/seller/wallet', iconSrc: GUMROAD_ICONS.payouts, label: 'Payouts' },
+  { to: '/seller/marketing', iconSrc: GUMROAD_ICONS.emails, label: 'Emails' },
+  { to: '/seller/inventory', iconSrc: GUMROAD_ICONS.inventory, label: 'Inventory' },
+  { to: '/seller/reports', iconSrc: GUMROAD_ICONS.reports, label: 'Reports' },
+  { to: '/seller/performance', iconSrc: GUMROAD_ICONS.performance, label: 'Performance' },
+  { to: '/seller/chat', iconSrc: GUMROAD_ICONS.chat, label: 'Chat' },
 ];
 
 const bottomNavItems = [
-  { to: '/seller/settings', icon: Settings, label: 'Settings' },
-  { to: '/seller/support', icon: HelpCircle, label: 'Help' },
+  { to: '/seller/settings', iconSrc: GUMROAD_ICONS.settings, label: 'Settings' },
+  { to: '/seller/support', iconSrc: GUMROAD_ICONS.help, label: 'Help' },
 ];
 
 const SellerSidebar = () => {
@@ -42,6 +42,10 @@ const SellerSidebar = () => {
     if (exact) return location.pathname === path;
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
+
+  // CSS filter for pink color on active state
+  const activeFilter = 'brightness(0) saturate(100%) invert(75%) sepia(50%) saturate(1000%) hue-rotate(280deg) brightness(1.1)';
+  const inactiveFilter = 'brightness(0) invert(1) opacity(0.8)';
 
   return (
     <TooltipProvider>
@@ -65,7 +69,6 @@ const SellerSidebar = () => {
         <nav className="flex-1 py-4 overflow-y-auto">
           {navItems.map((item) => {
             const active = isActive(item.to, item.exact);
-            const Icon = item.icon;
 
             if (isCollapsed) {
               return (
@@ -79,7 +82,13 @@ const SellerSidebar = () => {
                           : 'text-white/80 hover:text-white'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={2} />
+                      <GumroadIcon 
+                        src={item.iconSrc} 
+                        size={20} 
+                        alt={item.label}
+                        className="transition-all"
+                        style={{ filter: active ? activeFilter : inactiveFilter }}
+                      />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-white text-black border-0">
@@ -99,7 +108,13 @@ const SellerSidebar = () => {
                     : 'text-white/80 hover:text-white'
                 }`}
               >
-                <Icon size={20} strokeWidth={2} />
+                <GumroadIcon 
+                  src={item.iconSrc} 
+                  size={20} 
+                  alt={item.label}
+                  className="transition-all"
+                  style={{ filter: active ? activeFilter : inactiveFilter }}
+                />
                 <span>{item.label}</span>
               </Link>
             );
@@ -111,7 +126,6 @@ const SellerSidebar = () => {
           {/* Settings & Help */}
           {bottomNavItems.map((item) => {
             const active = isActive(item.to);
-            const Icon = item.icon;
 
             if (isCollapsed) {
               return (
@@ -125,7 +139,13 @@ const SellerSidebar = () => {
                           : 'text-white/80 hover:text-white'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={2} />
+                      <GumroadIcon 
+                        src={item.iconSrc} 
+                        size={20} 
+                        alt={item.label}
+                        className="transition-all"
+                        style={{ filter: active ? activeFilter : inactiveFilter }}
+                      />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-white text-black border-0">
@@ -145,7 +165,13 @@ const SellerSidebar = () => {
                     : 'text-white/80 hover:text-white'
                 }`}
               >
-                <Icon size={20} strokeWidth={2} />
+                <GumroadIcon 
+                  src={item.iconSrc} 
+                  size={20} 
+                  alt={item.label}
+                  className="transition-all"
+                  style={{ filter: active ? activeFilter : inactiveFilter }}
+                />
                 <span>{item.label}</span>
               </Link>
             );
