@@ -1,11 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, Store, ShoppingCart, Heart, Sparkles,
-  BarChart3, FileText, Wallet, Bell, MessageSquare, Settings,
-  ChevronLeft, ChevronRight, ChevronDown 
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Store, ShoppingCart, Heart, Sparkles, BarChart2, CreditCard, Bell, MessageSquare, Settings, ChevronDown, FileText } from 'lucide-react';
 import { useSidebarContext } from '@/contexts/SidebarContext';
 import { useAuthContext } from '@/contexts/AuthContext';
+import uptozaLogo from '@/assets/uptoza-logo.png';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Tooltip,
@@ -14,16 +11,16 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-// Gumroad-style navigation with Lucide icons for buyer
+// Gumroad-style navigation labels for buyer
 const navItems = [
   { to: '/dashboard/home', icon: Home, label: 'Home' },
   { to: '/dashboard/marketplace', icon: Store, label: 'Marketplace' },
   { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
   { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
   { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
-  { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/dashboard/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/dashboard/reports', icon: FileText, label: 'Reports' },
-  { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
+  { to: '/dashboard/wallet', icon: CreditCard, label: 'Wallet' },
 ];
 
 const bottomNavItems = [
@@ -75,7 +72,7 @@ const DashboardSidebar = () => {
                           : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={1.5} />
+                      <Icon size={20} strokeWidth={2} />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-slate-900 text-white border-0">
@@ -95,7 +92,7 @@ const DashboardSidebar = () => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Icon size={20} strokeWidth={1.5} />
+                <Icon size={20} strokeWidth={2} />
                 <span>{item.label}</span>
               </Link>
             );
@@ -121,7 +118,7 @@ const DashboardSidebar = () => {
                           : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={1.5} />
+                      <Icon size={20} strokeWidth={2} />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-slate-900 text-white border-0">
@@ -141,7 +138,7 @@ const DashboardSidebar = () => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Icon size={20} strokeWidth={1.5} />
+                <Icon size={20} strokeWidth={2} />
                 <span>{item.label}</span>
               </Link>
             );

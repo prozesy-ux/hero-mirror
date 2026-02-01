@@ -1,129 +1,128 @@
 
+# Dashboard Marketplace Product View URL Routing Fix
 
-# Fix Sidebar Icons - Match Gumroad Reference Design
+## Problem
 
-## Problem Identified
+When clicking "View Full Details" in the dashboard marketplace Quick View Modal, the navigation:
+- Currently redirects to external store page (`/store/{storeSlug}/product/{slug}`)
+- Should stay within the dashboard at `/dashboard/marketplace/product/{slug}`
 
-The uploaded icons (files 5-15) are Gumroad's **illustrated mascot/character icons** (colorful, complex, filled shapes like hands, monsters, flowers) - NOT the **clean outlined sidebar icons** shown in the reference image.
-
-**Reference image shows:**
-- Simple, minimal outlined icons
-- Consistent stroke-based design
-- White icons on black background
-- Pink (#FF90E8) active state
-
-**Current uploaded icons are:**
-- Colorful illustrated mascots (pink hands, blue waves, monsters)
-- Complex filled shapes
-- Not suitable for sidebar navigation
-
-## Solution Options
-
-### Option A: Use Lucide Icons (Best Match)
-
-Revert to Lucide React icons which closely match the clean outlined style in the Gumroad reference:
-
-| Menu Item | Lucide Icon | Matches Reference |
-|-----------|-------------|-------------------|
-| Home | `Home` | House outline |
-| Products | `Package` | Box/package |
-| Collaborators/Customers | `Users` | People icons |
-| Checkout/Sales | `ShoppingCart` | Cart icon |
-| Emails | `Mail` | Envelope |
-| Workflows | `Workflow` | Flow icon |
-| Analytics | `BarChart3` | Bar chart |
-| Payouts | `Building2` or `Landmark` | Building |
-| Discover | `Search` | Magnifying glass |
-| Library | `BookOpen` | Book |
-| Settings | `Settings` | Gear |
-| Help | `HelpCircle` | Question mark |
-
-### Option B: Upload Correct Gumroad Icons
-
-If you have the actual Gumroad sidebar icons (the simple outlined ones), upload those instead. They would be simple SVG files with stroke-based paths, not filled illustrations.
-
-## Implementation (Option A Recommended)
-
-### Files to Modify
-
-| File | Action |
-|------|--------|
-| `src/components/seller/SellerSidebar.tsx` | Revert to Lucide icons |
-| `src/components/dashboard/DashboardSidebar.tsx` | Revert to Lucide icons |
-| `src/components/icons/GumroadIcons.tsx` | Can be removed or kept for other uses |
-
-### Menu Structure (Seller - Matching Reference)
+## Current Flow
 
 ```text
-SELLER SIDEBAR (Black bg, white icons, pink active)
-┌─────────────────────────┐
-│  UPTOZA (text logo)     │
-├─────────────────────────┤
-│  🏠 Home                │  <- Home icon
-│  📦 Products            │  <- Package icon (pink when active)
-│  👥 Customers           │  <- Users icon
-│  🛒 Sales               │  <- ShoppingCart icon
-│  📊 Analytics           │  <- BarChart3 icon
-│  🏛️ Payouts             │  <- Landmark/Building icon
-│  ✉️ Emails              │  <- Mail icon
-│  📦 Inventory           │  <- Warehouse icon
-│  📄 Reports             │  <- FileText icon
-├─────────────────────────┤
-│  🔍 Discover            │  <- Search icon (optional)
-│  📚 Library             │  <- BookOpen icon (optional)
-├─────────────────────────┤
-│  ⚙️ Settings            │  <- Settings icon
-│  ❓ Help                │  <- HelpCircle icon
-└─────────────────────────┘
+User in /dashboard/marketplace
+    ↓
+Clicks product card → Quick View Modal opens
+    ↓
+Clicks "View Full Details"
+    ↓
+❌ Navigates to /store/{storeSlug}/product/{slug}  ← WRONG (leaves dashboard)
 ```
 
-### Code Changes
+## Target Flow
 
-**SellerSidebar.tsx:**
+```text
+User in /dashboard/marketplace
+    ↓
+Clicks product card → Quick View Modal opens
+    ↓
+Clicks "View Full Details"
+    ↓
+✓ Navigates to /dashboard/marketplace/product/{slug}  ← CORRECT (stays in dashboard)
+```
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/components/dashboard/AIAccountsSection.tsx` | Update `onViewFull` navigation to use dashboard route |
+| `src/pages/Dashboard.tsx` | Update route param from `:productId` to `:productSlug` |
+| `src/components/dashboard/ProductFullViewPage.tsx` | Add slug-based product lookup |
+
+## Implementation Details
+
+### 1. Update Navigation in AIAccountsSection.tsx
+
+**Current code (lines 2064-2080):**
 ```typescript
-// Revert to Lucide imports
-import { 
-  Home, Package, ShoppingCart, Users, BarChart3, 
-  Landmark, Mail, Warehouse, FileText, Activity,
-  MessageSquare, Settings, HelpCircle, Zap, TrendingUp,
-  ChevronLeft, ChevronRight, ChevronDown 
-} from 'lucide-react';
-
-const navItems = [
-  { to: '/seller', icon: Home, label: 'Home', exact: true },
-  { to: '/seller/products', icon: Package, label: 'Products' },
-  { to: '/seller/orders', icon: ShoppingCart, label: 'Sales' },
-  { to: '/seller/customers', icon: Users, label: 'Customers' },
-  // ... etc
-];
-
-// Render with strokeWidth={1.5} for thinner lines matching Gumroad
-<item.icon size={20} strokeWidth={1.5} />
+onViewFull={() => {
+  setShowQuickViewModal(false);
+  if (quickViewProduct?.type === 'seller') {
+    const product = quickViewProduct.data as SellerProduct;
+    const storeSlug = product.seller_profiles?.store_slug;
+    if (storeSlug) {
+      navigate(generateProductUrlWithFallback(...));  // Goes to /store/...
+      return;
+    }
+  }
+  navigate(`/dashboard/ai-accounts/product/${quickViewProduct?.data.id}`);
+}}
 ```
 
-**DashboardSidebar.tsx:**
+**New code:**
 ```typescript
-// Same pattern for buyer dashboard
-import { 
-  Home, Store, ShoppingCart, Heart, Sparkles,
-  BarChart3, FileText, Wallet, Bell, MessageSquare, Settings,
-  ChevronLeft, ChevronRight, ChevronDown 
-} from 'lucide-react';
+onViewFull={() => {
+  setShowQuickViewModal(false);
+  if (quickViewProduct?.type === 'seller') {
+    const product = quickViewProduct.data as SellerProduct;
+    // Use slug if available, otherwise fallback to ID
+    const slug = product.slug || product.id;
+    navigate(`/dashboard/marketplace/product/${slug}`);
+  } else if (quickViewProduct) {
+    navigate(`/dashboard/marketplace/product/${quickViewProduct.data.id}`);
+  }
+}}
 ```
 
-## Visual Result
+### 2. Update Dashboard Route
 
-After implementation, the sidebar will have:
-- Clean outlined icons matching the Gumroad reference
-- Proper white/gray color for inactive state
-- Pink (#FF90E8) for active state on Seller
-- Violet for active state on Buyer
-- Consistent 20px size with 1.5 stroke width
+**Current:**
+```typescript
+<Route path="marketplace/product/:productId" element={<ProductFullViewPage />} />
+```
+
+**New:**
+```typescript
+<Route path="marketplace/product/:productSlug" element={<ProductFullViewPage />} />
+```
+
+### 3. Update ProductFullViewPage.tsx Lookup
+
+Add slug-based lookup to support SEO-friendly URLs:
+
+**Current lookup (lines 133-160):**
+```typescript
+const { productId } = useParams<{ productId: string }>();
+// Queries by ID only
+.eq('id', productId)
+```
+
+**New lookup strategy:**
+```typescript
+const { productSlug } = useParams<{ productSlug: string }>();
+
+// Determine if param is UUID or slug
+const isUUID = /^[a-f0-9-]{36}$/i.test(productSlug || '');
+
+if (isUUID) {
+  // Query by ID
+  .eq('id', productSlug)
+} else {
+  // Query by slug first, then fallback to name matching
+  .eq('slug', productSlug)
+}
+```
+
+## URL Examples
+
+| Action | Old URL | New URL |
+|--------|---------|---------|
+| View Netflix product | `/store/prozesy/product/netflix-premium` | `/dashboard/marketplace/product/netflix-premium` |
+| View by ID (fallback) | `/dashboard/ai-accounts/product/abc123...` | `/dashboard/marketplace/product/abc123...` |
 
 ## Summary
 
-- The uploaded icons are decorative illustrations, not navigation icons
-- Lucide icons are the best match for the reference design
-- Both sidebars will be updated to use Lucide with proper styling
-- Keep the same color scheme (black/pink for seller, white/violet for buyer)
-
+- All product full views from dashboard stay within `/dashboard/marketplace/product/{slug}`
+- Supports both UUID and slug-based lookups for backward compatibility
+- Maintains dashboard header, sidebar, and context
+- SEO-friendly URLs match the store pattern

@@ -1,12 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, Package, ShoppingCart, Users, BarChart3, 
-  Landmark, Mail, Warehouse, FileText, Activity,
-  MessageSquare, Settings, HelpCircle, Zap, TrendingUp,
-  ChevronLeft, ChevronRight, ChevronDown 
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Package, ShoppingCart, BarChart2, Warehouse, Users, Mail, FileText, Activity, MessageSquare, CreditCard, Settings, HelpCircle, Zap, TrendingUp, ChevronDown } from 'lucide-react';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import { useSellerContext } from '@/contexts/SellerContext';
+import uptozaLogo from '@/assets/uptoza-logo.png';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Tooltip,
@@ -15,16 +11,16 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-// Gumroad-style navigation with Lucide icons
+// Gumroad-style navigation labels
 const navItems = [
   { to: '/seller', icon: Home, label: 'Home', exact: true },
   { to: '/seller/products', icon: Package, label: 'Products' },
   { to: '/seller/orders', icon: ShoppingCart, label: 'Sales' },
   { to: '/seller/customers', icon: Users, label: 'Customers' },
   { to: '/seller/flash-sales', icon: Zap, label: 'Flash Sales' },
-  { to: '/seller/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/seller/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/seller/product-analytics', icon: TrendingUp, label: 'Insights' },
-  { to: '/seller/wallet', icon: Landmark, label: 'Payouts' },
+  { to: '/seller/wallet', icon: CreditCard, label: 'Payouts' },
   { to: '/seller/marketing', icon: Mail, label: 'Emails' },
   { to: '/seller/inventory', icon: Warehouse, label: 'Inventory' },
   { to: '/seller/reports', icon: FileText, label: 'Reports' },
@@ -83,7 +79,7 @@ const SellerSidebar = () => {
                           : 'text-white/80 hover:text-white'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={1.5} />
+                      <Icon size={20} strokeWidth={2} />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-white text-black border-0">
@@ -103,7 +99,7 @@ const SellerSidebar = () => {
                     : 'text-white/80 hover:text-white'
                 }`}
               >
-                <Icon size={20} strokeWidth={1.5} />
+                <Icon size={20} strokeWidth={2} />
                 <span>{item.label}</span>
               </Link>
             );
@@ -129,7 +125,7 @@ const SellerSidebar = () => {
                           : 'text-white/80 hover:text-white'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={1.5} />
+                      <Icon size={20} strokeWidth={2} />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-white text-black border-0">
@@ -149,7 +145,7 @@ const SellerSidebar = () => {
                     : 'text-white/80 hover:text-white'
                 }`}
               >
-                <Icon size={20} strokeWidth={1.5} />
+                <Icon size={20} strokeWidth={2} />
                 <span>{item.label}</span>
               </Link>
             );
