@@ -603,4 +603,9 @@
     scroll-snap-align: start;
     flex-shrink: 0;
   }
+
+  /* Neo-Brutalism Design System */
+  .shadow-neobrutalism {
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+  }
 }

@@ -287,27 +287,27 @@ const SellerProducts = () => {
   }
 
   return (
-    <div className="p-6 lg:p-8 bg-white min-h-screen">
-      {/* Gumroad-style Banner - FIRST at very top */}
-      <div className="mb-8 border-2 border-dashed border-black/10 rounded-lg overflow-hidden bg-white p-4">
+    <div className="p-6 lg:p-8 bg-[#FBF8F3] min-h-screen">
+      {/* Banner - Clean with subtle glow */}
+      <div className="mb-4">
         <img 
           src={gumroadBanner} 
           alt="Start creating and selling" 
-          className="w-full h-auto object-contain rounded-lg"
+          className="w-full h-auto object-contain rounded-xl shadow-lg"
         />
       </div>
 
-      {/* Stats Row - B&W */}
+      {/* Stats Row - Neo-Brutalist */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-white border-2 border-black/10 rounded-lg p-5">
+        <div className="bg-white border-2 border-black rounded-lg p-5 shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">PRODUCTS</p>
           <p className="text-3xl font-black text-black">{totalProducts}</p>
         </div>
-        <div className="bg-white border-2 border-black/10 rounded-lg p-5">
+        <div className="bg-white border-2 border-black rounded-lg p-5 shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">LIVE</p>
           <p className="text-3xl font-black text-black">{liveProducts}</p>
         </div>
-        <div className="bg-white border-2 border-black/10 rounded-lg p-5">
+        <div className="bg-white border-2 border-black rounded-lg p-5 shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">REVENUE</p>
           <p className="text-3xl font-black text-black">{formatAmountOnly(totalRevenue)}</p>
         </div>
@@ -322,7 +322,7 @@ const SellerProducts = () => {
             placeholder="Search products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-11 bg-white border-2 border-black/10 rounded-lg h-12 focus:border-black transition-colors"
+            className="pl-11 bg-white border-2 border-black rounded-lg h-12 shadow-neobrutalism focus:shadow-none focus:translate-x-0.5 focus:translate-y-0.5 transition-all"
           />
         </div>
         <Button 
@@ -347,7 +347,7 @@ const SellerProducts = () => {
             return (
               <div 
                 key={product.id} 
-                className="bg-white border-2 border-black/10 rounded-lg overflow-hidden group hover:border-black/20 transition-colors"
+                className="bg-white border-2 border-black rounded-lg overflow-hidden group shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
               >
                 {/* Image - Square */}
                 <div className="aspect-square bg-gray-50 relative overflow-hidden">
