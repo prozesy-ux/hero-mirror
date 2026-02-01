@@ -56,8 +56,10 @@ const CenteredHoverPreview = ({
 
   const handleTriggerMouseLeave = useCallback(() => {
     clearAllTimeouts();
-    closeTimeoutRef.current = setTimeout(handleClose, closeDelay);
-  }, [clearAllTimeouts, handleClose, closeDelay]);
+    // Only cancel pending open if not yet open
+    // If already open, let overlay/content control closing
+    // This prevents "auto close" when mouse travels from trigger to centered preview
+  }, [clearAllTimeouts]);
 
   // Backdrop: start close timer when mouse enters backdrop area
   const handleBackdropMouseEnter = useCallback(() => {
