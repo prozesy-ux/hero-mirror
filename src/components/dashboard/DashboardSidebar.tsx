@@ -1,8 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Store, ShoppingCart, Heart, Sparkles, BarChart2, CreditCard, Bell, MessageSquare, Settings, ChevronDown, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { useSidebarContext } from '@/contexts/SidebarContext';
 import { useAuthContext } from '@/contexts/AuthContext';
-import uptozaLogo from '@/assets/uptoza-logo.png';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Tooltip,
@@ -10,23 +9,24 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { GUMROAD_ICONS, GumroadIcon } from '@/components/icons/GumroadIcons';
 
-// Gumroad-style navigation labels for buyer
+// Gumroad-style navigation labels for buyer with custom icons
 const navItems = [
-  { to: '/dashboard/home', icon: Home, label: 'Home' },
-  { to: '/dashboard/marketplace', icon: Store, label: 'Marketplace' },
-  { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
-  { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
-  { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
-  { to: '/dashboard/analytics', icon: BarChart2, label: 'Analytics' },
-  { to: '/dashboard/reports', icon: FileText, label: 'Reports' },
-  { to: '/dashboard/wallet', icon: CreditCard, label: 'Wallet' },
+  { to: '/dashboard/home', iconSrc: GUMROAD_ICONS.home, label: 'Home' },
+  { to: '/dashboard/marketplace', iconSrc: GUMROAD_ICONS.marketplace, label: 'Marketplace' },
+  { to: '/dashboard/orders', iconSrc: GUMROAD_ICONS.orders, label: 'My Orders' },
+  { to: '/dashboard/wishlist', iconSrc: GUMROAD_ICONS.wishlist, label: 'Wishlist' },
+  { to: '/dashboard/prompts', iconSrc: GUMROAD_ICONS.prompts, label: 'Prompts' },
+  { to: '/dashboard/analytics', iconSrc: GUMROAD_ICONS.analytics, label: 'Analytics' },
+  { to: '/dashboard/reports', iconSrc: GUMROAD_ICONS.reports, label: 'Reports' },
+  { to: '/dashboard/wallet', iconSrc: GUMROAD_ICONS.wallet, label: 'Wallet' },
 ];
 
 const bottomNavItems = [
-  { to: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
-  { to: '/dashboard/chat', icon: MessageSquare, label: 'Support' },
-  { to: '/dashboard/profile', icon: Settings, label: 'Settings' },
+  { to: '/dashboard/notifications', iconSrc: GUMROAD_ICONS.notifications, label: 'Notifications' },
+  { to: '/dashboard/chat', iconSrc: GUMROAD_ICONS.support, label: 'Support' },
+  { to: '/dashboard/profile', iconSrc: GUMROAD_ICONS.settings, label: 'Settings' },
 ];
 
 const DashboardSidebar = () => {
@@ -35,6 +35,10 @@ const DashboardSidebar = () => {
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+
+  // CSS filter for violet color on active state (buyer theme)
+  const activeFilter = 'brightness(0) saturate(100%) invert(30%) sepia(90%) saturate(2000%) hue-rotate(240deg) brightness(0.9)';
+  const inactiveFilter = 'brightness(0) opacity(0.6)';
 
   return (
     <TooltipProvider>
@@ -58,7 +62,6 @@ const DashboardSidebar = () => {
         <nav className="flex-1 py-4 overflow-y-auto">
           {navItems.map((item) => {
             const active = isActive(item.to);
-            const Icon = item.icon;
 
             if (isCollapsed) {
               return (
@@ -72,7 +75,13 @@ const DashboardSidebar = () => {
                           : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={2} />
+                      <GumroadIcon 
+                        src={item.iconSrc} 
+                        size={20} 
+                        alt={item.label}
+                        className="transition-all"
+                        style={{ filter: active ? activeFilter : inactiveFilter }}
+                      />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-slate-900 text-white border-0">
@@ -92,7 +101,13 @@ const DashboardSidebar = () => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Icon size={20} strokeWidth={2} />
+                <GumroadIcon 
+                  src={item.iconSrc} 
+                  size={20} 
+                  alt={item.label}
+                  className="transition-all"
+                  style={{ filter: active ? activeFilter : inactiveFilter }}
+                />
                 <span>{item.label}</span>
               </Link>
             );
@@ -104,7 +119,6 @@ const DashboardSidebar = () => {
           {/* Notifications, Support, Settings */}
           {bottomNavItems.map((item) => {
             const active = isActive(item.to);
-            const Icon = item.icon;
 
             if (isCollapsed) {
               return (
@@ -118,7 +132,13 @@ const DashboardSidebar = () => {
                           : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={2} />
+                      <GumroadIcon 
+                        src={item.iconSrc} 
+                        size={20} 
+                        alt={item.label}
+                        className="transition-all"
+                        style={{ filter: active ? activeFilter : inactiveFilter }}
+                      />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-slate-900 text-white border-0">
@@ -138,7 +158,13 @@ const DashboardSidebar = () => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Icon size={20} strokeWidth={2} />
+                <GumroadIcon 
+                  src={item.iconSrc} 
+                  size={20} 
+                  alt={item.label}
+                  className="transition-all"
+                  style={{ filter: active ? activeFilter : inactiveFilter }}
+                />
                 <span>{item.label}</span>
               </Link>
             );
