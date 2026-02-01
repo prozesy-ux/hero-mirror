@@ -1,192 +1,128 @@
 
+# Dashboard Marketplace Product View URL Routing Fix
 
-# Dashboard Marketplace Quick View Modal Redesign
+## Problem
 
-## Overview
+When clicking "View Full Details" in the dashboard marketplace Quick View Modal, the navigation:
+- Currently redirects to external store page (`/store/{storeSlug}/product/{slug}`)
+- Should stay within the dashboard at `/dashboard/marketplace/product/{slug}`
 
-Replace the old inline Quick View Modal in `AIAccountsSection.tsx` with a new design that matches the store's `ProductDetailModal.tsx` - featuring black/monochrome aesthetic, mobile drawer layout, and trust badges.
+## Current Flow
 
-## Current State (Old Design)
-
-The inline modal in `AIAccountsSection.tsx` (lines 2025-2133) has:
-- Green emerald store badges
-- Green checkmark price badges (`bg-emerald-100 text-emerald-700`)
-- Yellow "Buy" button (`bg-yellow-400`)
-- 3-column button layout (Chat, View, Buy)
-- No mobile drawer experience
-- No trust badges
-
-## Target Design (Store Modal Style)
-
-Match the `ProductDetailModal.tsx` design:
-- Black/white monochrome aesthetic
-- Black price badge with white text
-- Black action buttons
-- Mobile-first vertical stack with sticky bottom actions
-- Desktop: horizontal split layout
-- Trust badges (Secure, Instant, 24/7)
-- Image gallery with dot navigation
-
-## Visual Comparison
-
-### Current (Old):
 ```text
-+------------------+
-| [Green Badge]  X |
-| Product Image    |
-+------------------+
-| Title            |
-| [Green Price]    |
-| Description...   |
-+------------------+
-| [Chat][View][Buy]| <- Yellow Buy
-+------------------+
+User in /dashboard/marketplace
+    ↓
+Clicks product card → Quick View Modal opens
+    ↓
+Clicks "View Full Details"
+    ↓
+❌ Navigates to /store/{storeSlug}/product/{slug}  ← WRONG (leaves dashboard)
 ```
 
-### After (New - Mobile):
-```text
-+--------------------+
-| Image (280px)      |
-| < dots >           |
-+--------------------+
-| [Avatar] Seller    |
-|         100 orders |
-+--------------------+
-| Title              |
-| [$25] ★★★★★ (12)  | <- Black price badge
-+--------------------+
-| [Tag1] [Tag2]      |
-+--------------------+
-| Description...     |
-| Stats bar          |
-+--------------------+
-| [Chat] [Buy Now]   | <- Sticky black buttons
-+--------------------+
-```
+## Target Flow
 
-### After (New - Desktop):
 ```text
-+--------------------------------------+
-| +------------------+ +--------------+|
-| | Image Gallery    | | [$25]        ||
-| |   (65%)          | | [Buy Now]    || <- Black buttons
-| |                  | | [Chat]       ||
-| +------------------+ | Trust Badges ||
-|                      +--------------+|
-| Title + Seller + Description         |
-+--------------------------------------+
+User in /dashboard/marketplace
+    ↓
+Clicks product card → Quick View Modal opens
+    ↓
+Clicks "View Full Details"
+    ↓
+✓ Navigates to /dashboard/marketplace/product/{slug}  ← CORRECT (stays in dashboard)
 ```
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/components/dashboard/AIAccountsSection.tsx` | Replace inline Quick View Modal with new store-matching design |
+| File | Change |
+|------|--------|
+| `src/components/dashboard/AIAccountsSection.tsx` | Update `onViewFull` navigation to use dashboard route |
+| `src/pages/Dashboard.tsx` | Update route param from `:productId` to `:productSlug` |
+| `src/components/dashboard/ProductFullViewPage.tsx` | Add slug-based product lookup |
 
 ## Implementation Details
 
-### 1. Add New Imports
+### 1. Update Navigation in AIAccountsSection.tsx
+
+**Current code (lines 2064-2080):**
 ```typescript
-import { Drawer, DrawerContent } from '@/components/ui/drawer';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { BadgeCheck, ShieldCheck, Zap, Clock, ChevronLeft, ChevronRight, Users } from 'lucide-react';
-import StarRating from '@/components/reviews/StarRating';
-import { useIsMobile } from '@/hooks/use-mobile';
+onViewFull={() => {
+  setShowQuickViewModal(false);
+  if (quickViewProduct?.type === 'seller') {
+    const product = quickViewProduct.data as SellerProduct;
+    const storeSlug = product.seller_profiles?.store_slug;
+    if (storeSlug) {
+      navigate(generateProductUrlWithFallback(...));  // Goes to /store/...
+      return;
+    }
+  }
+  navigate(`/dashboard/ai-accounts/product/${quickViewProduct?.data.id}`);
+}}
 ```
 
-### 2. Add Review Stats Fetching
-Add `averageRating` and `reviewCount` state with fetch logic similar to `ProductDetailModal`.
-
-### 3. Replace Modal Content
-
-**Mobile Layout (Drawer-based):**
-- 280px image container with dot navigation
-- Seller info in `bg-black/5` rounded box
-- Black price badge: `bg-black text-white`
-- Sticky bottom action bar with Chat + Buy Now
-
-**Desktop Layout (Dialog):**
-- 65/35 horizontal split
-- Left: Image gallery with thumbnails
-- Right: Sticky purchase box with black buttons
-- Trust badges: Secure, Instant, 24/7
-- View Full Details button
-
-### 4. Styling Changes
-
-| Element | Old | New |
-|---------|-----|-----|
-| Store Badge | `bg-emerald-500` | `bg-black/80 text-white` |
-| Price Badge | `bg-emerald-100 text-emerald-700` | `bg-black text-white rounded` |
-| Buy Button | `bg-yellow-400` | `bg-black text-white` |
-| Chat Button | `bg-emerald-100`/`bg-violet-100` | `border-2 border-black` outline |
-| View Button | `bg-gray-100` | Move to View Full Details |
-
-### 5. Key UI Components
-
-**Image Gallery Navigation:**
+**New code:**
 ```typescript
-// Dot indicators
-<div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
-  {images.map((_, i) => (
-    <button
-      key={i}
-      onClick={() => setCurrentImageIndex(i)}
-      className={`w-2 h-2 rounded-full ${
-        i === currentImageIndex ? 'bg-black' : 'bg-white border border-black/20'
-      }`}
-    />
-  ))}
-</div>
+onViewFull={() => {
+  setShowQuickViewModal(false);
+  if (quickViewProduct?.type === 'seller') {
+    const product = quickViewProduct.data as SellerProduct;
+    // Use slug if available, otherwise fallback to ID
+    const slug = product.slug || product.id;
+    navigate(`/dashboard/marketplace/product/${slug}`);
+  } else if (quickViewProduct) {
+    navigate(`/dashboard/marketplace/product/${quickViewProduct.data.id}`);
+  }
+}}
 ```
 
-**Trust Badges:**
+### 2. Update Dashboard Route
+
+**Current:**
 ```typescript
-<div className="flex flex-wrap gap-1.5">
-  <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
-    <ShieldCheck size={10} />
-    <span>Secure</span>
-  </div>
-  <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
-    <Zap size={10} />
-    <span>Instant</span>
-  </div>
-  <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
-    <Clock size={10} />
-    <span>24/7</span>
-  </div>
-</div>
+<Route path="marketplace/product/:productId" element={<ProductFullViewPage />} />
 ```
 
-**Sticky Mobile Actions:**
+**New:**
 ```typescript
-<div className="flex gap-2 px-4 pb-4 sticky bottom-0 bg-white pt-2 border-t border-black/10 safe-area-bottom">
-  <Button
-    variant="outline"
-    onClick={handleChat}
-    className="flex-1 rounded-xl border-2 border-black text-black hover:bg-black hover:text-white h-11"
-  >
-    <MessageCircle className="w-4 h-4 mr-1.5" />
-    Chat
-  </Button>
-  <Button
-    onClick={handleBuy}
-    className="flex-1 rounded-xl bg-black hover:bg-black/90 text-white h-11"
-  >
-    <ShoppingCart className="w-4 h-4 mr-1.5" />
-    Buy Now
-  </Button>
-</div>
+<Route path="marketplace/product/:productSlug" element={<ProductFullViewPage />} />
 ```
+
+### 3. Update ProductFullViewPage.tsx Lookup
+
+Add slug-based lookup to support SEO-friendly URLs:
+
+**Current lookup (lines 133-160):**
+```typescript
+const { productId } = useParams<{ productId: string }>();
+// Queries by ID only
+.eq('id', productId)
+```
+
+**New lookup strategy:**
+```typescript
+const { productSlug } = useParams<{ productSlug: string }>();
+
+// Determine if param is UUID or slug
+const isUUID = /^[a-f0-9-]{36}$/i.test(productSlug || '');
+
+if (isUUID) {
+  // Query by ID
+  .eq('id', productSlug)
+} else {
+  // Query by slug first, then fallback to name matching
+  .eq('slug', productSlug)
+}
+```
+
+## URL Examples
+
+| Action | Old URL | New URL |
+|--------|---------|---------|
+| View Netflix product | `/store/prozesy/product/netflix-premium` | `/dashboard/marketplace/product/netflix-premium` |
+| View by ID (fallback) | `/dashboard/ai-accounts/product/abc123...` | `/dashboard/marketplace/product/abc123...` |
 
 ## Summary
 
-- Replace old green/yellow Quick View Modal with black/white monochrome design
-- Add mobile drawer experience with sticky bottom actions
-- Desktop uses 65/35 horizontal split like store modal
-- Add trust badges (Secure, Instant, 24/7)
-- Add image gallery with dot navigation
-- Add seller info box with avatar
-- Add star ratings display
-- Consistent 44px touch targets for mobile
-
+- All product full views from dashboard stay within `/dashboard/marketplace/product/{slug}`
+- Supports both UUID and slug-based lookups for backward compatibility
+- Maintains dashboard header, sidebar, and context
+- SEO-friendly URLs match the store pattern
