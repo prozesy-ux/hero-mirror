@@ -288,6 +288,15 @@ const SellerProducts = () => {
 
   return (
     <div className="p-6 lg:p-8 bg-white min-h-screen">
+      {/* Gumroad-style Banner - FIRST at very top */}
+      <div className="mb-8 border-2 border-dashed border-black/10 rounded-lg overflow-hidden bg-white p-4">
+        <img 
+          src={gumroadBanner} 
+          alt="Start creating and selling" 
+          className="w-full h-auto object-contain rounded-lg"
+        />
+      </div>
+
       {/* Stats Row - B&W */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="bg-white border-2 border-black/10 rounded-lg p-5">
@@ -323,15 +332,6 @@ const SellerProducts = () => {
           <Plus className="h-4 w-4 mr-2" />
           New Product
         </Button>
-      </div>
-
-      {/* Gumroad-style Banner - Always visible at top */}
-      <div className="mb-8 border-2 border-dashed border-black/10 rounded-lg overflow-hidden bg-white p-4">
-        <img 
-          src={gumroadBanner} 
-          alt="Start creating and selling" 
-          className="w-full h-auto object-contain rounded-lg"
-        />
       </div>
 
       {/* Products Grid - 4 columns */}
