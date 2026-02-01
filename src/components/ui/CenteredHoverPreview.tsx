@@ -16,7 +16,7 @@ const CenteredHoverPreview = ({
   children,
   content,
   openDelay = 400,
-  closeDelay = 150,
+  closeDelay = 300, // Increased for smoother UX
   disabled = false,
   className,
   onOpenChange,
@@ -59,11 +59,19 @@ const CenteredHoverPreview = ({
     closeTimeoutRef.current = setTimeout(handleClose, closeDelay);
   }, [clearAllTimeouts, handleClose, closeDelay]);
 
-  const handleOverlayMouseEnter = useCallback(() => {
+  // Backdrop: start close timer when mouse enters backdrop area
+  const handleBackdropMouseEnter = useCallback(() => {
+    clearAllTimeouts();
+    closeTimeoutRef.current = setTimeout(handleClose, closeDelay);
+  }, [clearAllTimeouts, handleClose, closeDelay]);
+
+  // Content: cancel close timer when mouse enters preview content
+  const handleContentMouseEnter = useCallback(() => {
     clearAllTimeouts();
   }, [clearAllTimeouts]);
 
-  const handleOverlayMouseLeave = useCallback(() => {
+  // Content: start close timer when mouse leaves preview content
+  const handleContentMouseLeave = useCallback(() => {
     clearAllTimeouts();
     closeTimeoutRef.current = setTimeout(handleClose, closeDelay);
   }, [clearAllTimeouts, handleClose, closeDelay]);
@@ -118,18 +126,15 @@ const CenteredHoverPreview = ({
       </div>
 
       {isOpen && createPortal(
-        <div 
-          className="fixed inset-0 z-[9998]"
-          onMouseEnter={handleOverlayMouseEnter}
-          onMouseLeave={handleOverlayMouseLeave}
-        >
-          {/* Backdrop overlay */}
+        <div className="fixed inset-0 z-[9998]">
+          {/* Backdrop overlay - starts close timer when mouse enters */}
           <div 
             className="absolute inset-0 bg-black/20"
             onClick={handleClose}
+            onMouseEnter={handleBackdropMouseEnter}
           />
           
-          {/* Centered content */}
+          {/* Centered content - keeps preview open while mouse is here */}
           <div
             ref={contentRef}
             className={cn(
@@ -139,6 +144,8 @@ const CenteredHoverPreview = ({
               "animate-in fade-in-0 zoom-in-95 duration-200",
               className
             )}
+            onMouseEnter={handleContentMouseEnter}
+            onMouseLeave={handleContentMouseLeave}
           >
             {content}
           </div>
