@@ -41,7 +41,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import MultiImageUploader from './MultiImageUploader';
 import { getProductShareUrl } from '@/lib/url-utils';
-import productsIllustration from '@/assets/products-illustration.png';
 
 interface Category {
   id: string;
@@ -355,36 +354,16 @@ const SellerProducts = () => {
 
       {/* Products Grid */}
       {filteredProducts.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 p-8 md:p-12 text-center shadow-sm">
-          {/* Panda Illustration */}
-          <div className="max-w-lg mx-auto mb-6">
-            <img 
-              src={productsIllustration} 
-              alt="Get started with products" 
-              className="w-full h-auto rounded-xl"
-            />
+        <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <Package className="h-8 w-8 text-slate-400" />
           </div>
-          
-          {/* Gumroad-style Copy */}
-          <h3 className="text-xl md:text-2xl font-bold text-black mb-2">
-            "We've never met an idea we didn't like."
-          </h3>
-          <p className="text-slate-600 max-w-md mx-auto mb-6">
-            Your first product doesn't need to be perfect. Just get it out there and see what happens!
-          </p>
-          
-          {/* CTA Button */}
-          <Button 
-            onClick={() => navigate('/seller/products/new')} 
-            className="bg-pink-500 hover:bg-pink-600 text-white rounded-xl px-8 py-3 text-base font-semibold"
-          >
-            New product
+          <h3 className="seller-heading text-slate-900 mb-2">No products yet</h3>
+          <p className="text-slate-500 text-sm mb-4">Start adding products to your store</p>
+          <Button onClick={() => handleOpenDialog()} className="bg-emerald-500 hover:bg-emerald-600 rounded-xl">
+            <Plus className="h-4 w-4 mr-2" />
+            Add First Product
           </Button>
-          
-          {/* Help Link */}
-          <p className="text-sm text-slate-500 mt-4">
-            or <button className="text-pink-500 hover:underline">learn more about the products dashboard</button>
-          </p>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
