@@ -325,17 +325,19 @@ const SellerProducts = () => {
         </Button>
       </div>
 
+      {/* Gumroad-style Banner - Always visible at top */}
+      <div className="mb-8 border-2 border-white rounded-xl overflow-hidden shadow-[0_0_0_2px_rgba(0,0,0,0.08)]">
+        <img 
+          src={gumroadBanner} 
+          alt="Start creating and selling" 
+          className="w-full h-[180px] md:h-[220px] object-cover"
+        />
+      </div>
+
       {/* Products Grid - 4 columns */}
       {filteredProducts.length === 0 ? (
-        <div className="bg-white rounded-lg overflow-hidden">
-          {/* Gumroad-style Banner */}
-          <div className="w-full">
-            <img 
-              src={gumroadBanner} 
-              alt="Start creating and selling" 
-              className="w-full h-auto object-cover rounded-lg"
-            />
-          </div>
+        <div className="text-center py-12">
+          <p className="text-gray-500">No products yet. Create your first product!</p>
         </div>
       ) : (
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
