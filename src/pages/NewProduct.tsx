@@ -15,6 +15,7 @@ import ProductTypeSelector from '@/components/seller/ProductTypeSelector';
 import MultiImageUploader from '@/components/seller/MultiImageUploader';
 import { ProductTypeId, getProductTypeById, PRODUCT_TYPES } from '@/components/icons/ProductTypeIcons';
 import { cn } from '@/lib/utils';
+import productsIllustration from '@/assets/products-illustration.png';
 
 interface Category {
   id: string;
@@ -300,6 +301,15 @@ const NewProduct = () => {
                         </p>
                       </div>
                     </div>
+                  </div>
+                  
+                  {/* Gumroad-style Illustration */}
+                  <div className="mt-6">
+                    <img 
+                      src={productsIllustration} 
+                      alt="Product creation guide" 
+                      className="w-full h-auto rounded-xl opacity-90"
+                    />
                   </div>
                 </div>
                 
