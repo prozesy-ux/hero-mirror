@@ -1,105 +1,184 @@
 
 
-# Increase HoverCard Size and Center Position
+# Marketplace Sections Unified Design System
 
 ## Overview
 
-Increase the HoverCard preview to match the QuickView modal dimensions and position it centered on screen rather than relative to the product card.
+Redesign all marketplace sections (Featured, Trending, New Arrivals, Top Rated) with a consistent enterprise-grade design that matches the clean header aesthetic. Remove emojis, standardize layouts, and use premium icon styling.
 
-## Current vs New Dimensions
+## Current Issues
 
-| Element | Current HoverCard | New HoverCard (= QuickView) |
-|---------|-------------------|------------------------------|
-| Container width | `w-[500px]` | `w-[700px]` |
-| Image height | `h-[220px]` | `h-[350px]` |
-| Layout split | 60/40 | 65/35 |
-| Position | `side="right"` (relative) | Centered on screen |
+| Section | Current Design | Problem |
+|---------|---------------|---------|
+| Featured | Black gradient + Sparkles | Different from other sections |
+| Hot Products | Orange gradient + 🔥 emoji | Inconsistent color, uses emoji |
+| New Arrivals | White + green + 🆕 emoji | Uses emoji, green accent |
+| Top Rated | White + yellow + ⭐ emoji | Uses emoji, yellow accent |
 
-## Visual Comparison
+## New Unified Design
 
-**Current (small, positioned to side):**
+All sections will follow this pattern:
+
 ```text
-┌─────────┐
-│ Product │──────► ┌──────────────────┐
-│  Card   │        │ Small HoverCard  │
-└─────────┘        │  w-[500px]       │
-                   │  h-[220px] img   │
-                   └──────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│  ● Section Title                               [View All →]              │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │          │  │          │  │          │  │          │  │          │  │
+│  │  Product │  │  Product │  │  Product │  │  Product │  │  Product │  │
+│  │   Card   │  │   Card   │  │   Card   │  │   Card   │  │   Card   │  │
+│  │          │  │          │  │          │  │          │  │          │  │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**New (larger, centered like modal):**
-```text
-                   ┌────────────────────────────────────┐
-                   │         Centered HoverCard         │
-                   │           w-[700px]                │
-┌─────────┐        │                                    │
-│ Product │        │  ┌────────────┐  ┌────────────┐   │
-│  Card   │        │  │   Image    │  │  Purchase  │   │
-└─────────┘        │  │  h-[350px] │  │    Box     │   │
-                   │  │    65%     │  │    35%     │   │
-                   │  └────────────┘  └────────────┘   │
-                   │                                    │
-                   └────────────────────────────────────┘
-```
+## Design Specifications
 
-## Technical Implementation
+### Container Style (All Sections)
+- Background: `bg-white`
+- Border: `border border-black/10 rounded-2xl`
+- Padding: `p-6`
+- Consistent shadow on hover for cards
 
-### 1. ProductHoverCard.tsx
+### Header Style (All Sections)
+- Icon + Title left-aligned
+- "View All" button right-aligned
+- No colored badges or emoji tags
+- Clean monochrome aesthetic
 
-**Update HoverCardContent styling:**
+### Section Variants
 
-```typescript
-<HoverCardContent 
-  side="bottom"
-  align="center"
-  sideOffset={16}
-  className="w-[700px] p-0 border border-black/10 shadow-2xl bg-white z-50 fixed-center"
->
-```
+| Section | Icon | Icon Style |
+|---------|------|------------|
+| Featured | `Gem` | Black filled |
+| Trending | `TrendingUp` | Black stroke |
+| New Arrivals | `Zap` | Black stroke |
+| Top Rated | `Award` | Black stroke |
 
-**Update internal dimensions:**
-- Change container padding: `p-3` to `p-4`
-- Change image height: `h-[220px]` to `h-[350px]`
-- Change layout split: `w-[60%]` to `w-[65%]` and `w-[40%]` to `w-[35%]`
-- Increase thumbnail size: `w-10 h-10` to `w-14 h-14`
-- Increase icon sizes and typography to match QuickView
-
-### 2. StoreProductHoverCard.tsx
-
-Apply identical changes:
-- Width: `w-[500px]` to `w-[700px]`
-- Image: `h-[220px]` to `h-[350px]`
-- Layout: 60/40 to 65/35 split
-- Position: Center with `side="bottom" align="center"`
-
-### 3. Update hover-card.tsx (UI component)
-
-Add centering capability with custom positioning:
-
-```typescript
-// Add option for centered positioning
-className={cn(
-  "z-50 w-64 rounded-md border bg-popover p-4 ...",
-  // When centered, use fixed positioning
-  className?.includes('fixed-center') && 
-    "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
-  className,
-)}
-```
+### Product Cards (Unified)
+- White background
+- `border border-black/10`
+- `aspect-[4/3]` image ratio
+- No emoji badges - use clean text badges
+- Consistent price/seller styling
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/marketplace/ProductHoverCard.tsx` | Increase width to 700px, image to 350px, center position, 65/35 split |
-| `src/components/store/StoreProductHoverCard.tsx` | Same changes as above |
-| `src/components/ui/hover-card.tsx` | Add centered positioning support |
+| `FeaturedCarousel.tsx` | White container, Gem icon, remove black gradient |
+| `HotProductsSection.tsx` | TrendingUp icon, remove orange, remove 🔥 emoji |
+| `NewArrivalsSection.tsx` | Zap icon, remove green, remove 🆕 emoji |
+| `TopRatedSection.tsx` | Award icon, remove yellow, remove ⭐ emoji |
+
+## Detailed Changes
+
+### 1. FeaturedCarousel.tsx
+
+**Before:**
+```typescript
+<div className="bg-gradient-to-br from-black via-gray-900 to-black rounded-2xl p-6">
+  <Sparkles className="w-5 h-5 text-yellow-400" />
+```
+
+**After:**
+```typescript
+<div className="bg-white border border-black/10 rounded-2xl p-6">
+  <Gem className="w-5 h-5 text-black" />
+```
+
+- Remove black gradient
+- Use `Gem` icon for premium feel
+- Keep 4-column grid layout
+- Product cards stay white
+
+### 2. HotProductsSection.tsx
+
+**Before:**
+```typescript
+<div className="border border-orange-200 rounded-xl p-4 bg-gradient-to-br from-orange-50 via-amber-50 to-white">
+  <Flame className="h-5 w-5 text-orange-500" />
+  <Badge>🔥 Hot</Badge>
+```
+
+**After:**
+```typescript
+<div className="bg-white border border-black/10 rounded-2xl p-6">
+  <TrendingUp className="h-5 w-5 text-black" />
+  <Badge className="bg-black text-white">Trending</Badge>
+```
+
+- Remove orange gradient
+- Use `TrendingUp` icon
+- Replace emoji badge with text badge
+- Match container styling
+
+### 3. NewArrivalsSection.tsx
+
+**Before:**
+```typescript
+<div className="border border-black/10 rounded-xl p-4 bg-white">
+  <Sparkles className="h-4 w-4 text-green-500" />
+  <Badge>🆕 New</Badge>
+```
+
+**After:**
+```typescript
+<div className="bg-white border border-black/10 rounded-2xl p-6">
+  <Zap className="h-5 w-5 text-black" />
+  <Badge className="bg-black text-white">New</Badge>
+```
+
+- Increase padding from p-4 to p-6
+- Use `Zap` icon (enterprise feel)
+- Replace emoji badge with text badge
+
+### 4. TopRatedSection.tsx
+
+**Before:**
+```typescript
+<div className="border border-black/10 rounded-xl p-4 bg-white">
+  <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+  <Badge>⭐ 4.5</Badge>
+```
+
+**After:**
+```typescript
+<div className="bg-white border border-black/10 rounded-2xl p-6">
+  <Award className="h-5 w-5 text-black" />
+  <Badge className="bg-black text-white">★ 4.5+</Badge>
+```
+
+- Use `Award` icon for premium feel
+- Replace emoji with star character (★)
+- Clean black badge styling
+
+## Icon Selection Rationale
+
+| Icon | Meaning | Why Enterprise |
+|------|---------|----------------|
+| `Gem` | Featured/Premium | Suggests exclusive, curated content |
+| `TrendingUp` | Trending/Hot | Business-grade growth indicator |
+| `Zap` | New/Fresh | Energy, speed - commonly used in SaaS |
+| `Award` | Top Rated | Achievement, quality assurance |
+
+## Badge Styling (Unified)
+
+All section badges use clean monochrome:
+```typescript
+className="bg-black text-white text-xs px-2 py-0.5 rounded-full font-medium"
+```
+
+Product card badges:
+```typescript
+className="absolute top-2 right-2 bg-black/80 text-white text-[10px] px-2 py-0.5 rounded-full"
+```
 
 ## Summary
 
-- Increase HoverCard width from 500px to 700px
-- Increase image container from 220px to 350px height
-- Change layout split from 60/40 to 65/35
-- Center the HoverCard on screen instead of positioning relative to card
-- Match QuickView modal design exactly
+- Unify all section containers to white + black border
+- Replace colored/emoji icons with premium Lucide icons (Gem, TrendingUp, Zap, Award)
+- Remove all emoji badges (🔥 🆕 ⭐) - use clean text badges
+- Consistent padding (p-6) and border radius (rounded-2xl)
+- Match the clean, enterprise header aesthetic throughout
 
