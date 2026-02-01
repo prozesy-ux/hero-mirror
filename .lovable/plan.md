@@ -1,285 +1,226 @@
 
 
-# Redis Integration Plan - Upstash for Edge Function Caching
+# Database Indexes Optimization Plan
 
 ## Overview
 
-Integrate **Upstash Redis** as a distributed caching layer for your Edge Functions to dramatically reduce database load and improve response times. Upstash is the recommended Redis provider for Supabase Edge Functions (Deno runtime).
+Add targeted database indexes to optimize slow query patterns for `seller_orders`, `wallet_transactions`, and product search tables. Based on analysis of current query patterns and index usage statistics, this migration will address high sequential scan rates and add missing covering indexes.
 
-## Why Upstash Redis?
+## Current State Analysis
 
-| Feature | Benefit |
-|---------|---------|
-| **Serverless** | No always-on servers, pay-per-request pricing |
-| **Global Edge** | ~50ms latency worldwide via edge replication |
-| **REST API** | Works natively with Deno/Edge Functions (no TCP needed) |
-| **Free Tier** | 10,000 commands/day free |
+### Index Usage Statistics
 
-## What Will Be Cached
+| Table | Sequential Scans | Index Scans | Ratio |
+|-------|-----------------|-------------|-------|
+| `seller_orders` | 4,200 | 926 | 🔴 82% seq scans |
+| `wallet_transactions` | 2,692 | 953 | 🔴 74% seq scans |
+| `recently_viewed` | 320 | 0 | 🔴 100% seq scans |
+| `ai_accounts` | 20,263 | 8,499 | 🔴 70% seq scans |
+| `seller_profiles` | 28,701 | 38,586 | 🟡 43% seq scans |
+| `seller_products` | 7,515 | 18,050 | 🟢 29% seq scans |
 
-### High-Impact Caching Targets
+### Key Query Patterns Identified
 
-| Data | Current TTL | Database Calls Saved | Priority |
-|------|-------------|---------------------|----------|
-| **Marketplace Home** (categories, hot products, trending) | CDN: 5 min | ~4 parallel queries/request | 🔴 High |
-| **Trending/Popular Searches** | None | 1 query per search keystroke | 🔴 High |
-| **Categories List** | None | 1 query per page load | 🟡 Medium |
-| **Seller Store Data** | CDN: 5 min | 3-5 queries/store visit | 🟡 Medium |
-| **Session/Rate Limit Data** | None | Multiple queries | 🟢 Low |
+**seller_orders:**
+- `WHERE buyer_id = ? ORDER BY created_at DESC` (buyer dashboard)
+- `WHERE seller_id = ? ORDER BY created_at DESC` (seller dashboard)
+- `WHERE status = 'completed' AND created_at >= ?` (hot products)
+- `WHERE product_id = ?` (product analytics, aggregations)
 
-### Estimated Performance Improvement
+**wallet_transactions:**
+- `WHERE user_id = ? ORDER BY created_at DESC` (wallet history) ✅ Index exists
+- `WHERE status = ? AND type = ?` (admin filtering)
+- `WHERE transaction_id = ?` (payment verification)
 
-```text
-Current (DB Direct):
-  bff-marketplace-home → 4 parallel DB queries → ~150-300ms
-  bff-marketplace-search → 5-8 queries → ~200-400ms
+**recently_viewed:**
+- `WHERE user_id = ? ORDER BY viewed_at DESC` (search suggestions) ❌ No index!
 
-With Redis Cache:
-  Cache HIT → 5-15ms response time
-  Cache MISS → DB query + cache write → ~170-320ms (first request only)
-  
-Overall: 80-95% of requests served from cache = 10-20x faster
+**Product Search:**
+- `WHERE is_available = true AND name ILIKE '%query%'` (ai_accounts)
+- `WHERE is_available = true AND is_approved = true AND name ILIKE '%query%'` (seller_products)
+- `WHERE store_name ILIKE '%query%' AND is_verified = true AND is_active = true` (seller_profiles)
+
+## Indexes to Create
+
+### 1. seller_orders - High Priority
+
+```sql
+-- Optimize buyer dashboard queries (buyer_id + created_at ordering)
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_buyer_created 
+ON seller_orders (buyer_id, created_at DESC);
+
+-- Optimize seller dashboard queries (seller_id + created_at ordering)
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_seller_created 
+ON seller_orders (seller_id, created_at DESC);
+
+-- Optimize hot products aggregation (status + created_at for date range + product_id)
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_completed_recent 
+ON seller_orders (created_at DESC, product_id) 
+WHERE status = 'completed';
+
+-- Optimize product analytics queries
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_product_id 
+ON seller_orders (product_id);
 ```
 
-## Architecture
+### 2. wallet_transactions - Medium Priority
 
-```text
-┌─────────────────┐
-│   Client App    │
-└────────┬────────┘
-         │ Request
-         ▼
-┌─────────────────┐
-│  Edge Function  │
-└────────┬────────┘
-         │
-    ┌────▼────┐
-    │  Redis  │ ← Check cache first (5-15ms)
-    │ (Upstash)│
-    └────┬────┘
-         │ Cache MISS only
-         ▼
-┌─────────────────┐
-│   PostgreSQL    │ ← Full query (150-300ms)
-│   (Supabase)    │
-└─────────────────┘
+```sql
+-- Optimize admin filtering by status and type
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_wallet_transactions_status_type 
+ON wallet_transactions (status, type);
+
+-- Optimize pending transaction lookups
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_wallet_transactions_pending 
+ON wallet_transactions (user_id, created_at DESC) 
+WHERE status = 'pending';
 ```
 
-## Implementation
+### 3. recently_viewed - High Priority (Currently 100% seq scans!)
 
-### Step 1: Set Up Upstash Account & Get Credentials
+```sql
+-- Critical: Optimize user's recently viewed products lookup
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recently_viewed_user_viewed 
+ON recently_viewed (user_id, viewed_at DESC);
 
-1. Go to [console.upstash.com](https://console.upstash.com)
-2. Create a new Redis database (select region closest to your users)
-3. Copy `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
-4. Add these as secrets in Lovable Cloud
-
-### Step 2: Create Shared Redis Helper
-
-Create a reusable Redis cache utility for all Edge Functions:
-
-**File: `supabase/functions/_shared/redis-cache.ts`**
-
-```typescript
-import { Redis } from 'https://deno.land/x/upstash_redis@v1.19.3/mod.ts';
-
-let redis: Redis | null = null;
-
-export function getRedis(): Redis | null {
-  const url = Deno.env.get('UPSTASH_REDIS_REST_URL');
-  const token = Deno.env.get('UPSTASH_REDIS_REST_TOKEN');
-  
-  if (!url || !token) {
-    console.warn('[Redis] Not configured, falling back to DB');
-    return null;
-  }
-  
-  if (!redis) {
-    redis = new Redis({ url, token });
-  }
-  return redis;
-}
-
-// Cache wrapper with automatic serialization
-export async function cacheGet<T>(key: string): Promise<T | null> {
-  const r = getRedis();
-  if (!r) return null;
-  
-  try {
-    const cached = await r.get(key);
-    return cached ? JSON.parse(cached as string) : null;
-  } catch (e) {
-    console.error('[Redis] Get error:', e);
-    return null;
-  }
-}
-
-export async function cacheSet(key: string, data: unknown, ttlSeconds: number): Promise<void> {
-  const r = getRedis();
-  if (!r) return;
-  
-  try {
-    await r.set(key, JSON.stringify(data), { ex: ttlSeconds });
-  } catch (e) {
-    console.error('[Redis] Set error:', e);
-  }
-}
-
-export async function cacheDelete(pattern: string): Promise<void> {
-  const r = getRedis();
-  if (!r) return;
-  
-  try {
-    const keys = await r.keys(pattern);
-    if (keys.length > 0) {
-      await r.del(...keys);
-    }
-  } catch (e) {
-    console.error('[Redis] Delete error:', e);
-  }
-}
+-- Optimize product lookups for recently viewed
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recently_viewed_product 
+ON recently_viewed (product_id, product_type);
 ```
 
-### Step 3: Update bff-marketplace-home with Redis
+### 4. Product Search Optimization
 
-**File: `supabase/functions/bff-marketplace-home/index.ts`**
+```sql
+-- Optimize seller profile search (currently 43% seq scans)
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_profiles_store_name_trgm 
+ON seller_profiles USING gin (store_name gin_trgm_ops);
 
-```typescript
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { cacheGet, cacheSet } from '../_shared/redis-cache.ts';
-
-const CACHE_KEY = 'marketplace:home';
-const CACHE_TTL = 300; // 5 minutes
-
-Deno.serve(async (req) => {
-  // ... CORS handling ...
-
-  try {
-    // 1. Try Redis cache first
-    const cached = await cacheGet<MarketplaceHomeData>(CACHE_KEY);
-    if (cached) {
-      console.log('[BFF-MarketplaceHome] Cache HIT');
-      return new Response(JSON.stringify(cached), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    
-    console.log('[BFF-MarketplaceHome] Cache MISS, fetching from DB');
-    
-    // 2. Cache miss - fetch from database
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-    
-    // ... existing parallel queries ...
-    
-    // 3. Store in Redis for next request
-    await cacheSet(CACHE_KEY, response, CACHE_TTL);
-    
-    return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    // ... error handling ...
-  }
-});
+-- Optimize verified/active seller filtering
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_profiles_verified_active 
+ON seller_profiles (is_verified, is_active) 
+WHERE is_verified = true AND is_active = true;
 ```
 
-### Step 4: Update bff-marketplace-search with Redis
+### 5. Additional Optimizations
 
-Cache trending searches and popular data (not personalized user data):
-
-```typescript
-import { cacheGet, cacheSet } from '../_shared/redis-cache.ts';
-
-// Cache trending searches (shared across all users)
-const TRENDING_CACHE_KEY = 'search:trending';
-const TRENDING_TTL = 120; // 2 minutes
-
-// In the trending fetch:
-let trendingData = await cacheGet<TrendingSuggestion[]>(TRENDING_CACHE_KEY);
-if (!trendingData) {
-  const { data } = await serviceClient
-    .from("popular_searches")
-    .select("id, query, search_count")
-    .order("search_count", { ascending: false })
-    .limit(5);
-  trendingData = data;
-  await cacheSet(TRENDING_CACHE_KEY, trendingData, TRENDING_TTL);
-}
+```sql
+-- popular_searches ordering optimization
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_popular_searches_count_desc 
+ON popular_searches (search_count DESC);
 ```
 
-### Step 5: Cache Invalidation Strategy
+## Expected Performance Improvements
 
-When products/categories are updated, invalidate related cache:
+| Query Pattern | Before | After |
+|--------------|--------|-------|
+| Buyer order history | ~50-100ms (seq scan) | ~5-15ms (index scan) |
+| Seller order list | ~50-100ms (seq scan) | ~5-15ms (index scan) |
+| Hot products aggregation | ~200-400ms | ~30-50ms |
+| Recently viewed lookup | ~100ms (seq scan) | ~10ms (index scan) |
+| Store name search | ~150ms (seq scan) | ~20ms (index scan) |
+| Wallet transaction history | Already indexed | Already indexed |
 
-```typescript
-// In admin mutation functions or after product updates:
-import { cacheDelete } from '../_shared/redis-cache.ts';
+## Migration Strategy
 
-// Invalidate marketplace home cache
-await cacheDelete('marketplace:*');
+All indexes will be created using `CONCURRENTLY` to avoid locking production tables during creation. This means:
 
-// Invalidate search cache
-await cacheDelete('search:*');
+- No table locks during index creation
+- Queries continue to work normally
+- Index creation takes longer but is production-safe
+- Each index is wrapped in `IF NOT EXISTS` for idempotency
 
-// Invalidate specific store
-await cacheDelete(`store:${storeSlug}:*`);
-```
+## Technical Details
 
-## Cache Key Strategy
-
-| Key Pattern | Data | TTL |
-|-------------|------|-----|
-| `marketplace:home` | Full marketplace homepage data | 5 min |
-| `marketplace:categories` | Categories with counts | 10 min |
-| `search:trending` | Popular/trending searches | 2 min |
-| `store:{slug}:home` | Store homepage data | 5 min |
-| `store:{slug}:products` | Store product list | 3 min |
-| `flash:active` | Active flash sales | 1 min |
-| `rate:{ip}:{endpoint}` | Rate limit counters | 1 min |
-
-## Files to Create/Modify
+### Files to Modify
 
 | File | Action |
 |------|--------|
-| `supabase/functions/_shared/redis-cache.ts` | **CREATE** - Shared Redis utility |
-| `supabase/functions/bff-marketplace-home/index.ts` | **MODIFY** - Add cache layer |
-| `supabase/functions/bff-marketplace-search/index.ts` | **MODIFY** - Cache trending data |
-| `supabase/functions/bff-store-public/index.ts` | **MODIFY** - Cache store data |
-| `supabase/functions/bff-flash-sales/index.ts` | **MODIFY** - Cache flash sale data |
+| Database Migration | **CREATE** - Add performance indexes |
 
-## Required Secrets
+### SQL Migration Script
 
-Two new secrets need to be configured:
+```sql
+-- =====================================================
+-- Performance Indexes for High-Traffic Tables
+-- =====================================================
 
-1. **UPSTASH_REDIS_REST_URL** - Your Upstash Redis REST endpoint
-2. **UPSTASH_REDIS_REST_TOKEN** - Your Upstash REST token
+-- Enable pg_trgm extension if not already enabled (for fuzzy search)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
-## Performance Expectations
+-- ===================
+-- seller_orders
+-- ===================
 
-| Metric | Before Redis | After Redis |
-|--------|--------------|-------------|
-| Marketplace Home | 150-300ms | 5-15ms (cache hit) |
-| Search Suggestions | 200-400ms | 10-20ms (trending cached) |
-| Store Page | 100-250ms | 5-15ms (cache hit) |
-| DB Connections/min | ~1000+ | ~100-200 (90% reduction) |
-| Cold Start Impact | Every request | Only cache misses |
+-- Buyer dashboard: ORDER BY created_at DESC with buyer_id filter
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_buyer_created 
+ON seller_orders (buyer_id, created_at DESC);
 
-## Graceful Degradation
+-- Seller dashboard: ORDER BY created_at DESC with seller_id filter
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_seller_created 
+ON seller_orders (seller_id, created_at DESC);
 
-The implementation includes fallback logic - if Redis is unavailable or not configured:
-- Edge functions continue to work with direct database queries
-- No errors thrown, just console warnings
-- Ensures zero downtime during Redis issues
+-- Hot products: completed orders in date range grouped by product
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_completed_recent 
+ON seller_orders (created_at DESC, product_id) 
+WHERE status = 'completed';
+
+-- Product analytics aggregations
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_product_id 
+ON seller_orders (product_id);
+
+-- ===================
+-- wallet_transactions
+-- ===================
+
+-- Admin dashboard filtering
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_wallet_transactions_status_type 
+ON wallet_transactions (status, type);
+
+-- Pending transactions lookup
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_wallet_transactions_pending 
+ON wallet_transactions (user_id, created_at DESC) 
+WHERE status = 'pending';
+
+-- ===================
+-- recently_viewed (Critical - 100% seq scans currently!)
+-- ===================
+
+-- User's recently viewed products
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recently_viewed_user_viewed 
+ON recently_viewed (user_id, viewed_at DESC);
+
+-- Product lookups
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recently_viewed_product 
+ON recently_viewed (product_id, product_type);
+
+-- ===================
+-- seller_profiles (Search optimization)
+-- ===================
+
+-- Fuzzy search on store name
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_profiles_store_name_trgm 
+ON seller_profiles USING gin (store_name gin_trgm_ops);
+
+-- Verified & active sellers (partial index)
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_profiles_verified_active 
+ON seller_profiles (id) 
+WHERE is_verified = true AND is_active = true;
+
+-- ===================
+-- popular_searches
+-- ===================
+
+-- Trending searches ordered by count
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_popular_searches_count_desc 
+ON popular_searches (search_count DESC);
+```
 
 ## Summary
 
-- **Add Upstash Redis** as distributed cache layer
-- **Cache hot data**: Marketplace home, trending searches, store data
-- **5-15ms response times** for cached requests (vs 150-300ms DB)
-- **90% database load reduction** for read-heavy endpoints
-- **Graceful fallback** - Works without Redis if needed
-- **Simple integration** - Just 2 secrets and shared helper module
+- **11 new indexes** targeting the slowest query patterns
+- **CONCURRENTLY** creation for zero-downtime deployment
+- **Partial indexes** to reduce storage footprint where applicable
+- **GIN trigram indexes** for fuzzy text search optimization
+- **Expected 5-10x improvement** on frequently-executed dashboard queries
+- **Reduces database load** by shifting from sequential to index scans
 
