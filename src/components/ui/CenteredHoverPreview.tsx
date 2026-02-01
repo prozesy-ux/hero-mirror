@@ -1,0 +1,150 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { cn } from '@/lib/utils';
+
+interface CenteredHoverPreviewProps {
+  children: React.ReactNode;
+  content: React.ReactNode;
+  openDelay?: number;
+  closeDelay?: number;
+  disabled?: boolean;
+  className?: string;
+  onOpenChange?: (open: boolean) => void;
+}
+
+const CenteredHoverPreview = ({
+  children,
+  content,
+  openDelay = 400,
+  closeDelay = 150,
+  disabled = false,
+  className,
+  onOpenChange,
+}: CenteredHoverPreviewProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const openTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const clearAllTimeouts = useCallback(() => {
+    if (openTimeoutRef.current) {
+      clearTimeout(openTimeoutRef.current);
+      openTimeoutRef.current = null;
+    }
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  }, []);
+
+  const handleOpen = useCallback(() => {
+    setIsOpen(true);
+    onOpenChange?.(true);
+  }, [onOpenChange]);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+    onOpenChange?.(false);
+  }, [onOpenChange]);
+
+  const handleTriggerMouseEnter = useCallback(() => {
+    if (disabled) return;
+    clearAllTimeouts();
+    openTimeoutRef.current = setTimeout(handleOpen, openDelay);
+  }, [disabled, clearAllTimeouts, handleOpen, openDelay]);
+
+  const handleTriggerMouseLeave = useCallback(() => {
+    clearAllTimeouts();
+    closeTimeoutRef.current = setTimeout(handleClose, closeDelay);
+  }, [clearAllTimeouts, handleClose, closeDelay]);
+
+  const handleContentMouseEnter = useCallback(() => {
+    clearAllTimeouts();
+  }, [clearAllTimeouts]);
+
+  const handleContentMouseLeave = useCallback(() => {
+    clearAllTimeouts();
+    closeTimeoutRef.current = setTimeout(handleClose, closeDelay);
+  }, [clearAllTimeouts, handleClose, closeDelay]);
+
+  // Handle Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleClose]);
+
+  // Handle click outside
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        contentRef.current && 
+        !contentRef.current.contains(target) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(target)
+      ) {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, handleClose]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => clearAllTimeouts();
+  }, [clearAllTimeouts]);
+
+  return (
+    <>
+      <div
+        ref={triggerRef}
+        onMouseEnter={handleTriggerMouseEnter}
+        onMouseLeave={handleTriggerMouseLeave}
+      >
+        {children}
+      </div>
+
+      {isOpen && createPortal(
+        <>
+          {/* Backdrop overlay */}
+          <div 
+            className="fixed inset-0 bg-black/20 z-[9998]"
+            onClick={handleClose}
+          />
+          
+          {/* Centered content */}
+          <div
+            ref={contentRef}
+            onMouseEnter={handleContentMouseEnter}
+            onMouseLeave={handleContentMouseLeave}
+            className={cn(
+              "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
+              "w-[700px] max-w-[95vw] max-h-[90vh] overflow-auto",
+              "z-[9999] bg-white rounded-lg border border-black/10 shadow-2xl",
+              "animate-in fade-in-0 zoom-in-95 duration-200",
+              className
+            )}
+          >
+            {content}
+          </div>
+        </>,
+        document.body
+      )}
+    </>
+  );
+};
+
+export default CenteredHoverPreview;
