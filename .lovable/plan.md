@@ -1,34 +1,35 @@
 
 
-# Fix Gumroad Banner - Full Image Display
+# Update Gumroad Banner with New Comic Strip Image
 
-## Problem
+## Overview
 
-The current banner implementation:
-- Uses fixed heights (`h-[180px]` / `h-[220px]`) that crop the image
-- `object-cover` cuts off parts of the illustration
-- The panda artwork is not fully visible
+Replace the current banner image with the new Gumroad-style 4-panel comic strip illustration that shows the creator journey (working at laptop → e-book → sales → playing). The banner will remain at the top of the products section above the product cards.
 
-## Solution
+## Reference Image Analysis
 
-Change the image to display at its natural aspect ratio while maintaining the Gumroad-style white border design.
+The uploaded screenshot shows Gumroad's actual Products page with:
+- 4-panel colorful comic strip (teal/yellow/pink color scheme)
+- Dashed border container around the entire section
+- Banner positioned above product cards
+- Pink panda character throughout the panels
+- Clean, playful illustration style
 
 ## Implementation
 
-### File: `src/components/seller/SellerProducts.tsx`
+### Step 1: Copy New Image to Assets
 
-**Current Code (Lines 328-335):**
-```tsx
-<div className="mb-8 border-2 border-white rounded-xl overflow-hidden shadow-[0_0_0_2px_rgba(0,0,0,0.08)]">
-  <img 
-    src={gumroadBanner} 
-    alt="Start creating and selling" 
-    className="w-full h-[180px] md:h-[220px] object-cover"
-  />
-</div>
+Copy the uploaded illustration to replace the current banner:
+
+```
+user-uploads://Capture.PNG → src/assets/gumroad-banner.png
 ```
 
-**New Code:**
+### Step 2: Update Banner Styling
+
+**File:** `src/components/seller/SellerProducts.tsx`
+
+**Current Code (Lines 328-335):**
 ```tsx
 <div className="mb-8 rounded-xl overflow-hidden">
   <img 
@@ -39,19 +40,32 @@ Change the image to display at its natural aspect ratio while maintaining the Gu
 </div>
 ```
 
-**Changes:**
-| Property | Before | After |
-|----------|--------|-------|
-| Height | Fixed `h-[180px]`/`h-[220px]` | Auto `h-auto` |
-| Object Fit | `object-cover` (crops) | `object-contain` (full view) |
-| Border | White border + shadow | Clean rounded corners |
-| Image | Cropped/cut off | Full illustration visible |
+**New Code:**
+```tsx
+<div className="mb-8 border-2 border-dashed border-black/10 rounded-lg overflow-hidden bg-white p-4">
+  <img 
+    src={gumroadBanner} 
+    alt="Start creating and selling" 
+    className="w-full h-auto object-contain rounded-lg"
+  />
+</div>
+```
+
+### Changes Summary
+
+| Element | Before | After |
+|---------|--------|-------|
+| Image | Current panda illustration | New 4-panel comic strip |
+| Border | None | Dashed border (matches Gumroad style) |
+| Padding | None | `p-4` for breathing room |
+| Position | Top of products section | Same - top of products section |
+| Display | Full width, auto height | Same - preserves aspect ratio |
 
 ## Result
 
-- Full panda illustration visible at natural aspect ratio
-- Clean, minimalist design matching Gumroad style
-- Responsive width that scales properly
-- No cropping - perfect shape maintained
-- Positioned at top of products section as requested chaneg ths iamegs is use this images blob:https://labs.google/8f781563-5a4d-4b6f-98e2-175edb952c0f
+- New Gumroad-style comic strip banner displays at top
+- Full illustration visible with proper aspect ratio
+- Dashed border container matches original Gumroad design
+- Banner shows above all product cards
+- Responsive and clean appearance
 
