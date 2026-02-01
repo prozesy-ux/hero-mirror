@@ -1,151 +1,188 @@
 
-# Marketplace Design Enhancement
+# Home Page Search & Category Enhancement
 
 ## Overview
 
-Redesign the marketplace with a premium black-themed Featured section, an improved Hot/Trending section, enhanced product cards with store names and ratings, and a larger header logo for better branding visibility.
+Upgrade the home page with a functional search bar that navigates directly to matching products, and update the category menu to reflect your actual product categories.
 
 ## What Will Be Done
 
-### 1. Featured Products Section - Black Base Design (4 Products)
+### 1. Hero Section Search Bar - Direct Product Navigation
 
-Transform the current Featured carousel into a premium black background section showing exactly 4 products:
-
-```text
-+------------------------------------------------------------------+
-|  ████████████  FEATURED PRODUCTS (Black Background)  ████████████ |
-|                                                                    |
-|  +------------+  +------------+  +------------+  +------------+   |
-|  |   Card 1   |  |   Card 2   |  |   Card 3   |  |   Card 4   |   |
-|  |            |  |            |  |            |  |            |   |
-|  +------------+  +------------+  +------------+  +------------+   |
-|                                                                    |
-+------------------------------------------------------------------+
-```
-
-**Design Specifications:**
-- Black gradient background: `bg-gradient-to-br from-black via-gray-900 to-black`
-- Rounded container with padding: `rounded-2xl p-6`
-- White title text: "Featured Products" with a sparkle icon
-- 4 products in a single row on desktop, 2x2 on tablet, 1 column on mobile
-- Cards use white/light styling for contrast
-
-### 2. Hot Trending Section - Styled Base Design
-
-Update the HotProductsSection with an orange-accented gradient base:
+Transform the static search bar into a smart search that:
+- Checks if the search query matches a product name
+- If exact/close match found → Navigate directly to `/marketplace/{product-slug}`
+- If no direct match → Navigate to `/marketplace?search={query}` for keyword search
 
 ```text
-+------------------------------------------------------------------+
-| 🔥 HOT TRENDING (Orange Gradient Background)                      |
-|                                                                    |
-|  +--------+  +--------+  +--------+  +--------+  [→ scroll]       |
-|  | Card 1 |  | Card 2 |  | Card 3 |  | Card 4 |                   |
-|  +--------+  +--------+  +--------+  +--------+                   |
-|                                                                    |
-+------------------------------------------------------------------+
+User types: "Netflix"
+  ↓
+System finds: "Netflix Cheap Monthly Account" (slug: netflix-cheap-monthly-account)
+  ↓
+Direct redirect to: /marketplace/netflix-cheap-monthly-account
 ```
 
-**Design Specifications:**
-- Orange gradient: `bg-gradient-to-br from-orange-50 via-amber-50 to-white`
-- Border with orange tint: `border-orange-100`
-- Keep flame icon and "Hot Right Now" label
-- Show 4 products initially with horizontal scroll
+**Technical Approach:**
+- Add state management for search input
+- Create a lightweight product search function using existing `bff-marketplace-search` edge function
+- Add search suggestions dropdown (similar to marketplace)
+- On search submit: Check for direct product match → navigate accordingly
 
-### 3. Product Card Enhancements - GumroadProductCard
+### 2. Secondary Category Menu - Real Categories
 
-Upgrade the product cards with store name, larger size, and rating display:
+Replace the hardcoded AI model tags with actual database categories:
 
+**Current (Hardcoded):**
 ```text
-+------------------+
-|   [Product Img]   |  <- Larger image area
-|                   |
-+-------------------+
-| Product Title     |
-| by StoreName      |  <- NEW: Store name row
-|                   |
-| $29  ★ 4.5 (125)  |  <- Price + Rating
-+-------------------+
+Featured | Hot | New | Top | Video | SeedEdit | Nano Banana | FLUX | Sora | Veo | ChatGPT Image | Midjourney...
 ```
 
-**Changes:**
-- Increase card size (currently 5 columns → 4 columns on XL screens)
-- Add store name below title: "by {sellerName}"
-- Add rating display with star icon
-- If no rating: Show "New" badge instead
-- Grid: 4 products per row on desktop (currently 5)
-
-### 4. Header Logo Size Increase
-
-Increase the logo from `h-12` to `h-14` for better visibility:
-
+**Proposed (Database-Driven):**
 ```text
-Current:  [Logo h-12] ──────── [Search Bar] ──────── [Buttons]
-                                    
-Proposed: [Logo h-14] ──────── [Search Bar] ──────── [Buttons]
+Featured | Hot | New | Coding | Education | Finance | Marketing | Productivity | SEO | Social Media | Writing | Video | Music | E-commerce | Gaming...
 ```
 
-**Changes in GumroadHeader.tsx:**
-- Logo height: `h-12` → `h-14`
-- Slight header height increase: `h-16` → `h-18`
+### 3. Hero Model Tags - Update to Match Products
+
+Update the "Search by model" tags to reflect actual product types in your marketplace:
+
+**Current:**
+```text
+ChatGPT Image | Midjourney | SeedEdit | Seedream 4 | Nano Banana | Veo | FLUX | Sora
+```
+
+**Proposed (based on your products):**
+```text
+Netflix | Amazon Prime | Google Cloud | ChatGPT | Gaming | Social Media | Streaming | AI Tools
+```
 
 ## Files to be Modified
 
 | File | Changes |
 |------|---------|
-| `src/components/marketplace/FeaturedCarousel.tsx` | Black background, 4-product grid layout |
-| `src/components/marketplace/GumroadProductCard.tsx` | Add store name, rating display, larger size |
-| `src/components/marketplace/GumroadHeader.tsx` | Increase logo size to h-14 |
-| `src/components/marketplace/HotProductsSection.tsx` | Orange gradient background styling |
-| `src/pages/Marketplace.tsx` | Change grid to 4 columns, pass rating data |
+| `src/components/HeroSection.tsx` | Add search functionality, update model tags, add search suggestions |
+| `src/components/Header.tsx` | Fetch categories from database, dynamic category menu |
+| `src/pages/Index.tsx` | Import useNavigate for search navigation |
 
-## Technical Details
+## Technical Implementation
 
-### Featured Section Code Changes (FeaturedCarousel.tsx)
+### HeroSection.tsx Changes
 
 ```tsx
-// New wrapper with black background
-<section className="py-8">
-  <div className="bg-gradient-to-br from-black via-gray-900 to-black rounded-2xl p-6">
-    <div className="flex items-center gap-2 mb-5">
-      <Sparkles className="w-5 h-5 text-yellow-400" />
-      <h2 className="text-xl font-bold text-white">{title}</h2>
-    </div>
-    
-    {/* 4-column grid instead of carousel */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {products.slice(0, 4).map((product) => (
-        <FeaturedBannerCard ... className="bg-white" />
-      ))}
-    </div>
-  </div>
-</section>
+// Add imports
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+
+// Add state
+const [searchQuery, setSearchQuery] = useState('');
+const [suggestions, setSuggestions] = useState([]);
+const [isSearching, setIsSearching] = useState(false);
+const navigate = useNavigate();
+
+// Search handler
+const handleSearch = async () => {
+  if (!searchQuery.trim()) return;
+  
+  // Check for direct product match
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bff-marketplace-search?q=${encodeURIComponent(searchQuery)}`,
+    { headers: { 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }}
+  );
+  const data = await response.json();
+  
+  // If we have a product match with similar name, go directly to it
+  const exactMatch = data.products.find(p => 
+    p.text.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  if (exactMatch) {
+    // Navigate to product page
+    const slug = exactMatch.text.toLowerCase().replace(/\s+/g, '-');
+    navigate(`/marketplace/${slug}`);
+  } else {
+    // Navigate to marketplace with search query
+    navigate(`/marketplace?search=${encodeURIComponent(searchQuery)}`);
+  }
+};
 ```
 
-### Product Card Rating Logic (GumroadProductCard.tsx)
+### Header.tsx - Dynamic Categories
 
 ```tsx
-// Rating display logic
-{rating && rating > 0 ? (
-  <div className="flex items-center gap-1">
-    <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-    <span className="text-sm font-medium">{rating.toFixed(1)}</span>
-    {reviewCount && <span className="text-xs text-black/50">({reviewCount})</span>}
-  </div>
-) : (
-  <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full">New</span>
-)}
+// Fetch categories on mount
+const [categories, setCategories] = useState([]);
+
+useEffect(() => {
+  const fetchCategories = async () => {
+    const { data } = await supabase
+      .from('categories')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('display_order')
+      .limit(20);
+    setCategories(data || []);
+  };
+  fetchCategories();
+}, []);
+
+// Static items + dynamic categories
+const menuItems = [
+  { name: 'Featured', href: '/marketplace?filter=featured' },
+  { name: 'Hot', href: '/marketplace?filter=hot' },
+  { name: 'New', href: '/marketplace?filter=new' },
+  ...categories.map(c => ({ name: c.name, href: `/marketplace?category=${c.id}` }))
+];
 ```
 
-### Grid Layout Change (Marketplace.tsx)
+### Updated Model Tags for Hero
+
+Based on your actual products, update the tags to:
 
 ```tsx
-// Change from 5 columns to 4 on XL screens
-<div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+const productTags = [
+  { name: 'Netflix', query: 'netflix' },
+  { name: 'Amazon Prime', query: 'amazon' },
+  { name: 'Google Cloud', query: 'google cloud' },
+  { name: 'ChatGPT', query: 'chatgpt' },
+  { name: 'Gaming', query: 'gaming' },
+  { name: 'Streaming', query: 'streaming' },
+  { name: 'Social Media', query: 'social media' },
+  { name: 'AI Tools', query: 'ai' },
+];
 ```
 
-## Visual Summary
+## Search Flow Diagram
 
-- **Featured Section**: Premium black design with 4 featured products
-- **Hot Trending**: Warm orange gradient, eye-catching section
-- **Product Cards**: Larger, show store name + rating (or "New" badge)
-- **Header Logo**: More prominent branding (h-14)
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    USER TYPES IN SEARCH                      │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Query: "Netflix"                                │
+│              Call bff-marketplace-search API                 │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                ┌───────────┴───────────┐
+                ▼                       ▼
+┌───────────────────────┐   ┌───────────────────────────────┐
+│   PRODUCT FOUND       │   │   NO EXACT MATCH              │
+│   "Netflix Cheap..."  │   │                               │
+└───────────────────────┘   └───────────────────────────────┘
+         │                              │
+         ▼                              ▼
+┌───────────────────────┐   ┌───────────────────────────────┐
+│  Navigate to:         │   │  Navigate to:                 │
+│  /marketplace/        │   │  /marketplace?search=netflix  │
+│  netflix-cheap-...    │   │                               │
+└───────────────────────┘   └───────────────────────────────┘
+```
+
+## Summary
+
+- **Search Bar**: Becomes functional with direct product navigation
+- **Category Menu**: Shows real categories from database (Coding, Education, Finance, etc.)
+- **Model Tags**: Updated to match your actual products (Netflix, Amazon, etc.)
+- **Smart Navigation**: Exact product match → direct product page, no match → search results
