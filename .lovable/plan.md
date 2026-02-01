@@ -1,56 +1,47 @@
 
-
-# Fix Hover Preview Flickering Issue
+# Fix Hover Preview Close Behavior
 
 ## Problem
 
-The hover preview is flickering (opening and closing repeatedly) because:
-
-1. When mouse leaves the trigger card, a 150ms close timer starts
-2. The preview appears in screen center (not near the trigger), so there's a gap
-3. As the mouse travels from the trigger toward the centered preview, it's over the **backdrop** (not the content)
-4. The backdrop doesn't cancel the close timer
-5. Result: Preview closes before mouse can reach it, then re-opens when mouse hits another card
+Currently:
+- Entire screen overlay keeps the preview open
+- Mouse can never "leave" the overlay (it covers the whole screen)
+- Users must **click** to close the preview - no way to close by moving mouse away
 
 ```text
-Current behavior:
+Current (broken):
 ┌─────────────────────────────────────────────────────────────┐
-│                     BACKDROP (bg-black/20)                  │
+│                                                             │
+│           ENTIRE SCREEN = keeps preview open                │
 │                                                             │
 │                    ┌─────────────────┐                      │
-│                    │   Preview Box   │ ← only this cancels  │
-│                    │                 │   close timer        │
+│                    │   Preview Box   │                      │
 │                    └─────────────────┘                      │
-│                           ↑                                 │
-│           mouse travels here (over backdrop)                │
-│           close timer KEEPS RUNNING! ← Problem              │
-│                           ↑                                 │
-│  ┌────┐                                                     │
-│  │Card│ ← mouse leaves here, close timer starts             │
-│  └────┘                                                     │
+│                                                             │
+│   Mouse anywhere on screen = stays open forever             │
+│   Only click closes it ← Bad UX                             │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## Solution
 
-Treat the entire overlay (backdrop + content) as a single hover zone. When mouse is anywhere inside the portal (backdrop OR content), cancel the close timer.
+Only the **preview content box** should keep it open. The backdrop should **start the close timer** when mouse is over it.
 
 ```text
 Fixed behavior:
 ┌─────────────────────────────────────────────────────────────┐
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │           ENTIRE OVERLAY = hover zone                 │  │
-│  │                                                       │  │
-│  │              ┌─────────────────┐                      │  │
-│  │              │   Preview Box   │                      │  │
-│  │              └─────────────────┘                      │  │
-│  │                                                       │  │
-│  │    Mouse anywhere here = stays open                   │  │
-│  └───────────────────────────────────────────────────────┘  │
 │                                                             │
-│  ┌────┐                                                     │
-│  │Card│                                                     │
-│  └────┘                                                     │
+│        BACKDROP = starts close timer (after delay)         │
+│                                                             │
+│                    ┌─────────────────┐                      │
+│                    │   Preview Box   │ ← only this keeps    │
+│                    │                 │   preview open       │
+│                    └─────────────────┘                      │
+│                                                             │
+│   Move mouse away from preview → closes after 300ms         │
+│   Move mouse to preview → stays open                        │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -58,59 +49,64 @@ Fixed behavior:
 
 ### Update CenteredHoverPreview.tsx
 
-1. **Wrap backdrop + content in a single container** with hover handlers
-2. **Add onMouseEnter to the outer wrapper** to cancel close timer when mouse enters the overlay area
-3. **Only close on explicit actions**: clicking backdrop, pressing Escape, or clicking X button
-4. **Remove onMouseLeave from content** (no auto-close when leaving content)
+1. **Remove hover handlers from outer wrapper** - The full-screen overlay should not control open/close state
+2. **Add hover handlers to the content box only** - Only the preview itself keeps it open
+3. **Add hover handler to backdrop** - Entering backdrop starts close timer
+4. **Increase close delay to 300ms** - Give user time to move mouse back to preview if they accidentally leave
 
 ```typescript
-// Current structure (problematic):
-{isOpen && createPortal(
-  <>
-    <div className="backdrop" onClick={handleClose} />  // No hover handling
-    <div onMouseEnter={cancel} onMouseLeave={close}>    // Only this cancels
-      {content}
-    </div>
-  </>,
-  document.body
-)}
+// Before (entire overlay keeps it open):
+<div 
+  className="fixed inset-0 z-[9998]"
+  onMouseEnter={handleOverlayMouseEnter}  // Problem: keeps open
+  onMouseLeave={handleOverlayMouseLeave}
+>
+  <div className="backdrop" onClick={handleClose} />
+  <div ref={contentRef}>{content}</div>
+</div>
 
-// Fixed structure:
-{isOpen && createPortal(
+// After (only content keeps it open):
+<div className="fixed inset-0 z-[9998]">
   <div 
-    className="fixed inset-0 z-[9998]"
-    onMouseEnter={handleOverlayMouseEnter}  // Cancel close timer
+    className="backdrop" 
+    onClick={handleClose}
+    onMouseEnter={handleBackdropMouseEnter}  // Starts close timer
+  />
+  <div 
+    ref={contentRef}
+    onMouseEnter={handleContentMouseEnter}   // Cancels close timer
+    onMouseLeave={handleContentMouseLeave}   // Starts close timer
   >
-    <div className="backdrop" onClick={handleClose} />
-    <div className="centered-content">
-      {content}
-    </div>
-  </div>,
-  document.body
-)}
+    {content}
+  </div>
+</div>
 ```
 
-### Key behavior changes:
+### Behavior Flow
 
-| Action | Before | After |
-|--------|--------|-------|
-| Mouse leaves trigger | Starts 150ms close timer | Same (starts timer) |
-| Mouse enters backdrop area | Timer keeps running | Timer cancelled |
-| Mouse enters content | Timer cancelled | Timer cancelled |
-| Mouse leaves content | Starts close timer | No effect |
-| Mouse leaves overlay entirely | N/A | Starts close timer |
-| Click backdrop | Closes | Closes |
-| Press Escape | Closes | Closes |
+| Action | Result |
+|--------|--------|
+| Hover product card | Preview opens after 400ms |
+| Move mouse to preview content | Stays open (timer cancelled) |
+| Move mouse from preview to backdrop | Close timer starts (300ms) |
+| Move mouse back to preview before 300ms | Stays open (timer cancelled) |
+| Stay on backdrop for 300ms+ | Preview closes |
+| Click backdrop | Closes immediately |
+| Press Escape | Closes immediately |
 
-## Files to Modify
+### Additional Improvement
+
+Increase `closeDelay` from 150ms to 300ms to give users more time to move their mouse around without accidentally closing the preview.
+
+## File to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/ui/CenteredHoverPreview.tsx` | Wrap portal content in single hover container |
+| `src/components/ui/CenteredHoverPreview.tsx` | Move hover handlers from overlay to content/backdrop separately |
 
 ## Result
 
-- No more flickering when moving mouse from card to preview
-- Preview stays open while mouse is anywhere in the overlay
-- Clean close behavior: click backdrop, press Escape, or move mouse completely out
-
+- Move mouse to preview → stays open
+- Move mouse away from preview (to backdrop or cards) → closes after short delay
+- No more "stuck" preview that requires clicking
+- Smooth, natural hover experience
