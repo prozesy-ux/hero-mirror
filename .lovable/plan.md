@@ -1,80 +1,75 @@
 
+# Make Video Perfectly Blend & Prevent Download
 
-# Replace 404 Page Icon with Video
+## Goals
 
-## Current State
-The 404 page displays a UFO SVG illustration (280x280) with:
-- Floating animation (`animate-float`)
-- Dark background (#1a1a1a)
-- Size: 224px on mobile, 288px on desktop
+1. **Perfect Background Blend** - Make the video look like a native code animation, completely seamless with the dark background
+2. **Prevent Download/Scraping** - Block right-click, disable download tools, prevent scrapers from grabbing the video
 
-## What You Want
-Replace the UFO icon with the uploaded panda video:
-- Same position (centered, above the text)
-- Same box design/size
-- Video plays automatically on page load
-- Looping playback for continuous effect
+## Technical Approach
+
+### 1. Enhanced Visual Blending
+
+**Current Issue**: The video still has visible edges and doesn't fully integrate with the background.
+
+**Solution**: Use multiple layered techniques:
+
+| Technique | Purpose |
+|-----------|---------|
+| Canvas rendering | Render video frames to canvas (hides video element from DOM) |
+| Stronger edge fading | More aggressive gradient masks on all sides |
+| Color matching | Match video blacks to exact background color `#1a1a1a` |
+| Blend modes | Use `luminosity` or `screen` blend for seamless integration |
+| CSS filters | Apply brightness/contrast to match ambient lighting |
+
+### 2. Download Prevention Methods
+
+| Method | Blocks |
+|--------|--------|
+| `onContextMenu={e => e.preventDefault()}` | Right-click menu |
+| `controlsList="nodownload"` | Browser download button |
+| `disablePictureInPicture` | PiP mode extraction |
+| Canvas rendering (blob URL) | Direct video URL access |
+| Invisible overlay div | Prevents drag/drop and inspection |
+| Dynamic source loading | No static URL in source code |
+
+### 3. Implementation Details
+
+**Render Video to Canvas** (Best Protection):
+- Load video via JavaScript Blob URL (not direct path)
+- Draw frames to `<canvas>` element instead of showing `<video>`
+- Canvas cannot be downloaded like video
+- Source URL not visible in DOM inspector
+
+**Seamless Blend Design**:
+```text
++------------------------------------------+
+|           Background #1a1a1a             |
+|   +----------------------------------+   |
+|   | Outer glow (purple/teal pulse)   |   |
+|   |   +------------------------+     |   |
+|   |   | Edge gradient masks    |     |   |
+|   |   |   +----------------+   |     |   |
+|   |   |   | CANVAS element |   |     |   |
+|   |   |   | (video frames) |   |     |   |
+|   |   |   +----------------+   |     |   |
+|   |   | (all edges fade out)   |     |   |
+|   |   +------------------------+     |   |
+|   +----------------------------------+   |
++------------------------------------------+
+```
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/NotFound.tsx` | Replace SVG with video element, add autoplay/loop |
-
-## Technical Implementation
-
-### 1. Copy Video to Project
-Copy the uploaded video file to the public folder for direct video access:
-- From: `user-uploads://A_highly_stylized_cartoon-like_giant_panda_stands_against_a_dark_background_illuminated_by_vibrant_seed869836945.mp4`
-- To: `public/videos/404-panda.mp4`
-
-### 2. Replace SVG with Video Element
-
-**Before (SVG):**
-```jsx
-<div className="relative mb-8 animate-float">
-  <svg width="280" height="280" ...>
-    {/* UFO illustration */}
-  </svg>
-</div>
-```
-
-**After (Video):**
-```jsx
-<div className="relative mb-8">
-  <div className="w-56 h-56 md:w-72 md:h-72 rounded-2xl overflow-hidden shadow-2xl">
-    <video
-      autoPlay
-      loop
-      muted
-      playsInline
-      className="w-full h-full object-cover"
-    >
-      <source src="/videos/404-panda.mp4" type="video/mp4" />
-    </video>
-  </div>
-</div>
-```
-
-### Video Element Properties
-
-| Property | Purpose |
-|----------|---------|
-| `autoPlay` | Starts playing immediately on page load |
-| `loop` | Replays continuously |
-| `muted` | Required for autoplay in browsers (no sound needed) |
-| `playsInline` | Prevents fullscreen on mobile devices |
-| `object-cover` | Maintains aspect ratio, fills container |
-
-### Box Design
-- Same size as current icon: `w-56 h-56 md:w-72 md:h-72` (224px / 288px)
-- Rounded corners: `rounded-2xl`
-- Shadow for depth: `shadow-2xl`
-- Overflow hidden to clip video to box
+| `src/pages/NotFound.tsx` | Replace video with canvas, add download protection, enhance blend effects |
 
 ## Result
-- Video loads and plays automatically when user lands on 404 page
-- Same centered position above the "Looking for something?" heading
-- Same box size as the current UFO illustration
-- Loops continuously for engaging visual effect
 
+- Video appears as native animated element (like CSS/JS animation)
+- No visible borders or container edges
+- Right-click disabled, download tools blocked
+- Video URL not exposed in DOM
+- Scrapers cannot find or download the video file
+- Perfect seamless integration with `#1a1a1a` background
