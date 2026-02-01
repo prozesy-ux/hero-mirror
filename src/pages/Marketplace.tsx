@@ -10,6 +10,8 @@ import GumroadProductCard from '@/components/marketplace/GumroadProductCard';
 import FeaturedCarousel from '@/components/marketplace/FeaturedCarousel';
 import GumroadFilterSidebar from '@/components/marketplace/GumroadFilterSidebar';
 import ProductHoverCard from '@/components/marketplace/ProductHoverCard';
+import { HotProductsSection } from '@/components/marketplace/HotProductsSection';
+import { TopRatedSection } from '@/components/marketplace/TopRatedSection';
 import GuestPaymentModal from '@/components/marketplace/GuestPaymentModal';
 import MarketplaceProductFullView from '@/components/marketplace/MarketplaceProductFullView';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -484,6 +486,42 @@ const Marketplace = () => {
             products={featuredProducts}
             onProductClick={handleProductClick}
             title="Featured products"
+          />
+        )}
+
+        {/* Hot Right Now Section */}
+        {!searchQuery && selectedCategory === 'all' && (
+          <HotProductsSection 
+            onProductClick={(product) => handleProductClick({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              iconUrl: product.icon_url,
+              sellerName: product.seller_name || null,
+              storeSlug: product.store_slug || null,
+              isVerified: false,
+              soldCount: product.sold_count,
+              type: product.type,
+            })}
+            className="mt-6"
+          />
+        )}
+
+        {/* Top Rated Section */}
+        {!searchQuery && selectedCategory === 'all' && (
+          <TopRatedSection 
+            onProductClick={(product) => handleProductClick({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              iconUrl: product.icon_url,
+              sellerName: product.seller_name || null,
+              storeSlug: product.store_slug || null,
+              isVerified: false,
+              soldCount: 0,
+              type: 'seller',
+            })}
+            className="mt-6"
           />
         )}
 
