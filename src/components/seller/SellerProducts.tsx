@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import productsIllustration from '@/assets/products-illustration.png';
+import gumroadBanner from '@/assets/gumroad-banner.png';
 import { useNavigate } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -327,28 +327,15 @@ const SellerProducts = () => {
 
       {/* Products Grid - 4 columns */}
       {filteredProducts.length === 0 ? (
-        <div className="bg-white border-2 border-black/10 rounded-lg p-12 text-center">
-          <div className="max-w-sm mx-auto mb-6">
+        <div className="bg-white rounded-lg overflow-hidden">
+          {/* Gumroad-style Banner */}
+          <div className="w-full">
             <img 
-              src={productsIllustration} 
-              alt="Get started with products" 
-              className="w-full h-auto"
+              src={gumroadBanner} 
+              alt="Start creating and selling" 
+              className="w-full h-auto object-cover rounded-lg"
             />
           </div>
-          
-          <h3 className="text-2xl font-black text-black mb-2">
-            Start selling today
-          </h3>
-          <p className="text-gray-500 max-w-md mx-auto mb-8">
-            Your first product doesn't need to be perfect. Just get it out there.
-          </p>
-          
-          <Button 
-            onClick={() => navigate('/seller/products/new')} 
-            className="bg-black hover:bg-black/90 text-white rounded-lg px-8 py-3 h-12 text-base font-semibold"
-          >
-            New Product
-          </Button>
         </div>
       ) : (
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
