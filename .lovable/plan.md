@@ -1,109 +1,80 @@
 
 
-# Fix Hover Preview Buttons and Navigation in Marketplace
+# Replace 404 Page Icon with Video
 
-## Problem Summary
+## Current State
+The 404 page displays a UFO SVG illustration (280x280) with:
+- Floating animation (`animate-float`)
+- Dark background (#1a1a1a)
+- Size: 224px on mobile, 288px on desktop
 
-Currently in the `ProductHoverCard` hover preview:
-1. The Buy button shows "Top Up & Buy" when user has insufficient balance - should always show "BUY NOW"
-2. There's no "Full View" button to see the complete product page
-3. When clicking Buy, it redirects to the store page (`/store/{slug}`) instead of staying in marketplace context
-4. Navigation should use the marketplace full view URL `/marketplace/:productSlug`
+## What You Want
+Replace the UFO icon with the uploaded panda video:
+- Same position (centered, above the text)
+- Same box design/size
+- Video plays automatically on page load
+- Looping playback for continuous effect
 
-## Solution
-
-### Changes to ProductHoverCard.tsx
-
-**1. Change Buy Button Text**
-- Remove the conditional "Top Up & Buy" text
-- Always display "BUY NOW"
-- Keep the ShoppingCart icon
-
-**2. Add "Full View" Button**
-- Add a new button below Buy and Chat buttons
-- Design: Outlined style with Eye icon, text "Full View"
-- On click: Navigate to `/marketplace/{slugified-product-name}`
-
-**3. Update onBuy Handler (in Marketplace.tsx)**
-- Currently: Redirects to store page
-- Change: Open guest checkout modal for guests, or handle purchase within marketplace
-
-### Files to Modify
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/marketplace/ProductHoverCard.tsx` | Change button text to "BUY NOW", add "Full View" button with navigation to `/marketplace/{slug}` |
-| `src/pages/Marketplace.tsx` | Update `handleHoverBuy` to handle purchase directly instead of redirecting to store |
+| `src/pages/NotFound.tsx` | Replace SVG with video element, add autoplay/loop |
 
-### Visual Design for Buttons
+## Technical Implementation
 
-```text
-+----------------------------------+
-|  [$] BUY NOW         (Black bg)  |  <- Primary action
-+----------------------------------+
-|  [Eye] Full View     (Outlined)  |  <- Navigate to full view
-+----------------------------------+
-|  [Chat] Chat         (Outlined)  |  <- Chat with seller
-+----------------------------------+
+### 1. Copy Video to Project
+Copy the uploaded video file to the public folder for direct video access:
+- From: `user-uploads://A_highly_stylized_cartoon-like_giant_panda_stands_against_a_dark_background_illuminated_by_vibrant_seed869836945.mp4`
+- To: `public/videos/404-panda.mp4`
+
+### 2. Replace SVG with Video Element
+
+**Before (SVG):**
+```jsx
+<div className="relative mb-8 animate-float">
+  <svg width="280" height="280" ...>
+    {/* UFO illustration */}
+  </svg>
+</div>
 ```
 
-### Button Behavior Matrix
-
-| Button | Logged In User | Guest User |
-|--------|---------------|------------|
-| BUY NOW | Open guest checkout / handle purchase | Open GuestPaymentModal |
-| Full View | Navigate to `/marketplace/{slug}` | Navigate to `/marketplace/{slug}` |
-| Chat | Open chat with seller | Redirect to sign in |
-
-### Technical Implementation
-
-**ProductHoverCard.tsx - Button Changes:**
-```typescript
-// Line 278 - Change "Top Up & Buy" to "BUY NOW"
-{isAuthenticated && !hasEnoughBalance ? 'BUY NOW' : 'BUY NOW'}
-// Simplify to just:
-'BUY NOW'
-
-// Add Full View button after Chat button (around line 290)
-<Button
-  onClick={(e) => { 
-    e.stopPropagation(); 
-    navigate(`/marketplace/${slugify(product.name)}`);
-  }}
-  variant="outline"
-  className="w-full h-10 rounded-lg border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors mb-3 text-sm"
->
-  <Eye className="w-4 h-4 mr-2" />
-  Full View
-</Button>
+**After (Video):**
+```jsx
+<div className="relative mb-8">
+  <div className="w-56 h-56 md:w-72 md:h-72 rounded-2xl overflow-hidden shadow-2xl">
+    <video
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="w-full h-full object-cover"
+    >
+      <source src="/videos/404-panda.mp4" type="video/mp4" />
+    </video>
+  </div>
+</div>
 ```
 
-**Marketplace.tsx - Update handleHoverBuy:**
-```typescript
-// Change from redirecting to store to opening guest checkout
-const handleHoverBuy = useCallback((product: Product) => {
-  if (user) {
-    // For logged in users, navigate to marketplace full view to complete purchase
-    const slug = slugify(product.name);
-    navigate(`/marketplace/${slug}`);
-  } else {
-    // For guests, open the guest payment modal
-    setGuestCheckoutProduct(product);
-  }
-}, [user, navigate]);
-```
+### Video Element Properties
 
-### Expected Result
+| Property | Purpose |
+|----------|---------|
+| `autoPlay` | Starts playing immediately on page load |
+| `loop` | Replays continuously |
+| `muted` | Required for autoplay in browsers (no sound needed) |
+| `playsInline` | Prevents fullscreen on mobile devices |
+| `object-cover` | Maintains aspect ratio, fills container |
 
-1. Hovering any product card shows preview with:
-   - "BUY NOW" button (always, no "Top Up" text)
-   - "Full View" button → navigates to `/marketplace/{product-slug}`
-   - "Chat" button → opens chat or prompts sign in
+### Box Design
+- Same size as current icon: `w-56 h-56 md:w-72 md:h-72` (224px / 288px)
+- Rounded corners: `rounded-2xl`
+- Shadow for depth: `shadow-2xl`
+- Overflow hidden to clip video to box
 
-2. Clicking Buy button:
-   - Guest → Opens guest checkout modal
-   - Logged in → Navigates to marketplace full view
-
-3. Clicking Full View button:
-   - Both → Navigates to `/marketplace/{product-slug}` with full product details
+## Result
+- Video loads and plays automatically when user lands on 404 page
+- Same centered position above the "Looking for something?" heading
+- Same box size as the current UFO illustration
+- Loops continuously for engaging visual effect
 
