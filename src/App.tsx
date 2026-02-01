@@ -86,11 +86,6 @@ const App = () => (
                   <Seller />
                 </Suspense>
               } />
-              <Route path="/seller/products/new" element={
-                <Suspense fallback={<AppShell variant="seller" />}>
-                  <NewProduct />
-                </Suspense>
-              } />
               <Route path="/admin/*" element={
                 <Suspense fallback={<AppShell variant="dashboard" />}>
                   <Admin />
