@@ -323,7 +323,9 @@ const ProductHoverCard = ({
         </div>
       </HoverCardTrigger>
       <HoverCardContent 
-        sideOffset={0}
+        side="bottom" 
+        align="center"
+        sideOffset={16}
         className="w-[700px] p-0 border border-black/10 shadow-2xl bg-white z-50 fixed-center"
       >
         <HoverContent />
