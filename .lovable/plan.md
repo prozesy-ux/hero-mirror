@@ -1,194 +1,192 @@
 
 
-# Dashboard Marketplace Product View Redesign Plan
+# Dashboard Marketplace Quick View Modal Redesign
 
 ## Overview
 
-Redesign the dashboard marketplace product view (`ProductFullViewPage.tsx`) to match the store product view design (`ProductDetailModal.tsx`) with consistent styling, clear layout, and mobile-first design.
+Replace the old inline Quick View Modal in `AIAccountsSection.tsx` with a new design that matches the store's `ProductDetailModal.tsx` - featuring black/monochrome aesthetic, mobile drawer layout, and trust badges.
 
-## Current State Analysis
+## Current State (Old Design)
 
-### Store Product View (`ProductDetailModal.tsx`) - Reference Design
-- **Desktop**: 65/35 horizontal split (image left, purchase box right)
-- **Mobile**: Vertical drawer with bottom-sticky action buttons
-- **Styling**: Clean black/white monochrome with trust badges
-- **Key Features**: Image gallery with dots, seller info, rating stars, tags, trust badges (Secure, Instant, 24/7)
+The inline modal in `AIAccountsSection.tsx` (lines 2025-2133) has:
+- Green emerald store badges
+- Green checkmark price badges (`bg-emerald-100 text-emerald-700`)
+- Yellow "Buy" button (`bg-yellow-400`)
+- 3-column button layout (Chat, View, Buy)
+- No mobile drawer experience
+- No trust badges
 
-### Dashboard Product View (`ProductFullViewPage.tsx`) - Current Issues
-- Has 70/30 split but inconsistent with store modal
-- Missing drawer-style mobile experience
-- Header differs (uses sticky back button instead of modal header)
-- Trust badges and layout slightly different from store view
-- Not using Drawer component for mobile
+## Target Design (Store Modal Style)
 
-## Key Changes Required
+Match the `ProductDetailModal.tsx` design:
+- Black/white monochrome aesthetic
+- Black price badge with white text
+- Black action buttons
+- Mobile-first vertical stack with sticky bottom actions
+- Desktop: horizontal split layout
+- Trust badges (Secure, Instant, 24/7)
+- Image gallery with dot navigation
 
-### 1. Mobile Experience - Add Drawer Component
-Convert mobile view to use bottom sheet drawer (like store modal):
+## Visual Comparison
 
+### Current (Old):
 ```text
-Current (Mobile):
 +------------------+
-| Back Button      |
+| [Green Badge]  X |
+| Product Image    |
 +------------------+
-| Image            |
-| Content          |
-| Actions          | ← Not sticky
+| Title            |
+| [Green Price]    |
+| Description...   |
 +------------------+
-
-After (Mobile):
-+------------------+
-| Image (280px)    |
-| Seller Info      |
-| Title + Price    |
-| Tags + Desc      |
-+------------------+
-| Chat | Buy Now   | ← Sticky bottom
+| [Chat][View][Buy]| <- Yellow Buy
 +------------------+
 ```
 
-### 2. Desktop Layout - Match Store Modal
-Align the 70/30 split with store's visual patterns:
+### After (New - Mobile):
+```text
++--------------------+
+| Image (280px)      |
+| < dots >           |
++--------------------+
+| [Avatar] Seller    |
+|         100 orders |
++--------------------+
+| Title              |
+| [$25] ★★★★★ (12)  | <- Black price badge
++--------------------+
+| [Tag1] [Tag2]      |
++--------------------+
+| Description...     |
+| Stats bar          |
++--------------------+
+| [Chat] [Buy Now]   | <- Sticky black buttons
++--------------------+
+```
 
-- Same image container height (`h-[350px] lg:h-[450px]`)
-- Same purchase box styling (black price badge, trust badges)
-- Same navigation arrows and dot indicators
-
-### 3. Mobile-Specific Components
-
-Add matching mobile content structure:
-
-| Component | Store Modal | Dashboard (After) |
-|-----------|-------------|-------------------|
-| Image height | 280px | 280px |
-| Seller info box | Rounded bg-black/5 | Same |
-| Price badge | Black with white text | Same |
-| Action buttons | Sticky bottom 44px | Same |
-| Trust badges | Secure, Instant, 24/7 | Same |
-
-### 4. Navigation Changes
-
-| Item | Current | After |
-|------|---------|-------|
-| Desktop back | Sticky header bar | Keep as-is (dashboard nav) |
-| Mobile back | None (uses browser) | Add close/back in drawer handle |
+### After (New - Desktop):
+```text
++--------------------------------------+
+| +------------------+ +--------------+|
+| | Image Gallery    | | [$25]        ||
+| |   (65%)          | | [Buy Now]    || <- Black buttons
+| |                  | | [Chat]       ||
+| +------------------+ | Trust Badges ||
+|                      +--------------+|
+| Title + Seller + Description         |
++--------------------------------------+
+```
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/dashboard/ProductFullViewPage.tsx` | Add mobile drawer, align styling with store modal |
+| `src/components/dashboard/AIAccountsSection.tsx` | Replace inline Quick View Modal with new store-matching design |
 
-## Detailed Implementation
+## Implementation Details
 
-### Step 1: Import Drawer Components
-Add Drawer imports for mobile bottom sheet experience.
-
-### Step 2: Add useIsMobile Hook
-Detect mobile viewport to switch between layouts.
-
-### Step 3: Create Mobile Content Component
-Mirror the `MobileContent` component from `ProductDetailModal`:
-- 280px image gallery with dots
-- Seller info in rounded bg-black/5 box
-- Black price badge
-- Sticky action buttons at bottom
-
-### Step 4: Update Desktop Layout
-Ensure desktop view maintains 70/30 split with:
-- Same image container heights
-- Same purchase box border styling
-- Same trust badge layout
-
-### Step 5: Mobile-Specific Styling
-Add responsive classes for:
-- `safe-area-bottom` padding for iOS
-- Touch-friendly 44px min button heights
-- Horizontal scroll for image thumbnails
-
-## Visual Comparison
-
-### Mobile View (After Changes)
-
-```text
-+------------------------+
-|  [Image 280px]         |
-|  < > dots             |
-+------------------------+
-| [Avatar] Seller Name   |
-|         100 orders     |
-+------------------------+
-| Product Title          |
-| [$25.00] ★★★★★ (12)   |
-+------------------------+
-| [Tag1] [Tag2] [Tag3]   |
-+------------------------+
-| Description text...    |
-| 50 sold | Balance: $30 |
-+------------------------+
-| [Chat] [Buy Now]       | ← Sticky
-+------------------------+
-```
-
-### Desktop View (After Changes)
-
-```text
-+------------------------------------------+
-| ← Back to Marketplace                    |
-+------------------------------------------+
-| +---------------------------+ +---------+|
-| |                           | | $25.00  ||
-| |     Image Gallery         | |         ||
-| |       (70%)               | | [Buy]   ||
-| |                           | | [Chat]  ||
-| +---------------------------+ |         ||
-| | thumb | thumb | thumb     | | Trust   ||
-| +---------------------------+ | Badges  ||
-|                               +---------+|
-| +---------------------------------------+|
-| | Title + Seller + Description          ||
-| +---------------------------------------+|
-| | Ratings & Reviews                      ||
-| +---------------------------------------+|
-+------------------------------------------+
-```
-
-## Technical Details
-
-### Drawer Implementation
+### 1. Add New Imports
 ```typescript
-// Use conditional rendering based on viewport
-if (isMobile) {
-  return (
-    <div className="min-h-screen">
-      {/* Mobile vertical stack with sticky actions */}
-    </div>
-  );
-}
-
-// Desktop continues with current 70/30 layout
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { BadgeCheck, ShieldCheck, Zap, Clock, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import StarRating from '@/components/reviews/StarRating';
+import { useIsMobile } from '@/hooks/use-mobile';
 ```
 
-### Sticky Action Bar (Mobile)
-```css
-.sticky bottom-0 bg-white pt-2 border-t border-black/10 safe-area-bottom
+### 2. Add Review Stats Fetching
+Add `averageRating` and `reviewCount` state with fetch logic similar to `ProductDetailModal`.
+
+### 3. Replace Modal Content
+
+**Mobile Layout (Drawer-based):**
+- 280px image container with dot navigation
+- Seller info in `bg-black/5` rounded box
+- Black price badge: `bg-black text-white`
+- Sticky bottom action bar with Chat + Buy Now
+
+**Desktop Layout (Dialog):**
+- 65/35 horizontal split
+- Left: Image gallery with thumbnails
+- Right: Sticky purchase box with black buttons
+- Trust badges: Secure, Instant, 24/7
+- View Full Details button
+
+### 4. Styling Changes
+
+| Element | Old | New |
+|---------|-----|-----|
+| Store Badge | `bg-emerald-500` | `bg-black/80 text-white` |
+| Price Badge | `bg-emerald-100 text-emerald-700` | `bg-black text-white rounded` |
+| Buy Button | `bg-yellow-400` | `bg-black text-white` |
+| Chat Button | `bg-emerald-100`/`bg-violet-100` | `border-2 border-black` outline |
+| View Button | `bg-gray-100` | Move to View Full Details |
+
+### 5. Key UI Components
+
+**Image Gallery Navigation:**
+```typescript
+// Dot indicators
+<div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
+  {images.map((_, i) => (
+    <button
+      key={i}
+      onClick={() => setCurrentImageIndex(i)}
+      className={`w-2 h-2 rounded-full ${
+        i === currentImageIndex ? 'bg-black' : 'bg-white border border-black/20'
+      }`}
+    />
+  ))}
+</div>
 ```
 
-### Trust Badges (Consistent)
+**Trust Badges:**
 ```typescript
 <div className="flex flex-wrap gap-1.5">
   <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
     <ShieldCheck size={10} />
     <span>Secure</span>
   </div>
-  {/* Instant, 24/7 badges */}
+  <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
+    <Zap size={10} />
+    <span>Instant</span>
+  </div>
+  <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
+    <Clock size={10} />
+    <span>24/7</span>
+  </div>
 </div>
 ```
 
-## Expected Outcome
+**Sticky Mobile Actions:**
+```typescript
+<div className="flex gap-2 px-4 pb-4 sticky bottom-0 bg-white pt-2 border-t border-black/10 safe-area-bottom">
+  <Button
+    variant="outline"
+    onClick={handleChat}
+    className="flex-1 rounded-xl border-2 border-black text-black hover:bg-black hover:text-white h-11"
+  >
+    <MessageCircle className="w-4 h-4 mr-1.5" />
+    Chat
+  </Button>
+  <Button
+    onClick={handleBuy}
+    className="flex-1 rounded-xl bg-black hover:bg-black/90 text-white h-11"
+  >
+    <ShoppingCart className="w-4 h-4 mr-1.5" />
+    Buy Now
+  </Button>
+</div>
+```
 
-- Dashboard marketplace product view will match store product view design exactly
-- Clean, mobile-first experience with bottom-sticky actions
-- Consistent trust indicators and styling across platform
-- Same 44px touch targets and safe area handling
+## Summary
+
+- Replace old green/yellow Quick View Modal with black/white monochrome design
+- Add mobile drawer experience with sticky bottom actions
+- Desktop uses 65/35 horizontal split like store modal
+- Add trust badges (Secure, Instant, 24/7)
+- Add image gallery with dot navigation
+- Add seller info box with avatar
+- Add star ratings display
+- Consistent 44px touch targets for mobile
 
