@@ -1,73 +1,85 @@
 
-## What’s happening (why you still see the “150ms timer” problem)
-Even though `CenteredHoverPreview` now defaults to `closeDelay = 300`, your **two callers override it back to 150ms**:
+Goal
+- Prevent the centered hover preview from closing while the user is moving the mouse from the product card (trigger) to the centered preview (content), even if they move a bit slowly.
+- Keep the “move away to close” behavior (no need to click) once the user is not in that travel window.
 
-- `src/components/marketplace/ProductHoverCard.tsx` → `closeDelay={150}`
-- `src/components/store/StoreProductHoverCard.tsx` → `closeDelay={150}`
+What’s happening now (root cause)
+- After the preview opens, the screen has a backdrop overlay.
+- When the user leaves the trigger card to move toward the centered preview, their mouse necessarily passes over the backdrop first.
+- Our current logic starts the close timer as soon as the mouse enters the backdrop.
+- If the user takes longer than closeDelay (300ms) to reach the centered content, the preview closes “too fast”.
+- This matches your report: first 1–2 hovers feel OK, then later hovers you notice the premature closing (usually because the mouse movement timing varies).
 
-Also, right now **the close timer starts immediately when the mouse leaves the trigger card** (`handleTriggerMouseLeave`). That can still cause “auto close” if the user’s cursor takes longer than the delay to reach the centered preview.
+Design approach (best UX compromise)
+Add a short “travel grace period” after the preview opens (or after leaving the trigger), during which the backdrop will NOT start the close timer. This gives users time to move from the trigger card to the centered content without the preview closing.
 
-## Target behavior (best UX)
-- Hover card → preview opens
-- Move mouse from card toward the centered preview:
-  - Preview should NOT start closing just because you left the card
-  - Preview should only start closing when you’re on the backdrop (not on preview content), or when you leave the preview content
-- Moving around quickly shouldn’t cause open/close flicker loops
+After the grace period:
+- Backdrop hover will start close timer as it does now (so moving away closes naturally).
+- Content hover will cancel close timer.
 
-## Changes I will make
+Implementation details
 
-### 1) Stop overriding `closeDelay` with 150ms in the two product hover components
-Update both files to either:
-- Remove the `closeDelay` prop entirely (use the component default), or
-- Set it to `300` (or slightly higher like `350`)
+1) Update `src/components/ui/CenteredHoverPreview.tsx` to track a travel grace window
+- Add a ref like:
+  - `const lastOpenAtRef = useRef<number>(0);`
+  - (Optionally also `lastTriggerLeaveAtRef`, but “lastOpenAt” is often enough.)
+- When opening (`handleOpen`), set `lastOpenAtRef.current = Date.now()`.
 
-Files:
-- `src/components/marketplace/ProductHoverCard.tsx`
-- `src/components/store/StoreProductHoverCard.tsx`
+2) Add a prop (optional) or constant for the grace duration
+- Add a new optional prop:
+  - `travelGraceMs?: number` (default: 450–600ms)
+- Keep existing defaults:
+  - `openDelay = 400`
+  - `closeDelay = 300` (or slightly higher if needed)
+- Recommended defaults:
+  - `travelGraceMs = 600`
+  - `closeDelay = 350` (small bump for forgiveness)
 
-### 2) Change `CenteredHoverPreview` so leaving the trigger card does NOT start the close timer when the preview is already open
-This is the core fix for “mouse auto move → it closes too fast”.
+3) Modify backdrop mouse-enter close behavior
+Current behavior:
+- Backdrop `onMouseEnter` immediately starts the close timer.
 
-Update `handleTriggerMouseLeave` logic:
+New behavior:
+- In `handleBackdropMouseEnter`, check if we’re inside the grace window:
+  - `if (Date.now() - lastOpenAtRef.current < travelGraceMs) return;`
+- Only start the close timer if we’re outside the grace window.
 
-- Always clear timers
-- If preview is NOT open yet (still in openDelay phase):
-  - Cancel the pending open (so it doesn’t open after you left)
-- If preview IS already open:
-  - Do NOT start a close timer here
-  - Let the overlay logic control closing:
-    - backdrop `onMouseEnter` starts close timer
-    - content `onMouseLeave` starts close timer
-    - Escape / click backdrop closes immediately
+This preserves:
+- “Move away closes” once the preview has been open for a moment.
+This fixes:
+- “Closes too fast” while traveling to the centered preview.
 
-Why this works:
-- When the portal is open, the user’s next mouse area is almost always the backdrop or the content; those are the correct places to decide closing behavior.
-- This removes the “gap travel penalty” entirely.
+4) Keep content handlers as-is
+- `handleContentMouseEnter` cancels timers
+- `handleContentMouseLeave` starts close timer
 
-File:
-- `src/components/ui/CenteredHoverPreview.tsx`
+5) Verify callers don’t override with too-aggressive delays
+- `ProductHoverCard` and `StoreProductHoverCard` already removed `closeDelay={150}` (good).
+- We’ll avoid adding any new overrides unless you want different behavior per page.
 
-### 3) Optional small polish (if needed after the above)
-If you still feel it closes too quickly for some users:
-- Increase default `closeDelay` slightly (e.g. `350–450ms`)
-- Keep `openDelay` at `350–450ms` so it doesn’t feel “too sensitive”
+Acceptance tests (what you should test end-to-end)
+1) Marketplace (/marketplace/chatgpt):
+   - Hover product card, then move slowly to the centered preview.
+   - Expected: preview stays open and does not close while traveling.
+2) After preview is open for >0.6s:
+   - Move mouse off the preview onto the dark backdrop and wait.
+   - Expected: preview closes after closeDelay.
+3) Repeat hover on 5–10 products:
+   - Expected: no “after 1–2 hovers it breaks” behavior.
+4) Store page:
+   - Same behavior as marketplace.
+5) Confirm clicks still work:
+   - Clicking backdrop closes immediately.
+   - Escape closes immediately.
 
-## Acceptance checks (what you should test)
-1) Go to `/marketplace/chatgpt` and hover a product card:
-   - Preview opens in center
-2) Move mouse from the card to the preview (slowly):
-   - Preview should stay open (no auto close)
-3) Move mouse away from the preview onto the dark backdrop:
-   - Preview closes after the delay (no click required)
-4) Move quickly across many cards:
-   - No “on/off/on/off” flicker loop
-5) Verify same behavior in Store pages (where `StoreProductHoverCard` is used)
+Files to change
+- src/components/ui/CenteredHoverPreview.tsx
+  - Add `travelGraceMs` (optional prop)
+  - Track open timestamp
+  - Gate backdrop close-timer start by grace window
 
-## Files involved
-- `src/components/ui/CenteredHoverPreview.tsx` (logic update)
-- `src/components/marketplace/ProductHoverCard.tsx` (remove/adjust closeDelay prop)
-- `src/components/store/StoreProductHoverCard.tsx` (remove/adjust closeDelay prop)
+Notes / edge cases considered
+- This solution avoids making the overlay “sticky” again (still closes when you move away after the grace window).
+- It directly targets the travel gap problem without reintroducing flicker.
+- If you still see “too fast” after this, we can increase `travelGraceMs` to ~800ms or raise `closeDelay` slightly (but grace window is the key).
 
-## Risk / tradeoffs
-- Very low risk: change is isolated to hover-preview behavior only.
-- Expected improvement: removes premature auto-close when cursor travels from trigger to centered preview.
