@@ -35,6 +35,7 @@ import SellerCustomers from '@/components/seller/SellerCustomers';
 import SellerMarketing from '@/components/seller/SellerMarketing';
 import SellerReports from '@/components/seller/SellerReports';
 import SellerPerformance from '@/components/seller/SellerPerformance';
+import NewProduct from './NewProduct';
 import signinBackground from '@/assets/signin-background.webp';
 import uptozaLogo from '@/assets/uptoza-logo.png';
 
@@ -559,6 +560,7 @@ const SellerMainContent = () => {
         <Routes>
           <Route path="/" element={<SellerDashboard />} />
           <Route path="/products" element={<SellerProducts />} />
+          <Route path="/products/new" element={<NewProduct />} />
           <Route path="/orders" element={<SellerOrders />} />
           <Route path="/analytics" element={<SellerAnalytics />} />
           <Route path="/inventory" element={<SellerInventory />} />
