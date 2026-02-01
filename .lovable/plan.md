@@ -1,112 +1,75 @@
 
+# Make Video Perfectly Blend & Prevent Download
 
-# Full Page Video Background - Seamless "Code Animation" Design
+## Goals
 
-## Goal
+1. **Perfect Background Blend** - Make the video look like a native code animation, completely seamless with the dark background
+2. **Prevent Download/Scraping** - Block right-click, disable download tools, prevent scrapers from grabbing the video
 
-Make the panda video fill the **entire page background**, perfectly blended with the dark theme so it looks like a native animated background - not a video at all.
+## Technical Approach
 
-## Current vs. New Design
+### 1. Enhanced Visual Blending
 
-| Current | New |
-|---------|-----|
-| Small box (280px) centered | Full-screen background |
-| Gradient masks on edges | Video blends into entire page |
-| Video visible as element | Video invisible as "animation layer" |
+**Current Issue**: The video still has visible edges and doesn't fully integrate with the background.
 
-## Visual Concept
+**Solution**: Use multiple layered techniques:
 
+| Technique | Purpose |
+|-----------|---------|
+| Canvas rendering | Render video frames to canvas (hides video element from DOM) |
+| Stronger edge fading | More aggressive gradient masks on all sides |
+| Color matching | Match video blacks to exact background color `#1a1a1a` |
+| Blend modes | Use `luminosity` or `screen` blend for seamless integration |
+| CSS filters | Apply brightness/contrast to match ambient lighting |
+
+### 2. Download Prevention Methods
+
+| Method | Blocks |
+|--------|--------|
+| `onContextMenu={e => e.preventDefault()}` | Right-click menu |
+| `controlsList="nodownload"` | Browser download button |
+| `disablePictureInPicture` | PiP mode extraction |
+| Canvas rendering (blob URL) | Direct video URL access |
+| Invisible overlay div | Prevents drag/drop and inspection |
+| Dynamic source loading | No static URL in source code |
+
+### 3. Implementation Details
+
+**Render Video to Canvas** (Best Protection):
+- Load video via JavaScript Blob URL (not direct path)
+- Draw frames to `<canvas>` element instead of showing `<video>`
+- Canvas cannot be downloaded like video
+- Source URL not visible in DOM inspector
+
+**Seamless Blend Design**:
 ```text
-+--------------------------------------------------+
-|                FULL SCREEN VIDEO                  |
-|     (blended with background, very subtle)        |
-|                                                  |
-|           ┌─────────────────────┐                |
-|           │   Panda Animation   │                |
-|           │   (center focus)    │                |
-|           └─────────────────────┘                |
-|                                                  |
-|           "Looking for something?"               |
-|           [Browse] [Seller] [Help]               |
-|              [Go to Homepage]                    |
-|                                                  |
-|   (Background: #1a1a1a with subtle video blend)  |
-+--------------------------------------------------+
++------------------------------------------+
+|           Background #1a1a1a             |
+|   +----------------------------------+   |
+|   | Outer glow (purple/teal pulse)   |   |
+|   |   +------------------------+     |   |
+|   |   | Edge gradient masks    |     |   |
+|   |   |   +----------------+   |     |   |
+|   |   |   | CANVAS element |   |     |   |
+|   |   |   | (video frames) |   |     |   |
+|   |   |   +----------------+   |     |   |
+|   |   | (all edges fade out)   |     |   |
+|   |   +------------------------+     |   |
+|   +----------------------------------+   |
++------------------------------------------+
 ```
 
-## Technical Implementation
-
-### 1. Full-Page Video Layer
-
-| Property | Value | Purpose |
-|----------|-------|---------|
-| Position | `fixed inset-0` | Cover entire viewport |
-| Size | `w-full h-full object-cover` | Fill without distortion |
-| Z-index | `-10` | Behind all content |
-| Opacity | `0.4-0.6` | Subtle, not overwhelming |
-| Blend | `mix-blend-mode: luminosity` | Merge with background color |
-
-### 2. Enhanced Blending Layers
-
-**Layer Stack (bottom to top):**
-1. **Base background** - Solid `#1a1a1a`
-2. **Video canvas** - Full screen, low opacity, luminosity blend
-3. **Gradient overlay** - Radial vignette to darken edges
-4. **Content layer** - Text, buttons (fully visible)
-5. **Protection overlay** - Invisible, blocks all interactions
-
-### 3. Video Processing for Perfect Blend
-
-Apply CSS filters to the canvas to match the dark theme:
-
-```css
-filter: 
-  brightness(0.5)      /* Darken video */
-  contrast(1.2)        /* Enhance panda details */
-  saturate(0.8)        /* Reduce color intensity */
-  blur(0.5px);         /* Slight soften */
-
-mix-blend-mode: luminosity;  /* Blend with bg color */
-opacity: 0.5;                /* Subtle presence */
-```
-
-### 4. Vignette Overlay Design
-
-Add a radial gradient overlay to fade video toward edges:
-
-```css
-background: radial-gradient(
-  ellipse at center,
-  transparent 20%,
-  rgba(26, 26, 26, 0.7) 50%,
-  #1a1a1a 80%
-);
-```
-
-This creates a "spotlight" effect on the panda in the center while edges fade to solid background.
-
-### 5. Download Protection (Enhanced)
-
-| Layer | Protection |
-|-------|------------|
-| Canvas rendering | No video URL in DOM |
-| Full-page overlay | Blocks all mouse events |
-| `user-select: none` | No selection possible |
-| `pointer-events: none` on canvas | Can't target it |
-| `onContextMenu` disabled | No right-click |
-
-## File to Modify
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/NotFound.tsx` | Convert to full-page video background with layered blending |
+| `src/pages/NotFound.tsx` | Replace video with canvas, add download protection, enhance blend effects |
 
 ## Result
 
-- Video fills entire page as subtle animated background
-- Panda animation visible in center with vignette fade
-- Looks like built-in CSS/JS animation, not a video
-- Completely protected from download/scraping
-- Text and buttons remain fully visible and interactive
-- Professional, polished 404 experience
-
+- Video appears as native animated element (like CSS/JS animation)
+- No visible borders or container edges
+- Right-click disabled, download tools blocked
+- Video URL not exposed in DOM
+- Scrapers cannot find or download the video file
+- Perfect seamless integration with `#1a1a1a` background
