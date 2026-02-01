@@ -1,136 +1,57 @@
 
 
-# Gumroad-Style Illustration Banner for Products Page
+# Fix Gumroad Banner - Full Image Display
 
-## Overview
+## Problem
 
-Replace the current products illustration with a Gumroad-inspired comic-strip style banner at the top of the Products page. This will use the provided panda illustrations to create a visually engaging, colorful banner that guides sellers through the product creation journey.
+The current banner implementation:
+- Uses fixed heights (`h-[180px]` / `h-[220px]`) that crop the image
+- `object-cover` cuts off parts of the illustration
+- The panda artwork is not fully visible
 
-## Design Reference Analysis
+## Solution
 
-The Gumroad reference shows:
-- 4-panel comic strip layout (horizontal row)
-- Teal (#14B8A6) and yellow (#FFC107) color scheme
-- Bold black outlines on illustrations
-- Each panel tells a story (working, creating, selling, playing)
-- Sits at the top of the empty products page
-- Dashed border container
+Change the image to display at its natural aspect ratio while maintaining the Gumroad-style white border design.
 
-## Implementation Plan
+## Implementation
 
-### 1. Copy Uploaded Image to Assets
+### File: `src/components/seller/SellerProducts.tsx`
 
-Copy the panda illustration banner to the project:
-
-```
-user-uploads://product_view.png → src/assets/gumroad-banner.png
-```
-
-### 2. Update SellerProducts.tsx
-
-**Changes to Empty State:**
-
-| Current | New |
-|---------|-----|
-| Small centered illustration | Full-width banner at top |
-| Simple message below | Gumroad-style messaging |
-| Single "New Product" button | Centered CTA with helper text |
-
-**New Banner Layout:**
-
-```text
-┌──────────────────────────────────────────────────────────────┐
-│  ┌────────────┐┌────────────┐┌────────────┐┌────────────┐    │
-│  │   Panda    ││   Start    ││   First    ││   Panda    │    │
-│  │ at laptop  ││  Selling   ││   Sale!    ││  creator   │    │
-│  │   (teal)   ││  Online    ││  (yellow)  ││   (teal)   │    │
-│  └────────────┘└────────────┘└────────────┘└────────────┘    │
-│                                                               │
-│     "We've never met an idea we didn't like."                │
-│     Your first product doesn't need to be perfect.           │
-│                                                               │
-│                    [ New Product ]                            │
-│             or learn more about products →                    │
-└──────────────────────────────────────────────────────────────┘
+**Current Code (Lines 328-335):**
+```tsx
+<div className="mb-8 border-2 border-white rounded-xl overflow-hidden shadow-[0_0_0_2px_rgba(0,0,0,0.08)]">
+  <img 
+    src={gumroadBanner} 
+    alt="Start creating and selling" 
+    className="w-full h-[180px] md:h-[220px] object-cover"
+  />
+</div>
 ```
 
-### 3. Banner Component Design
-
-**Container:**
-- Full-width within the content area
-- Dashed border (2px, black/10)
-- Rounded corners (8px)
-- White background
-- Generous padding
-
-**Image Section:**
-- Full-width banner image
-- `object-cover` to fill
-- Rounded top corners
-- Aspect ratio ~4:1 for the comic strip look
-
-**Text Section:**
-- Centered below image
-- Bold black headline
-- Gray body text
-- CTA button (black background, white text)
-- Secondary link for "learn more"
-
-### 4. CSS Styling
-
-**Banner Container:**
-```css
-border: 2px dashed rgba(0,0,0,0.1)
-border-radius: 8px
-background: white
-overflow: hidden
+**New Code:**
+```tsx
+<div className="mb-8 rounded-xl overflow-hidden">
+  <img 
+    src={gumroadBanner} 
+    alt="Start creating and selling" 
+    className="w-full h-auto object-contain rounded-xl"
+  />
+</div>
 ```
 
-**Image:**
-```css
-width: 100%
-object-fit: cover
-max-height: 300px (desktop)
-max-height: 200px (mobile)
-```
-
-**CTA Button:**
-```css
-background: #FF90E8 (Gumroad pink)
-color: black
-font-weight: 600
-padding: 12px 24px
-border-radius: 6px
-```
-
-### 5. Mobile Responsiveness
-
-| Breakpoint | Banner Height | Layout |
-|------------|--------------|--------|
-| Desktop (1024px+) | 300px | Full comic strip visible |
-| Tablet (768px) | 240px | Slightly cropped |
-| Mobile (375px) | 180px | Center-focused crop |
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/assets/gumroad-banner.png` | Copy uploaded illustration (NEW) |
-| `src/components/seller/SellerProducts.tsx` | Update empty state with new banner design |
-
-## Technical Notes
-
-- Use the uploaded `product_view.png` as the banner image
-- Remove or update the existing `products-illustration.png` import
-- Ensure the banner works well when products exist (hide or minimize)
-- Keep the existing B&W styling for the rest of the page
-- The banner adds color and personality only to the empty state
+**Changes:**
+| Property | Before | After |
+|----------|--------|-------|
+| Height | Fixed `h-[180px]`/`h-[220px]` | Auto `h-auto` |
+| Object Fit | `object-cover` (crops) | `object-contain` (full view) |
+| Border | White border + shadow | Clean rounded corners |
+| Image | Cropped/cut off | Full illustration visible |
 
 ## Result
 
-- Gumroad-inspired visual design for the products empty state
-- Colorful, engaging panda illustrations create brand personality
-- Clear call-to-action to start selling
-- Professional, polished appearance matching reference screenshots
-- Mobile-optimized with proper image scaling
+- Full panda illustration visible at natural aspect ratio
+- Clean, minimalist design matching Gumroad style
+- Responsive width that scales properly
+- No cropping - perfect shape maintained
+- Positioned at top of products section as requested chaneg ths iamegs is use this images blob:https://labs.google/8f781563-5a4d-4b6f-98e2-175edb952c0f
 
