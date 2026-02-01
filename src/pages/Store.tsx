@@ -32,7 +32,7 @@ import { Instagram, Twitter, Youtube, Music } from 'lucide-react';
 import StoreSidebar from '@/components/store/StoreSidebar';
 import StoreProductCard from '@/components/store/StoreProductCard';
 import StoreProductCardCompact from '@/components/store/StoreProductCardCompact';
-import ProductDetailModal from '@/components/store/ProductDetailModal';
+import StoreProductHoverCard from '@/components/store/StoreProductHoverCard';
 import ShareStoreModal from '@/components/seller/ShareStoreModal';
 import MobileStoreHeader from '@/components/store/MobileStoreHeader';
 import StoreCategoryChips from '@/components/store/StoreCategoryChips';
@@ -139,7 +139,6 @@ const StoreContent = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<SellerProduct | null>(null);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -280,8 +279,10 @@ const StoreContent = () => {
           });
           toast.success(`Welcome back! Chat with ${seller.store_name} is now open`);
         } else {
-          setSelectedProduct(pendingProd);
-          toast.success(`Welcome back! Continue your purchase of "${pendingProd.name}"`);
+          // Navigate to product page instead of opening modal
+          const slug = pendingProd.slug || `${pendingProd.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)}-${pendingProd.id.slice(0, 8)}`;
+          navigate(`/store/${storeSlug}/product/${slug}`);
+          toast.success(`Welcome back! Viewing "${pendingProd.name}"`);
         }
       } else if (data.pendingProductId) {
         localStorage.removeItem('storeReturn');
@@ -486,7 +487,6 @@ const StoreContent = () => {
       setWallet(prev => prev ? { ...prev, balance: (prev.balance || 0) - product.price } : null);
 
       toast.success('Purchase successful! The seller will deliver your order soon.');
-      setSelectedProduct(null);
       fetchWallet();
     } catch (error: any) {
       toast.error(error.message || 'Purchase failed');
@@ -536,14 +536,20 @@ const StoreContent = () => {
   const handleSuggestionSelect = (suggestion: any) => {
     if (suggestion.type === 'product') {
       const product = products.find(p => p.id === suggestion.id);
-      if (product) setSelectedProduct(product);
+      if (product && seller) {
+        const slug = product.slug || `${product.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)}-${product.id.slice(0, 8)}`;
+        navigate(`/store/${seller.store_slug}/product/${slug}`);
+      }
     } else if (suggestion.type === 'category') {
       setSelectedCategory(suggestion.id);
     } else if (suggestion.type === 'tag') {
       handleTagSelect(suggestion.text);
     } else if (suggestion.type === 'trending') {
       const product = products.find(p => p.id === suggestion.id);
-      if (product) setSelectedProduct(product);
+      if (product && seller) {
+        const slug = product.slug || `${product.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)}-${product.id.slice(0, 8)}`;
+        navigate(`/store/${seller.store_slug}/product/${slug}`);
+      }
     } else {
       setSearchQuery(suggestion.text);
     }
@@ -780,7 +786,7 @@ const StoreContent = () => {
               selectedTags={selectedTags}
               onCategorySelect={setSelectedCategory}
               onTagSelect={handleTagSelect}
-              onProductClick={(product) => setSelectedProduct(product)}
+              onProductClick={() => {}} // Navigation handled by hover cards
             />
           </div>
 
@@ -883,7 +889,7 @@ const StoreContent = () => {
                   selectedTags={selectedTags}
                   onCategorySelect={setSelectedCategory}
                   onTagSelect={handleTagSelect}
-                  onProductClick={(product) => setSelectedProduct(product)}
+                  onProductClick={() => {}} // Navigation handled by hover cards
                 />
 
                 {/* Mobile Search Trigger */}
@@ -973,7 +979,10 @@ const StoreContent = () => {
                     return (
                       <div key={sale.id} className="flex-shrink-0 w-44 sm:w-52 snap-start">
                         <div 
-                          onClick={() => setSelectedProduct(saleProduct)}
+                          onClick={() => {
+                            const slug = saleProduct.slug || `${saleProduct.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)}-${saleProduct.id.slice(0, 8)}`;
+                            navigate(`/store/${seller.store_slug}/product/${slug}`);
+                          }}
                           className="group bg-white rounded-xl overflow-hidden border-2 border-red-200 shadow-sm hover:shadow-lg hover:border-red-300 transition-all cursor-pointer"
                         >
                           {/* Flash Sale Banner */}
@@ -1051,31 +1060,50 @@ const StoreContent = () => {
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4 lg:gap-5">
-                {filteredProducts.map(product => (
-                  isMobile ? (
+                {filteredProducts.map(product => {
+                  const productSlug = product.slug || `${product.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)}-${product.id.slice(0, 8)}`;
+                  const handleView = () => navigate(`/store/${seller.store_slug}/product/${productSlug}`);
+                  
+                  return isMobile ? (
                     <StoreProductCardCompact
                       key={product.id}
                       product={product}
                       hasEnoughBalance={hasEnoughBalance(product.price)}
                       isLoggedIn={!!user}
                       purchasing={purchasing === product.id}
-                      onView={() => setSelectedProduct(product)}
+                      onView={handleView}
                       onBuy={() => handlePurchase(product)}
                     />
                   ) : (
-                    <StoreProductCard
+                    <StoreProductHoverCard
                       key={product.id}
                       product={product}
-                      storeName={seller.store_name}
-                      hasEnoughBalance={hasEnoughBalance(product.price)}
-                      isLoggedIn={!!user}
-                      purchasing={purchasing === product.id}
-                      onChat={() => handleChat(product)}
-                      onView={() => setSelectedProduct(product)}
+                      seller={{
+                        id: seller.id,
+                        store_name: seller.store_name,
+                        store_slug: seller.store_slug,
+                        store_logo_url: seller.store_logo_url,
+                        is_verified: seller.is_verified,
+                      }}
                       onBuy={() => handlePurchase(product)}
-                    />
-                  )
-                ))}
+                      onChat={() => handleChat(product)}
+                      isLoggedIn={!!user}
+                      walletBalance={wallet?.balance}
+                      purchasing={purchasing === product.id}
+                    >
+                      <StoreProductCard
+                        product={product}
+                        storeName={seller.store_name}
+                        hasEnoughBalance={hasEnoughBalance(product.price)}
+                        isLoggedIn={!!user}
+                        purchasing={purchasing === product.id}
+                        onChat={() => handleChat(product)}
+                        onView={() => {}} // Navigation handled by HoverCard wrapper
+                        onBuy={() => handlePurchase(product)}
+                      />
+                    </StoreProductHoverCard>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1098,30 +1126,6 @@ const StoreContent = () => {
         onVoiceStart={startListening}
         onVoiceStop={stopListening}
         onImageSearchResult={handleImageSearchResult}
-      />
-
-      {/* Product Details Modal */}
-      <ProductDetailModal
-        product={selectedProduct}
-        seller={seller ? {
-          id: seller.id,
-          store_name: seller.store_name,
-          store_logo_url: seller.store_logo_url,
-          is_verified: seller.is_verified
-        } : null}
-        isOpen={!!selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-        onChat={selectedProduct ? () => handleChat(selectedProduct) : undefined}
-        onBuy={selectedProduct ? () => handlePurchase(selectedProduct) : undefined}
-        onViewFull={selectedProduct ? () => {
-          setSelectedProduct(null);
-          // Use clean slug from database, fallback to legacy format if not available
-          const slug = (selectedProduct as any).slug || `${selectedProduct.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)}-${selectedProduct.id.slice(0, 8)}`;
-          navigate(`/store/${storeSlug}/product/${slug}`);
-        } : undefined}
-        isLoggedIn={!!user}
-        walletBalance={wallet?.balance}
-        purchasing={!!purchasing}
       />
 
       {/* Login Modal */}
