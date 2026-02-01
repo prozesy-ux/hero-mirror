@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
+import CenteredHoverPreview from '@/components/ui/CenteredHoverPreview';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   Zap,
   Clock,
-  Info,
   Loader2,
   Users
 } from 'lucide-react';
@@ -316,18 +315,16 @@ const ProductHoverCard = ({
   );
 
   return (
-    <HoverCard openDelay={400} closeDelay={150}>
-      <HoverCardTrigger asChild>
-        <div onClick={handleNavigate} className="cursor-pointer">
-          {children}
-        </div>
-      </HoverCardTrigger>
-      <HoverCardContent 
-        className="w-[700px] p-0 border border-black/10 shadow-2xl bg-white z-50 fixed-center"
-      >
-        <HoverContent />
-      </HoverCardContent>
-    </HoverCard>
+    <CenteredHoverPreview
+      content={<HoverContent />}
+      openDelay={400}
+      closeDelay={150}
+      disabled={isMobile}
+    >
+      <div onClick={handleNavigate} className="cursor-pointer">
+        {children}
+      </div>
+    </CenteredHoverPreview>
   );
 };
 
