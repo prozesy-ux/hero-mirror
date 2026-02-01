@@ -1,4 +1,5 @@
-import { Sparkles, Store } from 'lucide-react';
+import { Gem, Store, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface Product {
@@ -35,12 +36,18 @@ const FeaturedCarousel = ({
 
   return (
     <section className="py-6">
-      {/* Black gradient container */}
-      <div className="bg-gradient-to-br from-black via-gray-900 to-black rounded-2xl p-6">
+      {/* Clean enterprise container */}
+      <div className="bg-white border border-black/10 rounded-2xl p-6">
         {/* Header */}
-        <div className="flex items-center gap-2 mb-5">
-          <Sparkles className="w-5 h-5 text-yellow-400" />
-          <h2 className="text-xl font-bold text-white">{title}</h2>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <Gem className="w-5 h-5 text-black" />
+            <h2 className="text-lg font-bold text-black">{title}</h2>
+            <span className="text-xs px-2 py-0.5 bg-black text-white rounded-full font-medium">Premium</span>
+          </div>
+          <Button variant="ghost" size="sm" className="text-black/50 hover:text-black text-xs h-7">
+            View All <ChevronRight className="h-3 w-3 ml-0.5" />
+          </Button>
         </div>
 
         {/* 4-column grid */}

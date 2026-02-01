@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Star, ChevronRight, ShoppingCart } from 'lucide-react';
+import { Award, ChevronRight, ShoppingCart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { trackProductClick } from '@/lib/analytics-tracker';
 import { Card, CardContent } from '@/components/ui/card';
@@ -146,12 +146,12 @@ export function TopRatedSection({ onProductClick, className }: TopRatedSectionPr
   }
 
   return (
-    <div className={cn("border border-black/10 rounded-xl p-4 bg-white", className)}>
-      <div className="flex items-center justify-between mb-3">
+    <div className={cn("bg-white border border-black/10 rounded-2xl p-6", className)}>
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-          <h3 className="text-sm font-semibold text-black">Top Rated</h3>
-          <span className="text-[10px] px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-medium">4.5+ stars</span>
+          <Award className="h-5 w-5 text-black" />
+          <h3 className="text-lg font-bold text-black">Top Rated</h3>
+          <span className="text-xs px-2 py-0.5 bg-black text-white rounded-full font-medium">★ 4.5+</span>
         </div>
         <Button variant="ghost" size="sm" className="text-black/50 hover:text-black text-xs h-7">
           View All <ChevronRight className="h-3 w-3 ml-0.5" />
@@ -175,19 +175,19 @@ export function TopRatedSection({ onProductClick, className }: TopRatedSectionPr
                   alt={product.name}
                   className="w-full h-24 rounded-md"
                   aspectRatio="auto"
-                  fallbackIcon={<ShoppingCart className="h-8 w-8 text-yellow-500/50" />}
+                  fallbackIcon={<ShoppingCart className="h-8 w-8 text-black/30" />}
                 />
-                <Badge className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] px-1.5">
-                  ⭐ {product.avg_rating}
-                </Badge>
+                <span className="absolute top-2 right-2 bg-black/80 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
+                  ★ {product.avg_rating}
+                </span>
               </div>
               <h4 className="font-medium text-sm truncate">{product.name}</h4>
               {product.seller_name && (
                 <p className="text-xs text-muted-foreground truncate">{product.seller_name}</p>
               )}
               <div className="flex items-center justify-between mt-2">
-                <span className="font-bold text-primary">${product.price.toFixed(2)}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="font-bold text-black">${product.price.toFixed(2)}</span>
+                <span className="text-xs text-black/50">
                   {product.review_count} reviews
                 </span>
               </div>
