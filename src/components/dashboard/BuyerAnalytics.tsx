@@ -184,19 +184,19 @@ const BuyerAnalytics = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl" />
+            <Skeleton key={i} className="h-28 rounded-2xl border-2 border-black" />
           ))}
         </div>
-        <Skeleton className="h-80 rounded-2xl" />
+        <Skeleton className="h-80 rounded-2xl border-2 border-black" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
       {/* Header - No Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
         <div className="flex items-center gap-2 flex-wrap">

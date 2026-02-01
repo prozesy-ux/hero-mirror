@@ -419,15 +419,15 @@ const SellerSupport = () => {
 
   if (loading) {
     return (
-      <div className="p-6 lg:p-8 bg-slate-50 min-h-screen">
-        <Skeleton className="h-8 w-48 mb-6" />
-        <Skeleton className="h-[calc(100vh-200px)] rounded-xl" />
+      <div className="p-6 lg:p-8 bg-[#FBF8F3] min-h-screen">
+        <Skeleton className="h-8 w-48 mb-6 border-2 border-black" />
+        <Skeleton className="h-[calc(100vh-200px)] rounded-xl border-2 border-black" />
       </div>
     );
   }
 
   return (
-    <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
       {/* Hidden file inputs */}
       <input
         ref={imageInputRef}

@@ -306,17 +306,17 @@ const SellerOrders = () => {
 
   if (loading) {
     return (
-      <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen">
-        <Skeleton className="h-8 w-48 mb-6" />
+      <div className="p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+        <Skeleton className="h-8 w-48 mb-6 border-2 border-black" />
         <div className="space-y-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-2xl border-2 border-black" />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen seller-dashboard">
+    <div className="p-4 lg:p-6 bg-[#FBF8F3] min-h-screen seller-dashboard">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4 mb-6">
         <div className="flex items-center gap-2">

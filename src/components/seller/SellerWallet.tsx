@@ -757,14 +757,14 @@ const SellerWallet = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto animate-fade-up px-3 sm:px-0">
+    <div className="max-w-4xl mx-auto animate-fade-up px-3 sm:px-0 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
       {/* Tab Navigation */}
       <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-gray-200 shadow-md">
         <div className="flex gap-1 overflow-x-auto hide-scrollbar">
