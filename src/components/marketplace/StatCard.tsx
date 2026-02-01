@@ -13,7 +13,7 @@ interface StatCardProps {
     label?: string;
     isPositive?: boolean;
   };
-  variant?: 'default' | 'gradient' | 'bordered' | 'minimal';
+  variant?: 'default' | 'gradient' | 'bordered' | 'minimal' | 'neobrutalism';
   accentColor?: 'emerald' | 'violet' | 'blue' | 'orange' | 'pink' | 'amber';
   href?: string;
   onClick?: () => void;
@@ -164,6 +164,11 @@ const StatCard = ({
     ),
     minimal: cn(
       "bg-slate-50/80 hover:bg-slate-100/80"
+    ),
+    neobrutalism: cn(
+      "bg-white border-2 border-black rounded-lg shadow-neobrutalism",
+      "hover:shadow-none hover:translate-x-1 hover:translate-y-1",
+      "transition-all cursor-pointer"
     ),
   };
 

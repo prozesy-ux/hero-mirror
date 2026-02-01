@@ -245,7 +245,7 @@ const BuyerAnalytics = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500">Total Spent</p>
@@ -272,7 +272,7 @@ const BuyerAnalytics = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500">Total Orders</p>
@@ -284,7 +284,7 @@ const BuyerAnalytics = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500">Avg Order Value</p>
@@ -296,7 +296,7 @@ const BuyerAnalytics = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500">This Month</p>
@@ -314,7 +314,7 @@ const BuyerAnalytics = () => {
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Spending Details Chart */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-slate-800">Spending Details</h3>
           </div>
@@ -363,7 +363,7 @@ const BuyerAnalytics = () => {
         </div>
 
         {/* Category Breakdown */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
           <h3 className="font-semibold text-slate-800 mb-4">Spending by Product</h3>
           {spendingByCategory.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
@@ -394,7 +394,7 @@ const BuyerAnalytics = () => {
       </div>
 
       {/* Monthly Trend */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+      <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
         <h3 className="font-semibold text-slate-800 mb-4">Monthly Spending Trend</h3>
         {monthlyTrend.length > 0 ? (
           <ResponsiveContainer width="100%" height={200}>
