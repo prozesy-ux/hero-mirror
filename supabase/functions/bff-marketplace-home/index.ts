@@ -1,25 +1,53 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { cacheGet, cacheSet } from '../_shared/redis-cache.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-  // Cloudflare CDN optimized: 5 min cache, 10 min stale-while-revalidate
   'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
   'CDN-Cache-Control': 'max-age=600',
   'Vary': 'Accept-Encoding',
 };
+
+const CACHE_KEY = 'marketplace:home';
+const CACHE_TTL = 300; // 5 minutes
+
+interface MarketplaceHomeData {
+  categories: unknown[];
+  hotProducts: unknown[];
+  topRated: unknown[];
+  newArrivals: unknown[];
+  featuredSellers: unknown[];
+  totalProducts: number;
+  cachedAt: string;
+  fromRedis?: boolean;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Handle HEAD requests for edge warming
+  if (req.method === 'HEAD') {
+    return new Response(null, { status: 200, headers: corsHeaders });
+  }
+
   try {
+    // 1. Try Redis cache first
+    const cached = await cacheGet<MarketplaceHomeData>(CACHE_KEY);
+    if (cached) {
+      console.log('[BFF-MarketplaceHome] Redis HIT');
+      return new Response(JSON.stringify({ ...cached, fromRedis: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('[BFF-MarketplaceHome] Cache MISS, fetching from DB');
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-
-    console.log('[BFF-MarketplaceHome] Fetching unified marketplace data...');
 
     // Run all queries in parallel for maximum speed
     const [
@@ -28,14 +56,12 @@ Deno.serve(async (req) => {
       sellerProductsResult,
       sellersResult,
     ] = await Promise.all([
-      // Categories with product counts (single optimized query)
       supabase
         .from('categories')
         .select('id, name, icon, color, display_order')
         .eq('is_active', true)
         .order('display_order', { ascending: true }),
       
-      // AI Accounts (for hot, trending, new)
       supabase
         .from('ai_accounts')
         .select('id, name, slug, price, icon_url, is_trending, is_featured, created_at, view_count, sold_count, category_id')
@@ -43,7 +69,6 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false })
         .limit(50),
       
-      // Seller Products (for hot, top-rated, new)
       supabase
         .from('seller_products')
         .select(`
@@ -55,7 +80,6 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false })
         .limit(50),
       
-      // Featured/Verified Sellers
       supabase
         .from('seller_profiles')
         .select('id, store_name, store_logo_url, is_verified, store_slug')
@@ -74,7 +98,7 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Process Hot Products (best sellers by sold_count)
+    // Process products
     const allProducts = [
       ...(aiAccountsResult.data || []).map(p => ({
         id: p.id,
@@ -111,7 +135,7 @@ Deno.serve(async (req) => {
       .sort((a, b) => b.soldCount - a.soldCount)
       .slice(0, 10);
 
-    // Top Rated - for now use view count as proxy (can add reviews later)
+    // Top Rated - use view count as proxy
     const topRated = [...allProducts]
       .sort((a, b) => b.viewCount - a.viewCount)
       .slice(0, 10);
@@ -132,7 +156,7 @@ Deno.serve(async (req) => {
       storeSlug: s.store_slug,
     }));
 
-    const response = {
+    const response: MarketplaceHomeData = {
       categories: categoriesWithCounts,
       hotProducts,
       topRated,
@@ -141,6 +165,9 @@ Deno.serve(async (req) => {
       totalProducts: allProducts.length,
       cachedAt: new Date().toISOString(),
     };
+
+    // 3. Store in Redis for next request
+    await cacheSet(CACHE_KEY, response, CACHE_TTL);
 
     console.log(`[BFF-MarketplaceHome] Returning ${categoriesWithCounts.length} categories, ${hotProducts.length} hot, ${newArrivals.length} new`);
 
