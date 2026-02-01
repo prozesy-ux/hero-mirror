@@ -1,112 +1,73 @@
 
-# Fix Hover Preview Close Behavior
+## What’s happening (why you still see the “150ms timer” problem)
+Even though `CenteredHoverPreview` now defaults to `closeDelay = 300`, your **two callers override it back to 150ms**:
 
-## Problem
+- `src/components/marketplace/ProductHoverCard.tsx` → `closeDelay={150}`
+- `src/components/store/StoreProductHoverCard.tsx` → `closeDelay={150}`
 
-Currently:
-- Entire screen overlay keeps the preview open
-- Mouse can never "leave" the overlay (it covers the whole screen)
-- Users must **click** to close the preview - no way to close by moving mouse away
+Also, right now **the close timer starts immediately when the mouse leaves the trigger card** (`handleTriggerMouseLeave`). That can still cause “auto close” if the user’s cursor takes longer than the delay to reach the centered preview.
 
-```text
-Current (broken):
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│           ENTIRE SCREEN = keeps preview open                │
-│                                                             │
-│                    ┌─────────────────┐                      │
-│                    │   Preview Box   │                      │
-│                    └─────────────────┘                      │
-│                                                             │
-│   Mouse anywhere on screen = stays open forever             │
-│   Only click closes it ← Bad UX                             │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+## Target behavior (best UX)
+- Hover card → preview opens
+- Move mouse from card toward the centered preview:
+  - Preview should NOT start closing just because you left the card
+  - Preview should only start closing when you’re on the backdrop (not on preview content), or when you leave the preview content
+- Moving around quickly shouldn’t cause open/close flicker loops
 
-## Solution
+## Changes I will make
 
-Only the **preview content box** should keep it open. The backdrop should **start the close timer** when mouse is over it.
+### 1) Stop overriding `closeDelay` with 150ms in the two product hover components
+Update both files to either:
+- Remove the `closeDelay` prop entirely (use the component default), or
+- Set it to `300` (or slightly higher like `350`)
 
-```text
-Fixed behavior:
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│        BACKDROP = starts close timer (after delay)         │
-│                                                             │
-│                    ┌─────────────────┐                      │
-│                    │   Preview Box   │ ← only this keeps    │
-│                    │                 │   preview open       │
-│                    └─────────────────┘                      │
-│                                                             │
-│   Move mouse away from preview → closes after 300ms         │
-│   Move mouse to preview → stays open                        │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+Files:
+- `src/components/marketplace/ProductHoverCard.tsx`
+- `src/components/store/StoreProductHoverCard.tsx`
 
-## Technical Changes
+### 2) Change `CenteredHoverPreview` so leaving the trigger card does NOT start the close timer when the preview is already open
+This is the core fix for “mouse auto move → it closes too fast”.
 
-### Update CenteredHoverPreview.tsx
+Update `handleTriggerMouseLeave` logic:
 
-1. **Remove hover handlers from outer wrapper** - The full-screen overlay should not control open/close state
-2. **Add hover handlers to the content box only** - Only the preview itself keeps it open
-3. **Add hover handler to backdrop** - Entering backdrop starts close timer
-4. **Increase close delay to 300ms** - Give user time to move mouse back to preview if they accidentally leave
+- Always clear timers
+- If preview is NOT open yet (still in openDelay phase):
+  - Cancel the pending open (so it doesn’t open after you left)
+- If preview IS already open:
+  - Do NOT start a close timer here
+  - Let the overlay logic control closing:
+    - backdrop `onMouseEnter` starts close timer
+    - content `onMouseLeave` starts close timer
+    - Escape / click backdrop closes immediately
 
-```typescript
-// Before (entire overlay keeps it open):
-<div 
-  className="fixed inset-0 z-[9998]"
-  onMouseEnter={handleOverlayMouseEnter}  // Problem: keeps open
-  onMouseLeave={handleOverlayMouseLeave}
->
-  <div className="backdrop" onClick={handleClose} />
-  <div ref={contentRef}>{content}</div>
-</div>
+Why this works:
+- When the portal is open, the user’s next mouse area is almost always the backdrop or the content; those are the correct places to decide closing behavior.
+- This removes the “gap travel penalty” entirely.
 
-// After (only content keeps it open):
-<div className="fixed inset-0 z-[9998]">
-  <div 
-    className="backdrop" 
-    onClick={handleClose}
-    onMouseEnter={handleBackdropMouseEnter}  // Starts close timer
-  />
-  <div 
-    ref={contentRef}
-    onMouseEnter={handleContentMouseEnter}   // Cancels close timer
-    onMouseLeave={handleContentMouseLeave}   // Starts close timer
-  >
-    {content}
-  </div>
-</div>
-```
+File:
+- `src/components/ui/CenteredHoverPreview.tsx`
 
-### Behavior Flow
+### 3) Optional small polish (if needed after the above)
+If you still feel it closes too quickly for some users:
+- Increase default `closeDelay` slightly (e.g. `350–450ms`)
+- Keep `openDelay` at `350–450ms` so it doesn’t feel “too sensitive”
 
-| Action | Result |
-|--------|--------|
-| Hover product card | Preview opens after 400ms |
-| Move mouse to preview content | Stays open (timer cancelled) |
-| Move mouse from preview to backdrop | Close timer starts (300ms) |
-| Move mouse back to preview before 300ms | Stays open (timer cancelled) |
-| Stay on backdrop for 300ms+ | Preview closes |
-| Click backdrop | Closes immediately |
-| Press Escape | Closes immediately |
+## Acceptance checks (what you should test)
+1) Go to `/marketplace/chatgpt` and hover a product card:
+   - Preview opens in center
+2) Move mouse from the card to the preview (slowly):
+   - Preview should stay open (no auto close)
+3) Move mouse away from the preview onto the dark backdrop:
+   - Preview closes after the delay (no click required)
+4) Move quickly across many cards:
+   - No “on/off/on/off” flicker loop
+5) Verify same behavior in Store pages (where `StoreProductHoverCard` is used)
 
-### Additional Improvement
+## Files involved
+- `src/components/ui/CenteredHoverPreview.tsx` (logic update)
+- `src/components/marketplace/ProductHoverCard.tsx` (remove/adjust closeDelay prop)
+- `src/components/store/StoreProductHoverCard.tsx` (remove/adjust closeDelay prop)
 
-Increase `closeDelay` from 150ms to 300ms to give users more time to move their mouse around without accidentally closing the preview.
-
-## File to Modify
-
-| File | Changes |
-|------|---------|
-| `src/components/ui/CenteredHoverPreview.tsx` | Move hover handlers from overlay to content/backdrop separately |
-
-## Result
-
-- Move mouse to preview → stays open
-- Move mouse away from preview (to backdrop or cards) → closes after short delay
-- No more "stuck" preview that requires clicking
-- Smooth, natural hover experience
+## Risk / tradeoffs
+- Very low risk: change is isolated to hover-preview behavior only.
+- Expected improvement: removes premature auto-close when cursor travels from trigger to centered preview.
