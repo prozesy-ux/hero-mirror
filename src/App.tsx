@@ -23,6 +23,7 @@ const Store = lazy(() => import("./pages/Store"));
 const ProductFullView = lazy(() => import("./pages/ProductFullView"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
+const NewProduct = lazy(() => import("./pages/NewProduct"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -83,6 +84,11 @@ const App = () => (
               <Route path="/seller/*" element={
                 <Suspense fallback={<AppShell variant="seller" />}>
                   <Seller />
+                </Suspense>
+              } />
+              <Route path="/seller/products/new" element={
+                <Suspense fallback={<AppShell variant="seller" />}>
+                  <NewProduct />
                 </Suspense>
               } />
               <Route path="/admin/*" element={

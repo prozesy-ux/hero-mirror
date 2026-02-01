@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,6 +78,7 @@ const initialFormData: ProductFormData = {
 const popularTags = ['Digital', 'Premium', 'Instant Delivery', 'Lifetime', 'Subscription', 'API', 'Software', 'Course'];
 
 const SellerProducts = () => {
+  const navigate = useNavigate();
   const { profile, products, refreshProducts, loading } = useSellerContext();
   const { formatAmountOnly } = useCurrency();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -342,11 +344,11 @@ const SellerProducts = () => {
           />
         </div>
         <Button 
-          onClick={() => handleOpenDialog()} 
-          className="bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 rounded-xl"
+          onClick={() => navigate('/seller/products/new')} 
+          className="bg-pink-500 text-white hover:bg-pink-600 rounded-xl"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Product
+          New product
         </Button>
       </div>
 

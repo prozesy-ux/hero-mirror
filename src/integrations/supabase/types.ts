@@ -2248,6 +2248,8 @@ export type Database = {
           is_available: boolean | null
           name: string
           price: number
+          product_metadata: Json | null
+          product_type: string | null
           requires_email: boolean | null
           seller_id: string
           slug: string | null
@@ -2270,6 +2272,8 @@ export type Database = {
           is_available?: boolean | null
           name: string
           price?: number
+          product_metadata?: Json | null
+          product_type?: string | null
           requires_email?: boolean | null
           seller_id: string
           slug?: string | null
@@ -2292,6 +2296,8 @@ export type Database = {
           is_available?: boolean | null
           name?: string
           price?: number
+          product_metadata?: Json | null
+          product_type?: string | null
           requires_email?: boolean | null
           seller_id?: string
           slug?: string | null
