@@ -326,11 +326,11 @@ const SellerProducts = () => {
       </div>
 
       {/* Gumroad-style Banner - Always visible at top */}
-      <div className="mb-8 border-2 border-white rounded-xl overflow-hidden shadow-[0_0_0_2px_rgba(0,0,0,0.08)]">
+      <div className="mb-8 rounded-xl overflow-hidden">
         <img 
           src={gumroadBanner} 
           alt="Start creating and selling" 
-          className="w-full h-[180px] md:h-[220px] object-cover"
+          className="w-full h-auto object-contain rounded-xl"
         />
       </div>
 
