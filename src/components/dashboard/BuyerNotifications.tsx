@@ -165,7 +165,7 @@ const BuyerNotifications = () => {
 
       {/* Notifications List */}
       {filteredNotifications.length === 0 ? (
-        <div className="bg-white rounded-2xl p-10 text-center border border-slate-100">
+        <div className="bg-white rounded-lg p-10 text-center border-2 border-black shadow-neobrutalism">
           <Bell className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-800 mb-2">No notifications</h3>
           <p className="text-slate-500">You're all caught up!</p>
@@ -176,7 +176,7 @@ const BuyerNotifications = () => {
             <div 
               key={notification.id}
               onClick={() => !notification.is_read && markAsRead(notification.id)}
-              className={`bg-white rounded-xl border p-4 cursor-pointer transition-colors ${
+              className={`bg-white rounded-lg border-2 p-4 cursor-pointer transition-all shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 ${
                 notification.is_read 
                   ? 'border-slate-100 hover:bg-slate-50' 
                   : 'border-blue-200 bg-blue-50/50 hover:bg-blue-50'

@@ -235,7 +235,7 @@ const BuyerDashboardHome = () => {
   }
 
   return (
-    <div className="space-y-6 p-4 lg:p-6 bg-slate-50/50 min-h-screen">
+    <div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
       {/* Session Expired Banner - only show if truly expired */}
       {sessionExpiredLocal && !isReconnecting && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
       
@@ -281,7 +281,7 @@ const BuyerDashboardHome = () => {
       </div>
 
       {/* Flash Deals */}
-      <FlashSaleSection className="bg-white rounded-xl border border-slate-100 shadow-stat" />
+      <FlashSaleSection className="bg-white rounded-lg border-2 border-black shadow-neobrutalism" />
 
       {/* Stats Row - 4 Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -290,6 +290,7 @@ const BuyerDashboardHome = () => {
           value={formatAmountOnly(wallet.balance)}
           icon={<Wallet className="w-6 h-6" />}
           accentColor="violet"
+          variant="neobrutalism"
           href="/dashboard/wallet"
         />
         <StatCard
@@ -297,6 +298,7 @@ const BuyerDashboardHome = () => {
           value={formatAmountOnly(stats.totalSpent)}
           icon={<TrendingUp className="w-6 h-6" />}
           accentColor="emerald"
+          variant="neobrutalism"
           subValue="Lifetime"
         />
         <StatCard
@@ -304,6 +306,7 @@ const BuyerDashboardHome = () => {
           value={stats.total}
           icon={<ShoppingBag className="w-6 h-6" />}
           accentColor="blue"
+          variant="neobrutalism"
           subValue={`${stats.completed} completed`}
           href="/dashboard/orders"
         />
@@ -312,6 +315,7 @@ const BuyerDashboardHome = () => {
           value={stats.pending + stats.delivered}
           icon={<Clock className="w-6 h-6" />}
           accentColor="orange"
+          variant="neobrutalism"
           subValue={stats.delivered > 0 ? `${stats.delivered} awaiting approval` : undefined}
         />
       </div>
@@ -320,7 +324,7 @@ const BuyerDashboardHome = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Add Funds - Primary CTA */}
         <Link to="/dashboard/billing">
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 text-white hover:shadow-lg transition-all cursor-pointer group">
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg p-5 text-white border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Plus className="w-5 h-5" />
@@ -336,7 +340,7 @@ const BuyerDashboardHome = () => {
 
         {/* Browse Marketplace */}
         <Link to="/dashboard/marketplace">
-          <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-stat hover:shadow-stat-hover transition-all cursor-pointer group">
+          <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-xl bg-blue-50 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-blue-600" />
@@ -352,7 +356,7 @@ const BuyerDashboardHome = () => {
 
         {/* View Wishlist */}
         <Link to="/dashboard/wishlist">
-          <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-stat hover:shadow-stat-hover transition-all cursor-pointer group">
+          <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-xl bg-pink-50 flex items-center justify-center">
                 <Heart className="w-5 h-5 text-pink-600" />
@@ -368,7 +372,7 @@ const BuyerDashboardHome = () => {
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-white rounded-xl border border-slate-100 shadow-stat">
+      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism">
         <div className="flex items-center justify-between p-5 border-b border-slate-100">
           <h2 className="text-lg font-semibold text-slate-900">Recent Orders</h2>
           <Link 
@@ -451,7 +455,7 @@ const BuyerDashboardHome = () => {
 
       {/* Quick Stats Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-stat">
+        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
               <CheckCircle className="h-5 w-5 text-emerald-600" />
