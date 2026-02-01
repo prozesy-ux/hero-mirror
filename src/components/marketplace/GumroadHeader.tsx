@@ -99,13 +99,13 @@ const GumroadHeader = ({ searchQuery, onSearchChange, onSearch }: GumroadHeaderP
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-black/10">
       <div className="mx-auto max-w-screen-2xl px-4 lg:px-6">
-        <div className="flex items-center justify-between h-16 gap-4">
-          {/* Logo - Bigger */}
+        <div className="flex items-center justify-between h-[72px] gap-4">
+          {/* Logo - Larger for better branding */}
           <Link to="/" className="flex-shrink-0">
             <img 
               src={uptozaLogo} 
               alt="Uptoza" 
-              className="h-12 w-auto"
+              className="h-14 w-auto"
             />
           </Link>
 

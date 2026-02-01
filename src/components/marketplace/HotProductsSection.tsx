@@ -130,14 +130,14 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
   }
 
   return (
-    <div className={cn("border border-black/10 rounded-xl p-4 bg-white", className)}>
+    <div className={cn("border border-orange-200 rounded-xl p-4 bg-gradient-to-br from-orange-50 via-amber-50 to-white", className)}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Flame className="h-4 w-4 text-orange-500" />
-          <h3 className="text-sm font-semibold text-black">Hot Right Now</h3>
-          <span className="text-[10px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full font-medium">Trending</span>
+          <Flame className="h-5 w-5 text-orange-500" />
+          <h3 className="text-sm font-bold text-black">Hot Right Now</h3>
+          <span className="text-[10px] px-2 py-0.5 bg-orange-500 text-white rounded-full font-semibold">🔥 Trending</span>
         </div>
-        <Button variant="ghost" size="sm" className="text-black/50 hover:text-black text-xs h-7">
+        <Button variant="ghost" size="sm" className="text-orange-600 hover:text-orange-700 hover:bg-orange-100 text-xs h-7">
           View All <ChevronRight className="h-3 w-3 ml-0.5" />
         </Button>
       </div>

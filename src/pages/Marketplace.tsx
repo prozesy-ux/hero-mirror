@@ -588,13 +588,17 @@ const Marketplace = () => {
           {/* Product Grid - Gumroad style minimal cards */}
           <div className="flex-1">
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {Array.from({ length: 15 }).map((_, i) => (
-                  <div key={i} className="bg-white rounded-lg overflow-hidden">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-xl overflow-hidden border border-black/10">
                     <Skeleton className="aspect-square" />
                     <div className="p-3 space-y-2">
                       <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-3 w-20" />
+                      <div className="flex justify-between">
+                        <Skeleton className="h-4 w-12" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -610,7 +614,7 @@ const Marketplace = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {filteredProducts.map((product) => (
                   <GumroadProductCard
                     key={product.id}
@@ -621,6 +625,8 @@ const Marketplace = () => {
                     sellerName={product.sellerName}
                     storeSlug={product.storeSlug}
                     isVerified={product.isVerified}
+                    rating={product.rating}
+                    reviewCount={product.reviewCount}
                     soldCount={product.soldCount}
                     type={product.type}
                     onClick={() => handleProductClick(product)}
