@@ -1,160 +1,105 @@
 
-# Replace QuickView Modal with HoverCard Preview
+
+# Increase HoverCard Size and Center Position
 
 ## Overview
 
-Transform the current click-to-open QuickView modal into a hover-triggered preview card that maintains the exact same design, layout, and dimensions. Clicking will now navigate to the full product view page instead of opening a modal.
+Increase the HoverCard preview to match the QuickView modal dimensions and position it centered on screen rather than relative to the product card.
 
-## Current vs New Behavior
+## Current vs New Dimensions
 
-| Action | Current | New |
-|--------|---------|-----|
-| Hover on card | Nothing | Shows HoverCard with QuickView design |
-| Click on card | Opens QuickView modal | Navigates to full view page |
-| Mobile tap | Opens QuickView modal | Navigates to full view page |
+| Element | Current HoverCard | New HoverCard (= QuickView) |
+|---------|-------------------|------------------------------|
+| Container width | `w-[500px]` | `w-[700px]` |
+| Image height | `h-[220px]` | `h-[350px]` |
+| Layout split | 60/40 | 65/35 |
+| Position | `side="right"` (relative) | Centered on screen |
 
-## Design Preservation
+## Visual Comparison
 
-The HoverCard content will use the **exact same design** as the current QuickView:
-
-**Desktop HoverCard:**
+**Current (small, positioned to side):**
 ```text
-┌────────────────────────────────────────────────────────────────┐
-│  ┌────────────────────────────┐  ┌──────────────────────────┐ │
-│  │                            │  │  [$12] (black badge)     │ │
-│  │    Product Image           │  │                          │ │
-│  │    h-[320px]               │  │  Balance: $50.00         │ │
-│  │    65% width               │  │                          │ │
-│  │    + gallery nav           │  │  [Buy Now] (black btn)   │ │
-│  │    + thumbnails            │  │  [Chat] (outline btn)    │ │
-│  │                            │  │                          │ │
-│  └────────────────────────────┘  │  ─────────────────────── │ │
-│                                  │  542 sales               │ │
-│  Product Title                   │                          │ │
-│  Seller Avatar + Name + Verified │  [Secure][Instant][24/7] │ │
-│  ★★★★☆ (12 reviews)             │        35% width         │ │
-│  Description text...             └──────────────────────────┘ │
-│  [tag1] [tag2] [tag3]                                         │
-└────────────────────────────────────────────────────────────────┘
+┌─────────┐
+│ Product │──────► ┌──────────────────┐
+│  Card   │        │ Small HoverCard  │
+└─────────┘        │  w-[500px]       │
+                   │  h-[220px] img   │
+                   └──────────────────┘
 ```
 
-**Dimensions:**
-- Desktop HoverCard: `max-w-[700px]` width, ~450px content height
-- 65/35 split layout (same as QuickView modal)
-- Image container: `h-[320px]` (slightly reduced from modal's 350px)
-
-## Mobile Strategy
-
-Since hover doesn't work on touch devices, the mobile experience will be:
-
-**Option: Direct navigation on tap**
-- Tapping product card navigates directly to full view page
-- No intermediate modal or hover - faster, cleaner UX
-- Aligns with native mobile app patterns
+**New (larger, centered like modal):**
+```text
+                   ┌────────────────────────────────────┐
+                   │         Centered HoverCard         │
+                   │           w-[700px]                │
+┌─────────┐        │                                    │
+│ Product │        │  ┌────────────┐  ┌────────────┐   │
+│  Card   │        │  │   Image    │  │  Purchase  │   │
+└─────────┘        │  │  h-[350px] │  │    Box     │   │
+                   │  │    65%     │  │    35%     │   │
+                   │  └────────────┘  └────────────┘   │
+                   │                                    │
+                   └────────────────────────────────────┘
+```
 
 ## Technical Implementation
 
-### 1. Create New ProductHoverCard Component
+### 1. ProductHoverCard.tsx
 
-**File:** `src/components/marketplace/ProductHoverCard.tsx`
-
-A reusable HoverCard component that wraps product cards with the QuickView-style preview content:
+**Update HoverCardContent styling:**
 
 ```typescript
-import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
-
-interface ProductHoverCardProps {
-  product: Product;
-  children: React.ReactNode;  // The product card trigger
-  onBuy: () => void;
-  onChat: () => void;
-  isAuthenticated: boolean;
-  walletBalance?: number;
-}
+<HoverCardContent 
+  side="bottom"
+  align="center"
+  sideOffset={16}
+  className="w-[700px] p-0 border border-black/10 shadow-2xl bg-white z-50 fixed-center"
+>
 ```
 
-**Content Structure:**
-- Reuse the exact `DesktopContent` layout from `GumroadQuickViewModal`
-- Same image gallery with navigation
-- Same seller info, price badge, trust badges
-- Same button styling (black Buy Now, outline Chat)
+**Update internal dimensions:**
+- Change container padding: `p-3` to `p-4`
+- Change image height: `h-[220px]` to `h-[350px]`
+- Change layout split: `w-[60%]` to `w-[65%]` and `w-[40%]` to `w-[35%]`
+- Increase thumbnail size: `w-10 h-10` to `w-14 h-14`
+- Increase icon sizes and typography to match QuickView
 
-### 2. Update GumroadProductCard
+### 2. StoreProductHoverCard.tsx
 
-**File:** `src/components/marketplace/GumroadProductCard.tsx`
+Apply identical changes:
+- Width: `w-[500px]` to `w-[700px]`
+- Image: `h-[220px]` to `h-[350px]`
+- Layout: 60/40 to 65/35 split
+- Position: Center with `side="bottom" align="center"`
 
-Wrap the existing card with HoverCard:
-- `HoverCardTrigger` wraps the product card
-- `onClick` now navigates to full view instead of opening modal
-- Pass hover handlers for preview content
+### 3. Update hover-card.tsx (UI component)
 
-### 3. Update StoreProductCard
-
-**File:** `src/components/store/StoreProductCard.tsx`
-
-Apply same pattern:
-- Desktop: HoverCard wrapper with preview
-- Click navigates to full product page
-- Mobile: Direct navigation (no hover)
-
-### 4. Update StoreProductCardCompact
-
-**File:** `src/components/store/StoreProductCardCompact.tsx`
-
-Mobile-only card:
-- Remove modal trigger
-- Click navigates directly to full view
-
-### 5. Update Marketplace.tsx
-
-**File:** `src/pages/Marketplace.tsx`
-
-- Remove `GumroadQuickViewModal` usage
-- Update `handleProductClick` to navigate to full view URL
-- Pass necessary props to product cards for hover preview
-
-### 6. Update Store.tsx
-
-**File:** `src/pages/Store.tsx`
-
-- Remove `ProductDetailModal` for click actions
-- Update card click handlers to navigate to full product view
-- Keep modal only for flash sale quick purchases if needed
-
-## Files to Create/Modify
-
-| File | Action | Changes |
-|------|--------|---------|
-| `src/components/marketplace/ProductHoverCard.tsx` | CREATE | New hover preview component with QuickView design |
-| `src/components/marketplace/GumroadProductCard.tsx` | MODIFY | Wrap with HoverCard, change onClick to navigate |
-| `src/components/store/StoreProductCard.tsx` | MODIFY | Wrap with HoverCard, change onClick to navigate |
-| `src/components/store/StoreProductCardCompact.tsx` | MODIFY | Change onView to navigate directly |
-| `src/pages/Marketplace.tsx` | MODIFY | Remove QuickViewModal, update handlers |
-| `src/pages/Store.tsx` | MODIFY | Update click behavior, simplify modal usage |
-
-## HoverCard Configuration
+Add centering capability with custom positioning:
 
 ```typescript
-<HoverCard openDelay={300} closeDelay={100}>
-  <HoverCardTrigger asChild>
-    {/* Product card button */}
-  </HoverCardTrigger>
-  <HoverCardContent 
-    side="right" 
-    align="start"
-    sideOffset={8}
-    className="w-[700px] p-0 border border-black/10 shadow-xl"
-  >
-    {/* QuickView-style content */}
-  </HoverCardContent>
-</HoverCard>
+// Add option for centered positioning
+className={cn(
+  "z-50 w-64 rounded-md border bg-popover p-4 ...",
+  // When centered, use fixed positioning
+  className?.includes('fixed-center') && 
+    "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
+  className,
+)}
 ```
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/marketplace/ProductHoverCard.tsx` | Increase width to 700px, image to 350px, center position, 65/35 split |
+| `src/components/store/StoreProductHoverCard.tsx` | Same changes as above |
+| `src/components/ui/hover-card.tsx` | Add centered positioning support |
 
 ## Summary
 
-- Create `ProductHoverCard` component with exact QuickView design
-- Wrap marketplace and store product cards with hover preview
-- Change click behavior from modal to full page navigation
-- Mobile: Direct tap-to-navigate (no hover/modal)
-- Preserve all existing styling, layout, and functionality
+- Increase HoverCard width from 500px to 700px
+- Increase image container from 220px to 350px height
+- Change layout split from 60/40 to 65/35
+- Center the HoverCard on screen instead of positioning relative to card
+- Match QuickView modal design exactly
 
