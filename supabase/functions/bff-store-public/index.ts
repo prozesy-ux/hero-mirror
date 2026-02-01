@@ -1,21 +1,30 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { cacheGet, cacheSet } from '../_shared/redis-cache.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-  // Cloudflare CDN optimized: 5 min cache, 10 min stale-while-revalidate
   'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
   'CDN-Cache-Control': 'max-age=600',
   'Vary': 'Accept-Encoding',
 };
 
+const CACHE_TTL = 300; // 5 minutes
+
+interface StoreData {
+  seller: unknown;
+  products: unknown[];
+  categories: unknown[];
+  flashSales: unknown[];
+  cachedAt: string;
+  fromRedis?: boolean;
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Handle HEAD requests for edge warming (no slug required)
   if (req.method === 'HEAD') {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
@@ -31,11 +40,22 @@ Deno.serve(async (req) => {
       );
     }
 
+    const cacheKey = `store:${storeSlug}:home`;
+
+    // 1. Try Redis cache first
+    const cached = await cacheGet<StoreData>(cacheKey);
+    if (cached) {
+      console.log(`[BFF-StorePublic] Redis HIT for ${storeSlug}`);
+      return new Response(JSON.stringify({ ...cached, fromRedis: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`[BFF-StorePublic] Cache MISS, fetching store: ${storeSlug}`);
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-
-    console.log(`[BFF-StorePublic] Fetching store: ${storeSlug}`);
 
     // First fetch seller profile
     const { data: seller, error: sellerError } = await supabase
@@ -116,7 +136,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const response = {
+    const response: StoreData = {
       seller: {
         ...seller,
         averageRating,
@@ -127,6 +147,9 @@ Deno.serve(async (req) => {
       flashSales,
       cachedAt: new Date().toISOString(),
     };
+
+    // Store in Redis
+    await cacheSet(cacheKey, response, CACHE_TTL);
 
     console.log(`[BFF-StorePublic] Returning ${products.length} products for ${seller.store_name}`);
 

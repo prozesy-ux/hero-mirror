@@ -1,9 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { cacheGet, cacheSet } from '../_shared/redis-cache.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const TRENDING_CACHE_KEY = 'search:trending';
+const TRENDING_TTL = 120; // 2 minutes
 
 interface SearchSuggestion {
   type: "recent" | "trending" | "product" | "category" | "tag" | "seller";
@@ -219,14 +223,28 @@ Deno.serve(async (req) => {
         })()
       );
 
-      // Trending searches
+      // Trending searches (with Redis cache)
       fetchPromises.push(
         (async () => {
+          // Try Redis cache first for trending
+          const cached = await cacheGet<any[]>(TRENDING_CACHE_KEY);
+          if (cached) {
+            console.log('[Search] Trending Redis HIT');
+            return { type: "trending", data: cached };
+          }
+          
+          console.log('[Search] Trending cache MISS');
           const { data } = await serviceClient
             .from("popular_searches")
             .select("id, query, search_count, is_trending")
             .order("search_count", { ascending: false })
             .limit(5);
+          
+          // Cache for next request
+          if (data) {
+            await cacheSet(TRENDING_CACHE_KEY, data, TRENDING_TTL);
+          }
+          
           return { type: "trending", data };
         })()
       );

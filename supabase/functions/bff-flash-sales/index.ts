@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { cacheGet, cacheSet } from '../_shared/redis-cache.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,25 +9,41 @@ const corsHeaders = {
   'Vary': 'Accept-Encoding',
 };
 
+const CACHE_KEY = 'flash:active';
+const CACHE_TTL = 60; // 1 minute - short TTL for flash sales accuracy
+
+interface FlashSalesData {
+  flashSales: unknown[];
+  cachedAt: string;
+  fromRedis?: boolean;
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Handle HEAD requests for edge warming
   if (req.method === 'HEAD') {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
+    // 1. Try Redis cache first
+    const cached = await cacheGet<FlashSalesData>(CACHE_KEY);
+    if (cached) {
+      console.log('[BFF-FlashSales] Redis HIT');
+      return new Response(JSON.stringify({ ...cached, fromRedis: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('[BFF-FlashSales] Cache MISS, fetching from DB');
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const now = new Date().toISOString();
-
-    console.log('[BFF-FlashSales] Fetching active flash sales');
 
     // Fetch active flash sales with product and seller info
     const { data: flashSales, error } = await supabase
@@ -59,8 +76,13 @@ Deno.serve(async (req) => {
     }
 
     if (!flashSales || flashSales.length === 0) {
+      const emptyResponse: FlashSalesData = {
+        flashSales: [],
+        cachedAt: new Date().toISOString(),
+      };
+      await cacheSet(CACHE_KEY, emptyResponse, CACHE_TTL);
       return new Response(
-        JSON.stringify({ flashSales: [], products: [], sellers: [] }),
+        JSON.stringify(emptyResponse),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -93,17 +115,21 @@ Deno.serve(async (req) => {
       ...fs,
       product: productMap.get(fs.product_id) || null,
       seller: sellerMap.get(fs.seller_id) || null,
-    })).filter(fs => fs.product !== null); // Only include sales with valid products
+    })).filter(fs => fs.product !== null);
+
+    const response: FlashSalesData = {
+      flashSales: enrichedFlashSales,
+      cachedAt: new Date().toISOString(),
+    };
+
+    // Store in Redis
+    await cacheSet(CACHE_KEY, response, CACHE_TTL);
 
     console.log(`[BFF-FlashSales] Returning ${enrichedFlashSales.length} active flash sales`);
 
-    return new Response(
-      JSON.stringify({
-        flashSales: enrichedFlashSales,
-        cachedAt: new Date().toISOString(),
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify(response), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('[BFF-FlashSales] Error:', error);
     return new Response(
