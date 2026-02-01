@@ -480,6 +480,29 @@ const Marketplace = () => {
               soldCount: product.sold_count,
               type: product.type,
             })}
+            onBuy={(product) => handleHoverBuy({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              iconUrl: product.icon_url,
+              sellerName: product.seller_name || null,
+              storeSlug: product.store_slug || null,
+              isVerified: false,
+              soldCount: product.sold_count,
+              type: product.type,
+            })}
+            onChat={(product) => handleHoverChat({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              iconUrl: product.icon_url,
+              sellerName: product.seller_name || null,
+              storeSlug: product.store_slug || null,
+              isVerified: false,
+              soldCount: product.sold_count,
+              type: product.type,
+            })}
+            isAuthenticated={!!user}
             className="mt-6"
           />
         )}
@@ -498,6 +521,29 @@ const Marketplace = () => {
               soldCount: 0,
               type: 'seller',
             })}
+            onBuy={(product) => handleHoverBuy({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              iconUrl: product.icon_url,
+              sellerName: product.seller_name || null,
+              storeSlug: product.store_slug || null,
+              isVerified: false,
+              soldCount: 0,
+              type: 'seller',
+            })}
+            onChat={(product) => handleHoverChat({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              iconUrl: product.icon_url,
+              sellerName: product.seller_name || null,
+              storeSlug: product.store_slug || null,
+              isVerified: false,
+              soldCount: 0,
+              type: 'seller',
+            })}
+            isAuthenticated={!!user}
             className="mt-6"
           />
         )}

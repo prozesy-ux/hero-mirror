@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { OptimizedImage } from '@/components/ui/optimized-image';
+import ProductHoverCard from '@/components/marketplace/ProductHoverCard';
 
 interface NewProduct {
   id: string;
@@ -24,10 +25,13 @@ interface NewProduct {
 
 interface NewArrivalsSectionProps {
   onProductClick: (product: NewProduct) => void;
+  onBuy?: (product: NewProduct) => void;
+  onChat?: (product: NewProduct) => void;
+  isAuthenticated?: boolean;
   className?: string;
 }
 
-export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSectionProps) {
+export function NewArrivalsSection({ onProductClick, onBuy, onChat, isAuthenticated = false, className }: NewArrivalsSectionProps) {
   const [products, setProducts] = useState<NewProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -125,40 +129,57 @@ export function NewArrivalsSection({ onProductClick, className }: NewArrivalsSec
 
       <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
         {products.map((product) => (
-          <Card
+          <ProductHoverCard
             key={product.id}
-            className="flex-shrink-0 w-36 cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 bg-white border border-black/10 hover:border-black/20"
-            onClick={() => {
-              trackProductClick(product.id);
-              onProductClick(product);
+            product={{
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              iconUrl: product.icon_url,
+              sellerName: product.seller_name || null,
+              storeSlug: product.store_slug || null,
+              isVerified: false,
+              soldCount: 0,
+              type: product.type,
             }}
+            onBuy={() => onBuy?.(product)}
+            onChat={() => onChat?.(product)}
+            isAuthenticated={isAuthenticated}
           >
-            <CardContent className="p-3">
-              <div className="relative mb-2">
-                <OptimizedImage
-                  src={product.icon_url}
-                  alt={product.name}
-                  className="w-full h-24 rounded-md"
-                  aspectRatio="auto"
-                  fallbackIcon={<ShoppingCart className="h-8 w-8 text-green-500/50" />}
-                />
-                <Badge className="absolute top-1 right-1 bg-green-500 text-white text-[10px] px-1.5">
-                  🆕 New
-                </Badge>
-              </div>
-              <h4 className="font-medium text-sm truncate">{product.name}</h4>
-              {product.seller_name && (
-                <p className="text-xs text-muted-foreground truncate">{product.seller_name}</p>
-              )}
-              <div className="flex items-center justify-between mt-2">
-                <span className="font-bold text-primary">${product.price.toFixed(2)}</span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {formatDistanceToNow(new Date(product.created_at), { addSuffix: false })}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+            <Card
+              className="flex-shrink-0 w-36 cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 bg-white border border-black/10 hover:border-black/20"
+              onClick={() => {
+                trackProductClick(product.id);
+                onProductClick(product);
+              }}
+            >
+              <CardContent className="p-3">
+                <div className="relative mb-2">
+                  <OptimizedImage
+                    src={product.icon_url}
+                    alt={product.name}
+                    className="w-full h-24 rounded-md"
+                    aspectRatio="auto"
+                    fallbackIcon={<ShoppingCart className="h-8 w-8 text-green-500/50" />}
+                  />
+                  <Badge className="absolute top-1 right-1 bg-green-500 text-white text-[10px] px-1.5">
+                    🆕 New
+                  </Badge>
+                </div>
+                <h4 className="font-medium text-sm truncate">{product.name}</h4>
+                {product.seller_name && (
+                  <p className="text-xs text-muted-foreground truncate">{product.seller_name}</p>
+                )}
+                <div className="flex items-center justify-between mt-2">
+                  <span className="font-bold text-primary">${product.price.toFixed(2)}</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatDistanceToNow(new Date(product.created_at), { addSuffix: false })}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </ProductHoverCard>
         ))}
       </div>
     </div>

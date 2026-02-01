@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { OptimizedImage } from '@/components/ui/optimized-image';
+import ProductHoverCard from '@/components/marketplace/ProductHoverCard';
 
 interface HotProduct {
   id: string;
@@ -22,10 +23,13 @@ interface HotProduct {
 
 interface HotProductsSectionProps {
   onProductClick: (product: HotProduct) => void;
+  onBuy?: (product: HotProduct) => void;
+  onChat?: (product: HotProduct) => void;
+  isAuthenticated?: boolean;
   className?: string;
 }
 
-export function HotProductsSection({ onProductClick, className }: HotProductsSectionProps) {
+export function HotProductsSection({ onProductClick, onBuy, onChat, isAuthenticated = false, className }: HotProductsSectionProps) {
   const [products, setProducts] = useState<HotProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -147,49 +151,66 @@ export function HotProductsSection({ onProductClick, className }: HotProductsSec
       {/* Horizontal Scrolling Cards */}
       <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
         {products.map((product) => (
-          <Card
+          <ProductHoverCard
             key={product.id}
-            className="flex-shrink-0 w-[130px] cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 bg-white border border-black/10 hover:border-black/20"
-            onClick={() => {
-              trackProductClick(product.id);
-              onProductClick(product);
+            product={{
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              iconUrl: product.icon_url,
+              sellerName: product.seller_name || null,
+              storeSlug: product.store_slug || null,
+              isVerified: false,
+              soldCount: product.sold_count,
+              type: product.type,
             }}
+            onBuy={() => onBuy?.(product)}
+            onChat={() => onChat?.(product)}
+            isAuthenticated={isAuthenticated}
           >
-            <CardContent className="p-2.5">
-              {/* Image with Badge */}
-              <div className="relative mb-2">
-                <OptimizedImage
-                  src={product.icon_url}
-                  alt={product.name}
-                  className="w-full aspect-square rounded-md"
-                  aspectRatio="square"
-                  fallbackIcon={<ShoppingCart className="h-8 w-8 text-muted-foreground" />}
-                />
-                {/* Hot Badge - Top Left */}
-                <div className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 font-medium">
-                  <Flame className="h-2.5 w-2.5" />
-                  Hot
+            <Card
+              className="flex-shrink-0 w-[130px] cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 bg-white border border-black/10 hover:border-black/20"
+              onClick={() => {
+                trackProductClick(product.id);
+                onProductClick(product);
+              }}
+            >
+              <CardContent className="p-2.5">
+                {/* Image with Badge */}
+                <div className="relative mb-2">
+                  <OptimizedImage
+                    src={product.icon_url}
+                    alt={product.name}
+                    className="w-full aspect-square rounded-md"
+                    aspectRatio="square"
+                    fallbackIcon={<ShoppingCart className="h-8 w-8 text-muted-foreground" />}
+                  />
+                  {/* Hot Badge - Top Left */}
+                  <div className="absolute top-1.5 left-1.5 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 font-medium">
+                    <Flame className="h-2.5 w-2.5" />
+                    Hot
+                  </div>
                 </div>
-              </div>
-              
-              {/* Title */}
-              <h4 className="font-medium text-xs text-black truncate">{product.name}</h4>
-              
-              {/* Seller Name */}
-              {product.seller_name && (
-                <p className="text-[10px] text-black/50 truncate mt-0.5">{product.seller_name}</p>
-              )}
-              
-              {/* Price and Sold Count Row */}
-              <div className="flex items-center justify-between mt-2">
-                <span className="font-bold text-sm text-emerald-500">${product.price.toFixed(2)}</span>
-                <span className="text-[10px] text-black/50 flex items-center gap-0.5">
-                  <Star className="h-2.5 w-2.5 fill-orange-400 text-orange-400" />
-                  {product.sold_count} sold
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+                
+                {/* Title */}
+                <h4 className="font-medium text-xs text-black truncate">{product.name}</h4>
+                
+                {/* Seller Name */}
+                {product.seller_name && (
+                  <p className="text-[10px] text-black/50 truncate mt-0.5">{product.seller_name}</p>
+                )}
+                
+                {/* Price and Sold Count Row */}
+                <div className="flex items-center justify-between mt-2">
+                  <span className="font-bold text-sm text-emerald-500">${product.price.toFixed(2)}</span>
+                  <span className="text-[10px] text-black/50 flex items-center gap-0.5">
+                    <Star className="h-2.5 w-2.5 fill-orange-400 text-orange-400" />
+                    {product.sold_count} sold
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </ProductHoverCard>
         ))}
       </div>
     </div>
