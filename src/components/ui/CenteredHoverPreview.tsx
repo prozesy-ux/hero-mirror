@@ -59,11 +59,11 @@ const CenteredHoverPreview = ({
     closeTimeoutRef.current = setTimeout(handleClose, closeDelay);
   }, [clearAllTimeouts, handleClose, closeDelay]);
 
-  const handleContentMouseEnter = useCallback(() => {
+  const handleOverlayMouseEnter = useCallback(() => {
     clearAllTimeouts();
   }, [clearAllTimeouts]);
 
-  const handleContentMouseLeave = useCallback(() => {
+  const handleOverlayMouseLeave = useCallback(() => {
     clearAllTimeouts();
     closeTimeoutRef.current = setTimeout(handleClose, closeDelay);
   }, [clearAllTimeouts, handleClose, closeDelay]);
@@ -118,18 +118,20 @@ const CenteredHoverPreview = ({
       </div>
 
       {isOpen && createPortal(
-        <>
+        <div 
+          className="fixed inset-0 z-[9998]"
+          onMouseEnter={handleOverlayMouseEnter}
+          onMouseLeave={handleOverlayMouseLeave}
+        >
           {/* Backdrop overlay */}
           <div 
-            className="fixed inset-0 bg-black/20 z-[9998]"
+            className="absolute inset-0 bg-black/20"
             onClick={handleClose}
           />
           
           {/* Centered content */}
           <div
             ref={contentRef}
-            onMouseEnter={handleContentMouseEnter}
-            onMouseLeave={handleContentMouseLeave}
             className={cn(
               "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
               "w-[700px] max-w-[95vw] max-h-[90vh] overflow-auto",
@@ -140,7 +142,7 @@ const CenteredHoverPreview = ({
           >
             {content}
           </div>
-        </>,
+        </div>,
         document.body
       )}
     </>
