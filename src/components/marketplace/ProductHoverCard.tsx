@@ -318,7 +318,6 @@ const ProductHoverCard = ({
     <CenteredHoverPreview
       content={<HoverContent />}
       openDelay={400}
-      closeDelay={150}
       disabled={isMobile}
     >
       <div onClick={handleNavigate} className="cursor-pointer">
