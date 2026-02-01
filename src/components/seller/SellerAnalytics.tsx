@@ -233,11 +233,11 @@ const SellerAnalytics = () => {
 
   if (loading) {
     return (
-      <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen space-y-6">
+      <div className="p-4 lg:p-6 bg-[#FBF8F3] min-h-screen space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />)}
         </div>
-        <Skeleton className="h-80 rounded-2xl" />
+        <Skeleton className="h-80 rounded-lg border-2 border-black" />
       </div>
     );
   }
@@ -254,7 +254,7 @@ const SellerAnalytics = () => {
     change?: number;
     icon: React.ElementType;
   }) => (
-    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{title}</p>
@@ -280,7 +280,7 @@ const SellerAnalytics = () => {
           )}
         </div>
         {/* Amazon Orange Icon */}
-        <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+        <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0 border-2 border-black">
           <Icon className="h-6 w-6 text-orange-500" />
         </div>
       </div>
@@ -299,7 +299,7 @@ const SellerAnalytics = () => {
     value: React.ReactNode; 
     label: string; 
   }) => (
-    <div className="bg-white rounded-xl p-4 border border-slate-100">
+    <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
       <div className="flex items-center gap-3">
         <Icon className={`h-6 w-6 ${iconColor}`} />
         <div>
@@ -311,7 +311,7 @@ const SellerAnalytics = () => {
   );
 
   return (
-    <div className="p-4 lg:p-6 bg-[#F7F8FA] min-h-screen space-y-6">
+    <div className="p-4 lg:p-6 bg-[#FBF8F3] min-h-screen space-y-6">
       {/* Header - No Title, Just Date Filter + Export (Shopeers Style) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
         {/* Date Range Picker */}
@@ -319,9 +319,9 @@ const SellerAnalytics = () => {
           <PopoverTrigger asChild>
             <Button 
               variant="outline" 
-              className="bg-white border-slate-200 rounded-xl h-9 px-3 text-sm font-normal text-slate-600 hover:bg-slate-50"
+              className="bg-white border-2 border-black rounded-lg h-9 px-3 text-sm font-medium text-slate-800 shadow-neobrutalism hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
             >
-              <CalendarIcon className="w-4 h-4 mr-2 text-slate-400" />
+              <CalendarIcon className="w-4 h-4 mr-2 text-slate-600" />
               {dateRange.from && dateRange.to ? (
                 <span>
                   {format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}
@@ -351,10 +351,10 @@ const SellerAnalytics = () => {
 
         {/* Period Dropdown */}
         <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
-          <SelectTrigger className="w-[130px] bg-white border-slate-200 rounded-xl h-9 text-sm">
+          <SelectTrigger className="w-[130px] bg-white border-2 border-black rounded-lg h-9 text-sm font-medium shadow-neobrutalism hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-white">
+          <SelectContent className="bg-white border-2 border-black rounded-lg">
             <SelectItem value="7d">Last 7 days</SelectItem>
             <SelectItem value="30d">Last 30 days</SelectItem>
             <SelectItem value="90d">Last 90 days</SelectItem>
@@ -365,7 +365,7 @@ const SellerAnalytics = () => {
         {/* Export Button */}
         <Button 
           onClick={handleExport}
-          className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl h-9 px-4"
+          className="bg-black text-white hover:bg-black/90 rounded-lg h-9 px-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
         >
           <Download className="w-4 h-4 mr-2" />
           Export
@@ -401,7 +401,7 @@ const SellerAnalytics = () => {
       {/* Main Content Row */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Sales Details Chart - 2/3 width */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="lg:col-span-2 bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
           </div>
@@ -486,7 +486,7 @@ const SellerAnalytics = () => {
               value={`${analyticsData.conversionRate.toFixed(0)}%`} 
               label="Buy Box Wins" 
             />
-            <div className="bg-white rounded-xl p-4 border border-slate-100">
+            <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
               <div className="flex items-center gap-3">
                 <Star className="h-6 w-6 text-amber-500" />
                 <div>
@@ -507,7 +507,7 @@ const SellerAnalytics = () => {
       {/* Second Row */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Order Status Donut Chart */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Order Status</h3>
           {analyticsData.statusBreakdown.length > 0 ? (
             <>
@@ -558,12 +558,12 @@ const SellerAnalytics = () => {
         </div>
 
         {/* Top Products */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Top Products</h3>
           {analyticsData.topProducts.length > 0 ? (
             <div className="space-y-3">
               {analyticsData.topProducts.map((product, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
                   <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
                     {i + 1}
                   </div>
@@ -583,7 +583,7 @@ const SellerAnalytics = () => {
         </div>
 
         {/* Revenue by Day */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Revenue by Day</h3>
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
