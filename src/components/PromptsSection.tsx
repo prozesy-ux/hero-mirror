@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { Heart, Unlock, Lock } from 'lucide-react';
 
 const prompts = [
@@ -125,12 +127,23 @@ const prompts = [
 ];
 
 const PromptsSection = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthContext();
   const [favorites, setFavorites] = useState<number[]>([]);
 
   const toggleFavorite = (id: number) => {
     setFavorites(prev =>
       prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
     );
+  };
+
+  const handleUnlockPrompt = () => {
+    if (isAuthenticated) {
+      navigate('/dashboard/prompts');
+    } else {
+      localStorage.setItem('pendingBundlePrompts', 'true');
+      navigate('/signin');
+    }
   };
 
   return (
@@ -191,7 +204,10 @@ const PromptsSection = () => {
                 </h3>
 
                 {/* Action Button - Always shows Unlock */}
-                <button className="w-full py-2.5 bg-purple-500/20 hover:bg-purple-500 text-purple-400 hover:text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-purple-500/30 hover:border-purple-500">
+                <button 
+                  onClick={handleUnlockPrompt}
+                  className="w-full py-2.5 bg-purple-500/20 hover:bg-purple-500 text-purple-400 hover:text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-purple-500/30 hover:border-purple-500"
+                >
                   <Lock className="w-4 h-4" />
                   Unlock Prompt
                 </button>

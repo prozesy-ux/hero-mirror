@@ -1,4 +1,6 @@
 import { Check, Rocket, Sparkles, Database, Zap, Gift } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import promptGeneratorsImg from "@/assets/prompt-generators.jpg";
@@ -144,6 +146,18 @@ const whatYouGet = [
 ];
 
 const BundleSection = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthContext();
+
+  const handleGetBundle = () => {
+    if (isAuthenticated) {
+      navigate('/dashboard/prompts');
+    } else {
+      localStorage.setItem('pendingBundlePrompts', 'true');
+      navigate('/signin');
+    }
+  };
+
   return (
     <section className="py-20 bg-background">
       <div className="container mx-auto px-4">
@@ -206,7 +220,7 @@ const BundleSection = () => {
             <span className="text-2xl text-muted-foreground line-through">$499</span>
             <span className="text-5xl font-bold text-primary">$19</span>
           </div>
-          <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-6 text-xl">
+          <Button size="lg" onClick={handleGetBundle} className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-6 text-xl">
             <Zap className="w-6 h-6 mr-2" />
             Get The Everything Bundle
           </Button>
@@ -271,7 +285,7 @@ const BundleSection = () => {
                 <span>Instant Delivery</span>
               </div>
             </div>
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-6 text-xl">
+            <Button size="lg" onClick={handleGetBundle} className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-6 text-xl">
               Get The Everything Bundle - $19
             </Button>
           </div>

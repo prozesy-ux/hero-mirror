@@ -25,6 +25,14 @@ const SignIn = () => {
 
   // Handle post-auth redirect (for store purchases and chats)
   const handlePostAuthRedirect = () => {
+    // Priority 0: Check for bundle/prompts intent - redirect to prompts
+    const pendingBundlePrompts = localStorage.getItem('pendingBundlePrompts');
+    if (pendingBundlePrompts) {
+      localStorage.removeItem('pendingBundlePrompts');
+      navigate('/dashboard/prompts');
+      return;
+    }
+
     // Priority 1: Check for pending purchase - redirect to marketplace
     const pendingPurchase = localStorage.getItem('pendingPurchase');
     if (pendingPurchase) {
