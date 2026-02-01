@@ -1,226 +1,194 @@
 
 
-# Database Indexes Optimization Plan
+# Dashboard Marketplace Product View Redesign Plan
 
 ## Overview
 
-Add targeted database indexes to optimize slow query patterns for `seller_orders`, `wallet_transactions`, and product search tables. Based on analysis of current query patterns and index usage statistics, this migration will address high sequential scan rates and add missing covering indexes.
+Redesign the dashboard marketplace product view (`ProductFullViewPage.tsx`) to match the store product view design (`ProductDetailModal.tsx`) with consistent styling, clear layout, and mobile-first design.
 
 ## Current State Analysis
 
-### Index Usage Statistics
+### Store Product View (`ProductDetailModal.tsx`) - Reference Design
+- **Desktop**: 65/35 horizontal split (image left, purchase box right)
+- **Mobile**: Vertical drawer with bottom-sticky action buttons
+- **Styling**: Clean black/white monochrome with trust badges
+- **Key Features**: Image gallery with dots, seller info, rating stars, tags, trust badges (Secure, Instant, 24/7)
 
-| Table | Sequential Scans | Index Scans | Ratio |
-|-------|-----------------|-------------|-------|
-| `seller_orders` | 4,200 | 926 | 🔴 82% seq scans |
-| `wallet_transactions` | 2,692 | 953 | 🔴 74% seq scans |
-| `recently_viewed` | 320 | 0 | 🔴 100% seq scans |
-| `ai_accounts` | 20,263 | 8,499 | 🔴 70% seq scans |
-| `seller_profiles` | 28,701 | 38,586 | 🟡 43% seq scans |
-| `seller_products` | 7,515 | 18,050 | 🟢 29% seq scans |
+### Dashboard Product View (`ProductFullViewPage.tsx`) - Current Issues
+- Has 70/30 split but inconsistent with store modal
+- Missing drawer-style mobile experience
+- Header differs (uses sticky back button instead of modal header)
+- Trust badges and layout slightly different from store view
+- Not using Drawer component for mobile
 
-### Key Query Patterns Identified
+## Key Changes Required
 
-**seller_orders:**
-- `WHERE buyer_id = ? ORDER BY created_at DESC` (buyer dashboard)
-- `WHERE seller_id = ? ORDER BY created_at DESC` (seller dashboard)
-- `WHERE status = 'completed' AND created_at >= ?` (hot products)
-- `WHERE product_id = ?` (product analytics, aggregations)
+### 1. Mobile Experience - Add Drawer Component
+Convert mobile view to use bottom sheet drawer (like store modal):
 
-**wallet_transactions:**
-- `WHERE user_id = ? ORDER BY created_at DESC` (wallet history) ✅ Index exists
-- `WHERE status = ? AND type = ?` (admin filtering)
-- `WHERE transaction_id = ?` (payment verification)
+```text
+Current (Mobile):
++------------------+
+| Back Button      |
++------------------+
+| Image            |
+| Content          |
+| Actions          | ← Not sticky
++------------------+
 
-**recently_viewed:**
-- `WHERE user_id = ? ORDER BY viewed_at DESC` (search suggestions) ❌ No index!
-
-**Product Search:**
-- `WHERE is_available = true AND name ILIKE '%query%'` (ai_accounts)
-- `WHERE is_available = true AND is_approved = true AND name ILIKE '%query%'` (seller_products)
-- `WHERE store_name ILIKE '%query%' AND is_verified = true AND is_active = true` (seller_profiles)
-
-## Indexes to Create
-
-### 1. seller_orders - High Priority
-
-```sql
--- Optimize buyer dashboard queries (buyer_id + created_at ordering)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_buyer_created 
-ON seller_orders (buyer_id, created_at DESC);
-
--- Optimize seller dashboard queries (seller_id + created_at ordering)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_seller_created 
-ON seller_orders (seller_id, created_at DESC);
-
--- Optimize hot products aggregation (status + created_at for date range + product_id)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_completed_recent 
-ON seller_orders (created_at DESC, product_id) 
-WHERE status = 'completed';
-
--- Optimize product analytics queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_product_id 
-ON seller_orders (product_id);
+After (Mobile):
++------------------+
+| Image (280px)    |
+| Seller Info      |
+| Title + Price    |
+| Tags + Desc      |
++------------------+
+| Chat | Buy Now   | ← Sticky bottom
++------------------+
 ```
 
-### 2. wallet_transactions - Medium Priority
+### 2. Desktop Layout - Match Store Modal
+Align the 70/30 split with store's visual patterns:
 
-```sql
--- Optimize admin filtering by status and type
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_wallet_transactions_status_type 
-ON wallet_transactions (status, type);
+- Same image container height (`h-[350px] lg:h-[450px]`)
+- Same purchase box styling (black price badge, trust badges)
+- Same navigation arrows and dot indicators
 
--- Optimize pending transaction lookups
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_wallet_transactions_pending 
-ON wallet_transactions (user_id, created_at DESC) 
-WHERE status = 'pending';
+### 3. Mobile-Specific Components
+
+Add matching mobile content structure:
+
+| Component | Store Modal | Dashboard (After) |
+|-----------|-------------|-------------------|
+| Image height | 280px | 280px |
+| Seller info box | Rounded bg-black/5 | Same |
+| Price badge | Black with white text | Same |
+| Action buttons | Sticky bottom 44px | Same |
+| Trust badges | Secure, Instant, 24/7 | Same |
+
+### 4. Navigation Changes
+
+| Item | Current | After |
+|------|---------|-------|
+| Desktop back | Sticky header bar | Keep as-is (dashboard nav) |
+| Mobile back | None (uses browser) | Add close/back in drawer handle |
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/dashboard/ProductFullViewPage.tsx` | Add mobile drawer, align styling with store modal |
+
+## Detailed Implementation
+
+### Step 1: Import Drawer Components
+Add Drawer imports for mobile bottom sheet experience.
+
+### Step 2: Add useIsMobile Hook
+Detect mobile viewport to switch between layouts.
+
+### Step 3: Create Mobile Content Component
+Mirror the `MobileContent` component from `ProductDetailModal`:
+- 280px image gallery with dots
+- Seller info in rounded bg-black/5 box
+- Black price badge
+- Sticky action buttons at bottom
+
+### Step 4: Update Desktop Layout
+Ensure desktop view maintains 70/30 split with:
+- Same image container heights
+- Same purchase box border styling
+- Same trust badge layout
+
+### Step 5: Mobile-Specific Styling
+Add responsive classes for:
+- `safe-area-bottom` padding for iOS
+- Touch-friendly 44px min button heights
+- Horizontal scroll for image thumbnails
+
+## Visual Comparison
+
+### Mobile View (After Changes)
+
+```text
++------------------------+
+|  [Image 280px]         |
+|  < > dots             |
++------------------------+
+| [Avatar] Seller Name   |
+|         100 orders     |
++------------------------+
+| Product Title          |
+| [$25.00] ★★★★★ (12)   |
++------------------------+
+| [Tag1] [Tag2] [Tag3]   |
++------------------------+
+| Description text...    |
+| 50 sold | Balance: $30 |
++------------------------+
+| [Chat] [Buy Now]       | ← Sticky
++------------------------+
 ```
 
-### 3. recently_viewed - High Priority (Currently 100% seq scans!)
+### Desktop View (After Changes)
 
-```sql
--- Critical: Optimize user's recently viewed products lookup
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recently_viewed_user_viewed 
-ON recently_viewed (user_id, viewed_at DESC);
-
--- Optimize product lookups for recently viewed
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recently_viewed_product 
-ON recently_viewed (product_id, product_type);
+```text
++------------------------------------------+
+| ← Back to Marketplace                    |
++------------------------------------------+
+| +---------------------------+ +---------+|
+| |                           | | $25.00  ||
+| |     Image Gallery         | |         ||
+| |       (70%)               | | [Buy]   ||
+| |                           | | [Chat]  ||
+| +---------------------------+ |         ||
+| | thumb | thumb | thumb     | | Trust   ||
+| +---------------------------+ | Badges  ||
+|                               +---------+|
+| +---------------------------------------+|
+| | Title + Seller + Description          ||
+| +---------------------------------------+|
+| | Ratings & Reviews                      ||
+| +---------------------------------------+|
++------------------------------------------+
 ```
-
-### 4. Product Search Optimization
-
-```sql
--- Optimize seller profile search (currently 43% seq scans)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_profiles_store_name_trgm 
-ON seller_profiles USING gin (store_name gin_trgm_ops);
-
--- Optimize verified/active seller filtering
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_profiles_verified_active 
-ON seller_profiles (is_verified, is_active) 
-WHERE is_verified = true AND is_active = true;
-```
-
-### 5. Additional Optimizations
-
-```sql
--- popular_searches ordering optimization
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_popular_searches_count_desc 
-ON popular_searches (search_count DESC);
-```
-
-## Expected Performance Improvements
-
-| Query Pattern | Before | After |
-|--------------|--------|-------|
-| Buyer order history | ~50-100ms (seq scan) | ~5-15ms (index scan) |
-| Seller order list | ~50-100ms (seq scan) | ~5-15ms (index scan) |
-| Hot products aggregation | ~200-400ms | ~30-50ms |
-| Recently viewed lookup | ~100ms (seq scan) | ~10ms (index scan) |
-| Store name search | ~150ms (seq scan) | ~20ms (index scan) |
-| Wallet transaction history | Already indexed | Already indexed |
-
-## Migration Strategy
-
-All indexes will be created using `CONCURRENTLY` to avoid locking production tables during creation. This means:
-
-- No table locks during index creation
-- Queries continue to work normally
-- Index creation takes longer but is production-safe
-- Each index is wrapped in `IF NOT EXISTS` for idempotency
 
 ## Technical Details
 
-### Files to Modify
+### Drawer Implementation
+```typescript
+// Use conditional rendering based on viewport
+if (isMobile) {
+  return (
+    <div className="min-h-screen">
+      {/* Mobile vertical stack with sticky actions */}
+    </div>
+  );
+}
 
-| File | Action |
-|------|--------|
-| Database Migration | **CREATE** - Add performance indexes |
-
-### SQL Migration Script
-
-```sql
--- =====================================================
--- Performance Indexes for High-Traffic Tables
--- =====================================================
-
--- Enable pg_trgm extension if not already enabled (for fuzzy search)
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-
--- ===================
--- seller_orders
--- ===================
-
--- Buyer dashboard: ORDER BY created_at DESC with buyer_id filter
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_buyer_created 
-ON seller_orders (buyer_id, created_at DESC);
-
--- Seller dashboard: ORDER BY created_at DESC with seller_id filter
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_seller_created 
-ON seller_orders (seller_id, created_at DESC);
-
--- Hot products: completed orders in date range grouped by product
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_completed_recent 
-ON seller_orders (created_at DESC, product_id) 
-WHERE status = 'completed';
-
--- Product analytics aggregations
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_orders_product_id 
-ON seller_orders (product_id);
-
--- ===================
--- wallet_transactions
--- ===================
-
--- Admin dashboard filtering
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_wallet_transactions_status_type 
-ON wallet_transactions (status, type);
-
--- Pending transactions lookup
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_wallet_transactions_pending 
-ON wallet_transactions (user_id, created_at DESC) 
-WHERE status = 'pending';
-
--- ===================
--- recently_viewed (Critical - 100% seq scans currently!)
--- ===================
-
--- User's recently viewed products
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recently_viewed_user_viewed 
-ON recently_viewed (user_id, viewed_at DESC);
-
--- Product lookups
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_recently_viewed_product 
-ON recently_viewed (product_id, product_type);
-
--- ===================
--- seller_profiles (Search optimization)
--- ===================
-
--- Fuzzy search on store name
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_profiles_store_name_trgm 
-ON seller_profiles USING gin (store_name gin_trgm_ops);
-
--- Verified & active sellers (partial index)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_profiles_verified_active 
-ON seller_profiles (id) 
-WHERE is_verified = true AND is_active = true;
-
--- ===================
--- popular_searches
--- ===================
-
--- Trending searches ordered by count
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_popular_searches_count_desc 
-ON popular_searches (search_count DESC);
+// Desktop continues with current 70/30 layout
 ```
 
-## Summary
+### Sticky Action Bar (Mobile)
+```css
+.sticky bottom-0 bg-white pt-2 border-t border-black/10 safe-area-bottom
+```
 
-- **11 new indexes** targeting the slowest query patterns
-- **CONCURRENTLY** creation for zero-downtime deployment
-- **Partial indexes** to reduce storage footprint where applicable
-- **GIN trigram indexes** for fuzzy text search optimization
-- **Expected 5-10x improvement** on frequently-executed dashboard queries
-- **Reduces database load** by shifting from sequential to index scans
+### Trust Badges (Consistent)
+```typescript
+<div className="flex flex-wrap gap-1.5">
+  <div className="flex items-center gap-1 px-2 py-1 bg-black/5 rounded text-[10px] text-black/70">
+    <ShieldCheck size={10} />
+    <span>Secure</span>
+  </div>
+  {/* Instant, 24/7 badges */}
+</div>
+```
+
+## Expected Outcome
+
+- Dashboard marketplace product view will match store product view design exactly
+- Clean, mobile-first experience with bottom-sticky actions
+- Consistent trust indicators and styling across platform
+- Same 44px touch targets and safe area handling
 
