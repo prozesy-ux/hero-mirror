@@ -48,6 +48,7 @@ export const clearLocalStorageSelectively = (): void => {
       'storeReturn',
       'pendingPurchase', // Key for buy flow from store
       'pendingChat', // Key for chat flow from store
+      'pendingBundlePrompts', // Key for bundle/prompts unlock flow
       // UI state keys - preserve user preferences  
       'sidebar-collapsed',
       'seller-sidebar-collapsed',

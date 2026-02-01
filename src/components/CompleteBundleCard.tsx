@@ -1,4 +1,6 @@
 import { Star, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthContext } from '@/contexts/AuthContext';
 import madeForNotion from '@/assets/made-for-notion.avif';
 import chatgptLogo from '@/assets/chatgpt-logo.avif';
 import midjourneyLogo from '@/assets/midjourney-logo.avif';
@@ -8,6 +10,18 @@ import chatgptIcon from '@/assets/chatgpt-icon.svg';
 import starsIcon from '@/assets/stars.svg';
 
 const CompleteBundleCard = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthContext();
+
+  const handleGetBundle = () => {
+    if (isAuthenticated) {
+      navigate('/dashboard/prompts');
+    } else {
+      localStorage.setItem('pendingBundlePrompts', 'true');
+      navigate('/signin');
+    }
+  };
+
   return (
     <section className="py-8 md:py-12 px-4 bg-white">
       <div className="max-w-6xl mx-auto">
@@ -48,7 +62,10 @@ const CompleteBundleCard = () => {
             <p className="text-[10px] text-gray-400 mb-3">Loved by Business Owners</p>
 
             {/* CTA Button */}
-            <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-colors text-sm mb-4">
+            <button 
+              onClick={handleGetBundle}
+              className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-colors text-sm mb-4"
+            >
               Get Lifetime Access
               <ArrowRight className="w-4 h-4" />
             </button>
