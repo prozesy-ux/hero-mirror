@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ChevronDown, Star, X } from 'lucide-react';
+import { ChevronDown, Star, X, Package } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { PRODUCT_TYPES } from '@/components/icons/ProductTypeIcons';
 
 interface Category {
   id: string;
@@ -23,6 +24,9 @@ interface GumroadFilterSidebarProps {
   minRating: number | null;
   onRatingChange: (rating: number | null) => void;
   onClearFilters: () => void;
+  // New: Product type filter
+  selectedProductTypes?: string[];
+  onProductTypeToggle?: (type: string) => void;
 }
 
 const GumroadFilterSidebar = ({
@@ -38,11 +42,14 @@ const GumroadFilterSidebar = ({
   minRating,
   onRatingChange,
   onClearFilters,
+  selectedProductTypes = [],
+  onProductTypeToggle,
 }: GumroadFilterSidebarProps) => {
   const [showAllTags, setShowAllTags] = useState(false);
   const [localPriceMin, setLocalPriceMin] = useState<string>(priceMin?.toString() || '');
   const [localPriceMax, setLocalPriceMax] = useState<string>(priceMax?.toString() || '');
   const [openSections, setOpenSections] = useState({
+    productTypes: true,
     categories: true,
     tags: true,
     price: true,
@@ -51,11 +58,15 @@ const GumroadFilterSidebar = ({
 
   const visibleTags = showAllTags ? availableTags : availableTags.slice(0, 8);
   
+  // Subset of product types to show in filter
+  const filterableTypes = PRODUCT_TYPES.slice(0, 8); // Show first 8 types
+  
   const hasActiveFilters = selectedCategory !== 'all' || 
     selectedTags.length > 0 || 
     priceMin !== undefined || 
     priceMax !== undefined || 
-    minRating !== null;
+    minRating !== null ||
+    selectedProductTypes.length > 0;
 
   const handlePriceApply = () => {
     onPriceChange(
@@ -80,6 +91,42 @@ const GumroadFilterSidebar = ({
           Clear all filters
         </button>
       )}
+
+      {/* Product Types */}
+      {onProductTypeToggle && (
+        <Collapsible open={openSections.productTypes} onOpenChange={() => toggleSection('productTypes')}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-left">
+            <span className="text-sm font-semibold text-black uppercase tracking-wide">Product Type</span>
+            <ChevronDown className={cn(
+              "w-4 h-4 text-black/40 transition-transform duration-200",
+              openSections.productTypes && "rotate-180"
+            )} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-1 space-y-0.5">
+            {filterableTypes.map((type) => {
+              const Icon = type.Icon;
+              const isSelected = selectedProductTypes.includes(type.id);
+              return (
+                <button
+                  key={type.id}
+                  onClick={() => onProductTypeToggle(type.id)}
+                  className={cn(
+                    "w-full text-left px-2 py-1.5 rounded text-sm flex items-center gap-2 transition-colors",
+                    isSelected
+                      ? 'text-black font-medium bg-black/5'
+                      : 'text-black/60 hover:text-black'
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{type.name}</span>
+                </button>
+              );
+            })}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      <div className="h-6" />
 
       {/* Categories */}
       <Collapsible open={openSections.categories} onOpenChange={() => toggleSection('categories')}>

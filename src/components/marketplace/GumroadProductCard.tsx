@@ -1,5 +1,6 @@
 import { Store, Star } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import ProductTypeBadge from './ProductTypeBadge';
 
 interface GumroadProductCardProps {
   id: string;
@@ -14,6 +15,7 @@ interface GumroadProductCardProps {
   reviewCount?: number;
   soldCount?: number;
   type: 'ai' | 'seller';
+  productType?: string;
   onClick: () => void;
 }
 
@@ -24,6 +26,7 @@ const GumroadProductCard = ({
   sellerName,
   rating,
   reviewCount,
+  productType,
   onClick,
 }: GumroadProductCardProps) => {
   return (
@@ -46,6 +49,13 @@ const GumroadProductCard = ({
             </div>
           )}
         </AspectRatio>
+        
+        {/* Product Type Badge */}
+        {productType && productType !== 'digital_product' && (
+          <div className="absolute top-2 left-2">
+            <ProductTypeBadge type={productType} size="sm" />
+          </div>
+        )}
       </div>
 
       {/* Content */}
