@@ -2065,18 +2065,12 @@ const AIAccountsSection = () => {
           setShowQuickViewModal(false);
           if (quickViewProduct?.type === 'seller') {
             const product = quickViewProduct.data as SellerProduct;
-            const storeSlug = product.seller_profiles?.store_slug;
-            if (storeSlug) {
-              navigate(generateProductUrlWithFallback(
-                storeSlug,
-                product.slug,
-                product.name,
-                product.id
-              ));
-              return;
-            }
+            // Use slug if available, otherwise fallback to ID
+            const slug = product.slug || product.id;
+            navigate(`/dashboard/marketplace/product/${slug}`);
+          } else if (quickViewProduct) {
+            navigate(`/dashboard/marketplace/product/${quickViewProduct.data.id}`);
           }
-          navigate(`/dashboard/ai-accounts/product/${quickViewProduct?.data.id}`);
         }}
       />
 
