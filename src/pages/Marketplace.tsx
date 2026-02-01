@@ -7,7 +7,7 @@ import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import { useMarketplaceData } from '@/hooks/useMarketplaceData';
 import GumroadHeader from '@/components/marketplace/GumroadHeader';
 import GumroadProductCard from '@/components/marketplace/GumroadProductCard';
-import FeaturedCarousel from '@/components/marketplace/FeaturedCarousel';
+
 import GumroadFilterSidebar from '@/components/marketplace/GumroadFilterSidebar';
 import ProductHoverCard from '@/components/marketplace/ProductHoverCard';
 import { HotProductsSection } from '@/components/marketplace/HotProductsSection';
@@ -299,21 +299,6 @@ const Marketplace = () => {
     return result;
   }, [allProducts, searchQuery, priceMin, priceMax, sortOption]);
 
-  // Featured products for carousel
-  const featuredProducts = useMemo(() => {
-    return hotProducts.slice(0, 8).map(p => ({
-      id: p.id,
-      name: p.name,
-      description: null as string | null,
-      price: p.price,
-      iconUrl: p.iconUrl,
-      sellerName: p.sellerName,
-      storeSlug: p.storeSlug,
-      isVerified: p.isVerified,
-      soldCount: p.soldCount,
-      type: p.type,
-    }));
-  }, [hotProducts]);
 
   // Handlers
   const handleSearch = useCallback(() => {
@@ -480,14 +465,6 @@ const Marketplace = () => {
 
       {/* Main Content */}
       <main className="mx-auto max-w-screen-2xl px-4 lg:px-6 py-6">
-        {/* Featured Carousel - Banner style */}
-        {featuredProducts.length > 0 && !searchQuery && selectedCategory === 'all' && (
-          <FeaturedCarousel
-            products={featuredProducts}
-            onProductClick={handleProductClick}
-            title="Featured products"
-          />
-        )}
 
         {/* Hot Right Now Section */}
         {!searchQuery && selectedCategory === 'all' && (
