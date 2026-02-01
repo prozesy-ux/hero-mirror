@@ -7,6 +7,7 @@ interface CenteredHoverPreviewProps {
   content: React.ReactNode;
   openDelay?: number;
   closeDelay?: number;
+  travelGraceMs?: number;
   disabled?: boolean;
   className?: string;
   onOpenChange?: (open: boolean) => void;
@@ -16,7 +17,8 @@ const CenteredHoverPreview = ({
   children,
   content,
   openDelay = 400,
-  closeDelay = 300, // Increased for smoother UX
+  closeDelay = 350,
+  travelGraceMs = 600,
   disabled = false,
   className,
   onOpenChange,
@@ -24,6 +26,7 @@ const CenteredHoverPreview = ({
   const [isOpen, setIsOpen] = useState(false);
   const openTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastOpenAtRef = useRef<number>(0);
   const triggerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +42,7 @@ const CenteredHoverPreview = ({
   }, []);
 
   const handleOpen = useCallback(() => {
+    lastOpenAtRef.current = Date.now();
     setIsOpen(true);
     onOpenChange?.(true);
   }, [onOpenChange]);
@@ -61,11 +65,13 @@ const CenteredHoverPreview = ({
     // This prevents "auto close" when mouse travels from trigger to centered preview
   }, [clearAllTimeouts]);
 
-  // Backdrop: start close timer when mouse enters backdrop area
+  // Backdrop: start close timer when mouse enters backdrop area (after grace period)
   const handleBackdropMouseEnter = useCallback(() => {
+    // Skip if still within travel grace period
+    if (Date.now() - lastOpenAtRef.current < travelGraceMs) return;
     clearAllTimeouts();
     closeTimeoutRef.current = setTimeout(handleClose, closeDelay);
-  }, [clearAllTimeouts, handleClose, closeDelay]);
+  }, [clearAllTimeouts, handleClose, closeDelay, travelGraceMs]);
 
   // Content: cancel close timer when mouse enters preview content
   const handleContentMouseEnter = useCallback(() => {
