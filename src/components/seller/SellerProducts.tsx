@@ -332,6 +332,34 @@ const SellerProducts = () => {
         </div>
       </div>
 
+      {/* Panda Banner - Product Sales Guide */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 mb-6 shadow-sm">
+        <div className="flex flex-col md:flex-row items-center gap-6">
+          <div className="w-full md:w-1/2 lg:w-2/5">
+            <img 
+              src={productsIllustration} 
+              alt="Product Sales Guide" 
+              className="w-full h-auto rounded-xl"
+            />
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <h2 className="text-xl md:text-2xl font-bold text-black mb-2">
+              "We've never met an idea we didn't like."
+            </h2>
+            <p className="text-slate-600 mb-4">
+              Your products don't need to be perfect. Just get them out there and see what happens!
+            </p>
+            <Button 
+              onClick={() => navigate('/seller/products/new')} 
+              className="bg-pink-500 hover:bg-pink-600 text-white rounded-xl px-6 py-2"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New product
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between gap-4 mb-6">
         {/* Search */}
