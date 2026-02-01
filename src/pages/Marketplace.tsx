@@ -9,7 +9,7 @@ import GumroadHeader from '@/components/marketplace/GumroadHeader';
 import GumroadProductCard from '@/components/marketplace/GumroadProductCard';
 import FeaturedCarousel from '@/components/marketplace/FeaturedCarousel';
 import GumroadFilterSidebar from '@/components/marketplace/GumroadFilterSidebar';
-import GumroadQuickViewModal from '@/components/marketplace/GumroadQuickViewModal';
+import ProductHoverCard from '@/components/marketplace/ProductHoverCard';
 import GuestPaymentModal from '@/components/marketplace/GuestPaymentModal';
 import MarketplaceProductFullView from '@/components/marketplace/MarketplaceProductFullView';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -62,8 +62,7 @@ const Marketplace = () => {
   const [sortOption, setSortOption] = useState<SortOption>('trending');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Modal state
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  // Guest checkout state
   const [guestCheckoutProduct, setGuestCheckoutProduct] = useState<Product | null>(null);
   
   // URL-based full view state
@@ -319,47 +318,36 @@ const Marketplace = () => {
     // Search is already reactive via filteredProducts
   }, []);
 
+  // Handle product click - navigate to full view
   const handleProductClick = useCallback((product: Product) => {
-    setQuickViewProduct(product);
-  }, []);
+    const slug = slugify(product.name);
+    navigate(`/marketplace/${slug}`);
+  }, [navigate]);
 
-  const handleBuy = useCallback(() => {
-    if (!quickViewProduct) return;
-
+  // Handle buy from hover card
+  const handleHoverBuy = useCallback((product: Product) => {
     if (user) {
-      if (quickViewProduct.storeSlug) {
-        navigate(`/store/${quickViewProduct.storeSlug}`);
+      if (product.storeSlug) {
+        navigate(`/store/${product.storeSlug}`);
       } else {
         navigate('/dashboard');
       }
     } else {
-      setGuestCheckoutProduct(quickViewProduct);
+      setGuestCheckoutProduct(product);
     }
-    setQuickViewProduct(null);
-  }, [quickViewProduct, user, navigate]);
+  }, [user, navigate]);
 
-  const handleChat = useCallback(() => {
-    if (!quickViewProduct) return;
-
+  // Handle chat from hover card
+  const handleHoverChat = useCallback((product: Product) => {
     if (user) {
-      if (quickViewProduct.storeSlug) {
-        navigate(`/store/${quickViewProduct.storeSlug}?chat=${quickViewProduct.id}`);
+      if (product.storeSlug) {
+        navigate(`/store/${product.storeSlug}?chat=${product.id}`);
       }
     } else {
       toast.info('Please sign in to chat with sellers');
       navigate('/signin');
     }
-    setQuickViewProduct(null);
-  }, [quickViewProduct, user, navigate]);
-
-  const handleViewFull = useCallback(() => {
-    if (!quickViewProduct) return;
-
-    // Navigate to URL-based product view
-    const slug = slugify(quickViewProduct.name);
-    navigate(`/marketplace/${slug}`);
-    setQuickViewProduct(null);
-  }, [quickViewProduct, navigate]);
+  }, [user, navigate]);
 
   const handleFullViewBuy = useCallback(() => {
     if (!urlProduct) return;
@@ -616,38 +604,47 @@ const Marketplace = () => {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {filteredProducts.map((product) => (
-                  <GumroadProductCard
+                  <ProductHoverCard
                     key={product.id}
-                    id={product.id}
-                    name={product.name}
-                    price={product.price}
-                    iconUrl={product.iconUrl}
-                    sellerName={product.sellerName}
-                    storeSlug={product.storeSlug}
-                    isVerified={product.isVerified}
-                    rating={product.rating}
-                    reviewCount={product.reviewCount}
-                    soldCount={product.soldCount}
-                    type={product.type}
-                    onClick={() => handleProductClick(product)}
-                  />
+                    product={{
+                      id: product.id,
+                      name: product.name,
+                      description: product.description,
+                      price: product.price,
+                      iconUrl: product.iconUrl,
+                      sellerName: product.sellerName,
+                      sellerAvatar: product.sellerAvatar,
+                      storeSlug: product.storeSlug,
+                      isVerified: product.isVerified,
+                      soldCount: product.soldCount,
+                      tags: product.tags,
+                      type: product.type,
+                    }}
+                    onBuy={() => handleHoverBuy(product)}
+                    onChat={() => handleHoverChat(product)}
+                    isAuthenticated={!!user}
+                  >
+                    <GumroadProductCard
+                      id={product.id}
+                      name={product.name}
+                      price={product.price}
+                      iconUrl={product.iconUrl}
+                      sellerName={product.sellerName}
+                      storeSlug={product.storeSlug}
+                      isVerified={product.isVerified}
+                      rating={product.rating}
+                      reviewCount={product.reviewCount}
+                      soldCount={product.soldCount}
+                      type={product.type}
+                      onClick={() => {}} // Navigation handled by HoverCard wrapper
+                    />
+                  </ProductHoverCard>
                 ))}
               </div>
             )}
           </div>
         </div>
       </main>
-
-      {/* Quick View Modal */}
-      <GumroadQuickViewModal
-        open={!!quickViewProduct}
-        onOpenChange={(open) => !open && setQuickViewProduct(null)}
-        product={quickViewProduct}
-        onBuy={handleBuy}
-        onChat={handleChat}
-        onViewFull={handleViewFull}
-        isAuthenticated={!!user}
-      />
 
       {/* Guest Payment Modal */}
       <GuestPaymentModal
