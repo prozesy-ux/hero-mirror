@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import heroBackground from "@/assets/hero-background.webp";
 
 interface SearchProduct {
@@ -11,16 +12,10 @@ interface SearchProduct {
   type: string;
 }
 
-const productTags = [
-  { name: "Netflix", query: "netflix" },
-  { name: "Amazon Prime", query: "amazon" },
-  { name: "Google Cloud", query: "google cloud" },
-  { name: "ChatGPT", query: "chatgpt" },
-  { name: "Gaming", query: "gaming" },
-  { name: "Streaming", query: "streaming" },
-  { name: "Social Media", query: "social media" },
-  { name: "AI Tools", query: "ai" },
-];
+interface Category {
+  id: string;
+  name: string;
+}
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -28,8 +23,23 @@ const HeroSection = () => {
   const [suggestions, setSuggestions] = useState<SearchProduct[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+
+  // Fetch categories from database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from("categories")
+        .select("id, name")
+        .eq("is_active", true)
+        .order("display_order")
+        .limit(8);
+      setCategories(data || []);
+    };
+    fetchCategories();
+  }, []);
 
   // Click outside to close suggestions
   useEffect(() => {
@@ -136,8 +146,8 @@ const HeroSection = () => {
     navigate(`/marketplace/${slug}`);
   };
 
-  const handleTagClick = (query: string) => {
-    navigate(`/marketplace?search=${encodeURIComponent(query)}`);
+  const handleCategoryClick = (categoryId: string) => {
+    navigate(`/marketplace?category=${categoryId}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -237,13 +247,13 @@ const HeroSection = () => {
             Popular searches
           </span>
           <div className="flex flex-wrap justify-center gap-2">
-            {productTags.map((tag) => (
+            {categories.map((cat) => (
               <button
-                key={tag.name}
-                onClick={() => handleTagClick(tag.query)}
+                key={cat.id}
+                onClick={() => handleCategoryClick(cat.id)}
                 className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm transition-all hover:border-white/30 hover:bg-white/20"
               >
-                {tag.name}
+                {cat.name}
               </button>
             ))}
           </div>
