@@ -8,12 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, Loader2, X, Check, HelpCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, X, Check } from 'lucide-react';
 import ProductTypeSelector from '@/components/seller/ProductTypeSelector';
 import MultiImageUploader from '@/components/seller/MultiImageUploader';
-import { ProductTypeId, getProductTypeById, PRODUCT_TYPES } from '@/components/icons/ProductTypeIcons';
+import { ProductTypeId, getProductTypeById } from '@/components/icons/ProductTypeIcons';
 import { cn } from '@/lib/utils';
 
 interface Category {
@@ -22,7 +21,7 @@ interface Category {
 }
 
 const STEPS = [
-  { id: 1, title: 'Choose Type', description: 'What are you selling?' },
+  { id: 1, title: 'Type', description: 'What are you selling?' },
   { id: 2, title: 'Details', description: 'Name, price, and description' },
   { id: 3, title: 'Customize', description: 'Images and settings' },
 ];
@@ -158,26 +157,30 @@ const NewProduct = () => {
   const SelectedIcon = selectedType.Icon;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-3">
+    <div className="min-h-screen bg-white">
+      {/* Header - Clean B&W */}
+      <header className="sticky top-0 z-10 bg-white border-b-2 border-black/10 px-4 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button 
               onClick={handleBack}
-              className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+              className="p-2 rounded-lg border-2 border-black/10 hover:border-black hover:bg-black hover:text-white transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="font-semibold text-lg">New Product</h1>
-              <p className="text-sm text-slate-500">Step {currentStep} of {STEPS.length}</p>
+              <h1 className="font-black text-xl text-black">New Product</h1>
+              <p className="text-sm text-gray-500">Step {currentStep} of {STEPS.length}</p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
             {currentStep > 1 && (
-              <Button variant="outline" onClick={handleBack} className="rounded-xl">
+              <Button 
+                variant="outline" 
+                onClick={handleBack} 
+                className="rounded-lg border-2 border-black/20 hover:border-black hover:bg-black hover:text-white transition-colors"
+              >
                 Back
               </Button>
             )}
@@ -185,7 +188,7 @@ const NewProduct = () => {
               <Button 
                 onClick={handleNext} 
                 disabled={!canProceed()}
-                className="rounded-xl bg-pink-500 hover:bg-pink-600"
+                className="rounded-lg bg-black hover:bg-black/90 text-white px-6"
               >
                 Next
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -194,7 +197,7 @@ const NewProduct = () => {
               <Button 
                 onClick={handleSubmit}
                 disabled={submitting || !canProceed()}
-                className="rounded-xl bg-pink-500 hover:bg-pink-600"
+                className="rounded-lg bg-black hover:bg-black/90 text-white px-6"
               >
                 {submitting ? (
                   <>
@@ -204,7 +207,7 @@ const NewProduct = () => {
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2" />
-                    Publish Product
+                    Publish
                   </>
                 )}
               </Button>
@@ -213,37 +216,31 @@ const NewProduct = () => {
         </div>
       </header>
 
-      {/* Progress Bar */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-2">
+      {/* Progress Bar - Minimal dots */}
+      <div className="bg-white border-b-2 border-black/10">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-center gap-4">
             {STEPS.map((step, index) => (
-              <div 
-                key={step.id} 
-                className={cn(
-                  "flex items-center",
-                  index < STEPS.length - 1 && "flex-1"
-                )}
-              >
+              <div key={step.id} className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
+                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors border-2",
                     currentStep > step.id
-                      ? "bg-emerald-500 text-white"
+                      ? "bg-black text-white border-black"
                       : currentStep === step.id
-                        ? "bg-black text-white"
-                        : "bg-slate-200 text-slate-500"
+                        ? "bg-white text-black border-black"
+                        : "bg-gray-100 text-gray-400 border-gray-200"
                   )}>
                     {currentStep > step.id ? (
-                      <Check className="w-4 h-4" />
+                      <Check className="w-5 h-5" />
                     ) : (
                       step.id
                     )}
                   </div>
                   <div className="hidden sm:block">
                     <p className={cn(
-                      "text-sm font-medium",
-                      currentStep >= step.id ? "text-black" : "text-slate-400"
+                      "text-sm font-bold",
+                      currentStep >= step.id ? "text-black" : "text-gray-400"
                     )}>
                       {step.title}
                     </p>
@@ -251,8 +248,8 @@ const NewProduct = () => {
                 </div>
                 {index < STEPS.length - 1 && (
                   <div className={cn(
-                    "flex-1 h-0.5 mx-4",
-                    currentStep > step.id ? "bg-emerald-500" : "bg-slate-200"
+                    "w-12 h-0.5",
+                    currentStep > step.id ? "bg-black" : "bg-gray-200"
                   )} />
                 )}
               </div>
@@ -263,44 +260,29 @@ const NewProduct = () => {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white border-2 border-black/10 rounded-lg">
           {/* Step 1: Choose Type */}
           {currentStep === 1 && (
             <div className="p-6 lg:p-8">
               <div className="grid lg:grid-cols-5 gap-8">
                 {/* Left: Info */}
                 <div className="lg:col-span-2">
-                  <h2 className="text-2xl font-bold text-black mb-3">
+                  <h2 className="text-2xl font-black text-black mb-3">
                     What are you creating?
                   </h2>
-                  <p className="text-slate-600 mb-6">
-                    Choose the type that best describes your product. This helps buyers find what they're looking for.
+                  <p className="text-gray-600 mb-6">
+                    Choose the type that best describes your product.
                   </p>
                   
                   {selectedType && (
-                    <div className={cn(
-                      "p-4 rounded-xl border-2",
-                      selectedType.color
-                    )}>
+                    <div className="p-4 rounded-lg border-2 border-black bg-gray-50">
                       <div className="flex items-center gap-3 mb-2">
                         <SelectedIcon className="w-8 h-8" />
-                        <span className="font-semibold">{selectedType.name}</span>
+                        <span className="font-bold text-black">{selectedType.name}</span>
                       </div>
-                      <p className="text-sm text-slate-600">{selectedType.description}</p>
+                      <p className="text-sm text-gray-600">{selectedType.description}</p>
                     </div>
                   )}
-                  
-                  <div className="mt-6 p-4 bg-slate-50 rounded-xl">
-                    <div className="flex items-start gap-2">
-                      <HelpCircle className="w-5 h-5 text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-slate-700">Need help choosing?</p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          You can always change this later. Pick what feels closest to your product.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
                 
                 {/* Right: Type Grid */}
@@ -320,25 +302,25 @@ const NewProduct = () => {
               <div className="grid lg:grid-cols-5 gap-8">
                 {/* Left: Preview */}
                 <div className="lg:col-span-2">
-                  <h2 className="text-2xl font-bold text-black mb-3">
+                  <h2 className="text-2xl font-black text-black mb-3">
                     Product Details
                   </h2>
-                  <p className="text-slate-600 mb-6">
-                    Give your product a name and set your price. You can update these anytime.
+                  <p className="text-gray-600 mb-6">
+                    Give your product a name and set your price.
                   </p>
                   
                   {/* Mini Preview Card */}
-                  <div className="p-4 bg-slate-50 rounded-xl">
-                    <p className="text-xs font-medium text-slate-500 uppercase mb-3">Preview</p>
-                    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                      <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center">
-                        <SelectedIcon className="w-16 h-16 opacity-50" />
+                  <div className="p-4 bg-gray-50 rounded-lg border-2 border-black/10">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-3">Preview</p>
+                    <div className="bg-white rounded-lg border-2 border-black/10 overflow-hidden">
+                      <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                        <SelectedIcon className="w-16 h-16 opacity-30" />
                       </div>
-                      <div className="p-3">
-                        <p className="font-medium text-sm truncate">
+                      <div className="p-3 border-t-2 border-black/10">
+                        <p className="font-bold text-black text-sm truncate">
                           {name || 'Your product name'}
                         </p>
-                        <p className="text-lg font-bold text-black mt-1">
+                        <p className="text-xl font-black text-black mt-1">
                           ${price || '0'}
                         </p>
                       </div>
@@ -350,25 +332,25 @@ const NewProduct = () => {
                 <div className="lg:col-span-3 space-y-6">
                   {/* Name */}
                   <div>
-                    <Label className="text-sm font-semibold text-black mb-2 block">
+                    <Label className="text-sm font-bold text-black mb-2 block">
                       Product Name *
                     </Label>
                     <Input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g., Ultimate Design Bundle"
-                      className="rounded-xl border-slate-200 h-12 text-base"
+                      className="rounded-lg border-2 border-black/10 h-12 text-base focus:border-black transition-colors"
                     />
                   </div>
                   
                   {/* Price & Stock */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-semibold text-black mb-2 block">
+                      <Label className="text-sm font-bold text-black mb-2 block">
                         Price (USD) *
                       </Label>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
                         <Input
                           type="number"
                           value={price}
@@ -376,13 +358,13 @@ const NewProduct = () => {
                           placeholder="0"
                           min="0"
                           step="0.01"
-                          className="rounded-xl border-slate-200 h-12 text-base pl-7"
+                          className="rounded-lg border-2 border-black/10 h-12 text-base pl-8 focus:border-black transition-colors"
                         />
                       </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-semibold text-black mb-2 block">
-                        Stock (optional)
+                      <Label className="text-sm font-bold text-black mb-2 block">
+                        Stock
                       </Label>
                       <Input
                         type="number"
@@ -390,14 +372,14 @@ const NewProduct = () => {
                         onChange={(e) => setStock(e.target.value)}
                         placeholder="Unlimited"
                         min="0"
-                        className="rounded-xl border-slate-200 h-12 text-base"
+                        className="rounded-lg border-2 border-black/10 h-12 text-base focus:border-black transition-colors"
                       />
                     </div>
                   </div>
                   
                   {/* Description */}
                   <div>
-                    <Label className="text-sm font-semibold text-black mb-2 block">
+                    <Label className="text-sm font-bold text-black mb-2 block">
                       Description
                     </Label>
                     <Textarea
@@ -405,13 +387,13 @@ const NewProduct = () => {
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe your product..."
                       rows={4}
-                      className="rounded-xl border-slate-200 text-base resize-none"
+                      className="rounded-lg border-2 border-black/10 text-base resize-none focus:border-black transition-colors"
                     />
                   </div>
                   
                   {/* Categories */}
                   <div>
-                    <Label className="text-sm font-semibold text-black mb-2 block">
+                    <Label className="text-sm font-bold text-black mb-2 block">
                       Categories
                     </Label>
                     <div className="flex flex-wrap gap-2">
@@ -421,10 +403,10 @@ const NewProduct = () => {
                           type="button"
                           onClick={() => toggleCategory(cat.id)}
                           className={cn(
-                            "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                            "px-4 py-2 rounded-lg text-sm font-semibold border-2 transition-colors",
                             categoryIds.includes(cat.id)
                               ? "bg-black text-white border-black"
-                              : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                              : "bg-white text-gray-600 border-black/10 hover:border-black"
                           )}
                         >
                           {cat.name}
@@ -443,33 +425,33 @@ const NewProduct = () => {
               <div className="grid lg:grid-cols-5 gap-8">
                 {/* Left: Summary */}
                 <div className="lg:col-span-2">
-                  <h2 className="text-2xl font-bold text-black mb-3">
+                  <h2 className="text-2xl font-black text-black mb-3">
                     Final Touches
                   </h2>
-                  <p className="text-slate-600 mb-6">
-                    Add images and configure settings to make your product stand out.
+                  <p className="text-gray-600 mb-6">
+                    Add images and configure settings.
                   </p>
                   
                   {/* Summary Card */}
-                  <div className="p-4 bg-slate-50 rounded-xl space-y-3">
+                  <div className="p-4 bg-gray-50 rounded-lg border-2 border-black/10 space-y-4">
                     <div className="flex items-center gap-3">
                       <SelectedIcon className="w-8 h-8" />
                       <div>
-                        <p className="text-xs text-slate-500 uppercase">Type</p>
-                        <p className="font-medium">{selectedType.name}</p>
+                        <p className="text-xs text-gray-500 uppercase font-bold">Type</p>
+                        <p className="font-bold text-black">{selectedType.name}</p>
                       </div>
                     </div>
-                    <div className="border-t border-slate-200 pt-3">
-                      <p className="text-xs text-slate-500 uppercase">Product</p>
-                      <p className="font-medium">{name || 'Untitled'}</p>
-                      <p className="text-lg font-bold text-black">${price || '0'}</p>
+                    <div className="border-t-2 border-black/10 pt-4">
+                      <p className="text-xs text-gray-500 uppercase font-bold">Product</p>
+                      <p className="font-bold text-black">{name || 'Untitled'}</p>
+                      <p className="text-2xl font-black text-black">${price || '0'}</p>
                     </div>
                     {tags.length > 0 && (
-                      <div className="border-t border-slate-200 pt-3">
-                        <p className="text-xs text-slate-500 uppercase mb-2">Tags</p>
+                      <div className="border-t-2 border-black/10 pt-4">
+                        <p className="text-xs text-gray-500 uppercase font-bold mb-2">Tags</p>
                         <div className="flex flex-wrap gap-1">
                           {tags.map((tag) => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
+                            <Badge key={tag} className="bg-black text-white border-0 text-xs">
                               {tag}
                             </Badge>
                           ))}
@@ -483,7 +465,7 @@ const NewProduct = () => {
                 <div className="lg:col-span-3 space-y-6">
                   {/* Images */}
                   <div>
-                    <Label className="text-sm font-semibold text-black mb-2 block">
+                    <Label className="text-sm font-bold text-black mb-2 block">
                       Product Images
                     </Label>
                     <MultiImageUploader
@@ -495,21 +477,20 @@ const NewProduct = () => {
                   
                   {/* Tags */}
                   <div>
-                    <Label className="text-sm font-semibold text-black mb-2 block">
+                    <Label className="text-sm font-bold text-black mb-2 block">
                       Tags
                     </Label>
-                    <div className="flex flex-wrap gap-2 mb-2">
+                    <div className="flex flex-wrap gap-2 mb-3">
                       {tags.map((tag) => (
                         <Badge
                           key={tag}
-                          variant="secondary"
-                          className="gap-1 pr-1"
+                          className="gap-1.5 pr-1.5 bg-black text-white border-0"
                         >
                           {tag}
                           <button
                             type="button"
                             onClick={() => handleRemoveTag(tag)}
-                            className="ml-1 p-0.5 rounded-full hover:bg-black/10"
+                            className="ml-1 p-0.5 rounded-full hover:bg-white/20"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -526,15 +507,15 @@ const NewProduct = () => {
                         }
                       }}
                       placeholder="Add a tag..."
-                      className="rounded-xl border-slate-200 mb-2"
+                      className="rounded-lg border-2 border-black/10 mb-3 focus:border-black transition-colors"
                     />
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5">
                       {popularTags.filter(t => !tags.includes(t)).slice(0, 6).map((tag) => (
                         <button
                           key={tag}
                           type="button"
                           onClick={() => handleAddTag(tag)}
-                          className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 transition-colors"
+                          className="text-xs px-3 py-1.5 border-2 border-black/10 hover:border-black hover:bg-black hover:text-white rounded-lg text-gray-600 transition-colors"
                         >
                           + {tag}
                         </button>
@@ -543,37 +524,40 @@ const NewProduct = () => {
                   </div>
                   
                   {/* Settings */}
-                  <div className="space-y-4 pt-4 border-t border-slate-200">
-                    <div className="flex items-center justify-between">
+                  <div className="space-y-4 pt-6 border-t-2 border-black/10">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-black/10">
                       <div>
-                        <p className="font-medium text-sm">Available for purchase</p>
-                        <p className="text-xs text-slate-500">Show this product in your store</p>
+                        <p className="font-bold text-sm text-black">Available for purchase</p>
+                        <p className="text-xs text-gray-500">Show this product in your store</p>
                       </div>
                       <Switch
                         checked={isAvailable}
                         onCheckedChange={setIsAvailable}
+                        className="data-[state=checked]:bg-black"
                       />
                     </div>
                     
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-black/10">
                       <div>
-                        <p className="font-medium text-sm">Allow chat</p>
-                        <p className="text-xs text-slate-500">Let buyers message you about this product</p>
+                        <p className="font-bold text-sm text-black">Allow chat</p>
+                        <p className="text-xs text-gray-500">Let buyers message you</p>
                       </div>
                       <Switch
                         checked={chatAllowed}
                         onCheckedChange={setChatAllowed}
+                        className="data-[state=checked]:bg-black"
                       />
                     </div>
                     
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-black/10">
                       <div>
-                        <p className="font-medium text-sm">Require email</p>
-                        <p className="text-xs text-slate-500">Ask buyers for their email before purchase</p>
+                        <p className="font-bold text-sm text-black">Require email</p>
+                        <p className="text-xs text-gray-500">Ask buyers for their email</p>
                       </div>
                       <Switch
                         checked={requiresEmail}
                         onCheckedChange={setRequiresEmail}
+                        className="data-[state=checked]:bg-black"
                       />
                     </div>
                   </div>

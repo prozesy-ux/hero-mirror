@@ -25,13 +25,8 @@ import {
   MoreVertical,
   Eye,
   EyeOff,
-  DollarSign,
-  ShoppingBag,
-  TrendingUp,
-  Link2,
   X,
-  Copy,
-  Images
+  Copy
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -143,7 +138,6 @@ const SellerProducts = () => {
 
     setSubmitting(true);
     try {
-      // Set primary image from images array if not manually set
       const primaryImage = formData.images.length > 0 ? formData.images[0] : formData.icon_url.trim() || null;
       
       const productData = {
@@ -226,7 +220,6 @@ const SellerProducts = () => {
 
   const copyProductLink = async (productId: string, productName: string, productSlug?: string | null) => {
     const storeSlug = (profile as any)?.store_slug || profile?.id;
-    // Use SEO-friendly URL for sharing - prefer database slug, fallback to legacy format
     const slug = productSlug || `${productName.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)}-${productId.slice(0, 8)}`;
     const url = getProductShareUrl(storeSlug, slug);
     try {
@@ -281,205 +274,189 @@ const SellerProducts = () => {
 
   if (loading) {
     return (
-      <div className="p-6 lg:p-8 bg-slate-50 min-h-screen seller-dashboard">
+      <div className="p-6 lg:p-8 bg-white min-h-screen">
         <div className="flex justify-between items-center mb-6">
           <Skeleton className="h-8 w-32" />
           <Skeleton className="h-10 w-32" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-64 rounded-xl" />)}
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-80 rounded-lg" />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 lg:p-8 bg-slate-50 min-h-screen seller-dashboard">
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
-              <Package className="w-5 h-5 text-violet-600" />
-            </div>
-            <div>
-              <p className="seller-label text-slate-500">TOTAL</p>
-              <p className="seller-stat-number text-xl text-slate-900">{totalProducts}</p>
-            </div>
-          </div>
+    <div className="p-6 lg:p-8 bg-white min-h-screen">
+      {/* Stats Row - B&W */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="bg-white border-2 border-black/10 rounded-lg p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">PRODUCTS</p>
+          <p className="text-3xl font-black text-black">{totalProducts}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <Eye className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="seller-label text-slate-500">LIVE</p>
-              <p className="seller-stat-number text-xl text-slate-900">{liveProducts}</p>
-            </div>
-          </div>
+        <div className="bg-white border-2 border-black/10 rounded-lg p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">LIVE</p>
+          <p className="text-3xl font-black text-black">{liveProducts}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="seller-label text-slate-500">REVENUE</p>
-              <p className="seller-stat-number text-xl text-slate-900">{formatAmountOnly(totalRevenue)}</p>
-            </div>
-          </div>
+        <div className="bg-white border-2 border-black/10 rounded-lg p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">REVENUE</p>
+          <p className="text-3xl font-black text-black">{formatAmountOnly(totalRevenue)}</p>
         </div>
-      </div>
-
-      {/* Panda Banner - Full Width Image */}
-      <div className="mb-6">
-        <img 
-          src={productsIllustration} 
-          alt="Product Sales Guide" 
-          className="w-full h-auto rounded-2xl"
-        />
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-6">
+      <div className="flex items-center justify-between gap-4 mb-8">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Search products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white border-slate-200 rounded-xl"
+            className="pl-11 bg-white border-2 border-black/10 rounded-lg h-12 focus:border-black transition-colors"
           />
         </div>
         <Button 
           onClick={() => navigate('/seller/products/new')} 
-          className="bg-pink-500 text-white hover:bg-pink-600 rounded-xl"
+          className="bg-black text-white hover:bg-black/90 rounded-lg h-12 px-6 font-semibold"
         >
           <Plus className="h-4 w-4 mr-2" />
-          New product
+          New Product
         </Button>
       </div>
 
-      {/* Products Grid */}
+      {/* Products Grid - 4 columns */}
       {filteredProducts.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 p-8 md:p-12 text-center shadow-sm">
-          {/* Panda Illustration */}
-          <div className="max-w-lg mx-auto mb-6">
+        <div className="bg-white border-2 border-black/10 rounded-lg p-12 text-center">
+          <div className="max-w-sm mx-auto mb-6">
             <img 
               src={productsIllustration} 
               alt="Get started with products" 
-              className="w-full h-auto rounded-xl"
+              className="w-full h-auto"
             />
           </div>
           
-          {/* Gumroad-style Copy */}
-          <h3 className="text-xl md:text-2xl font-bold text-black mb-2">
-            "We've never met an idea we didn't like."
+          <h3 className="text-2xl font-black text-black mb-2">
+            Start selling today
           </h3>
-          <p className="text-slate-600 max-w-md mx-auto mb-6">
-            Your first product doesn't need to be perfect. Just get it out there and see what happens!
+          <p className="text-gray-500 max-w-md mx-auto mb-8">
+            Your first product doesn't need to be perfect. Just get it out there.
           </p>
           
-          {/* CTA Button - Pink like Gumroad */}
           <Button 
             onClick={() => navigate('/seller/products/new')} 
-            className="bg-pink-500 hover:bg-pink-600 text-white rounded-xl px-8 py-3 text-base font-semibold"
+            className="bg-black hover:bg-black/90 text-white rounded-lg px-8 py-3 h-12 text-base font-semibold"
           >
-            New product
+            New Product
           </Button>
-          
-          {/* Help Link */}
-          <p className="text-sm text-slate-500 mt-4">
-            or <button className="text-pink-500 hover:underline">learn more about products</button>
-          </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
           {filteredProducts.map((product) => {
             const categoryNames = getCategoryNames(product);
-            const productTags = (product as any).tags || [];
             
             return (
               <div 
                 key={product.id} 
-                className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-xl hover:border-slate-200 hover:-translate-y-1 transition-all duration-300 group"
+                className="bg-white border-2 border-black/10 rounded-lg overflow-hidden group hover:border-black/20 transition-colors"
               >
-                {/* Image */}
-                <div className="aspect-[16/10] bg-slate-50 relative overflow-hidden">
+                {/* Image - Square */}
+                <div className="aspect-square bg-gray-50 relative overflow-hidden">
                   {product.icon_url ? (
                     <img 
                       src={product.icon_url} 
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:opacity-95 transition-opacity"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-50">
-                      <Package className="h-12 w-12 text-slate-300" />
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      <Package className="h-16 w-16 text-gray-300" />
                     </div>
                   )}
                   
-                  {/* Gradient Overlay on Hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  {/* Status Badges */}
-                  <div className="absolute top-3 left-3 flex gap-2">
-                    <Badge 
-                      variant="outline" 
-                      className={`text-[10px] font-semibold backdrop-blur-sm ${
-                        product.is_approved 
-                          ? 'bg-emerald-500/90 text-white border-emerald-500' 
-                          : 'bg-amber-500/90 text-white border-amber-500'
-                      }`}
-                    >
-                      {product.is_approved ? 'Approved' : 'Pending'}
-                    </Badge>
-                    {!product.is_available && (
-                      <Badge variant="outline" className="text-[10px] bg-slate-500/90 text-white border-slate-500 backdrop-blur-sm font-semibold">
-                        Hidden
-                      </Badge>
-                    )}
+                  {/* Status Badge - Minimal */}
+                  <div className="absolute top-3 left-3">
+                    <span className={`inline-flex items-center px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded ${
+                      product.is_approved 
+                        ? 'bg-black text-white' 
+                        : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {product.is_approved ? 'Live' : 'Pending'}
+                    </span>
                   </div>
                   
-                  {/* Sold Count Badge */}
-                  {product.sold_count > 0 && (
-                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-semibold text-slate-700">
-                      <TrendingUp className="w-3 h-3 text-emerald-600" />
-                      {product.sold_count}
+                  {/* Hidden indicator */}
+                  {!product.is_available && (
+                    <div className="absolute top-3 right-3">
+                      <span className="inline-flex items-center px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded bg-gray-200 text-gray-600">
+                        Hidden
+                      </span>
                     </div>
                   )}
+                </div>
+
+                {/* Content */}
+                <div className="p-4">
+                  {/* Title */}
+                  <h3 className="font-bold text-black text-sm line-clamp-2 mb-2 min-h-[2.5rem]">
+                    {product.name}
+                  </h3>
                   
-                  {/* Quick Actions on Hover */}
-                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => handleOpenDialog(product.id)}
-                        className="h-8 px-3 bg-white/90 hover:bg-white backdrop-blur-sm rounded-lg shadow-sm"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => copyProductLink(product.id, product.name, (product as any).slug)}
-                        className="h-8 px-3 bg-white/90 hover:bg-white backdrop-blur-sm rounded-lg shadow-sm"
-                      >
-                        <Copy className="w-3.5 h-3.5 mr-1" />
-                        Link
-                      </Button>
-                    </div>
+                  {/* Price */}
+                  <p className="text-2xl font-black text-black mb-3">
+                    {formatAmountOnly(Number(product.price))}
+                  </p>
+                  
+                  {/* Category & Type */}
+                  <p className="text-xs text-gray-500 mb-3">
+                    {(product as any).product_type?.replace(/_/g, ' ') || 'Digital'} 
+                    {categoryNames.length > 0 && ` • ${categoryNames[0]}`}
+                  </p>
+                  
+                  {/* Divider */}
+                  <div className="border-t border-black/10 my-3" />
+                  
+                  {/* Stats */}
+                  <p className="text-xs text-gray-400 mb-4">
+                    {product.sold_count || 0} sold • {product.stock} in stock
+                  </p>
+                  
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleOpenDialog(product.id)}
+                      className="flex-1 h-9 border-2 border-black text-black hover:bg-black hover:text-white rounded-lg font-medium transition-colors"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 mr-1.5" />
+                      Edit
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyProductLink(product.id, product.name, (product as any).slug)}
+                      className="h-9 w-9 p-0 border-2 border-black/20 hover:border-black hover:bg-black hover:text-white rounded-lg transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+                    
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/90 backdrop-blur-sm hover:bg-white shadow-sm rounded-lg">
-                          <MoreVertical className="h-4 w-4 text-slate-600" />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-9 w-9 p-0 border-2 border-black/20 hover:border-black hover:bg-black hover:text-white rounded-lg transition-colors"
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-xl">
-                        <DropdownMenuItem onClick={() => toggleAvailability(product.id, product.is_available)} className="rounded-lg">
+                      <DropdownMenuContent align="end" className="rounded-lg border-2 border-black/10">
+                        <DropdownMenuItem 
+                          onClick={() => toggleAvailability(product.id, product.is_available)} 
+                          className="rounded-md"
+                        >
                           {product.is_available ? (
                             <>
                               <EyeOff className="h-4 w-4 mr-2" />
@@ -495,7 +472,7 @@ const SellerProducts = () => {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           onClick={() => handleDeleteClick(product.id)}
-                          className="text-red-600 focus:text-red-600 rounded-lg"
+                          className="text-red-600 focus:text-red-600 rounded-md"
                           disabled={deleting}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
@@ -505,84 +482,48 @@ const SellerProducts = () => {
                     </DropdownMenu>
                   </div>
                 </div>
-
-                {/* Content */}
-                <div className="p-4">
-                  <h3 className="seller-heading text-slate-900 truncate mb-1">{product.name}</h3>
-                  <p className="seller-stat-number text-xl text-emerald-600 mb-2">{formatAmountOnly(Number(product.price))}</p>
-                  
-                  {/* Categories & Tags */}
-                  <div className="flex flex-wrap gap-1 mb-3 min-h-[24px]">
-                    {categoryNames.slice(0, 2).map((name: string) => (
-                      <Badge key={name} variant="outline" className="text-[10px] px-1.5 py-0 bg-violet-50 text-violet-700 border-violet-200">
-                        {name}
-                      </Badge>
-                    ))}
-                    {productTags.slice(0, 2).map((tag: string) => (
-                      <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-50 text-slate-600 border-slate-200">
-                        {tag}
-                      </Badge>
-                    ))}
-                    {(categoryNames.length + productTags.length) > 4 && (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200">
-                        +{categoryNames.length + productTags.length - 4}
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <p className="text-sm text-slate-500 line-clamp-2 mb-3 min-h-[2.5rem]">
-                    {product.description || 'No description'}
-                  </p>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400 flex items-center gap-1">
-                      <ShoppingBag className="w-3 h-3" />
-                      Stock: {product.stock}
-                    </span>
-                    <span className="text-slate-400">
-                      Sold: {product.sold_count}
-                    </span>
-                  </div>
-                </div>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Add/Edit Dialog */}
+      {/* Edit Dialog - B&W Style */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto border-2 border-black/10 rounded-lg">
           <DialogHeader>
-            <DialogTitle className="seller-heading">{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+            <DialogTitle className="text-xl font-black text-black">
+              {editingProduct ? 'Edit Product' : 'Add New Product'}
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="name">Product Name *</Label>
+              <Label htmlFor="name" className="text-sm font-semibold text-black">Product Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., ChatGPT Plus Account"
-                className="border-slate-200 rounded-xl"
+                className="border-2 border-black/10 rounded-lg h-11 focus:border-black transition-colors"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description" className="text-sm font-semibold text-black">Description</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Describe your product..."
                 rows={3}
-                className="border-slate-200 rounded-xl"
+                className="border-2 border-black/10 rounded-lg focus:border-black transition-colors"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price (USD) *</Label>
+                <Label htmlFor="price" className="text-sm font-semibold text-black">Price (USD) *</Label>
                 <Input
                   id="price"
                   type="number"
@@ -591,12 +532,12 @@ const SellerProducts = () => {
                   value={formData.price}
                   onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
                   placeholder="0.00"
-                  className="border-slate-200 rounded-xl"
+                  className="border-2 border-black/10 rounded-lg h-11 focus:border-black transition-colors"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="stock">Stock</Label>
+                <Label htmlFor="stock" className="text-sm font-semibold text-black">Stock</Label>
                 <Input
                   id="stock"
                   type="number"
@@ -604,25 +545,26 @@ const SellerProducts = () => {
                   value={formData.stock}
                   onChange={(e) => setFormData(prev => ({ ...prev, stock: e.target.value }))}
                   placeholder="0"
-                  className="border-slate-200 rounded-xl"
+                  className="border-2 border-black/10 rounded-lg h-11 focus:border-black transition-colors"
                 />
               </div>
             </div>
 
-            {/* Multi-Category Selection */}
+            {/* Category Selection */}
             <div className="space-y-2">
-              <Label>Categories</Label>
-              <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <Label className="text-sm font-semibold text-black">Categories</Label>
+              <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 rounded-lg border-2 border-black/10">
                 {categories.map((cat) => (
                   <div key={cat.id} className="flex items-center space-x-2">
                     <Checkbox
                       id={`cat-${cat.id}`}
                       checked={formData.category_ids.includes(cat.id)}
                       onCheckedChange={() => toggleCategory(cat.id)}
+                      className="border-2 border-black/20 data-[state=checked]:bg-black data-[state=checked]:border-black"
                     />
                     <label
                       htmlFor={`cat-${cat.id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      className="text-sm font-medium leading-none cursor-pointer"
                     >
                       {cat.name}
                     </label>
@@ -633,17 +575,17 @@ const SellerProducts = () => {
 
             {/* Tags Input */}
             <div className="space-y-2">
-              <Label>Tags</Label>
-              <div className="flex flex-wrap gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 min-h-[80px]">
+              <Label className="text-sm font-semibold text-black">Tags</Label>
+              <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border-2 border-black/10 min-h-[80px]">
                 {formData.tags.map(tag => (
                   <Badge 
                     key={tag} 
                     variant="secondary" 
-                    className="px-2 py-1 bg-emerald-100 text-emerald-700 border-emerald-200 cursor-pointer hover:bg-emerald-200"
+                    className="px-2.5 py-1 bg-black text-white border-0 cursor-pointer hover:bg-gray-800"
                     onClick={() => handleRemoveTag(tag)}
                   >
                     {tag}
-                    <X className="w-3 h-3 ml-1" />
+                    <X className="w-3 h-3 ml-1.5" />
                   </Badge>
                 ))}
                 <Input
@@ -654,15 +596,14 @@ const SellerProducts = () => {
                   className="flex-1 min-w-[100px] border-0 bg-transparent p-0 h-7 focus-visible:ring-0 text-sm"
                 />
               </div>
-              {/* Popular Tags */}
-              <div className="flex flex-wrap gap-1 mt-2">
-                <span className="text-xs text-slate-500 mr-1">Popular:</span>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                <span className="text-xs text-gray-500 mr-1">Popular:</span>
                 {popularTags.filter(t => !formData.tags.includes(t)).slice(0, 5).map(tag => (
                   <button
                     key={tag}
                     type="button"
                     onClick={() => handleAddTag(tag)}
-                    className="text-xs px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-colors"
+                    className="text-xs px-2.5 py-1 border border-black/20 hover:border-black hover:bg-black hover:text-white text-gray-600 rounded-full transition-colors"
                   >
                     + {tag}
                   </button>
@@ -677,48 +618,55 @@ const SellerProducts = () => {
               maxImages={5}
             />
 
-            <div className="flex items-center justify-between py-2">
-              <Label htmlFor="is_available" className="font-normal text-slate-600">Available for sale</Label>
-              <Switch
-                id="is_available"
-                checked={formData.is_available}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_available: checked }))}
-              />
-            </div>
-
-            <div className="flex items-center justify-between py-2">
-              <Label htmlFor="chat_allowed" className="font-normal text-slate-600">Allow buyers to chat</Label>
-              <Switch
-                id="chat_allowed"
-                checked={formData.chat_allowed}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, chat_allowed: checked }))}
-              />
-            </div>
-
-            <div className="flex items-center justify-between py-2 border-t border-slate-100 pt-4">
-              <div className="flex flex-col">
-                <Label htmlFor="requires_email" className="font-medium text-slate-700">Email Required</Label>
-                <span className="text-xs text-slate-500 mt-0.5">
-                  Buyer must provide email for shared access
-                </span>
+            <div className="space-y-3 pt-4 border-t-2 border-black/10">
+              <div className="flex items-center justify-between py-2">
+                <Label htmlFor="is_available" className="font-medium text-black">Available for sale</Label>
+                <Switch
+                  id="is_available"
+                  checked={formData.is_available}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_available: checked }))}
+                  className="data-[state=checked]:bg-black"
+                />
               </div>
-              <Switch
-                id="requires_email"
-                checked={formData.requires_email}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requires_email: checked }))}
-              />
+
+              <div className="flex items-center justify-between py-2">
+                <Label htmlFor="chat_allowed" className="font-medium text-black">Allow buyers to chat</Label>
+                <Switch
+                  id="chat_allowed"
+                  checked={formData.chat_allowed}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, chat_allowed: checked }))}
+                  className="data-[state=checked]:bg-black"
+                />
+              </div>
+
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <Label htmlFor="requires_email" className="font-medium text-black">Email Required</Label>
+                  <p className="text-xs text-gray-500 mt-0.5">Buyer must provide email</p>
+                </div>
+                <Switch
+                  id="requires_email"
+                  checked={formData.requires_email}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requires_email: checked }))}
+                  className="data-[state=checked]:bg-black"
+                />
+              </div>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsDialogOpen(false)}
-                className="flex-1 border-slate-200 rounded-xl"
+                className="flex-1 border-2 border-black/20 hover:border-black hover:bg-black hover:text-white rounded-lg h-11 transition-colors"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting} className="flex-1 bg-emerald-500 hover:bg-emerald-600 rounded-xl">
+              <Button 
+                type="submit" 
+                disabled={submitting} 
+                className="flex-1 bg-black hover:bg-black/90 text-white rounded-lg h-11 font-semibold"
+              >
                 {submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : editingProduct ? 'Update' : 'Add Product'}
