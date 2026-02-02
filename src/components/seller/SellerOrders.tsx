@@ -492,7 +492,7 @@ const SellerOrders = () => {
             const buyerEmailInput = (order as any).buyer_email_input;
 
             return (
-              <div key={order.id} className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+              <div key={order.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 {/* Order Header - Dokani Style */}
                 <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div className="flex items-center gap-2 text-sm text-slate-600 flex-wrap">
