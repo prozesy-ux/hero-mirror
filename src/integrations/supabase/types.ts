@@ -907,6 +907,42 @@ export type Database = {
           },
         ]
       }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          id: string
+          seller_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          id?: string
+          seller_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          id?: string
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follows_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guest_pending_orders: {
         Row: {
           admin_notes: string | null
@@ -1328,6 +1364,48 @@ export type Database = {
           {
             foreignKeyName: "product_reviews_product_id_fkey"
             columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_upsells: {
+        Row: {
+          created_at: string
+          discount_percent: number | null
+          id: string
+          position: number | null
+          product_id: string
+          upsell_product_id: string
+        }
+        Insert: {
+          created_at?: string
+          discount_percent?: number | null
+          id?: string
+          position?: number | null
+          product_id: string
+          upsell_product_id: string
+        }
+        Update: {
+          created_at?: string
+          discount_percent?: number | null
+          id?: string
+          position?: number | null
+          product_id?: string
+          upsell_product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_upsells_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_upsells_upsell_product_id_fkey"
+            columns: ["upsell_product_id"]
             isOneToOne: false
             referencedRelation: "seller_products"
             referencedColumns: ["id"]
@@ -2246,10 +2324,15 @@ export type Database = {
           images: string[] | null
           is_approved: boolean | null
           is_available: boolean | null
+          is_preorder: boolean | null
+          is_pwyw: boolean | null
+          min_price: number | null
           name: string
+          preorder_message: string | null
           price: number
           product_metadata: Json | null
           product_type: string | null
+          release_date: string | null
           requires_email: boolean | null
           seller_id: string
           slug: string | null
@@ -2270,10 +2353,15 @@ export type Database = {
           images?: string[] | null
           is_approved?: boolean | null
           is_available?: boolean | null
+          is_preorder?: boolean | null
+          is_pwyw?: boolean | null
+          min_price?: number | null
           name: string
+          preorder_message?: string | null
           price?: number
           product_metadata?: Json | null
           product_type?: string | null
+          release_date?: string | null
           requires_email?: boolean | null
           seller_id: string
           slug?: string | null
@@ -2294,10 +2382,15 @@ export type Database = {
           images?: string[] | null
           is_approved?: boolean | null
           is_available?: boolean | null
+          is_preorder?: boolean | null
+          is_pwyw?: boolean | null
+          min_price?: number | null
           name?: string
+          preorder_message?: string | null
           price?: number
           product_metadata?: Json | null
           product_type?: string | null
+          release_date?: string | null
           requires_email?: boolean | null
           seller_id?: string
           slug?: string | null
@@ -2341,6 +2434,7 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           deletion_reason: string | null
+          follower_count: number | null
           id: string
           is_active: boolean | null
           is_deleted: boolean | null
@@ -2374,6 +2468,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           deletion_reason?: string | null
+          follower_count?: number | null
           id?: string
           is_active?: boolean | null
           is_deleted?: boolean | null
@@ -2407,6 +2502,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           deletion_reason?: string | null
+          follower_count?: number | null
           id?: string
           is_active?: boolean | null
           is_deleted?: boolean | null

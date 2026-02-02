@@ -47,6 +47,15 @@ const NewProduct = () => {
   const [images, setImages] = useState<string[]>([]);
   const [isAvailable, setIsAvailable] = useState(true);
   const [chatAllowed, setChatAllowed] = useState(true);
+  
+  // PWYW (Pay What You Want) state
+  const [isPwyw, setIsPwyw] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  
+  // Pre-order state
+  const [isPreorder, setIsPreorder] = useState(false);
+  const [releaseDate, setReleaseDate] = useState('');
+  const [preorderMessage, setPreorderMessage] = useState('');
   const [requiresEmail, setRequiresEmail] = useState(false);
 
   useEffect(() => {
@@ -133,6 +142,13 @@ const NewProduct = () => {
         requires_email: requiresEmail,
         product_type: productType,
         product_metadata: {},
+        // PWYW fields
+        is_pwyw: isPwyw,
+        min_price: isPwyw ? (parseFloat(minPrice) || 0) : 0,
+        // Pre-order fields
+        is_preorder: isPreorder,
+        release_date: isPreorder && releaseDate ? new Date(releaseDate).toISOString() : null,
+        preorder_message: isPreorder ? preorderMessage.trim() || null : null,
       };
 
       const { error } = await supabase
@@ -540,7 +556,96 @@ const NewProduct = () => {
                   
                   <div className="border-t border-black/10" />
                   
-                  {/* SECTION 6: Settings */}
+                  {/* SECTION 6: Pricing Options */}
+                  <div>
+                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-3 block">
+                      Pricing Options
+                    </Label>
+                    <div className="space-y-3">
+                      {/* Pay What You Want */}
+                      <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-md border border-pink-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="font-medium text-sm text-gray-900">Pay What You Want</p>
+                            <p className="text-xs text-gray-500">Let buyers choose their price</p>
+                          </div>
+                          <Switch
+                            checked={isPwyw}
+                            onCheckedChange={setIsPwyw}
+                            className="data-[state=checked]:bg-pink-500"
+                          />
+                        </div>
+                        {isPwyw && (
+                          <div className="pt-2 border-t border-pink-200">
+                            <Label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                              Minimum Price
+                            </Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                              <Input
+                                type="number"
+                                value={minPrice}
+                                onChange={(e) => setMinPrice(e.target.value)}
+                                placeholder="0"
+                                min="0"
+                                step="0.01"
+                                className="h-10 pl-8 rounded-md border-pink-200 focus:border-pink-400 focus:ring-pink-200"
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1.5">
+                              Buyers can pay ${minPrice || '0'} or more
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Pre-order */}
+                      <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-md border border-blue-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="font-medium text-sm text-gray-900">Pre-order</p>
+                            <p className="text-xs text-gray-500">Accept orders before product is ready</p>
+                          </div>
+                          <Switch
+                            checked={isPreorder}
+                            onCheckedChange={setIsPreorder}
+                            className="data-[state=checked]:bg-blue-500"
+                          />
+                        </div>
+                        {isPreorder && (
+                          <div className="pt-2 border-t border-blue-200 space-y-3">
+                            <div>
+                              <Label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                                Release Date
+                              </Label>
+                              <Input
+                                type="date"
+                                value={releaseDate}
+                                onChange={(e) => setReleaseDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                className="h-10 rounded-md border-blue-200 focus:border-blue-400 focus:ring-blue-200"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                                Pre-order Message (optional)
+                              </Label>
+                              <Input
+                                value={preorderMessage}
+                                onChange={(e) => setPreorderMessage(e.target.value)}
+                                placeholder="e.g., Expected delivery: March 2026"
+                                className="h-10 rounded-md border-blue-200 focus:border-blue-400 focus:ring-blue-200"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="border-t border-black/10" />
+                  
+                  {/* SECTION 7: Settings */}
                   <div>
                     <Label className="text-sm font-bold text-black uppercase tracking-wide mb-3 block">
                       Settings
