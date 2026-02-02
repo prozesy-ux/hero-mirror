@@ -172,11 +172,8 @@ const SellerTopBar = () => {
         isCollapsed ? 'left-[72px]' : 'left-[240px]'
       }`}
     >
-      {/* Left Section - Logo & Search */}
+      {/* Left Section - Search */}
       <div className="flex items-center gap-6">
-        <Link to="/seller" className="flex items-center gap-2">
-          <img src={theLogo} alt="Logo" className="h-8 w-auto" />
-        </Link>
 
         <div className={`relative transition-all duration-200 ${searchFocused ? 'w-80' : 'w-64'}`}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
