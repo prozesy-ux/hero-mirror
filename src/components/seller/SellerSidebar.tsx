@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Package, ShoppingCart, BarChart2, Warehouse, Users, Mail, FileText, Activity, MessageSquare, CreditCard, Settings, HelpCircle, Zap, TrendingUp, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Package, ShoppingCart, BarChart2, Warehouse, Users, FileText, Activity, MessageSquare, CreditCard, Settings, HelpCircle, Zap, TrendingUp, ChevronDown, Percent, Tag } from 'lucide-react';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import { useSellerContext } from '@/contexts/SellerContext';
 import uptozaLogo from '@/assets/uptoza-logo.png';
@@ -10,6 +11,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 // Gumroad-style navigation labels
 const navItems = [
@@ -17,11 +23,18 @@ const navItems = [
   { to: '/seller/products', icon: Package, label: 'Products' },
   { to: '/seller/orders', icon: ShoppingCart, label: 'Sales' },
   { to: '/seller/customers', icon: Users, label: 'Customers' },
-  { to: '/seller/flash-sales', icon: Zap, label: 'Flash Sales' },
   { to: '/seller/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/seller/product-analytics', icon: TrendingUp, label: 'Insights' },
   { to: '/seller/wallet', icon: CreditCard, label: 'Payouts' },
-  { to: '/seller/marketing', icon: Mail, label: 'Emails' },
+];
+
+// Discount sub-menu items
+const discountItems = [
+  { to: '/seller/coupons', icon: Tag, label: 'Coupons' },
+  { to: '/seller/flash-sales', icon: Zap, label: 'Flash Sales' },
+];
+
+const navItemsAfterDiscount = [
   { to: '/seller/inventory', icon: Warehouse, label: 'Inventory' },
   { to: '/seller/reports', icon: FileText, label: 'Reports' },
   { to: '/seller/performance', icon: Activity, label: 'Performance' },
@@ -37,10 +50,55 @@ const SellerSidebar = () => {
   const { isCollapsed, toggleSidebar } = useSellerSidebarContext();
   const { profile } = useSellerContext();
   const location = useLocation();
+  const [discountOpen, setDiscountOpen] = useState(true);
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact) return location.pathname === path;
     return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  const isDiscountActive = discountItems.some(item => isActive(item.to));
+
+  const renderNavItem = (item: { to: string; icon: any; label: string; exact?: boolean }) => {
+    const active = isActive(item.to, item.exact);
+    const Icon = item.icon;
+
+    if (isCollapsed) {
+      return (
+        <Tooltip key={item.to} delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Link
+              to={item.to}
+              className={`flex items-center justify-center w-full py-3 transition-colors ${
+                active 
+                  ? 'text-[#FF90E8]' 
+                  : 'text-white/80 hover:text-white'
+              }`}
+            >
+              <Icon size={20} strokeWidth={2} />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="bg-white text-black border-0">
+            <p>{item.label}</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Link
+        key={item.to}
+        to={item.to}
+        className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${
+          active 
+            ? 'text-[#FF90E8]' 
+            : 'text-white/80 hover:text-white'
+        }`}
+      >
+        <Icon size={20} strokeWidth={2} />
+        <span>{item.label}</span>
+      </Link>
+    );
   };
 
   return (
@@ -63,47 +121,74 @@ const SellerSidebar = () => {
 
         {/* Main Navigation */}
         <nav className="flex-1 py-4 overflow-y-auto">
-          {navItems.map((item) => {
-            const active = isActive(item.to, item.exact);
-            const Icon = item.icon;
+          {/* First section of nav items */}
+          {navItems.map(renderNavItem)}
 
-            if (isCollapsed) {
-              return (
-                <Tooltip key={item.to} delayDuration={0}>
-                  <TooltipTrigger asChild>
+          {/* Discount Section with Sub-menu */}
+          {isCollapsed ? (
+            // Collapsed: Show icons for discount sub-items
+            <>
+              {discountItems.map((item) => {
+                const active = isActive(item.to);
+                const Icon = item.icon;
+                return (
+                  <Tooltip key={item.to} delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={item.to}
+                        className={`flex items-center justify-center w-full py-3 transition-colors ${
+                          active 
+                            ? 'text-[#FF90E8]' 
+                            : 'text-white/80 hover:text-white'
+                        }`}
+                      >
+                        <Icon size={20} strokeWidth={2} />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="bg-white text-black border-0">
+                      <p>{item.label}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </>
+          ) : (
+            // Expanded: Show collapsible Discount section
+            <Collapsible open={discountOpen} onOpenChange={setDiscountOpen}>
+              <CollapsibleTrigger className={`flex items-center justify-between w-full px-5 py-3 text-[15px] font-medium transition-colors ${
+                isDiscountActive ? 'text-[#FF90E8]' : 'text-white/80 hover:text-white'
+              }`}>
+                <div className="flex items-center gap-3.5">
+                  <Percent size={20} strokeWidth={2} />
+                  <span>Discount</span>
+                </div>
+                <ChevronDown size={16} className={`transition-transform duration-200 ${discountOpen ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                {discountItems.map((item) => {
+                  const active = isActive(item.to);
+                  const Icon = item.icon;
+                  return (
                     <Link
+                      key={item.to}
                       to={item.to}
-                      className={`flex items-center justify-center w-full py-3 transition-colors ${
+                      className={`flex items-center gap-3.5 pl-12 pr-5 py-2.5 text-[14px] font-medium transition-colors ${
                         active 
                           ? 'text-[#FF90E8]' 
-                          : 'text-white/80 hover:text-white'
+                          : 'text-white/60 hover:text-white'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={2} />
+                      <Icon size={18} strokeWidth={2} />
+                      <span>{item.label}</span>
                     </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-white text-black border-0">
-                    <p>{item.label}</p>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            }
+                  );
+                })}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
 
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${
-                  active 
-                    ? 'text-[#FF90E8]' 
-                    : 'text-white/80 hover:text-white'
-                }`}
-              >
-                <Icon size={20} strokeWidth={2} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+          {/* Rest of nav items */}
+          {navItemsAfterDiscount.map(renderNavItem)}
         </nav>
 
         {/* Bottom Section */}
