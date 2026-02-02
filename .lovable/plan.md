@@ -1,181 +1,148 @@
 
-# Seller Dashboard Card Redesign & Navigation Restructuring
+# Seller Dashboard Card Design Consistency Update
 
 ## Summary
 
-This plan covers two major changes:
-1. **Card Design Update**: Replace heavy neo-brutalist card styling (`border-2 border-black shadow-neobrutalism`) with a cleaner, modern design (`border border-slate-200 rounded-xl hover:shadow-md`) across all Seller Dashboard sections
-2. **Navigation Restructuring**: Rename "Emails" to "Discount" and reorganize with Flash Sales and a new Coupons section underneath
+This plan standardizes all Seller Dashboard sections to use the **clean, modern analytics card design** already established in `SellerProductAnalytics.tsx`. This means replacing the remaining neo-brutalist styling (thick black borders, offset shadows) with the lighter aesthetic (subtle slate borders, soft shadows, rounded-xl corners).
 
 ---
 
-## Part 1: Navigation Changes
+## Reference Design Pattern (from SellerProductAnalytics.tsx)
 
-### Sidebar Updates (`SellerSidebar.tsx`)
-
-**Current Structure:**
-```
-Home
-Products
-Sales
-Customers
-Flash Sales  ← Move under Discount
-Analytics
-Insights
-Payouts
-Emails       ← Rename to "Discount"
-Inventory
-Reports
-Performance
-Chat
-```
-
-**New Structure:**
-```
-Home
-Products
-Sales
-Customers
-Analytics
-Insights
-Payouts
-Discount     ← Renamed (was Emails), with sub-items
-├── Coupons  ← NEW
-└── Flash Sales ← Moved here
-Inventory
-Reports
-Performance
-Chat
-```
-
-**Files to Modify:**
-
-| File | Changes |
-|------|---------|
-| `src/components/seller/SellerSidebar.tsx` | Rename "Emails" → "Discount", add Coupons route, move Flash Sales under Discount group |
-| `src/components/seller/SellerMobileNavigation.tsx` | Same navigation structure changes |
-| `src/pages/Seller.tsx` | Add route for `/seller/coupons` component |
-
-**New Navigation Item:**
-```tsx
-{ to: '/seller/coupons', icon: Tag, label: 'Coupons' }
-```
-
-**Discount section with collapsible sub-menu:**
-- Parent: "Discount" with Percent icon
-- Children: "Coupons", "Flash Sales"
+The target card style uses:
+- `bg-white rounded-xl p-4 border border-slate-200` for container cards
+- Colored stat cards: `bg-{color}-50 rounded-xl p-4 border border-{color}-100`
+- Tables: `bg-white rounded-xl border border-slate-200 overflow-hidden`
+- Charts: `bg-white rounded-xl p-4 border border-slate-200`
+- No offset shadows, smooth hover transitions
 
 ---
 
-## Part 2: Card Design Changes
+## Files Requiring Updates
 
-### Current Style (Neo-Brutalist)
-```css
-border-2 border-black
-shadow-neobrutalism
-hover:shadow-none hover:translate-x-1 hover:translate-y-1
-rounded-lg
-```
+### 1. SellerAnalytics.tsx (Primary Update)
 
-### New Style (Modern Clean)
-```css
-border border-slate-200
-rounded-xl
-shadow-sm
-hover:shadow-md hover:border-slate-300
-transition-all duration-200
-```
+This file still uses heavy neo-brutalism. Update all instances:
 
----
+| Line | Current Pattern | New Pattern |
+|------|----------------|-------------|
+| 238-241 | Skeleton `border-2 border-black` | `border border-slate-200 rounded-xl` |
+| 257 | StatCard `border-2 border-black shadow-neobrutalism hover:translate` | `border border-slate-200 shadow-sm hover:shadow-md rounded-xl` |
+| 283 | Icon container `border-2 border-black` | `border border-slate-200` |
+| 302 | QuickStatItem same neo-brutalist pattern | Same clean update |
+| 322 | Date picker button `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
+| 354-357 | Select trigger/content `border-2 border-black` | `border border-slate-200` |
+| 368 | Export button `border-2 border-black shadow-neobrutalism` | `border border-slate-200` (or keep solid black but clean) |
+| 404 | Sales chart container `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
+| 489 | Rating card `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
+| 510, 561, 586 | Chart cards `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
 
-### Files & Card Updates
-
-#### 1. `SellerDashboard.tsx`
+### 2. SellerMarketing.tsx (Skeleton States)
 
 | Line | Current | New |
 |------|---------|-----|
-| 217-221 | Skeleton `border-2 border-black` | `border border-slate-200` |
-| 337-348 | Quick action cards `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm hover:shadow-md` |
-| 366-378 | Messages card `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm hover:shadow-md` |
-| 381-395 | Export button `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm hover:shadow-md` |
-| 401-416 | Completion Rate card `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
-| 419-443 | Order Status card `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
-| 446-458 | Monthly Comparison `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
-| 462-513 | Revenue Chart `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
-| 518-545 | Top Products `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
-| 548-596 | Recent Orders `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
+| 189 | `border-2 border-black` | `border border-slate-200 rounded-xl` |
+| 192 | `border-2 border-black` | `border border-slate-200 rounded-xl` |
 
-#### 2. `SellerOrders.tsx`
+### 3. SellerCustomers.tsx (Skeleton States)
 
-| Line | Element | Change |
-|------|---------|--------|
-| 310-312 | Loading skeleton | `border border-slate-200` |
-| 346-361 | Stats cards | Already clean (`border border-slate-100`) ✓ |
-| 495 | Order cards | Already clean (`border border-slate-100`) ✓ |
+| Line | Current | New |
+|------|---------|-----|
+| 164 | `border-2 border-black` | `border border-slate-200 rounded-xl` |
+| 167 | `border-2 border-black` | `border border-slate-200 rounded-xl` |
 
-#### 3. `SellerFlashSales.tsx`
+### 4. SellerSettings.tsx (Skeleton States)
 
-| Line | Element | Change |
-|------|---------|--------|
-| 268 | Empty state | Already clean (`border-dashed border-slate-200`) ✓ |
-| 280-286 | Flash sale cards | Already clean (`rounded-xl border`) ✓ |
+| Line | Current | New |
+|------|---------|-----|
+| 368 | `border-2 border-black` | `border border-slate-200 rounded-xl` |
+| 369 | `border-2 border-black` | `border border-slate-200 rounded-xl` |
 
-#### 4. `SellerMarketing.tsx` (will become Coupons content)
+### 5. SellerInventory.tsx (Skeleton States)
 
-- Rename to `SellerCoupons.tsx` or keep and add redirect
-- Ensure card styles use clean design
+| Line | Current | New |
+|------|---------|-----|
+| 116 | `border-2 border-black` | `border border-slate-200 rounded-xl` |
+| 119 | `border-2 border-black` | `border border-slate-200 rounded-xl` |
 
----
+### 6. SellerChat.tsx (Skeleton States)
 
-## Part 3: New Coupons Section
-
-Create `src/components/seller/SellerCoupons.tsx`:
-- Copy coupon functionality from existing `SellerMarketing.tsx`
-- This file already contains discount codes/coupons management
-- Rename component to `SellerCoupons`
-
-The existing SellerMarketing.tsx content is already coupon-focused, so we'll:
-1. Rename the route from `/seller/marketing` to `/seller/coupons`
-2. Update the component name for clarity
+| Line | Current | New |
+|------|---------|-----|
+| 238 | `border-2 border-black` | `border border-slate-200 rounded-xl` |
+| 240 | `border-2 border-black` | `border border-slate-200 rounded-xl` |
+| 241 | `border-2 border-black` | `border border-slate-200 rounded-xl` |
 
 ---
 
-## Visual Summary
+## Visual Transformation
 
-### Before (Neo-Brutalist Cards)
+**Before (Neo-Brutalist):**
 ```
-┌────────────────────────────────────────┐
-│ ██ Heavy black border                  │
-│    Offset shadow                       │
-│    Shift-on-hover effect               │
-└────────────────────────────────────────┘
+Card styling:
+- border-2 border-black
+- shadow-neobrutalism (4px offset)
+- hover:shadow-none hover:translate-x-1 hover:translate-y-1
+- rounded-lg
 ```
 
-### After (Modern Clean Cards)
+**After (Modern Analytics):**
 ```
-┌────────────────────────────────────────┐
-│ ░░ Subtle slate border                 │
-│    Soft shadow on hover                │
-│    Smooth transitions                  │
-└────────────────────────────────────────┘
+Card styling:
+- border border-slate-200
+- shadow-sm (or no shadow)
+- hover:shadow-md hover:border-slate-300 (optional)
+- rounded-xl
+- transition-all duration-200
 ```
 
 ---
 
-## Files to Create/Modify
+## Component Style Reference
 
-| File | Action |
-|------|--------|
-| `src/components/seller/SellerSidebar.tsx` | Update navItems, add Discount group with Coupons + Flash Sales |
-| `src/components/seller/SellerMobileNavigation.tsx` | Mirror sidebar navigation changes |
-| `src/components/seller/SellerDashboard.tsx` | Replace all `border-2 border-black shadow-neobrutalism` styles |
-| `src/pages/Seller.tsx` | Add `/seller/coupons` route |
+**Stat Cards (Colored):**
+```tsx
+<div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+  <div className="flex items-center gap-2 mb-2">
+    <Icon className="h-4 w-4 text-blue-500" />
+    <span className="text-xs text-blue-600 font-medium">Label</span>
+  </div>
+  <p className="text-2xl font-bold text-blue-700">Value</p>
+</div>
+```
+
+**Chart/Table Containers:**
+```tsx
+<div className="bg-white rounded-xl p-4 border border-slate-200">
+  <h3 className="font-semibold text-slate-900 mb-4">Title</h3>
+  {/* Content */}
+</div>
+```
+
+**Icon Containers:**
+```tsx
+<div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
+  <Icon className="h-6 w-6 text-orange-500" />
+</div>
+```
 
 ---
 
-## Implementation Order
+## Files to Modify
 
-1. **Navigation First**: Update sidebar and mobile nav with new structure
-2. **Routes**: Add coupons route pointing to existing SellerMarketing (or renamed component)
-3. **Card Styles**: Update SellerDashboard.tsx card designs
-4. **Verification**: Ensure all sections load correctly with new styles
+| File | Changes |
+|------|---------|
+| `src/components/seller/SellerAnalytics.tsx` | Full card style overhaul (StatCard, QuickStatItem, all chart containers, buttons, selects) |
+| `src/components/seller/SellerMarketing.tsx` | Skeleton loading states |
+| `src/components/seller/SellerCustomers.tsx` | Skeleton loading states |
+| `src/components/seller/SellerSettings.tsx` | Skeleton loading states |
+| `src/components/seller/SellerInventory.tsx` | Skeleton loading states |
+| `src/components/seller/SellerChat.tsx` | Skeleton loading states |
+
+---
+
+## Implementation Summary
+
+1. Update `SellerAnalytics.tsx` with complete style overhaul (most changes)
+2. Update all other seller components to fix skeleton loading states
+3. Result: Consistent modern card design across all Seller Dashboard sections
