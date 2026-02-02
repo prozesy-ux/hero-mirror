@@ -766,7 +766,7 @@ const SellerWallet = () => {
   return (
     <div className="max-w-4xl mx-auto animate-fade-up px-3 sm:px-0">
       {/* Tab Navigation */}
-      <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-gray-200 shadow-md">
+      <div className="bg-white rounded-lg p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border-2 border-black shadow-neobrutalism">
         <div className="flex gap-1 overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => {
             const TabIcon = tab.icon;
@@ -798,7 +798,7 @@ const SellerWallet = () => {
       {activeTab === 'wallet' && (
         <div className="space-y-4 sm:space-y-6">
           {/* Wallet Card */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100">
+          <div className="bg-white rounded-lg p-4 sm:p-6 border-2 border-black shadow-neobrutalism">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600">
@@ -823,7 +823,7 @@ const SellerWallet = () => {
           </div>
 
           {savedAccounts.length === 0 && (
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+            <div className="p-4 bg-amber-50 border-2 border-black rounded-lg flex items-center gap-3">
               <AlertCircle className="text-amber-600 flex-shrink-0" size={20} />
               <div>
                 <p className="text-amber-700 font-medium">Add Payment Account First</p>
@@ -841,7 +841,7 @@ const SellerWallet = () => {
           )}
 
           {/* Available Withdrawal Methods - from Admin Config */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
+          <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <h3 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
                 <CreditCard className="text-violet-500" size={20} />
@@ -875,7 +875,7 @@ const SellerWallet = () => {
                   return (
                     <div 
                       key={method.id}
-                      className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
+                      className="p-4 rounded-lg bg-white border-2 border-black shadow-neobrutalism text-center hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
                     >
                       {logoUrl ? (
                         <img 
@@ -917,7 +917,7 @@ const SellerWallet = () => {
               return (
                 <div 
                   key={account.id}
-                  className="p-4 rounded-xl border border-gray-200 bg-white hover:shadow-md transition-all relative"
+                  className="p-4 rounded-lg border-2 border-black shadow-neobrutalism bg-white hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all relative"
                 >
                   {account.is_primary && (
                     <Badge className="absolute -top-2 -right-2 bg-violet-600 text-white text-[10px]">
@@ -968,7 +968,7 @@ const SellerWallet = () => {
             {/* Add Account Card */}
             <button 
               onClick={() => setShowAddAccountModal(true)}
-              className="p-6 rounded-xl border-2 border-dashed border-violet-200 hover:border-violet-400 hover:bg-violet-50 transition-all flex flex-col items-center justify-center gap-2 min-h-[140px]"
+              className="p-6 rounded-lg border-2 border-dashed border-black hover:bg-violet-50 transition-all flex flex-col items-center justify-center gap-2 min-h-[140px]"
             >
               <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center">
                 <Plus className="text-violet-600" size={24} />
@@ -981,7 +981,7 @@ const SellerWallet = () => {
 
       {/* Withdrawals Tab */}
       {activeTab === 'withdrawals' && (
-        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md">
+        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
           <h3 className="text-lg font-bold text-gray-900 tracking-tight mb-4 flex items-center gap-2">
             <History className="text-gray-500" size={20} />
             Withdrawal History
@@ -997,7 +997,7 @@ const SellerWallet = () => {
                 return (
                   <div
                     key={withdrawal.id}
-                    className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
+                    className="p-4 bg-white rounded-lg border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">

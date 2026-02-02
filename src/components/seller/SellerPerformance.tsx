@@ -125,13 +125,13 @@ const SellerPerformance = () => {
   if (loading || contextLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-40 rounded-lg border-2 border-black" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl" />
+            <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />
           ))}
         </div>
-        <Skeleton className="h-80 rounded-2xl" />
+        <Skeleton className="h-80 rounded-lg border-2 border-black" />
       </div>
     );
   }
@@ -183,7 +183,7 @@ const SellerPerformance = () => {
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Trust Score */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
               <Award className="w-6 h-6 text-emerald-600" />
@@ -198,7 +198,7 @@ const SellerPerformance = () => {
         </div>
 
         {/* Fulfillment Rate */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
               <Target className="w-6 h-6 text-blue-600" />
@@ -211,7 +211,7 @@ const SellerPerformance = () => {
         </div>
 
         {/* Avg Response Time */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
               <Clock className="w-6 h-6 text-violet-600" />
@@ -224,7 +224,7 @@ const SellerPerformance = () => {
         </div>
 
         {/* Avg Delivery */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
               <Truck className="w-6 h-6 text-orange-600" />
@@ -240,7 +240,7 @@ const SellerPerformance = () => {
       {/* Detailed Metrics */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Order Distribution */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
           <h3 className="font-semibold text-slate-800 mb-4">Order Status Distribution</h3>
           {metrics.statusDistribution.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
@@ -270,7 +270,7 @@ const SellerPerformance = () => {
         </div>
 
         {/* Performance Checklist */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
           <h3 className="font-semibold text-slate-800 mb-4">Performance Checklist</h3>
           <div className="space-y-3">
             {[
@@ -299,7 +299,7 @@ const SellerPerformance = () => {
       </div>
 
       {/* Stats Summary */}
-      <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+      <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
           <div>
             <p className="text-sm text-slate-500 mb-1">Total Orders</p>

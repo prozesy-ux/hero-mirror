@@ -106,7 +106,7 @@ const SellerProductAnalytics = () => {
 
   if (products.length === 0) {
     return (
-      <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+      <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-black">
         <BarChart3 className="h-12 w-12 text-slate-300 mx-auto mb-3" />
         <p className="text-slate-500">No products to analyze</p>
         <p className="text-xs text-slate-400">Add products to see analytics</p>
@@ -126,40 +126,48 @@ const SellerProductAnalytics = () => {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
           <div className="flex items-center gap-2 mb-2">
-            <Eye className="h-4 w-4 text-blue-500" />
-            <span className="text-xs text-blue-600 font-medium">Total Views</span>
+            <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Eye className="h-4 w-4 text-blue-500" />
+            </div>
+            <span className="text-xs text-slate-600 font-medium">Total Views</span>
           </div>
-          <p className="text-2xl font-bold text-blue-700">{totals.views.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-slate-900">{totals.views.toLocaleString()}</p>
         </div>
-        <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
           <div className="flex items-center gap-2 mb-2">
-            <MousePointer className="h-4 w-4 text-purple-500" />
-            <span className="text-xs text-purple-600 font-medium">Total Clicks</span>
+            <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
+              <MousePointer className="h-4 w-4 text-purple-500" />
+            </div>
+            <span className="text-xs text-slate-600 font-medium">Total Clicks</span>
           </div>
-          <p className="text-2xl font-bold text-purple-700">{totals.clicks.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-slate-900">{totals.clicks.toLocaleString()}</p>
         </div>
-        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
           <div className="flex items-center gap-2 mb-2">
-            <ShoppingCart className="h-4 w-4 text-emerald-500" />
-            <span className="text-xs text-emerald-600 font-medium">Total Purchases</span>
+            <div className="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+              <ShoppingCart className="h-4 w-4 text-emerald-500" />
+            </div>
+            <span className="text-xs text-slate-600 font-medium">Total Purchases</span>
           </div>
-          <p className="text-2xl font-bold text-emerald-700">{totals.purchases.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-slate-900">{totals.purchases.toLocaleString()}</p>
         </div>
-        <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="h-4 w-4 text-amber-500" />
-            <span className="text-xs text-amber-600 font-medium">Conversion Rate</span>
+            <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-amber-500" />
+            </div>
+            <span className="text-xs text-slate-600 font-medium">Conversion Rate</span>
           </div>
-          <p className="text-2xl font-bold text-amber-700">
+          <p className="text-2xl font-bold text-slate-900">
             {totals.views > 0 ? ((totals.purchases / totals.views) * 100).toFixed(1) : '0'}%
           </p>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="bg-white rounded-xl p-4 border border-slate-200">
+      <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-slate-900">Views & Purchases (Last 7 Days)</h3>
           <select
@@ -218,7 +226,7 @@ const SellerProductAnalytics = () => {
       </div>
 
       {/* Product Performance Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism overflow-hidden">
         <div className="p-4 border-b border-slate-100">
           <h3 className="font-semibold text-slate-900">Product Performance</h3>
         </div>
