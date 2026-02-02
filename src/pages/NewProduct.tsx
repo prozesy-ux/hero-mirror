@@ -371,7 +371,7 @@ const NewProduct = () => {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g., Ultimate Design Bundle"
-                        className="rounded-lg border-2 border-black/10 h-12 text-base focus:border-black focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors bg-white"
+                        className="w-full px-4 py-3 bg-white border-2 border-[#e673b3] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#e673b3] focus:ring-opacity-20 transition-all text-gray-900"
                       />
                     </div>
                     
@@ -416,42 +416,48 @@ const NewProduct = () => {
                     <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
                       Description
                     </Label>
-                    <div className="border-2 border-black/10 rounded-lg overflow-hidden focus-within:border-black transition-colors">
+                    <div className="border-2 border-black rounded-lg overflow-hidden bg-white shadow-sm">
                       {/* Black toolbar */}
-                      <div className="bg-black px-3 py-2 flex items-center gap-1 flex-wrap">
+                      <div className="bg-black text-white px-4 py-2 flex items-center flex-wrap gap-2 sm:gap-4 select-none">
                         {/* Format dropdown */}
-                        <button type="button" className="px-3 py-1.5 text-white text-sm rounded hover:bg-white/10 flex items-center gap-1">
-                          Text <ChevronDown className="w-3 h-3" />
-                        </button>
-                        <div className="w-px h-5 bg-gray-700 mx-1" />
+                        <div className="flex items-center gap-1 cursor-pointer hover:bg-gray-800 px-2 py-1 rounded transition-colors">
+                          <span className="text-sm font-medium">Text</span>
+                          <ChevronDown size={14} />
+                        </div>
+                        <div className="h-4 w-[1px] bg-gray-600 mx-1" />
                         {/* Formatting buttons */}
-                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Bold className="w-4 h-4" /></button>
-                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Italic className="w-4 h-4" /></button>
-                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Underline className="w-4 h-4" /></button>
-                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Strikethrough className="w-4 h-4" /></button>
-                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Quote className="w-4 h-4" /></button>
-                        <div className="w-px h-5 bg-gray-700 mx-1" />
-                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Link2 className="w-4 h-4" /></button>
-                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Image className="w-4 h-4" /></button>
-                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Video className="w-4 h-4" /></button>
-                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Music className="w-4 h-4" /></button>
-                        <div className="w-px h-5 bg-gray-700 mx-1" />
-                        <button type="button" className="px-3 py-1.5 text-white text-sm rounded hover:bg-white/10 flex items-center gap-1">
-                          Insert <ChevronDown className="w-3 h-3" />
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Bold size={18} /></button>
+                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Italic size={18} /></button>
+                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Underline size={18} /></button>
+                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Strikethrough size={18} /></button>
+                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Quote size={18} /></button>
+                        </div>
+                        <div className="h-4 w-[1px] bg-gray-600 mx-1" />
+                        <div className="flex items-center gap-3">
+                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Link2 size={18} /></button>
+                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Image size={18} /></button>
+                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Video size={18} /></button>
+                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Music size={18} /></button>
+                        </div>
+                        <div className="h-4 w-[1px] bg-gray-600 mx-1" />
+                        {/* Insert dropdown */}
+                        <div className="flex items-center gap-1 cursor-pointer hover:bg-gray-800 px-2 py-1 rounded transition-colors">
+                          <span className="text-sm font-medium">Insert</span>
+                          <ChevronDown size={14} />
+                        </div>
                         {/* Undo/Redo on right */}
-                        <div className="ml-auto flex items-center gap-1">
-                          <button type="button" className="p-2 text-white/60 rounded hover:bg-white/10"><Undo className="w-4 h-4" /></button>
-                          <button type="button" className="p-2 text-white/60 rounded hover:bg-white/10"><Redo className="w-4 h-4" /></button>
+                        <div className="ml-auto flex items-center gap-3">
+                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors text-white/60"><Undo size={18} /></button>
+                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors text-white/60"><Redo size={18} /></button>
                         </div>
                       </div>
                       {/* Text area */}
-                      <Textarea
+                      <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Describe your product..."
-                        rows={6}
-                        className="border-0 rounded-none text-base resize-none focus:ring-0 focus:outline-none bg-white"
+                        className="w-full h-48 p-4 focus:outline-none resize-none text-gray-800 placeholder-gray-400"
                       />
                     </div>
                   </div>
