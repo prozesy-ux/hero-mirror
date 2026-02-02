@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import gumroadBanner from '@/assets/gumroad-banner.png';
+import gumroadComic from '@/assets/gumroad-comic.png';
 import { useNavigate } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -15,6 +16,8 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 import { 
   Plus, 
   Package, 
@@ -26,7 +29,12 @@ import {
   Eye,
   EyeOff,
   X,
-  Copy
+  Copy,
+  Calendar,
+  Filter,
+  TrendingUp,
+  ShoppingBag,
+  DollarSign
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -84,6 +92,12 @@ const SellerProducts = () => {
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [tagInput, setTagInput] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  
+  // Filter states
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('newest');
   
   // Delete confirmation state
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
@@ -258,19 +272,57 @@ const SellerProducts = () => {
     }));
   };
 
-  const filteredProducts = products.filter(p => 
+  // Apply filters
+  let filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Status filter
+  if (statusFilter !== 'all') {
+    if (statusFilter === 'live') {
+      filteredProducts = filteredProducts.filter(p => p.is_approved && p.is_available);
+    } else if (statusFilter === 'pending') {
+      filteredProducts = filteredProducts.filter(p => !p.is_approved);
+    } else if (statusFilter === 'hidden') {
+      filteredProducts = filteredProducts.filter(p => !p.is_available);
+    }
+  }
+
+  // Category filter
+  if (categoryFilter !== 'all') {
+    filteredProducts = filteredProducts.filter(p => {
+      const ids = (p as any).category_ids || (p.category_id ? [p.category_id] : []);
+      return ids.includes(categoryFilter);
+    });
+  }
+
+  // Sort
+  if (sortBy === 'newest') {
+    filteredProducts = [...filteredProducts].sort((a, b) => 
+      new Date((b as any).created_at || 0).getTime() - new Date((a as any).created_at || 0).getTime()
+    );
+  } else if (sortBy === 'price-high') {
+    filteredProducts = [...filteredProducts].sort((a, b) => b.price - a.price);
+  } else if (sortBy === 'price-low') {
+    filteredProducts = [...filteredProducts].sort((a, b) => a.price - b.price);
+  } else if (sortBy === 'best-selling') {
+    filteredProducts = [...filteredProducts].sort((a, b) => (b.sold_count || 0) - (a.sold_count || 0));
+  }
 
   // Calculate stats
   const totalProducts = products.length;
   const liveProducts = products.filter(p => p.is_approved && p.is_available).length;
+  const pendingProducts = products.filter(p => !p.is_approved).length;
   const totalRevenue = products.reduce((sum, p) => sum + (p.sold_count || 0) * p.price, 0);
+  const totalSales = products.reduce((sum, p) => sum + (p.sold_count || 0), 0);
 
   const getCategoryNames = (product: any) => {
     const ids = product.category_ids || (product.category_id ? [product.category_id] : []);
     return ids.map((id: string) => categories.find(c => c.id === id)?.name).filter(Boolean);
   };
+
+  // Get selected product for preview
+  const previewProduct = selectedProduct ? products.find(p => p.id === selectedProduct) : null;
 
   if (loading) {
     return (
@@ -287,232 +339,409 @@ const SellerProducts = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Banner - Clean with subtle glow */}
-      <div className="mb-4">
-        <img 
-          src={gumroadBanner} 
-          alt="Start creating and selling" 
-          className="w-full h-auto object-contain rounded-xl shadow-lg"
-        />
-      </div>
-
-      {/* Stats Row - Neo-Brutalist */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-white border-2 border-black rounded-lg p-5 shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">PRODUCTS</p>
-          <p className="text-3xl font-black text-black">{totalProducts}</p>
-        </div>
-        <div className="bg-white border-2 border-black rounded-lg p-5 shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">LIVE</p>
-          <p className="text-3xl font-black text-black">{liveProducts}</p>
-        </div>
-        <div className="bg-white border-2 border-black rounded-lg p-5 shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">REVENUE</p>
-          <p className="text-3xl font-black text-black">{formatAmountOnly(totalRevenue)}</p>
-        </div>
-      </div>
-
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-8">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-11 bg-white border-2 border-black rounded-lg h-12 shadow-neobrutalism focus:shadow-none focus:translate-x-0.5 focus:translate-y-0.5 transition-all"
+    <div className="grid lg:grid-cols-10 gap-6">
+      {/* Main Products Section - 70% */}
+      <div className="lg:col-span-7 space-y-6">
+        {/* Banner - Clean with subtle glow */}
+        <div className="mb-4">
+          <img 
+            src={gumroadBanner} 
+            alt="Start creating and selling" 
+            className="w-full h-auto object-contain rounded-xl shadow-lg"
           />
         </div>
+
+        {/* Stats Row - Modern Soft Design */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                <Package className="w-4 h-4 text-blue-600" />
+              </div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">PRODUCTS</p>
+            </div>
+            <p className="text-3xl font-black text-black">
+              <AnimatedCounter value={totalProducts} />
+            </p>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                <Eye className="w-4 h-4 text-green-600" />
+              </div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">LIVE</p>
+            </div>
+            <p className="text-3xl font-black text-black">
+              <AnimatedCounter value={liveProducts} />
+            </p>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-pink-600" />
+              </div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">REVENUE</p>
+            </div>
+            <p className="text-3xl font-black text-black">{formatAmountOnly(totalRevenue)}</p>
+          </div>
+        </div>
+
+        {/* Search & Filters Bar */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 mb-6">
+          {/* Search - Wider */}
+          <div className="relative flex-1 max-w-xl w-full">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-11 bg-white border border-gray-300 rounded-xl h-12 shadow-sm focus:border-pink-500 focus:ring-pink-500 transition-all"
+            />
+          </div>
+          
+          {/* Filters */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[130px] h-10 border border-gray-200 rounded-lg bg-white shadow-sm">
+                <Filter className="w-3.5 h-3.5 mr-2 text-gray-400" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="live">Live</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="hidden">Hidden</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[140px] h-10 border border-gray-200 rounded-lg bg-white shadow-sm">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(cat => (
+                  <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[140px] h-10 border border-gray-200 rounded-lg bg-white shadow-sm">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="best-selling">Best Selling</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button 
+              onClick={() => navigate('/seller/products/new')} 
+              className="bg-black text-white hover:bg-black/90 rounded-lg h-10 px-5 font-semibold shadow-sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Product
+            </Button>
+          </div>
+        </div>
+
+        {/* Products Grid - 3 columns for main section */}
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-12 bg-white border border-gray-200 rounded-xl">
+            <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No products yet. Create your first product!</p>
+          </div>
+        ) : (
+          <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {filteredProducts.map((product) => {
+              const categoryNames = getCategoryNames(product);
+              const isSelected = selectedProduct === product.id;
+              
+              return (
+                <div 
+                  key={product.id} 
+                  onClick={() => setSelectedProduct(product.id)}
+                  className={`bg-white border rounded-xl overflow-hidden group shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer ${
+                    isSelected ? 'border-pink-500 ring-2 ring-pink-100' : 'border-gray-200'
+                  }`}
+                >
+                  {/* Image - Square */}
+                  <div className="aspect-square bg-gray-50 relative overflow-hidden">
+                    {product.icon_url ? (
+                      <img 
+                        src={product.icon_url} 
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <Package className="h-16 w-16 text-gray-300" />
+                      </div>
+                    )}
+                    
+                    {/* Status Badge - Modern */}
+                    <div className="absolute top-3 left-3">
+                      <span className={`inline-flex items-center px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full ${
+                        product.is_approved 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {product.is_approved ? 'Live' : 'Pending'}
+                      </span>
+                    </div>
+                    
+                    {/* Hidden indicator */}
+                    {!product.is_available && (
+                      <div className="absolute top-3 right-3">
+                        <span className="inline-flex items-center px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full bg-gray-100 text-gray-600">
+                          Hidden
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4">
+                    {/* Title */}
+                    <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 min-h-[2.5rem]">
+                      {product.name}
+                    </h3>
+                    
+                    {/* Price */}
+                    <p className="text-xl font-bold text-black mb-2">
+                      {formatAmountOnly(Number(product.price))}
+                    </p>
+                    
+                    {/* Category & Type */}
+                    <p className="text-xs text-gray-500 mb-3">
+                      {(product as any).product_type?.replace(/_/g, ' ') || 'Digital'} 
+                      {categoryNames.length > 0 && ` • ${categoryNames[0]}`}
+                    </p>
+                    
+                    {/* Divider */}
+                    <div className="border-t border-gray-100 my-3" />
+                    
+                    {/* Stats */}
+                    <p className="text-xs text-gray-400 mb-4">
+                      {product.sold_count || 0} sold • {product.stock} in stock
+                    </p>
+                    
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDialog(product.id);
+                        }}
+                        className="flex-1 h-9 border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 rounded-lg font-medium transition-colors"
+                      >
+                        <Edit2 className="w-3.5 h-3.5 mr-1.5" />
+                        Edit
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyProductLink(product.id, product.name, (product as any).slug);
+                        }}
+                        className="h-9 w-9 p-0 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 rounded-lg transition-colors"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </Button>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={(e) => e.stopPropagation()}
+                            className="h-9 w-9 p-0 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 rounded-lg transition-colors"
+                          >
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-lg border border-gray-200">
+                          <DropdownMenuItem 
+                            onClick={() => toggleAvailability(product.id, product.is_available)} 
+                            className="rounded-md"
+                          >
+                            {product.is_available ? (
+                              <>
+                                <EyeOff className="h-4 w-4 mr-2" />
+                                Hide
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="h-4 w-4 mr-2" />
+                                Show
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteClick(product.id)}
+                            className="text-red-600 focus:text-red-600 rounded-md"
+                            disabled={deleting}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Preview Section - 30% */}
+      <div className="lg:col-span-3 space-y-6">
+        {/* Comic Illustration */}
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+          <img 
+            src={gumroadComic} 
+            alt="Gumroad Creator" 
+            className="w-full h-auto object-contain"
+          />
+        </div>
+
+        {/* Quick Stats Summary */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-pink-500" />
+            Quick Stats
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Total Products</span>
+              <span className="font-bold text-black">{totalProducts}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Live Products</span>
+              <span className="font-bold text-green-600">{liveProducts}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Pending Approval</span>
+              <span className="font-bold text-amber-600">{pendingProducts}</span>
+            </div>
+            <div className="border-t border-gray-100 pt-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500">Total Sales</span>
+                <span className="font-bold text-black">{totalSales}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Total Revenue</span>
+              <span className="font-bold text-pink-600">{formatAmountOnly(totalRevenue)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Selected Product Preview */}
+        {previewProduct ? (
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-pink-500" />
+              Selected Product
+            </h3>
+            <div className="space-y-4">
+              {previewProduct.icon_url && (
+                <img 
+                  src={previewProduct.icon_url} 
+                  alt={previewProduct.name}
+                  className="w-full aspect-video object-cover rounded-lg"
+                />
+              )}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-1">{previewProduct.name}</h4>
+                <p className="text-2xl font-bold text-black">{formatAmountOnly(previewProduct.price)}</p>
+              </div>
+              <div className="text-sm text-gray-500">
+                <p>{previewProduct.sold_count || 0} sold • {previewProduct.stock} in stock</p>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  className="flex-1 bg-black text-white hover:bg-black/90 rounded-lg"
+                  onClick={() => handleOpenDialog(previewProduct.id)}
+                >
+                  <Edit2 className="w-3.5 h-3.5 mr-1.5" />
+                  Edit
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="border border-gray-200 rounded-lg"
+                  onClick={() => copyProductLink(previewProduct.id, previewProduct.name, (previewProduct as any).slug)}
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl p-6 text-center">
+            <ShoppingBag className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm text-gray-500">Click a product to preview</p>
+          </div>
+        )}
+
+        {/* Quick Action */}
         <Button 
           onClick={() => navigate('/seller/products/new')} 
-          className="bg-black text-white hover:bg-black/90 rounded-lg h-12 px-6 font-semibold"
+          className="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:from-pink-600 hover:to-rose-600 rounded-xl h-12 font-semibold shadow-sm"
         >
           <Plus className="h-4 w-4 mr-2" />
-          New Product
+          Create New Product
         </Button>
       </div>
 
-      {/* Products Grid - 4 columns */}
-      {filteredProducts.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No products yet. Create your first product!</p>
-        </div>
-      ) : (
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-          {filteredProducts.map((product) => {
-            const categoryNames = getCategoryNames(product);
-            
-            return (
-              <div 
-                key={product.id} 
-                className="bg-white border-2 border-black rounded-lg overflow-hidden group shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
-              >
-                {/* Image - Square */}
-                <div className="aspect-square bg-gray-50 relative overflow-hidden">
-                  {product.icon_url ? (
-                    <img 
-                      src={product.icon_url} 
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:opacity-95 transition-opacity"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      <Package className="h-16 w-16 text-gray-300" />
-                    </div>
-                  )}
-                  
-                  {/* Status Badge - Minimal */}
-                  <div className="absolute top-3 left-3">
-                    <span className={`inline-flex items-center px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded ${
-                      product.is_approved 
-                        ? 'bg-black text-white' 
-                        : 'bg-gray-200 text-gray-600'
-                    }`}>
-                      {product.is_approved ? 'Live' : 'Pending'}
-                    </span>
-                  </div>
-                  
-                  {/* Hidden indicator */}
-                  {!product.is_available && (
-                    <div className="absolute top-3 right-3">
-                      <span className="inline-flex items-center px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded bg-gray-200 text-gray-600">
-                        Hidden
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="p-4">
-                  {/* Title */}
-                  <h3 className="font-bold text-black text-sm line-clamp-2 mb-2 min-h-[2.5rem]">
-                    {product.name}
-                  </h3>
-                  
-                  {/* Price */}
-                  <p className="text-2xl font-black text-black mb-3">
-                    {formatAmountOnly(Number(product.price))}
-                  </p>
-                  
-                  {/* Category & Type */}
-                  <p className="text-xs text-gray-500 mb-3">
-                    {(product as any).product_type?.replace(/_/g, ' ') || 'Digital'} 
-                    {categoryNames.length > 0 && ` • ${categoryNames[0]}`}
-                  </p>
-                  
-                  {/* Divider */}
-                  <div className="border-t border-black/10 my-3" />
-                  
-                  {/* Stats */}
-                  <p className="text-xs text-gray-400 mb-4">
-                    {product.sold_count || 0} sold • {product.stock} in stock
-                  </p>
-                  
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleOpenDialog(product.id)}
-                      className="flex-1 h-9 border-2 border-black text-black hover:bg-black hover:text-white rounded-lg font-medium transition-colors"
-                    >
-                      <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-                      Edit
-                    </Button>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyProductLink(product.id, product.name, (product as any).slug)}
-                      className="h-9 w-9 p-0 border-2 border-black/20 hover:border-black hover:bg-black hover:text-white rounded-lg transition-colors"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </Button>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-9 w-9 p-0 border-2 border-black/20 hover:border-black hover:bg-black hover:text-white rounded-lg transition-colors"
-                        >
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-lg border-2 border-black/10">
-                        <DropdownMenuItem 
-                          onClick={() => toggleAvailability(product.id, product.is_available)} 
-                          className="rounded-md"
-                        >
-                          {product.is_available ? (
-                            <>
-                              <EyeOff className="h-4 w-4 mr-2" />
-                              Hide
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Show
-                            </>
-                          )}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => handleDeleteClick(product.id)}
-                          className="text-red-600 focus:text-red-600 rounded-md"
-                          disabled={deleting}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Edit Dialog - B&W Style */}
+      {/* Edit Dialog - Modern Style */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto border-2 border-black/10 rounded-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto border border-gray-200 rounded-xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black text-black">
+            <DialogTitle className="text-xl font-bold text-gray-900">
               {editingProduct ? 'Edit Product' : 'Add New Product'}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-semibold text-black">Product Name *</Label>
+              <Label htmlFor="name" className="text-sm font-semibold text-gray-900">Product Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., ChatGPT Plus Account"
-                className="border-2 border-black/10 rounded-lg h-11 focus:border-black transition-colors"
+                className="border border-gray-200 rounded-lg h-11 focus:border-pink-500 transition-colors"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm font-semibold text-black">Description</Label>
+              <Label htmlFor="description" className="text-sm font-semibold text-gray-900">Description</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Describe your product..."
                 rows={3}
-                className="border-2 border-black/10 rounded-lg focus:border-black transition-colors"
+                className="border border-gray-200 rounded-lg focus:border-pink-500 transition-colors"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price" className="text-sm font-semibold text-black">Price (USD) *</Label>
+                <Label htmlFor="price" className="text-sm font-semibold text-gray-900">Price (USD) *</Label>
                 <Input
                   id="price"
                   type="number"
@@ -521,12 +750,12 @@ const SellerProducts = () => {
                   value={formData.price}
                   onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
                   placeholder="0.00"
-                  className="border-2 border-black/10 rounded-lg h-11 focus:border-black transition-colors"
+                  className="border border-gray-200 rounded-lg h-11 focus:border-pink-500 transition-colors"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="stock" className="text-sm font-semibold text-black">Stock</Label>
+                <Label htmlFor="stock" className="text-sm font-semibold text-gray-900">Stock</Label>
                 <Input
                   id="stock"
                   type="number"
@@ -534,22 +763,22 @@ const SellerProducts = () => {
                   value={formData.stock}
                   onChange={(e) => setFormData(prev => ({ ...prev, stock: e.target.value }))}
                   placeholder="0"
-                  className="border-2 border-black/10 rounded-lg h-11 focus:border-black transition-colors"
+                  className="border border-gray-200 rounded-lg h-11 focus:border-pink-500 transition-colors"
                 />
               </div>
             </div>
 
             {/* Category Selection */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-black">Categories</Label>
-              <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 rounded-lg border-2 border-black/10">
+              <Label className="text-sm font-semibold text-gray-900">Categories</Label>
+              <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
                 {categories.map((cat) => (
                   <div key={cat.id} className="flex items-center space-x-2">
                     <Checkbox
                       id={`cat-${cat.id}`}
                       checked={formData.category_ids.includes(cat.id)}
                       onCheckedChange={() => toggleCategory(cat.id)}
-                      className="border-2 border-black/20 data-[state=checked]:bg-black data-[state=checked]:border-black"
+                      className="border border-gray-300 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
                     />
                     <label
                       htmlFor={`cat-${cat.id}`}
@@ -564,13 +793,13 @@ const SellerProducts = () => {
 
             {/* Tags Input */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-black">Tags</Label>
-              <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border-2 border-black/10 min-h-[80px]">
+              <Label className="text-sm font-semibold text-gray-900">Tags</Label>
+              <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 min-h-[80px]">
                 {formData.tags.map(tag => (
                   <Badge 
                     key={tag} 
                     variant="secondary" 
-                    className="px-2.5 py-1 bg-black text-white border-0 cursor-pointer hover:bg-gray-800"
+                    className="px-2.5 py-1 bg-pink-500 text-white border-0 cursor-pointer hover:bg-pink-600"
                     onClick={() => handleRemoveTag(tag)}
                   >
                     {tag}
@@ -592,7 +821,7 @@ const SellerProducts = () => {
                     key={tag}
                     type="button"
                     onClick={() => handleAddTag(tag)}
-                    className="text-xs px-2.5 py-1 border border-black/20 hover:border-black hover:bg-black hover:text-white text-gray-600 rounded-full transition-colors"
+                    className="text-xs px-2.5 py-1 border border-gray-200 hover:border-pink-500 hover:bg-pink-50 hover:text-pink-600 text-gray-600 rounded-full transition-colors"
                   >
                     + {tag}
                   </button>
@@ -607,37 +836,37 @@ const SellerProducts = () => {
               maxImages={5}
             />
 
-            <div className="space-y-3 pt-4 border-t-2 border-black/10">
+            <div className="space-y-3 pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between py-2">
-                <Label htmlFor="is_available" className="font-medium text-black">Available for sale</Label>
+                <Label htmlFor="is_available" className="font-medium text-gray-900">Available for sale</Label>
                 <Switch
                   id="is_available"
                   checked={formData.is_available}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_available: checked }))}
-                  className="data-[state=checked]:bg-black"
+                  className="data-[state=checked]:bg-pink-500"
                 />
               </div>
 
               <div className="flex items-center justify-between py-2">
-                <Label htmlFor="chat_allowed" className="font-medium text-black">Allow buyers to chat</Label>
+                <Label htmlFor="chat_allowed" className="font-medium text-gray-900">Allow buyers to chat</Label>
                 <Switch
                   id="chat_allowed"
                   checked={formData.chat_allowed}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, chat_allowed: checked }))}
-                  className="data-[state=checked]:bg-black"
+                  className="data-[state=checked]:bg-pink-500"
                 />
               </div>
 
               <div className="flex items-center justify-between py-2">
                 <div>
-                  <Label htmlFor="requires_email" className="font-medium text-black">Email Required</Label>
+                  <Label htmlFor="requires_email" className="font-medium text-gray-900">Email Required</Label>
                   <p className="text-xs text-gray-500 mt-0.5">Buyer must provide email</p>
                 </div>
                 <Switch
                   id="requires_email"
                   checked={formData.requires_email}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requires_email: checked }))}
-                  className="data-[state=checked]:bg-black"
+                  className="data-[state=checked]:bg-pink-500"
                 />
               </div>
             </div>
@@ -647,14 +876,14 @@ const SellerProducts = () => {
                 type="button"
                 variant="outline"
                 onClick={() => setIsDialogOpen(false)}
-                className="flex-1 border-2 border-black/20 hover:border-black hover:bg-black hover:text-white rounded-lg h-11 transition-colors"
+                className="flex-1 border border-gray-200 hover:bg-gray-50 rounded-lg h-11 transition-colors"
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={submitting} 
-                className="flex-1 bg-black hover:bg-black/90 text-white rounded-lg h-11 font-semibold"
+                className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-lg h-11 font-semibold"
               >
                 {submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
