@@ -218,7 +218,7 @@ const BuyerReports = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500">Total Spent</p>
@@ -230,7 +230,7 @@ const BuyerReports = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500">Total Orders</p>
@@ -242,7 +242,7 @@ const BuyerReports = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500">Avg Order Value</p>
@@ -254,7 +254,7 @@ const BuyerReports = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500">Completed</p>
@@ -270,7 +270,7 @@ const BuyerReports = () => {
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Monthly Spending Trend */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
           <h3 className="font-semibold text-slate-800 mb-4">Monthly Spending</h3>
           {monthlyData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
@@ -305,7 +305,7 @@ const BuyerReports = () => {
         </div>
 
         {/* Category Breakdown */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
           <h3 className="font-semibold text-slate-800 mb-4">Spending by Product</h3>
           {categoryData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
