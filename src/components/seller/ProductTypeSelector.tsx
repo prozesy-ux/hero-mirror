@@ -22,7 +22,7 @@ const ProductTypeSelector = ({
   if (compact) {
     const displayTypes = PRODUCT_TYPES.slice(0, 9);
     return (
-      <div className="grid grid-cols-3 gap-3" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <div className="grid grid-cols-3 gap-4" style={{ fontFamily: "'Inter', sans-serif" }}>
         {displayTypes.map((type) => {
           const isSelected = selectedType === type.id;
           const Icon = type.Icon;
@@ -33,17 +33,17 @@ const ProductTypeSelector = ({
               type="button"
               onClick={() => onTypeSelect(type.id)}
               className={cn(
-                "flex flex-col gap-4 p-4 rounded-md border-2 text-left transition-all bg-white h-full",
+                "flex flex-col gap-4 p-4 rounded-xl border-2 text-left transition-all bg-white h-full",
                 isSelected
-                  ? "border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                  : "border-gray-300 hover:border-black"
+                  ? "border-black"
+                  : "border-gray-200 hover:border-gray-400"
               )}
             >
               <div 
-                className="flex-shrink-0 w-10 h-10 rounded-md flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: type.bgColor }}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-6 h-6" />
               </div>
               <h3 className="font-bold text-sm text-gray-900">{type.name}</h3>
             </button>
@@ -58,7 +58,7 @@ const ProductTypeSelector = ({
       {/* Products Section */}
       <div>
         <h3 className="text-sm font-medium text-gray-900 mb-4">Products</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {productTypes.map((type) => {
             const isSelected = selectedType === type.id;
             const Icon = type.Icon;
@@ -69,17 +69,17 @@ const ProductTypeSelector = ({
               type="button"
               onClick={() => onTypeSelect(type.id)}
               className={cn(
-                "flex flex-col gap-4 p-4 rounded-md border-2 text-left transition-all bg-white h-full",
+                "flex flex-col gap-4 p-4 rounded-xl border-2 text-left transition-all bg-white h-full",
                 isSelected
-                  ? "border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                  : "border-gray-300 hover:border-black"
+                  ? "border-black"
+                  : "border-gray-200 hover:border-gray-400"
               )}
             >
               <div 
-                className="flex-shrink-0 w-10 h-10 rounded-md flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: type.bgColor }}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="font-bold text-gray-900 text-sm mb-1">
@@ -98,7 +98,7 @@ const ProductTypeSelector = ({
       {/* Services Section */}
       <div>
         <h3 className="text-sm font-medium text-gray-900 mb-4">Services</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {serviceTypes.map((type) => {
             const isSelected = selectedType === type.id;
             const Icon = type.Icon;
@@ -109,17 +109,17 @@ const ProductTypeSelector = ({
               type="button"
               onClick={() => onTypeSelect(type.id)}
               className={cn(
-                "flex flex-col gap-4 p-4 rounded-md border-2 text-left transition-all bg-white h-full",
+                "flex flex-col gap-4 p-4 rounded-xl border-2 text-left transition-all bg-white h-full",
                 isSelected
-                  ? "border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                  : "border-gray-300 hover:border-black"
+                  ? "border-black"
+                  : "border-gray-200 hover:border-gray-400"
               )}
             >
               <div 
-                className="flex-shrink-0 w-10 h-10 rounded-md flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: type.bgColor }}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="font-bold text-gray-900 text-sm mb-1">

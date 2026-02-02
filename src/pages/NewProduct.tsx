@@ -160,7 +160,7 @@ const NewProduct = () => {
     <div className="min-h-screen bg-[#f4f4f0]" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Header - Clean Gumroad style */}
       <header className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button 
               onClick={handleBack}
@@ -218,7 +218,7 @@ const NewProduct = () => {
 
       {/* Progress Bar - Clean minimal style */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 py-5">
+        <div className="max-w-6xl mx-auto px-4 py-5">
           <div className="flex items-center justify-center gap-4">
             {STEPS.map((step, index) => (
               <div key={step.id} className="flex items-center gap-4">
@@ -259,7 +259,7 @@ const NewProduct = () => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg border border-gray-200">
           {/* Step 1: Choose Type */}
           {currentStep === 1 && (
