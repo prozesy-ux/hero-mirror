@@ -307,9 +307,9 @@ const SellerOrders = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-48 mb-6 border-2 border-black" />
+        <Skeleton className="h-8 w-48 mb-6 border-2 border-black rounded-lg" />
         <div className="space-y-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-2xl border-2 border-black" />)}
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-lg border-2 border-black" />)}
         </div>
       </div>
     );
@@ -343,26 +343,26 @@ const SellerOrders = () => {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism">
           <p className="text-xs font-medium text-slate-500 uppercase">Pending</p>
           <p className="text-2xl font-bold text-amber-600 mt-1">{pendingCount}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism">
           <p className="text-xs font-medium text-slate-500 uppercase">Delivered</p>
           <p className="text-2xl font-bold text-blue-600 mt-1">{deliveredCount}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism">
           <p className="text-xs font-medium text-slate-500 uppercase">Completed</p>
           <p className="text-2xl font-bold text-emerald-600 mt-1">{completedCount}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism">
           <p className="text-xs font-medium text-slate-500 uppercase">Refunded</p>
           <p className="text-2xl font-bold text-red-600 mt-1">{refundedCount}</p>
         </div>
       </div>
 
       {/* Filters Card */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 mb-6">
+      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism p-4 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">

@@ -235,9 +235,9 @@ const SellerAnalytics = () => {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-xl border border-slate-200" />)}
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />)}
         </div>
-        <Skeleton className="h-80 rounded-xl border border-slate-200" />
+        <Skeleton className="h-80 rounded-lg border-2 border-black" />
       </div>
     );
   }
@@ -254,7 +254,7 @@ const SellerAnalytics = () => {
     change?: number;
     icon: React.ElementType;
   }) => (
-    <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer">
+    <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{title}</p>
@@ -279,7 +279,7 @@ const SellerAnalytics = () => {
             </div>
           )}
         </div>
-        <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+        <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0 border-2 border-black">
           <Icon className="h-6 w-6 text-orange-500" />
         </div>
       </div>
@@ -298,7 +298,7 @@ const SellerAnalytics = () => {
     value: React.ReactNode; 
     label: string; 
   }) => (
-    <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer">
+    <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
       <div className="flex items-center gap-3">
         <Icon className={`h-6 w-6 ${iconColor}`} />
         <div>
@@ -318,7 +318,7 @@ const SellerAnalytics = () => {
           <PopoverTrigger asChild>
             <Button 
               variant="outline" 
-              className="bg-white border border-slate-200 rounded-xl h-9 px-3 text-sm font-medium text-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+              className="bg-white border-2 border-black rounded-lg h-9 px-3 text-sm font-medium text-slate-800 shadow-neobrutalism hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
             >
               <CalendarIcon className="w-4 h-4 mr-2 text-slate-600" />
               {dateRange.from && dateRange.to ? (
@@ -350,10 +350,10 @@ const SellerAnalytics = () => {
 
         {/* Period Dropdown */}
         <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
-          <SelectTrigger className="w-[130px] bg-white border border-slate-200 rounded-xl h-9 text-sm font-medium shadow-sm hover:shadow-md hover:border-slate-300 transition-all">
+          <SelectTrigger className="w-[130px] bg-white border-2 border-black rounded-lg h-9 text-sm font-medium shadow-neobrutalism hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-white border border-slate-200 rounded-xl">
+          <SelectContent className="bg-white border-2 border-black rounded-lg">
             <SelectItem value="7d">Last 7 days</SelectItem>
             <SelectItem value="30d">Last 30 days</SelectItem>
             <SelectItem value="90d">Last 90 days</SelectItem>
@@ -364,7 +364,7 @@ const SellerAnalytics = () => {
         {/* Export Button */}
         <Button 
           onClick={handleExport}
-          className="bg-slate-900 text-white hover:bg-slate-800 rounded-xl h-9 px-4 shadow-sm hover:shadow-md transition-all"
+          className="bg-black text-white hover:bg-slate-800 rounded-lg h-9 px-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
         >
           <Download className="w-4 h-4 mr-2" />
           Export
@@ -400,7 +400,7 @@ const SellerAnalytics = () => {
       {/* Main Content Row */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Sales Details Chart - 2/3 width */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div className="lg:col-span-2 bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
           </div>
