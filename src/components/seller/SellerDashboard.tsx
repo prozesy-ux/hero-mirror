@@ -212,12 +212,12 @@ const SellerDashboard = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-xl border border-slate-200" />
+            <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />
           ))}
         </div>
-        <Skeleton className="h-80 rounded-xl border border-slate-200" />
+        <Skeleton className="h-80 rounded-lg border-2 border-black" />
       </div>
     );
   }
@@ -334,9 +334,9 @@ const SellerDashboard = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Link to="/seller/orders">
-          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer group">
+          <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center border-2 border-black">
                 <Clock className="w-5 h-5 text-amber-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -349,9 +349,9 @@ const SellerDashboard = () => {
         </Link>
 
         <Link to="/seller/flash-sales">
-          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-xl p-4 text-white border border-orange-400/50 shadow-sm hover:shadow-md transition-all cursor-pointer group">
+          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-lg p-4 text-white border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-white/20 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-lg bg-white/20 flex items-center justify-center border-2 border-black/20">
                 <Zap className="w-5 h-5" />
               </div>
               <div>
@@ -364,9 +364,9 @@ const SellerDashboard = () => {
         </Link>
 
         <Link to="/seller/chat">
-          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer group">
+          <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center border-2 border-black">
                 <MessageSquare className="w-5 h-5 text-blue-600" />
               </div>
               <div>
@@ -381,10 +381,10 @@ const SellerDashboard = () => {
         <Button 
           onClick={handleExport}
           variant="outline"
-          className="bg-white border border-slate-200 rounded-xl h-auto p-4 justify-start shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+          className="bg-white border-2 border-black rounded-lg h-auto p-4 justify-start shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
         >
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center border-2 border-black">
               <Download className="w-5 h-5 text-slate-600" />
             </div>
             <div className="text-left">
@@ -398,7 +398,7 @@ const SellerDashboard = () => {
       {/* Performance Metrics Row */}
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Completion Rate */}
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-slate-800">Completion Rate</h3>
             <Target className="w-5 h-5 text-emerald-500" />
@@ -407,7 +407,7 @@ const SellerDashboard = () => {
             <span className="text-4xl font-bold text-slate-900">{metrics.completionRate.toFixed(0)}%</span>
             <span className="text-sm text-slate-500 mb-1">of orders completed</span>
           </div>
-          <div className="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div className="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden border border-black">
             <div 
               className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-500"
               style={{ width: `${metrics.completionRate}%` }}
@@ -416,26 +416,26 @@ const SellerDashboard = () => {
         </div>
 
         {/* Order Status */}
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism">
           <h3 className="text-sm font-semibold text-slate-800 mb-4">Order Status</h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-emerald-500" />
+              <div className="w-3 h-3 rounded-full bg-emerald-500 border border-black" />
               <span className="text-xs text-slate-600">Completed</span>
               <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.completed}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-500" />
+              <div className="w-3 h-3 rounded-full bg-blue-500 border border-black" />
               <span className="text-xs text-slate-600">Delivered</span>
               <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.delivered}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-amber-500" />
+              <div className="w-3 h-3 rounded-full bg-amber-500 border border-black" />
               <span className="text-xs text-slate-600">Pending</span>
               <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.pending}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <div className="w-3 h-3 rounded-full bg-red-500 border border-black" />
               <span className="text-xs text-slate-600">Refunded</span>
               <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.refunded}</span>
             </div>

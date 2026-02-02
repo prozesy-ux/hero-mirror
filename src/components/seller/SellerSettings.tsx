@@ -365,8 +365,8 @@ const SellerSettings = () => {
   if (loading) {
     return (
       <div className="space-y-6 max-w-3xl seller-dashboard">
-        <Skeleton className="h-32 rounded-xl border border-slate-200" />
-        <Skeleton className="h-64 rounded-xl border border-slate-200" />
+        <Skeleton className="h-32 rounded-lg border-2 border-black" />
+        <Skeleton className="h-64 rounded-lg border-2 border-black" />
       </div>
     );
   }
