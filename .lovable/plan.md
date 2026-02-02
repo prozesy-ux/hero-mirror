@@ -1,125 +1,299 @@
 
 
-# New Product Page - Enhanced Design
+# Seller Dashboard - Welcome Video Overlay Implementation
 
 ## Overview
 
-Redesign the product creation wizard with three key improvements:
-1. **Step 1 (Type)**: Increase width and make product cards match the services section row-based layout
-2. **Step 2 (Details)**: Gumroad-style form with pink focused borders on inputs and a black-base rich text editor toolbar
-3. Overall width increase for the entire section
+Create a premium "Welcome Back" video overlay that displays when sellers first load the dashboard. The video features a friendly panda mascot and uses a beautiful color-based background design. After the video plays or is dismissed, the welcome section fades away gracefully, revealing the dashboard beneath.
 
 ---
 
-## Current vs Target Analysis
+## Design Concept
 
-### Reference Image Analysis
-The reference shows:
-- **Name Input**: White input with a thick pink/magenta border when focused (`border-2` style)
-- **Description**: Rich text editor with a black toolbar (`bg-black`) containing formatting buttons (Bold, Italic, Underline, Strikethrough, Quote, Link, Image, Video, Audio, Insert dropdown)
-- **Labels**: Simple black text labels above inputs ("Name", "Description")
-- **Background**: Cream/off-white background (#f4f4f0)
+### User Flow
+```text
+1. Seller loads dashboard
+2. Full-screen overlay appears with gradient background + video
+3. Video auto-plays (muted initially, with play button)
+4. User can skip anytime via "Skip" button
+5. After video ends OR skip, overlay fades out smoothly
+6. Dashboard revealed - no overlap issues
+```
+
+### Visual Design
+- **Overlay**: Fixed position, `z-50`, covers entire viewport (above header/sidebar)
+- **Background**: Gradient from deep purple to black with subtle animated dots
+- **Video**: Centered, rounded corners, soft shadow glow
+- **Welcome Text**: Above video - personalized greeting
+- **Skip Button**: Bottom right - always visible
+- **Play/Replay Controls**: Over video
 
 ---
 
-## File 1: `src/components/seller/ProductTypeSelector.tsx`
+## Technical Implementation
 
-### Changes Required
-
-**1. Products Grid - Match Services Row Layout:**
+### File Structure
 ```text
-Current: xl:grid-cols-5 (5 columns, small cards)
-Target: xl:grid-cols-4 (4 columns, wider cards like services)
+1. Copy video to project assets
+2. Create new component: WelcomeVideoOverlay.tsx
+3. Integrate into SellerDashboard.tsx
+4. Handle localStorage persistence (don't show again for session)
 ```
-
-**2. Increase Card Width:**
-- Change products grid from `xl:grid-cols-5` to `xl:grid-cols-4`
-- This makes product cards wider, matching the services section row-based feel
 
 ---
 
-## File 2: `src/pages/NewProduct.tsx`
+## File 1: Copy Video Asset
 
-### Changes Required
-
-**1. Increase Main Content Width:**
+Copy the uploaded video to the public folder for direct access:
 ```text
-Current: max-w-6xl
-Target: max-w-7xl
+Source: user-uploads://A_full-body_panda_mascot_...mp4
+Target: public/videos/welcome-panda.mp4
 ```
 
-**2. Step 1 Layout - Adjust Grid Ratio:**
-```text
-Current: lg:grid-cols-5 (2:3 split)
-Target: lg:grid-cols-3 (1:2 split) - gives more space to the type selector
-```
+---
 
-**3. Step 2 (Details) - Gumroad Form Styling:**
+## File 2: Create `src/components/seller/WelcomeVideoOverlay.tsx`
 
-**Input Fields - Pink Focus Border:**
+### Component Structure
+
 ```tsx
-// Current:
-className="rounded-md border border-gray-300 h-11 text-base focus:border-pink-500 focus:ring-pink-500"
+import { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Play, Pause, SkipForward, Sparkles, Volume2, VolumeX } from 'lucide-react';
 
-// Target:
-className="rounded-lg border-2 border-gray-200 h-12 text-base focus:border-pink-500 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors"
-```
+interface WelcomeVideoOverlayProps {
+  storeName: string;
+  onComplete: () => void;
+}
 
-**Labels - Clean Black Text:**
-```tsx
-// Current:
-<Label className="text-sm font-medium text-gray-700 mb-2 block">Name</Label>
+const WelcomeVideoOverlay = ({ storeName, onComplete }: WelcomeVideoOverlayProps) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
 
-// Target:
-<Label className="text-base font-medium text-gray-900 mb-2 block">Name</Label>
-```
+  // Handle video load
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.addEventListener('loadeddata', () => setVideoLoaded(true));
+      video.addEventListener('ended', handleVideoEnd);
+    }
+    return () => {
+      if (video) {
+        video.removeEventListener('loadeddata', () => setVideoLoaded(true));
+        video.removeEventListener('ended', handleVideoEnd);
+      }
+    };
+  }, []);
 
-**4. Rich Text Editor with Black Toolbar:**
+  const handleVideoEnd = () => {
+    handleDismiss();
+  };
 
-Replace the simple `<Textarea>` with a styled editor container:
-```tsx
-<div>
-  <Label className="text-base font-medium text-gray-900 mb-2 block">Description</Label>
-  
-  {/* Black toolbar */}
-  <div className="border-2 border-gray-200 rounded-lg overflow-hidden focus-within:border-pink-500 transition-colors">
-    <div className="bg-black px-3 py-2 flex items-center gap-1 flex-wrap">
-      {/* Format dropdown */}
-      <button className="px-3 py-1.5 text-white text-sm rounded hover:bg-white/10 flex items-center gap-1">
-        Text <ChevronDown className="w-3 h-3" />
-      </button>
-      <div className="w-px h-5 bg-gray-700 mx-1" />
-      {/* Formatting buttons */}
-      <button className="p-2 text-white rounded hover:bg-white/10"><Bold /></button>
-      <button className="p-2 text-white rounded hover:bg-white/10"><Italic /></button>
-      <button className="p-2 text-white rounded hover:bg-white/10"><Underline /></button>
-      <button className="p-2 text-white rounded hover:bg-white/10"><Strikethrough /></button>
-      <button className="p-2 text-white rounded hover:bg-white/10"><Quote /></button>
-      <div className="w-px h-5 bg-gray-700 mx-1" />
-      <button className="p-2 text-white rounded hover:bg-white/10"><Link /></button>
-      <button className="p-2 text-white rounded hover:bg-white/10"><Image /></button>
-      <button className="p-2 text-white rounded hover:bg-white/10"><Video /></button>
-      <button className="p-2 text-white rounded hover:bg-white/10"><Music /></button>
-      <div className="w-px h-5 bg-gray-700 mx-1" />
-      <button className="px-3 py-1.5 text-white text-sm rounded hover:bg-white/10 flex items-center gap-1">
-        Insert <ChevronDown className="w-3 h-3" />
-      </button>
-      {/* Undo/Redo on right */}
-      <div className="ml-auto flex items-center gap-1">
-        <button className="p-2 text-white/60 rounded hover:bg-white/10"><Undo /></button>
-        <button className="p-2 text-white/60 rounded hover:bg-white/10"><Redo /></button>
+  const handleDismiss = () => {
+    setFadeOut(true);
+    setTimeout(() => {
+      onComplete();
+    }, 500);
+  };
+
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    if (isPlaying) {
+      video.pause();
+    } else {
+      video.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !isMuted;
+    setIsMuted(!isMuted);
+  };
+
+  return (
+    <div className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-500 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}>
+      {/* Background - Deep gradient with animated dots */}
+      <div className="absolute inset-0 bg-gradient-to-br from-violet-950 via-black to-slate-950">
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: "radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px)",
+            backgroundSize: "30px 30px"
+          }}
+        />
+      </div>
+
+      {/* Content Container */}
+      <div className="relative z-10 flex flex-col items-center justify-center px-6 py-12 max-w-2xl mx-auto text-center">
+        
+        {/* Sparkle Icon */}
+        <div className="mb-6 w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-violet-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
+          <Sparkles className="w-8 h-8 text-white" />
+        </div>
+
+        {/* Welcome Text */}
+        <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 tracking-tight">
+          Welcome back, {storeName}!
+        </h1>
+        <p className="text-lg text-white/70 mb-8">
+          Here's a quick hello from our mascot 🐼
+        </p>
+
+        {/* Video Container */}
+        <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10 max-w-md w-full aspect-[9/16]">
+          {/* Video Loading State */}
+          {!videoLoaded && (
+            <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
+              <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+            </div>
+          )}
+
+          <video
+            ref={videoRef}
+            src="/videos/welcome-panda.mp4"
+            className="w-full h-full object-cover"
+            playsInline
+            muted={isMuted}
+            preload="auto"
+          />
+
+          {/* Video Controls Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col items-center justify-end p-6">
+            <div className="flex items-center gap-3">
+              {/* Play/Pause Button */}
+              <button
+                onClick={togglePlay}
+                className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors border border-white/20"
+              >
+                {isPlaying ? (
+                  <Pause className="w-6 h-6 text-white" />
+                ) : (
+                  <Play className="w-6 h-6 text-white ml-1" />
+                )}
+              </button>
+
+              {/* Mute Toggle */}
+              <button
+                onClick={toggleMute}
+                className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
+              >
+                {isMuted ? (
+                  <VolumeX className="w-5 h-5 text-white/70" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-white" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Skip Button */}
+        <Button
+          variant="ghost"
+          onClick={handleDismiss}
+          className="mt-8 text-white/60 hover:text-white hover:bg-white/10 gap-2"
+        >
+          <SkipForward className="w-4 h-4" />
+          Skip to Dashboard
+        </Button>
       </div>
     </div>
-    {/* Text area */}
-    <Textarea
-      value={description}
-      onChange={(e) => setDescription(e.target.value)}
-      placeholder="Describe your product..."
-      rows={6}
-      className="border-0 rounded-none text-base resize-none focus:ring-0 focus:outline-none"
-    />
-  </div>
-</div>
+  );
+};
+
+export default WelcomeVideoOverlay;
+```
+
+---
+
+## File 3: Update `src/components/seller/SellerDashboard.tsx`
+
+### Changes Required
+
+**1. Import the new component:**
+```tsx
+import WelcomeVideoOverlay from './WelcomeVideoOverlay';
+```
+
+**2. Add state for welcome overlay (around line 60):**
+```tsx
+const [showWelcome, setShowWelcome] = useState(false);
+
+// Check if we should show welcome (once per session)
+useEffect(() => {
+  const hasSeenWelcome = sessionStorage.getItem('seller_welcome_seen');
+  if (!hasSeenWelcome && !loading) {
+    setShowWelcome(true);
+  }
+}, [loading]);
+
+const handleWelcomeComplete = () => {
+  sessionStorage.setItem('seller_welcome_seen', 'true');
+  setShowWelcome(false);
+};
+```
+
+**3. Render the overlay conditionally (at the beginning of return):**
+```tsx
+return (
+  <>
+    {/* Welcome Video Overlay - Portal to body */}
+    {showWelcome && (
+      <WelcomeVideoOverlay
+        storeName={profile?.store_name || 'Seller'}
+        onComplete={handleWelcomeComplete}
+      />
+    )}
+
+    <div className="space-y-6">
+      {/* ... existing dashboard content ... */}
+    </div>
+  </>
+);
+```
+
+---
+
+## Why This Approach Prevents Overlap Issues
+
+| Issue | Solution |
+|-------|----------|
+| **Header overlap** | Overlay uses `z-[100]` (higher than header's `z-40` and `z-50`) |
+| **Sidebar overlap** | `fixed inset-0` covers entire viewport, not affected by sidebar margin |
+| **Content behind** | Dashboard renders but is hidden by opaque overlay |
+| **Scroll issues** | `overflow: hidden` on body during overlay (optional) |
+| **Mobile safe** | Responsive design with mobile-first approach |
+
+---
+
+## Video Loading Strategy
+
+1. **Preload**: `preload="auto"` starts loading immediately
+2. **Loading State**: Show spinner until `loadeddata` event fires
+3. **Graceful Fallback**: If video fails, skip button still works
+4. **Session Storage**: Video overlay only shows once per browser session
+
+---
+
+## Animation Timeline
+
+```text
+0ms     - Overlay appears (instant)
+100ms   - Video starts loading
+~500ms  - Video loaded, spinner hidden
+User    - Clicks play or video auto-plays (optional)
+~5-10s  - Video ends naturally
+0ms     - fadeOut state set to true
+500ms   - Opacity transitions to 0
+500ms   - onComplete called, overlay removed from DOM
 ```
 
 ---
@@ -128,31 +302,20 @@ Replace the simple `<Textarea>` with a styled editor container:
 
 | File | Change |
 |------|--------|
-| `ProductTypeSelector.tsx` | Products grid: `xl:grid-cols-5` → `xl:grid-cols-4` for wider cards |
-| `NewProduct.tsx` | Container width: `max-w-6xl` → `max-w-7xl` |
-| `NewProduct.tsx` | Step 1 grid: `lg:grid-cols-5` → `lg:grid-cols-3` (1:2 ratio) |
-| `NewProduct.tsx` | Step 2 grid: `lg:grid-cols-5` → `lg:grid-cols-3` (1:2 ratio) |
-| `NewProduct.tsx` | Input styling: Add `border-2`, larger height `h-12`, `rounded-lg` |
-| `NewProduct.tsx` | Labels: `text-gray-700` → `text-gray-900`, `text-sm` → `text-base` |
-| `NewProduct.tsx` | Description: Replace Textarea with rich text editor container (black toolbar) |
+| `public/videos/welcome-panda.mp4` | Copy user's uploaded panda video |
+| `src/components/seller/WelcomeVideoOverlay.tsx` | New premium welcome overlay component |
+| `src/components/seller/SellerDashboard.tsx` | Import overlay, add state management, render conditionally |
 
 ---
 
-## Visual Comparison
+## Design Features
 
-### Step 1 - Before vs After
-- **Before**: 5-column product grid (small cards)
-- **After**: 4-column product grid (wider cards matching services)
-
-### Step 2 - Before vs After
-- **Before**: Simple gray border inputs, plain textarea
-- **After**: Pink focus borders (`border-2`), black toolbar rich text editor
-
-### Input Focus State
-```text
-Before: border-gray-300 → focus:border-pink-500 (subtle)
-After: border-2 border-gray-200 → focus:border-pink-500 (prominent like reference)
-```
-
-This creates the exact Gumroad-style form aesthetic shown in the reference image with thick pink focus borders and the distinctive black rich text editor toolbar.
+- **Premium gradient background**: Deep violet to black with dot pattern
+- **Centered vertical video**: Proper 9:16 aspect ratio for the panda animation
+- **Glassmorphic controls**: Play/pause with backdrop blur
+- **Personalized greeting**: Uses seller's store name
+- **Smooth fade out**: 500ms opacity transition
+- **Skip anytime**: Users never feel trapped
+- **Session-based**: Only shows once per visit (not annoying)
+- **No z-index conflicts**: `z-[100]` ensures overlay is always on top
 
