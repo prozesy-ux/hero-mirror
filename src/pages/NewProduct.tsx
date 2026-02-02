@@ -157,19 +157,19 @@ const NewProduct = () => {
   const SelectedIcon = selectedType.Icon;
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header - Clean B&W */}
-      <header className="sticky top-0 z-10 bg-white border-b-2 border-black/10 px-4 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+    <div className="min-h-screen bg-[#f4f4f0]">
+      {/* Header - Clean Gumroad style */}
+      <header className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button 
               onClick={handleBack}
-              className="p-2 rounded-lg border-2 border-black/10 hover:border-black hover:bg-black hover:text-white transition-colors"
+              className="p-2 rounded-md border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div>
-              <h1 className="font-black text-xl text-black">New Product</h1>
+              <h1 className="font-semibold text-xl text-gray-900">New Product</h1>
               <p className="text-sm text-gray-500">Step {currentStep} of {STEPS.length}</p>
             </div>
           </div>
@@ -179,7 +179,7 @@ const NewProduct = () => {
               <Button 
                 variant="outline" 
                 onClick={handleBack} 
-                className="rounded-lg border-2 border-black/20 hover:border-black hover:bg-black hover:text-white transition-colors"
+                className="rounded-md border border-gray-200 hover:bg-gray-50 text-gray-700"
               >
                 Back
               </Button>
@@ -188,7 +188,7 @@ const NewProduct = () => {
               <Button 
                 onClick={handleNext} 
                 disabled={!canProceed()}
-                className="rounded-lg bg-black hover:bg-black/90 text-white px-6"
+                className="rounded-md bg-pink-500 hover:bg-pink-600 text-white px-6"
               >
                 Next
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -197,7 +197,7 @@ const NewProduct = () => {
               <Button 
                 onClick={handleSubmit}
                 disabled={submitting || !canProceed()}
-                className="rounded-lg bg-black hover:bg-black/90 text-white px-6"
+                className="rounded-md bg-pink-500 hover:bg-pink-600 text-white px-6"
               >
                 {submitting ? (
                   <>
@@ -216,31 +216,31 @@ const NewProduct = () => {
         </div>
       </header>
 
-      {/* Progress Bar - Minimal dots */}
-      <div className="bg-white border-b-2 border-black/10">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+      {/* Progress Bar - Clean minimal style */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-5xl mx-auto px-4 py-5">
           <div className="flex items-center justify-center gap-4">
             {STEPS.map((step, index) => (
               <div key={step.id} className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors border-2",
+                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
                     currentStep > step.id
-                      ? "bg-black text-white border-black"
+                      ? "bg-pink-500 text-white"
                       : currentStep === step.id
-                        ? "bg-white text-black border-black"
-                        : "bg-gray-100 text-gray-400 border-gray-200"
+                        ? "bg-white text-gray-900 border-2 border-pink-500"
+                        : "bg-gray-100 text-gray-400"
                   )}>
                     {currentStep > step.id ? (
-                      <Check className="w-5 h-5" />
+                      <Check className="w-4 h-4" />
                     ) : (
                       step.id
                     )}
                   </div>
                   <div className="hidden sm:block">
                     <p className={cn(
-                      "text-sm font-bold",
-                      currentStep >= step.id ? "text-black" : "text-gray-400"
+                      "text-sm font-medium",
+                      currentStep >= step.id ? "text-gray-900" : "text-gray-400"
                     )}>
                       {step.title}
                     </p>
@@ -249,7 +249,7 @@ const NewProduct = () => {
                 {index < STEPS.length - 1 && (
                   <div className={cn(
                     "w-12 h-0.5",
-                    currentStep > step.id ? "bg-black" : "bg-gray-200"
+                    currentStep > step.id ? "bg-pink-500" : "bg-gray-200"
                   )} />
                 )}
               </div>
@@ -259,26 +259,26 @@ const NewProduct = () => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white border-2 border-black/10 rounded-lg">
+      <main className="max-w-5xl mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg border border-gray-200">
           {/* Step 1: Choose Type */}
           {currentStep === 1 && (
             <div className="p-6 lg:p-8">
               <div className="grid lg:grid-cols-5 gap-8">
                 {/* Left: Info */}
                 <div className="lg:col-span-2">
-                  <h2 className="text-2xl font-black text-black mb-3">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-3">
                     What are you creating?
                   </h2>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-gray-500 mb-6">
                     Choose the type that best describes your product.
                   </p>
                   
                   {selectedType && (
-                    <div className="p-4 rounded-lg border-2 border-black bg-gray-50">
+                    <div className="p-4 rounded-md border border-pink-200 bg-pink-50">
                       <div className="flex items-center gap-3 mb-2">
                         <SelectedIcon className="w-8 h-8" />
-                        <span className="font-bold text-black">{selectedType.name}</span>
+                        <span className="font-medium text-gray-900">{selectedType.name}</span>
                       </div>
                       <p className="text-sm text-gray-600">{selectedType.description}</p>
                     </div>
@@ -302,25 +302,25 @@ const NewProduct = () => {
               <div className="grid lg:grid-cols-5 gap-8">
                 {/* Left: Preview */}
                 <div className="lg:col-span-2">
-                  <h2 className="text-2xl font-black text-black mb-3">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-3">
                     Product Details
                   </h2>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-gray-500 mb-6">
                     Give your product a name and set your price.
                   </p>
                   
                   {/* Mini Preview Card */}
-                  <div className="p-4 bg-gray-50 rounded-lg border-2 border-black/10">
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-3">Preview</p>
-                    <div className="bg-white rounded-lg border-2 border-black/10 overflow-hidden">
+                  <div className="p-4 bg-gray-50 rounded-md border border-gray-200">
+                    <p className="text-xs font-medium text-gray-500 uppercase mb-3">Preview</p>
+                    <div className="bg-white rounded-md border border-gray-200 overflow-hidden">
                       <div className="aspect-square bg-gray-100 flex items-center justify-center">
                         <SelectedIcon className="w-16 h-16 opacity-30" />
                       </div>
-                      <div className="p-3 border-t-2 border-black/10">
-                        <p className="font-bold text-black text-sm truncate">
+                      <div className="p-3 border-t border-gray-200">
+                        <p className="font-medium text-gray-900 text-sm truncate">
                           {name || 'Your product name'}
                         </p>
-                        <p className="text-xl font-black text-black mt-1">
+                        <p className="text-xl font-semibold text-gray-900 mt-1">
                           ${price || '0'}
                         </p>
                       </div>
@@ -332,25 +332,25 @@ const NewProduct = () => {
                 <div className="lg:col-span-3 space-y-6">
                   {/* Name */}
                   <div>
-                    <Label className="text-sm font-bold text-black mb-2 block">
-                      Product Name *
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                      Name
                     </Label>
                     <Input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g., Ultimate Design Bundle"
-                      className="rounded-lg border-2 border-black/10 h-12 text-base focus:border-black transition-colors"
+                      className="rounded-md border border-gray-300 h-11 text-base focus:border-pink-500 focus:ring-pink-500 transition-colors"
                     />
                   </div>
                   
                   {/* Price & Stock */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-bold text-black mb-2 block">
-                        Price (USD) *
+                      <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Price
                       </Label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
                         <Input
                           type="number"
                           value={price}
@@ -358,12 +358,12 @@ const NewProduct = () => {
                           placeholder="0"
                           min="0"
                           step="0.01"
-                          className="rounded-lg border-2 border-black/10 h-12 text-base pl-8 focus:border-black transition-colors"
+                          className="rounded-md border border-gray-300 h-11 text-base pl-8 focus:border-pink-500 focus:ring-pink-500 transition-colors"
                         />
                       </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-bold text-black mb-2 block">
+                      <Label className="text-sm font-medium text-gray-700 mb-2 block">
                         Stock
                       </Label>
                       <Input
@@ -372,14 +372,14 @@ const NewProduct = () => {
                         onChange={(e) => setStock(e.target.value)}
                         placeholder="Unlimited"
                         min="0"
-                        className="rounded-lg border-2 border-black/10 h-12 text-base focus:border-black transition-colors"
+                        className="rounded-md border border-gray-300 h-11 text-base focus:border-pink-500 focus:ring-pink-500 transition-colors"
                       />
                     </div>
                   </div>
                   
                   {/* Description */}
                   <div>
-                    <Label className="text-sm font-bold text-black mb-2 block">
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
                       Description
                     </Label>
                     <Textarea
@@ -387,13 +387,13 @@ const NewProduct = () => {
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe your product..."
                       rows={4}
-                      className="rounded-lg border-2 border-black/10 text-base resize-none focus:border-black transition-colors"
+                      className="rounded-md border border-gray-300 text-base resize-none focus:border-pink-500 focus:ring-pink-500 transition-colors"
                     />
                   </div>
                   
                   {/* Categories */}
                   <div>
-                    <Label className="text-sm font-bold text-black mb-2 block">
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
                       Categories
                     </Label>
                     <div className="flex flex-wrap gap-2">
@@ -403,10 +403,10 @@ const NewProduct = () => {
                           type="button"
                           onClick={() => toggleCategory(cat.id)}
                           className={cn(
-                            "px-4 py-2 rounded-lg text-sm font-semibold border-2 transition-colors",
+                            "px-4 py-2 rounded-md text-sm font-medium border transition-colors",
                             categoryIds.includes(cat.id)
-                              ? "bg-black text-white border-black"
-                              : "bg-white text-gray-600 border-black/10 hover:border-black"
+                              ? "bg-pink-500 text-white border-pink-500"
+                              : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
                           )}
                         >
                           {cat.name}
@@ -425,33 +425,33 @@ const NewProduct = () => {
               <div className="grid lg:grid-cols-5 gap-8">
                 {/* Left: Summary */}
                 <div className="lg:col-span-2">
-                  <h2 className="text-2xl font-black text-black mb-3">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-3">
                     Final Touches
                   </h2>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-gray-500 mb-6">
                     Add images and configure settings.
                   </p>
                   
                   {/* Summary Card */}
-                  <div className="p-4 bg-gray-50 rounded-lg border-2 border-black/10 space-y-4">
+                  <div className="p-4 bg-gray-50 rounded-md border border-gray-200 space-y-4">
                     <div className="flex items-center gap-3">
                       <SelectedIcon className="w-8 h-8" />
                       <div>
-                        <p className="text-xs text-gray-500 uppercase font-bold">Type</p>
-                        <p className="font-bold text-black">{selectedType.name}</p>
+                        <p className="text-xs text-gray-500 uppercase font-medium">Type</p>
+                        <p className="font-medium text-gray-900">{selectedType.name}</p>
                       </div>
                     </div>
-                    <div className="border-t-2 border-black/10 pt-4">
-                      <p className="text-xs text-gray-500 uppercase font-bold">Product</p>
-                      <p className="font-bold text-black">{name || 'Untitled'}</p>
-                      <p className="text-2xl font-black text-black">${price || '0'}</p>
+                    <div className="border-t border-gray-200 pt-4">
+                      <p className="text-xs text-gray-500 uppercase font-medium">Product</p>
+                      <p className="font-medium text-gray-900">{name || 'Untitled'}</p>
+                      <p className="text-2xl font-semibold text-gray-900">${price || '0'}</p>
                     </div>
                     {tags.length > 0 && (
-                      <div className="border-t-2 border-black/10 pt-4">
-                        <p className="text-xs text-gray-500 uppercase font-bold mb-2">Tags</p>
+                      <div className="border-t border-gray-200 pt-4">
+                        <p className="text-xs text-gray-500 uppercase font-medium mb-2">Tags</p>
                         <div className="flex flex-wrap gap-1">
                           {tags.map((tag) => (
-                            <Badge key={tag} className="bg-black text-white border-0 text-xs">
+                            <Badge key={tag} className="bg-pink-500 text-white border-0 text-xs">
                               {tag}
                             </Badge>
                           ))}
@@ -465,7 +465,7 @@ const NewProduct = () => {
                 <div className="lg:col-span-3 space-y-6">
                   {/* Images */}
                   <div>
-                    <Label className="text-sm font-bold text-black mb-2 block">
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
                       Product Images
                     </Label>
                     <MultiImageUploader
@@ -477,14 +477,14 @@ const NewProduct = () => {
                   
                   {/* Tags */}
                   <div>
-                    <Label className="text-sm font-bold text-black mb-2 block">
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
                       Tags
                     </Label>
                     <div className="flex flex-wrap gap-2 mb-3">
                       {tags.map((tag) => (
                         <Badge
                           key={tag}
-                          className="gap-1.5 pr-1.5 bg-black text-white border-0"
+                          className="gap-1.5 pr-1.5 bg-pink-500 text-white border-0"
                         >
                           {tag}
                           <button
@@ -507,7 +507,7 @@ const NewProduct = () => {
                         }
                       }}
                       placeholder="Add a tag..."
-                      className="rounded-lg border-2 border-black/10 mb-3 focus:border-black transition-colors"
+                      className="rounded-md border border-gray-300 mb-3 focus:border-pink-500 transition-colors"
                     />
                     <div className="flex flex-wrap gap-1.5">
                       {popularTags.filter(t => !tags.includes(t)).slice(0, 6).map((tag) => (
@@ -515,7 +515,7 @@ const NewProduct = () => {
                           key={tag}
                           type="button"
                           onClick={() => handleAddTag(tag)}
-                          className="text-xs px-3 py-1.5 border-2 border-black/10 hover:border-black hover:bg-black hover:text-white rounded-lg text-gray-600 transition-colors"
+                          className="text-xs px-3 py-1.5 border border-gray-300 hover:border-pink-500 hover:bg-pink-500 hover:text-white rounded-md text-gray-600 transition-colors"
                         >
                           + {tag}
                         </button>
@@ -524,40 +524,40 @@ const NewProduct = () => {
                   </div>
                   
                   {/* Settings */}
-                  <div className="space-y-4 pt-6 border-t-2 border-black/10">
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-black/10">
+                  <div className="space-y-4 pt-6 border-t border-gray-200">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-200">
                       <div>
-                        <p className="font-bold text-sm text-black">Available for purchase</p>
+                        <p className="font-medium text-sm text-gray-900">Available for purchase</p>
                         <p className="text-xs text-gray-500">Show this product in your store</p>
                       </div>
                       <Switch
                         checked={isAvailable}
                         onCheckedChange={setIsAvailable}
-                        className="data-[state=checked]:bg-black"
+                        className="data-[state=checked]:bg-pink-500"
                       />
                     </div>
                     
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-black/10">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-200">
                       <div>
-                        <p className="font-bold text-sm text-black">Allow chat</p>
+                        <p className="font-medium text-sm text-gray-900">Allow chat</p>
                         <p className="text-xs text-gray-500">Let buyers message you</p>
                       </div>
                       <Switch
                         checked={chatAllowed}
                         onCheckedChange={setChatAllowed}
-                        className="data-[state=checked]:bg-black"
+                        className="data-[state=checked]:bg-pink-500"
                       />
                     </div>
                     
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-black/10">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-200">
                       <div>
-                        <p className="font-bold text-sm text-black">Require email</p>
+                        <p className="font-medium text-sm text-gray-900">Require email</p>
                         <p className="text-xs text-gray-500">Ask buyers for their email</p>
                       </div>
                       <Switch
                         checked={requiresEmail}
                         onCheckedChange={setRequiresEmail}
-                        className="data-[state=checked]:bg-black"
+                        className="data-[state=checked]:bg-pink-500"
                       />
                     </div>
                   </div>
