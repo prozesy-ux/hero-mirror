@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, Loader2, X, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, X, Check, Bold, Italic, Underline, Strikethrough, Quote, Link2, Image, Video, Music, ChevronDown, Undo, Redo } from 'lucide-react';
 import ProductTypeSelector from '@/components/seller/ProductTypeSelector';
 import MultiImageUploader from '@/components/seller/MultiImageUploader';
 import { ProductTypeId, getProductTypeById } from '@/components/icons/ProductTypeIcons';
@@ -160,7 +160,7 @@ const NewProduct = () => {
     <div className="min-h-screen bg-[#f4f4f0]" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Header - Clean Gumroad style */}
       <header className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button 
               onClick={handleBack}
@@ -218,7 +218,7 @@ const NewProduct = () => {
 
       {/* Progress Bar - Clean minimal style */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-5">
+        <div className="max-w-7xl mx-auto px-4 py-5">
           <div className="flex items-center justify-center gap-4">
             {STEPS.map((step, index) => (
               <div key={step.id} className="flex items-center gap-4">
@@ -259,14 +259,14 @@ const NewProduct = () => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg border border-gray-200">
           {/* Step 1: Choose Type */}
           {currentStep === 1 && (
             <div className="p-6 lg:p-8">
-              <div className="grid lg:grid-cols-5 gap-8">
+              <div className="grid lg:grid-cols-3 gap-8">
                 {/* Left: Info */}
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-1">
                   <h2 className="text-xl font-semibold text-gray-900 mb-3">
                     What are you creating?
                   </h2>
@@ -286,7 +286,7 @@ const NewProduct = () => {
                 </div>
                 
                 {/* Right: Type Grid */}
-                <div className="lg:col-span-3">
+                <div className="lg:col-span-2">
                   <ProductTypeSelector
                     selectedType={productType}
                     onTypeSelect={setProductType}
@@ -299,9 +299,9 @@ const NewProduct = () => {
           {/* Step 2: Details */}
           {currentStep === 2 && (
             <div className="p-6 lg:p-8">
-              <div className="grid lg:grid-cols-5 gap-8">
+              <div className="grid lg:grid-cols-3 gap-8">
                 {/* Left: Preview */}
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-1">
                   <h2 className="text-xl font-semibold text-gray-900 mb-3">
                     Product Details
                   </h2>
@@ -329,24 +329,24 @@ const NewProduct = () => {
                 </div>
                 
                 {/* Right: Form */}
-                <div className="lg:col-span-3 space-y-6">
+                <div className="lg:col-span-2 space-y-6">
                   {/* Name */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Label className="text-base font-medium text-gray-900 mb-2 block">
                       Name
                     </Label>
                     <Input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g., Ultimate Design Bundle"
-                      className="rounded-md border border-gray-300 h-11 text-base focus:border-pink-500 focus:ring-pink-500 transition-colors"
+                      className="rounded-lg border-2 border-gray-200 h-12 text-base focus:border-pink-500 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors"
                     />
                   </div>
                   
                   {/* Price & Stock */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                      <Label className="text-base font-medium text-gray-900 mb-2 block">
                         Price
                       </Label>
                       <div className="relative">
@@ -358,12 +358,12 @@ const NewProduct = () => {
                           placeholder="0"
                           min="0"
                           step="0.01"
-                          className="rounded-md border border-gray-300 h-11 text-base pl-8 focus:border-pink-500 focus:ring-pink-500 transition-colors"
+                          className="rounded-lg border-2 border-gray-200 h-12 text-base pl-8 focus:border-pink-500 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors"
                         />
                       </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                      <Label className="text-base font-medium text-gray-900 mb-2 block">
                         Stock
                       </Label>
                       <Input
@@ -372,28 +372,59 @@ const NewProduct = () => {
                         onChange={(e) => setStock(e.target.value)}
                         placeholder="Unlimited"
                         min="0"
-                        className="rounded-md border border-gray-300 h-11 text-base focus:border-pink-500 focus:ring-pink-500 transition-colors"
+                        className="rounded-lg border-2 border-gray-200 h-12 text-base focus:border-pink-500 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors"
                       />
                     </div>
                   </div>
                   
-                  {/* Description */}
+                  {/* Description with Rich Text Editor */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Label className="text-base font-medium text-gray-900 mb-2 block">
                       Description
                     </Label>
-                    <Textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Describe your product..."
-                      rows={4}
-                      className="rounded-md border border-gray-300 text-base resize-none focus:border-pink-500 focus:ring-pink-500 transition-colors"
-                    />
+                    <div className="border-2 border-gray-200 rounded-lg overflow-hidden focus-within:border-pink-500 transition-colors">
+                      {/* Black toolbar */}
+                      <div className="bg-black px-3 py-2 flex items-center gap-1 flex-wrap">
+                        {/* Format dropdown */}
+                        <button type="button" className="px-3 py-1.5 text-white text-sm rounded hover:bg-white/10 flex items-center gap-1">
+                          Text <ChevronDown className="w-3 h-3" />
+                        </button>
+                        <div className="w-px h-5 bg-gray-700 mx-1" />
+                        {/* Formatting buttons */}
+                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Bold className="w-4 h-4" /></button>
+                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Italic className="w-4 h-4" /></button>
+                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Underline className="w-4 h-4" /></button>
+                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Strikethrough className="w-4 h-4" /></button>
+                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Quote className="w-4 h-4" /></button>
+                        <div className="w-px h-5 bg-gray-700 mx-1" />
+                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Link2 className="w-4 h-4" /></button>
+                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Image className="w-4 h-4" /></button>
+                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Video className="w-4 h-4" /></button>
+                        <button type="button" className="p-2 text-white rounded hover:bg-white/10"><Music className="w-4 h-4" /></button>
+                        <div className="w-px h-5 bg-gray-700 mx-1" />
+                        <button type="button" className="px-3 py-1.5 text-white text-sm rounded hover:bg-white/10 flex items-center gap-1">
+                          Insert <ChevronDown className="w-3 h-3" />
+                        </button>
+                        {/* Undo/Redo on right */}
+                        <div className="ml-auto flex items-center gap-1">
+                          <button type="button" className="p-2 text-white/60 rounded hover:bg-white/10"><Undo className="w-4 h-4" /></button>
+                          <button type="button" className="p-2 text-white/60 rounded hover:bg-white/10"><Redo className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                      {/* Text area */}
+                      <Textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Describe your product..."
+                        rows={6}
+                        className="border-0 rounded-none text-base resize-none focus:ring-0 focus:outline-none bg-white"
+                      />
+                    </div>
                   </div>
                   
                   {/* Categories */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Label className="text-base font-medium text-gray-900 mb-2 block">
                       Categories
                     </Label>
                     <div className="flex flex-wrap gap-2">
@@ -422,9 +453,9 @@ const NewProduct = () => {
           {/* Step 3: Customize */}
           {currentStep === 3 && (
             <div className="p-6 lg:p-8">
-              <div className="grid lg:grid-cols-5 gap-8">
+              <div className="grid lg:grid-cols-3 gap-8">
                 {/* Left: Summary */}
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-1">
                   <h2 className="text-xl font-semibold text-gray-900 mb-3">
                     Final Touches
                   </h2>
@@ -462,10 +493,10 @@ const NewProduct = () => {
                 </div>
                 
                 {/* Right: Settings */}
-                <div className="lg:col-span-3 space-y-6">
+                <div className="lg:col-span-2 space-y-6">
                   {/* Images */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Label className="text-base font-medium text-gray-900 mb-2 block">
                       Product Images
                     </Label>
                     <MultiImageUploader
@@ -477,7 +508,7 @@ const NewProduct = () => {
                   
                   {/* Tags */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Label className="text-base font-medium text-gray-900 mb-2 block">
                       Tags
                     </Label>
                     <div className="flex flex-wrap gap-2 mb-3">
