@@ -109,7 +109,7 @@ const SellerSidebar = () => {
         }`}
       >
         {/* Logo Section - Gumroad style text logo */}
-        <div className={`h-14 flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-3' : 'px-6'}`}>
+        <div className={`py-6 flex items-center ${isCollapsed ? 'justify-center px-3' : 'px-6'}`}>
           <Link to="/seller" className="flex items-center">
             {isCollapsed ? (
               <span className="text-white text-lg font-bold">u</span>
