@@ -151,7 +151,7 @@ const getPurchaseCount = (accountId: string) => {
   const hash = accountId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return 150 + hash % 350;
 };
-type TabType = 'browse';
+type TabType = 'browse' | 'purchases' | 'stats' | 'chat';
 const AIAccountsSection = () => {
   const {
     user
@@ -230,16 +230,16 @@ const AIAccountsSection = () => {
     priceMin: undefined,
     priceMax: undefined,
     minRating: null,
-    verifiedOnly: false,
+    verifiedOnly: false
   });
 
   // Use unified marketplace data hook for faster loading
-  const { 
-    categories: marketplaceCategories, 
+  const {
+    categories: marketplaceCategories,
     hotProducts: marketplaceHotProducts,
     topRated: marketplaceTopRated,
     newArrivals: marketplaceNewArrivals,
-    loading: marketplaceLoading,
+    loading: marketplaceLoading
   } = useMarketplaceData();
 
   // Search suggestions hook
@@ -253,7 +253,7 @@ const AIAccountsSection = () => {
     clearRecentSearches,
     setQuery: setSuggestionsQuery,
     scope: searchScope,
-    setScope: setSearchScope,
+    setScope: setSearchScope
   } = useSearchSuggestions();
 
   // Voice search hook
@@ -261,24 +261,19 @@ const AIAccountsSection = () => {
     setSearchQuery(text);
     openSuggestions();
   }, [openSuggestions]);
-  
   const {
     isListening,
     isSupported: voiceSupported,
     error: voiceError,
     startListening,
-    stopListening,
+    stopListening
   } = useVoiceSearch(handleVoiceResult);
 
   // "/" keyboard shortcut to focus search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger if user is typing in an input/textarea
-      if (
-        e.key === '/' &&
-        !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName) &&
-        !(e.target as HTMLElement).isContentEditable
-      ) {
+      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName) && !(e.target as HTMLElement).isContentEditable) {
         e.preventDefault();
         if (window.innerWidth < 1024) {
           // Mobile: open overlay
@@ -290,7 +285,6 @@ const AIAccountsSection = () => {
         }
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [openSuggestions]);
@@ -298,7 +292,6 @@ const AIAccountsSection = () => {
   // Handle search suggestion selection
   const handleSuggestionSelect = useCallback((suggestion: SearchSuggestion) => {
     closeSuggestions();
-    
     switch (suggestion.type) {
       case 'recent':
       case 'trending':
@@ -309,7 +302,6 @@ const AIAccountsSection = () => {
         // Find and open the product
         const aiAccount = accounts.find(a => a.id === suggestion.id);
         const sellerProduct = sellerProducts.find(p => p.id === suggestion.id);
-        
         if (aiAccount) {
           setSelectedAccount(aiAccount);
           setShowDetailsModal(true);
@@ -633,7 +625,10 @@ const AIAccountsSection = () => {
       const sellerEarning = product.price * (1 - commissionRate);
 
       // Use atomic RPC for purchase - handles wallet deduction, transaction, order, and seller balance
-      const { data: result, error: rpcError } = await supabase.rpc('purchase_seller_product', {
+      const {
+        data: result,
+        error: rpcError
+      } = await supabase.rpc('purchase_seller_product', {
         p_buyer_id: user.id,
         p_seller_id: product.seller_id,
         p_product_id: product.id,
@@ -641,16 +636,21 @@ const AIAccountsSection = () => {
         p_amount: product.price,
         p_seller_earning: sellerEarning
       });
-
       if (rpcError) throw rpcError;
-
-      const purchaseResult = result as { success: boolean; error?: string; order_id?: string };
+      const purchaseResult = result as {
+        success: boolean;
+        error?: string;
+        order_id?: string;
+      };
       if (!purchaseResult.success) {
         throw new Error(purchaseResult.error || 'Purchase failed');
       }
 
       // Update local wallet state immediately
-      setWallet(prev => prev ? { ...prev, balance: currentBalance - product.price } : null);
+      setWallet(prev => prev ? {
+        ...prev,
+        balance: currentBalance - product.price
+      } : null);
 
       // 5. Create notification for buyer
       await supabase.from('notifications').insert({
@@ -681,19 +681,20 @@ const AIAccountsSection = () => {
           order_id: product.id.slice(0, 8).toUpperCase(),
           product_name: product.name,
           amount: product.price.toString(),
-          order_date: new Date().toLocaleDateString(),
+          order_date: new Date().toLocaleDateString()
         }
       }).catch(err => console.error('Order email error:', err));
 
       // 8. Send new order notification email to seller (background, non-blocking)
-      const { data: sellerProfile } = await supabase
-        .from('seller_profiles')
-        .select('user_id')
-        .eq('id', product.seller_id)
-        .single();
-      
+      const {
+        data: sellerProfile
+      } = await supabase.from('seller_profiles').select('user_id').eq('id', product.seller_id).single();
       if (sellerProfile?.user_id) {
-        const { data: sellerAuth } = await supabase.auth.admin.getUserById(sellerProfile.user_id).catch(() => ({ data: null }));
+        const {
+          data: sellerAuth
+        } = await supabase.auth.admin.getUserById(sellerProfile.user_id).catch(() => ({
+          data: null
+        }));
         const sellerEmail = sellerAuth?.user?.email;
         if (sellerEmail) {
           sendEmail({
@@ -704,7 +705,7 @@ const AIAccountsSection = () => {
               order_id: product.id.slice(0, 8).toUpperCase(),
               product_name: product.name,
               buyer_name: user.email?.split('@')[0] || 'Buyer',
-              amount: product.price.toString(),
+              amount: product.price.toString()
             }
           }).catch(err => console.error('Seller order email error:', err));
         }
@@ -720,7 +721,7 @@ const AIAccountsSection = () => {
       fetchWallet();
       fetchPurchases();
       fetchSellerOrders();
-      navigate('/dashboard/orders');
+      setActiveTab('purchases');
     } catch (error: any) {
       console.error('Purchase error:', error);
       toast.error(error.message || 'Failed to complete purchase');
@@ -745,7 +746,10 @@ const AIAccountsSection = () => {
       const sellerEarning = data.price * (1 - commissionRate);
 
       // Use atomic RPC for purchase - handles wallet deduction, transaction, order, and seller balance
-      const { data: result, error: rpcError } = await supabase.rpc('purchase_seller_product', {
+      const {
+        data: result,
+        error: rpcError
+      } = await supabase.rpc('purchase_seller_product', {
         p_buyer_id: user.id,
         p_seller_id: data.sellerId,
         p_product_id: data.productId,
@@ -753,22 +757,26 @@ const AIAccountsSection = () => {
         p_amount: data.price,
         p_seller_earning: sellerEarning
       });
-
       if (rpcError) throw rpcError;
-
-      const purchaseResult = result as { success: boolean; error?: string; order_id?: string };
+      const purchaseResult = result as {
+        success: boolean;
+        error?: string;
+        order_id?: string;
+      };
       if (!purchaseResult.success) {
         throw new Error(purchaseResult.error || 'Purchase failed');
       }
 
       // Update local wallet state immediately
-      setWallet(prev => prev ? { ...prev, balance: currentBalance - data.price } : null);
-
+      setWallet(prev => prev ? {
+        ...prev,
+        balance: currentBalance - data.price
+      } : null);
       toast.success('Purchase successful! The seller will deliver your order soon.');
       setPendingPurchaseData(null);
       fetchWallet();
       fetchSellerOrders();
-      navigate('/dashboard/orders');
+      setActiveTab('purchases');
     } catch (error: any) {
       console.error('Pending purchase error:', error);
       toast.error(error.message || 'Purchase failed');
@@ -870,7 +878,11 @@ const AIAccountsSection = () => {
 
       // Send payment released email to seller (background, non-blocking)
       if (order.seller_profiles?.user_id) {
-        const { data: sellerAuth } = await supabase.auth.admin.getUserById(order.seller_profiles.user_id).catch(() => ({ data: null }));
+        const {
+          data: sellerAuth
+        } = await supabase.auth.admin.getUserById(order.seller_profiles.user_id).catch(() => ({
+          data: null
+        }));
         const sellerEmail = sellerAuth?.user?.email;
         if (sellerEmail) {
           sendEmail({
@@ -881,12 +893,11 @@ const AIAccountsSection = () => {
               order_id: order.id.slice(0, 8).toUpperCase(),
               product_name: order.seller_products?.name || 'Product',
               buyer_name: user.email?.split('@')[0] || 'Buyer',
-              amount: Number(order.seller_earning).toFixed(2),
+              amount: Number(order.seller_earning).toFixed(2)
             }
           }).catch(err => console.error('Approval email error:', err));
         }
       }
-
       toast.success('Delivery approved! Thank you for your purchase.');
       fetchSellerOrders();
     } catch (error: any) {
@@ -1007,7 +1018,7 @@ const AIAccountsSection = () => {
       toast.success('Purchase successful! Account credentials will be delivered soon.');
       fetchWallet();
       fetchPurchases();
-      navigate('/dashboard/orders');
+      setActiveTab('purchases');
     } catch (error: any) {
       console.error('Purchase error:', error);
       toast.error(error.message || 'Failed to complete purchase');
@@ -1093,13 +1104,9 @@ const AIAccountsSection = () => {
       </div>;
   }
   return <div className="animate-fade-up">
-      {/* Marketplace Header */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-black flex items-center gap-2">
-          <ShoppingCart size={20} />
-          Browse Products
-        </h2>
-        <p className="text-sm text-black/60 mt-1">Explore our marketplace and find the perfect products</p>
+      {/* Tab Navigation - Enterprise Gumroad style */}
+      <div className="mb-6 border-b border-black/10">
+        
       </div>
 
       {/* Browse Accounts Tab - New Layout with Sidebar */}
@@ -1108,37 +1115,26 @@ const AIAccountsSection = () => {
         <div className="lg:hidden sticky top-0 z-10 bg-white/95 backdrop-blur-md pb-3 pt-3 -mx-3 px-3 border-b border-gray-100 mb-4">
           <div className="grid grid-cols-[1fr,auto] gap-2">
             {/* Mobile Search Button - Opens Full Screen Overlay */}
-            <button
-              onClick={() => setMobileSearchOpen(true)}
-              className="flex items-center gap-2 w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-left shadow-sm active:scale-[0.98] transition-transform"
-            >
+            <button onClick={() => setMobileSearchOpen(true)} className="flex items-center gap-2 w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-left shadow-sm active:scale-[0.98] transition-transform">
               <Search size={16} className="text-gray-400" />
-              {searchQuery ? (
-                <span className="text-sm text-gray-900 truncate flex-1">{searchQuery}</span>
-              ) : (
-                <span className="text-sm text-gray-400 flex-1">Search products...</span>
-              )}
+              {searchQuery ? <span className="text-sm text-gray-900 truncate flex-1">{searchQuery}</span> : <span className="text-sm text-gray-400 flex-1">Search products...</span>}
               <kbd className="hidden xs:inline px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-xs font-mono">/</kbd>
             </button>
             {/* Filter Button - Mobile only */}
-            <MarketplaceSidebar 
-              trendingAccounts={trendingAccounts} 
-              categories={dynamicCategories} 
-              accounts={accounts} 
-              selectedCategory={categoryFilter} 
-              selectedTags={selectedTags} 
-              onCategorySelect={setCategoryFilter} 
-              onTagSelect={handleTagSelect} 
-              onAccountClick={account => {
-                setSelectedAccount(account);
-                setShowDetailsModal(true);
-              }} 
-              getCategoryCount={getCategoryCount}
-              priceRange={{ min: filterState.priceMin, max: filterState.priceMax }}
-              onPriceChange={(min, max) => setFilterState(prev => ({ ...prev, priceMin: min, priceMax: max }))}
-              minRating={filterState.minRating}
-              onRatingChange={(rating) => setFilterState(prev => ({ ...prev, minRating: rating }))}
-            />
+            <MarketplaceSidebar trendingAccounts={trendingAccounts} categories={dynamicCategories} accounts={accounts} selectedCategory={categoryFilter} selectedTags={selectedTags} onCategorySelect={setCategoryFilter} onTagSelect={handleTagSelect} onAccountClick={account => {
+            setSelectedAccount(account);
+            setShowDetailsModal(true);
+          }} getCategoryCount={getCategoryCount} priceRange={{
+            min: filterState.priceMin,
+            max: filterState.priceMax
+          }} onPriceChange={(min, max) => setFilterState(prev => ({
+            ...prev,
+            priceMin: min,
+            priceMax: max
+          }))} minRating={filterState.minRating} onRatingChange={rating => setFilterState(prev => ({
+            ...prev,
+            minRating: rating
+          }))} />
           </div>
         </div>
 
@@ -1146,24 +1142,20 @@ const AIAccountsSection = () => {
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* Left Sidebar - Desktop Only */}
           <div className="hidden lg:block w-72 flex-shrink-0">
-            <MarketplaceSidebar 
-              trendingAccounts={trendingAccounts} 
-              categories={dynamicCategories} 
-              accounts={accounts} 
-              selectedCategory={categoryFilter} 
-              selectedTags={selectedTags} 
-              onCategorySelect={setCategoryFilter} 
-              onTagSelect={handleTagSelect} 
-              onAccountClick={account => {
-                setSelectedAccount(account);
-                setShowDetailsModal(true);
-              }} 
-              getCategoryCount={getCategoryCount}
-              priceRange={{ min: filterState.priceMin, max: filterState.priceMax }}
-              onPriceChange={(min, max) => setFilterState(prev => ({ ...prev, priceMin: min, priceMax: max }))}
-              minRating={filterState.minRating}
-              onRatingChange={(rating) => setFilterState(prev => ({ ...prev, minRating: rating }))}
-            />
+            <MarketplaceSidebar trendingAccounts={trendingAccounts} categories={dynamicCategories} accounts={accounts} selectedCategory={categoryFilter} selectedTags={selectedTags} onCategorySelect={setCategoryFilter} onTagSelect={handleTagSelect} onAccountClick={account => {
+            setSelectedAccount(account);
+            setShowDetailsModal(true);
+          }} getCategoryCount={getCategoryCount} priceRange={{
+            min: filterState.priceMin,
+            max: filterState.priceMax
+          }} onPriceChange={(min, max) => setFilterState(prev => ({
+            ...prev,
+            priceMin: min,
+            priceMax: max
+          }))} minRating={filterState.minRating} onRatingChange={rating => setFilterState(prev => ({
+            ...prev,
+            minRating: rating
+          }))} />
           </div>
 
           {/* Main Content */}
@@ -1174,89 +1166,50 @@ const AIAccountsSection = () => {
               <div className="flex items-stretch bg-white rounded-xl border-2 border-black/15 overflow-hidden focus-within:border-black/40 focus-within:ring-2 focus-within:ring-black/10 focus-within:shadow-lg transition-all">
                 {/* Category Dropdown - Left */}
                 <div className="border-r border-black/15">
-                  <SearchScopeSelector
-                    value={searchScope}
-                    onChange={setSearchScope}
-                  />
+                  <SearchScopeSelector value={searchScope} onChange={setSearchScope} />
                 </div>
                 
                 {/* Search Input - Center */}
                 <div className="relative flex-1">
                   <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40 z-10" />
-                  <input 
-                    ref={searchInputRef}
-                    type="text" 
-                    value={searchQuery} 
-                    onChange={e => setSearchQuery(e.target.value)} 
-                    onFocus={openSuggestions}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && searchQuery.length >= 2) {
-                        logSearch(searchQuery, categoryFilter);
-                        closeSuggestions();
-                      }
-                    }}
-                    placeholder={isListening ? 'Listening...' : 'Search products, sellers, or "under $20"...'}
-                    className="w-full h-full pl-12 pr-28 py-3.5 bg-white border-0 text-base text-black placeholder-black/40 focus:outline-none focus:ring-0" 
-                  />
+                  <input ref={searchInputRef} type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onFocus={openSuggestions} onKeyDown={e => {
+                  if (e.key === 'Enter' && searchQuery.length >= 2) {
+                    logSearch(searchQuery, categoryFilter);
+                    closeSuggestions();
+                  }
+                }} placeholder={isListening ? 'Listening...' : 'Search products, sellers, or "under $20"...'} className="w-full h-full pl-12 pr-28 py-3.5 bg-white border-0 text-base text-black placeholder-black/40 focus:outline-none focus:ring-0" />
                   
                   {/* Action buttons inside input */}
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1">
-                    <ImageSearchButton
-                      onSearchResult={(text) => {
-                        setSearchQuery(text);
-                        openSuggestions();
-                      }}
-                      className="h-9 w-9"
-                    />
-                    <VoiceSearchButton
-                      isListening={isListening}
-                      isSupported={voiceSupported}
-                      error={voiceError}
-                      onStart={startListening}
-                      onStop={stopListening}
-                      className="h-9 w-9"
-                    />
-                    {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && (
-                      <button 
-                        onClick={() => {
-                          setSearchQuery('');
-                          setSelectedTags([]);
-                          setCategoryFilter('all');
-                          closeSuggestions();
-                        }} 
-                        className="p-1.5 hover:bg-black/5 rounded-lg transition-colors"
-                      >
+                    <ImageSearchButton onSearchResult={text => {
+                    setSearchQuery(text);
+                    openSuggestions();
+                  }} className="h-9 w-9" />
+                    <VoiceSearchButton isListening={isListening} isSupported={voiceSupported} error={voiceError} onStart={startListening} onStop={stopListening} className="h-9 w-9" />
+                    {(searchQuery || selectedTags.length > 0 || categoryFilter !== 'all') && <button onClick={() => {
+                    setSearchQuery('');
+                    setSelectedTags([]);
+                    setCategoryFilter('all');
+                    closeSuggestions();
+                  }} className="p-1.5 hover:bg-black/5 rounded-lg transition-colors">
                         <X size={18} className="text-black/40" />
-                      </button>
-                    )}
+                      </button>}
                   </div>
                   
                   {/* Search Suggestions Dropdown */}
-                  <SearchSuggestions
-                    query={searchQuery}
-                    suggestions={suggestions}
-                    isLoading={suggestionsLoading}
-                    isOpen={suggestionsOpen}
-                    onClose={closeSuggestions}
-                    onSelect={handleSuggestionSelect}
-                    onClearRecent={clearRecentSearches}
-                    onDidYouMeanClick={(text) => {
-                      setSearchQuery(text);
-                      logSearch(text, categoryFilter);
-                    }}
-                  />
+                  <SearchSuggestions query={searchQuery} suggestions={suggestions} isLoading={suggestionsLoading} isOpen={suggestionsOpen} onClose={closeSuggestions} onSelect={handleSuggestionSelect} onClearRecent={clearRecentSearches} onDidYouMeanClick={text => {
+                  setSearchQuery(text);
+                  logSearch(text, categoryFilter);
+                }} />
                 </div>
                 
                 {/* Search Button - Right */}
-                <button 
-                  onClick={() => {
-                    if (searchQuery.length >= 2) {
-                      logSearch(searchQuery, categoryFilter);
-                      closeSuggestions();
-                    }
-                  }}
-                  className="px-6 py-3.5 bg-black text-white font-semibold hover:bg-black/90 transition-colors flex items-center gap-2"
-                >
+                <button onClick={() => {
+                if (searchQuery.length >= 2) {
+                  logSearch(searchQuery, categoryFilter);
+                  closeSuggestions();
+                }
+              }} className="px-6 py-3.5 bg-black text-white font-semibold hover:bg-black/90 transition-colors flex items-center gap-2">
                   <Search size={18} />
                   <span>Search</span>
                 </button>
@@ -1264,10 +1217,7 @@ const AIAccountsSection = () => {
               
               {/* Filters Bar - Below Search */}
               <div className="mt-4">
-                <SearchFiltersBar
-                  filters={filterState}
-                  onFiltersChange={setFilterState}
-                />
+                <SearchFiltersBar filters={filterState} onFiltersChange={setFilterState} />
               </div>
             </div>
 
@@ -1288,66 +1238,56 @@ const AIAccountsSection = () => {
               </div>}
 
             {/* Discovery Sections - Only show when no active search/filters */}
-            {searchQuery.length === 0 && selectedTags.length === 0 && categoryFilter === 'all' && (
-              <div className="space-y-8 mb-8">
+            {searchQuery.length === 0 && selectedTags.length === 0 && categoryFilter === 'all' && <div className="space-y-8 mb-8">
 
                 {/* Hot Products */}
-                <HotProductsSection
-                  onProductClick={(product) => {
-                    const sellerProduct = sellerProducts.find(p => p.id === product.id);
-                    if (sellerProduct) {
-                      setSelectedSellerProduct(sellerProduct);
-                      setShowSellerDetailsModal(true);
-                    }
-                  }}
-                />
+                <HotProductsSection onProductClick={product => {
+              const sellerProduct = sellerProducts.find(p => p.id === product.id);
+              if (sellerProduct) {
+                setSelectedSellerProduct(sellerProduct);
+                setShowSellerDetailsModal(true);
+              }
+            }} />
 
                 {/* Top Rated */}
-                <TopRatedSection
-                  onProductClick={(product) => {
-                    const sellerProduct = sellerProducts.find(p => p.id === product.id);
-                    if (sellerProduct) {
-                      setSelectedSellerProduct(sellerProduct);
-                      setShowSellerDetailsModal(true);
-                    }
-                  }}
-                />
+                <TopRatedSection onProductClick={product => {
+              const sellerProduct = sellerProducts.find(p => p.id === product.id);
+              if (sellerProduct) {
+                setSelectedSellerProduct(sellerProduct);
+                setShowSellerDetailsModal(true);
+              }
+            }} />
 
                 {/* New Arrivals */}
-                <NewArrivalsSection
-                  onProductClick={(product) => {
-                    if (product.type === 'seller') {
-                      const sellerProduct = sellerProducts.find(p => p.id === product.id);
-                      if (sellerProduct) {
-                        setSelectedSellerProduct(sellerProduct);
-                        setShowSellerDetailsModal(true);
-                      }
-                    } else {
-                      const aiAccount = accounts.find(a => a.id === product.id);
-                      if (aiAccount) {
-                        setSelectedAccount(aiAccount);
-                        setShowDetailsModal(true);
-                      }
-                    }
-                  }}
-                />
-              </div>
-            )}
+                <NewArrivalsSection onProductClick={product => {
+              if (product.type === 'seller') {
+                const sellerProduct = sellerProducts.find(p => p.id === product.id);
+                if (sellerProduct) {
+                  setSelectedSellerProduct(sellerProduct);
+                  setShowSellerDetailsModal(true);
+                }
+              } else {
+                const aiAccount = accounts.find(a => a.id === product.id);
+                if (aiAccount) {
+                  setSelectedAccount(aiAccount);
+                  setShowDetailsModal(true);
+                }
+              }
+            }} />
+              </div>}
 
             {/* Section Header for All Products */}
-            {(searchQuery.length > 0 || selectedTags.length > 0 || categoryFilter !== 'all') && (
-              <h3 className="text-lg font-semibold mb-4 text-foreground">
+            {(searchQuery.length > 0 || selectedTags.length > 0 || categoryFilter !== 'all') && <h3 className="text-lg font-semibold mb-4 text-foreground">
                 {searchQuery ? `Results for "${searchQuery}"` : categoryFilter !== 'all' ? getCategoryName(categoryFilter) : 'All Products'}
                 <span className="text-muted-foreground text-sm font-normal ml-2">
                   ({filteredAccounts.length + sellerProducts.filter(p => {
-                    const matchesSearch = searchQuery.length === 0 || p.name.toLowerCase().includes(searchQuery.toLowerCase());
-                    const matchesCategory = categoryFilter === 'all' || p.category_id === categoryFilter;
-                    const matchesTags = selectedTags.length === 0 || p.tags?.some(tag => selectedTags.includes(tag));
-                    return matchesSearch && matchesCategory && matchesTags;
-                  }).length} products)
+                const matchesSearch = searchQuery.length === 0 || p.name.toLowerCase().includes(searchQuery.toLowerCase());
+                const matchesCategory = categoryFilter === 'all' || p.category_id === categoryFilter;
+                const matchesTags = selectedTags.length === 0 || p.tags?.some(tag => selectedTags.includes(tag));
+                return matchesSearch && matchesCategory && matchesTags;
+              }).length} products)
                 </span>
-              </h3>
-            )}
+              </h3>}
             {/* Products Grid */}
             {filteredAccounts.length === 0 ? <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
                 <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
@@ -1356,16 +1296,16 @@ const AIAccountsSection = () => {
                 <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Products Found</h3>
                 <p className="text-gray-500 mb-4">Try adjusting your search or filters</p>
                 <button onClick={() => {
-            setSearchQuery('');
-            setSelectedTags([]);
-            setCategoryFilter('all');
-          }} className="text-violet-600 font-medium hover:underline">
+              setSearchQuery('');
+              setSelectedTags([]);
+              setCategoryFilter('all');
+            }} className="text-violet-600 font-medium hover:underline">
                   Clear all filters
                 </button>
               </div> : <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
                 {filteredAccounts.map(account => {
-            const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
-            return <div key={account.id} className="group w-full text-left bg-white rounded-xl overflow-hidden border border-black/10 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5 cursor-pointer">
+              const hasEnoughBalance = (wallet?.balance || 0) >= account.price;
+              return <div key={account.id} className="group w-full text-left bg-white rounded-xl overflow-hidden border border-black/10 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5 cursor-pointer">
                       {/* Image */}
                       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
                         {account.icon_url ? <img src={account.icon_url} alt={account.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -1427,25 +1367,25 @@ const AIAccountsSection = () => {
                         <div className="flex gap-1.5">
                           {/* Chat Button */}
                           {account.chat_allowed !== false && <button onClick={() => {
-                    openChat({
-                      sellerId: 'support',
-                      sellerName: 'Uptoza Support',
-                      productId: account.id,
-                      productName: account.name,
-                      type: 'support'
-                    });
-                  }} className="flex-1 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700 min-h-[44px]">
+                      openChat({
+                        sellerId: 'support',
+                        sellerName: 'Uptoza Support',
+                        productId: account.id,
+                        productName: account.name,
+                        type: 'support'
+                      });
+                    }} className="flex-1 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-violet-100 hover:bg-violet-200 text-violet-700 min-h-[44px]">
                               <MessageCircle size={16} />
                               <span className="hidden sm:inline text-sm">Chat</span>
                             </button>}
                           {/* View Button */}
                           <button onClick={() => {
-                    setQuickViewProduct({
-                      type: 'account',
-                      data: account
-                    });
-                    setShowQuickViewModal(true);
-                  }} className="flex-1 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]">
+                      setQuickViewProduct({
+                        type: 'account',
+                        data: account
+                      });
+                      setShowQuickViewModal(true);
+                    }} className="flex-1 font-semibold py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]">
                             <Eye size={16} />
                             <span className="hidden sm:inline text-sm">View</span>
                           </button>
@@ -1456,17 +1396,17 @@ const AIAccountsSection = () => {
                         </div>
                       </div>
                     </div>;
-          })}
+            })}
                 
                 {/* Seller Products */}
                 {sellerProducts.filter(p => {
-            const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesCategory = categoryFilter === 'all' || p.category_id === categoryFilter;
-            const matchesTags = selectedTags.length === 0 || p.tags?.some(tag => selectedTags.includes(tag));
-            return matchesSearch && matchesCategory && matchesTags;
-          }).map(product => {
-            const hasEnoughBalance = (wallet?.balance || 0) >= product.price;
-            return <div key={`seller-${product.id}`} className="group w-full text-left bg-white rounded-xl overflow-hidden border border-black/10 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5 cursor-pointer">
+              const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+              const matchesCategory = categoryFilter === 'all' || p.category_id === categoryFilter;
+              const matchesTags = selectedTags.length === 0 || p.tags?.some(tag => selectedTags.includes(tag));
+              return matchesSearch && matchesCategory && matchesTags;
+            }).map(product => {
+              const hasEnoughBalance = (wallet?.balance || 0) >= product.price;
+              return <div key={`seller-${product.id}`} className="group w-full text-left bg-white rounded-xl overflow-hidden border border-black/10 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-black/20 hover:-translate-y-0.5 cursor-pointer">
                       {/* Image */}
                       <div className="relative aspect-[4/3] overflow-hidden">
                         {product.icon_url ? <img src={product.icon_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -1507,25 +1447,25 @@ const AIAccountsSection = () => {
                         <div className="flex gap-1.5 sm:gap-2">
                           {/* Chat Button */}
                           {product.chat_allowed !== false && <button onClick={() => {
-                    openChat({
-                      sellerId: product.seller_id,
-                      sellerName: product.seller_profiles?.store_name || 'Seller',
-                      productId: product.id,
-                      productName: product.name,
-                      type: 'seller'
-                    });
-                  }} className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-black/5 hover:bg-black/10 text-black min-h-[44px]">
+                      openChat({
+                        sellerId: product.seller_id,
+                        sellerName: product.seller_profiles?.store_name || 'Seller',
+                        productId: product.id,
+                        productName: product.name,
+                        type: 'seller'
+                      });
+                    }} className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-black/5 hover:bg-black/10 text-black min-h-[44px]">
                               <MessageCircle size={16} className="sm:w-4 sm:h-4" />
                               <span className="hidden sm:inline text-sm">Chat</span>
                             </button>}
                           {/* View Button */}
                           <button onClick={() => {
-                    setQuickViewProduct({
-                      type: 'seller',
-                      data: product
-                    });
-                    setShowQuickViewModal(true);
-                  }} className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]">
+                      setQuickViewProduct({
+                        type: 'seller',
+                        data: product
+                      });
+                      setShowQuickViewModal(true);
+                    }} className="flex-1 font-semibold py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700 min-h-[44px]">
                             <Eye size={16} className="sm:w-4 sm:h-4" />
                             <span className="hidden sm:inline text-sm">View</span>
                           </button>
@@ -1539,7 +1479,7 @@ const AIAccountsSection = () => {
                         </div>
                       </div>
                     </div>;
-          })}
+            })}
               </div>}
           </div>
         </div>
@@ -1633,6 +1573,290 @@ const AIAccountsSection = () => {
         </DialogContent>
       </Dialog>
 
+      {/* My Purchases Tab */}
+      {activeTab === 'purchases' && <>
+          {purchasesLoading ? <div className="flex items-center justify-center h-64">
+              <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-gray-900 animate-spin" />
+            </div> : purchases.length === 0 && sellerOrders.length === 0 ? <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
+              <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+                <Package className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Purchases Yet</h3>
+              <p className="text-gray-500 mb-6">Your purchased accounts will appear here</p>
+              <button onClick={() => setActiveTab('browse')} className="bg-gray-900 text-white font-semibold px-6 py-3 rounded-xl hover:bg-gray-800 transition-all">
+                Browse Products
+              </button>
+            </div> : <div className="space-y-3 sm:space-y-4">
+              {/* Seller Orders (Marketplace Purchases) */}
+              {sellerOrders.map(order => <div key={`seller-order-${order.id}`} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border-2 border-emerald-200 shadow-md hover:shadow-lg transition-all">
+                  {/* Stack on mobile, row on desktop */}
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-emerald-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {order.seller_products?.icon_url ? <img src={order.seller_products.icon_url} alt={order.seller_products?.name || 'Product'} className="w-full h-full object-cover" /> : <Store className="w-5 h-5 sm:w-8 sm:h-8 text-emerald-500" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <h3 className="text-sm sm:text-lg font-bold text-gray-900 tracking-tight truncate max-w-[180px] sm:max-w-none">
+                            {order.seller_products?.name || 'Product'}
+                          </h3>
+                          <span className="px-1.5 sm:px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] sm:text-xs font-medium flex-shrink-0">
+                            Marketplace
+                          </span>
+                        </div>
+                        <p className="text-gray-500 text-xs sm:text-sm truncate">
+                          From: {order.seller_profiles?.store_name || 'Seller'}
+                        </p>
+                        <p className="text-gray-400 text-[10px] sm:text-xs">
+                          {new Date(order.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Badges - wrap on mobile */}
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
+                      <span className="flex items-center gap-1 sm:gap-1.5 bg-violet-50 text-violet-600 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium">
+                        <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />
+                        ${Number(order.amount).toFixed(2)}
+                      </span>
+                      {order.status === 'pending' && <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <span className="hidden sm:inline">Awaiting Delivery</span>
+                          <span className="sm:hidden">Pending</span>
+                        </span>}
+                      {order.status === 'delivered' && !order.buyer_approved && <span className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <Truck className="w-3 h-3 sm:w-4 sm:h-4" />
+                          Delivered
+                        </span>}
+                      {order.status === 'completed' && order.buyer_approved && <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                          Approved
+                        </span>}
+                      {order.status === 'completed' && !order.buyer_approved && <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                          Completed
+                        </span>}
+                    </div>
+                  </div>
+
+                  {/* Credentials display for delivered orders */}
+                  {order.status === 'delivered' && order.credentials && <div className="mt-5 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-blue-700">Account Credentials</span>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => toggleCredentials(`seller-${order.id}`)} className="p-2 hover:bg-blue-100 rounded-lg transition-colors">
+                            {showCredentials[`seller-${order.id}`] ? <EyeOff className="w-4 h-4 text-blue-600" /> : <Eye className="w-4 h-4 text-blue-600" />}
+                          </button>
+                          <button onClick={() => copyCredentials(order.credentials!)} className="p-2 hover:bg-blue-100 rounded-lg transition-colors">
+                            <Copy className="w-4 h-4 text-blue-600" />
+                          </button>
+                        </div>
+                      </div>
+                      <code className="text-sm text-blue-900 font-mono block bg-blue-100 p-3 rounded-lg whitespace-pre-wrap">
+                        {showCredentials[`seller-${order.id}`] ? order.credentials : '••••••••••••••••'}
+                      </code>
+                      
+                      {/* Approve Delivery Button */}
+                      <div className="mt-4 flex items-center gap-3">
+                        <button onClick={() => handleApproveDelivery(order.id)} disabled={approvingOrder === order.id} className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50">
+                          {approvingOrder === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <>
+                              <ThumbsUp className="w-4 h-4" />
+                              Approve Delivery
+                            </>}
+                        </button>
+                        <button onClick={() => {
+                openChat({
+                  sellerId: order.seller_id,
+                  sellerName: order.seller_profiles?.store_name || 'Seller',
+                  productId: order.product_id,
+                  productName: order.seller_products?.name,
+                  type: 'seller'
+                });
+              }} className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all">
+                          <MessageCircle className="w-4 h-4" />
+                          Chat
+                        </button>
+                      </div>
+                      
+                      <p className="text-xs text-blue-600 mt-3">
+                        Please verify the credentials work before approving. This will release payment to the seller.
+                      </p>
+                    </div>}
+
+                  {/* Completed order credentials display */}
+                  {order.status === 'completed' && order.credentials && <div className="mt-5 p-4 bg-gray-100 rounded-xl border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-600">Account Credentials</span>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => toggleCredentials(`seller-${order.id}`)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                            {showCredentials[`seller-${order.id}`] ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4 text-gray-500" />}
+                          </button>
+                          <button onClick={() => copyCredentials(order.credentials!)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                            <Copy className="w-4 h-4 text-gray-500" />
+                          </button>
+                        </div>
+                      </div>
+                      <code className="text-sm text-gray-800 font-mono block bg-gray-200 p-3 rounded-lg whitespace-pre-wrap">
+                        {showCredentials[`seller-${order.id}`] ? order.credentials : '••••••••••••••••'}
+                      </code>
+                    </div>}
+
+                  {/* Pending delivery message */}
+                  {order.status === 'pending' && <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center gap-3">
+                      <Clock className="w-5 h-5 text-amber-600" />
+                      <p className="text-sm text-amber-700">
+                        Waiting for seller to deliver your account credentials.
+                      </p>
+                    </div>}
+                </div>)}
+
+              {/* Admin Account Purchases */}
+              {purchases.map(purchase => <div key={purchase.id} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-gray-200 shadow-md hover:shadow-lg transition-all">
+                  {/* Stack on mobile, row on desktop */}
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <img src={purchase.ai_accounts?.icon_url || getProductImage(purchase.ai_accounts?.category)} alt={purchase.ai_accounts?.name || 'Account'} className="w-7 h-7 sm:w-10 sm:h-10 object-contain" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm sm:text-lg font-bold text-gray-900 tracking-tight truncate">
+                          {purchase.ai_accounts?.name || 'Account'}
+                        </h3>
+                        <p className="text-gray-500 text-xs sm:text-sm">
+                          {new Date(purchase.purchased_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Badges - wrap on mobile */}
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
+                      <span className="flex items-center gap-1 bg-violet-50 text-violet-600 px-2 py-1 rounded-full text-xs sm:text-sm font-medium">
+                        <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />
+                        Wallet
+                      </span>
+                      {purchase.delivery_status === 'pending' ? <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                          Pending
+                        </span> : <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                          Delivered
+                        </span>}
+                    </div>
+                  </div>
+
+                  {purchase.delivery_status === 'delivered' && purchase.account_credentials && <div className="mt-5 p-4 bg-gray-100 rounded-xl border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-600">Account Credentials</span>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => toggleCredentials(purchase.id)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                            {showCredentials[purchase.id] ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4 text-gray-500" />}
+                          </button>
+                          <button onClick={() => copyCredentials(purchase.account_credentials!)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                            <Copy className="w-4 h-4 text-gray-500" />
+                          </button>
+                        </div>
+                      </div>
+                      <code className="text-sm text-gray-800 font-mono block bg-gray-200 p-3 rounded-lg">
+                        {showCredentials[purchase.id] ? purchase.account_credentials : '••••••••••••••••'}
+                      </code>
+                    </div>}
+                </div>)}
+            </div>}
+        </>}
+
+      {/* Stats Tab */}
+      {activeTab === 'stats' && <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
+            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
+              <p className="text-xs lg:text-sm text-gray-500 mb-1">Total Purchases</p>
+              <p className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">{totalPurchases}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
+              <p className="text-xs lg:text-sm text-gray-500 mb-1">Total Spent</p>
+              <p className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">${totalSpent.toFixed(2)}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
+              <p className="text-xs lg:text-sm text-gray-500 mb-1">Delivered</p>
+              <p className="text-2xl lg:text-3xl font-bold text-emerald-600 tracking-tight">{deliveredCount}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
+              <p className="text-xs lg:text-sm text-gray-500 mb-1">Pending</p>
+              <p className="text-2xl lg:text-3xl font-bold text-amber-600 tracking-tight">{pendingCount}</p>
+            </div>
+          </div>
+
+          {/* Wallet Section */}
+          <div className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-2xl p-6 lg:p-8 text-white shadow-xl mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Wallet className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-white/70 text-sm">Current Balance</p>
+                  <p className="text-3xl lg:text-4xl font-bold tracking-tight">
+                    ${wallet?.balance?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => navigate('/dashboard/billing')} className="px-6 py-3 bg-white text-violet-700 rounded-xl font-semibold hover:bg-white/90 transition-all">
+                Top Up
+              </button>
+            </div>
+          </div>
+        </>}
+
+      {/* Chat Tab */}
+      {activeTab === 'chat' && <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden">
+          {/* Chat Header */}
+          <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
+              <MessageCircle className="text-violet-600" size={20} />
+            </div>
+            <div>
+              <h3 className="text-gray-900 font-semibold">Support Chat</h3>
+              <p className="text-gray-500 text-sm">We typically reply within a few hours</p>
+            </div>
+          </div>
+          
+          {/* Messages Area */}
+          <div className="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            {messages.length === 0 ? <div className="h-full flex items-center justify-center">
+                <div className="text-center">
+                  <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600">No messages yet</p>
+                  <p className="text-gray-500 text-sm">Send us a message and we'll get back to you</p>
+                </div>
+              </div> : messages.map(msg => <div key={msg.id} className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${msg.sender_type === 'user' ? 'bg-violet-500 text-white' : 'bg-white text-gray-900 border border-gray-200 shadow-sm'}`}>
+                    <p className="whitespace-pre-wrap">{msg.message}</p>
+                    <span className={`text-xs mt-1 block ${msg.sender_type === 'user' ? 'opacity-60' : 'text-gray-400'}`}>
+                      {format(new Date(msg.created_at), 'h:mm a')}
+                    </span>
+                  </div>
+                </div>)}
+            <div ref={messagesEndRef} />
+          </div>
+          
+          {/* Input Area */}
+          <div className="p-4 border-t border-gray-200 bg-white">
+            <div className="flex gap-3">
+              <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Type your message..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-300" onKeyPress={e => e.key === 'Enter' && !e.shiftKey && sendChatMessage()} />
+              <button onClick={sendChatMessage} disabled={!newMessage.trim() || sendingMessage} className="bg-violet-500 hover:bg-violet-600 text-white px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <Send size={18} />
+                Send
+              </button>
+            </div>
+          </div>
+        </div>}
 
       {/* View Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
@@ -1728,55 +1952,44 @@ const AIAccountsSection = () => {
       </Dialog>
 
       {/* Quick View Modal - Store-matching design */}
-      <QuickViewModal
-        open={showQuickViewModal}
-        onOpenChange={setShowQuickViewModal}
-        productType={quickViewProduct?.type || 'account'}
-        product={quickViewProduct?.data || null}
-        purchasing={purchasing === quickViewProduct?.data?.id}
-        walletBalance={wallet?.balance || 0}
-        isLoggedIn={!!user}
-        onChat={() => {
-          setShowQuickViewModal(false);
-          if (quickViewProduct?.type === 'seller') {
-            const product = quickViewProduct.data as SellerProduct;
-            openChat({
-              sellerId: product.seller_id,
-              sellerName: product.seller_profiles?.store_name || 'Seller',
-              productId: product.id,
-              productName: product.name,
-              type: 'seller'
-            });
-          } else {
-            openChat({
-              sellerId: 'support',
-              sellerName: 'Uptoza Support',
-              productId: quickViewProduct?.data.id || '',
-              productName: quickViewProduct?.data.name || '',
-              type: 'support'
-            });
-          }
-        }}
-        onBuy={() => {
-          setShowQuickViewModal(false);
-          if (quickViewProduct?.type === 'seller') {
-            handleSellerProductPurchase(quickViewProduct.data as SellerProduct);
-          } else if (quickViewProduct) {
-            handlePurchase(quickViewProduct.data as AIAccount);
-          }
-        }}
-        onViewFull={() => {
-          setShowQuickViewModal(false);
-          if (quickViewProduct?.type === 'seller') {
-            const product = quickViewProduct.data as SellerProduct;
-            // Use slug if available, otherwise fallback to ID
-            const slug = product.slug || product.id;
-            navigate(`/dashboard/marketplace/product/${slug}`);
-          } else if (quickViewProduct) {
-            navigate(`/dashboard/marketplace/product/${quickViewProduct.data.id}`);
-          }
-        }}
-      />
+      <QuickViewModal open={showQuickViewModal} onOpenChange={setShowQuickViewModal} productType={quickViewProduct?.type || 'account'} product={quickViewProduct?.data || null} purchasing={purchasing === quickViewProduct?.data?.id} walletBalance={wallet?.balance || 0} isLoggedIn={!!user} onChat={() => {
+      setShowQuickViewModal(false);
+      if (quickViewProduct?.type === 'seller') {
+        const product = quickViewProduct.data as SellerProduct;
+        openChat({
+          sellerId: product.seller_id,
+          sellerName: product.seller_profiles?.store_name || 'Seller',
+          productId: product.id,
+          productName: product.name,
+          type: 'seller'
+        });
+      } else {
+        openChat({
+          sellerId: 'support',
+          sellerName: 'Uptoza Support',
+          productId: quickViewProduct?.data.id || '',
+          productName: quickViewProduct?.data.name || '',
+          type: 'support'
+        });
+      }
+    }} onBuy={() => {
+      setShowQuickViewModal(false);
+      if (quickViewProduct?.type === 'seller') {
+        handleSellerProductPurchase(quickViewProduct.data as SellerProduct);
+      } else if (quickViewProduct) {
+        handlePurchase(quickViewProduct.data as AIAccount);
+      }
+    }} onViewFull={() => {
+      setShowQuickViewModal(false);
+      if (quickViewProduct?.type === 'seller') {
+        const product = quickViewProduct.data as SellerProduct;
+        // Use slug if available, otherwise fallback to ID
+        const slug = product.slug || product.id;
+        navigate(`/dashboard/marketplace/product/${slug}`);
+      } else if (quickViewProduct) {
+        navigate(`/dashboard/marketplace/product/${quickViewProduct.data.id}`);
+      }
+    }} />
 
       {/* Insufficient Funds Modal */}
       {insufficientFundsModal.show && <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1968,32 +2181,16 @@ const AIAccountsSection = () => {
         </div>}
 
       {/* Mobile Search Overlay */}
-      <MobileSearchOverlay
-        isOpen={mobileSearchOpen}
-        onClose={() => setMobileSearchOpen(false)}
-        query={searchQuery}
-        setQuery={setSearchQuery}
-        suggestions={suggestions}
-        isLoading={suggestionsLoading}
-        onSelect={(suggestion) => {
-          handleSuggestionSelect(suggestion);
-          setMobileSearchOpen(false);
-        }}
-        onClearRecent={clearRecentSearches}
-        onSearch={() => {
-          if (searchQuery.length >= 2) {
-            logSearch(searchQuery, categoryFilter);
-          }
-        }}
-        voiceSupported={voiceSupported}
-        isListening={isListening}
-        voiceError={voiceError}
-        onVoiceStart={startListening}
-        onVoiceStop={stopListening}
-        onImageSearchResult={(text) => {
-          setSearchQuery(text);
-        }}
-      />
+      <MobileSearchOverlay isOpen={mobileSearchOpen} onClose={() => setMobileSearchOpen(false)} query={searchQuery} setQuery={setSearchQuery} suggestions={suggestions} isLoading={suggestionsLoading} onSelect={suggestion => {
+      handleSuggestionSelect(suggestion);
+      setMobileSearchOpen(false);
+    }} onClearRecent={clearRecentSearches} onSearch={() => {
+      if (searchQuery.length >= 2) {
+        logSearch(searchQuery, categoryFilter);
+      }
+    }} voiceSupported={voiceSupported} isListening={isListening} voiceError={voiceError} onVoiceStart={startListening} onVoiceStop={stopListening} onImageSearchResult={text => {
+      setSearchQuery(text);
+    }} />
     </div>;
 };
 export default AIAccountsSection;
