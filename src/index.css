@@ -16,6 +16,18 @@
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
 
+    /* ==========================================
+       UPTOZA BRAND IDENTITY SYSTEM
+       ========================================== */
+    --uptoza-primary: 265 85% 60%;        /* Signature violet */
+    --uptoza-secondary: 330 85% 65%;      /* Signature pink */
+    --uptoza-accent: 280 75% 55%;         /* Fuchsia accent */
+    --uptoza-surface: 30 20% 98%;         /* Warm white (not pure white) */
+    --uptoza-glow: 265 85% 60% / 0.15;    /* Brand glow effect */
+    --uptoza-gradient-start: 265 85% 60%; /* Gradient start */
+    --uptoza-gradient-mid: 280 75% 55%;   /* Gradient middle */
+    --uptoza-gradient-end: 330 85% 65%;   /* Gradient end */
+
     /* Marketplace Core Colors (HSL) */
     --marketplace-green: 153 66% 44%;
     --marketplace-green-hover: 153 66% 38%;
@@ -607,5 +619,187 @@
   /* Neo-Brutalism Design System */
   .shadow-neobrutalism {
     box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+  }
+
+  /* ==========================================
+     UPTOZA BRAND IDENTITY UTILITIES
+     ========================================== */
+  
+  /* Brand Gradient Backgrounds */
+  .uptoza-gradient {
+    background: linear-gradient(135deg, 
+      hsl(265 85% 60%) 0%, 
+      hsl(280 75% 55%) 50%, 
+      hsl(330 85% 65%) 100%);
+  }
+
+  .uptoza-gradient-text {
+    background: linear-gradient(135deg, 
+      hsl(265 85% 60%) 0%, 
+      hsl(280 75% 55%) 50%, 
+      hsl(330 85% 65%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .uptoza-gradient-subtle {
+    background: linear-gradient(135deg, 
+      hsl(265 85% 60% / 0.08) 0%, 
+      hsl(330 85% 65% / 0.05) 100%);
+  }
+
+  /* Brand Glow Effects */
+  .uptoza-glow {
+    box-shadow: 0 0 30px hsl(265 85% 60% / 0.25);
+  }
+
+  .uptoza-glow-lg {
+    box-shadow: 0 0 50px hsl(265 85% 60% / 0.35);
+  }
+
+  .uptoza-glow-pulse {
+    animation: uptoza-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes uptoza-pulse {
+    0%, 100% { 
+      box-shadow: 0 0 20px hsl(265 85% 60% / 0.2); 
+    }
+    50% { 
+      box-shadow: 0 0 40px hsl(265 85% 60% / 0.4); 
+    }
+  }
+
+  /* Brand Surface */
+  .uptoza-surface {
+    background: hsl(30 20% 98%);
+  }
+
+  /* Brand Border Gradient */
+  .uptoza-border-gradient {
+    position: relative;
+  }
+
+  .uptoza-border-gradient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(135deg, 
+      hsl(265 85% 60%) 0%, 
+      hsl(280 75% 55%) 50%, 
+      hsl(330 85% 65%) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Brand Typography */
+  .uptoza-display {
+    font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .uptoza-heading {
+    font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .uptoza-stat {
+    font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .uptoza-label {
+    font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Brand Card Styles */
+  .uptoza-card {
+    background: hsl(30 20% 98%);
+    border-radius: 20px;
+    border: 2px solid hsl(0 0% 0%);
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+    transition: all 0.2s ease;
+  }
+
+  .uptoza-card:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+  }
+
+  .uptoza-card-featured {
+    background: linear-gradient(135deg, 
+      hsl(265 85% 60% / 0.05) 0%, 
+      hsl(330 85% 65% / 0.03) 100%);
+    border: 2px solid hsl(265 85% 60% / 0.3);
+    border-radius: 20px;
+    box-shadow: 
+      4px 4px 0px 0px hsl(265 85% 60% / 0.3),
+      0 0 30px hsl(265 85% 60% / 0.1);
+  }
+
+  /* Brand Accent Line */
+  .uptoza-accent-line {
+    position: relative;
+  }
+
+  .uptoza-accent-line::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    border-radius: 4px 0 0 4px;
+    background: linear-gradient(180deg, 
+      hsl(265 85% 60%) 0%, 
+      hsl(330 85% 65%) 100%);
+  }
+
+  /* Brand Button */
+  .uptoza-button {
+    background: linear-gradient(135deg, 
+      hsl(265 85% 60%) 0%, 
+      hsl(280 75% 55%) 50%, 
+      hsl(330 85% 65%) 100%);
+    color: white;
+    font-weight: 600;
+    border-radius: 12px;
+    border: 2px solid hsl(0 0% 0%);
+    box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);
+    transition: all 0.15s ease;
+  }
+
+  .uptoza-button:hover {
+    transform: translate(1px, 1px);
+    box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+  }
+
+  .uptoza-button:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0px 0px 0px 0px rgba(0,0,0,1);
+  }
+
+  /* Time-based greeting animations */
+  @keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(15deg); }
+    75% { transform: rotate(-10deg); }
+  }
+
+  .wave-emoji {
+    display: inline-block;
+    animation: wave 1.5s ease-in-out;
   }
 }
