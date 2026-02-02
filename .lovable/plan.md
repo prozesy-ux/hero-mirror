@@ -1,114 +1,123 @@
 
-# Seller Dashboard Neo-Brutalist Card Design - Complete Update
+# Complete Neo-Brutalist Card Design for Remaining Seller Dashboard Sections
 
-## Overview
+## Problem Identified
 
-Multiple Seller Dashboard sections still have the light/modern card design (`border border-slate-100/200`, `shadow-sm`) instead of the **neo-brutalist style** that matches the Buyer Dashboard.
+After thorough code review, the following Seller Dashboard sections still have the **light/modern card design** instead of the **neo-brutalist style** that matches the Buyer Dashboard:
 
-The target design uses:
-- `border-2 border-black`
-- `shadow-neobrutalism`
-- `hover:shadow-none hover:translate-x-1 hover:translate-y-1`
-- `rounded-lg`
+- `/seller` - SellerDashboard.tsx (bottom cards)
+- `/seller/analytics` - SellerAnalytics.tsx (bottom cards)
+- `/seller/customers` - SellerCustomers.tsx (all cards)
+- `/seller/inventory` - SellerInventory.tsx (all cards)
+- `/seller/coupons` - SellerMarketing.tsx (all cards)
+
+---
+
+## Target Design Standard
+
+All cards must use:
+- `border-2 border-black` (thick black border)
+- `shadow-neobrutalism` (4px offset shadow)
+- `rounded-lg` (consistent border radius)
+- `hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all` (interactive cards only)
 
 ---
 
 ## Files Requiring Updates
 
-### 1. SellerPerformance.tsx
+### 1. SellerDashboard.tsx
 
-**Current**: All metric cards use `border border-slate-100 shadow-sm`
+| Line Range | Component | Current Style | Update To |
+|------------|-----------|---------------|-----------|
+| 446-458 | Monthly Comparison card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+| 462-513 | Revenue Chart card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+| 518-545 | Top Products card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+| 548-596 | Recent Orders card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
 
-| Line | Component | Current | Update To |
-|------|-----------|---------|-----------|
-| 128-136 | Skeleton states | `rounded-2xl` | `rounded-lg border-2 border-black` |
-| 186-198 | Trust Score card | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg hover:shadow-none hover:translate-x-1 hover:translate-y-1` |
-| 201-211 | Fulfillment Rate card | Same pattern | Same update |
-| 214-224 | Avg Response card | Same pattern | Same update |
-| 227-237 | Avg Delivery card | Same pattern | Same update |
-| 243-270 | Order Distribution card | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-| 273-298 | Performance Checklist card | Same pattern | Same update |
-| 302-323 | Stats Summary card | `bg-slate-50 border border-slate-100 rounded-2xl` | `bg-white border-2 border-black shadow-neobrutalism rounded-lg` |
+### 2. SellerAnalytics.tsx
 
-### 2. SellerFlashSales.tsx
+| Line Range | Component | Current Style | Update To |
+|------------|-----------|---------------|-----------|
+| 488-501 | Customer Feedback card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+| 509-557 | Order Status Donut card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+| 560-582 | Top Products card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+| 585-607 | Revenue by Day card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
 
-| Line | Component | Current | Update To |
-|------|-----------|---------|-----------|
-| 268-272 | Empty state | `bg-slate-50 border border-dashed border-slate-200 rounded-xl` | `bg-white border-2 border-dashed border-black rounded-lg` |
-| 280-286 | Flash sale cards | Custom gradient borders | `border-2 border-black shadow-neobrutalism rounded-lg` + keep gradient bg |
+### 3. SellerCustomers.tsx
 
-### 3. SellerReports.tsx
+| Line Range | Component | Current Style | Update To |
+|------------|-----------|---------------|-----------|
+| 186-196 | Total Customers stat | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` + hover effect |
+| 198-208 | Repeat Customers stat | Same pattern | Same update |
+| 210-220 | Retention Rate stat | Same pattern | Same update |
+| 222-232 | Avg Order Value stat | Same pattern | Same update |
+| 239-261 | Top Customer card | `border border-orange-100 rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+| 264-291 | Customer Segments card | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+| 295-361 | Customer List table | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
 
-| Line | Component | Current | Update To |
-|------|-----------|---------|-----------|
-| 257-263 | Skeleton states | `rounded-2xl` | `rounded-lg border-2 border-black` |
-| 322-339 | Report type cards | `border-2` with `border-slate-100` or `border-emerald-500` | `border-2 border-black shadow-neobrutalism rounded-lg` (selected: add `ring-2 ring-emerald-500`) |
-| 343 | Report preview container | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+### 4. SellerInventory.tsx
 
-### 4. SellerProductAnalytics.tsx
+| Line Range | Component | Current Style | Update To |
+|------------|-----------|---------------|-----------|
+| 143-153 | Total Products stat | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` + hover effect |
+| 156-166 | Total Units stat | Same pattern | Same update |
+| 169-179 | In Stock stat | Same pattern | Same update |
+| 182-192 | Low Stock stat | Same pattern | Same update |
+| 195-205 | Out of Stock stat | Same pattern | Same update |
+| 209-228 | Inventory Health card | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+| 256-348 | Products Table card | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
 
-| Line | Component | Current | Update To |
-|------|-----------|---------|-----------|
-| 109-114 | Empty state | `bg-slate-50 border border-dashed border-slate-200 rounded-xl` | `bg-white border-2 border-dashed border-black rounded-lg` |
-| 129-135 | Total Views stat | `bg-blue-50 rounded-xl border border-blue-100` | `bg-white rounded-lg border-2 border-black shadow-neobrutalism` + keep blue icon bg |
-| 136-142 | Total Clicks stat | Same pattern (purple) | Same update |
-| 143-149 | Total Purchases stat | Same pattern (emerald) | Same update |
-| 150-158 | Conversion Rate stat | Same pattern (amber) | Same update |
-| 162 | Chart container | `bg-white rounded-xl border border-slate-200` | `bg-white rounded-lg border-2 border-black shadow-neobrutalism` |
-| 221 | Product Performance table | `bg-white rounded-xl border border-slate-200` | `bg-white rounded-lg border-2 border-black shadow-neobrutalism` |
+### 5. SellerMarketing.tsx (Coupons)
 
-### 5. SellerSupport.tsx
-
-| Line | Component | Current | Update To |
-|------|-----------|---------|-----------|
-| 423-425 | Skeleton states | `border-2 border-black` | Already correct |
-| 457 | Chat card container | `border border-slate-100 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-
-### 6. SellerFeatureRequests.tsx
-
-| Line | Component | Current | Update To |
-|------|-----------|---------|-----------|
-| 153-226 | New Request Card | `Card` with `border-slate-200 shadow-sm` | Add `className="border-2 border-black shadow-neobrutalism rounded-lg"` |
-| 231-312 | Requests List Card | Same pattern | Same update |
-
-### 7. SellerWallet.tsx
-
-Need to check all card containers and update to neo-brutalist style.
+| Line Range | Component | Current Style | Update To |
+|------------|-----------|---------------|-----------|
+| 321-331 | Total Codes stat | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` + hover effect |
+| 333-343 | Active Codes stat | Same pattern | Same update |
+| 345-355 | Total Uses stat | Same pattern | Same update |
+| 359-435 | Discount Codes Table | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
 
 ---
 
-## Visual Reference
+## Visual Comparison
 
-**Before (Incorrect - Light Style):**
-```text
-+------------------------------------+
-| Light slate border (1px)           |
-| Subtle shadow-sm                   |
-| rounded-xl or rounded-2xl          |
-+------------------------------------+
+**Current (Incorrect):**
+```
+┌────────────────────────────────────┐
+│  1px slate border                  │
+│  Subtle shadow-sm                  │
+│  rounded-xl/2xl corners            │
+└────────────────────────────────────┘
 ```
 
-**After (Correct - Neo-Brutalist):**
-```text
-+====================================+ #
-| Thick black border (2px)           | #
-| 4px offset shadow                  | #
-| rounded-lg                         | #
-| Shifts into shadow on hover        | #
-+====================================+
-  ####################################
+**Target (Correct - Neo-Brutalist):**
+```
+╔════════════════════════════════════╗ ▄
+║  2px black border                  ║ ▄
+║  4px offset shadow                 ║ ▄
+║  rounded-lg corners                ║ ▄
+║  Shifts into shadow on hover       ║ ▄
+╚════════════════════════════════════╝
+   ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
 ```
 
 ---
 
-## Implementation Approach
+## Implementation Summary
 
-1. **SellerPerformance.tsx** - Update all 7+ card containers
-2. **SellerFlashSales.tsx** - Update empty state and sale cards
-3. **SellerReports.tsx** - Update skeletons, report type cards, and preview container
-4. **SellerProductAnalytics.tsx** - Update all stat cards, chart, and table containers
-5. **SellerSupport.tsx** - Update chat card container
-6. **SellerFeatureRequests.tsx** - Update both Card components
-7. **SellerWallet.tsx** - Update all card containers
+1. **SellerDashboard.tsx** - Update 4 bottom section cards (Monthly Comparison, Revenue Chart, Top Products, Recent Orders)
+2. **SellerAnalytics.tsx** - Update 4 bottom section cards (Customer Feedback, Order Status, Top Products, Revenue by Day)
+3. **SellerCustomers.tsx** - Update all 7 card containers (4 stat cards + Top Customer + Segments + Table)
+4. **SellerInventory.tsx** - Update all 7 card containers (5 stat cards + Health + Table)
+5. **SellerMarketing.tsx** - Update all 4 card containers (3 stat cards + Table)
 
-All cards will then match the Buyer Dashboard's neo-brutalist design for visual consistency.
+Total: **26 cards** will be updated to match the neo-brutalist design system.
+
+---
+
+## Technical Notes
+
+- All `rounded-2xl` and `rounded-xl` will be changed to `rounded-lg` for consistency
+- All `border border-slate-100/200` will be changed to `border-2 border-black`
+- All `shadow-sm` will be changed to `shadow-neobrutalism`
+- Interactive stat cards will receive `hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer`
+- Container cards (tables, charts) will not have hover effects but will have the neo-brutalist border and shadow
