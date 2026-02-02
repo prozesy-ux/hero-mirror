@@ -264,18 +264,18 @@ const BuyerDashboardHome = () => {
       {/* Welcome Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl uptoza-heading text-slate-900">
-            Your empire awaits{user?.email ? `, ${user.email.split('@')[0]}` : ''}! <span className="wave-emoji">👋</span>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Welcome back{user?.email ? `, ${user.email.split('@')[0]}` : ''}! 👋
           </h1>
-          <p className="text-slate-500 mt-1">Here's what's happening in your world.</p>
+          <p className="text-slate-500 mt-1">Here's what's happening with your account.</p>
         </div>
         <div className="flex gap-2">
           <Button 
             onClick={() => navigate('/dashboard/marketplace')}
-            className="uptoza-button"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
           >
             <Store className="w-4 h-4 mr-2" />
-            Explore Marketplace
+            Browse Marketplace
           </Button>
         </div>
       </div>
@@ -283,41 +283,40 @@ const BuyerDashboardHome = () => {
       {/* Flash Deals */}
       <FlashSaleSection className="bg-white rounded-lg border-2 border-black shadow-neobrutalism" />
 
-      {/* Stats Row - 4 Cards with UPTOZA variant */}
+      {/* Stats Row - 4 Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Your Balance"
+          label="Wallet Balance"
           value={formatAmountOnly(wallet.balance)}
           icon={<Wallet className="w-6 h-6" />}
           accentColor="violet"
-          variant="uptoza"
-          featured
+          variant="neobrutalism"
           href="/dashboard/wallet"
         />
         <StatCard
-          label="Money Spent"
+          label="Total Spent"
           value={formatAmountOnly(stats.totalSpent)}
           icon={<TrendingUp className="w-6 h-6" />}
           accentColor="emerald"
-          variant="uptoza"
-          subValue="All-time"
+          variant="neobrutalism"
+          subValue="Lifetime"
         />
         <StatCard
-          label="Orders Made"
+          label="Total Orders"
           value={stats.total}
           icon={<ShoppingBag className="w-6 h-6" />}
           accentColor="blue"
-          variant="uptoza"
+          variant="neobrutalism"
           subValue={`${stats.completed} completed`}
           href="/dashboard/orders"
         />
         <StatCard
-          label="In Transit"
+          label="Pending Delivery"
           value={stats.pending + stats.delivered}
           icon={<Clock className="w-6 h-6" />}
           accentColor="orange"
-          variant="uptoza"
-          subValue={stats.delivered > 0 ? `${stats.delivered} ready for review` : undefined}
+          variant="neobrutalism"
+          subValue={stats.delivered > 0 ? `${stats.delivered} awaiting approval` : undefined}
         />
       </div>
 
@@ -325,14 +324,14 @@ const BuyerDashboardHome = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Add Funds - Primary CTA */}
         <Link to="/dashboard/billing">
-          <div className="uptoza-gradient rounded-[20px] p-5 text-white border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg p-5 text-white border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Plus className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-semibold">Top Up Wallet</p>
-                <p className="text-sm text-white/80">Add funds now</p>
+                <p className="font-semibold">Add Funds</p>
+                <p className="text-sm text-white/80">Top up your wallet</p>
               </div>
               <ChevronRight className="w-5 h-5 ml-auto opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
             </div>
@@ -341,44 +340,44 @@ const BuyerDashboardHome = () => {
 
         {/* Browse Marketplace */}
         <Link to="/dashboard/marketplace">
-          <div className="bg-[hsl(30,20%,98%)] rounded-[20px] p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
+          <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-violet-50 to-fuchsia-50 flex items-center justify-center border border-violet-100">
-                <Sparkles className="w-5 h-5 text-violet-600" />
+              <div className="h-11 w-11 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="font-semibold text-slate-800">Discover</p>
-                <p className="text-sm text-slate-500">Find new products</p>
+                <p className="font-semibold text-slate-800">Marketplace</p>
+                <p className="text-sm text-slate-500">Discover products</p>
               </div>
-              <ChevronRight className="w-5 h-5 ml-auto text-slate-400 group-hover:text-violet-600 group-hover:translate-x-1 transition-all" />
+              <ChevronRight className="w-5 h-5 ml-auto text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
             </div>
           </div>
         </Link>
 
         {/* View Wishlist */}
         <Link to="/dashboard/wishlist">
-          <div className="bg-[hsl(30,20%,98%)] rounded-[20px] p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
+          <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-pink-50 to-rose-50 flex items-center justify-center border border-pink-100">
+              <div className="h-11 w-11 rounded-xl bg-pink-50 flex items-center justify-center">
                 <Heart className="w-5 h-5 text-pink-600" />
               </div>
               <div>
-                <p className="font-semibold text-slate-800">Saved Items</p>
-                <p className="text-sm text-slate-500">{wishlistCount} in your list</p>
+                <p className="font-semibold text-slate-800">Wishlist</p>
+                <p className="text-sm text-slate-500">{wishlistCount} saved items</p>
               </div>
-              <ChevronRight className="w-5 h-5 ml-auto text-slate-400 group-hover:text-pink-600 group-hover:translate-x-1 transition-all" />
+              <ChevronRight className="w-5 h-5 ml-auto text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
             </div>
           </div>
         </Link>
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-[hsl(30,20%,98%)] rounded-[20px] border-2 border-black shadow-neobrutalism">
-        <div className="flex items-center justify-between p-5 border-b border-slate-200">
-          <h2 className="text-lg uptoza-heading text-slate-900">Recent Orders</h2>
+      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <h2 className="text-lg font-semibold text-slate-900">Recent Orders</h2>
           <Link 
             to="/dashboard/orders" 
-            className="text-sm font-medium text-violet-600 hover:text-violet-700 flex items-center gap-1"
+            className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
           >
             View All <ArrowRight className="w-4 h-4" />
           </Link>

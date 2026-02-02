@@ -108,13 +108,13 @@ const SellerSidebar = () => {
           isCollapsed ? 'w-[72px]' : 'w-[240px]'
         }`}
       >
-        {/* Logo Section with brand gradient */}
+        {/* Logo Section - Gumroad style text logo */}
         <div className={`h-14 flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-3' : 'px-5'}`}>
           <Link to="/seller" className="flex items-center">
             {isCollapsed ? (
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 text-lg font-bold">U</span>
+              <span className="text-white text-lg font-bold">U</span>
             ) : (
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 text-xl font-bold tracking-tight">UPTOZA</span>
+              <span className="text-white text-xl font-bold tracking-tight">UPTOZA</span>
             )}
           </Link>
         </div>
@@ -253,15 +253,15 @@ const SellerSidebar = () => {
             )}
           </button>
 
-          {/* User Profile with brand gradient ring */}
+          {/* User Profile */}
           <div className={`mt-2 pt-3 border-t border-white/10 ${isCollapsed ? 'px-3' : 'px-4'}`}>
             <Link 
               to="/seller/settings"
               className={`flex items-center gap-3 py-2 rounded-lg hover:bg-white/5 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
             >
-              <Avatar className="h-8 w-8 ring-2 ring-gradient-to-r from-violet-500 to-pink-500">
+              <Avatar className="h-8 w-8 ring-1 ring-white/20">
                 <AvatarImage src={profile?.store_logo_url || ''} />
-                <AvatarFallback className="bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white text-xs font-medium">
+                <AvatarFallback className="bg-white/10 text-white text-xs font-medium">
                   {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
                 </AvatarFallback>
               </Avatar>

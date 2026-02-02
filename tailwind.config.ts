@@ -24,15 +24,6 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         
-        // UPTOZA Brand Identity System
-        uptoza: {
-          primary: "hsl(var(--uptoza-primary))",
-          secondary: "hsl(var(--uptoza-secondary))",
-          accent: "hsl(var(--uptoza-accent))",
-          surface: "hsl(var(--uptoza-surface))",
-          glow: "hsl(var(--uptoza-glow))",
-        },
-        
         // Fiverr-inspired marketplace colors
         marketplace: {
           green: "hsl(var(--marketplace-green))",
@@ -100,10 +91,6 @@ export default {
         "stat": "0 1px 3px rgba(0, 0, 0, 0.04)",
         "stat-hover": "0 4px 12px rgba(0, 0, 0, 0.08)",
         "card-premium": "0 2px 8px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06)",
-        "neobrutalism": "4px 4px 0px 0px rgba(0,0,0,1)",
-        "uptoza-glow": "0 0 30px hsl(265 85% 60% / 0.25)",
-        "uptoza-glow-lg": "0 0 50px hsl(265 85% 60% / 0.35)",
-        "uptoza-card": "0 4px 20px hsl(265 85% 60% / 0.1)",
       },
       keyframes: {
         "accordion-down": {
