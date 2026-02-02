@@ -218,6 +218,8 @@ const BuyerOrders = () => {
     pending: orders.filter(o => o.status === 'pending').length,
     delivered: orders.filter(o => o.status === 'delivered').length,
     completed: orders.filter(o => o.status === 'completed').length,
+    approved: orders.filter(o => o.buyer_approved === true).length,
+    unapproved: orders.filter(o => o.buyer_approved === false && o.status !== 'pending').length,
     totalSpent: orders.reduce((sum, o) => sum + o.amount, 0)
   }), [orders]);
 
@@ -251,8 +253,11 @@ const BuyerOrders = () => {
                            order.seller?.store_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            order.id.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // Status filter
-      const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+      // Status filter (including approval status)
+      const matchesStatus = statusFilter === 'all' || 
+        order.status === statusFilter ||
+        (statusFilter === 'approved' && order.buyer_approved === true) ||
+        (statusFilter === 'unapproved' && order.buyer_approved === false && order.status !== 'pending');
       
       // Date filter
       let matchesDate = true;
@@ -532,6 +537,8 @@ const BuyerOrders = () => {
             { value: 'all', label: 'All', count: stats.total },
             { value: 'pending', label: 'Pending', count: stats.pending },
             { value: 'delivered', label: 'Delivered', count: stats.delivered },
+            { value: 'approved', label: 'Approved', count: stats.approved },
+            { value: 'unapproved', label: 'Unapproved', count: stats.unapproved },
             { value: 'completed', label: 'Completed', count: stats.completed },
             { value: 'cancelled', label: 'Cancelled', count: orders.filter(o => o.status === 'cancelled').length },
           ].map((tab) => (

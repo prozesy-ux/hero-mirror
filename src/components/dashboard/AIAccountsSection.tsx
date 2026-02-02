@@ -151,7 +151,7 @@ const getPurchaseCount = (accountId: string) => {
   const hash = accountId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return 150 + hash % 350;
 };
-type TabType = 'browse' | 'purchases' | 'stats' | 'chat';
+type TabType = 'browse';
 const AIAccountsSection = () => {
   const {
     user
@@ -720,7 +720,7 @@ const AIAccountsSection = () => {
       fetchWallet();
       fetchPurchases();
       fetchSellerOrders();
-      setActiveTab('purchases');
+      navigate('/dashboard/orders');
     } catch (error: any) {
       console.error('Purchase error:', error);
       toast.error(error.message || 'Failed to complete purchase');
@@ -768,7 +768,7 @@ const AIAccountsSection = () => {
       setPendingPurchaseData(null);
       fetchWallet();
       fetchSellerOrders();
-      setActiveTab('purchases');
+      navigate('/dashboard/orders');
     } catch (error: any) {
       console.error('Pending purchase error:', error);
       toast.error(error.message || 'Purchase failed');
@@ -1007,7 +1007,7 @@ const AIAccountsSection = () => {
       toast.success('Purchase successful! Account credentials will be delivered soon.');
       fetchWallet();
       fetchPurchases();
-      setActiveTab('purchases');
+      navigate('/dashboard/orders');
     } catch (error: any) {
       console.error('Purchase error:', error);
       toast.error(error.message || 'Failed to complete purchase');
@@ -1093,25 +1093,13 @@ const AIAccountsSection = () => {
       </div>;
   }
   return <div className="animate-fade-up">
-      {/* Tab Navigation - Enterprise Gumroad style */}
-      <div className="mb-6 border-b border-black/10">
-        <div className="flex gap-6 overflow-x-auto hide-scrollbar">
-          <button onClick={() => setActiveTab('browse')} className={`pb-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'browse' ? 'text-black border-b-2 border-black' : 'text-black/50 hover:text-black'}`}>
-            <ShoppingCart size={16} />
-            <span>Browse</span>
-          </button>
-          <button onClick={() => setActiveTab('purchases')} className={`pb-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'purchases' ? 'text-black border-b-2 border-black' : 'text-black/50 hover:text-black'}`}>
-            <Package size={16} />
-            <span>Purchases</span>
-            {purchases.length > 0 && <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${activeTab === 'purchases' ? 'bg-black text-white' : 'bg-black/10 text-black/70'}`}>
-                {purchases.length}
-              </span>}
-          </button>
-          <button onClick={() => setActiveTab('stats')} className={`pb-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'stats' ? 'text-black border-b-2 border-black' : 'text-black/50 hover:text-black'}`}>
-            <BarChart3 size={16} />
-            <span>Stats</span>
-          </button>
-        </div>
+      {/* Marketplace Header */}
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-black flex items-center gap-2">
+          <ShoppingCart size={20} />
+          Browse Products
+        </h2>
+        <p className="text-sm text-black/60 mt-1">Explore our marketplace and find the perfect products</p>
       </div>
 
       {/* Browse Accounts Tab - New Layout with Sidebar */}
@@ -1645,290 +1633,6 @@ const AIAccountsSection = () => {
         </DialogContent>
       </Dialog>
 
-      {/* My Purchases Tab */}
-      {activeTab === 'purchases' && <>
-          {purchasesLoading ? <div className="flex items-center justify-center h-64">
-              <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-gray-900 animate-spin" />
-            </div> : purchases.length === 0 && sellerOrders.length === 0 ? <div className="bg-white rounded-2xl p-16 text-center border border-gray-200 shadow-md">
-              <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
-                <Package className="w-10 h-10 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">No Purchases Yet</h3>
-              <p className="text-gray-500 mb-6">Your purchased accounts will appear here</p>
-              <button onClick={() => setActiveTab('browse')} className="bg-gray-900 text-white font-semibold px-6 py-3 rounded-xl hover:bg-gray-800 transition-all">
-                Browse Products
-              </button>
-            </div> : <div className="space-y-3 sm:space-y-4">
-              {/* Seller Orders (Marketplace Purchases) */}
-              {sellerOrders.map(order => <div key={`seller-order-${order.id}`} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border-2 border-emerald-200 shadow-md hover:shadow-lg transition-all">
-                  {/* Stack on mobile, row on desktop */}
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div className="flex items-start gap-3 sm:gap-4">
-                      <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-emerald-50 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {order.seller_products?.icon_url ? <img src={order.seller_products.icon_url} alt={order.seller_products?.name || 'Product'} className="w-full h-full object-cover" /> : <Store className="w-5 h-5 sm:w-8 sm:h-8 text-emerald-500" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                          <h3 className="text-sm sm:text-lg font-bold text-gray-900 tracking-tight truncate max-w-[180px] sm:max-w-none">
-                            {order.seller_products?.name || 'Product'}
-                          </h3>
-                          <span className="px-1.5 sm:px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] sm:text-xs font-medium flex-shrink-0">
-                            Marketplace
-                          </span>
-                        </div>
-                        <p className="text-gray-500 text-xs sm:text-sm truncate">
-                          From: {order.seller_profiles?.store_name || 'Seller'}
-                        </p>
-                        <p className="text-gray-400 text-[10px] sm:text-xs">
-                          {new Date(order.created_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Badges - wrap on mobile */}
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
-                      <span className="flex items-center gap-1 sm:gap-1.5 bg-violet-50 text-violet-600 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium">
-                        <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />
-                        ${Number(order.amount).toFixed(2)}
-                      </span>
-                      {order.status === 'pending' && <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
-                          <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                          <span className="hidden sm:inline">Awaiting Delivery</span>
-                          <span className="sm:hidden">Pending</span>
-                        </span>}
-                      {order.status === 'delivered' && !order.buyer_approved && <span className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
-                          <Truck className="w-3 h-3 sm:w-4 sm:h-4" />
-                          Delivered
-                        </span>}
-                      {order.status === 'completed' && order.buyer_approved && <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
-                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
-                          Approved
-                        </span>}
-                      {order.status === 'completed' && !order.buyer_approved && <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
-                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
-                          Completed
-                        </span>}
-                    </div>
-                  </div>
-
-                  {/* Credentials display for delivered orders */}
-                  {order.status === 'delivered' && order.credentials && <div className="mt-5 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-blue-700">Account Credentials</span>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => toggleCredentials(`seller-${order.id}`)} className="p-2 hover:bg-blue-100 rounded-lg transition-colors">
-                            {showCredentials[`seller-${order.id}`] ? <EyeOff className="w-4 h-4 text-blue-600" /> : <Eye className="w-4 h-4 text-blue-600" />}
-                          </button>
-                          <button onClick={() => copyCredentials(order.credentials!)} className="p-2 hover:bg-blue-100 rounded-lg transition-colors">
-                            <Copy className="w-4 h-4 text-blue-600" />
-                          </button>
-                        </div>
-                      </div>
-                      <code className="text-sm text-blue-900 font-mono block bg-blue-100 p-3 rounded-lg whitespace-pre-wrap">
-                        {showCredentials[`seller-${order.id}`] ? order.credentials : '••••••••••••••••'}
-                      </code>
-                      
-                      {/* Approve Delivery Button */}
-                      <div className="mt-4 flex items-center gap-3">
-                        <button onClick={() => handleApproveDelivery(order.id)} disabled={approvingOrder === order.id} className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50">
-                          {approvingOrder === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <>
-                              <ThumbsUp className="w-4 h-4" />
-                              Approve Delivery
-                            </>}
-                        </button>
-                        <button onClick={() => {
-                openChat({
-                  sellerId: order.seller_id,
-                  sellerName: order.seller_profiles?.store_name || 'Seller',
-                  productId: order.product_id,
-                  productName: order.seller_products?.name,
-                  type: 'seller'
-                });
-              }} className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all">
-                          <MessageCircle className="w-4 h-4" />
-                          Chat
-                        </button>
-                      </div>
-                      
-                      <p className="text-xs text-blue-600 mt-3">
-                        Please verify the credentials work before approving. This will release payment to the seller.
-                      </p>
-                    </div>}
-
-                  {/* Completed order credentials display */}
-                  {order.status === 'completed' && order.credentials && <div className="mt-5 p-4 bg-gray-100 rounded-xl border border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-600">Account Credentials</span>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => toggleCredentials(`seller-${order.id}`)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-                            {showCredentials[`seller-${order.id}`] ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4 text-gray-500" />}
-                          </button>
-                          <button onClick={() => copyCredentials(order.credentials!)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-                            <Copy className="w-4 h-4 text-gray-500" />
-                          </button>
-                        </div>
-                      </div>
-                      <code className="text-sm text-gray-800 font-mono block bg-gray-200 p-3 rounded-lg whitespace-pre-wrap">
-                        {showCredentials[`seller-${order.id}`] ? order.credentials : '••••••••••••••••'}
-                      </code>
-                    </div>}
-
-                  {/* Pending delivery message */}
-                  {order.status === 'pending' && <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center gap-3">
-                      <Clock className="w-5 h-5 text-amber-600" />
-                      <p className="text-sm text-amber-700">
-                        Waiting for seller to deliver your account credentials.
-                      </p>
-                    </div>}
-                </div>)}
-
-              {/* Admin Account Purchases */}
-              {purchases.map(purchase => <div key={purchase.id} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-gray-200 shadow-md hover:shadow-lg transition-all">
-                  {/* Stack on mobile, row on desktop */}
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div className="flex items-start gap-3 sm:gap-4">
-                      <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        <img src={purchase.ai_accounts?.icon_url || getProductImage(purchase.ai_accounts?.category)} alt={purchase.ai_accounts?.name || 'Account'} className="w-7 h-7 sm:w-10 sm:h-10 object-contain" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-sm sm:text-lg font-bold text-gray-900 tracking-tight truncate">
-                          {purchase.ai_accounts?.name || 'Account'}
-                        </h3>
-                        <p className="text-gray-500 text-xs sm:text-sm">
-                          {new Date(purchase.purchased_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Badges - wrap on mobile */}
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
-                      <span className="flex items-center gap-1 bg-violet-50 text-violet-600 px-2 py-1 rounded-full text-xs sm:text-sm font-medium">
-                        <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />
-                        Wallet
-                      </span>
-                      {purchase.delivery_status === 'pending' ? <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
-                          <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                          Pending
-                        </span> : <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-full text-[10px] sm:text-sm font-medium">
-                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
-                          Delivered
-                        </span>}
-                    </div>
-                  </div>
-
-                  {purchase.delivery_status === 'delivered' && purchase.account_credentials && <div className="mt-5 p-4 bg-gray-100 rounded-xl border border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-600">Account Credentials</span>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => toggleCredentials(purchase.id)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-                            {showCredentials[purchase.id] ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4 text-gray-500" />}
-                          </button>
-                          <button onClick={() => copyCredentials(purchase.account_credentials!)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-                            <Copy className="w-4 h-4 text-gray-500" />
-                          </button>
-                        </div>
-                      </div>
-                      <code className="text-sm text-gray-800 font-mono block bg-gray-200 p-3 rounded-lg">
-                        {showCredentials[purchase.id] ? purchase.account_credentials : '••••••••••••••••'}
-                      </code>
-                    </div>}
-                </div>)}
-            </div>}
-        </>}
-
-      {/* Stats Tab */}
-      {activeTab === 'stats' && <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
-            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
-              <p className="text-xs lg:text-sm text-gray-500 mb-1">Total Purchases</p>
-              <p className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">{totalPurchases}</p>
-            </div>
-            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
-              <p className="text-xs lg:text-sm text-gray-500 mb-1">Total Spent</p>
-              <p className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">${totalSpent.toFixed(2)}</p>
-            </div>
-            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
-              <p className="text-xs lg:text-sm text-gray-500 mb-1">Delivered</p>
-              <p className="text-2xl lg:text-3xl font-bold text-emerald-600 tracking-tight">{deliveredCount}</p>
-            </div>
-            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-md">
-              <p className="text-xs lg:text-sm text-gray-500 mb-1">Pending</p>
-              <p className="text-2xl lg:text-3xl font-bold text-amber-600 tracking-tight">{pendingCount}</p>
-            </div>
-          </div>
-
-          {/* Wallet Section */}
-          <div className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-2xl p-6 lg:p-8 text-white shadow-xl mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Wallet className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-white/70 text-sm">Current Balance</p>
-                  <p className="text-3xl lg:text-4xl font-bold tracking-tight">
-                    ${wallet?.balance?.toFixed(2) || '0.00'}
-                  </p>
-                </div>
-              </div>
-              <button onClick={() => navigate('/dashboard/billing')} className="px-6 py-3 bg-white text-violet-700 rounded-xl font-semibold hover:bg-white/90 transition-all">
-                Top Up
-              </button>
-            </div>
-          </div>
-        </>}
-
-      {/* Chat Tab */}
-      {activeTab === 'chat' && <div className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden">
-          {/* Chat Header */}
-          <div className="p-4 border-b border-gray-200 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
-              <MessageCircle className="text-violet-600" size={20} />
-            </div>
-            <div>
-              <h3 className="text-gray-900 font-semibold">Support Chat</h3>
-              <p className="text-gray-500 text-sm">We typically reply within a few hours</p>
-            </div>
-          </div>
-          
-          {/* Messages Area */}
-          <div className="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50">
-            {messages.length === 0 ? <div className="h-full flex items-center justify-center">
-                <div className="text-center">
-                  <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600">No messages yet</p>
-                  <p className="text-gray-500 text-sm">Send us a message and we'll get back to you</p>
-                </div>
-              </div> : messages.map(msg => <div key={msg.id} className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${msg.sender_type === 'user' ? 'bg-violet-500 text-white' : 'bg-white text-gray-900 border border-gray-200 shadow-sm'}`}>
-                    <p className="whitespace-pre-wrap">{msg.message}</p>
-                    <span className={`text-xs mt-1 block ${msg.sender_type === 'user' ? 'opacity-60' : 'text-gray-400'}`}>
-                      {format(new Date(msg.created_at), 'h:mm a')}
-                    </span>
-                  </div>
-                </div>)}
-            <div ref={messagesEndRef} />
-          </div>
-          
-          {/* Input Area */}
-          <div className="p-4 border-t border-gray-200 bg-white">
-            <div className="flex gap-3">
-              <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Type your message..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-300" onKeyPress={e => e.key === 'Enter' && !e.shiftKey && sendChatMessage()} />
-              <button onClick={sendChatMessage} disabled={!newMessage.trim() || sendingMessage} className="bg-violet-500 hover:bg-violet-600 text-white px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                <Send size={18} />
-                Send
-              </button>
-            </div>
-          </div>
-        </div>}
 
       {/* View Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
