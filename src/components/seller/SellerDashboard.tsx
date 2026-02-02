@@ -211,7 +211,7 @@ const SellerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="p-4 lg:p-6 bg-[#FBF8F3] min-h-screen space-y-6">
+      <div className="space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />
@@ -223,7 +223,7 @@ const SellerDashboard = () => {
   }
 
   return (
-    <div className="p-4 lg:p-6 bg-[#FBF8F3] min-h-screen space-y-6">
+    <div className="space-y-6">
       <AnnouncementBanner audience="seller" />
 
       {/* Header with Share Store */}

@@ -633,7 +633,7 @@ const BillingSection = () => {
   // Removed blocking loading overlay - now using toast notifications instead
 
   return (
-    <div className="max-w-4xl mx-auto animate-fade-up p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+    <div className="max-w-4xl mx-auto animate-fade-up">
       {/* Tab Navigation - Mobile Optimized */}
       <div className="bg-white rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-4 lg:mb-8 border border-gray-200 shadow-md">
         <div className="flex gap-0.5 sm:gap-1 lg:gap-2">

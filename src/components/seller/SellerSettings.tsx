@@ -364,7 +364,7 @@ const SellerSettings = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 max-w-3xl seller-dashboard p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+      <div className="space-y-6 max-w-3xl seller-dashboard">
         <Skeleton className="h-32 rounded-2xl border-2 border-black" />
         <Skeleton className="h-64 rounded-2xl border-2 border-black" />
       </div>
@@ -372,7 +372,7 @@ const SellerSettings = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-3 sm:px-0 pb-24 space-y-4 seller-dashboard p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+    <div className="max-w-2xl mx-auto px-3 sm:px-0 pb-24 space-y-4 seller-dashboard">
       {/* Hidden file inputs */}
       <input
         ref={logoInputRef}

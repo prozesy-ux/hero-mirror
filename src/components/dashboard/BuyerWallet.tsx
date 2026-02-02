@@ -746,7 +746,7 @@ const BuyerWallet = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+      <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
       </div>
     );
@@ -754,7 +754,7 @@ const BuyerWallet = () => {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
         <AlertCircle className="w-12 h-12 text-destructive" />
         <p className="text-muted-foreground">{error}</p>
         <Button onClick={fetchData}>Retry</Button>
@@ -763,7 +763,7 @@ const BuyerWallet = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto animate-fade-up px-3 sm:px-0 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+    <div className="max-w-4xl mx-auto animate-fade-up px-3 sm:px-0">
       {/* Tab Navigation */}
       <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-gray-200 shadow-md">
         <div className="flex gap-1 overflow-x-auto hide-scrollbar">

@@ -235,7 +235,7 @@ const BuyerDashboardHome = () => {
   }
 
   return (
-    <div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+    <div className="space-y-6">
       {/* Session Expired Banner - only show if truly expired */}
       {sessionExpiredLocal && !isReconnecting && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
       

@@ -37,7 +37,7 @@ const DashboardContent = () => {
   const { isCollapsed } = useSidebarContext();
 
   return (
-    <main className={`pb-24 lg:pb-0 pt-0 lg:pt-16 min-h-screen bg-white transition-all duration-300 ${
+    <main className={`pb-24 lg:pb-0 pt-0 lg:pt-16 min-h-screen bg-[#FBF8F3] transition-all duration-300 ${
       isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[240px]'
     }`}>
       <div className="relative p-3 sm:p-4 lg:p-8">
@@ -72,7 +72,7 @@ const DashboardLayout = () => {
   const { isCollapsed } = useSidebarContext();
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="min-h-screen bg-[#FBF8F3] overflow-x-hidden">
       {/* Mobile Header removed - elements moved to bottom nav */}
       
       {/* Desktop Sidebar */}

@@ -419,7 +419,7 @@ const SellerSupport = () => {
 
   if (loading) {
     return (
-      <div className="p-6 lg:p-8 bg-[#FBF8F3] min-h-screen">
+      <div className="space-y-6">
         <Skeleton className="h-8 w-48 mb-6 border-2 border-black" />
         <Skeleton className="h-[calc(100vh-200px)] rounded-xl border-2 border-black" />
       </div>
@@ -427,7 +427,7 @@ const SellerSupport = () => {
   }
 
   return (
-    <div className="p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+    <div className="space-y-6">
       {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
