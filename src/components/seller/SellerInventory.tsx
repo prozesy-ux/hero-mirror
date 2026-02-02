@@ -140,9 +140,9 @@ const SellerInventory = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total Products */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center border-2 border-black">
               <Package className="w-6 h-6 text-blue-600" />
             </div>
             <div>
@@ -153,9 +153,9 @@ const SellerInventory = () => {
         </div>
 
         {/* Total Units */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center border-2 border-black">
               <TrendingUp className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
@@ -166,9 +166,9 @@ const SellerInventory = () => {
         </div>
 
         {/* In Stock */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center border-2 border-black">
               <Package className="w-6 h-6 text-green-600" />
             </div>
             <div>
@@ -179,9 +179,9 @@ const SellerInventory = () => {
         </div>
 
         {/* Low Stock */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center border-2 border-black">
               <AlertTriangle className="w-6 h-6 text-orange-600" />
             </div>
             <div>
@@ -192,9 +192,9 @@ const SellerInventory = () => {
         </div>
 
         {/* Out of Stock */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center border-2 border-black">
               <TrendingDown className="w-6 h-6 text-red-600" />
             </div>
             <div>
@@ -206,7 +206,7 @@ const SellerInventory = () => {
       </div>
 
       {/* Inventory Health */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+      <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-slate-800">Inventory Health Score</h3>
           <span className={`text-lg font-bold ${
@@ -253,7 +253,7 @@ const SellerInventory = () => {
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">

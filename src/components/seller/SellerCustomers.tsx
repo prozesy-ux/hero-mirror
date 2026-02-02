@@ -183,9 +183,9 @@ const SellerCustomers = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center border-2 border-black">
               <Users className="w-6 h-6 text-blue-600" />
             </div>
             <div>
@@ -195,9 +195,9 @@ const SellerCustomers = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center border-2 border-black">
               <UserCheck className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
@@ -207,9 +207,9 @@ const SellerCustomers = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center border-2 border-black">
               <TrendingUp className="w-6 h-6 text-orange-600" />
             </div>
             <div>
@@ -219,9 +219,9 @@ const SellerCustomers = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-violet-100 flex items-center justify-center border-2 border-black">
               <Star className="w-6 h-6 text-violet-600" />
             </div>
             <div>
@@ -236,13 +236,13 @@ const SellerCustomers = () => {
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Top Spender Card */}
         {stats.topSpender && (
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-orange-100">
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-6 border-2 border-black shadow-neobrutalism">
             <div className="flex items-center gap-2 mb-4">
               <Crown className="w-5 h-5 text-amber-600" />
               <h3 className="font-semibold text-slate-800">Top Customer</h3>
             </div>
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16 border-2 border-amber-200">
+              <Avatar className="h-16 w-16 border-2 border-black">
                 <AvatarImage src={stats.topSpender.avatar_url || ''} />
                 <AvatarFallback className="bg-amber-200 text-amber-800 text-xl font-bold">
                   {stats.topSpender.full_name?.charAt(0) || stats.topSpender.email.charAt(0).toUpperCase()}
@@ -261,7 +261,7 @@ const SellerCustomers = () => {
         )}
 
         {/* Customer Segments */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
           <h3 className="font-semibold text-slate-800 mb-4">Customer Segments</h3>
           {segmentData.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
@@ -292,7 +292,7 @@ const SellerCustomers = () => {
       </div>
 
       {/* Customer List */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism overflow-hidden">
         <div className="p-4 border-b border-slate-100">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
