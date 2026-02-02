@@ -34,11 +34,13 @@ import { Crown, Bell, BellRing, X } from 'lucide-react';
 // MobileHeader removed - logo and notification moved to MobileNavigation
 
 const DashboardContent = () => {
-  const {
-    isCollapsed
-  } = useSidebarContext();
-  return <main className={`pb-24 lg:pb-0 pt-0 lg:pt-16 min-h-screen bg-white transition-all duration-300 ${isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[240px]'}`}>
-      <div className="relative p-3 sm:p-4 lg:p-8 px-[3px] py-0">
+  const { isCollapsed } = useSidebarContext();
+
+  return (
+    <main className={`pb-24 lg:pb-0 pt-0 lg:pt-16 min-h-screen bg-[#FBF8F3] transition-all duration-300 ${
+      isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[240px]'
+    }`}>
+      <div className="relative p-3 sm:p-4 lg:p-8">
         <Routes>
           <Route index element={<Navigate to="/dashboard/home" replace />} />
           <Route path="home" element={<BuyerDashboardHome />} />
@@ -62,13 +64,15 @@ const DashboardContent = () => {
       
       {/* Floating Chat Widget */}
       <FloatingChatWidget />
-    </main>;
+    </main>
+  );
 };
+
 const DashboardLayout = () => {
-  const {
-    isCollapsed
-  } = useSidebarContext();
-  return <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+  const { isCollapsed } = useSidebarContext();
+
+  return (
+    <div className="min-h-screen bg-[#FBF8F3] overflow-x-hidden">
       {/* Mobile Header removed - elements moved to bottom nav */}
       
       {/* Desktop Sidebar */}
@@ -82,30 +86,36 @@ const DashboardLayout = () => {
       
       {/* Main Content */}
       <DashboardContent />
-    </div>;
+    </div>
+  );
 };
-const Dashboard = () => {
-  const {
-    sessionExpired,
-    sessionWarning
-  } = useAuthContext();
 
+const Dashboard = () => {
+  const { sessionExpired, sessionWarning } = useAuthContext();
+  
   // Start background session monitoring
-  const {
-    refreshSession
-  } = useSessionHeartbeat();
-  return <CurrencyProvider>
+  const { refreshSession } = useSessionHeartbeat();
+  
+  return (
+    <CurrencyProvider>
       <SidebarProvider>
         <SearchProvider>
           <FloatingChatProvider>
             <DashboardLayout />
             {/* Session warning banner (5 min before expiry) */}
-            {sessionWarning !== null && !sessionExpired && <SessionWarningBanner minutesRemaining={sessionWarning} onRefresh={refreshSession} />}
+            {sessionWarning !== null && !sessionExpired && (
+              <SessionWarningBanner 
+                minutesRemaining={sessionWarning}
+                onRefresh={refreshSession}
+              />
+            )}
             {/* Session expired banner floats above all content */}
             {sessionExpired && <SessionExpiredBanner />}
           </FloatingChatProvider>
         </SearchProvider>
       </SidebarProvider>
-    </CurrencyProvider>;
+    </CurrencyProvider>
+  );
 };
+
 export default Dashboard;
