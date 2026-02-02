@@ -49,7 +49,6 @@ import { toast } from 'sonner';
 import { DateRange } from 'react-day-picker';
 import StatCard from '@/components/marketplace/StatCard';
 import ShareStoreModal from './ShareStoreModal';
-import WelcomeVideoOverlay from './WelcomeVideoOverlay';
 
 const SellerDashboard = () => {
   const { profile, wallet, products, orders, loading } = useSellerContext();
@@ -61,21 +60,7 @@ const SellerDashboard = () => {
   });
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
   const navigate = useNavigate();
-
-  // Check if we should show welcome (once per session)
-  useEffect(() => {
-    const hasSeenWelcome = sessionStorage.getItem('seller_welcome_seen');
-    if (!hasSeenWelcome && !loading) {
-      setShowWelcome(true);
-    }
-  }, [loading]);
-
-  const handleWelcomeComplete = () => {
-    sessionStorage.setItem('seller_welcome_seen', 'true');
-    setShowWelcome(false);
-  };
 
   useEffect(() => {
     const now = new Date();
@@ -238,17 +223,8 @@ const SellerDashboard = () => {
   }
 
   return (
-    <>
-      {/* Welcome Video Overlay */}
-      {showWelcome && (
-        <WelcomeVideoOverlay
-          storeName={profile?.store_name || 'Seller'}
-          onComplete={handleWelcomeComplete}
-        />
-      )}
-
-      <div className="space-y-6">
-        <AnnouncementBanner audience="seller" />
+    <div className="space-y-6">
+      <AnnouncementBanner audience="seller" />
 
       {/* Header with Share Store */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -629,8 +605,7 @@ const SellerDashboard = () => {
           storeName={profile.store_name}
         />
       )}
-      </div>
-    </>
+    </div>
   );
 };
 
