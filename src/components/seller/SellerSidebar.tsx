@@ -69,7 +69,7 @@ const SellerSidebar = () => {
           <TooltipTrigger asChild>
             <Link
               to={item.to}
-              className={`flex items-center justify-center w-full py-2 transition-colors ${
+              className={`flex items-center justify-center w-full py-3 transition-colors ${
                 active 
                   ? 'text-[#FF90E8]' 
                   : 'text-white/70 hover:text-white'
@@ -89,7 +89,7 @@ const SellerSidebar = () => {
       <Link
         key={item.to}
         to={item.to}
-        className={`flex items-center gap-3 px-6 py-2 text-sm font-medium transition-colors ${
+        className={`flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors ${
           active 
             ? 'text-[#FF90E8]' 
             : 'text-white/70 hover:text-white'
@@ -105,7 +105,7 @@ const SellerSidebar = () => {
     <TooltipProvider>
       <aside 
         className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-50 bg-black transition-all duration-300 ${
-          isCollapsed ? 'w-[72px]' : 'w-[240px]'
+          isCollapsed ? 'w-[72px]' : 'w-64'
         }`}
       >
         {/* Logo Section - Gumroad style text logo */}
@@ -136,7 +136,7 @@ const SellerSidebar = () => {
                     <TooltipTrigger asChild>
                       <Link
                         to={item.to}
-                        className={`flex items-center justify-center w-full py-2 transition-colors ${
+                        className={`flex items-center justify-center w-full py-3 transition-colors ${
                           active 
                             ? 'text-[#FF90E8]' 
                             : 'text-white/70 hover:text-white'
@@ -172,7 +172,7 @@ const SellerSidebar = () => {
                     <Link
                       key={item.to}
                       to={item.to}
-                      className={`flex items-center gap-3 pl-12 pr-6 py-2 text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-3 pl-12 pr-6 py-3 text-sm font-medium transition-colors ${
                         active 
                           ? 'text-[#FF90E8]' 
                           : 'text-white/60 hover:text-white'
@@ -204,7 +204,7 @@ const SellerSidebar = () => {
                   <TooltipTrigger asChild>
                     <Link
                       to={item.to}
-                      className={`flex items-center justify-center w-full py-2 transition-colors ${
+                      className={`flex items-center justify-center w-full py-3 transition-colors ${
                         active 
                           ? 'text-[#FF90E8]' 
                           : 'text-white/70 hover:text-white'
@@ -224,7 +224,7 @@ const SellerSidebar = () => {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex items-center gap-3 px-6 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors ${
                   active 
                     ? 'text-[#FF90E8]' 
                     : 'text-white/70 hover:text-white'
