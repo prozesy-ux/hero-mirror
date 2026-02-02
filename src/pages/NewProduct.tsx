@@ -20,10 +20,10 @@ interface Category {
   name: string;
 }
 
+// Consolidated to 2 steps
 const STEPS = [
   { id: 1, title: 'Type', description: 'What are you selling?' },
-  { id: 2, title: 'Details', description: 'Name, price, and description' },
-  { id: 3, title: 'Customize', description: 'Images and settings' },
+  { id: 2, title: 'Details', description: 'Everything about your product' },
 ];
 
 const popularTags = ['Digital', 'Premium', 'Instant Delivery', 'Lifetime', 'Subscription', 'API', 'Software', 'Course', 'Template', 'E-book'];
@@ -88,8 +88,6 @@ const NewProduct = () => {
         return !!productType;
       case 2:
         return name.trim().length > 0 && parseFloat(price) >= 0;
-      case 3:
-        return true;
       default:
         return false;
     }
@@ -188,7 +186,7 @@ const NewProduct = () => {
               <Button 
                 onClick={handleNext} 
                 disabled={!canProceed()}
-                className="rounded-md bg-pink-500 hover:bg-pink-600 text-white px-6"
+                className="rounded-md bg-black hover:bg-black/90 text-white px-6"
               >
                 Next
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -197,7 +195,7 @@ const NewProduct = () => {
               <Button 
                 onClick={handleSubmit}
                 disabled={submitting || !canProceed()}
-                className="rounded-md bg-pink-500 hover:bg-pink-600 text-white px-6"
+                className="rounded-md bg-black hover:bg-black/90 text-white px-6"
               >
                 {submitting ? (
                   <>
@@ -226,9 +224,9 @@ const NewProduct = () => {
                   <div className={cn(
                     "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
                     currentStep > step.id
-                      ? "bg-pink-500 text-white"
+                      ? "bg-black text-white"
                       : currentStep === step.id
-                        ? "bg-white text-gray-900 border-2 border-pink-500"
+                        ? "bg-white text-gray-900 border-2 border-black"
                         : "bg-gray-100 text-gray-400"
                   )}>
                     {currentStep > step.id ? (
@@ -249,7 +247,7 @@ const NewProduct = () => {
                 {index < STEPS.length - 1 && (
                   <div className={cn(
                     "w-12 h-0.5",
-                    currentStep > step.id ? "bg-pink-500" : "bg-gray-200"
+                    currentStep > step.id ? "bg-black" : "bg-gray-200"
                   )} />
                 )}
               </div>
@@ -275,7 +273,7 @@ const NewProduct = () => {
                   </p>
                   
                   {selectedType && (
-                    <div className="p-4 rounded-md border border-pink-200 bg-pink-50">
+                    <div className="p-4 rounded-md border border-black/20 bg-gray-50">
                       <div className="flex items-center gap-3 mb-2">
                         <SelectedIcon className="w-8 h-8" />
                         <span className="font-medium text-gray-900">{selectedType.name}</span>
@@ -296,7 +294,7 @@ const NewProduct = () => {
             </div>
           )}
 
-          {/* Step 2: Details */}
+          {/* Step 2: ALL Details (Consolidated) */}
           {currentStep === 2 && (
             <div className="p-6 lg:p-8">
               <div className="grid lg:grid-cols-3 gap-8">
@@ -306,83 +304,119 @@ const NewProduct = () => {
                     Product Details
                   </h2>
                   <p className="text-gray-500 mb-6">
-                    Give your product a name and set your price.
+                    Fill in all the details about your product.
                   </p>
                   
-                  {/* Mini Preview Card */}
-                  <div className="p-4 bg-gray-50 rounded-md border border-gray-200">
-                    <p className="text-xs font-medium text-gray-500 uppercase mb-3">Preview</p>
-                    <div className="bg-white rounded-md border border-gray-200 overflow-hidden">
-                      <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                        <SelectedIcon className="w-16 h-16 opacity-30" />
-                      </div>
-                      <div className="p-3 border-t border-gray-200">
-                        <p className="font-medium text-gray-900 text-sm truncate">
-                          {name || 'Your product name'}
-                        </p>
-                        <p className="text-xl font-semibold text-gray-900 mt-1">
-                          ${price || '0'}
-                        </p>
+                  {/* Summary Card */}
+                  <div className="p-4 bg-gray-50 rounded-md border border-black/10 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <SelectedIcon className="w-8 h-8" />
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wide">Type</p>
+                        <p className="font-medium text-gray-900">{selectedType.name}</p>
                       </div>
                     </div>
+                    <div className="border-t border-black/10 pt-4">
+                      <p className="text-xs text-gray-500 uppercase font-bold tracking-wide">Product</p>
+                      <p className="font-medium text-gray-900">{name || 'Untitled'}</p>
+                      <p className="text-2xl font-bold text-black">${price || '0'}</p>
+                    </div>
+                    {images.length > 0 && (
+                      <div className="border-t border-black/10 pt-4">
+                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wide mb-2">Preview</p>
+                        <div className="aspect-square rounded-md overflow-hidden bg-gray-100">
+                          <img src={images[0]} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                    )}
+                    {tags.length > 0 && (
+                      <div className="border-t border-black/10 pt-4">
+                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wide mb-2">Tags</p>
+                        <div className="flex flex-wrap gap-1">
+                          {tags.map((tag) => (
+                            <Badge key={tag} className="bg-black text-white border-0 text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
                 {/* Right: Form */}
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Name */}
+                <div className="lg:col-span-2 space-y-8">
+                  
+                  {/* SECTION 1: Images (FIRST) */}
                   <div>
-                    <Label className="text-base font-medium text-gray-900 mb-2 block">
-                      Name
+                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-3 block">
+                      Product Images
                     </Label>
-                    <Input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g., Ultimate Design Bundle"
-                      className="rounded-lg border-2 border-gray-200 h-12 text-base focus:border-pink-500 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors"
+                    <MultiImageUploader
+                      images={images}
+                      onChange={setImages}
+                      maxImages={5}
                     />
                   </div>
                   
-                  {/* Price & Stock */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="border-t border-black/10" />
+                  
+                  {/* SECTION 2: Basic Info */}
+                  <div className="space-y-5">
                     <div>
-                      <Label className="text-base font-medium text-gray-900 mb-2 block">
-                        Price
+                      <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
+                        Name
                       </Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                      <Input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g., Ultimate Design Bundle"
+                        className="rounded-lg border-2 border-black/10 h-12 text-base focus:border-black focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors bg-white"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
+                          Price
+                        </Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                          <Input
+                            type="number"
+                            value={price}
+                            onChange={(e) => setPrice(e.target.value)}
+                            placeholder="0"
+                            min="0"
+                            step="0.01"
+                            className="rounded-lg border-2 border-black/10 h-12 text-base pl-8 focus:border-black focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors bg-white"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
+                          Stock
+                        </Label>
                         <Input
                           type="number"
-                          value={price}
-                          onChange={(e) => setPrice(e.target.value)}
-                          placeholder="0"
+                          value={stock}
+                          onChange={(e) => setStock(e.target.value)}
+                          placeholder="Unlimited"
                           min="0"
-                          step="0.01"
-                          className="rounded-lg border-2 border-gray-200 h-12 text-base pl-8 focus:border-pink-500 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors"
+                          className="rounded-lg border-2 border-black/10 h-12 text-base focus:border-black focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors bg-white"
                         />
                       </div>
                     </div>
-                    <div>
-                      <Label className="text-base font-medium text-gray-900 mb-2 block">
-                        Stock
-                      </Label>
-                      <Input
-                        type="number"
-                        value={stock}
-                        onChange={(e) => setStock(e.target.value)}
-                        placeholder="Unlimited"
-                        min="0"
-                        className="rounded-lg border-2 border-gray-200 h-12 text-base focus:border-pink-500 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors"
-                      />
-                    </div>
                   </div>
                   
-                  {/* Description with Rich Text Editor */}
+                  <div className="border-t border-black/10" />
+                  
+                  {/* SECTION 3: Description */}
                   <div>
-                    <Label className="text-base font-medium text-gray-900 mb-2 block">
+                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
                       Description
                     </Label>
-                    <div className="border-2 border-gray-200 rounded-lg overflow-hidden focus-within:border-pink-500 transition-colors">
+                    <div className="border-2 border-black/10 rounded-lg overflow-hidden focus-within:border-black transition-colors">
                       {/* Black toolbar */}
                       <div className="bg-black px-3 py-2 flex items-center gap-1 flex-wrap">
                         {/* Format dropdown */}
@@ -422,100 +456,18 @@ const NewProduct = () => {
                     </div>
                   </div>
                   
-                  {/* Categories */}
-                  <div>
-                    <Label className="text-base font-medium text-gray-900 mb-2 block">
-                      Categories
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => toggleCategory(cat.id)}
-                          className={cn(
-                            "px-4 py-2 rounded-md text-sm font-medium border transition-colors",
-                            categoryIds.includes(cat.id)
-                              ? "bg-pink-500 text-white border-pink-500"
-                              : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
-                          )}
-                        >
-                          {cat.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Customize */}
-          {currentStep === 3 && (
-            <div className="p-6 lg:p-8">
-              <div className="grid lg:grid-cols-3 gap-8">
-                {/* Left: Summary */}
-                <div className="lg:col-span-1">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-3">
-                    Final Touches
-                  </h2>
-                  <p className="text-gray-500 mb-6">
-                    Add images and configure settings.
-                  </p>
+                  <div className="border-t border-black/10" />
                   
-                  {/* Summary Card */}
-                  <div className="p-4 bg-gray-50 rounded-md border border-gray-200 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <SelectedIcon className="w-8 h-8" />
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase font-medium">Type</p>
-                        <p className="font-medium text-gray-900">{selectedType.name}</p>
-                      </div>
-                    </div>
-                    <div className="border-t border-gray-200 pt-4">
-                      <p className="text-xs text-gray-500 uppercase font-medium">Product</p>
-                      <p className="font-medium text-gray-900">{name || 'Untitled'}</p>
-                      <p className="text-2xl font-semibold text-gray-900">${price || '0'}</p>
-                    </div>
-                    {tags.length > 0 && (
-                      <div className="border-t border-gray-200 pt-4">
-                        <p className="text-xs text-gray-500 uppercase font-medium mb-2">Tags</p>
-                        <div className="flex flex-wrap gap-1">
-                          {tags.map((tag) => (
-                            <Badge key={tag} className="bg-pink-500 text-white border-0 text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Right: Settings */}
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Images */}
+                  {/* SECTION 4: Tags */}
                   <div>
-                    <Label className="text-base font-medium text-gray-900 mb-2 block">
-                      Product Images
-                    </Label>
-                    <MultiImageUploader
-                      images={images}
-                      onChange={setImages}
-                      maxImages={5}
-                    />
-                  </div>
-                  
-                  {/* Tags */}
-                  <div>
-                    <Label className="text-base font-medium text-gray-900 mb-2 block">
+                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
                       Tags
                     </Label>
                     <div className="flex flex-wrap gap-2 mb-3">
                       {tags.map((tag) => (
                         <Badge
                           key={tag}
-                          className="gap-1.5 pr-1.5 bg-pink-500 text-white border-0"
+                          className="gap-1.5 pr-1.5 bg-black text-white border-0"
                         >
                           {tag}
                           <button
@@ -538,7 +490,7 @@ const NewProduct = () => {
                         }
                       }}
                       placeholder="Add a tag..."
-                      className="rounded-md border border-gray-300 mb-3 focus:border-pink-500 transition-colors"
+                      className="rounded-lg border-2 border-black/10 h-11 mb-3 focus:border-black focus:ring-0 transition-colors bg-white"
                     />
                     <div className="flex flex-wrap gap-1.5">
                       {popularTags.filter(t => !tags.includes(t)).slice(0, 6).map((tag) => (
@@ -546,7 +498,7 @@ const NewProduct = () => {
                           key={tag}
                           type="button"
                           onClick={() => handleAddTag(tag)}
-                          className="text-xs px-3 py-1.5 border border-gray-300 hover:border-pink-500 hover:bg-pink-500 hover:text-white rounded-md text-gray-600 transition-colors"
+                          className="text-xs px-3 py-1.5 border border-black/20 hover:border-black hover:bg-black hover:text-white rounded-md text-gray-600 transition-colors"
                         >
                           + {tag}
                         </button>
@@ -554,44 +506,78 @@ const NewProduct = () => {
                     </div>
                   </div>
                   
-                  {/* Settings */}
-                  <div className="space-y-4 pt-6 border-t border-gray-200">
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-200">
-                      <div>
-                        <p className="font-medium text-sm text-gray-900">Available for purchase</p>
-                        <p className="text-xs text-gray-500">Show this product in your store</p>
-                      </div>
-                      <Switch
-                        checked={isAvailable}
-                        onCheckedChange={setIsAvailable}
-                        className="data-[state=checked]:bg-pink-500"
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-200">
-                      <div>
-                        <p className="font-medium text-sm text-gray-900">Allow chat</p>
-                        <p className="text-xs text-gray-500">Let buyers message you</p>
-                      </div>
-                      <Switch
-                        checked={chatAllowed}
-                        onCheckedChange={setChatAllowed}
-                        className="data-[state=checked]:bg-pink-500"
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-200">
-                      <div>
-                        <p className="font-medium text-sm text-gray-900">Require email</p>
-                        <p className="text-xs text-gray-500">Ask buyers for their email</p>
-                      </div>
-                      <Switch
-                        checked={requiresEmail}
-                        onCheckedChange={setRequiresEmail}
-                        className="data-[state=checked]:bg-pink-500"
-                      />
+                  <div className="border-t border-black/10" />
+                  
+                  {/* SECTION 5: Categories */}
+                  <div>
+                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
+                      Categories
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => toggleCategory(cat.id)}
+                          className={cn(
+                            "px-4 py-2 rounded-md text-sm font-medium border transition-colors",
+                            categoryIds.includes(cat.id)
+                              ? "bg-black text-white border-black"
+                              : "bg-white text-gray-600 border-black/20 hover:border-black"
+                          )}
+                        >
+                          {cat.name}
+                        </button>
+                      ))}
                     </div>
                   </div>
+                  
+                  <div className="border-t border-black/10" />
+                  
+                  {/* SECTION 6: Settings */}
+                  <div>
+                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-3 block">
+                      Settings
+                    </Label>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-black/10">
+                        <div>
+                          <p className="font-medium text-sm text-gray-900">Available for purchase</p>
+                          <p className="text-xs text-gray-500">Show this product in your store</p>
+                        </div>
+                        <Switch
+                          checked={isAvailable}
+                          onCheckedChange={setIsAvailable}
+                          className="data-[state=checked]:bg-black"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-black/10">
+                        <div>
+                          <p className="font-medium text-sm text-gray-900">Allow chat</p>
+                          <p className="text-xs text-gray-500">Let buyers message you</p>
+                        </div>
+                        <Switch
+                          checked={chatAllowed}
+                          onCheckedChange={setChatAllowed}
+                          className="data-[state=checked]:bg-black"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-black/10">
+                        <div>
+                          <p className="font-medium text-sm text-gray-900">Require email</p>
+                          <p className="text-xs text-gray-500">Ask buyers for their email</p>
+                        </div>
+                        <Switch
+                          checked={requiresEmail}
+                          onCheckedChange={setRequiresEmail}
+                          className="data-[state=checked]:bg-black"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
                 </div>
               </div>
             </div>
