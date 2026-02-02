@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import SessionExpiredBanner from '@/components/ui/session-expired-banner';
 import FlashSaleSection from '@/components/flash-sale/FlashSaleSection';
 import StatCard from '@/components/marketplace/StatCard';
+import { GettingStartedSection, ActivityStatsSection } from './GumroadSections';
 
 interface Order {
   id: string;
@@ -261,29 +262,33 @@ const BuyerDashboardHome = () => {
         </div>
       )}
 
-      {/* Welcome Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Welcome back{user?.email ? `, ${user.email.split('@')[0]}` : ''}! 👋
-          </h1>
-          <p className="text-slate-500 mt-1">Here's what's happening with your account.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => navigate('/dashboard/marketplace')}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
-          >
-            <Store className="w-4 h-4 mr-2" />
-            Browse Marketplace
-          </Button>
-        </div>
-      </div>
+      {/* Dashboard Header - Gumroad style */}
+      <header className="border-b border-slate-200 -mx-3 sm:-mx-4 lg:-mx-8 px-4 lg:px-8 pb-4 mb-6">
+        <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
+      </header>
 
-      {/* Flash Deals */}
-      <FlashSaleSection className="bg-white rounded-lg border-2 border-black shadow-neobrutalism" />
+      {/* Getting Started Section - Gumroad style */}
+      <GettingStartedSection 
+        onboardingProgress={{
+          accountCreated: true,
+          profileCustomized: !!user?.email,
+          firstProductCreated: false,
+          firstFollower: false,
+          firstSale: false,
+          firstPayout: false,
+          firstEmailBlast: false,
+          smallBetsSignup: false,
+        }}
+      />
 
-      {/* Stats Row - 4 Cards */}
+      {/* Activity Stats - Gumroad style */}
+      <ActivityStatsSection
+        balance={wallet.balance}
+        last7Days={stats.totalSpent * 0.1} // Placeholder calculation
+        last28Days={stats.totalSpent * 0.4} // Placeholder calculation  
+        totalEarnings={stats.totalSpent}
+        formatAmount={formatAmountOnly}
+      />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Wallet Balance"

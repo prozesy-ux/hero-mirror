@@ -172,7 +172,7 @@ const DashboardTopBar = ({
         return <Bell size={14} className="text-gray-500" />;
     }
   };
-  return <header className={`hidden lg:flex fixed top-0 right-0 z-50 h-16 bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm transition-all duration-300 ${sidebarCollapsed ? 'left-[72px]' : 'left-60'}`}>
+  return <header className={`hidden lg:flex fixed top-0 right-0 z-50 h-16 bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm transition-all duration-300 ${sidebarCollapsed ? 'left-[72px]' : 'left-52'}`}>
       <div className="flex items-center justify-between w-full px-6 bg-white">
         {/* Left Section - Logo, Search & Navigation */}
         <div className="flex items-center gap-4">

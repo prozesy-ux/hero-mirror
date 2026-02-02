@@ -38,7 +38,7 @@ const DashboardContent = () => {
 
   return (
     <main className={`pb-24 lg:pb-0 pt-0 lg:pt-16 min-h-screen bg-[#FBF8F3] transition-all duration-300 ${
-      isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-64'
+      isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-52'
     }`}>
       <div className="relative p-3 sm:p-4 lg:p-8">
         <Routes>

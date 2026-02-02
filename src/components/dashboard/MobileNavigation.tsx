@@ -160,42 +160,43 @@ const MobileNavigation = () => {
   return (
     <>
       {/* Bottom Navigation Bar with Menu + Notification */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 lg:hidden z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]">
+      <nav className="fixed bottom-0 left-0 right-0 bg-black border-t border-white/20 lg:hidden z-50">
         <div className="flex items-center justify-around px-1 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           {/* Hamburger Menu - Opens Left Panel */}
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
-              <button className="relative flex flex-col items-center gap-1 px-3 py-1.5 transition-colors duration-200 active:scale-95 active:opacity-80 text-gray-400">
+              <button className="relative flex flex-col items-center gap-1 px-3 py-1.5 transition-colors duration-200 active:scale-95 active:opacity-80 text-white/60">
                 <Menu size={22} strokeWidth={1.8} />
                 <span className="text-[10px] font-semibold">Menu</span>
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-white flex flex-col">
-              {/* Logo */}
-              <div className="p-4 border-b border-slate-100">
+            <SheetContent side="left" className="w-72 p-0 bg-black text-white flex flex-col border-r border-white/20">
+              {/* Logo - Gumroad style */}
+              <div className="p-6">
                 <Link to="/dashboard" onClick={() => setSidebarOpen(false)}>
-                  <img src={theLogo} alt="Uptoza" className="h-8 w-auto" />
+                  <span className="text-white text-2xl font-bold tracking-tight">uptoza</span>
                 </Link>
               </div>
               
-              {/* Navigation Links */}
-              <ScrollArea className="flex-1 py-4">
+              {/* Navigation Links - Gumroad style */}
+              <ScrollArea className="flex-1">
                 <nav>
-                  {sidebarNavItems.map((item) => {
+                  {sidebarNavItems.map((item, index) => {
                     const active = isActive(item.to);
                     const Icon = item.icon;
+                    const isLast = index === sidebarNavItems.length - 1;
                     return (
                       <Link
                         key={item.to}
                         to={item.to}
                         onClick={() => setSidebarOpen(false)}
-                        className={`flex items-center gap-3 w-full px-5 py-2.5 text-[14px] transition-colors ${
+                        className={`flex items-center gap-4 w-full px-6 py-4 text-sm transition-colors border-t border-white/50 ${isLast ? 'border-b' : ''} ${
                           active 
-                            ? 'text-violet-600 bg-violet-50' 
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                            ? 'text-[#FF90E8]' 
+                            : 'text-white/70 hover:text-[#FF90E8]'
                         }`}
                       >
-                        <Icon size={18} strokeWidth={1.5} />
+                        <Icon size={16} strokeWidth={1.5} />
                         <span>{item.label}</span>
                       </Link>
                     );
@@ -203,22 +204,23 @@ const MobileNavigation = () => {
                 </nav>
                 
                 {/* Bottom section */}
-                <div className="border-t border-slate-100 mt-4 pt-4">
-                  {bottomSidebarItems.map((item) => {
+                <div className="mt-8">
+                  {bottomSidebarItems.map((item, index) => {
                     const active = isActive(item.to);
                     const Icon = item.icon;
+                    const isLast = index === bottomSidebarItems.length - 1;
                     return (
                       <Link
                         key={item.to}
                         to={item.to}
                         onClick={() => setSidebarOpen(false)}
-                        className={`flex items-center gap-3 w-full px-5 py-2.5 text-[14px] transition-colors ${
+                        className={`flex items-center gap-4 w-full px-6 py-4 text-sm transition-colors border-t border-white/50 ${isLast ? 'border-b' : ''} ${
                           active 
-                            ? 'text-violet-600 bg-violet-50' 
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                            ? 'text-[#FF90E8]' 
+                            : 'text-white/70 hover:text-[#FF90E8]'
                         }`}
                       >
-                        <Icon size={18} strokeWidth={1.5} />
+                        <Icon size={16} strokeWidth={1.5} />
                         <span>{item.label}</span>
                       </Link>
                     );
@@ -226,7 +228,7 @@ const MobileNavigation = () => {
                 </div>
                 
                 {/* Become a Seller */}
-                <div className="px-5 py-4 border-t border-slate-100 mt-4">
+                <div className="px-6 py-4 border-t border-white/50 mt-8">
                   <button
                     onClick={() => {
                       setSidebarOpen(false);
@@ -234,8 +236,8 @@ const MobileNavigation = () => {
                     }}
                     className="w-full text-center text-sm transition-colors"
                   >
-                    <span className="text-slate-500">Want to sell?</span>{' '}
-                    <span className="font-medium text-emerald-600 hover:underline">
+                    <span className="text-white/50">Want to sell?</span>{' '}
+                    <span className="font-medium text-[#FF90E8] hover:underline">
                       Become a Seller →
                     </span>
                   </button>
@@ -257,12 +259,12 @@ const MobileNavigation = () => {
                   relative flex flex-col items-center gap-1 px-3 py-1.5
                   transition-colors duration-200
                   active:scale-95 active:opacity-80
-                  ${active ? 'text-violet-600' : 'text-gray-400'}
+                  ${active ? 'text-[#FF90E8]' : 'text-white/60'}
                 `}
               >
                 {/* Active indicator bar */}
                 {active && (
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-violet-600 rounded-full" />
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-[#FF90E8] rounded-full" />
                 )}
                 
                 <Icon size={22} strokeWidth={active ? 2.2 : 1.8} />
@@ -274,11 +276,11 @@ const MobileNavigation = () => {
           {/* Notification Bell */}
           <DropdownMenu open={showDropdown} onOpenChange={setShowDropdown}>
             <DropdownMenuTrigger asChild>
-              <button className="relative flex flex-col items-center gap-1 px-3 py-1.5 transition-colors duration-200 active:scale-95 active:opacity-80 text-gray-400">
+              <button className="relative flex flex-col items-center gap-1 px-3 py-1.5 transition-colors duration-200 active:scale-95 active:opacity-80 text-white/60">
                 <div className="relative">
                   <Bell size={22} strokeWidth={1.8} />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 bg-[#FF90E8] text-black text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
