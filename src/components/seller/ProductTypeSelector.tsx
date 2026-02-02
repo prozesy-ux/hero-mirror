@@ -98,7 +98,7 @@ const ProductTypeSelector = ({
       {/* Services Section */}
       <div>
         <h3 className="text-sm font-medium text-gray-900 mb-4">Services</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {serviceTypes.map((type) => {
             const isSelected = selectedType === type.id;
             const Icon = type.Icon;
