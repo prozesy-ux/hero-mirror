@@ -22,7 +22,7 @@ const ProductTypeSelector = ({
   if (compact) {
     const displayTypes = PRODUCT_TYPES.slice(0, 9);
     return (
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3" style={{ fontFamily: "'Inter', sans-serif" }}>
         {displayTypes.map((type) => {
           const isSelected = selectedType === type.id;
           const Icon = type.Icon;
@@ -33,14 +33,17 @@ const ProductTypeSelector = ({
               type="button"
               onClick={() => onTypeSelect(type.id)}
               className={cn(
-                "flex items-start gap-3 p-3 rounded-md border text-left transition-all bg-white",
+                "flex items-start gap-3 p-3 rounded-lg border text-left transition-all bg-white",
                 isSelected
                   ? "border-pink-500 border-2"
                   : "border-gray-200 hover:border-gray-300"
               )}
             >
-              <div className="flex-shrink-0">
-                <Icon className="w-8 h-8" />
+              <div 
+                className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: type.bgColor }}
+              >
+                <Icon className="w-6 h-6" />
               </div>
               <span className="font-medium text-sm text-gray-900">{type.name}</span>
             </button>
@@ -51,7 +54,7 @@ const ProductTypeSelector = ({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Products Section */}
       <div>
         <h3 className="text-sm font-medium text-gray-900 mb-4">Products</h3>
@@ -66,14 +69,17 @@ const ProductTypeSelector = ({
                 type="button"
                 onClick={() => onTypeSelect(type.id)}
                 className={cn(
-                  "flex items-start gap-3 p-4 rounded-md border text-left transition-all bg-white min-h-[80px]",
+                  "flex items-start gap-3 p-4 rounded-lg border text-left transition-all bg-white min-h-[90px]",
                   isSelected
                     ? "border-pink-500 border-2"
                     : "border-gray-200 hover:border-gray-300"
                 )}
               >
-                <div className="flex-shrink-0">
-                  <Icon className="w-10 h-10" />
+                <div 
+                  className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: type.bgColor }}
+                >
+                  <Icon className="w-7 h-7" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 text-sm leading-tight">
@@ -103,14 +109,17 @@ const ProductTypeSelector = ({
                 type="button"
                 onClick={() => onTypeSelect(type.id)}
                 className={cn(
-                  "flex items-start gap-3 p-4 rounded-md border text-left transition-all bg-white min-h-[80px]",
+                  "flex items-start gap-3 p-4 rounded-lg border text-left transition-all bg-white min-h-[90px]",
                   isSelected
                     ? "border-pink-500 border-2"
                     : "border-gray-200 hover:border-gray-300"
                 )}
               >
-                <div className="flex-shrink-0">
-                  <Icon className="w-10 h-10" />
+                <div 
+                  className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: type.bgColor }}
+                >
+                  <Icon className="w-7 h-7" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 text-sm leading-tight">
