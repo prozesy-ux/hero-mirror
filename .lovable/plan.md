@@ -1,131 +1,138 @@
 
 
-# Redesign Order Cards - Cleaner, Modern Layout
+# Fix Chat and Leave Review Buttons in Order Details Modal
 
-## Current Issues
+## Problem Identified
 
-The order cards currently use a heavy neo-brutalist style with:
-- Thick black borders (`border-2 border-black`)
-- Offset shadow (`shadow-neobrutalism`)
-- Separate header row that adds visual clutter
-- Too many distinct sections within each card
-
-## New Design Approach
-
-Switch to a clean, minimal card design similar to the existing `OrderCard` component:
-- Subtle border (`border border-slate-200`)
-- Soft shadow on hover (`hover:shadow-md`)
-- Single-row layout with all info together
-- No separate header - inline metadata
-- Clean rounded corners (`rounded-xl`)
+The "Contact Seller" and "Leave Review" buttons in the Order Details modal (BuyerOrders.tsx, lines 720-730) are **completely non-functional** - they have no `onClick` handlers attached.
 
 ---
 
-## Visual Comparison
+## Solution
 
-**Before (Current):**
-```text
-┌────────────────────────────────────────────────────────┐
-│ Seller: Store | Date: 02 Feb, 2026    Order ID: #XXX   │  <- Heavy black border header
-├────────────────────────────────────────────────────────┤
-│ [IMG]  Product Name                   ৳12,100          │
-│        @StoreName                     12:22 AM         │
-│        Quantity: 1                    [Pending] [View] │
-└────────────────────────────────────────────────────────┘
+### Part 1: Add Floating Chat Integration for "Contact Seller"
+
+**Import the floating chat hook:**
+```tsx
+import { useFloatingChat } from '@/contexts/FloatingChatContext';
 ```
 
-**After (Clean):**
-```text
-┌────────────────────────────────────────────────────────┐
-│ [IMG]  Product Name                         [Pending]  │
-│        Seller: StoreName                               │
-│        ৳12,100 • Feb 2, 2026 • #ABC123                 │
-│                                                        │
-│        [View Details]   [Contact Seller]               │
-└────────────────────────────────────────────────────────┘
+**Use the hook in component:**
+```tsx
+const { openChat } = useFloatingChat();
+```
+
+**Add onClick handler to Contact Seller button:**
+```tsx
+<Button 
+  variant="outline" 
+  className="flex-1"
+  onClick={() => {
+    if (selectedOrder?.seller && selectedOrder?.product) {
+      openChat({
+        sellerId: selectedOrder.seller.id,
+        sellerName: selectedOrder.seller.store_name,
+        productId: selectedOrder.product.id,
+        productName: selectedOrder.product.name,
+        type: 'seller'
+      });
+      setSelectedOrder(null); // Close modal
+    }
+  }}
+>
 ```
 
 ---
 
-## Technical Changes
+### Part 2: Add Review Modal for "Leave Review"
 
-### File: `src/components/dashboard/BuyerOrders.tsx`
-
-**Lines 578-662 - Replace order card structure:**
-
-| Element | Current | New |
-|---------|---------|-----|
-| Card wrapper | `border-2 border-black shadow-neobrutalism` | `border border-slate-200 hover:shadow-md hover:border-slate-300` |
-| Header row | Separate `bg-slate-50 border-b-2` section | Remove entirely |
-| Layout | Stacked with header | Single flex container |
-| Status badge | Inline with actions | Top-right corner |
-| Order ID | In header | Small text under price |
-| Date | In header | Inline with price |
-
-**New Card Structure:**
+**Add state for review modal:**
 ```tsx
-<div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200">
-  <div className="flex items-start gap-4">
-    {/* Product Image */}
-    <img src={...} className="w-14 h-14 rounded-lg object-cover" />
-    
-    {/* Content */}
-    <div className="flex-1 min-w-0">
-      {/* Title + Status Row */}
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-medium text-slate-900 truncate">{name}</h3>
-        {statusBadge}
-      </div>
-      
-      {/* Seller */}
-      <p className="text-sm text-slate-500 mt-0.5">Seller: {storeName}</p>
-      
-      {/* Price, Date, Order ID */}
-      <div className="flex items-center gap-2 mt-2 text-sm flex-wrap">
-        <span className="font-semibold text-slate-900">{price}</span>
-        <span className="text-slate-300">•</span>
-        <span className="text-slate-500">{date}</span>
-        <span className="text-slate-300">•</span>
-        <span className="text-slate-400 text-xs">#{orderId}</span>
-      </div>
-      
-      {/* Actions */}
-      <div className="flex gap-2 mt-3">
-        <Button variant="outline" size="sm">View Details</Button>
-      </div>
-    </div>
-  </div>
-</div>
+const [showReviewModal, setShowReviewModal] = useState(false);
+const [reviewingOrder, setReviewingOrder] = useState<Order | null>(null);
 ```
 
-**Empty State - Line 572:**
+**Import ReviewForm component:**
 ```tsx
-// Change from:
-className="border-2 border-black shadow-neobrutalism"
-// To:
-className="border border-slate-200"
+import ReviewForm from '@/components/reviews/ReviewForm';
 ```
 
-**Delivery Confirmation Box - Lines 647-660:**
+**Add onClick handler to Leave Review button:**
 ```tsx
-// Change from:
-className="p-3 bg-blue-50 rounded-xl border border-blue-100"
-// To:
-className="p-3 bg-blue-50 rounded-lg border border-blue-200"
+<Button 
+  variant="outline" 
+  className="flex-1"
+  onClick={() => {
+    setReviewingOrder(selectedOrder);
+    setShowReviewModal(true);
+    setSelectedOrder(null); // Close order detail modal
+  }}
+>
+```
+
+**Add Review Modal Dialog:**
+```tsx
+<Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
+  <DialogContent className="sm:max-w-lg">
+    <DialogHeader>
+      <DialogTitle>Leave a Review</DialogTitle>
+    </DialogHeader>
+    {reviewingOrder && reviewingOrder.product && (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+          {reviewingOrder.product.icon_url ? (
+            <img 
+              src={reviewingOrder.product.icon_url} 
+              alt="" 
+              className="w-12 h-12 rounded-lg object-cover"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-lg bg-slate-200 flex items-center justify-center">
+              <Package className="w-6 h-6 text-slate-400" />
+            </div>
+          )}
+          <div>
+            <h4 className="font-medium">{reviewingOrder.product.name}</h4>
+            <p className="text-sm text-slate-500">{reviewingOrder.seller?.store_name}</p>
+          </div>
+        </div>
+        <ReviewForm 
+          productId={reviewingOrder.product.id}
+          orderId={reviewingOrder.id}
+          onSuccess={() => {
+            setShowReviewModal(false);
+            setReviewingOrder(null);
+            toast.success('Review submitted!');
+          }}
+          onCancel={() => {
+            setShowReviewModal(false);
+            setReviewingOrder(null);
+          }}
+        />
+      </div>
+    )}
+  </DialogContent>
+</Dialog>
 ```
 
 ---
 
-## Summary
+## Files to Modify
 
-| Element | Before | After |
-|---------|--------|-------|
-| Card border | `border-2 border-black` | `border border-slate-200` |
-| Shadow | `shadow-neobrutalism` | `hover:shadow-md` |
-| Header row | Separate section | Removed |
-| Layout | 2-row structure | Single compact row |
-| Corner radius | `rounded-lg` | `rounded-xl` |
-| Information | Split across header/body | All inline |
+| File | Changes |
+|------|---------|
+| `src/components/dashboard/BuyerOrders.tsx` | Add imports, state, click handlers, and review modal |
 
-This creates a cleaner, more modern card design that's easier to scan and less visually heavy.
+---
+
+## Summary of Changes
+
+| Button | Before | After |
+|--------|--------|-------|
+| Contact Seller | No `onClick` - does nothing | Opens floating chat with seller context |
+| Leave Review | No `onClick` - does nothing | Opens review modal with product/order context |
+
+Both buttons will now be fully functional:
+- **Chat**: Opens the floating chat widget pre-filled with seller and product info
+- **Review**: Opens a modal with the ReviewForm component for that specific order
 
