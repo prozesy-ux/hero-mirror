@@ -7,70 +7,124 @@ interface ProductTypeSelectorProps {
   compact?: boolean;
 }
 
+// Separate product types into categories
+const PRODUCT_CATEGORY_TYPES = ['digital_product', 'course', 'ebook', 'membership', 'bundle', 'software', 'template', 'graphics', 'audio', 'video'];
+const SERVICE_CATEGORY_TYPES = ['service', 'commission', 'call', 'coffee'];
+
 const ProductTypeSelector = ({ 
   selectedType, 
   onTypeSelect,
   compact = false 
 }: ProductTypeSelectorProps) => {
-  const displayTypes = compact ? PRODUCT_TYPES.slice(0, 9) : PRODUCT_TYPES;
+  const productTypes = PRODUCT_TYPES.filter(t => PRODUCT_CATEGORY_TYPES.includes(t.id));
+  const serviceTypes = PRODUCT_TYPES.filter(t => SERVICE_CATEGORY_TYPES.includes(t.id));
+  
+  if (compact) {
+    const displayTypes = PRODUCT_TYPES.slice(0, 9);
+    return (
+      <div className="grid grid-cols-3 gap-3">
+        {displayTypes.map((type) => {
+          const isSelected = selectedType === type.id;
+          const Icon = type.Icon;
+          
+          return (
+            <button
+              key={type.id}
+              type="button"
+              onClick={() => onTypeSelect(type.id)}
+              className={cn(
+                "flex items-start gap-3 p-3 rounded-md border text-left transition-all bg-white",
+                isSelected
+                  ? "border-pink-500 border-2"
+                  : "border-gray-200 hover:border-gray-300"
+              )}
+            >
+              <div className="flex-shrink-0">
+                <Icon className="w-8 h-8" />
+              </div>
+              <span className="font-medium text-sm text-gray-900">{type.name}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
-    <div className={cn(
-      "grid gap-3",
-      compact ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
-    )}>
-      {displayTypes.map((type) => {
-        const isSelected = selectedType === type.id;
-        const Icon = type.Icon;
-        
-        return (
-          <button
-            key={type.id}
-            type="button"
-            onClick={() => onTypeSelect(type.id)}
-            className={cn(
-              "relative flex flex-col items-center p-4 rounded-lg border-2 transition-all duration-200 text-center group bg-white",
-              isSelected
-                ? "border-black"
-                : "border-black/10 hover:border-black/30"
-            )}
-          >
-            {/* Selection indicator */}
-            {isSelected && (
-              <div className="absolute top-2 right-2 w-5 h-5 bg-black rounded-full flex items-center justify-center">
-                <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </div>
-            )}
+    <div className="space-y-8">
+      {/* Products Section */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-900 mb-4">Products</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          {productTypes.map((type) => {
+            const isSelected = selectedType === type.id;
+            const Icon = type.Icon;
             
-            <div className="mb-3">
-              <Icon className={cn(
-                "transition-transform duration-200",
-                isSelected ? "scale-110" : "group-hover:scale-105"
-              )} />
-            </div>
+            return (
+              <button
+                key={type.id}
+                type="button"
+                onClick={() => onTypeSelect(type.id)}
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-md border text-left transition-all bg-white min-h-[80px]",
+                  isSelected
+                    ? "border-pink-500 border-2"
+                    : "border-gray-200 hover:border-gray-300"
+                )}
+              >
+                <div className="flex-shrink-0">
+                  <Icon className="w-10 h-10" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 text-sm leading-tight">
+                    {type.name}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                    {type.description}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Services Section */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-900 mb-4">Services</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {serviceTypes.map((type) => {
+            const isSelected = selectedType === type.id;
+            const Icon = type.Icon;
             
-            <span className={cn(
-              "text-sm font-bold",
-              isSelected ? "text-black" : "text-gray-700"
-            )}>
-              {type.name}
-            </span>
-            
-            {!compact && (
-              <span className="text-xs text-gray-500 mt-1 line-clamp-2">
-                {type.description}
-              </span>
-            )}
-            
-            {/* Underline indicator for selected */}
-            {isSelected && (
-              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-black rounded-full" />
-            )}
-          </button>
-        );
-      })}
+            return (
+              <button
+                key={type.id}
+                type="button"
+                onClick={() => onTypeSelect(type.id)}
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-md border text-left transition-all bg-white min-h-[80px]",
+                  isSelected
+                    ? "border-pink-500 border-2"
+                    : "border-gray-200 hover:border-gray-300"
+                )}
+              >
+                <div className="flex-shrink-0">
+                  <Icon className="w-10 h-10" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 text-sm leading-tight">
+                    {type.name}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                    {type.description}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
