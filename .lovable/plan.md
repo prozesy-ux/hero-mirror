@@ -1,69 +1,157 @@
 
-# Remove Border Design from Seller Wallet Section
+
+# Product Creation Page Redesign - Gumroad Style
 
 ## Overview
 
-This plan will remove the neo-brutalist border design (`border-2 border-black`, `shadow-neobrutalism`, and hover effects) from the `/seller/wallet` section, giving it a cleaner, borderless appearance.
+Redesign the product creation wizard (`/seller/products/new`) to match the Gumroad reference design, including wider product type boxes, professional typography, and a cleaner section-based layout.
 
 ---
 
-## Current Design Elements to Remove
+## Key Design Changes
 
-The following styling will be removed across all cards and containers:
-- `border-2 border-black` (thick black borders)
-- `shadow-neobrutalism` (4px offset shadow)
-- `hover:shadow-none hover:translate-x-1 hover:translate-y-1` (hover effects)
+### 1. Typography Updates
 
----
+| Element | Current | Target |
+|---------|---------|--------|
+| Page title | `font-black` (900) | `font-semibold` (600) |
+| Section labels | Not present | Simple uppercase labels like "Products", "Services" |
+| Card titles | `font-bold` centered | `font-medium` left-aligned |
+| Descriptions | `text-xs` centered | `text-sm` left-aligned, gray |
 
-## Components to Update
+### 2. Product Type Card Design
 
-### 1. Tab Navigation (Line 769)
-**Current:** `border-2 border-black shadow-neobrutalism`
-**New:** No border, subtle background only
+**Current:**
+- Centered layout with icon on top
+- Black checkmark circle indicator
+- 4-column grid
+- Black border when selected
 
-### 2. Wallet Card (Line 801)
-**Current:** `border-2 border-black shadow-neobrutalism`
-**New:** Clean card without borders
+**Target (Gumroad style):**
+- Left-aligned layout: icon on left, text on right
+- Pink/magenta border when selected (no checkmark)
+- 5-column grid for Products, 3-column for Services
+- Thin 1px gray border by default
+- Icon with subtle colored background
+- Wider cards with more horizontal space
 
-### 3. Add Account First Warning (Line 826)
-**Current:** `border-2 border-black`
-**New:** Simple warning box without thick border
+### 3. Layout Structure
 
-### 4. Available Withdrawal Methods Card (Line 844)
-**Current:** `border-2 border-black shadow-neobrutalism`
-**New:** Clean container
+**Step 1 (Type Selection):**
+- Two-column: Left intro text (narrower), Right product grid (wider)
+- "Products" section header above main product types (5 columns)
+- "Services" section header above service types (3 columns)
+- Gray page background
 
-### 5. Withdrawal Method Items (Line 878)
-**Current:** `border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1`
-**New:** Simple cards with light styling
+### 4. Input Field Updates
 
-### 6. Saved Account Cards (Lines 920, 1000)
-**Current:** `border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1`
-**New:** Clean cards without neo-brutalist styling
+**Name input:**
+- Full-width with thin border
+- No heavy styling
 
-### 7. Add New Account Button (Line 975)
-**Current:** `border-2 border-dashed border-black`
-**New:** Subtle dashed border
-
----
-
-## Style Replacement Pattern
-
-| Current Style | New Style |
-|--------------|-----------|
-| `border-2 border-black` | `border border-gray-200` or none |
-| `shadow-neobrutalism` | `shadow-sm` or none |
-| `hover:shadow-none hover:translate-x-1 hover:translate-y-1` | `hover:shadow-md` or remove |
+**Price input:**
+- Integrated currency dropdown on left (`$ v`)
+- Full-width field
 
 ---
 
-## File to Modify
+## Files to Modify
 
-- `src/components/seller/SellerWallet.tsx`
+### 1. ProductTypeSelector.tsx
+- Change card layout from centered to horizontal (icon left, text right)
+- Update grid from 4-col to 5-col for products, 3-col for services
+- Change selection indicator from checkmark to pink border
+- Add section headers ("Products", "Services")
+- Widen cards and reduce vertical padding
+
+### 2. NewProduct.tsx
+- Update background to light gray (#f4f4f0)
+- Reduce font weights throughout
+- Update page title styling
+- Adjust column ratios for better content distribution
+- Update input field styling for Gumroad-like appearance
+
+### 3. ProductTypeIcons.tsx (Optional)
+- Icons are already good, may reduce size slightly
 
 ---
 
-## Visual Result
+## Visual Comparison
 
-The wallet section will have a cleaner, modern appearance without the bold black borders and offset shadows, while maintaining proper visual hierarchy through subtle shadows and light borders.
+**Current Card:**
+```
++------------------+
+|      [Icon]      |
+|   Product Name   |
+|   Description    |
+|  [Checkmark]     |
++------------------+
+```
+
+**Target Card (Gumroad):**
+```
++--------------------------------------------+
+| [Icon] Product Name                        |
+|        Description text goes here          |
++--------------------------------------------+
+        ^ pink border when selected
+```
+
+---
+
+## Technical Details
+
+### ProductTypeSelector Changes
+
+```tsx
+// New structure with section grouping
+const productTypes = PRODUCT_TYPES.filter(t => 
+  ['digital_product', 'course', 'ebook', 'membership', 'bundle'].includes(t.id)
+);
+const serviceTypes = PRODUCT_TYPES.filter(t => 
+  ['commission', 'call', 'coffee'].includes(t.id)
+);
+
+// Card styling
+className={cn(
+  "flex items-start gap-3 p-4 rounded-md border text-left transition-all",
+  isSelected
+    ? "border-pink-500 border-2"
+    : "border-gray-200 hover:border-gray-300"
+)}
+```
+
+### Font Updates
+
+```tsx
+// Header title
+className="font-semibold text-xl"
+
+// Section labels
+className="text-sm font-medium text-gray-900 mb-4"
+
+// Card title
+className="font-medium text-gray-900"
+
+// Card description
+className="text-sm text-gray-500"
+```
+
+### Background & Container
+
+```tsx
+// Page background
+<div className="min-h-screen bg-[#f4f4f0]">
+
+// Form container
+<div className="bg-white rounded-lg border border-gray-200">
+```
+
+---
+
+## Summary
+
+1. **ProductTypeSelector.tsx** - Rebuild card layout to horizontal style with pink selection border, 5-col and 3-col grids, section headers
+2. **NewProduct.tsx** - Update page background, reduce font weights, adjust layout ratios, improve input styling
+3. Maintain existing functionality while updating visual presentation to match Gumroad reference
+
