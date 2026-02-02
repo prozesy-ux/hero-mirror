@@ -235,10 +235,10 @@ const SellerChat = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-32 mb-6 border-2 border-black" />
+        <Skeleton className="h-8 w-32 mb-6 border border-slate-200 rounded-xl" />
         <div className="grid grid-cols-3 gap-4 h-[calc(100vh-180px)]">
-          <Skeleton className="col-span-1 rounded-xl border-2 border-black" />
-          <Skeleton className="col-span-2 rounded-xl border-2 border-black" />
+          <Skeleton className="col-span-1 rounded-xl border border-slate-200" />
+          <Skeleton className="col-span-2 rounded-xl border border-slate-200" />
         </div>
       </div>
     );
