@@ -66,10 +66,14 @@ const DashboardSidebar = () => {
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
   return <TooltipProvider>
       <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-50 bg-white border-r border-slate-200 transition-all duration-300 ${isCollapsed ? 'w-[72px]' : 'w-[240px]'}`}>
-        {/* Logo Section - Gumroad style text logo */}
+        {/* Logo Section with brand accent */}
         <div className={`h-14 flex items-center border-b border-slate-100 ${isCollapsed ? 'justify-center px-3' : 'px-5'}`}>
           <Link to="/dashboard" className="flex items-center">
-            {isCollapsed ? <span className="text-slate-900 text-lg font-bold">U</span> : <span className="text-slate-900 tracking-tight text-4xl font-sans font-extrabold">UPTOZA</span>}
+            {isCollapsed ? (
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 text-lg font-bold">U</span>
+            ) : (
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 tracking-tight text-4xl font-sans font-extrabold">UPTOZA</span>
+            )}
           </Link>
         </div>
 
@@ -90,7 +94,7 @@ const DashboardSidebar = () => {
                   </TooltipContent>
                 </Tooltip>;
           }
-          return <Link key={item.to} to={item.to} className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${active ? 'text-violet-600' : 'text-slate-600 hover:text-slate-900'}`}>
+          return <Link key={item.to} to={item.to} className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-all ${active ? 'text-violet-600 bg-gradient-to-r from-violet-50/80 to-fuchsia-50/50 border-r-2 border-violet-500' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}`}>
                 <Icon size={20} strokeWidth={2} />
                 <span>{item.label}</span>
               </Link>;
@@ -115,7 +119,7 @@ const DashboardSidebar = () => {
                   </TooltipContent>
                 </Tooltip>;
           }
-          return <Link key={item.to} to={item.to} className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${active ? 'text-violet-600' : 'text-slate-600 hover:text-slate-900'}`}>
+          return <Link key={item.to} to={item.to} className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-all ${active ? 'text-violet-600 bg-gradient-to-r from-violet-50/80 to-fuchsia-50/50 border-r-2 border-violet-500' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}`}>
                 <Icon size={20} strokeWidth={2} />
                 <span>{item.label}</span>
               </Link>;
@@ -129,12 +133,12 @@ const DashboardSidebar = () => {
               </>}
           </button>
 
-          {/* User Profile */}
+          {/* User Profile with brand gradient ring */}
           <div className={`mt-2 pt-3 border-t border-slate-100 ${isCollapsed ? 'px-3' : 'px-4'}`}>
             <Link to="/dashboard/profile" className={`flex items-center gap-3 py-2 rounded-lg hover:bg-slate-50 transition-colors ${isCollapsed ? 'justify-center' : ''}`}>
-              <Avatar className="h-8 w-8 ring-1 ring-slate-200">
+              <Avatar className="h-8 w-8 ring-2 ring-violet-200">
                 <AvatarImage src={profile?.avatar_url || ''} />
-                <AvatarFallback className="bg-violet-100 text-violet-700 text-xs font-medium">
+                <AvatarFallback className="bg-gradient-to-br from-violet-100 to-fuchsia-100 text-violet-700 text-xs font-medium">
                   {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>

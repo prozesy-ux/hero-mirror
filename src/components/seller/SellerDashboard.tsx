@@ -229,10 +229,10 @@ const SellerDashboard = () => {
       {/* Header with Share Store */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Welcome back, {profile?.store_name || 'Seller'}! 🎉
+          <h1 className="text-2xl uptoza-heading text-slate-900">
+            Let's get it, {profile?.store_name || 'Seller'}! 🔥
           </h1>
-          <p className="text-slate-500 mt-1">Here's how your store is performing.</p>
+          <p className="text-slate-500 mt-1">Your store command center is ready.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -291,42 +291,43 @@ const SellerDashboard = () => {
         </div>
       </div>
 
-      {/* Stats Row - 4 Cards */}
+      {/* Stats Row - 4 Cards with UPTOZA variant */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Revenue"
+          label="Your Earnings"
           value={formatAmountOnly(metrics.totalRevenue)}
           icon={<DollarSign className="w-6 h-6" />}
           trend={{ value: metrics.revenueChange, label: 'vs last week' }}
           accentColor="emerald"
-          variant="neobrutalism"
+          variant="uptoza"
+          featured
           onClick={() => navigate('/seller/analytics')}
         />
         <StatCard
-          label="Available Balance"
+          label="Available"
           value={formatAmountOnly(wallet?.balance || 0)}
           icon={<DollarSign className="w-6 h-6" />}
-          subValue={`${formatAmountOnly(metrics.pendingBalance)} pending`}
+          subValue={`${formatAmountOnly(metrics.pendingBalance)} incoming`}
           accentColor="blue"
-          variant="neobrutalism"
+          variant="uptoza"
           onClick={() => navigate('/seller/wallet')}
         />
         <StatCard
-          label="Total Orders"
+          label="Sales Closed"
           value={metrics.totalOrders}
           icon={<ShoppingCart className="w-6 h-6" />}
           trend={{ value: metrics.ordersChange, label: 'vs last week' }}
           accentColor="violet"
-          variant="neobrutalism"
+          variant="uptoza"
           onClick={() => navigate('/seller/orders')}
         />
         <StatCard
-          label="Active Products"
+          label="Your Catalog"
           value={metrics.activeProducts}
           icon={<Package className="w-6 h-6" />}
-          subValue={`${products.length} total`}
+          subValue={`${products.length} total products`}
           accentColor="orange"
-          variant="neobrutalism"
+          variant="uptoza"
           onClick={() => navigate('/seller/products')}
         />
       </div>
@@ -388,8 +389,8 @@ const SellerDashboard = () => {
               <Download className="w-5 h-5 text-slate-600" />
             </div>
             <div className="text-left">
-              <p className="text-sm font-medium text-slate-800">Export Report</p>
-              <p className="text-xs text-slate-500">Download CSV</p>
+              <p className="text-sm font-medium text-slate-800">Download Data</p>
+              <p className="text-xs text-slate-500">Export as CSV</p>
             </div>
           </div>
         </Button>
