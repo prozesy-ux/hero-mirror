@@ -69,13 +69,13 @@ const SellerSidebar = () => {
           <TooltipTrigger asChild>
             <Link
               to={item.to}
-              className={`flex items-center justify-center w-full py-3 transition-colors ${
+              className={`flex items-center justify-center w-full py-2 transition-colors ${
                 active 
                   ? 'text-[#FF90E8]' 
-                  : 'text-white/80 hover:text-white'
+                  : 'text-white/70 hover:text-white'
               }`}
             >
-              <Icon size={20} strokeWidth={2} />
+              <Icon size={18} strokeWidth={2} />
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right" className="bg-white text-black border-0">
@@ -89,13 +89,13 @@ const SellerSidebar = () => {
       <Link
         key={item.to}
         to={item.to}
-        className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${
+        className={`flex items-center gap-3 px-6 py-2 text-sm font-medium transition-colors ${
           active 
             ? 'text-[#FF90E8]' 
-            : 'text-white/80 hover:text-white'
+            : 'text-white/70 hover:text-white'
         }`}
       >
-        <Icon size={20} strokeWidth={2} />
+        <Icon size={18} strokeWidth={2} />
         <span>{item.label}</span>
       </Link>
     );
@@ -109,12 +109,12 @@ const SellerSidebar = () => {
         }`}
       >
         {/* Logo Section - Gumroad style text logo */}
-        <div className={`h-14 flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-3' : 'px-5'}`}>
+        <div className={`h-14 flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-3' : 'px-6'}`}>
           <Link to="/seller" className="flex items-center">
             {isCollapsed ? (
-              <span className="text-white text-lg font-bold">U</span>
+              <span className="text-white text-lg font-bold">u</span>
             ) : (
-              <span className="text-white text-xl font-bold tracking-tight">UPTOZA</span>
+              <span className="text-white text-2xl font-bold">uptoza</span>
             )}
           </Link>
         </div>
@@ -136,13 +136,13 @@ const SellerSidebar = () => {
                     <TooltipTrigger asChild>
                       <Link
                         to={item.to}
-                        className={`flex items-center justify-center w-full py-3 transition-colors ${
+                        className={`flex items-center justify-center w-full py-2 transition-colors ${
                           active 
                             ? 'text-[#FF90E8]' 
-                            : 'text-white/80 hover:text-white'
+                            : 'text-white/70 hover:text-white'
                         }`}
                       >
-                        <Icon size={20} strokeWidth={2} />
+                        <Icon size={18} strokeWidth={2} />
                       </Link>
                     </TooltipTrigger>
                     <TooltipContent side="right" className="bg-white text-black border-0">
@@ -155,11 +155,11 @@ const SellerSidebar = () => {
           ) : (
             // Expanded: Show collapsible Discount section
             <Collapsible open={discountOpen} onOpenChange={setDiscountOpen}>
-              <CollapsibleTrigger className={`flex items-center justify-between w-full px-5 py-3 text-[15px] font-medium transition-colors ${
-                isDiscountActive ? 'text-[#FF90E8]' : 'text-white/80 hover:text-white'
+              <CollapsibleTrigger className={`flex items-center justify-between w-full px-6 py-2 text-sm font-medium transition-colors ${
+                isDiscountActive ? 'text-[#FF90E8]' : 'text-white/70 hover:text-white'
               }`}>
-                <div className="flex items-center gap-3.5">
-                  <Percent size={20} strokeWidth={2} />
+                <div className="flex items-center gap-3">
+                  <Percent size={18} strokeWidth={2} />
                   <span>Discount</span>
                 </div>
                 <ChevronDown size={16} className={`transition-transform duration-200 ${discountOpen ? 'rotate-180' : ''}`} />
@@ -172,7 +172,7 @@ const SellerSidebar = () => {
                     <Link
                       key={item.to}
                       to={item.to}
-                      className={`flex items-center gap-3.5 pl-12 pr-5 py-2.5 text-[14px] font-medium transition-colors ${
+                      className={`flex items-center gap-3 pl-12 pr-6 py-2 text-sm font-medium transition-colors ${
                         active 
                           ? 'text-[#FF90E8]' 
                           : 'text-white/60 hover:text-white'
@@ -204,13 +204,13 @@ const SellerSidebar = () => {
                   <TooltipTrigger asChild>
                     <Link
                       to={item.to}
-                      className={`flex items-center justify-center w-full py-3 transition-colors ${
+                      className={`flex items-center justify-center w-full py-2 transition-colors ${
                         active 
                           ? 'text-[#FF90E8]' 
-                          : 'text-white/80 hover:text-white'
+                          : 'text-white/70 hover:text-white'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={2} />
+                      <Icon size={18} strokeWidth={2} />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-white text-black border-0">
@@ -224,13 +224,13 @@ const SellerSidebar = () => {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${
+                className={`flex items-center gap-3 px-6 py-2 text-sm font-medium transition-colors ${
                   active 
                     ? 'text-[#FF90E8]' 
-                    : 'text-white/80 hover:text-white'
+                    : 'text-white/70 hover:text-white'
                 }`}
               >
-                <Icon size={20} strokeWidth={2} />
+                <Icon size={18} strokeWidth={2} />
                 <span>{item.label}</span>
               </Link>
             );
@@ -239,16 +239,16 @@ const SellerSidebar = () => {
           {/* Collapse Toggle */}
           <button
             onClick={toggleSidebar}
-            className={`flex items-center gap-3.5 w-full py-3 text-white/50 hover:text-white transition-colors ${
-              isCollapsed ? 'justify-center' : 'px-5'
+            className={`flex items-center gap-3 w-full py-2 text-white/50 hover:text-white transition-colors ${
+              isCollapsed ? 'justify-center' : 'px-6'
             }`}
           >
             {isCollapsed ? (
-              <ChevronRight size={20} strokeWidth={2} />
+              <ChevronRight size={18} strokeWidth={2} />
             ) : (
               <>
-                <ChevronLeft size={20} strokeWidth={2} />
-                <span className="text-[15px] font-medium">Collapse</span>
+                <ChevronLeft size={18} strokeWidth={2} />
+                <span className="text-sm font-medium">Collapse</span>
               </>
             )}
           </button>
