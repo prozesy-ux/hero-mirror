@@ -611,19 +611,4 @@
   .shadow-neobrutalism {
     box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
   }
-
-  /* Chat Custom Scrollbar */
-  .chat-scrollbar::-webkit-scrollbar {
-    width: 4px;
-  }
-  .chat-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .chat-scrollbar::-webkit-scrollbar-thumb {
-    background: #E2E8F0;
-    border-radius: 10px;
-  }
-  .chat-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #CBD5E1;
-  }
 }

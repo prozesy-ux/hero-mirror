@@ -145,7 +145,7 @@ const FloatingSupportChatBox = ({ session }: FloatingSupportChatBoxProps) => {
     return (
       <button
         onClick={() => expandChat(session.id)}
-        className="relative flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-gray-800 text-white rounded-full shadow-lg transition-all hover:scale-105"
+        className="relative flex items-center gap-2 px-4 py-2.5 bg-violet-500 hover:bg-violet-600 text-white rounded-full shadow-lg transition-all hover:scale-105"
       >
         <Headphones size={16} />
         <span className="text-sm font-medium max-w-[100px] truncate">
@@ -165,9 +165,9 @@ const FloatingSupportChatBox = ({ session }: FloatingSupportChatBoxProps) => {
   return (
     <div className="w-[340px] h-[450px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="p-3 border-b border-gray-100 bg-white flex items-center justify-between">
+      <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-violet-50 to-purple-50 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-full bg-black flex items-center justify-center">
+          <div className="w-9 h-9 rounded-full bg-violet-500 flex items-center justify-center">
             <Headphones size={16} className="text-white" />
           </div>
           <div className="min-w-0">
@@ -180,7 +180,7 @@ const FloatingSupportChatBox = ({ session }: FloatingSupportChatBoxProps) => {
         <div className="flex items-center gap-1">
           <button
             onClick={() => minimizeChat(session.id)}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
             title="Minimize"
           >
             <Minus size={14} className="text-gray-600" />
@@ -196,7 +196,7 @@ const FloatingSupportChatBox = ({ session }: FloatingSupportChatBoxProps) => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-[#F8FAFC] chat-scrollbar">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
@@ -216,13 +216,13 @@ const FloatingSupportChatBox = ({ session }: FloatingSupportChatBoxProps) => {
               <div
                 className={`max-w-[85%] rounded-2xl px-3 py-2 ${
                   msg.sender_type === 'user'
-                    ? 'bg-black text-white rounded-br-sm'
-                    : 'bg-[#F3F4F6] border border-gray-200 text-gray-900 rounded-bl-sm'
+                    ? 'bg-violet-500 text-white rounded-br-md'
+                    : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md'
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
                 <p className={`text-[9px] mt-0.5 ${
-                  msg.sender_type === 'user' ? 'text-gray-400' : 'text-gray-400'
+                  msg.sender_type === 'user' ? 'text-violet-100' : 'text-gray-400'
                 }`}>
                   {format(new Date(msg.created_at), 'HH:mm')}
                 </p>
@@ -234,7 +234,7 @@ const FloatingSupportChatBox = ({ session }: FloatingSupportChatBoxProps) => {
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-gray-100 bg-white">
+      <div className="p-3 border-t border-gray-200 bg-white">
         <div className="flex gap-2">
           <input
             type="text"
@@ -242,13 +242,13 @@ const FloatingSupportChatBox = ({ session }: FloatingSupportChatBoxProps) => {
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
-            className="flex-1 px-3 py-2 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-gray-300"
+            className="flex-1 px-3 py-2 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
             disabled={sending}
           />
           <button
             onClick={sendMessage}
             disabled={!newMessage.trim() || sending}
-            className="px-3 py-2 bg-black hover:bg-gray-800 disabled:bg-gray-300 text-white rounded-xl transition-colors flex items-center"
+            className="px-3 py-2 bg-violet-500 hover:bg-violet-600 disabled:bg-gray-300 text-white rounded-xl transition-colors flex items-center"
           >
             {sending ? (
               <Loader2 size={16} className="animate-spin" />
