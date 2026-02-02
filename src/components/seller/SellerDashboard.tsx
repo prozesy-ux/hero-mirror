@@ -214,10 +214,10 @@ const SellerDashboard = () => {
       <div className="space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />
+            <Skeleton key={i} className="h-28 rounded-xl border border-slate-200" />
           ))}
         </div>
-        <Skeleton className="h-80 rounded-lg border-2 border-black" />
+        <Skeleton className="h-80 rounded-xl border border-slate-200" />
       </div>
     );
   }
@@ -334,7 +334,7 @@ const SellerDashboard = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Link to="/seller/orders">
-          <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
+          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-amber-600" />
@@ -349,7 +349,7 @@ const SellerDashboard = () => {
         </Link>
 
         <Link to="/seller/flash-sales">
-          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-lg p-4 text-white border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
+          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-xl p-4 text-white border border-orange-400/50 shadow-sm hover:shadow-md transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-white/20 flex items-center justify-center">
                 <Zap className="w-5 h-5" />
@@ -364,7 +364,7 @@ const SellerDashboard = () => {
         </Link>
 
         <Link to="/seller/chat">
-          <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
+          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
                 <MessageSquare className="w-5 h-5 text-blue-600" />
@@ -381,7 +381,7 @@ const SellerDashboard = () => {
         <Button 
           onClick={handleExport}
           variant="outline"
-          className="bg-white border-2 border-black rounded-lg h-auto p-4 justify-start shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
+          className="bg-white border border-slate-200 rounded-xl h-auto p-4 justify-start shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
         >
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
@@ -398,7 +398,7 @@ const SellerDashboard = () => {
       {/* Performance Metrics Row */}
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Completion Rate */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism">
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-slate-800">Completion Rate</h3>
             <Target className="w-5 h-5 text-emerald-500" />
@@ -416,7 +416,7 @@ const SellerDashboard = () => {
         </div>
 
         {/* Order Status */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism">
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-800 mb-4">Order Status</h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2">
@@ -443,7 +443,7 @@ const SellerDashboard = () => {
         </div>
 
         {/* Month Summary */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism">
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-800 mb-4">Monthly Comparison</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -459,7 +459,7 @@ const SellerDashboard = () => {
       </div>
 
       {/* Revenue Chart */}
-      <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism">
+      <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-slate-900">Revenue Trend</h3>
           <div className="flex items-center gap-2">
@@ -515,7 +515,7 @@ const SellerDashboard = () => {
       {/* Top Products & Recent Orders */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Top Products */}
-        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-900">Top Products</h3>
             <Link to="/seller/product-analytics" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
@@ -545,7 +545,7 @@ const SellerDashboard = () => {
         </div>
 
         {/* Recent Orders */}
-        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-900">Recent Orders</h3>
             <Link to="/seller/orders" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
