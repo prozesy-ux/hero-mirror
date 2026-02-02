@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Send, Loader2, Store, MessageCircle } from 'lucide-react';
+import { Send, Loader2, Store, MessageCircle, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface SellerChatMessage {
@@ -128,11 +128,11 @@ const SellerChatModal = ({ open, onOpenChange, sellerId, sellerName, productId, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white border-gray-200 max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="bg-white border-gray-200 max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden rounded-2xl">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50">
+        <div className="p-4 border-b border-gray-100 bg-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
               <Store size={18} className="text-white" />
             </div>
             <div>
@@ -142,10 +142,16 @@ const SellerChatModal = ({ open, onOpenChange, sellerId, sellerName, productId, 
               )}
             </div>
           </div>
+          <button 
+            onClick={() => onOpenChange(false)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X size={18} className="text-gray-500" />
+          </button>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] bg-[#F8FAFC] chat-scrollbar">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -165,13 +171,13 @@ const SellerChatModal = ({ open, onOpenChange, sellerId, sellerName, productId, 
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                     msg.sender_type === 'buyer'
-                      ? 'bg-emerald-500 text-white rounded-br-md'
-                      : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md'
+                      ? 'bg-black text-white rounded-br-sm'
+                      : 'bg-white border border-gray-200 text-gray-900 rounded-bl-sm'
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
                   <p className={`text-[10px] mt-1 ${
-                    msg.sender_type === 'buyer' ? 'text-emerald-100' : 'text-gray-400'
+                    msg.sender_type === 'buyer' ? 'text-gray-400' : 'text-gray-400'
                   }`}>
                     {format(new Date(msg.created_at), 'HH:mm')}
                   </p>
@@ -183,7 +189,7 @@ const SellerChatModal = ({ open, onOpenChange, sellerId, sellerName, productId, 
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-gray-200 bg-white">
+        <div className="p-4 border-t border-gray-100 bg-white">
           <div className="flex gap-2">
             <input
               type="text"
@@ -191,13 +197,13 @@ const SellerChatModal = ({ open, onOpenChange, sellerId, sellerName, productId, 
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
-              className="flex-1 px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              className="flex-1 px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-gray-300"
               disabled={sending}
             />
             <button
               onClick={sendMessage}
               disabled={!newMessage.trim() || sending}
-              className="px-4 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 text-white rounded-xl transition-colors flex items-center gap-2"
+              className="px-4 py-3 bg-black hover:bg-gray-800 disabled:bg-gray-300 text-white rounded-xl transition-colors flex items-center gap-2"
             >
               {sending ? (
                 <Loader2 size={18} className="animate-spin" />
