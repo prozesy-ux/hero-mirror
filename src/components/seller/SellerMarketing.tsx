@@ -318,9 +318,9 @@ const SellerMarketing = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center border-2 border-black">
               <Tag className="w-6 h-6 text-blue-600" />
             </div>
             <div>
@@ -330,9 +330,9 @@ const SellerMarketing = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center border-2 border-black">
               <ToggleRight className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
@@ -342,9 +342,9 @@ const SellerMarketing = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-lg bg-violet-100 flex items-center justify-center border-2 border-black">
               <Percent className="w-6 h-6 text-violet-600" />
             </div>
             <div>
@@ -356,7 +356,7 @@ const SellerMarketing = () => {
       </div>
 
       {/* Discount Codes Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">

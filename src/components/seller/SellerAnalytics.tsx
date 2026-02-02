@@ -485,7 +485,7 @@ const SellerAnalytics = () => {
               value={`${analyticsData.conversionRate.toFixed(0)}%`} 
               label="Buy Box Wins" 
             />
-            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer">
+            <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
               <div className="flex items-center gap-3">
                 <Star className="h-6 w-6 text-amber-500" />
                 <div>
@@ -506,7 +506,7 @@ const SellerAnalytics = () => {
       {/* Second Row */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Order Status Donut Chart */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Order Status</h3>
           {analyticsData.statusBreakdown.length > 0 ? (
             <>
@@ -557,7 +557,7 @@ const SellerAnalytics = () => {
         </div>
 
         {/* Top Products */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Top Products</h3>
           {analyticsData.topProducts.length > 0 ? (
             <div className="space-y-3">
@@ -582,7 +582,7 @@ const SellerAnalytics = () => {
         </div>
 
         {/* Revenue by Day */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">Revenue by Day</h3>
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">

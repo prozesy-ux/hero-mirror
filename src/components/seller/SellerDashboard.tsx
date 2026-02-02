@@ -443,7 +443,7 @@ const SellerDashboard = () => {
         </div>
 
         {/* Month Summary */}
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism">
           <h3 className="text-sm font-semibold text-slate-800 mb-4">Monthly Comparison</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -459,7 +459,7 @@ const SellerDashboard = () => {
       </div>
 
       {/* Revenue Chart */}
-      <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+      <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-slate-900">Revenue Trend</h3>
           <div className="flex items-center gap-2">
@@ -515,7 +515,7 @@ const SellerDashboard = () => {
       {/* Top Products & Recent Orders */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Top Products */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-900">Top Products</h3>
             <Link to="/seller/product-analytics" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
@@ -545,7 +545,7 @@ const SellerDashboard = () => {
         </div>
 
         {/* Recent Orders */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-900">Recent Orders</h3>
             <Link to="/seller/orders" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
