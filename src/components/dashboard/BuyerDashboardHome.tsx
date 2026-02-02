@@ -467,7 +467,7 @@ const BuyerDashboardHome = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-stat">
+        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
               <Package className="h-5 w-5 text-blue-600" />
@@ -479,7 +479,7 @@ const BuyerDashboardHome = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-stat">
+        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
               <Clock className="h-5 w-5 text-amber-600" />
@@ -492,7 +492,7 @@ const BuyerDashboardHome = () => {
         </div>
 
         <Link to="/dashboard/wishlist">
-          <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-stat hover:shadow-stat-hover transition-all cursor-pointer">
+          <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-pink-100 flex items-center justify-center">
                 <Heart className="h-5 w-5 text-pink-600" />

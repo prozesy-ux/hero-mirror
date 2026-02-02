@@ -562,15 +562,15 @@ const BuyerOrders = () => {
       {/* Orders List - Dokani Card Style */}
       <div className="space-y-4">
         {filteredOrders.length === 0 ? (
-          <div className="bg-white rounded-2xl p-10 text-center border border-slate-100">
+          <div className="bg-white rounded-lg p-10 text-center border-2 border-black shadow-neobrutalism">
             <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500">No orders found</p>
           </div>
         ) : (
           filteredOrders.map((order) => (
-            <div key={order.id} className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+            <div key={order.id} className="bg-white rounded-lg border-2 border-black shadow-neobrutalism overflow-hidden">
               {/* Order Header - Dokani Style */}
-              <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="px-4 py-3 bg-slate-50 border-b-2 border-black flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="flex items-center gap-2 text-sm text-slate-600 flex-wrap">
                   <span>Seller: <strong className="text-slate-800">{order.seller?.store_name || 'Store'}</strong></span>
                   <span className="text-slate-300 hidden sm:inline">|</span>
@@ -685,7 +685,7 @@ const BuyerOrders = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border-2 border-black">
                 <div>
                   <p className="text-xs text-slate-500">Order ID</p>
                   <p className="font-mono text-sm">{selectedOrder.id.slice(0, 8)}...</p>
@@ -705,7 +705,7 @@ const BuyerOrders = () => {
               </div>
 
               {selectedOrder.credentials && selectedOrder.status !== 'pending' && (
-                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                <div className="p-4 bg-emerald-50 rounded-lg border-2 border-black">
                   <p className="text-xs text-emerald-600 font-medium mb-2">Delivery Credentials</p>
                   <pre className="text-sm whitespace-pre-wrap bg-white p-3 rounded-lg border">
                     {selectedOrder.credentials}
