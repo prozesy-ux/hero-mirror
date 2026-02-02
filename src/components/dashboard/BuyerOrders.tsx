@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useFloatingChat } from '@/contexts/FloatingChatContext';
 import { supabase } from '@/integrations/supabase/client';
 import { bffApi } from '@/lib/api-fetch';
 import { isSessionValid } from '@/lib/session-persistence';
@@ -33,6 +34,7 @@ import { format, subDays, startOfDay, endOfDay, isWithinInterval, startOfWeek, s
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import SessionExpiredBanner from '@/components/ui/session-expired-banner';
+import ReviewForm from '@/components/reviews/ReviewForm';
 
 interface Order {
   id: string;
@@ -64,6 +66,7 @@ const CACHE_KEY = 'buyer_orders_cache';
 const BuyerOrders = () => {
   const { formatAmountOnly } = useCurrency();
   const { user, setSessionExpired } = useAuthContext();
+  const { openChat } = useFloatingChat();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +78,10 @@ const BuyerOrders = () => {
   const [usingCachedData, setUsingCachedData] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  
+  // Review modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewingOrder, setReviewingOrder] = useState<Order | null>(null);
   
   // Advanced filters
   const [datePreset, setDatePreset] = useState<DatePreset>('all');
@@ -718,17 +725,82 @@ const BuyerOrders = () => {
               )}
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    if (selectedOrder?.seller && selectedOrder?.product) {
+                      openChat({
+                        sellerId: selectedOrder.seller.id,
+                        sellerName: selectedOrder.seller.store_name,
+                        productId: selectedOrder.product.id,
+                        productName: selectedOrder.product.name,
+                        type: 'seller'
+                      });
+                      setSelectedOrder(null);
+                    }
+                  }}
+                >
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Contact Seller
                 </Button>
                 {selectedOrder.status === 'completed' && (
-                  <Button variant="outline" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => {
+                      setReviewingOrder(selectedOrder);
+                      setShowReviewModal(true);
+                      setSelectedOrder(null);
+                    }}
+                  >
                     <Star className="w-4 h-4 mr-2" />
                     Leave Review
                   </Button>
                 )}
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Review Modal */}
+      <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Leave a Review</DialogTitle>
+          </DialogHeader>
+          {reviewingOrder && reviewingOrder.product && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                {reviewingOrder.product.icon_url ? (
+                  <img 
+                    src={reviewingOrder.product.icon_url} 
+                    alt="" 
+                    className="w-12 h-12 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-slate-200 flex items-center justify-center">
+                    <Package className="w-6 h-6 text-slate-400" />
+                  </div>
+                )}
+                <div>
+                  <h4 className="font-medium">{reviewingOrder.product.name}</h4>
+                  <p className="text-sm text-slate-500">{reviewingOrder.seller?.store_name}</p>
+                </div>
+              </div>
+              <ReviewForm 
+                productId={reviewingOrder.product.id}
+                orderId={reviewingOrder.id}
+                onSuccess={() => {
+                  setShowReviewModal(false);
+                  setReviewingOrder(null);
+                }}
+                onCancel={() => {
+                  setShowReviewModal(false);
+                  setReviewingOrder(null);
+                }}
+              />
             </div>
           )}
         </DialogContent>
