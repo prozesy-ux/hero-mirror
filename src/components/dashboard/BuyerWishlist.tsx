@@ -95,7 +95,7 @@ const BuyerWishlist = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+      <div className="space-y-6">
         <Skeleton className="h-20 rounded-2xl border-2 border-black" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
@@ -107,7 +107,7 @@ const BuyerWishlist = () => {
   }
 
   return (
-    <div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+    <div className="space-y-6">
       {/* Wishlist Items */}
       {wishlist.length === 0 ? (
         <div className="bg-white rounded-2xl p-10 text-center border border-slate-100">

@@ -114,7 +114,7 @@ const BuyerNotifications = () => {
 
   if (loading) {
     return (
-      <div className="space-y-4 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+      <div className="space-y-4">
         <Skeleton className="h-16 rounded-2xl border-2 border-black" />
         {[...Array(5)].map((_, i) => (
           <Skeleton key={i} className="h-20 rounded-xl border-2 border-black" />
@@ -124,7 +124,7 @@ const BuyerNotifications = () => {
   }
 
   return (
-    <div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

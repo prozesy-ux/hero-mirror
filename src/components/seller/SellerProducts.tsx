@@ -287,7 +287,7 @@ const SellerProducts = () => {
   }
 
   return (
-    <div className="p-6 lg:p-8 bg-[#FBF8F3] min-h-screen">
+    <div className="space-y-6">
       {/* Banner - Clean with subtle glow */}
       <div className="mb-4">
         <img 

@@ -233,7 +233,7 @@ const SellerAnalytics = () => {
 
   if (loading) {
     return (
-      <div className="p-4 lg:p-6 bg-[#FBF8F3] min-h-screen space-y-6">
+      <div className="space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />)}
         </div>
@@ -311,7 +311,7 @@ const SellerAnalytics = () => {
   );
 
   return (
-    <div className="p-4 lg:p-6 bg-[#FBF8F3] min-h-screen space-y-6">
+    <div className="space-y-6">
       {/* Header - No Title, Just Date Filter + Export (Shopeers Style) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
         {/* Date Range Picker */}

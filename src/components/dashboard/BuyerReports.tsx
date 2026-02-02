@@ -160,7 +160,7 @@ const BuyerReports = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+      <div className="space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-2xl border-2 border-black" />
@@ -172,7 +172,7 @@ const BuyerReports = () => {
   }
 
   return (
-    <div className="space-y-6 p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+    <div className="space-y-6">
       {/* Header with filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
         <Popover>

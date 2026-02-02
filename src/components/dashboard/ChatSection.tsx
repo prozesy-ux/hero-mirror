@@ -649,7 +649,7 @@ const ChatSection = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+      <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -663,7 +663,7 @@ const ChatSection = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] bg-background rounded-2xl border border-border/50 overflow-hidden shadow-xl p-4 lg:p-6 bg-[#FBF8F3] min-h-screen">
+    <div className="flex h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] bg-background rounded-2xl border border-border/50 overflow-hidden shadow-xl">
       {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
