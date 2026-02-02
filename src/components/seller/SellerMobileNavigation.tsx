@@ -128,26 +128,26 @@ const SellerMobileNavigation = () => {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 lg:hidden z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]">
+      <nav className="fixed bottom-0 left-0 right-0 bg-black border-t border-white/50 lg:hidden z-50">
         <div className="flex items-center justify-around px-1 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           {/* Hamburger Menu - Opens Left Panel */}
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
-              <button className="relative flex flex-col items-center gap-1 px-3 py-1.5 transition-colors duration-200 active:scale-95 active:opacity-80 text-slate-400">
+              <button className="relative flex flex-col items-center gap-1 px-3 py-1.5 transition-colors duration-200 active:scale-95 active:opacity-80 text-white/60">
                 <Menu size={22} strokeWidth={1.8} />
                 <span className="text-[10px] font-semibold">Menu</span>
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-black flex flex-col">
+            <SheetContent side="left" className="w-52 p-0 bg-black flex flex-col border-r border-white/50">
               {/* Logo */}
-              <div className="p-4 border-b border-white/10">
+              <div className="py-6 px-6 border-b border-white/50">
                 <Link to="/seller" onClick={() => setSidebarOpen(false)}>
-                  <img src={theLogo} alt="Uptoza" className="h-8 w-auto brightness-0 invert" />
+                  <span className="text-white text-2xl font-bold tracking-tight">uptoza</span>
                 </Link>
               </div>
               
               {/* Navigation Links */}
-              <ScrollArea className="flex-1 py-4">
+              <ScrollArea className="flex-1">
                 <nav>
                   {sidebarNavItems.map((item) => {
                     const active = isActive(item.to, item.exact);
@@ -157,13 +157,13 @@ const SellerMobileNavigation = () => {
                         key={item.to}
                         to={item.to}
                         onClick={() => setSidebarOpen(false)}
-                        className={`flex items-center gap-3 w-full px-5 py-2.5 text-[14px] transition-colors ${
+                        className={`flex items-center gap-4 w-full px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
                           active 
-                            ? 'text-pink-400 bg-white/5' 
-                            : 'text-white/70 hover:text-white hover:bg-white/5'
+                            ? 'text-[#FF90E8]' 
+                            : 'text-white hover:bg-white/5'
                         }`}
                       >
-                        <Icon size={18} strokeWidth={1.5} />
+                        <Icon size={16} strokeWidth={1.5} />
                         <span>{item.label}</span>
                       </Link>
                     );
@@ -171,7 +171,7 @@ const SellerMobileNavigation = () => {
                 </nav>
                 
                 {/* Bottom section in mobile sheet */}
-                <div className="border-t border-white/10 mt-4 pt-4">
+                <div className="border-t border-white/50 mt-4">
                   {bottomSidebarItems.map((item) => {
                     const active = isActive(item.to);
                     const Icon = item.icon;
@@ -180,13 +180,13 @@ const SellerMobileNavigation = () => {
                         key={item.to}
                         to={item.to}
                         onClick={() => setSidebarOpen(false)}
-                        className={`flex items-center gap-3 w-full px-5 py-2.5 text-[14px] transition-colors ${
+                        className={`flex items-center gap-4 w-full px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
                           active 
-                            ? 'text-pink-400 bg-white/5' 
-                            : 'text-white/70 hover:text-white hover:bg-white/5'
+                            ? 'text-[#FF90E8]' 
+                            : 'text-white hover:bg-white/5'
                         }`}
                       >
-                        <Icon size={18} strokeWidth={1.5} />
+                        <Icon size={16} strokeWidth={1.5} />
                         <span>{item.label}</span>
                       </Link>
                     );
@@ -210,7 +210,7 @@ const SellerMobileNavigation = () => {
                   relative flex flex-col items-center gap-1 px-3 py-1.5
                   transition-colors duration-200
                   active:scale-95 active:opacity-80
-                  ${active ? 'text-emerald-600' : 'text-slate-400'}
+                  ${active ? 'text-[#FF90E8]' : 'text-white/60'}
                 `}
               >
                 <div className="relative">
@@ -231,10 +231,10 @@ const SellerMobileNavigation = () => {
             onClick={() => setShowShareModal(true)}
             className="relative flex flex-col items-center gap-1 -mt-5"
           >
-            <div className="w-14 h-14 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30 active:scale-95 transition-transform">
-              <Share2 size={24} className="text-white" strokeWidth={2} />
+            <div className="w-14 h-14 bg-[#FF90E8] rounded-full flex items-center justify-center shadow-lg shadow-pink-500/30 active:scale-95 transition-transform">
+              <Share2 size={24} className="text-black" strokeWidth={2} />
             </div>
-            <span className="text-[10px] font-semibold text-emerald-600">Share</span>
+            <span className="text-[10px] font-semibold text-[#FF90E8]">Share</span>
           </button>
 
           {/* Orders nav item */}
@@ -250,7 +250,7 @@ const SellerMobileNavigation = () => {
                   relative flex flex-col items-center gap-1 px-2 py-1.5
                   transition-colors duration-200
                   active:scale-95 active:opacity-80
-                  ${active ? 'text-emerald-600' : 'text-slate-400'}
+                  ${active ? 'text-[#FF90E8]' : 'text-white/60'}
                 `}
               >
                 <div className="relative">
@@ -269,7 +269,7 @@ const SellerMobileNavigation = () => {
           {/* Notification Bell */}
           <DropdownMenu open={showNotifDropdown} onOpenChange={setShowNotifDropdown}>
             <DropdownMenuTrigger asChild>
-              <button className="relative flex flex-col items-center gap-1 px-2 py-1.5 text-slate-400 active:scale-95">
+              <button className="relative flex flex-col items-center gap-1 px-2 py-1.5 text-white/60 active:scale-95">
                 <div className="relative">
                   <Bell size={22} strokeWidth={1.8} />
                   {unreadCount > 0 && (
@@ -354,12 +354,12 @@ const SellerMobileNavigation = () => {
           <Link 
             to="/seller/settings" 
             className={`flex flex-col items-center gap-1 px-2 py-1.5 ${
-              isActive('/seller/settings') ? 'text-emerald-600' : 'text-slate-400'
+              isActive('/seller/settings') ? 'text-[#FF90E8]' : 'text-white/60'
             }`}
           >
-            <Avatar className="h-6 w-6 ring-1 ring-emerald-200">
+            <Avatar className="h-6 w-6 ring-1 ring-white/30">
               <AvatarImage src={profile?.store_logo_url || ''} />
-              <AvatarFallback className="bg-emerald-100 text-emerald-700 text-[10px] font-semibold">
+              <AvatarFallback className="bg-white/10 text-white text-[10px] font-semibold">
                 {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
               </AvatarFallback>
             </Avatar>

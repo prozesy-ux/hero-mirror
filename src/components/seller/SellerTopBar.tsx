@@ -169,7 +169,7 @@ const SellerTopBar = () => {
   return (
     <header 
       className={`fixed top-0 right-0 h-16 bg-[#FBF8F3] border-b border-black/10 z-40 transition-all duration-300 hidden lg:flex items-center justify-between px-6 ${
-        isCollapsed ? 'left-[72px]' : 'left-[240px]'
+        isCollapsed ? 'left-[72px]' : 'left-52'
       }`}
     >
       {/* Left Section - Search */}
