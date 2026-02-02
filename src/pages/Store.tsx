@@ -26,7 +26,8 @@ import {
   SlidersHorizontal,
   Shield,
   Zap,
-  Clock
+  Clock,
+  Heart
 } from 'lucide-react';
 import { Instagram, Twitter, Youtube, Music } from 'lucide-react';
 import StoreSidebar from '@/components/store/StoreSidebar';
@@ -62,6 +63,7 @@ interface SellerProfile {
   is_active: boolean;
   total_sales: number;
   total_orders: number;
+  follower_count?: number;
   social_links: Record<string, string> | null;
   // Display settings
   banner_height?: 'small' | 'medium' | 'large';
@@ -145,6 +147,8 @@ const StoreContent = () => {
   const [pendingProduct, setPendingProduct] = useState<SellerProduct | null>(null);
   const [pendingAction, setPendingAction] = useState<'buy' | 'chat'>('buy');
   const [showShareModal, setShowShareModal] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [insufficientFundsModal, setInsufficientFundsModal] = useState<{
     show: boolean;
     required: number;
@@ -415,6 +419,62 @@ const StoreContent = () => {
       .eq('user_id', user.id)
       .single();
     if (data) setWallet(data);
+  };
+
+  // Check if user is following this seller
+  const checkFollowStatus = useCallback(async () => {
+    if (!user || !seller) return;
+    const { data } = await supabase
+      .from('follows')
+      .select('id')
+      .eq('follower_id', user.id)
+      .eq('seller_id', seller.id)
+      .maybeSingle();
+    setIsFollowing(!!data);
+  }, [user, seller]);
+
+  useEffect(() => {
+    if (user && seller) {
+      checkFollowStatus();
+    }
+  }, [user, seller, checkFollowStatus]);
+
+  const handleToggleFollow = async () => {
+    if (!user) {
+      setShowLoginModal(true);
+      setPendingAction('buy'); // Reuse for follow
+      return;
+    }
+    if (!seller) return;
+
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        // Unfollow
+        await supabase
+          .from('follows')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('seller_id', seller.id);
+        setIsFollowing(false);
+        // Update local follower count
+        setSeller(prev => prev ? { ...prev, follower_count: Math.max(0, (prev.follower_count || 0) - 1) } : null);
+        toast.success(`Unfollowed ${seller.store_name}`);
+      } else {
+        // Follow
+        await supabase
+          .from('follows')
+          .insert({ follower_id: user.id, seller_id: seller.id });
+        setIsFollowing(true);
+        // Update local follower count
+        setSeller(prev => prev ? { ...prev, follower_count: (prev.follower_count || 0) + 1 } : null);
+        toast.success(`Now following ${seller.store_name}!`);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update follow status');
+    } finally {
+      setFollowLoading(false);
+    }
   };
 
   const persistStoreReturn = (productId: string, action: 'buy' | 'chat') => {
@@ -704,6 +764,35 @@ const StoreContent = () => {
                     <span className="text-xs md:text-sm font-semibold">{seller.total_orders || 0}</span>
                   </div>
                 )}
+                {/* Follower count */}
+                <div className="flex items-center gap-1 md:gap-1.5 bg-white/20 backdrop-blur-sm px-2 md:px-3 py-1 md:py-1.5 rounded-full">
+                  <Heart className="w-3 md:w-4 h-3 md:h-4" />
+                  <span className="text-xs md:text-sm font-semibold">{seller.follower_count || 0}</span>
+                </div>
+                {/* Follow Button */}
+                <button
+                  onClick={handleToggleFollow}
+                  disabled={followLoading}
+                  className={`flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-semibold transition-all ${
+                    isFollowing 
+                      ? 'bg-white text-black hover:bg-white/90' 
+                      : 'bg-pink-500 text-white hover:bg-pink-600'
+                  }`}
+                >
+                  {followLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : isFollowing ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Following</span>
+                    </>
+                  ) : (
+                    <>
+                      <Heart className="w-3.5 h-3.5" />
+                      <span>Follow</span>
+                    </>
+                  )}
+                </button>
               </div>
               
               {/* Social Links */}
