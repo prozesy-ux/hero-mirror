@@ -1,138 +1,181 @@
 
+# Seller Dashboard Card Redesign & Navigation Restructuring
 
-# Fix Chat and Leave Review Buttons in Order Details Modal
+## Summary
 
-## Problem Identified
-
-The "Contact Seller" and "Leave Review" buttons in the Order Details modal (BuyerOrders.tsx, lines 720-730) are **completely non-functional** - they have no `onClick` handlers attached.
-
----
-
-## Solution
-
-### Part 1: Add Floating Chat Integration for "Contact Seller"
-
-**Import the floating chat hook:**
-```tsx
-import { useFloatingChat } from '@/contexts/FloatingChatContext';
-```
-
-**Use the hook in component:**
-```tsx
-const { openChat } = useFloatingChat();
-```
-
-**Add onClick handler to Contact Seller button:**
-```tsx
-<Button 
-  variant="outline" 
-  className="flex-1"
-  onClick={() => {
-    if (selectedOrder?.seller && selectedOrder?.product) {
-      openChat({
-        sellerId: selectedOrder.seller.id,
-        sellerName: selectedOrder.seller.store_name,
-        productId: selectedOrder.product.id,
-        productName: selectedOrder.product.name,
-        type: 'seller'
-      });
-      setSelectedOrder(null); // Close modal
-    }
-  }}
->
-```
+This plan covers two major changes:
+1. **Card Design Update**: Replace heavy neo-brutalist card styling (`border-2 border-black shadow-neobrutalism`) with a cleaner, modern design (`border border-slate-200 rounded-xl hover:shadow-md`) across all Seller Dashboard sections
+2. **Navigation Restructuring**: Rename "Emails" to "Discount" and reorganize with Flash Sales and a new Coupons section underneath
 
 ---
 
-### Part 2: Add Review Modal for "Leave Review"
+## Part 1: Navigation Changes
 
-**Add state for review modal:**
-```tsx
-const [showReviewModal, setShowReviewModal] = useState(false);
-const [reviewingOrder, setReviewingOrder] = useState<Order | null>(null);
+### Sidebar Updates (`SellerSidebar.tsx`)
+
+**Current Structure:**
+```
+Home
+Products
+Sales
+Customers
+Flash Sales  ← Move under Discount
+Analytics
+Insights
+Payouts
+Emails       ← Rename to "Discount"
+Inventory
+Reports
+Performance
+Chat
 ```
 
-**Import ReviewForm component:**
-```tsx
-import ReviewForm from '@/components/reviews/ReviewForm';
+**New Structure:**
+```
+Home
+Products
+Sales
+Customers
+Analytics
+Insights
+Payouts
+Discount     ← Renamed (was Emails), with sub-items
+├── Coupons  ← NEW
+└── Flash Sales ← Moved here
+Inventory
+Reports
+Performance
+Chat
 ```
 
-**Add onClick handler to Leave Review button:**
-```tsx
-<Button 
-  variant="outline" 
-  className="flex-1"
-  onClick={() => {
-    setReviewingOrder(selectedOrder);
-    setShowReviewModal(true);
-    setSelectedOrder(null); // Close order detail modal
-  }}
->
-```
-
-**Add Review Modal Dialog:**
-```tsx
-<Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
-  <DialogContent className="sm:max-w-lg">
-    <DialogHeader>
-      <DialogTitle>Leave a Review</DialogTitle>
-    </DialogHeader>
-    {reviewingOrder && reviewingOrder.product && (
-      <div className="space-y-4">
-        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-          {reviewingOrder.product.icon_url ? (
-            <img 
-              src={reviewingOrder.product.icon_url} 
-              alt="" 
-              className="w-12 h-12 rounded-lg object-cover"
-            />
-          ) : (
-            <div className="w-12 h-12 rounded-lg bg-slate-200 flex items-center justify-center">
-              <Package className="w-6 h-6 text-slate-400" />
-            </div>
-          )}
-          <div>
-            <h4 className="font-medium">{reviewingOrder.product.name}</h4>
-            <p className="text-sm text-slate-500">{reviewingOrder.seller?.store_name}</p>
-          </div>
-        </div>
-        <ReviewForm 
-          productId={reviewingOrder.product.id}
-          orderId={reviewingOrder.id}
-          onSuccess={() => {
-            setShowReviewModal(false);
-            setReviewingOrder(null);
-            toast.success('Review submitted!');
-          }}
-          onCancel={() => {
-            setShowReviewModal(false);
-            setReviewingOrder(null);
-          }}
-        />
-      </div>
-    )}
-  </DialogContent>
-</Dialog>
-```
-
----
-
-## Files to Modify
+**Files to Modify:**
 
 | File | Changes |
 |------|---------|
-| `src/components/dashboard/BuyerOrders.tsx` | Add imports, state, click handlers, and review modal |
+| `src/components/seller/SellerSidebar.tsx` | Rename "Emails" → "Discount", add Coupons route, move Flash Sales under Discount group |
+| `src/components/seller/SellerMobileNavigation.tsx` | Same navigation structure changes |
+| `src/pages/Seller.tsx` | Add route for `/seller/coupons` component |
+
+**New Navigation Item:**
+```tsx
+{ to: '/seller/coupons', icon: Tag, label: 'Coupons' }
+```
+
+**Discount section with collapsible sub-menu:**
+- Parent: "Discount" with Percent icon
+- Children: "Coupons", "Flash Sales"
 
 ---
 
-## Summary of Changes
+## Part 2: Card Design Changes
 
-| Button | Before | After |
-|--------|--------|-------|
-| Contact Seller | No `onClick` - does nothing | Opens floating chat with seller context |
-| Leave Review | No `onClick` - does nothing | Opens review modal with product/order context |
+### Current Style (Neo-Brutalist)
+```css
+border-2 border-black
+shadow-neobrutalism
+hover:shadow-none hover:translate-x-1 hover:translate-y-1
+rounded-lg
+```
 
-Both buttons will now be fully functional:
-- **Chat**: Opens the floating chat widget pre-filled with seller and product info
-- **Review**: Opens a modal with the ReviewForm component for that specific order
+### New Style (Modern Clean)
+```css
+border border-slate-200
+rounded-xl
+shadow-sm
+hover:shadow-md hover:border-slate-300
+transition-all duration-200
+```
 
+---
+
+### Files & Card Updates
+
+#### 1. `SellerDashboard.tsx`
+
+| Line | Current | New |
+|------|---------|-----|
+| 217-221 | Skeleton `border-2 border-black` | `border border-slate-200` |
+| 337-348 | Quick action cards `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm hover:shadow-md` |
+| 366-378 | Messages card `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm hover:shadow-md` |
+| 381-395 | Export button `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm hover:shadow-md` |
+| 401-416 | Completion Rate card `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
+| 419-443 | Order Status card `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
+| 446-458 | Monthly Comparison `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
+| 462-513 | Revenue Chart `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
+| 518-545 | Top Products `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
+| 548-596 | Recent Orders `border-2 border-black shadow-neobrutalism` | `border border-slate-200 shadow-sm` |
+
+#### 2. `SellerOrders.tsx`
+
+| Line | Element | Change |
+|------|---------|--------|
+| 310-312 | Loading skeleton | `border border-slate-200` |
+| 346-361 | Stats cards | Already clean (`border border-slate-100`) ✓ |
+| 495 | Order cards | Already clean (`border border-slate-100`) ✓ |
+
+#### 3. `SellerFlashSales.tsx`
+
+| Line | Element | Change |
+|------|---------|--------|
+| 268 | Empty state | Already clean (`border-dashed border-slate-200`) ✓ |
+| 280-286 | Flash sale cards | Already clean (`rounded-xl border`) ✓ |
+
+#### 4. `SellerMarketing.tsx` (will become Coupons content)
+
+- Rename to `SellerCoupons.tsx` or keep and add redirect
+- Ensure card styles use clean design
+
+---
+
+## Part 3: New Coupons Section
+
+Create `src/components/seller/SellerCoupons.tsx`:
+- Copy coupon functionality from existing `SellerMarketing.tsx`
+- This file already contains discount codes/coupons management
+- Rename component to `SellerCoupons`
+
+The existing SellerMarketing.tsx content is already coupon-focused, so we'll:
+1. Rename the route from `/seller/marketing` to `/seller/coupons`
+2. Update the component name for clarity
+
+---
+
+## Visual Summary
+
+### Before (Neo-Brutalist Cards)
+```
+┌────────────────────────────────────────┐
+│ ██ Heavy black border                  │
+│    Offset shadow                       │
+│    Shift-on-hover effect               │
+└────────────────────────────────────────┘
+```
+
+### After (Modern Clean Cards)
+```
+┌────────────────────────────────────────┐
+│ ░░ Subtle slate border                 │
+│    Soft shadow on hover                │
+│    Smooth transitions                  │
+└────────────────────────────────────────┘
+```
+
+---
+
+## Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `src/components/seller/SellerSidebar.tsx` | Update navItems, add Discount group with Coupons + Flash Sales |
+| `src/components/seller/SellerMobileNavigation.tsx` | Mirror sidebar navigation changes |
+| `src/components/seller/SellerDashboard.tsx` | Replace all `border-2 border-black shadow-neobrutalism` styles |
+| `src/pages/Seller.tsx` | Add `/seller/coupons` route |
+
+---
+
+## Implementation Order
+
+1. **Navigation First**: Update sidebar and mobile nav with new structure
+2. **Routes**: Add coupons route pointing to existing SellerMarketing (or renamed component)
+3. **Card Styles**: Update SellerDashboard.tsx card designs
+4. **Verification**: Ensure all sections load correctly with new styles
