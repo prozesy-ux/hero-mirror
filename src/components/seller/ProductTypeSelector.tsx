@@ -33,19 +33,19 @@ const ProductTypeSelector = ({
               type="button"
               onClick={() => onTypeSelect(type.id)}
               className={cn(
-                "flex items-start gap-3 p-3 rounded-lg border text-left transition-all bg-white",
+                "flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all bg-white",
                 isSelected
-                  ? "ring-2 ring-black border-transparent"
+                  ? "border-black"
                   : "border-gray-200 hover:border-gray-300"
               )}
             >
               <div 
-                className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: type.bgColor }}
               >
                 <Icon className="w-5 h-5" />
               </div>
-              <span className="font-semibold text-sm text-gray-900">{type.name}</span>
+              <span className="font-medium text-sm text-gray-900">{type.name}</span>
             </button>
           );
         })}
@@ -68,21 +68,21 @@ const ProductTypeSelector = ({
                 key={type.id}
                 type="button"
                 onClick={() => onTypeSelect(type.id)}
-                className={cn(
-                  "flex items-start gap-3 p-3 rounded-lg border text-left transition-all bg-white",
-                  isSelected
-                    ? "ring-2 ring-black border-transparent"
-                    : "border-gray-200 hover:border-gray-300"
-                )}
+              className={cn(
+                "flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all bg-white",
+                isSelected
+                  ? "border-black"
+                  : "border-gray-200 hover:border-gray-300"
+              )}
+            >
+              <div 
+                className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: type.bgColor }}
               >
-                <div 
-                  className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: type.bgColor }}
-                >
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 text-sm leading-tight">
+                <Icon className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 text-sm leading-tight">
                     {type.name}
                   </p>
                   <p className="text-xs text-gray-500 mt-1 line-clamp-2">
@@ -108,21 +108,21 @@ const ProductTypeSelector = ({
                 key={type.id}
                 type="button"
                 onClick={() => onTypeSelect(type.id)}
-                className={cn(
-                  "flex items-start gap-3 p-3 rounded-lg border text-left transition-all bg-white",
-                  isSelected
-                    ? "ring-2 ring-black border-transparent"
-                    : "border-gray-200 hover:border-gray-300"
-                )}
+              className={cn(
+                "flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all bg-white",
+                isSelected
+                  ? "border-black"
+                  : "border-gray-200 hover:border-gray-300"
+              )}
+            >
+              <div 
+                className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: type.bgColor }}
               >
-                <div 
-                  className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: type.bgColor }}
-                >
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 text-sm leading-tight">
+                <Icon className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 text-sm leading-tight">
                     {type.name}
                   </p>
                   <p className="text-xs text-gray-500 mt-1 line-clamp-2">
