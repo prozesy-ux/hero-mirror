@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSellerSidebarContext } from '@/contexts/SellerSidebarContext';
 import { useSellerContext } from '@/contexts/SellerContext';
@@ -69,6 +69,7 @@ const SellerSidebar = () => {
   const { isCollapsed, toggleSidebar } = useSellerSidebarContext();
   const { profile } = useSellerContext();
   const location = useLocation();
+  const [discountOpen, setDiscountOpen] = useState(true);
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact) return location.pathname === path;
@@ -76,14 +77,6 @@ const SellerSidebar = () => {
   };
 
   const isDiscountActive = discountItems.some(item => isActive(item.to));
-  const [discountOpen, setDiscountOpen] = useState(true);
-
-  // Auto-expand Discount dropdown when on a discount page
-  useEffect(() => {
-    if (isDiscountActive) {
-      setDiscountOpen(true);
-    }
-  }, [location.pathname, isDiscountActive]);
 
   const renderNavItem = (item: { to: string; icon: any; label: string; exact?: boolean }) => {
     const active = isActive(item.to, item.exact);
@@ -130,7 +123,7 @@ const SellerSidebar = () => {
   return (
     <TooltipProvider>
       <aside 
-        className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-[60] bg-black transition-all duration-300 ${
+        className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-50 bg-black transition-all duration-300 ${
           isCollapsed ? 'w-[72px]' : 'w-52'
         }`}
       >
@@ -146,7 +139,7 @@ const SellerSidebar = () => {
         </div>
 
         {/* Main Navigation */}
-        <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+        <nav className="flex-1 overflow-y-auto">
           {/* First section of nav items */}
           {navItems.map(renderNavItem)}
 
