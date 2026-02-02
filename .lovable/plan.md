@@ -1,123 +1,69 @@
 
-# Complete Neo-Brutalist Card Design for Remaining Seller Dashboard Sections
+# Remove Border Design from Seller Wallet Section
 
-## Problem Identified
+## Overview
 
-After thorough code review, the following Seller Dashboard sections still have the **light/modern card design** instead of the **neo-brutalist style** that matches the Buyer Dashboard:
-
-- `/seller` - SellerDashboard.tsx (bottom cards)
-- `/seller/analytics` - SellerAnalytics.tsx (bottom cards)
-- `/seller/customers` - SellerCustomers.tsx (all cards)
-- `/seller/inventory` - SellerInventory.tsx (all cards)
-- `/seller/coupons` - SellerMarketing.tsx (all cards)
+This plan will remove the neo-brutalist border design (`border-2 border-black`, `shadow-neobrutalism`, and hover effects) from the `/seller/wallet` section, giving it a cleaner, borderless appearance.
 
 ---
 
-## Target Design Standard
+## Current Design Elements to Remove
 
-All cards must use:
-- `border-2 border-black` (thick black border)
+The following styling will be removed across all cards and containers:
+- `border-2 border-black` (thick black borders)
 - `shadow-neobrutalism` (4px offset shadow)
-- `rounded-lg` (consistent border radius)
-- `hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all` (interactive cards only)
+- `hover:shadow-none hover:translate-x-1 hover:translate-y-1` (hover effects)
 
 ---
 
-## Files Requiring Updates
+## Components to Update
 
-### 1. SellerDashboard.tsx
+### 1. Tab Navigation (Line 769)
+**Current:** `border-2 border-black shadow-neobrutalism`
+**New:** No border, subtle background only
 
-| Line Range | Component | Current Style | Update To |
-|------------|-----------|---------------|-----------|
-| 446-458 | Monthly Comparison card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-| 462-513 | Revenue Chart card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-| 518-545 | Top Products card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-| 548-596 | Recent Orders card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+### 2. Wallet Card (Line 801)
+**Current:** `border-2 border-black shadow-neobrutalism`
+**New:** Clean card without borders
 
-### 2. SellerAnalytics.tsx
+### 3. Add Account First Warning (Line 826)
+**Current:** `border-2 border-black`
+**New:** Simple warning box without thick border
 
-| Line Range | Component | Current Style | Update To |
-|------------|-----------|---------------|-----------|
-| 488-501 | Customer Feedback card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-| 509-557 | Order Status Donut card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-| 560-582 | Top Products card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-| 585-607 | Revenue by Day card | `border border-slate-200 shadow-sm rounded-xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+### 4. Available Withdrawal Methods Card (Line 844)
+**Current:** `border-2 border-black shadow-neobrutalism`
+**New:** Clean container
 
-### 3. SellerCustomers.tsx
+### 5. Withdrawal Method Items (Line 878)
+**Current:** `border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1`
+**New:** Simple cards with light styling
 
-| Line Range | Component | Current Style | Update To |
-|------------|-----------|---------------|-----------|
-| 186-196 | Total Customers stat | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` + hover effect |
-| 198-208 | Repeat Customers stat | Same pattern | Same update |
-| 210-220 | Retention Rate stat | Same pattern | Same update |
-| 222-232 | Avg Order Value stat | Same pattern | Same update |
-| 239-261 | Top Customer card | `border border-orange-100 rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-| 264-291 | Customer Segments card | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-| 295-361 | Customer List table | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+### 6. Saved Account Cards (Lines 920, 1000)
+**Current:** `border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1`
+**New:** Clean cards without neo-brutalist styling
 
-### 4. SellerInventory.tsx
-
-| Line Range | Component | Current Style | Update To |
-|------------|-----------|---------------|-----------|
-| 143-153 | Total Products stat | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` + hover effect |
-| 156-166 | Total Units stat | Same pattern | Same update |
-| 169-179 | In Stock stat | Same pattern | Same update |
-| 182-192 | Low Stock stat | Same pattern | Same update |
-| 195-205 | Out of Stock stat | Same pattern | Same update |
-| 209-228 | Inventory Health card | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-| 256-348 | Products Table card | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
-
-### 5. SellerMarketing.tsx (Coupons)
-
-| Line Range | Component | Current Style | Update To |
-|------------|-----------|---------------|-----------|
-| 321-331 | Total Codes stat | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` + hover effect |
-| 333-343 | Active Codes stat | Same pattern | Same update |
-| 345-355 | Total Uses stat | Same pattern | Same update |
-| 359-435 | Discount Codes Table | `border border-slate-100 shadow-sm rounded-2xl` | `border-2 border-black shadow-neobrutalism rounded-lg` |
+### 7. Add New Account Button (Line 975)
+**Current:** `border-2 border-dashed border-black`
+**New:** Subtle dashed border
 
 ---
 
-## Visual Comparison
+## Style Replacement Pattern
 
-**Current (Incorrect):**
-```
-┌────────────────────────────────────┐
-│  1px slate border                  │
-│  Subtle shadow-sm                  │
-│  rounded-xl/2xl corners            │
-└────────────────────────────────────┘
-```
-
-**Target (Correct - Neo-Brutalist):**
-```
-╔════════════════════════════════════╗ ▄
-║  2px black border                  ║ ▄
-║  4px offset shadow                 ║ ▄
-║  rounded-lg corners                ║ ▄
-║  Shifts into shadow on hover       ║ ▄
-╚════════════════════════════════════╝
-   ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-```
+| Current Style | New Style |
+|--------------|-----------|
+| `border-2 border-black` | `border border-gray-200` or none |
+| `shadow-neobrutalism` | `shadow-sm` or none |
+| `hover:shadow-none hover:translate-x-1 hover:translate-y-1` | `hover:shadow-md` or remove |
 
 ---
 
-## Implementation Summary
+## File to Modify
 
-1. **SellerDashboard.tsx** - Update 4 bottom section cards (Monthly Comparison, Revenue Chart, Top Products, Recent Orders)
-2. **SellerAnalytics.tsx** - Update 4 bottom section cards (Customer Feedback, Order Status, Top Products, Revenue by Day)
-3. **SellerCustomers.tsx** - Update all 7 card containers (4 stat cards + Top Customer + Segments + Table)
-4. **SellerInventory.tsx** - Update all 7 card containers (5 stat cards + Health + Table)
-5. **SellerMarketing.tsx** - Update all 4 card containers (3 stat cards + Table)
-
-Total: **26 cards** will be updated to match the neo-brutalist design system.
+- `src/components/seller/SellerWallet.tsx`
 
 ---
 
-## Technical Notes
+## Visual Result
 
-- All `rounded-2xl` and `rounded-xl` will be changed to `rounded-lg` for consistency
-- All `border border-slate-100/200` will be changed to `border-2 border-black`
-- All `shadow-sm` will be changed to `shadow-neobrutalism`
-- Interactive stat cards will receive `hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer`
-- Container cards (tables, charts) will not have hover effects but will have the neo-brutalist border and shadow
+The wallet section will have a cleaner, modern appearance without the bold black borders and offset shadows, while maintaining proper visual hierarchy through subtle shadows and light borders.
