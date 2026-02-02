@@ -68,14 +68,14 @@ const DashboardSidebar = () => {
 
   return (
     <TooltipProvider>
-      <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-50 bg-black transition-all duration-300 ${isCollapsed ? 'w-[72px]' : 'w-[240px]'}`}>
+      <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-50 bg-white border-r border-gray-200 transition-all duration-300 ${isCollapsed ? 'w-[72px]' : 'w-64'}`}>
         {/* Logo Section - Gumroad style */}
-        <div className={`h-14 flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-3' : 'px-5'}`}>
+        <div className={`py-6 flex items-center border-b border-gray-200 ${isCollapsed ? 'justify-center px-3' : 'px-6'}`}>
           <Link to="/dashboard" className="flex items-center">
             {isCollapsed ? (
-              <span className="text-white text-lg font-bold">U</span>
+              <span className="text-gray-900 text-lg font-bold">U</span>
             ) : (
-              <span className="text-white tracking-tight text-4xl font-sans font-extrabold">UPTOZA</span>
+              <span className="text-gray-900 text-2xl font-bold tracking-tight">uptoza</span>
             )}
           </Link>
         </div>
@@ -91,11 +91,11 @@ const DashboardSidebar = () => {
                   <TooltipTrigger asChild>
                     <Link 
                       to={item.to} 
-                      className={`flex items-center justify-center w-full py-3 transition-colors ${
-                        active ? 'text-[#FF90E8]' : 'text-white/80 hover:text-white'
+                      className={`flex items-center justify-center w-full py-3 transition-colors border-b border-gray-200 ${
+                        active ? 'text-[#FF90E8]' : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={2} />
+                      <Icon size={18} strokeWidth={2} />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-white text-black border-0">
@@ -108,11 +108,13 @@ const DashboardSidebar = () => {
               <Link 
                 key={item.to} 
                 to={item.to} 
-                className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${
-                  active ? 'text-[#FF90E8]' : 'text-white/80 hover:text-white'
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-b border-gray-200 ${
+                  active ? 'text-[#FF90E8]' : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <Icon size={20} strokeWidth={2} />
+                <span className="w-5 h-5 flex items-center justify-center">
+                  <Icon size={18} strokeWidth={2} />
+                </span>
                 <span>{item.label}</span>
               </Link>
             );
@@ -120,7 +122,7 @@ const DashboardSidebar = () => {
         </nav>
 
         {/* Bottom Section */}
-        <div className="border-t border-white/10 py-3">
+        <div className="border-t border-gray-200 py-3">
           {/* Notifications, Support, Settings */}
           {bottomNavItems.map(item => {
             const active = isActive(item.to);
@@ -131,11 +133,11 @@ const DashboardSidebar = () => {
                   <TooltipTrigger asChild>
                     <Link 
                       to={item.to} 
-                      className={`flex items-center justify-center w-full py-3 transition-colors ${
-                        active ? 'text-[#FF90E8]' : 'text-white/80 hover:text-white'
+                      className={`flex items-center justify-center w-full py-3 transition-colors border-b border-gray-200 ${
+                        active ? 'text-[#FF90E8]' : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <Icon size={20} strokeWidth={2} />
+                      <Icon size={18} strokeWidth={2} />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-white text-black border-0">
@@ -148,11 +150,13 @@ const DashboardSidebar = () => {
               <Link 
                 key={item.to} 
                 to={item.to} 
-                className={`flex items-center gap-3.5 px-5 py-3 text-[15px] font-medium transition-colors ${
-                  active ? 'text-[#FF90E8]' : 'text-white/80 hover:text-white'
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-b border-gray-200 ${
+                  active ? 'text-[#FF90E8]' : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <Icon size={20} strokeWidth={2} />
+                <span className="w-5 h-5 flex items-center justify-center">
+                  <Icon size={18} strokeWidth={2} />
+                </span>
                 <span>{item.label}</span>
               </Link>
             );
@@ -161,40 +165,42 @@ const DashboardSidebar = () => {
           {/* Collapse Toggle */}
           <button 
             onClick={toggleSidebar} 
-            className={`flex items-center gap-3.5 w-full py-3 text-white/50 hover:text-white transition-colors ${
-              isCollapsed ? 'justify-center' : 'px-5'
+            className={`flex items-center gap-3 w-full py-3 text-gray-400 hover:text-gray-700 transition-colors ${
+              isCollapsed ? 'justify-center' : 'px-4'
             }`}
           >
             {isCollapsed ? (
-              <ChevronRight size={20} strokeWidth={2} />
+              <ChevronRight size={18} strokeWidth={2} />
             ) : (
               <>
-                <ChevronLeft size={20} strokeWidth={2} />
-                <span className="text-[15px] font-medium">Collapse</span>
+                <span className="w-5 h-5 flex items-center justify-center">
+                  <ChevronLeft size={18} strokeWidth={2} />
+                </span>
+                <span className="text-sm font-medium">Collapse</span>
               </>
             )}
           </button>
 
           {/* User Profile */}
-          <div className={`mt-2 pt-3 border-t border-white/10 ${isCollapsed ? 'px-3' : 'px-4'}`}>
+          <div className={`mt-2 pt-3 border-t border-gray-200 ${isCollapsed ? 'px-3' : 'px-4'}`}>
             <Link 
               to="/dashboard/profile" 
-              className={`flex items-center gap-3 py-2 rounded-lg hover:bg-white/5 transition-colors ${
+              className={`flex items-center gap-3 py-2 rounded-lg hover:bg-gray-50 transition-colors ${
                 isCollapsed ? 'justify-center' : ''
               }`}
             >
-              <Avatar className="h-8 w-8 ring-1 ring-white/20">
+              <Avatar className="h-8 w-8 ring-1 ring-gray-200">
                 <AvatarImage src={profile?.avatar_url || ''} />
-                <AvatarFallback className="bg-white/10 text-white text-xs font-medium">
+                <AvatarFallback className="bg-gray-100 text-gray-700 text-xs font-medium">
                   {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               {!isCollapsed && (
                 <div className="flex-1 min-w-0 flex items-center gap-2">
-                  <p className="text-sm text-white font-medium truncate">
+                  <p className="text-sm text-gray-900 font-medium truncate">
                     {profile?.full_name || user?.email?.split('@')[0] || 'User'}
                   </p>
-                  <ChevronDown className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 </div>
               )}
             </Link>
