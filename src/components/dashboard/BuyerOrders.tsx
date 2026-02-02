@@ -566,92 +566,89 @@ const BuyerOrders = () => {
         </div>
       </div>
 
-      {/* Orders List - Dokani Card Style */}
-      <div className="space-y-4">
+      {/* Orders List - Clean Card Style */}
+      <div className="space-y-3">
         {filteredOrders.length === 0 ? (
-          <div className="bg-white rounded-lg p-10 text-center border-2 border-black shadow-neobrutalism">
+          <div className="bg-white rounded-xl p-10 text-center border border-slate-200">
             <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500">No orders found</p>
           </div>
         ) : (
           filteredOrders.map((order) => (
-            <div key={order.id} className="bg-white rounded-lg border-2 border-black shadow-neobrutalism overflow-hidden">
-              {/* Order Header - Dokani Style */}
-              <div className="px-4 py-3 bg-slate-50 border-b-2 border-black flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="flex items-center gap-2 text-sm text-slate-600 flex-wrap">
-                  <span>Seller: <strong className="text-slate-800">{order.seller?.store_name || 'Store'}</strong></span>
-                  <span className="text-slate-300 hidden sm:inline">|</span>
-                  <span>Date: <strong className="text-slate-800">{format(new Date(order.created_at), 'dd MMM, yyyy')}</strong></span>
-                </div>
-                <span className="text-xs text-slate-500 font-mono">
-                  Order ID: #{order.id.slice(0, 8).toUpperCase()}
-                </span>
-              </div>
-              
-              {/* Product Row */}
-              <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div 
+              key={order.id} 
+              className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200"
+            >
+              <div className="flex items-start gap-4">
                 {/* Product Image */}
                 {order.product?.icon_url ? (
                   <img 
                     src={order.product.icon_url} 
                     alt="" 
-                    className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+                    className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
                     loading="lazy"
                     decoding="async"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                  <div className="w-14 h-14 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
                     <Package className="w-6 h-6 text-slate-400" />
                   </div>
                 )}
                 
-                {/* Product Info */}
+                {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-slate-800 truncate">{order.product?.name || 'Unknown Product'}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage src={order.seller?.store_logo_url || ''} />
-                      <AvatarFallback className="text-[10px] bg-slate-100">{order.seller?.store_name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs text-slate-500">{order.seller?.store_name}</span>
+                  {/* Title + Status Row */}
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-medium text-slate-900 truncate text-[15px] leading-tight">
+                      {order.product?.name || 'Unknown Product'}
+                    </h3>
+                    {getStatusBadge(order.status)}
                   </div>
-                  <p className="text-sm text-slate-500 mt-1">Quantity: 1</p>
-                </div>
-
-                {/* Price */}
-                <div className="text-right flex-shrink-0">
-                  <p className="text-lg font-bold text-slate-800">{formatAmountOnly(order.amount)}</p>
-                  <p className="text-xs text-slate-400">{format(new Date(order.created_at), 'h:mm a')}</p>
-                </div>
-                
-                {/* Status Badge */}
-                {getStatusBadge(order.status)}
-                
-                {/* Actions */}
-                <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setSelectedOrder(order)}
-                    className="flex-1 sm:flex-none rounded-lg"
-                  >
-                    <Eye className="w-4 h-4 mr-1" />
-                    View
-                  </Button>
+                  
+                  {/* Seller */}
+                  <div className="flex items-center gap-2 mt-1">
+                    <Avatar className="h-4 w-4">
+                      <AvatarImage src={order.seller?.store_logo_url || ''} />
+                      <AvatarFallback className="text-[8px] bg-slate-100">{order.seller?.store_name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-slate-500">{order.seller?.store_name || 'Store'}</span>
+                  </div>
+                  
+                  {/* Price, Date, Order ID */}
+                  <div className="flex items-center gap-2 mt-2 text-sm flex-wrap">
+                    <span className="font-semibold text-slate-900">{formatAmountOnly(order.amount)}</span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-slate-500">{format(new Date(order.created_at), 'MMM d, yyyy')}</span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-slate-400 text-xs font-mono">#{order.id.slice(0, 8).toUpperCase()}</span>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedOrder(order)}
+                      className="rounded-lg text-sm h-8 px-3"
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1.5" />
+                      View Details
+                    </Button>
+                  </div>
                 </div>
               </div>
 
               {/* Action for delivered orders */}
               {order.status === 'delivered' && !order.buyer_approved && (
-                <div className="px-4 pb-4">
-                  <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                      <p className="text-sm text-blue-700">Order delivered! Please confirm to release payment to seller.</p>
+                      <p className="text-sm text-blue-700">Order delivered! Please confirm to release payment.</p>
                       <Button
                         size="sm"
                         onClick={() => handleApproveDelivery(order.id)}
                         disabled={approving}
-                        className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+                        className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto h-8"
                       >
                         Confirm Delivery
                       </Button>
@@ -692,7 +689,7 @@ const BuyerOrders = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border-2 border-black">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div>
                   <p className="text-xs text-slate-500">Order ID</p>
                   <p className="font-mono text-sm">{selectedOrder.id.slice(0, 8)}...</p>
@@ -712,7 +709,7 @@ const BuyerOrders = () => {
               </div>
 
               {selectedOrder.credentials && selectedOrder.status !== 'pending' && (
-                <div className="p-4 bg-emerald-50 rounded-lg border-2 border-black">
+                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
                   <p className="text-xs text-emerald-600 font-medium mb-2">Delivery Credentials</p>
                   <pre className="text-sm whitespace-pre-wrap bg-white p-3 rounded-lg border">
                     {selectedOrder.credentials}
