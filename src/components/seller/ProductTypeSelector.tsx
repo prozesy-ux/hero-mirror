@@ -33,19 +33,19 @@ const ProductTypeSelector = ({
               type="button"
               onClick={() => onTypeSelect(type.id)}
               className={cn(
-                "flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all bg-white",
+                "flex flex-col gap-4 p-4 rounded-md border-2 text-left transition-all bg-white h-full",
                 isSelected
-                  ? "border-black"
-                  : "border-gray-200 hover:border-gray-300"
+                  ? "border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                  : "border-gray-300 hover:border-black"
               )}
             >
               <div 
-                className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
+                className="flex-shrink-0 w-10 h-10 rounded-md flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                 style={{ backgroundColor: type.bgColor }}
               >
                 <Icon className="w-5 h-5" />
               </div>
-              <span className="font-medium text-sm text-gray-900">{type.name}</span>
+              <h3 className="font-bold text-sm text-gray-900">{type.name}</h3>
             </button>
           );
         })}
@@ -64,32 +64,32 @@ const ProductTypeSelector = ({
             const Icon = type.Icon;
             
             return (
-              <button
-                key={type.id}
-                type="button"
-                onClick={() => onTypeSelect(type.id)}
+            <button
+              key={type.id}
+              type="button"
+              onClick={() => onTypeSelect(type.id)}
               className={cn(
-                "flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all bg-white",
+                "flex flex-col gap-4 p-4 rounded-md border-2 text-left transition-all bg-white h-full",
                 isSelected
-                  ? "border-black"
-                  : "border-gray-200 hover:border-gray-300"
+                  ? "border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                  : "border-gray-300 hover:border-black"
               )}
             >
               <div 
-                className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
+                className="flex-shrink-0 w-10 h-10 rounded-md flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                 style={{ backgroundColor: type.bgColor }}
               >
                 <Icon className="w-5 h-5" />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 text-sm leading-tight">
-                    {type.name}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                    {type.description}
-                  </p>
-                </div>
-              </button>
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm mb-1">
+                  {type.name}
+                </h3>
+                <p className="text-xs text-gray-600 leading-tight line-clamp-2">
+                  {type.description}
+                </p>
+              </div>
+            </button>
             );
           })}
         </div>
@@ -104,32 +104,32 @@ const ProductTypeSelector = ({
             const Icon = type.Icon;
             
             return (
-              <button
-                key={type.id}
-                type="button"
-                onClick={() => onTypeSelect(type.id)}
+            <button
+              key={type.id}
+              type="button"
+              onClick={() => onTypeSelect(type.id)}
               className={cn(
-                "flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all bg-white",
+                "flex flex-col gap-4 p-4 rounded-md border-2 text-left transition-all bg-white h-full",
                 isSelected
-                  ? "border-black"
-                  : "border-gray-200 hover:border-gray-300"
+                  ? "border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                  : "border-gray-300 hover:border-black"
               )}
             >
               <div 
-                className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center"
+                className="flex-shrink-0 w-10 h-10 rounded-md flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                 style={{ backgroundColor: type.bgColor }}
               >
                 <Icon className="w-5 h-5" />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 text-sm leading-tight">
-                    {type.name}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                    {type.description}
-                  </p>
-                </div>
-              </button>
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm mb-1">
+                  {type.name}
+                </h3>
+                <p className="text-xs text-gray-600 leading-tight line-clamp-2">
+                  {type.description}
+                </p>
+              </div>
+            </button>
             );
           })}
         </div>
