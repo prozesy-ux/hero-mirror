@@ -350,10 +350,10 @@ const BuyerOrders = () => {
       <div className="space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl border-2 border-black" />
+            <Skeleton key={i} className="h-28 rounded border" />
           ))}
         </div>
-        <Skeleton className="h-96 rounded-2xl border-2 border-black" />
+        <Skeleton className="h-96 rounded border" />
       </div>
     );
   }
@@ -393,69 +393,34 @@ const BuyerOrders = () => {
       
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total Orders</p>
-              <p className="text-2xl font-bold text-slate-800">{stats.total}</p>
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Total Orders</div>
+          <div className="text-4xl font-semibold text-slate-900">{stats.total}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
-              <Clock className="w-6 h-6 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Pending</p>
-              <p className="text-2xl font-bold text-orange-600">{stats.pending}</p>
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Pending</div>
+          <div className="text-4xl font-semibold text-orange-600">{stats.pending}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
-              <Package className="w-6 h-6 text-violet-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Delivered</p>
-              <p className="text-2xl font-bold text-violet-600">{stats.delivered}</p>
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Delivered</div>
+          <div className="text-4xl font-semibold text-violet-600">{stats.delivered}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Completed</p>
-              <p className="text-2xl font-bold text-emerald-600">{stats.completed}</p>
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Completed</div>
+          <div className="text-4xl font-semibold text-emerald-600">{stats.completed}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center">
-              <span className="text-green-600 font-bold text-lg">{formatAmountOnly(1).charAt(0)}</span>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total Spent</p>
-              <p className="text-2xl font-bold text-green-600">{formatAmountOnly(stats.totalSpent)}</p>
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Total Spent</div>
+          <div className="text-4xl font-semibold text-green-600">{formatAmountOnly(stats.totalSpent)}</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism p-4 space-y-4">
+      <div className="bg-white border rounded p-4 space-y-4">
         {/* Search, Date, Sort Row */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">

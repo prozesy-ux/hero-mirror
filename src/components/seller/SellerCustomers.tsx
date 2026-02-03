@@ -161,10 +161,10 @@ const SellerCustomers = () => {
       <div className="space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />
+            <Skeleton key={i} className="h-28 rounded border" />
           ))}
         </div>
-        <Skeleton className="h-96 rounded-lg border-2 border-black" />
+        <Skeleton className="h-96 rounded border" />
       </div>
     );
   }
@@ -183,52 +183,24 @@ const SellerCustomers = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center border-2 border-black">
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total Customers</p>
-              <p className="text-2xl font-bold text-slate-800">{stats.totalCustomers}</p>
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Total Customers</div>
+          <div className="text-4xl font-semibold text-slate-900">{stats.totalCustomers}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center border-2 border-black">
-              <UserCheck className="w-6 h-6 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Repeat Customers</p>
-              <p className="text-2xl font-bold text-emerald-600">{stats.repeatCustomers}</p>
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Repeat Customers</div>
+          <div className="text-4xl font-semibold text-emerald-600">{stats.repeatCustomers}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center border-2 border-black">
-              <TrendingUp className="w-6 h-6 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Retention Rate</p>
-              <p className="text-2xl font-bold text-orange-600">{stats.retentionRate}%</p>
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Retention Rate</div>
+          <div className="text-4xl font-semibold text-orange-600">{stats.retentionRate}%</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-violet-100 flex items-center justify-center border-2 border-black">
-              <Star className="w-6 h-6 text-violet-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Avg Order Value</p>
-              <p className="text-2xl font-bold text-violet-600">₹{stats.avgOrderValue.toFixed(0)}</p>
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Avg Order Value</div>
+          <div className="text-4xl font-semibold text-violet-600">₹{stats.avgOrderValue.toFixed(0)}</div>
         </div>
       </div>
 
@@ -236,7 +208,7 @@ const SellerCustomers = () => {
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Top Spender Card */}
         {stats.topSpender && (
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-6 border-2 border-black shadow-neobrutalism">
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 border rounded p-6">
             <div className="flex items-center gap-2 mb-4">
               <Crown className="w-5 h-5 text-amber-600" />
               <h3 className="font-semibold text-slate-800">Top Customer</h3>
@@ -261,7 +233,7 @@ const SellerCustomers = () => {
         )}
 
         {/* Customer Segments */}
-        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
+        <div className="bg-white border rounded p-6">
           <h3 className="font-semibold text-slate-800 mb-4">Customer Segments</h3>
           {segmentData.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
@@ -292,7 +264,7 @@ const SellerCustomers = () => {
       </div>
 
       {/* Customer List */}
-      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism overflow-hidden">
+      <div className="bg-white border rounded overflow-hidden">
         <div className="p-4 border-b border-slate-100">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
