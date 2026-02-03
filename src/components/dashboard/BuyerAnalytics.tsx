@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
-import { DollarSign, ShoppingBag, TrendingUp, TrendingDown, Calendar, Download, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Calendar, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, subDays, startOfMonth } from 'date-fns';
@@ -243,70 +243,40 @@ const BuyerAnalytics = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Gumroad Style */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total Spent</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(stats.totalSpent)}</p>
-              {stats.spentChange !== 0 && (
-                <div className="flex items-center gap-1 mt-2">
-                  {stats.spentChange > 0 ? (
-                    <span className="text-xs font-medium text-red-600 flex items-center">
-                      <ArrowUpRight className="w-3 h-3" />
-                      {stats.spentChange.toFixed(1)}% vs last period
-                    </span>
-                  ) : (
-                    <span className="text-xs font-medium text-emerald-600 flex items-center">
-                      <ArrowDownRight className="w-3 h-3" />
-                      {Math.abs(stats.spentChange).toFixed(1)}% vs last period
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-emerald-600" />
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Total Spent</span>
           </div>
+          <div className="text-4xl font-semibold text-slate-900">{formatAmountOnly(stats.totalSpent)}</div>
+          {stats.spentChange !== 0 && (
+            <p className="text-sm text-slate-500 mt-2">
+              {stats.spentChange > 0 ? '+' : ''}{stats.spentChange.toFixed(1)}% vs last period
+            </p>
+          )}
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total Orders</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{stats.totalOrders}</p>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-blue-600" />
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Total Orders</span>
           </div>
+          <div className="text-4xl font-semibold text-slate-900">{stats.totalOrders}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500">Avg Order Value</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(stats.avgOrderValue)}</p>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-violet-600" />
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Avg Order Value</span>
           </div>
+          <div className="text-4xl font-semibold text-slate-900">{formatAmountOnly(stats.avgOrderValue)}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500">This Month</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">
-                {formatAmountOnly(orders.filter(o => new Date(o.created_at) >= startOfMonth(new Date())).reduce((s, o) => s + o.amount, 0))}
-              </p>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-orange-600" />
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">This Month</span>
+          </div>
+          <div className="text-4xl font-semibold text-slate-900">
+            {formatAmountOnly(orders.filter(o => new Date(o.created_at) >= startOfMonth(new Date())).reduce((s, o) => s + o.amount, 0))}
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, Clock, Truck, Star, TrendingUp, TrendingDown, Award, Target, Zap, CheckCircle2 } from 'lucide-react';
+import { Shield, Clock, Truck, CheckCircle2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -180,60 +180,40 @@ const SellerPerformance = () => {
         </div>
       </div>
 
-      {/* Key Metrics Grid */}
+      {/* Key Metrics Grid - Gumroad Style */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Trust Score */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <Award className="w-6 h-6 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Trust Score</p>
-              <p className={`text-2xl font-bold ${getScoreColor(trustScore?.trust_score || 100)}`}>
-                {trustScore?.trust_score || 100}
-              </p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Trust Score</span>
+          </div>
+          <div className={`text-4xl font-semibold ${getScoreColor(trustScore?.trust_score || 100)}`}>
+            {trustScore?.trust_score || 100}
           </div>
         </div>
 
         {/* Fulfillment Rate */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <Target className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Fulfillment Rate</p>
-              <p className="text-2xl font-bold text-blue-600">{metrics.fulfillmentRate}%</p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Fulfillment Rate</span>
           </div>
+          <div className="text-4xl font-semibold text-slate-900">{metrics.fulfillmentRate}%</div>
         </div>
 
         {/* Avg Response Time */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
-              <Clock className="w-6 h-6 text-violet-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Avg Response</p>
-              <p className="text-2xl font-bold text-violet-600">{metrics.avgResponseTime}h</p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Avg Response</span>
           </div>
+          <div className="text-4xl font-semibold text-slate-900">{metrics.avgResponseTime}h</div>
         </div>
 
         {/* Avg Delivery */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
-              <Truck className="w-6 h-6 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Avg Delivery</p>
-              <p className="text-2xl font-bold text-orange-600">{metrics.avgDeliveryTime}h</p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Avg Delivery</span>
           </div>
+          <div className="text-4xl font-semibold text-slate-900">{metrics.avgDeliveryTime}h</div>
         </div>
       </div>
 

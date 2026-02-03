@@ -296,37 +296,29 @@ const SellerDashboard = () => {
         <StatCard
           label="Revenue"
           value={formatAmountOnly(metrics.totalRevenue)}
-          icon={<DollarSign className="w-6 h-6" />}
-          trend={{ value: metrics.revenueChange, label: 'vs last week' }}
-          accentColor="emerald"
-          variant="neobrutalism"
+          subValue={`${metrics.revenueChange >= 0 ? '+' : ''}${metrics.revenueChange.toFixed(1)}% vs last week`}
+          variant="gumroad"
           onClick={() => navigate('/seller/analytics')}
         />
         <StatCard
           label="Available Balance"
           value={formatAmountOnly(wallet?.balance || 0)}
-          icon={<DollarSign className="w-6 h-6" />}
           subValue={`${formatAmountOnly(metrics.pendingBalance)} pending`}
-          accentColor="blue"
-          variant="neobrutalism"
+          variant="gumroad"
           onClick={() => navigate('/seller/wallet')}
         />
         <StatCard
           label="Total Orders"
           value={metrics.totalOrders}
-          icon={<ShoppingCart className="w-6 h-6" />}
-          trend={{ value: metrics.ordersChange, label: 'vs last week' }}
-          accentColor="violet"
-          variant="neobrutalism"
+          subValue={`${metrics.ordersChange >= 0 ? '+' : ''}${metrics.ordersChange.toFixed(1)}% vs last week`}
+          variant="gumroad"
           onClick={() => navigate('/seller/orders')}
         />
         <StatCard
           label="Active Products"
           value={metrics.activeProducts}
-          icon={<Package className="w-6 h-6" />}
           subValue={`${products.length} total`}
-          accentColor="orange"
-          variant="neobrutalism"
+          variant="gumroad"
           onClick={() => navigate('/seller/products')}
         />
       </div>
