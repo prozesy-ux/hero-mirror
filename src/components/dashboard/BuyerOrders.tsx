@@ -429,14 +429,14 @@ const BuyerOrders = () => {
               placeholder="Search by product, seller, or order ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 rounded-xl border-slate-200"
+              className="pl-10 rounded border-black focus:ring-2 focus:ring-[#FF90E8]/50"
             />
           </div>
 
           {/* Date Filter */}
           <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto gap-2 rounded-xl border-slate-200">
+              <Button variant="outline" className="w-full sm:w-auto gap-2 rounded border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <Calendar className="h-4 w-4 text-slate-500" />
                 <span>{getDateLabel()}</span>
               </Button>
@@ -448,8 +448,8 @@ const BuyerOrders = () => {
                     key={preset}
                     onClick={() => { setDatePreset(preset); if (preset !== 'custom') setShowDatePicker(false); }}
                     className={cn(
-                      "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
-                      datePreset === preset ? "bg-violet-100 text-violet-700" : "hover:bg-slate-100"
+                      "w-full text-left px-3 py-2 rounded text-sm transition-colors",
+                      datePreset === preset ? "bg-[#FF90E8] text-black border border-black" : "hover:bg-slate-50"
                     )}
                   >
                     {preset === 'all' ? 'All Time' : 
@@ -463,8 +463,8 @@ const BuyerOrders = () => {
                 <button
                   onClick={() => setDatePreset('custom')}
                   className={cn(
-                    "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
-                    datePreset === 'custom' ? "bg-violet-100 text-violet-700" : "hover:bg-slate-100"
+                    "w-full text-left px-3 py-2 rounded text-sm transition-colors",
+                    datePreset === 'custom' ? "bg-[#FF90E8] text-black border border-black" : "hover:bg-slate-50"
                   )}
                 >
                   Custom Range
@@ -486,7 +486,7 @@ const BuyerOrders = () => {
 
           {/* Sort */}
           <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
-            <SelectTrigger className="w-full sm:w-[160px] rounded-xl border-slate-200">
+            <SelectTrigger className="w-full sm:w-[160px] rounded border-black">
               <ArrowUpDown className="w-4 h-4 mr-2 text-slate-400" />
               <SelectValue />
             </SelectTrigger>
@@ -504,44 +504,46 @@ const BuyerOrders = () => {
         </div>
 
         {/* Status Tabs */}
-        <div className="flex flex-wrap gap-2">
-          {[
-            { value: 'all', label: 'All', count: stats.total },
-            { value: 'pending', label: 'Pending', count: stats.pending },
-            { value: 'delivered', label: 'Delivered', count: stats.delivered },
-            { value: 'approved', label: 'Approved', count: stats.approved },
-            { value: 'unapproved', label: 'Unapproved', count: stats.unapproved },
-            { value: 'completed', label: 'Completed', count: stats.completed },
-            { value: 'cancelled', label: 'Cancelled', count: orders.filter(o => o.status === 'cancelled').length },
-          ].map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setStatusFilter(tab.value)}
-              className={cn(
-                "px-4 py-2 rounded-full text-sm font-medium transition-all",
-                statusFilter === tab.value
-                  ? "bg-violet-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              )}
-            >
-              {tab.label}
-              {tab.count > 0 && (
-                <span className={cn(
-                  "ml-1.5 px-1.5 py-0.5 rounded-full text-xs",
-                  statusFilter === tab.value ? "bg-white/20" : "bg-slate-200"
-                )}>
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="bg-white border rounded p-2">
+          <div className="flex flex-wrap gap-1">
+            {[
+              { value: 'all', label: 'All', count: stats.total },
+              { value: 'pending', label: 'Pending', count: stats.pending },
+              { value: 'delivered', label: 'Delivered', count: stats.delivered },
+              { value: 'approved', label: 'Approved', count: stats.approved },
+              { value: 'unapproved', label: 'Unapproved', count: stats.unapproved },
+              { value: 'completed', label: 'Completed', count: stats.completed },
+              { value: 'cancelled', label: 'Cancelled', count: orders.filter(o => o.status === 'cancelled').length },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
+                className={cn(
+                  "px-4 py-2 rounded text-sm font-medium transition-all",
+                  statusFilter === tab.value
+                    ? "bg-[#FF90E8] text-black border border-black"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                )}
+              >
+                {tab.label}
+                {tab.count > 0 && (
+                  <span className={cn(
+                    "ml-1.5 px-1.5 py-0.5 rounded text-xs",
+                    statusFilter === tab.value ? "bg-black/10" : "bg-slate-200"
+                  )}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Orders List - Clean Card Style */}
       <div className="space-y-3">
         {filteredOrders.length === 0 ? (
-          <div className="bg-white rounded-xl p-10 text-center border border-slate-200">
+          <div className="bg-white border rounded p-10 text-center">
             <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500">No orders found</p>
           </div>
@@ -549,7 +551,7 @@ const BuyerOrders = () => {
           filteredOrders.map((order) => (
             <div 
               key={order.id} 
-              className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200"
+              className="bg-white border rounded p-4 transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             >
               <div className="flex items-start gap-4">
                 {/* Product Image */}
@@ -597,15 +599,13 @@ const BuyerOrders = () => {
                   
                   {/* Actions */}
                   <div className="flex gap-2 mt-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
+                    <button
                       onClick={() => setSelectedOrder(order)}
-                      className="rounded-lg text-sm h-8 px-3"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-[#FF90E8] text-black font-medium text-sm rounded border border-black transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                     >
-                      <Eye className="w-3.5 h-3.5 mr-1.5" />
+                      <Eye className="w-3.5 h-3.5" />
                       View Details
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -613,17 +613,16 @@ const BuyerOrders = () => {
               {/* Action for delivered orders */}
               {order.status === 'delivered' && !order.buyer_approved && (
                 <div className="mt-3 pt-3 border-t border-slate-100">
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="p-4 bg-[#FFF5FB] border border-black rounded">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                      <p className="text-sm text-blue-700">Order delivered! Please confirm to release payment.</p>
-                      <Button
-                        size="sm"
+                      <p className="text-sm text-slate-700">Order delivered! Please confirm to release payment.</p>
+                      <button
                         onClick={() => handleApproveDelivery(order.id)}
                         disabled={approving}
-                        className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto h-8"
+                        className="px-4 py-2 bg-[#FF90E8] text-black font-medium text-sm rounded border border-black transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 w-full sm:w-auto"
                       >
                         Confirm Delivery
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -661,10 +660,10 @@ const BuyerOrders = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-white border rounded">
                 <div>
                   <p className="text-xs text-slate-500">Order ID</p>
-                  <p className="font-mono text-sm">{selectedOrder.id.slice(0, 8)}...</p>
+                  <p className="font-mono text-sm text-slate-900">{selectedOrder.id.slice(0, 8)}...</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Amount</p>
@@ -672,7 +671,7 @@ const BuyerOrders = () => {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Order Date</p>
-                  <p className="text-sm">{format(new Date(selectedOrder.created_at), 'PPP')}</p>
+                  <p className="text-sm text-slate-900">{format(new Date(selectedOrder.created_at), 'PPP')}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Status</p>
@@ -681,18 +680,17 @@ const BuyerOrders = () => {
               </div>
 
               {selectedOrder.credentials && selectedOrder.status !== 'pending' && (
-                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <p className="text-xs text-emerald-600 font-medium mb-2">Delivery Credentials</p>
-                  <pre className="text-sm whitespace-pre-wrap bg-white p-3 rounded-lg border">
+                <div className="p-4 bg-[#FFF5FB] border border-black rounded">
+                  <p className="text-xs text-slate-700 font-medium mb-2">Delivery Credentials</p>
+                  <pre className="text-sm whitespace-pre-wrap bg-white p-3 rounded border border-black">
                     {selectedOrder.credentials}
                   </pre>
                 </div>
               )}
 
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
+                <button 
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#FF90E8] text-black font-medium text-sm rounded border border-black transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                   onClick={() => {
                     if (selectedOrder?.seller && selectedOrder?.product) {
                       openChat({
@@ -706,22 +704,21 @@ const BuyerOrders = () => {
                     }
                   }}
                 >
-                  <MessageSquare className="w-4 h-4 mr-2" />
+                  <MessageSquare className="w-4 h-4" />
                   Contact Seller
-                </Button>
+                </button>
                 {selectedOrder.status === 'completed' && (
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
+                  <button 
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white text-black font-medium text-sm rounded border border-black transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                     onClick={() => {
                       setReviewingOrder(selectedOrder);
                       setShowReviewModal(true);
                       setSelectedOrder(null);
                     }}
                   >
-                    <Star className="w-4 h-4 mr-2" />
+                    <Star className="w-4 h-4" />
                     Leave Review
-                  </Button>
+                  </button>
                 )}
               </div>
             </div>
@@ -737,20 +734,20 @@ const BuyerOrders = () => {
           </DialogHeader>
           {reviewingOrder && reviewingOrder.product && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-white border rounded">
                 {reviewingOrder.product.icon_url ? (
                   <img 
                     src={reviewingOrder.product.icon_url} 
                     alt="" 
-                    className="w-12 h-12 rounded-lg object-cover"
+                    className="w-12 h-12 rounded object-cover"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-lg bg-slate-200 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded bg-slate-100 flex items-center justify-center">
                     <Package className="w-6 h-6 text-slate-400" />
                   </div>
                 )}
                 <div>
-                  <h4 className="font-medium">{reviewingOrder.product.name}</h4>
+                  <h4 className="font-medium text-slate-900">{reviewingOrder.product.name}</h4>
                   <p className="text-sm text-slate-500">{reviewingOrder.seller?.store_name}</p>
                 </div>
               </div>
