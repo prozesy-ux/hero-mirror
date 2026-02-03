@@ -765,7 +765,7 @@ const BuyerWallet = () => {
   return (
     <div className="max-w-4xl mx-auto animate-fade-up px-3 sm:px-0">
       {/* Tab Navigation */}
-      <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-gray-200 shadow-md">
+      <div className="bg-white border rounded p-2 mb-8">
         <div className="flex gap-1 overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => {
             const TabIcon = tab.icon;
@@ -773,17 +773,17 @@ const BuyerWallet = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-1.5 lg:gap-2 whitespace-nowrap flex-shrink-0 ${
+                className={`flex-1 px-4 py-3 rounded font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-gray-900 text-white shadow-lg'
-                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'
+                    ? 'bg-[#FF90E8] text-black border border-black'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
                 <TabIcon size={14} />
                 <span className="hidden sm:inline">{tab.label}</span>
                 <span className="sm:hidden">{tab.label.slice(0, 4)}</span>
                 {tab.id === 'accounts' && savedAccounts.length > 0 && (
-                  <span className={`text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-white/20' : 'bg-gray-200'}`}>
+                  <span className={`text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-black/10' : 'bg-slate-200'}`}>
                     {savedAccounts.length}
                   </span>
                 )}
@@ -868,7 +868,7 @@ const BuyerWallet = () => {
                   return (
                     <div 
                       key={method.id}
-                      className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
+                      className="p-4 bg-white border rounded text-center transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                     >
                       {logoUrl ? (
                         <img 
@@ -889,8 +889,8 @@ const BuyerWallet = () => {
                       >
                         {method.method_name.charAt(0).toUpperCase()}
                       </div>
-                      <p className="text-gray-900 font-medium text-sm">{method.method_name}</p>
-                      <p className="text-gray-500 text-xs capitalize">{method.account_type.replace('_', ' ')}</p>
+                      <p className="text-slate-900 font-medium text-sm">{method.method_name}</p>
+                      <p className="text-slate-600 text-xs capitalize">{method.account_type.replace('_', ' ')}</p>
                     </div>
                   );
                 })}
@@ -960,12 +960,12 @@ const BuyerWallet = () => {
             {/* Add Account Card */}
             <button 
               onClick={() => setShowAddAccountModal(true)}
-              className="p-6 rounded-xl border-2 border-dashed border-violet-200 hover:border-violet-400 hover:bg-violet-50 transition-all flex flex-col items-center justify-center gap-2 min-h-[140px]"
+              className="p-6 border-2 border-dashed border-black rounded transition-all flex flex-col items-center justify-center gap-2 min-h-[140px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFF5FB]"
             >
-              <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center">
-                <Plus className="text-violet-600" size={24} />
+              <div className="w-12 h-12 rounded-full bg-[#FF90E8] flex items-center justify-center">
+                <Plus className="text-black" size={24} />
               </div>
-              <span className="text-violet-600 font-medium">Add Account</span>
+              <span className="text-black font-semibold">Add Account</span>
             </button>
           </div>
         </div>
@@ -1118,7 +1118,7 @@ const BuyerWallet = () => {
                 return (
                   <div
                     key={withdrawal.id}
-                    className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
+                    className="p-4 bg-white border rounded transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -1158,10 +1158,7 @@ const BuyerWallet = () => {
       <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg">
-                <Wallet className="text-white" size={20} />
-              </div>
+            <DialogTitle className="text-xl font-semibold text-slate-900">
               Withdraw Funds
             </DialogTitle>
           </DialogHeader>
@@ -1169,16 +1166,16 @@ const BuyerWallet = () => {
           <div className="space-y-6">
             {/* Quick Amount Buttons */}
             <div>
-              <Label className="text-gray-500 text-sm mb-3 block">Select amount (USD)</Label>
+              <Label className="text-slate-600 text-sm mb-3 block">Select amount (USD)</Label>
               <div className="grid grid-cols-5 gap-2">
                 {quickAmounts.map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setWithdrawAmount(amount)}
-                    className={`py-3 rounded-xl font-semibold transition-all ${
+                    className={`py-3 rounded font-semibold transition-all border ${
                       withdrawAmount === amount
-                        ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-[#FF90E8] text-black border-black'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                     }`}
                   >
                     ${amount}
@@ -1255,7 +1252,7 @@ const BuyerWallet = () => {
             <Button 
               onClick={handleWithdraw} 
               disabled={!selectedAccountForWithdraw || submitting || otpSending || withdrawAmount < 5 || withdrawAmount > (wallet?.balance || 0)}
-              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+              className="bg-[#FF90E8] text-black border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             >
               {otpSending ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
               Withdraw ${withdrawAmount}
@@ -1272,12 +1269,12 @@ const BuyerWallet = () => {
         }
       }}>
         <DialogContent className="max-w-sm p-0 overflow-hidden">
-          <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-6 text-white text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-              <ShieldCheck className="w-8 h-8" />
+          <div className="bg-white border-b p-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#FF90E8] border border-black flex items-center justify-center">
+              <ShieldCheck className="w-8 h-8 text-black" />
             </div>
-            <h3 className="text-xl font-bold">Verify Withdrawal</h3>
-            <p className="text-violet-100 text-sm mt-2">
+            <h3 className="text-xl font-semibold text-slate-900">Verify Withdrawal</h3>
+            <p className="text-slate-600 text-sm mt-2">
               Enter the 6-digit code sent to your email
             </p>
           </div>
@@ -1301,7 +1298,7 @@ const BuyerWallet = () => {
             <Button
               onClick={handleVerifyOTP}
               disabled={otpVerifying || otpValue.length !== 6}
-              className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+              className="w-full bg-[#FF90E8] text-black border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             >
               {otpVerifying ? (
                 <>
@@ -1326,8 +1323,8 @@ const BuyerWallet = () => {
       {/* Add Account Modal - NEW 4-TIER SYSTEM */}
       <Dialog open={showAddAccountModal} onOpenChange={(open) => { setShowAddAccountModal(open); if (!open) resetAddAccountForm(); }}>
         <DialogContent className="max-w-md p-0 overflow-hidden">
-          {/* Gradient Header */}
-          <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-6 text-white">
+          {/* Clean Header */}
+          <div className="bg-white border-b p-6">
             <div className="flex items-center gap-3">
               {addAccountStep !== 'country' && (
                 <button 
@@ -1353,17 +1350,17 @@ const BuyerWallet = () => {
                       setSelectedCountry(null);
                     }
                   }}
-                  className="p-2 -ml-2 rounded-lg hover:bg-white/20 transition-colors"
+                  className="p-2 -ml-2 rounded-lg hover:bg-slate-100 transition-colors"
                 >
-                  <ChevronLeft size={20} />
+                  <ChevronLeft size={20} className="text-slate-600" />
                 </button>
               )}
-              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                <CreditCard className="w-6 h-6" />
+              <div className="p-3 bg-[#FF90E8] border border-black rounded">
+                <CreditCard className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Add Payment Account</h2>
-                <p className="text-violet-100 text-sm">{selectedCountry ? getCountryName(selectedCountry) : 'Select your country'}</p>
+                <h2 className="text-xl font-semibold text-slate-900">Add Payment Account</h2>
+                <p className="text-slate-600 text-sm">{selectedCountry ? getCountryName(selectedCountry) : 'Select your country'}</p>
               </div>
             </div>
           </div>
@@ -1372,8 +1369,8 @@ const BuyerWallet = () => {
             {/* Step 0: Select Country */}
             {addAccountStep === 'country' && (
               <div className="animate-fade-up">
-                <Label className="text-gray-600 text-sm font-medium mb-4 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">1</span>
+                <Label className="text-slate-700 text-sm font-medium mb-4 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-[#FF90E8] text-black text-xs flex items-center justify-center font-bold">1</span>
                   Select Your Country
                 </Label>
                 
@@ -1384,7 +1381,7 @@ const BuyerWallet = () => {
                     <button
                       key={country.code}
                       onClick={() => { setSelectedCountry(country.code); setAddAccountStep('type'); }}
-                      className="p-3 rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-all text-center"
+                      className="p-3 rounded border-2 border-slate-200 hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
                     >
                       <img src={country.flag} alt={country.name} className="w-8 h-6 mx-auto mb-1 object-cover rounded" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w80/un.png'; }} />
                       <p className="text-gray-900 font-medium text-xs">{country.code}</p>
@@ -1399,7 +1396,7 @@ const BuyerWallet = () => {
                     <button
                       key={country.code}
                       onClick={() => { setSelectedCountry(country.code); setAddAccountStep('type'); }}
-                      className="p-2 rounded-lg border border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-all text-center"
+                      className="p-2 rounded border border-slate-200 hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
                     >
                       <img src={country.flag} alt={country.name} className="w-6 h-4 mx-auto mb-1 object-cover rounded" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w80/un.png'; }} />
                       <p className="text-gray-700 text-[10px]">{country.name}</p>
@@ -1412,8 +1409,8 @@ const BuyerWallet = () => {
             {/* Step 1: Select Account Type */}
             {addAccountStep === 'type' && (
               <div className="animate-fade-up">
-                <Label className="text-gray-600 text-sm font-medium mb-4 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">2</span>
+                <Label className="text-slate-700 text-sm font-medium mb-4 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-[#FF90E8] text-black text-xs flex items-center justify-center font-bold">2</span>
                   Select Account Type
                 </Label>
                 <div className="grid grid-cols-3 gap-3">
@@ -1430,7 +1427,7 @@ const BuyerWallet = () => {
                           setAddAccountStep('details');
                         }
                       }}
-                      className="p-4 rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-all text-center"
+                      className="p-4 rounded border-2 border-slate-200 hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
                     >
                       <div className={`h-12 w-12 mx-auto mb-2 rounded-xl flex items-center justify-center ${
                         type.code === 'bank' ? 'bg-blue-50' : 
@@ -1451,8 +1448,8 @@ const BuyerWallet = () => {
             {/* Step 2a: Select Bank (for bank type) */}
             {addAccountStep === 'bank' && (
               <div className="animate-fade-up">
-                <Label className="text-gray-600 text-sm font-medium mb-4 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">3</span>
+                <Label className="text-slate-700 text-sm font-medium mb-4 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-[#FF90E8] text-black text-xs flex items-center justify-center font-bold">3</span>
                   Select Bank
                 </Label>
                 <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
@@ -1464,7 +1461,7 @@ const BuyerWallet = () => {
                         setBankName(bank.name);
                         setAddAccountStep('details');
                       }}
-                      className="p-3 rounded-xl border-2 border-gray-200 hover:border-violet-400 transition-all text-left group"
+                      className="p-3 rounded border-2 border-slate-200 hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-left group"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -1490,7 +1487,7 @@ const BuyerWallet = () => {
                     setBankName('');
                     setAddAccountStep('details');
                   }}
-                  className="w-full mt-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-violet-400 hover:bg-violet-50 transition-all text-center"
+                  className="w-full mt-3 p-4 rounded border-2 border-dashed border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFF5FB] transition-all text-center"
                 >
                   <span className="text-gray-600 font-medium">+ Other Bank (Enter Manually)</span>
                 </button>
@@ -1500,8 +1497,8 @@ const BuyerWallet = () => {
             {/* Step 2b: Select Digital Wallet (for digital_wallet type) */}
             {addAccountStep === 'wallet' && (
               <div className="animate-fade-up">
-                <Label className="text-gray-600 text-sm font-medium mb-4 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">3</span>
+                <Label className="text-slate-700 text-sm font-medium mb-4 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-[#FF90E8] text-black text-xs flex items-center justify-center font-bold">3</span>
                   Select Wallet
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
@@ -1512,7 +1509,7 @@ const BuyerWallet = () => {
                         setSelectedDigitalWallet(wallet);
                         setAddAccountStep('details');
                       }}
-                      className="p-4 rounded-xl border-2 border-gray-200 hover:border-violet-400 transition-all text-center group"
+                      className="p-4 rounded border-2 border-slate-200 hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-center group"
                       style={{ '--wallet-color': wallet.color } as React.CSSProperties}
                     >
                       <div className={`h-14 w-14 mx-auto mb-2 rounded-xl ${wallet.bgColor} flex items-center justify-center p-2 group-hover:scale-105 transition-transform`}>
@@ -1535,8 +1532,8 @@ const BuyerWallet = () => {
             {/* Step 4: Enter Account Details */}
             {addAccountStep === 'details' && (
               <div className="space-y-4 animate-fade-up">
-                <Label className="text-gray-600 text-sm font-medium flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-600 text-xs flex items-center justify-center font-bold">4</span>
+                <Label className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-[#FF90E8] text-black text-xs flex items-center justify-center font-bold">4</span>
                   Enter Account Details
                 </Label>
 
@@ -1684,7 +1681,7 @@ const BuyerWallet = () => {
                   <Button 
                     onClick={handleAddAccount} 
                     disabled={!accountName || !accountNumber || submitting}
-                    className="flex-1 h-12 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                    className="flex-1 h-12 rounded bg-[#FF90E8] text-black border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                   >
                     {submitting ? (
                       <>
