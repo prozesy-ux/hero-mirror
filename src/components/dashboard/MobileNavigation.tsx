@@ -1,12 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, ShoppingBag, Wallet, CreditCard, MessageSquare, Bell, Menu, ShoppingCart, Heart, BarChart3, ExternalLink, LayoutDashboard, FileText, User } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import theLogo from '@/assets/the-logo.png';
-import metaLogo from '@/assets/meta-logo.png';
-import googleAdsLogo from '@/assets/google-ads-logo.png';
+import {
+  GumroadHomeIcon,
+  GumroadDiscoverIcon,
+  GumroadCheckoutIcon,
+  GumroadLibraryIcon,
+  GumroadProductsIcon,
+  GumroadAnalyticsIcon,
+  GumroadPayoutsIcon,
+  GumroadSettingsIcon,
+  GumroadHelpIcon,
+  GumroadEmailsIcon,
+} from './GumroadIcons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -129,30 +138,30 @@ const MobileNavigation = () => {
     fetchUnreadCount();
   };
 
-  // Bottom nav items (limited for mobile)
+  // Bottom nav items (limited for mobile) - using Gumroad icons
   const bottomNavItems = [
-    { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompt' },
-    { to: '/dashboard/marketplace', icon: ShoppingBag, label: 'Market' },
-    { to: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
-    { to: '/dashboard/chat', icon: MessageSquare, label: 'Chat' },
+    { to: '/dashboard/prompts', icon: GumroadProductsIcon, label: 'Prompt' },
+    { to: '/dashboard/marketplace', icon: GumroadDiscoverIcon, label: 'Market' },
+    { to: '/dashboard/billing', icon: GumroadPayoutsIcon, label: 'Billing' },
+    { to: '/dashboard/chat', icon: GumroadHelpIcon, label: 'Chat' },
   ];
 
-  // Full sidebar nav items - Gumroad style
+  // Full sidebar nav items - Gumroad icons
   const sidebarNavItems = [
-    { to: '/dashboard/home', icon: LayoutDashboard, label: 'Home' },
-    { to: '/dashboard/marketplace', icon: ShoppingBag, label: 'Marketplace' },
-    { to: '/dashboard/orders', icon: ShoppingCart, label: 'My Orders' },
-    { to: '/dashboard/wishlist', icon: Heart, label: 'Wishlist' },
-    { to: '/dashboard/prompts', icon: Sparkles, label: 'Prompts' },
-    { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
-    { to: '/dashboard/reports', icon: FileText, label: 'Reports' },
-    { to: '/dashboard/wallet', icon: Wallet, label: 'Wallet' },
+    { to: '/dashboard/home', icon: GumroadHomeIcon, label: 'Home' },
+    { to: '/dashboard/marketplace', icon: GumroadDiscoverIcon, label: 'Marketplace' },
+    { to: '/dashboard/orders', icon: GumroadCheckoutIcon, label: 'My Orders' },
+    { to: '/dashboard/wishlist', icon: GumroadLibraryIcon, label: 'Wishlist' },
+    { to: '/dashboard/prompts', icon: GumroadProductsIcon, label: 'Prompts' },
+    { to: '/dashboard/analytics', icon: GumroadAnalyticsIcon, label: 'Analytics' },
+    { to: '/dashboard/reports', icon: GumroadAnalyticsIcon, label: 'Reports' },
+    { to: '/dashboard/wallet', icon: GumroadPayoutsIcon, label: 'Wallet' },
   ];
 
   const bottomSidebarItems = [
-    { to: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
-    { to: '/dashboard/chat', icon: MessageSquare, label: 'Support' },
-    { to: '/dashboard/profile', icon: User, label: 'Settings' },
+    { to: '/dashboard/notifications', icon: GumroadEmailsIcon, label: 'Notifications' },
+    { to: '/dashboard/chat', icon: GumroadHelpIcon, label: 'Support' },
+    { to: '/dashboard/profile', icon: GumroadSettingsIcon, label: 'Settings' },
   ];
 
   const isActive = (path: string) => location.pathname.startsWith(path);
@@ -178,7 +187,7 @@ const MobileNavigation = () => {
                 </Link>
               </div>
               
-              {/* Navigation Links - Gumroad style */}
+              {/* Navigation Links - Gumroad style with Gumroad icons */}
               <ScrollArea className="flex-1">
                 <nav>
                   {sidebarNavItems.map((item, index) => {
@@ -196,7 +205,7 @@ const MobileNavigation = () => {
                             : 'text-white/70 hover:text-[#FF90E8]'
                         }`}
                       >
-                        <Icon size={16} strokeWidth={1.5} />
+                        <Icon size={16} className={active ? 'text-[#FF90E8]' : 'text-white/70'} />
                         <span>{item.label}</span>
                       </Link>
                     );
@@ -220,7 +229,7 @@ const MobileNavigation = () => {
                             : 'text-white/70 hover:text-[#FF90E8]'
                         }`}
                       >
-                        <Icon size={16} strokeWidth={1.5} />
+                        <Icon size={16} className={active ? 'text-[#FF90E8]' : 'text-white/70'} />
                         <span>{item.label}</span>
                       </Link>
                     );
@@ -246,7 +255,7 @@ const MobileNavigation = () => {
             </SheetContent>
           </Sheet>
           
-          {/* Nav Items */}
+          {/* Nav Items - Using Gumroad icons */}
           {bottomNavItems.map((item) => {
             const active = isActive(item.to);
             const Icon = item.icon;
@@ -267,7 +276,7 @@ const MobileNavigation = () => {
                   <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-[#FF90E8] rounded-full" />
                 )}
                 
-                <Icon size={22} strokeWidth={active ? 2.2 : 1.8} />
+                <Icon size={22} className={active ? 'text-[#FF90E8]' : 'text-white/60'} />
                 <span className="text-[10px] font-semibold">{item.label}</span>
               </Link>
             );
@@ -292,15 +301,15 @@ const MobileNavigation = () => {
               align="end" 
               side="top"
               sideOffset={12}
-              className="w-80 bg-white border border-gray-200 shadow-xl z-[100] rounded-xl p-0 overflow-hidden mb-2"
+              className="w-80 bg-white border border-black shadow-xl z-[100] rounded p-0 overflow-hidden mb-2"
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-3 border-b border-gray-100">
-                <h3 className="font-semibold text-gray-900">Notifications</h3>
+              <div className="flex items-center justify-between p-3 border-b">
+                <h3 className="font-semibold text-slate-900">Notifications</h3>
                 {notifications.some(n => !n.is_read) && (
                   <button 
                     onClick={markAllAsRead}
-                    className="text-xs text-violet-600 hover:text-violet-700 font-medium"
+                    className="text-xs text-[#FF90E8] hover:text-black font-medium"
                   >
                     Mark all read
                   </button>
@@ -311,11 +320,11 @@ const MobileNavigation = () => {
               <ScrollArea className="max-h-64">
                 {notifications.length === 0 ? (
                   <div className="p-6 text-center">
-                    <Bell size={32} className="text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500 text-sm">No notifications yet</p>
+                    <Bell size={32} className="text-slate-300 mx-auto mb-2" />
+                    <p className="text-slate-500 text-sm">No notifications yet</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y">
                     {notifications.map((notif) => (
                       <DropdownMenuItem 
                         key={notif.id}
@@ -323,18 +332,18 @@ const MobileNavigation = () => {
                           markAsRead(notif.id);
                           if (notif.link) window.location.href = notif.link;
                         }}
-                        className={`flex flex-col items-start p-3 cursor-pointer focus:bg-gray-50 ${
-                          !notif.is_read ? 'bg-violet-50/50' : ''
+                        className={`flex flex-col items-start p-3 cursor-pointer focus:bg-slate-50 ${
+                          !notif.is_read ? 'bg-[#FFF5FB]' : ''
                         }`}
                       >
                         <div className="flex items-start gap-2 w-full">
                           <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                            !notif.is_read ? 'bg-violet-500' : 'bg-transparent'
+                            !notif.is_read ? 'bg-[#FF90E8]' : 'bg-transparent'
                           }`} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{notif.title}</p>
-                            <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{notif.message}</p>
-                            <p className="text-[10px] text-gray-400 mt-1">
+                            <p className="text-sm font-medium text-slate-900 truncate">{notif.title}</p>
+                            <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{notif.message}</p>
+                            <p className="text-[10px] text-slate-400 mt-1">
                               {format(new Date(notif.created_at), 'MMM d, h:mm a')}
                             </p>
                           </div>
@@ -350,7 +359,7 @@ const MobileNavigation = () => {
                 <Link 
                   to="/dashboard/notifications"
                   onClick={() => setShowDropdown(false)}
-                  className="block text-center py-2.5 text-sm text-violet-600 hover:text-violet-700 font-medium border-t border-gray-100 bg-gray-50"
+                  className="block text-center py-2.5 text-sm text-black font-medium border-t bg-slate-50 hover:bg-slate-100 transition-colors"
                 >
                   View all notifications
                 </Link>

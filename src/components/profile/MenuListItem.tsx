@@ -31,21 +31,21 @@ const MenuListItem = ({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors",
-        "border-b border-gray-100 last:border-b-0",
-        isClickable && "hover:bg-gray-50 active:bg-gray-100",
+        "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all",
+        "border-b last:border-b-0",
+        isClickable && "hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
         disabled && "opacity-50 cursor-not-allowed",
         !isClickable && "cursor-default"
       )}
     >
-      {/* Icon */}
+      {/* Icon - Gumroad pink style */}
       <div className={cn(
-        "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
-        variant === 'danger' ? "bg-red-50" : "bg-gray-100"
+        "w-9 h-9 rounded border border-black flex items-center justify-center flex-shrink-0",
+        variant === 'danger' ? "bg-red-100" : "bg-[#FF90E8]"
       )}>
         <Icon className={cn(
           "w-4 h-4",
-          variant === 'danger' ? "text-red-500" : iconColor || "text-gray-600"
+          variant === 'danger' ? "text-red-600" : "text-black"
         )} />
       </div>
 
@@ -53,12 +53,12 @@ const MenuListItem = ({
       <div className="flex-1 min-w-0">
         <p className={cn(
           "text-sm font-medium",
-          variant === 'danger' ? "text-red-600" : "text-gray-900"
+          variant === 'danger' ? "text-red-600" : "text-slate-900"
         )}>
           {label}
         </p>
         {description && (
-          <p className="text-xs text-gray-500 mt-0.5 truncate">
+          <p className="text-xs text-slate-600 mt-0.5 truncate">
             {description}
           </p>
         )}
@@ -67,12 +67,12 @@ const MenuListItem = ({
       {/* Value or chevron */}
       <div className="flex items-center gap-2 flex-shrink-0">
         {value && (
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-slate-600">
             {value}
           </span>
         )}
         {hasChevron && isClickable && (
-          <ChevronRight className="w-4 h-4 text-gray-400" />
+          <ChevronRight className="w-4 h-4 text-slate-400" />
         )}
       </div>
     </button>

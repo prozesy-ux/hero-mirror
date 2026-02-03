@@ -520,7 +520,7 @@ const ProfileSection = () => {
       />
 
       {/* PROFILE Section */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white border rounded overflow-hidden">
         <SectionHeader title="Profile" />
         
         <MenuListItem
@@ -528,7 +528,6 @@ const ProfileSection = () => {
           label="Profile Image"
           description="Change your profile photo"
           onClick={() => setActiveSheet('profile-image')}
-          iconColor="text-violet-500"
         />
         
         <MenuListItem
@@ -536,7 +535,6 @@ const ProfileSection = () => {
           label="Edit Name"
           value={profile?.full_name || 'Not set'}
           onClick={() => setActiveSheet('edit-name')}
-          iconColor="text-blue-500"
         />
         
         <MenuListItem
@@ -548,12 +546,11 @@ const ProfileSection = () => {
             </Badge>
           }
           hasChevron={false}
-          iconColor="text-gray-500"
         />
       </div>
 
       {/* SETTINGS Section */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white border rounded overflow-hidden">
         <SectionHeader title="Settings" />
         
         <MenuListItem
@@ -561,7 +558,6 @@ const ProfileSection = () => {
           label="Notifications"
           description="Email and push preferences"
           onClick={() => setActiveSheet('notifications')}
-          iconColor="text-purple-500"
         />
         
         <MenuListItem
@@ -569,7 +565,6 @@ const ProfileSection = () => {
           label="Security"
           description="Password and sessions"
           onClick={() => setActiveSheet('security')}
-          iconColor="text-emerald-500"
         />
         
         <MenuListItem
@@ -577,7 +572,6 @@ const ProfileSection = () => {
           label="Two-Factor Authentication"
           value={(profile as any)?.two_factor_enabled !== false ? 'ON' : 'OFF'}
           onClick={() => setActiveSheet('two-factor')}
-          iconColor="text-violet-500"
         />
         
         <MenuListItem
@@ -585,7 +579,6 @@ const ProfileSection = () => {
           label="Language"
           value="English"
           hasChevron={false}
-          iconColor="text-gray-500"
         />
         
         <MenuListItem
@@ -593,7 +586,6 @@ const ProfileSection = () => {
           label="Appearance"
           value="System"
           hasChevron={false}
-          iconColor="text-pink-500"
         />
         
         <MenuListItem
@@ -601,7 +593,6 @@ const ProfileSection = () => {
           label="Currency"
           value="USD"
           hasChevron={false}
-          iconColor="text-amber-500"
         />
       </div>
 
@@ -612,7 +603,7 @@ const ProfileSection = () => {
       />
 
       {/* DANGER ZONE Section */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white border rounded overflow-hidden">
         <SectionHeader title="Danger Zone" className="bg-red-50" />
         
         <MenuListItem
@@ -620,7 +611,6 @@ const ProfileSection = () => {
           label="Export Data"
           description="Download all your data"
           onClick={handleExportData}
-          iconColor="text-gray-600"
         />
         
         <AlertDialog>
@@ -676,20 +666,19 @@ const ProfileSection = () => {
 
       {/* Profile Image Sheet */}
       <Sheet open={activeSheet === 'profile-image'} onOpenChange={(open) => !open && setActiveSheet(null)}>
-        <SheetContent side="bottom" className="rounded-t-2xl">
+        <SheetContent side="bottom" className="rounded-t-xl border-t border-black">
           <SheetHeader className="text-center pb-4">
-            <SheetTitle>Profile Image</SheetTitle>
+            <SheetTitle className="text-slate-900">Profile Image</SheetTitle>
           </SheetHeader>
           <div className="space-y-2 pb-safe">
-            <Button
-              variant="ghost"
-              className="w-full justify-start h-14 text-base"
+            <button
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarLoading}
+              className="w-full flex items-center justify-start h-14 text-base px-4 rounded border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
-              <Camera className="w-5 h-5 mr-3 text-gray-600" />
+              <Camera className="w-5 h-5 mr-3 text-black" />
               {avatarLoading ? 'Uploading...' : 'Choose from Library'}
-            </Button>
+            </button>
           </div>
         </SheetContent>
       </Sheet>
@@ -698,29 +687,32 @@ const ProfileSection = () => {
       <Sheet open={activeSheet === 'edit-name'} onOpenChange={(open) => !open && setActiveSheet(null)}>
         <SheetContent side="right" className="w-full sm:max-w-md">
           <SheetHeader className="flex flex-row items-center gap-3 pb-6">
-            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+            <button 
+              onClick={() => setActiveSheet(null)}
+              className="p-2 rounded border border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+            >
               <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <SheetTitle>Edit Name</SheetTitle>
+            </button>
+            <SheetTitle className="text-slate-900">Edit Name</SheetTitle>
           </SheetHeader>
           <div className="space-y-4">
             <div>
-              <Label>Full Name</Label>
+              <Label className="text-slate-900">Full Name</Label>
               <Input
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your name"
-                className="mt-2"
+                className="mt-2 rounded border-black focus:ring-2 focus:ring-[#FF90E8]/50"
               />
             </div>
-            <Button
+            <button
               onClick={handleSaveName}
               disabled={loading}
-              className="w-full"
+              className="w-full px-4 py-3 bg-[#FF90E8] text-black font-semibold rounded border border-black transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50"
             >
-              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin inline" /> : <Check className="h-4 w-4 mr-2 inline" />}
               Save Changes
-            </Button>
+            </button>
           </div>
         </SheetContent>
       </Sheet>
@@ -909,14 +901,14 @@ const ProfileSection = () => {
                 )}
               </div>
               
-              <Button
+              <button
                 onClick={handlePasswordChange}
                 disabled={passwordLoading || newPassword.length < 8 || !passwordsMatch}
-                className="w-full"
+                className="w-full px-4 py-3 bg-[#FF90E8] text-black font-semibold rounded border border-black transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50"
               >
-                {passwordLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                {passwordLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin inline" /> : null}
                 Update Password
-              </Button>
+              </button>
             </div>
 
             {/* Active Sessions */}
@@ -964,41 +956,39 @@ const ProfileSection = () => {
                   {sessions.map((session) => (
                     <div
                       key={session.id}
-                      className={`flex items-center justify-between p-3 rounded-lg ${
-                        session.is_current ? 'bg-emerald-50 border border-emerald-100' : 'bg-gray-50'
+                      className={`flex items-center justify-between p-3 rounded border transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
+                        session.is_current ? 'bg-[#FFF5FB] border-black' : 'bg-white border-black'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         {session.device_name?.includes('Mobile') ? (
-                          <Smartphone className="h-4 w-4 text-gray-500" />
+                          <Smartphone className="h-4 w-4 text-slate-600" />
                         ) : (
-                          <Monitor className="h-4 w-4 text-gray-500" />
+                          <Monitor className="h-4 w-4 text-slate-600" />
                         )}
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-slate-900">
                               {session.browser || 'Unknown'} on {session.device_name || 'Unknown'}
                             </p>
                             {session.is_current && (
-                              <Badge className="text-xs bg-emerald-100 text-emerald-700">
+                              <Badge className="text-xs bg-[#FF90E8] text-black border border-black">
                                 Current
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-slate-600">
                             {new Date(session.last_active).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
                       {!session.is_current && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                        <button
                           onClick={() => handleTerminateSession(session.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                          className="text-red-600 hover:text-red-700 p-2 rounded border border-red-200 hover:bg-red-50"
                         >
                           <LogOut className="h-4 w-4" />
-                        </Button>
+                        </button>
                       )}
                     </div>
                   ))}
@@ -1021,10 +1011,10 @@ const ProfileSection = () => {
           
           <div className="space-y-4">
             {/* Toggle */}
-            <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border">
+            <div className="flex items-center justify-between p-4 rounded bg-white border border-black">
               <div>
-                <p className="font-medium text-sm">Enable 2FA Protection</p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="font-medium text-sm text-slate-900">Enable 2FA Protection</p>
+                <p className="text-xs text-slate-600 mt-0.5">
                   Require email OTP for sensitive actions
                 </p>
               </div>
@@ -1053,24 +1043,24 @@ const ProfileSection = () => {
             
             {/* Status */}
             {(profile as any)?.two_factor_enabled !== false ? (
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+              <div className="p-4 rounded bg-[#FFF5FB] border border-black">
                 <div className="flex items-start gap-3">
                   <Shield className="w-5 h-5 text-emerald-600 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-emerald-900">Protection Active</h4>
-                    <p className="text-sm text-emerald-700 mt-1">
+                    <h4 className="font-semibold text-slate-900">Protection Active</h4>
+                    <p className="text-sm text-slate-600 mt-1">
                       Sensitive actions require email verification.
                     </p>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+              <div className="p-4 rounded bg-amber-50 border border-black">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-amber-900">Protection Disabled</h4>
-                    <p className="text-sm text-amber-700 mt-1">
+                    <h4 className="font-semibold text-slate-900">Protection Disabled</h4>
+                    <p className="text-sm text-slate-600 mt-1">
                       We recommend enabling 2FA for security.
                     </p>
                   </div>
@@ -1078,18 +1068,18 @@ const ProfileSection = () => {
               </div>
             )}
             
-            <div className="p-4 rounded-xl bg-gray-50 border">
-              <p className="text-sm font-medium text-gray-700 mb-3">Protected actions:</p>
+            <div className="p-4 rounded bg-white border border-black">
+              <p className="text-sm font-medium text-slate-900 mb-3">Protected actions:</p>
               <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2 text-sm text-slate-600">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
                   Password changes
                 </li>
-                <li className="flex items-center gap-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2 text-sm text-slate-600">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
                   Email address updates
                 </li>
-                <li className="flex items-center gap-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2 text-sm text-slate-600">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
                   Account deletion
                 </li>
