@@ -1,450 +1,364 @@
 
-# Product Type-Based Delivery System - Comprehensive Implementation Plan
+# Phase 2-4: Product Delivery System Integration
 
 ## Overview
 
-This plan implements a complete delivery system where buyers receive products differently based on the product type. Currently, the system only supports manual credential delivery by sellers. We will extend this to support:
-
-1. **Instant Downloads** - Digital products, E-books, Templates, Graphics, Audio, Video, Software
-2. **Course Viewer** - Courses and Tutorials with lesson management
-3. **Membership Access** - Recurring access to member-only content
-4. **Service Workflows** - Commission (50/50 split), Calls (scheduling), Custom work
-5. **Tips/Coffee** - Simple thank-you, no delivery needed
-6. **Bundles** - Access to all bundled products
+This plan completes the product type-based delivery system by:
+1. **Integrating delivery configuration UI** into the NewProduct.tsx form
+2. **Connecting purchase flow** to call the `grant-product-access` edge function
+3. **Creating service booking components** for Call, Commission, and Service products
+4. **Adding bundle product selector** for bundle products
 
 ---
 
-## Database Schema Changes
+## Current State
 
-### 1. New Table: `product_content`
-Stores downloadable files and content for products.
-
-```sql
-CREATE TABLE product_content (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id UUID NOT NULL REFERENCES seller_products(id) ON DELETE CASCADE,
-  content_type TEXT NOT NULL, -- 'file', 'link', 'text', 'lesson', 'video_stream'
-  title TEXT,
-  description TEXT,
-  file_url TEXT,                    -- For downloadable files
-  file_name TEXT,
-  file_size BIGINT,
-  file_type TEXT,                   -- 'pdf', 'epub', 'zip', 'mp3', 'mp4', etc.
-  stream_url TEXT,                  -- For streaming content
-  external_link TEXT,               -- For redirect links
-  text_content TEXT,                -- For text-based content
-  display_order INT DEFAULT 0,
-  is_preview BOOLEAN DEFAULT false, -- Free preview content
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### 2. New Table: `course_lessons`
-For course/tutorial products with structured lessons.
-
-```sql
-CREATE TABLE course_lessons (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id UUID NOT NULL REFERENCES seller_products(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  description TEXT,
-  video_url TEXT,                   -- Video lesson
-  video_duration INT,               -- Duration in seconds
-  content_html TEXT,                -- Rich text content
-  attachments JSONB DEFAULT '[]',   -- [{url, name, size}]
-  display_order INT DEFAULT 0,
-  is_free_preview BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### 3. New Table: `buyer_content_access`
-Tracks what content buyers have access to after purchase.
-
-```sql
-CREATE TABLE buyer_content_access (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  buyer_id UUID NOT NULL,
-  order_id UUID REFERENCES seller_orders(id),
-  product_id UUID NOT NULL REFERENCES seller_products(id),
-  access_type TEXT NOT NULL,        -- 'download', 'stream', 'course', 'membership', 'service'
-  access_granted_at TIMESTAMPTZ DEFAULT now(),
-  access_expires_at TIMESTAMPTZ,    -- For memberships/subscriptions
-  download_count INT DEFAULT 0,
-  max_downloads INT,                -- Optional limit
-  last_accessed_at TIMESTAMPTZ,
-  metadata JSONB DEFAULT '{}',      -- Additional data
-  UNIQUE(buyer_id, product_id, order_id)
-);
-```
-
-### 4. New Table: `course_progress`
-Tracks buyer progress through courses.
-
-```sql
-CREATE TABLE course_progress (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  buyer_id UUID NOT NULL,
-  product_id UUID NOT NULL REFERENCES seller_products(id),
-  lesson_id UUID NOT NULL REFERENCES course_lessons(id),
-  progress_percent INT DEFAULT 0,   -- 0-100
-  completed_at TIMESTAMPTZ,
-  last_position INT DEFAULT 0,      -- Video position in seconds
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(buyer_id, lesson_id)
-);
-```
-
-### 5. New Table: `service_bookings`
-For Call and Commission products.
-
-```sql
-CREATE TABLE service_bookings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID REFERENCES seller_orders(id),
-  buyer_id UUID NOT NULL,
-  seller_id UUID NOT NULL REFERENCES seller_profiles(id),
-  product_id UUID NOT NULL REFERENCES seller_products(id),
-  booking_type TEXT NOT NULL,       -- 'call', 'commission'
-  status TEXT DEFAULT 'pending',    -- 'pending', 'scheduled', 'in_progress', 'completed', 'cancelled'
-  -- For Calls
-  scheduled_date DATE,
-  scheduled_time TIME,
-  duration_minutes INT,
-  meeting_link TEXT,
-  timezone TEXT,
-  -- For Commissions
-  commission_brief TEXT,            -- Customer requirements
-  deposit_paid BOOLEAN DEFAULT false,
-  final_paid BOOLEAN DEFAULT false,
-  deliverables JSONB DEFAULT '[]',  -- [{url, name, delivered_at}]
-  -- Common
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### 6. Extend `seller_products` Table
-Add new columns for delivery configuration:
-
-```sql
-ALTER TABLE seller_products ADD COLUMN IF NOT EXISTS 
-  delivery_type TEXT DEFAULT 'manual';       -- 'instant', 'manual', 'course', 'membership', 'service'
-
-ALTER TABLE seller_products ADD COLUMN IF NOT EXISTS 
-  call_duration_minutes INT;                 -- For Call products
-
-ALTER TABLE seller_products ADD COLUMN IF NOT EXISTS 
-  availability_slots JSONB DEFAULT '[]';     -- For scheduling: [{day, start, end}]
-
-ALTER TABLE seller_products ADD COLUMN IF NOT EXISTS 
-  membership_period TEXT;                    -- 'monthly', 'yearly', 'lifetime'
-
-ALTER TABLE seller_products ADD COLUMN IF NOT EXISTS 
-  bundle_product_ids UUID[];                 -- For Bundle products
-```
+| Component | Status |
+|-----------|--------|
+| Database tables (`product_content`, `course_lessons`, `buyer_content_access`, etc.) | Done |
+| `seller_products` extended with delivery columns | Done |
+| `grant-product-access` edge function | Done |
+| `FileContentUploader.tsx` | Done |
+| `LessonBuilder.tsx` | Done |
+| `AvailabilityEditor.tsx` | Done |
+| `BuyerLibrary.tsx` | Done |
+| `CourseViewer.tsx` | Done |
+| `DownloadManager.tsx` | Done |
+| **NewProduct.tsx integration** | Not Done |
+| **Purchase flow integration** | Not Done |
+| **Service booking UI** | Not Done |
 
 ---
 
-## Delivery Logic by Product Type
+## Phase 2: Integrate Delivery Config into NewProduct.tsx
 
-| Product Type | Delivery Type | Buyer Experience |
-|--------------|---------------|------------------|
-| `digital_product` | instant | Download files immediately |
-| `ebook` | instant | Download PDF/ePub/Mobi |
-| `template` | instant | Download template files |
-| `graphics` | instant | Download design assets |
-| `audio` | instant | Download or stream audio |
-| `video` | instant | Download or stream video |
-| `software` | instant | Download installer/files |
-| `course` | course | Access lesson viewer in dashboard |
-| `membership` | membership | Access member content while active |
-| `bundle` | bundle | Access all bundled products |
-| `service` | manual | Seller delivers work product |
-| `commission` | commission | 50% deposit, work, 50% final, delivery |
-| `call` | call | Book time slot, receive meeting link |
-| `coffee` | tip | Thank you message, no delivery |
+### Changes to `src/pages/NewProduct.tsx`
+
+Add new state variables and conditional UI sections based on product type:
+
+**New State Variables:**
+```tsx
+// Delivery content state
+const [productFiles, setProductFiles] = useState<FileItem[]>([]);
+const [lessons, setLessons] = useState<Lesson[]>([]);
+const [availabilitySlots, setAvailabilitySlots] = useState<TimeSlot[]>([]);
+const [callDuration, setCallDuration] = useState(30);
+const [membershipPeriod, setMembershipPeriod] = useState<'monthly' | 'yearly' | 'lifetime'>('monthly');
+const [bundleProductIds, setBundleProductIds] = useState<string[]>([]);
+const [thankYouMessage, setThankYouMessage] = useState('Thank you for your support!');
+const [sellerProducts, setSellerProducts] = useState<{ id: string; name: string }[]>([]);
+```
+
+**New Sections in Step 2 (after Description):**
+
+```text
+Section Flow by Product Type:
+
+INSTANT DOWNLOAD TYPES (digital_product, ebook, template, graphics, audio, video, software):
+┌─────────────────────────────────────────────┐
+│ PRODUCT FILES                               │
+│ ─────────────────────────────────────────── │
+│ <FileContentUploader                        │
+│   files={productFiles}                      │
+│   onChange={setProductFiles}                │
+│   sellerId={profile.id}                     │
+│   allowLinks={true}                         │
+│ />                                          │
+│                                             │
+│ [ ] Allow streaming (for audio/video)       │
+│ Max downloads: [input] (optional)           │
+└─────────────────────────────────────────────┘
+
+COURSE TYPE:
+┌─────────────────────────────────────────────┐
+│ COURSE LESSONS                              │
+│ ─────────────────────────────────────────── │
+│ <LessonBuilder                              │
+│   lessons={lessons}                         │
+│   onChange={setLessons}                     │
+│   sellerId={profile.id}                     │
+│ />                                          │
+└─────────────────────────────────────────────┘
+
+MEMBERSHIP TYPE:
+┌─────────────────────────────────────────────┐
+│ MEMBERSHIP SETTINGS                         │
+│ ─────────────────────────────────────────── │
+│ Billing Period:                             │
+│ [Monthly] [Yearly] [Lifetime]               │
+│                                             │
+│ <FileContentUploader (for member content)   │
+│   files={productFiles}                      │
+│   onChange={setProductFiles}                │
+│   ...                                       │
+│ />                                          │
+└─────────────────────────────────────────────┘
+
+CALL TYPE:
+┌─────────────────────────────────────────────┐
+│ CALL SETTINGS                               │
+│ ─────────────────────────────────────────── │
+│ <AvailabilityEditor                         │
+│   slots={availabilitySlots}                 │
+│   onChange={setAvailabilitySlots}           │
+│   duration={callDuration}                   │
+│   onDurationChange={setCallDuration}        │
+│ />                                          │
+└─────────────────────────────────────────────┘
+
+BUNDLE TYPE:
+┌─────────────────────────────────────────────┐
+│ BUNDLE CONTENTS                             │
+│ ─────────────────────────────────────────── │
+│ Select products to include:                 │
+│ ☑ Product A ($10)                          │
+│ ☑ Product B ($15)                          │
+│ ☐ Product C ($20)                          │
+│                                             │
+│ Total value: $25 (2 products)               │
+└─────────────────────────────────────────────┘
+
+COFFEE (TIP) TYPE:
+┌─────────────────────────────────────────────┐
+│ THANK YOU MESSAGE                           │
+│ ─────────────────────────────────────────── │
+│ [textarea for custom thank you message]     │
+│                                             │
+│ Preview:                                    │
+│ "Thank you for your support! ☕"            │
+└─────────────────────────────────────────────┘
+
+SERVICE/COMMISSION TYPE:
+┌─────────────────────────────────────────────┐
+│ SERVICE DETAILS                             │
+│ ─────────────────────────────────────────── │
+│ Delivery time: [input] days                 │
+│ Requirements template: [textarea]           │
+│                                             │
+│ (For commission):                           │
+│ ⚡ 50% deposit required upfront             │
+│ ⚡ 50% due upon completion                  │
+└─────────────────────────────────────────────┘
+```
+
+**Updated handleSubmit function:**
+
+After product creation, save related content:
+1. For instant downloads: Save files to `product_content` table
+2. For courses: Save lessons to `course_lessons` table
+3. Other settings saved directly in `seller_products` row
 
 ---
 
-## Frontend Components
+## Phase 3: Connect Purchase Flow to grant-product-access
 
-### 1. Seller Product Creation (Enhanced)
+### Changes to `src/pages/Store.tsx`
 
-**File:** `src/pages/NewProduct.tsx`
+After successful `purchase_seller_product` RPC call, invoke the edge function:
 
-Add delivery configuration based on product type:
-
-```text
-Step 2 Updates:
-- Digital/Ebook/Template/Graphics/Audio/Video/Software:
-  └── File Uploader (multiple files)
-  └── Toggle: "Allow streaming" (for audio/video)
-  └── Max downloads limit (optional)
-
-- Course:
-  └── Lesson Builder (add/edit lessons)
-  └── Video uploader per lesson
-  └── Attachments per lesson
-  └── Free preview toggle per lesson
-
-- Membership:
-  └── Membership period selector (monthly/yearly/lifetime)
-  └── Member content uploader
-
-- Call:
-  └── Duration selector (15/30/45/60 min)
-  └── Availability slots editor
-
-- Commission:
-  └── Requirements form template
-  └── Expected delivery time
-
-- Bundle:
-  └── Product selector (multi-select from existing products)
-
-- Coffee:
-  └── Thank you message editor
-```
-
-### 2. Buyer Library/Purchases Page
-
-**File:** `src/components/dashboard/BuyerLibrary.tsx` (NEW)
-
-Main hub for buyers to access all purchased products:
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│ My Library                                                       │
-├─────────────────────────────────────────────────────────────────┤
-│ [All] [Downloads] [Courses] [Memberships] [Services] [Tips]     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐         │
-│ │ 📦        │ │ 📚        │ │ 🎓        │ │ 💳        │         │
-│ │ Template  │ │ E-book    │ │ Course    │ │ Membership│         │
-│ │ Pack      │ │ Guide     │ │ (75%)     │ │ (Active)  │         │
-│ │ [Download]│ │ [Download]│ │ [Continue]│ │ [Access]  │         │
-│ └───────────┘ └───────────┘ └───────────┘ └───────────┘         │
-│                                                                  │
-│ ┌───────────┐ ┌───────────┐ ┌───────────┐                       │
-│ │ 🎨        │ │ 📞        │ │ ☕        │                       │
-│ │ Commission│ │ Call      │ │ Coffee    │                       │
-│ │ (Working) │ │ (Feb 10)  │ │ (Thanks!) │                       │
-│ │ [View]    │ │ [Join]    │ │ [Receipt] │                       │
-│ └───────────┘ └───────────┘ └───────────┘                       │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 3. Course Viewer Page
-
-**File:** `src/components/dashboard/CourseViewer.tsx` (NEW)
-
-Dedicated page for viewing purchased courses:
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│ ← Back to Library          Course: "Ultimate Design Mastery"    │
-├────────────────────────────────────────────────────────────────┤
-│ ┌──────────────────────────────────┐ ┌────────────────────────┐ │
-│ │                                  │ │ LESSONS                │ │
-│ │      📹 Video Player             │ │ ✓ 1. Introduction      │ │
-│ │                                  │ │ ► 2. Getting Started   │ │
-│ │                                  │ │ ○ 3. Advanced Topics   │ │
-│ │                                  │ │ ○ 4. Pro Techniques    │ │
-│ │                                  │ │ ○ 5. Final Project     │ │
-│ ├──────────────────────────────────┤ │                        │ │
-│ │ Lesson 2: Getting Started        │ │ Progress: 25%          │ │
-│ │ Learn the fundamentals...        │ │ ████░░░░░░░░░          │ │
-│ │                                  │ │                        │ │
-│ │ 📎 Attachments:                  │ │ [Download All Files]   │ │
-│ │  • starter-files.zip             │ │                        │ │
-│ │  • cheatsheet.pdf                │ │                        │ │
-│ └──────────────────────────────────┘ └────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 4. Service/Booking Components
-
-**File:** `src/components/dashboard/ServiceBooking.tsx` (NEW)
-
-For Call and Commission products:
-
-```text
-Commission Flow:
-1. Buyer submits requirements (brief)
-2. Buyer pays 50% deposit
-3. Seller works on commission
-4. Seller uploads deliverables
-5. Buyer reviews and approves
-6. Buyer pays remaining 50%
-7. Order completed
-
-Call Flow:
-1. Buyer purchases call product
-2. Buyer sees available time slots
-3. Buyer books a slot
-4. Both parties get calendar invite
-5. Meeting link generated
-6. After call: auto-complete
-```
-
-### 5. Download Manager
-
-**File:** `src/components/dashboard/DownloadManager.tsx` (NEW)
-
-Handles file downloads with tracking:
-
-```text
-Features:
-- List all files for a product
-- Download individual files
-- Download all as ZIP
-- Track download count
-- Show file size and type
-- Streaming option for audio/video
-```
-
----
-
-## Backend Edge Functions
-
-### 1. `grant-product-access` (NEW)
-Triggered after successful purchase. Creates appropriate access records:
-
-```typescript
-// Pseudo-code
-async function grantProductAccess(orderId, buyerId, productId, productType) {
-  switch (productType) {
-    case 'digital_product':
-    case 'ebook':
-    case 'template':
-    case 'graphics':
-    case 'audio':
-    case 'video':
-    case 'software':
-      // Grant instant download access
-      await createBuyerContentAccess(buyerId, productId, 'download');
-      await updateOrderStatus(orderId, 'completed');
-      break;
-      
-    case 'course':
-      // Grant course access
-      await createBuyerContentAccess(buyerId, productId, 'course');
-      await updateOrderStatus(orderId, 'completed');
-      break;
-      
-    case 'membership':
-      // Grant membership with expiry
-      const expiresAt = calculateMembershipExpiry(product.membership_period);
-      await createBuyerContentAccess(buyerId, productId, 'membership', expiresAt);
-      await updateOrderStatus(orderId, 'completed');
-      break;
-      
-    case 'bundle':
-      // Grant access to all bundled products
-      for (const bundledProductId of product.bundle_product_ids) {
-        await grantProductAccess(orderId, buyerId, bundledProductId);
+```tsx
+// In handleBuy function, after successful RPC
+if (purchaseResult.success && purchaseResult.order_id) {
+  // Grant product access based on product type
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/grant-product-access`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
+          order_id: purchaseResult.order_id,
+          buyer_id: user.id,
+          product_id: product.id,
+          seller_id: product.seller_id
+        })
       }
-      break;
-      
-    case 'call':
-      // Create booking record, status pending
-      await createServiceBooking(orderId, buyerId, productId, 'call');
-      // Order stays pending until call completed
-      break;
-      
-    case 'commission':
-      // Create commission booking, 50% deposited
-      await createServiceBooking(orderId, buyerId, productId, 'commission', {
-        deposit_paid: true
-      });
-      break;
-      
-    case 'service':
-      // Manual delivery by seller
-      // Order stays pending
-      break;
-      
-    case 'coffee':
-      // Just a tip, auto-complete
-      await updateOrderStatus(orderId, 'completed');
-      // Send thank you
-      break;
+    );
+    
+    const accessResult = await response.json();
+    
+    // Update toast message based on access type
+    if (accessResult.auto_completed) {
+      toast.success('Purchase complete! Access your content in your Library.');
+    } else if (accessResult.requires_scheduling) {
+      toast.success('Purchase complete! Book your call in your Library.');
+    } else {
+      toast.success('Purchase successful! The seller will deliver your order soon.');
+    }
+  } catch (error) {
+    console.error('Grant access error:', error);
+    // Purchase still succeeded, just access grant failed
   }
 }
 ```
 
-### 2. `generate-download-link` (NEW)
-Generates secure, time-limited download URLs.
+### Changes to `src/components/dashboard/AIAccountsSection.tsx`
 
-### 3. `track-course-progress` (NEW)
-Updates lesson progress and video position.
+Same integration pattern for AI accounts purchase flow.
 
 ---
 
-## Implementation Phases
+## Phase 4: Service Booking Components
 
-### Phase 1: Database & Core Infrastructure
-1. Create new database tables via migration
-2. Add new columns to `seller_products`
-3. Update order creation to call `grant-product-access`
-4. Create storage bucket for product files
+### New Component: `src/components/dashboard/ServiceBookingView.tsx`
 
-### Phase 2: Seller Product Creation
-1. Enhance `NewProduct.tsx` with delivery type fields
-2. Add file uploader for downloadable products
-3. Add lesson builder for courses
-4. Add availability editor for calls
+For buyers to view and manage their service bookings (calls, commissions):
 
-### Phase 3: Buyer Library
-1. Create `BuyerLibrary.tsx` component
-2. Implement download manager
-3. Implement course viewer
-4. Add progress tracking
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ ← Back to Library                                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ 📞 30-Minute Strategy Call                                  │ │
+│ │ with John's Consulting                                       │ │
+│ │                                                              │ │
+│ │ Status: SCHEDULED                                            │ │
+│ │ Date: Feb 10, 2026 at 2:00 PM (EST)                         │ │
+│ │                                                              │ │
+│ │ [Join Meeting]  [Reschedule]  [Cancel]                      │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ 🎨 Custom Logo Design (Commission)                          │ │
+│ │ with DesignPro Studio                                        │ │
+│ │                                                              │ │
+│ │ Status: IN PROGRESS                                          │ │
+│ │ Deposit: $50 (Paid ✓)                                       │ │
+│ │ Remaining: $50                                               │ │
+│ │                                                              │ │
+│ │ Your Brief:                                                  │ │
+│ │ "I need a modern logo for my tech startup..."               │ │
+│ │                                                              │ │
+│ │ [View Updates]  [Chat with Seller]                          │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### Phase 4: Services
-1. Implement call scheduling flow
-2. Implement commission workflow
-3. Add booking management for sellers
+### New Component: `src/components/dashboard/CallScheduler.tsx`
 
-### Phase 5: Polish
-1. Email notifications for each flow
-2. Mobile responsive design
-3. Analytics and reporting
+Modal/page for buyers to book a call slot:
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ Book Your Call                                           [X]    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ 📅 Select a Date                                                │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ [Calendar Picker showing available dates]                   │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│ ⏰ Select a Time (EST)                                          │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ [9:00 AM] [9:30 AM] [10:00 AM] [10:30 AM]                  │ │
+│ │ [11:00 AM] [11:30 AM] [2:00 PM] [2:30 PM]                  │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│                                          [Book Call - 30 min]   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### New Component: `src/components/dashboard/CommissionBriefForm.tsx`
+
+For buyers to submit their commission requirements:
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ Submit Your Requirements                                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ Describe what you need:                                          │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ [Rich text area for requirements]                           │ │
+│ │                                                              │ │
+│ │                                                              │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│ Attach reference files (optional):                              │
+│ [+ Add Files]                                                   │
+│                                                                  │
+│ Payment Summary:                                                 │
+│ ─────────────────────────────────────────────────────────────── │
+│ Total: $100                                                     │
+│ Deposit (50%): $50 ← You pay now                               │
+│ Final (50%): $50 ← Pay upon completion                         │
+│                                                                  │
+│                                    [Submit & Pay $50 Deposit]   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### New Component: `src/components/seller/SellerServiceManagement.tsx`
+
+For sellers to manage their service bookings:
+
+```text
+Seller can:
+- View pending calls and scheduled times
+- Confirm/reschedule calls
+- View commission briefs
+- Upload deliverables for commissions
+- Mark commissions as ready for final payment
+- Complete orders after delivery
+```
 
 ---
 
 ## File Changes Summary
 
-### New Files:
-- `src/components/dashboard/BuyerLibrary.tsx`
-- `src/components/dashboard/CourseViewer.tsx`
-- `src/components/dashboard/DownloadManager.tsx`
-- `src/components/dashboard/ServiceBooking.tsx`
-- `src/components/seller/LessonBuilder.tsx`
-- `src/components/seller/AvailabilityEditor.tsx`
-- `src/components/seller/FileContentUploader.tsx`
-- `supabase/functions/grant-product-access/index.ts`
-- `supabase/functions/generate-download-link/index.ts`
-- `supabase/functions/track-course-progress/index.ts`
+### Files to Create:
+1. `src/components/dashboard/ServiceBookingView.tsx` - Buyer view of service bookings
+2. `src/components/dashboard/CallScheduler.tsx` - Call booking modal
+3. `src/components/dashboard/CommissionBriefForm.tsx` - Commission requirements form
+4. `src/components/seller/SellerServiceManagement.tsx` - Seller service management
+5. `src/components/seller/BundleProductSelector.tsx` - Multi-select for bundles
 
-### Modified Files:
-- `src/pages/NewProduct.tsx` - Add delivery configuration UI
-- `src/components/dashboard/BuyerOrders.tsx` - Link to Library for accessing content
-- `src/components/seller/SellerOrders.tsx` - Show delivery type, different actions
-- `src/pages/Dashboard.tsx` - Add Library route
-- Database migrations for new tables
+### Files to Modify:
+1. `src/pages/NewProduct.tsx` - Add delivery config UI sections
+2. `src/pages/Store.tsx` - Connect to grant-product-access after purchase
+3. `src/components/dashboard/AIAccountsSection.tsx` - Connect to grant-product-access
+4. `src/pages/Dashboard.tsx` - Add routes for service booking views
+5. `src/pages/Seller.tsx` - Add route for service management
+
+---
+
+## Implementation Order
+
+1. **NewProduct.tsx Integration** - Add conditional delivery config sections
+2. **BundleProductSelector.tsx** - Create bundle product picker
+3. **Purchase Flow Integration** - Connect Store.tsx to grant-product-access
+4. **ServiceBookingView.tsx** - Create buyer service booking view
+5. **CallScheduler.tsx** - Create call scheduling UI
+6. **CommissionBriefForm.tsx** - Create commission brief form
+7. **SellerServiceManagement.tsx** - Create seller service management
+8. **Route Updates** - Add all new routes
 
 ---
 
 ## Technical Notes
 
-1. **File Storage**: Use Supabase Storage with a `product-files` bucket (private)
-2. **Download Security**: Generate signed URLs with expiry (1 hour)
-3. **Streaming**: Use HLS for video, progressive for audio
-4. **Course Progress**: Save video position every 10 seconds
-5. **Memberships**: Cron job to check and revoke expired access
-6. **Bundles**: Recursive access granting for nested bundles
+1. **Delivery Type Mapping**: The `delivery_type` column is auto-set based on `product_type`:
+   - `digital_product`, `ebook`, `template`, etc. → `instant`
+   - `course` → `course`
+   - `membership` → `membership`
+   - `call` → `call`
+   - `commission` → `commission`
+   - `service` → `manual`
+   - `coffee` → `tip`
+
+2. **Bundle Recursion**: The `grant-product-access` function already handles recursive bundle access granting.
+
+3. **Call Scheduling**: Uses the `availability_slots` JSONB column to determine available times.
+
+4. **Commission Flow**: 
+   - Initial purchase = 50% deposit
+   - Seller works
+   - Seller uploads deliverables
+   - Buyer approves
+   - Buyer pays remaining 50%
+   - Order completed
+
+5. **File Storage**: All product files go to the private `product-files` bucket.
