@@ -35,11 +35,13 @@ const sidebarNavItems = [
   { to: '/seller/orders', icon: ShoppingCart, label: 'Sales' },
   { to: '/seller/customers', icon: Users, label: 'Customers' },
   { to: '/seller/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/seller/product-analytics', icon: TrendingUp, label: 'Insights' },
   { to: '/seller/wallet', icon: Wallet, label: 'Payouts' },
+  // Discount section items
   { to: '/seller/coupons', icon: Tag, label: 'Coupons' },
   { to: '/seller/flash-sales', icon: Zap, label: 'Flash Sales' },
   { to: '/seller/inventory', icon: Warehouse, label: 'Inventory' },
+  // After discount
+  { to: '/seller/product-analytics', icon: TrendingUp, label: 'Insights' },
   { to: '/seller/reports', icon: FileText, label: 'Reports' },
   { to: '/seller/performance', icon: Activity, label: 'Performance' },
   { to: '/seller/chat', icon: MessageSquare, label: 'Chat' },
