@@ -163,10 +163,10 @@ const BuyerReports = () => {
       <div className="space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl border-2 border-black" />
+            <Skeleton key={i} className="h-28 rounded border" />
           ))}
         </div>
-        <Skeleton className="h-80 rounded-2xl border-2 border-black" />
+        <Skeleton className="h-80 rounded border" />
       </div>
     );
   }
@@ -218,59 +218,31 @@ const BuyerReports = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total Spent</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(stats.totalSpent)}</p>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <Wallet className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Total Spent</div>
+          <div className="text-4xl font-semibold text-slate-900">{formatAmountOnly(stats.totalSpent)}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total Orders</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{stats.totalOrders}</p>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Total Orders</div>
+          <div className="text-4xl font-semibold text-slate-900">{stats.totalOrders}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500">Avg Order Value</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{formatAmountOnly(stats.avgOrderValue)}</p>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-violet-600" />
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Avg Order Value</div>
+          <div className="text-4xl font-semibold text-slate-900">{formatAmountOnly(stats.avgOrderValue)}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500">Completed</p>
-              <p className="text-2xl font-bold text-emerald-600 mt-1">{stats.completedOrders}</p>
-            </div>
-            <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
+        <div className="bg-white border rounded p-8">
+          <div className="text-base text-slate-700 mb-2">Completed</div>
+          <div className="text-4xl font-semibold text-emerald-600">{stats.completedOrders}</div>
         </div>
       </div>
 
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Monthly Spending Trend */}
-        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
+        <div className="bg-white border rounded p-6">
           <h3 className="font-semibold text-slate-800 mb-4">Monthly Spending</h3>
           {monthlyData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
@@ -305,7 +277,7 @@ const BuyerReports = () => {
         </div>
 
         {/* Category Breakdown */}
-        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
+        <div className="bg-white border rounded p-6">
           <h3 className="font-semibold text-slate-800 mb-4">Spending by Product</h3>
           {categoryData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>

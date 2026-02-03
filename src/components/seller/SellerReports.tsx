@@ -254,10 +254,10 @@ const SellerReports = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-20 rounded-lg border-2 border-black" />
+        <Skeleton className="h-20 rounded border" />
         <div className="grid grid-cols-2 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-40 rounded-lg border-2 border-black" />
+            <Skeleton key={i} className="h-40 rounded border" />
           ))}
         </div>
       </div>
@@ -323,16 +323,13 @@ const SellerReports = () => {
             <button
               key={config.type}
               onClick={() => setSelectedReport(config.type)}
-              className={`text-left p-5 rounded-lg border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all ${
+              className={`text-left p-8 bg-white border rounded transition-colors ${
                 isSelected 
                   ? 'ring-2 ring-emerald-500 bg-emerald-50' 
-                  : 'bg-white'
+                  : 'hover:bg-slate-50'
               }`}
             >
-              <div className={`h-12 w-12 rounded-xl ${config.bg} flex items-center justify-center mb-3`}>
-                <Icon className={`w-6 h-6 ${config.color}`} />
-              </div>
-              <h3 className="font-semibold text-slate-800 mb-1">{config.title}</h3>
+              <h3 className="text-base text-slate-700 mb-2">{config.title}</h3>
               <p className="text-xs text-slate-500">{config.description}</p>
             </button>
           );
@@ -340,7 +337,7 @@ const SellerReports = () => {
       </div>
 
       {/* Report Preview */}
-      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism overflow-hidden">
+      <div className="bg-white border rounded overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`h-10 w-10 rounded-xl ${currentConfig.bg} flex items-center justify-center`}>

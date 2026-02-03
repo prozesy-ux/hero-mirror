@@ -265,7 +265,7 @@ const SellerFlashSales = () => {
 
       {/* Flash Sales List */}
       {flashSales.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-black">
+        <div className="text-center py-12 bg-white border rounded border-dashed">
           <Zap className="h-12 w-12 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-500">No flash sales yet</p>
           <p className="text-xs text-slate-400">Create your first flash sale to boost conversions</p>
@@ -279,10 +279,10 @@ const SellerFlashSales = () => {
             return (
               <div 
                 key={sale.id}
-                className={`p-3 sm:p-4 rounded-lg border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all ${
+                className={`p-4 bg-white border rounded transition-colors ${
                   isActive 
                     ? 'bg-gradient-to-r from-red-50 to-orange-50' 
-                    : 'bg-white'
+                    : ''
                 }`}
               >
                 {/* Mobile: Vertical stack, Desktop: Horizontal */}

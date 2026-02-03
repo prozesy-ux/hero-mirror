@@ -115,9 +115,9 @@ const BuyerNotifications = () => {
   if (loading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-16 rounded-2xl border-2 border-black" />
+        <Skeleton className="h-16 rounded border" />
         {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="h-20 rounded-xl border-2 border-black" />
+          <Skeleton key={i} className="h-20 rounded border" />
         ))}
       </div>
     );
@@ -165,7 +165,7 @@ const BuyerNotifications = () => {
 
       {/* Notifications List */}
       {filteredNotifications.length === 0 ? (
-        <div className="bg-white rounded-lg p-10 text-center border-2 border-black shadow-neobrutalism">
+        <div className="bg-white border rounded p-10 text-center">
           <Bell className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-800 mb-2">No notifications</h3>
           <p className="text-slate-500">You're all caught up!</p>
@@ -176,10 +176,10 @@ const BuyerNotifications = () => {
             <div 
               key={notification.id}
               onClick={() => !notification.is_read && markAsRead(notification.id)}
-              className={`bg-white rounded-lg border-2 p-4 cursor-pointer transition-all shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 ${
+              className={`bg-white border rounded p-4 cursor-pointer transition-colors hover:bg-slate-50 ${
                 notification.is_read 
-                  ? 'border-slate-100 hover:bg-slate-50' 
-                  : 'border-blue-200 bg-blue-50/50 hover:bg-blue-50'
+                  ? 'border-slate-200' 
+                  : 'border-blue-300 bg-blue-50/50'
               }`}
             >
               <div className="flex items-start gap-4">
