@@ -293,35 +293,27 @@ const BuyerDashboardHome = () => {
         <StatCard
           label="Wallet Balance"
           value={formatAmountOnly(wallet.balance)}
-          icon={<Wallet className="w-6 h-6" />}
-          accentColor="violet"
-          variant="neobrutalism"
+          variant="gumroad"
           href="/dashboard/wallet"
         />
         <StatCard
           label="Total Spent"
           value={formatAmountOnly(stats.totalSpent)}
-          icon={<TrendingUp className="w-6 h-6" />}
-          accentColor="emerald"
-          variant="neobrutalism"
           subValue="Lifetime"
+          variant="gumroad"
         />
         <StatCard
           label="Total Orders"
           value={stats.total}
-          icon={<ShoppingBag className="w-6 h-6" />}
-          accentColor="blue"
-          variant="neobrutalism"
           subValue={`${stats.completed} completed`}
+          variant="gumroad"
           href="/dashboard/orders"
         />
         <StatCard
           label="Pending Delivery"
           value={stats.pending + stats.delivered}
-          icon={<Clock className="w-6 h-6" />}
-          accentColor="orange"
-          variant="neobrutalism"
           subValue={stats.delivered > 0 ? `${stats.delivered} awaiting approval` : undefined}
+          variant="gumroad"
         />
       </div>
 

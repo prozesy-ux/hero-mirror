@@ -242,51 +242,31 @@ const SellerAnalytics = () => {
     );
   }
 
-  // Stat Card Component - Amazon Seller Central Style
+  // Stat Card Component - Gumroad Style
   const StatCard = ({ 
     title, 
     value, 
-    change, 
-    icon: Icon 
+    change
   }: { 
     title: string; 
     value: string | number; 
     change?: number;
-    icon: React.ElementType;
+    icon?: React.ElementType;
   }) => (
-    <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{title}</p>
-          <p className="text-[28px] lg:text-[32px] font-extrabold text-slate-800 mt-1 leading-tight">{value}</p>
-          {change !== undefined && (
-            <div className="flex items-center gap-1.5 mt-2">
-              {change >= 0 ? (
-                <>
-                  <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
-                  <span className="text-[11px] font-semibold text-emerald-600">
-                    {Math.abs(change).toFixed(1)}% Up from yesterday
-                  </span>
-                </>
-              ) : (
-                <>
-                  <ArrowDownRight className="h-3.5 w-3.5 text-red-500" />
-                  <span className="text-[11px] font-semibold text-red-600">
-                    {Math.abs(change).toFixed(1)}% Down from yesterday
-                  </span>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0 border-2 border-black">
-          <Icon className="h-6 w-6 text-orange-500" />
-        </div>
+    <div className="bg-white border rounded p-8">
+      <div className="flex items-center gap-2 text-base mb-2">
+        <span className="text-slate-700">{title}</span>
       </div>
+      <div className="text-4xl font-semibold text-slate-900">{value}</div>
+      {change !== undefined && (
+        <p className="text-sm text-slate-500 mt-2">
+          {change >= 0 ? '+' : ''}{change.toFixed(1)}% from yesterday
+        </p>
+      )}
     </div>
   );
 
-  // Quick Stat Item Component
+  // Quick Stat Item Component - Gumroad Style
   const QuickStatItem = ({ 
     icon: Icon, 
     iconColor, 
@@ -298,14 +278,11 @@ const SellerAnalytics = () => {
     value: React.ReactNode; 
     label: string; 
   }) => (
-    <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-      <div className="flex items-center gap-3">
-        <Icon className={`h-6 w-6 ${iconColor}`} />
-        <div>
-          <div className="text-2xl font-bold text-slate-800">{value}</div>
-          <p className="text-xs text-slate-500">{label}</p>
-        </div>
+    <div className="bg-white border rounded p-8">
+      <div className="flex items-center gap-2 text-base mb-2">
+        <span className="text-slate-700">{label}</span>
       </div>
+      <div className="text-4xl font-semibold text-slate-900">{value}</div>
     </div>
   );
 

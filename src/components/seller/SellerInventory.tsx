@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Package, AlertTriangle, TrendingUp, TrendingDown, Search, Filter, RefreshCw, Download, Edit2, Save, X } from 'lucide-react';
+import { Package, Search, Filter, RefreshCw, Download, Edit2, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -137,71 +137,46 @@ const SellerInventory = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Gumroad Style */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total Products */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center border-2 border-black">
-              <Package className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total Products</p>
-              <p className="text-2xl font-bold text-slate-800">{inventoryStats.totalProducts}</p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Total Products</span>
           </div>
+          <div className="text-4xl font-semibold text-slate-900">{inventoryStats.totalProducts}</div>
         </div>
 
         {/* Total Units */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center border-2 border-black">
-              <TrendingUp className="w-6 h-6 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total Units</p>
-              <p className="text-2xl font-bold text-slate-800">{inventoryStats.totalUnits}</p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Total Units</span>
           </div>
+          <div className="text-4xl font-semibold text-slate-900">{inventoryStats.totalUnits}</div>
         </div>
 
         {/* In Stock */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center border-2 border-black">
-              <Package className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">In Stock</p>
-              <p className="text-2xl font-bold text-green-600">{inventoryStats.inStock}</p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">In Stock</span>
           </div>
+          <div className="text-4xl font-semibold text-green-600">{inventoryStats.inStock}</div>
         </div>
 
         {/* Low Stock */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center border-2 border-black">
-              <AlertTriangle className="w-6 h-6 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Low Stock</p>
-              <p className="text-2xl font-bold text-orange-600">{inventoryStats.lowStock}</p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Low Stock</span>
           </div>
+          <div className="text-4xl font-semibold text-orange-600">{inventoryStats.lowStock}</div>
         </div>
 
         {/* Out of Stock */}
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center border-2 border-black">
-              <TrendingDown className="w-6 h-6 text-red-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Out of Stock</p>
-              <p className="text-2xl font-bold text-red-600">{inventoryStats.outOfStock}</p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Out of Stock</span>
           </div>
+          <div className="text-4xl font-semibold text-red-600">{inventoryStats.outOfStock}</div>
         </div>
       </div>
 
