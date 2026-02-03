@@ -8,9 +8,9 @@ interface StatusToggleCardProps {
 
 const StatusToggleCard = ({ isOnline, onToggle, loading = false }: StatusToggleCardProps) => {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="px-4 py-3 bg-gray-50">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+    <div className="bg-white border rounded overflow-hidden">
+      <div className="px-4 py-3 border-b">
+        <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">
           Set status
         </h3>
       </div>
@@ -25,8 +25,8 @@ const StatusToggleCard = ({ isOnline, onToggle, loading = false }: StatusToggleC
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">Online status</p>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-sm font-medium text-slate-900">Online status</p>
+              <p className="text-xs text-slate-600 mt-0.5">
                 {isOnline 
                   ? "You'll appear online to others" 
                   : "You'll appear offline to others"
