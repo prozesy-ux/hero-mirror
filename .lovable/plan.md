@@ -1,216 +1,212 @@
 
-# Wallet Sections Design Standardization to Match Billing Section
+# BuyerOrders Section Design Standardization to Match Billing Section
 
 ## Overview
 
-Update **BuyerWallet.tsx** and **SellerWallet.tsx** to match the exact Gumroad design pattern already implemented in **BillingSection.tsx**. This includes standardizing tabs, transaction borders, account sections, and the Add Account step design.
+Update **BuyerOrders.tsx** to match the Gumroad/Neo-brutalism design pattern already implemented in **BillingSection.tsx**. This includes standardizing filter containers, status tabs, order cards, date picker, modals, and all interactive elements.
 
 ## Reference Design (from BillingSection.tsx)
 
 ```text
-TAB NAVIGATION:
-┌────────────────────────────────────────────────────────────────┐
-│ bg-white border rounded p-2 mb-8                               │
-│                                                                │
-│ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│ │ Active   │ │ Inactive │ │ Inactive │ │ Inactive │           │
-│ │ #FF90E8  │ │ slate-600│ │ slate-600│ │ slate-600│           │
-│ │ + black  │ │          │ │          │ │          │           │
-│ │ border   │ │          │ │          │ │          │           │
-│ └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
-└────────────────────────────────────────────────────────────────┘
+TAB NAVIGATION (Status Filter):
++----------------------------------------------------------------+
+| bg-white border rounded p-2                                    |
+|                                                                |
+| [All]     [Pending]   [Delivered]   [Approved]   [Completed]   |
+| #FF90E8   slate-600   slate-600     slate-600    slate-600     |
+| + black   clean       clean         clean        clean         |
+| border                                                         |
++----------------------------------------------------------------+
 
-TRANSACTION/WITHDRAWAL ITEMS:
-┌────────────────────────────────────────────────────────────────┐
-│ p-4 bg-white border rounded                                    │
-│ hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]                   │
-│                                                                │
-│ [Icon] Transaction Description              $Amount            │
-│        Date • via Gateway                   [Status Badge]     │
-└────────────────────────────────────────────────────────────────┘
-
-METHOD/ACCOUNT CARDS:
-┌────────────────────────────────────────────────────────────────┐
-│ p-4 bg-white border rounded text-center                        │
-│ hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]                   │
-│                                                                │
-│ [Logo/Icon]                                                    │
-│ Method Name                                                    │
-│ Type Label                                                     │
-└────────────────────────────────────────────────────────────────┘
+ORDER CARDS:
++----------------------------------------------------------------+
+| p-4 bg-white border rounded                                    |
+| hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]                   |
+|                                                                |
+| [Image] Product Name                      [Status Badge]       |
+|         Seller Name                                            |
+|         $50.00 . Jan 15, 2025 . #ORDER123                      |
+|                                    [View Details] Gumroad pink |
++----------------------------------------------------------------+
 ```
 
 ---
 
-## Current Issues in Wallet Files
+## Current Issues Found
 
-### BuyerWallet.tsx
+### 1. Filter Container (Line 423)
+**Current:**
+```tsx
+<div className="bg-white border rounded p-4 space-y-4">
+```
+**Issue:** Good base but needs consistent spacing
 
-| Section | Current Styling | Target Styling |
-|---------|-----------------|----------------|
-| Tab Navigation (line 768) | `rounded-xl shadow-md border-gray-200` + `bg-gray-900` active | `border rounded` + `bg-[#FF90E8] border-black` active |
-| Withdrawal Methods (line 871) | `rounded-xl bg-gray-50 hover:bg-gray-100` | `bg-white border rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
-| Withdrawal Items (line 1121) | `bg-gray-50 rounded-xl border-gray-100 hover:bg-gray-100` | `bg-white border rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
-| Add Account Card (line 963) | `border-dashed border-violet-200` | `border-dashed border-black` + Gumroad styling |
-| Modals | Gradient headers `bg-gradient-to-r from-violet-600 to-purple-600` | Clean white with simple borders |
+### 2. Search Input (Lines 428-433)
+**Current:**
+```tsx
+className="pl-10 rounded-xl border-slate-200"
+```
+**Issue:** Uses `rounded-xl` (should be simple `rounded`)
 
-### SellerWallet.tsx
+### 3. Date Filter Button (Lines 437-443)
+**Current:**
+```tsx
+<Button variant="outline" className="w-full sm:w-auto gap-2 rounded-xl border-slate-200">
+```
+**Issue:** Uses `rounded-xl` (should be `rounded border-black`)
 
-| Section | Current Styling | Target Styling |
-|---------|-----------------|----------------|
-| Tab Navigation (line 769) | `rounded-lg shadow-sm` + `bg-gray-900` active | `border rounded` + `bg-[#FF90E8] border-black` active |
-| Withdrawal Methods (line 872) | `rounded-lg shadow-sm hover:shadow-md` | `bg-white border rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
-| Withdrawal Items (line 993) | `rounded-lg shadow-sm hover:shadow-md` | `bg-white border rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
-| Add Account Card (line 965) | `border-dashed border-gray-300` | `border-dashed border-black` + Gumroad styling |
-| Modals | Gradient headers | Clean white with simple borders |
+### 4. Date Preset Buttons (Lines 446-468)
+**Current:**
+```tsx
+className={cn(
+  "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
+  datePreset === preset ? "bg-violet-100 text-violet-700" : "hover:bg-slate-100"
+)}
+```
+**Issue:** Uses violet colors (should be Gumroad pink `#FF90E8`)
+
+### 5. Sort Dropdown (Lines 488-503)
+**Current:**
+```tsx
+<SelectTrigger className="w-full sm:w-[160px] rounded-xl border-slate-200">
+```
+**Issue:** Uses `rounded-xl` (should be `rounded border-black`)
+
+### 6. Status Tabs (Lines 507-538)
+**Current:**
+```tsx
+className={cn(
+  "px-4 py-2 rounded-full text-sm font-medium transition-all",
+  statusFilter === tab.value
+    ? "bg-violet-600 text-white shadow-sm"
+    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+)}
+```
+**Issue:** Uses violet and `rounded-full` (should be Gumroad pink with `rounded` and black border)
+
+### 7. Order Cards (Lines 549-632)
+**Current:**
+```tsx
+className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200"
+```
+**Issue:** Uses `rounded-xl hover:shadow-md` (should be `rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`)
+
+### 8. View Details Button (Lines 600-608)
+**Current:**
+```tsx
+<Button size="sm" variant="outline" className="rounded-lg text-sm h-8 px-3">
+```
+**Issue:** Standard outline button (should be Gumroad pink style)
+
+### 9. Confirm Delivery Button (Lines 619-625)
+**Current:**
+```tsx
+className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto h-8"
+```
+**Issue:** Uses blue (should be Gumroad pink with black border)
+
+### 10. Empty State (Lines 543-548)
+**Current:**
+```tsx
+<div className="bg-white rounded-xl p-10 text-center border border-slate-200">
+```
+**Issue:** Uses `rounded-xl` (should be `rounded`)
+
+### 11. Order Detail Modal (Lines 636-730)
+**Current:** Standard modal with slate backgrounds
+**Issue:** Should use Gumroad styling for buttons and layout
 
 ---
 
 ## Changes Required
 
-### File 1: `src/components/dashboard/BuyerWallet.tsx`
-
-#### 1. Tab Navigation (Lines 768-794)
-
-**Before:**
-```tsx
-<div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 lg:p-2 mb-3 sm:mb-4 lg:mb-8 border border-gray-200 shadow-md">
-  ...
-  className={`... ${activeTab === tab.id ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95'}`}
+### 1. Search Input (Line 432)
+```text
+BEFORE: className="pl-10 rounded-xl border-slate-200"
+AFTER:  className="pl-10 rounded border-black focus:ring-2 focus:ring-[#FF90E8]/50"
 ```
 
-**After:**
-```tsx
-<div className="bg-white border rounded p-2 mb-8">
-  ...
-  className={`flex-1 px-4 py-3 rounded font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
-    activeTab === tab.id
-      ? 'bg-[#FF90E8] text-black border border-black'
-      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-  }`}
+### 2. Date Filter Button (Line 439)
+```text
+BEFORE: className="w-full sm:w-auto gap-2 rounded-xl border-slate-200"
+AFTER:  className="w-full sm:w-auto gap-2 rounded border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
 ```
 
-#### 2. Withdrawal Methods Grid (Lines 868-896)
-
-**Before:**
-```tsx
-className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center hover:bg-gray-100 transition-all"
+### 3. Date Preset Buttons (Lines 450-453, 465-468)
+```text
+BEFORE: datePreset === preset ? "bg-violet-100 text-violet-700" : "hover:bg-slate-100"
+AFTER:  datePreset === preset ? "bg-[#FF90E8] text-black border border-black" : "hover:bg-slate-50"
 ```
 
-**After:**
-```tsx
-className="p-4 bg-white border rounded text-center transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] cursor-default"
+### 4. Sort Dropdown (Line 489)
+```text
+BEFORE: className="w-full sm:w-[160px] rounded-xl border-slate-200"
+AFTER:  className="w-full sm:w-[160px] rounded border-black"
 ```
 
-#### 3. Account Cards in Accounts Tab (Lines 906-970)
-
-**Before:**
+### 5. Status Tabs Container (Line 507)
+Wrap in a container matching BillingSection tab style:
 ```tsx
-className="p-4 border rounded bg-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all relative"
+<div className="bg-white border rounded p-2">
+  <div className="flex flex-wrap gap-1">
 ```
 
-This is already correct. Keep as is.
+### 6. Status Tab Buttons (Lines 520-525)
+```text
+BEFORE:
+  statusFilter === tab.value
+    ? "bg-violet-600 text-white shadow-sm"
+    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
 
-#### 4. Add Account Card Button (Lines 960-969)
-
-**Before:**
-```tsx
-className="p-6 rounded-xl border-2 border-dashed border-violet-200 hover:border-violet-400 hover:bg-violet-50 transition-all flex flex-col items-center justify-center gap-2 min-h-[140px]"
+AFTER:
+  statusFilter === tab.value
+    ? "bg-[#FF90E8] text-black border border-black"
+    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
 ```
 
-**After:**
-```tsx
-className="p-6 border-2 border-dashed border-black rounded transition-all flex flex-col items-center justify-center gap-2 min-h-[140px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFF5FB]"
-```
-- Icon background: `bg-[#FF90E8]` instead of `bg-violet-100`
-- Icon color: `text-black` instead of `text-violet-600`
-- Text: `text-black font-semibold`
-
-#### 5. Withdrawal Items (Lines 1114-1150)
-
-**Before:**
-```tsx
-className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
+### 7. Order Cards (Line 552)
+```text
+BEFORE: className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200"
+AFTER:  className="bg-white border rounded p-4 transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
 ```
 
-**After:**
-```tsx
-className="p-4 bg-white border rounded transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+### 8. View Details Button (Lines 600-608)
+```text
+BEFORE:
+<Button size="sm" variant="outline" className="rounded-lg text-sm h-8 px-3">
+  <Eye className="w-3.5 h-3.5 mr-1.5" />
+  View Details
+</Button>
+
+AFTER:
+<button className="flex items-center gap-1.5 px-4 py-2 bg-[#FF90E8] text-black font-medium text-sm rounded border border-black transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+  <Eye className="w-3.5 h-3.5" />
+  View Details
+</button>
 ```
 
-#### 6. Withdraw Modal (Lines 1157-1265)
+### 9. Confirm Delivery Section (Lines 615-629)
+```text
+BEFORE:
+<div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+  <Button className="bg-blue-600 hover:bg-blue-700">
 
-**Before:**
-```tsx
-<DialogTitle className="flex items-center gap-2">
-  <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg">
-    <Wallet className="text-white" size={20} />
-  </div>
+AFTER:
+<div className="p-4 bg-[#FFF5FB] border border-black rounded">
+  <button className="px-4 py-2 bg-[#FF90E8] text-black font-medium rounded border border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
 ```
 
-**After:**
-```tsx
-<DialogTitle className="text-xl font-semibold text-slate-900">
-  Withdraw Funds
-</DialogTitle>
+### 10. Empty State (Line 544)
+```text
+BEFORE: className="bg-white rounded-xl p-10 text-center border border-slate-200"
+AFTER:  className="bg-white border rounded p-10 text-center"
 ```
 
-- Quick amount buttons: Replace gradient with Gumroad style
-- Primary button: Replace gradient with `bg-[#FF90E8] border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`
-
-#### 7. OTP Modal (Lines 1267-1324)
-
-**Before:** Gradient header `bg-gradient-to-r from-violet-600 to-purple-600`
-
-**After:** Clean white with simple border, icon in `bg-[#FF90E8]`
-
-#### 8. Add Account Modal (Lines 1326-end)
-
-**Before:** Gradient header `bg-gradient-to-r from-violet-600 to-purple-600 p-6 text-white`
-
-**After:**
-```tsx
-<div className="bg-white border-b p-6">
-  <div className="flex items-center gap-3">
-    {/* Back button */}
-    <div className="p-3 bg-[#FF90E8] border border-black rounded">
-      <CreditCard className="w-6 h-6 text-black" />
-    </div>
-    <div>
-      <h2 className="text-xl font-semibold text-slate-900">Add Payment Account</h2>
-      <p className="text-slate-600 text-sm">{...}</p>
-    </div>
-  </div>
-</div>
-```
-
-- Step indicators: Replace violet with Gumroad pink `bg-[#FF90E8]`
-- Country/Type/Wallet selection buttons: `border rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`
-- Submit button: Gumroad pink styling
-
----
-
-### File 2: `src/components/seller/SellerWallet.tsx`
-
-Apply identical changes as BuyerWallet.tsx:
-
-#### 1. Tab Navigation (Lines 769-795)
-Same changes as BuyerWallet
-
-#### 2. Withdrawal Methods Grid (Lines 869-897)
-Same changes as BuyerWallet
-
-#### 3. Add Account Card Button (Lines 962-971)
-Same changes as BuyerWallet
-
-#### 4. Withdrawal Items (Lines 986-1024)
-Same changes as BuyerWallet
-
-#### 5. Withdraw Modal (Lines 1029-1137)
-Same changes as BuyerWallet
-
-#### 6. Add Account Modal (Lines 1139-end)
-Same changes as BuyerWallet
+### 11. Order Detail Modal
+- Update info grid: `bg-slate-50 rounded-lg` to `bg-white border rounded`
+- Update Contact Seller button: Gumroad pink style
+- Update Leave Review button: Secondary Gumroad style (white with black border)
+- Update credentials section border styling
 
 ---
 
@@ -218,21 +214,18 @@ Same changes as BuyerWallet
 
 | Element | Before | After |
 |---------|--------|-------|
-| Tab container | `rounded-xl/2xl shadow-md border-gray-200` | `border rounded` |
-| Tab active | `bg-gray-900 text-white` | `bg-[#FF90E8] text-black border border-black` |
-| Tab inactive | `text-gray-500 hover:bg-gray-100` | `text-slate-600 hover:bg-slate-50` |
-| Method cards | `rounded-xl bg-gray-50 hover:bg-gray-100` | `bg-white border rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
-| Transaction items | `bg-gray-50 rounded-xl hover:bg-gray-100` | `bg-white border rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
-| Add Account btn | `border-violet-200 hover:bg-violet-50` | `border-black hover:shadow-[...]` |
-| Modal headers | Violet gradient | Clean white + pink icon |
-| Primary buttons | Violet gradient | `bg-[#FF90E8] border border-black` |
-| Step indicators | `bg-violet-100 text-violet-600` | `bg-[#FF90E8] text-black` |
+| Inputs | `rounded-xl border-slate-200` | `rounded border-black` |
+| Buttons (outline) | `rounded-xl/lg` | `rounded border-black` |
+| Active tabs | `bg-violet-600 text-white rounded-full` | `bg-[#FF90E8] text-black border border-black rounded` |
+| Inactive tabs | `bg-slate-100` | `hover:bg-slate-50` |
+| Order cards | `rounded-xl hover:shadow-md` | `rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
+| Primary buttons | `bg-blue-600` or outline | `bg-[#FF90E8] border border-black` |
+| Date presets active | `bg-violet-100 text-violet-700` | `bg-[#FF90E8] text-black border border-black` |
+| Containers | Various rounded-xl | Simple `border rounded` |
 
 ---
 
-## Typography (Inter Font)
-
-All text already inherits Inter from dashboard layout. Key typography:
+## Typography Standardization
 
 | Element | Style |
 |---------|-------|
@@ -240,55 +233,60 @@ All text already inherits Inter from dashboard layout. Key typography:
 | Card Labels | `text-base text-slate-700` |
 | Card Values | `text-4xl font-semibold text-slate-900` |
 | Body Text | `text-slate-600` |
-
----
-
-## Files to Update
-
-| File | Changes |
-|------|---------|
-| `src/components/dashboard/BuyerWallet.tsx` | Tabs, methods grid, withdrawal items, add account button, all modals |
-| `src/components/seller/SellerWallet.tsx` | Tabs, methods grid, withdrawal items, add account button, all modals |
+| Product titles | `font-medium text-slate-900` |
 
 ---
 
 ## Visual Before/After
 
-**Tab Navigation Before:**
+**Status Tabs Before:**
 ```text
-┌────────────────────────────────────────────┐
-│ [Wallet]  [History]  [Accounts]            │
-│  (dark)   (gray)     (gray)                │
-│  shadow-md rounded-2xl                     │
-└────────────────────────────────────────────┘
++----------------------------------------+
+| (All)  (Pending)  (Delivered)          |
+|  dark   gray       gray                |
+|  rounded-full                          |
++----------------------------------------+
 ```
 
-**Tab Navigation After:**
+**Status Tabs After:**
 ```text
-┌────────────────────────────────────────────┐
-│ [Wallet]  [History]  [Accounts]            │
-│  (pink)   (slate)    (slate)               │
-│  + border  clean      clean                │
-│  border rounded                            │
-└────────────────────────────────────────────┘
++----------------------------------------+
+| bg-white border rounded p-2            |
+| [All]   [Pending]   [Delivered]        |
+|  pink    clean       clean             |
+| + black  text        text              |
++----------------------------------------+
 ```
 
-**Transaction Item Before:**
+**Order Card Before:**
 ```text
-┌────────────────────────────────────────────┐
-│ bg-gray-50 rounded-xl                      │
-│ [💜] $25.00              [Pending]         │
-│      Jan 15, 2025         badge            │
-│ hover:bg-gray-100                          │
-└────────────────────────────────────────────┘
++----------------------------------------+
+| bg-white rounded-xl shadow-md hover    |
+| [IMG] Product Name       [Badge]       |
+|       Seller                           |
+|       Price . Date . ID                |
+|                    [View Details]      |
++----------------------------------------+
 ```
 
-**Transaction Item After:**
+**Order Card After:**
 ```text
-┌────────────────────────────────────────────┐
-│ bg-white border rounded                    │
-│ $25.00                   [Pending]         │
-│ Jan 15, 2025 • via bKash  badge            │
-│ hover:shadow-[4px_4px_0px_0px_...]         │
-└────────────────────────────────────────────┘
++----------------------------------------+
+| bg-white border rounded                |
+| hover:shadow-[4px_4px_0px_0px_...]      |
+| [IMG] Product Name       [Badge]       |
+|       Seller                           |
+|       Price . Date . ID                |
+|                    [View Details]      |
+|                    Gumroad pink btn    |
++----------------------------------------+
 ```
+
+---
+
+## Files to Update
+
+| File | Sections to Change |
+|------|-------------------|
+| `src/components/dashboard/BuyerOrders.tsx` | Search input, Date picker, Sort dropdown, Status tabs, Order cards, Action buttons, Empty state, Detail modal |
+
