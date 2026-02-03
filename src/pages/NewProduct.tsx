@@ -9,15 +9,50 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, Loader2, X, Check, Bold, Italic, Underline, Strikethrough, Quote, Link2, Image, Video, Music, ChevronDown, Undo, Redo } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, X, Check, Bold, Italic, Underline, Strikethrough, Quote, Link2, Image, Video, Music, ChevronDown, Undo, Redo, Package } from 'lucide-react';
 import ProductTypeSelector from '@/components/seller/ProductTypeSelector';
 import MultiImageUploader from '@/components/seller/MultiImageUploader';
+import FileContentUploader from '@/components/seller/FileContentUploader';
+import LessonBuilder from '@/components/seller/LessonBuilder';
+import AvailabilityEditor from '@/components/seller/AvailabilityEditor';
 import { ProductTypeId, getProductTypeById } from '@/components/icons/ProductTypeIcons';
 import { cn } from '@/lib/utils';
 
 interface Category {
   id: string;
   name: string;
+}
+
+interface FileItem {
+  id?: string;
+  title: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  file_type: string;
+  content_type: 'file' | 'link';
+  external_link?: string;
+  is_preview: boolean;
+  display_order: number;
+}
+
+interface Lesson {
+  id?: string;
+  title: string;
+  description: string;
+  video_url: string;
+  video_duration?: number;
+  content_html: string;
+  attachments: { url: string; name: string; size: number }[];
+  display_order: number;
+  is_free_preview: boolean;
+}
+
+interface TimeSlot {
+  day: string;
+  start: string;
+  end: string;
+  enabled: boolean;
 }
 
 // Consolidated to 2 steps
@@ -27,6 +62,15 @@ const STEPS = [
 ];
 
 const popularTags = ['Digital', 'Premium', 'Instant Delivery', 'Lifetime', 'Subscription', 'API', 'Software', 'Course', 'Template', 'E-book'];
+
+// Product types that support instant downloads
+const INSTANT_DOWNLOAD_TYPES = ['digital_product', 'ebook', 'template', 'graphics', 'audio', 'video', 'software'];
+const COURSE_TYPES = ['course'];
+const MEMBERSHIP_TYPES = ['membership'];
+const CALL_TYPES = ['call'];
+const SERVICE_TYPES = ['service', 'commission'];
+const TIP_TYPES = ['coffee'];
+const BUNDLE_TYPES = ['bundle'];
 
 const NewProduct = () => {
   const navigate = useNavigate();

@@ -389,6 +389,63 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_content_access: {
+        Row: {
+          access_expires_at: string | null
+          access_granted_at: string | null
+          access_type: string
+          buyer_id: string
+          download_count: number | null
+          id: string
+          last_accessed_at: string | null
+          max_downloads: number | null
+          metadata: Json | null
+          order_id: string | null
+          product_id: string
+        }
+        Insert: {
+          access_expires_at?: string | null
+          access_granted_at?: string | null
+          access_type: string
+          buyer_id: string
+          download_count?: number | null
+          id?: string
+          last_accessed_at?: string | null
+          max_downloads?: number | null
+          metadata?: Json | null
+          order_id?: string | null
+          product_id: string
+        }
+        Update: {
+          access_expires_at?: string | null
+          access_granted_at?: string | null
+          access_type?: string
+          buyer_id?: string
+          download_count?: number | null
+          id?: string
+          last_accessed_at?: string | null
+          max_downloads?: number | null
+          metadata?: Json | null
+          order_id?: string | null
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_content_access_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "seller_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_content_access_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buyer_payment_accounts: {
         Row: {
           account_details: Json | null
@@ -675,6 +732,107 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      course_lessons: {
+        Row: {
+          attachments: Json | null
+          content_html: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          is_free_preview: boolean | null
+          product_id: string
+          title: string
+          video_duration: number | null
+          video_url: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          content_html?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_free_preview?: boolean | null
+          product_id: string
+          title: string
+          video_duration?: number | null
+          video_url?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          content_html?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_free_preview?: boolean | null
+          product_id?: string
+          title?: string
+          video_duration?: number | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_lessons_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_progress: {
+        Row: {
+          buyer_id: string
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          last_position: number | null
+          lesson_id: string
+          product_id: string
+          progress_percent: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          buyer_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          last_position?: number | null
+          lesson_id: string
+          product_id: string
+          progress_percent?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          last_position?: number | null
+          lesson_id?: string
+          product_id?: string
+          progress_percent?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_progress_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       discount_codes: {
         Row: {
@@ -1300,6 +1458,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "product_analytics_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_content: {
+        Row: {
+          content_type: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          external_link: string | null
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          is_preview: boolean | null
+          product_id: string
+          stream_url: string | null
+          text_content: string | null
+          title: string | null
+        }
+        Insert: {
+          content_type: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          external_link?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          is_preview?: boolean | null
+          product_id: string
+          stream_url?: string | null
+          text_content?: string | null
+          title?: string | null
+        }
+        Update: {
+          content_type?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          external_link?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          is_preview?: boolean | null
+          product_id?: string
+          stream_url?: string | null
+          text_content?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_content_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "seller_products"
@@ -2314,10 +2534,14 @@ export type Database = {
       }
       seller_products: {
         Row: {
+          availability_slots: Json | null
+          bundle_product_ids: string[] | null
+          call_duration_minutes: number | null
           category_id: string | null
           category_ids: string[] | null
           chat_allowed: boolean | null
           created_at: string | null
+          delivery_type: string | null
           description: string | null
           icon_url: string | null
           id: string
@@ -2326,6 +2550,7 @@ export type Database = {
           is_available: boolean | null
           is_preorder: boolean | null
           is_pwyw: boolean | null
+          membership_period: string | null
           min_price: number | null
           name: string
           preorder_message: string | null
@@ -2339,14 +2564,19 @@ export type Database = {
           sold_count: number | null
           stock: number | null
           tags: string[] | null
+          thank_you_message: string | null
           updated_at: string | null
           view_count: number | null
         }
         Insert: {
+          availability_slots?: Json | null
+          bundle_product_ids?: string[] | null
+          call_duration_minutes?: number | null
           category_id?: string | null
           category_ids?: string[] | null
           chat_allowed?: boolean | null
           created_at?: string | null
+          delivery_type?: string | null
           description?: string | null
           icon_url?: string | null
           id?: string
@@ -2355,6 +2585,7 @@ export type Database = {
           is_available?: boolean | null
           is_preorder?: boolean | null
           is_pwyw?: boolean | null
+          membership_period?: string | null
           min_price?: number | null
           name: string
           preorder_message?: string | null
@@ -2368,14 +2599,19 @@ export type Database = {
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
+          thank_you_message?: string | null
           updated_at?: string | null
           view_count?: number | null
         }
         Update: {
+          availability_slots?: Json | null
+          bundle_product_ids?: string[] | null
+          call_duration_minutes?: number | null
           category_id?: string | null
           category_ids?: string[] | null
           chat_allowed?: boolean | null
           created_at?: string | null
+          delivery_type?: string | null
           description?: string | null
           icon_url?: string | null
           id?: string
@@ -2384,6 +2620,7 @@ export type Database = {
           is_available?: boolean | null
           is_preorder?: boolean | null
           is_pwyw?: boolean | null
+          membership_period?: string | null
           min_price?: number | null
           name?: string
           preorder_message?: string | null
@@ -2397,6 +2634,7 @@ export type Database = {
           sold_count?: number | null
           stock?: number | null
           tags?: string[] | null
+          thank_you_message?: string | null
           updated_at?: string | null
           view_count?: number | null
         }
@@ -2846,6 +3084,101 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      service_bookings: {
+        Row: {
+          booking_type: string
+          buyer_id: string
+          commission_brief: string | null
+          created_at: string | null
+          deliverables: Json | null
+          deposit_paid: boolean | null
+          duration_minutes: number | null
+          final_paid: boolean | null
+          id: string
+          meeting_link: string | null
+          notes: string | null
+          order_id: string | null
+          product_id: string
+          scheduled_date: string | null
+          scheduled_time: string | null
+          seller_id: string
+          status: string | null
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          booking_type: string
+          buyer_id: string
+          commission_brief?: string | null
+          created_at?: string | null
+          deliverables?: Json | null
+          deposit_paid?: boolean | null
+          duration_minutes?: number | null
+          final_paid?: boolean | null
+          id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          order_id?: string | null
+          product_id: string
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          seller_id: string
+          status?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          booking_type?: string
+          buyer_id?: string
+          commission_brief?: string | null
+          created_at?: string | null
+          deliverables?: Json | null
+          deposit_paid?: boolean | null
+          duration_minutes?: number | null
+          final_paid?: boolean | null
+          id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          order_id?: string | null
+          product_id?: string
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          seller_id?: string
+          status?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_bookings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "seller_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_messages: {
         Row: {
