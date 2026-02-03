@@ -1,216 +1,241 @@
 
-# Card Design Standardization - Full Project Audit & Implementation
+
+# Full Card Design Standardization - Remove Extra Borders & Double-Line Text
 
 ## Overview
 
-Standardize all dashboard card designs across the project to match the **Gumroad-style Activity Cards** pattern from `GumroadSections.tsx` (the selected Balance card):
+Standardize ALL dashboard cards across the entire project to match the **Gumroad Activity Cards** pattern:
 
 ```text
-Design Reference (Line 199-205):
+TARGET DESIGN:
 ┌────────────────────────────────────┐
 │ bg-white border rounded p-8        │
 │                                    │
 │ Label (text-base text-slate-700)   │
-│ + Info icon                        │
 │                                    │
 │ Value (text-4xl font-semibold      │
 │        text-slate-900)             │
 └────────────────────────────────────┘
 ```
 
-**Target Design Specification:**
-- Background: `bg-white`
-- Border: `border rounded` (1px slate border, rounded corners)
-- Padding: `p-8` (32px all sides)
-- Label: `text-base text-slate-700` with optional info icon
-- Value: `text-4xl font-semibold text-slate-900`
-- No shadows, no hover effects
-- Clean, minimal, Gumroad-inspired
+**What to remove:**
+- `border-2 border-black` (replace with `border`)
+- `shadow-neobrutalism` (remove completely)
+- Icon boxes with colored backgrounds
+- Double-line card text (remove extra descriptive text)
+- Hover translate effects
+
+**What to keep:**
+- Date/calendar selection components (as requested)
+- Filter sections
 
 ---
 
-## Current Card Design Variations Found
+## Files Requiring Updates (32 files found)
 
-| Location | Current Style | Issues |
-|----------|--------------|--------|
-| `GumroadSections.tsx` (Activity) | `bg-white border rounded p-8` | **TARGET** |
-| `BuyerAnalytics.tsx` | `border-2 border-black shadow-neobrutalism` + icons | Different border, has shadows and icons |
-| `SellerInventory.tsx` | `border-2 border-black shadow-neobrutalism` + icons | Different border, has shadows and icons |
-| `SellerAnalytics.tsx` | `border-2 border-black shadow-neobrutalism` + icons | Different border, has shadows and icons |
-| `SellerDashboard.tsx` | Uses `StatCard` with `variant="neobrutalism"` | Different style |
-| `BuyerDashboardHome.tsx` | Uses `StatCard` + `ActivityStatsSection` | Mixed styles |
-| `SellerPerformance.tsx` | Gradient dark cards | Completely different |
-| `EmailManagement.tsx` (Admin) | Dark gradient cards | Admin-specific, keep as-is |
-| `StatCard.tsx` component | Multiple variants | Needs new `gumroad` variant |
+### Priority 1: Buyer Dashboard Components
+
+| File | Current Issues | Changes |
+|------|----------------|---------|
+| `BuyerOrders.tsx` | Stats cards with neo-brutalism, icon boxes, double-line text | Replace with Gumroad style |
+| `BuyerWallet.tsx` | Stats/balance cards with neo-brutalism | Replace with Gumroad style |
+| `BuyerAnalytics.tsx` | Chart containers with neo-brutalism | Replace with Gumroad style (already partially done) |
+| `BuyerReports.tsx` | Report cards with neo-brutalism | Replace with Gumroad style |
+| `BuyerNotifications.tsx` | Notification cards | Check and update |
+| `BuyerWishlist.tsx` | Wishlist cards | Check and update |
+
+### Priority 2: Seller Dashboard Components
+
+| File | Current Issues | Changes |
+|------|----------------|---------|
+| `SellerOrders.tsx` | Stats row + filters with neo-brutalism | Replace with Gumroad style |
+| `SellerWallet.tsx` | Wallet stats with neo-brutalism | Replace with Gumroad style |
+| `SellerCustomers.tsx` | Stats cards + segments + list container | Replace with Gumroad style |
+| `SellerDashboard.tsx` | Quick actions + charts with neo-brutalism | Replace (partially done) |
+| `SellerReports.tsx` | Report selection cards | Replace with Gumroad style |
+| `SellerProducts.tsx` | Product listing container | Check and update |
+| `SellerChat.tsx` | Chat container | Check and update |
+| `SellerFlashSales.tsx` | Flash sale cards | Check and update |
+| `SellerMarketing.tsx` | Marketing cards | Check and update |
+| `SellerSupport.tsx` | Support cards | Check and update |
+| `SellerFeatureRequests.tsx` | Feature request cards | Check and update |
+
+### Priority 3: Shared Components
+
+| File | Current Issues | Changes |
+|------|----------------|---------|
+| `StatCard.tsx` | Already has gumroad variant | Verify working correctly |
+| Skeleton loaders | Using neo-brutalism borders | Update to simple border |
 
 ---
 
-## Files to Update
+## Detailed Changes
 
-### 1. `src/components/marketplace/StatCard.tsx`
-Add new `gumroad` variant matching the Activity cards style:
+### 1. BuyerOrders.tsx (Lines 395-455)
 
+**Before:**
 ```tsx
-// New variant to add:
-gumroad: cn(
-  "bg-white border rounded p-8",
-  "hover:bg-slate-50/50 transition-colors"
-),
+<div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
+  <div className="flex items-center gap-3">
+    <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
+      <ShoppingBag className="w-6 h-6 text-blue-600" />
+    </div>
+    <div>
+      <p className="text-xs font-medium text-slate-500">Total Orders</p>
+      <p className="text-2xl font-bold text-slate-800">{stats.total}</p>
+    </div>
+  </div>
+</div>
 ```
 
-Update card content layout for this variant with no icon positioning.
-
----
-
-### 2. `src/components/dashboard/BuyerAnalytics.tsx`
-**Lines 246-320** - Replace neo-brutalist stat cards with Gumroad style:
-
-```text
-Before:
-- border-2 border-black shadow-neobrutalism
-- h-12 w-12 rounded-xl icon boxes
-- text-2xl font-bold
-
-After:
-- bg-white border rounded p-8
-- No icon boxes
-- text-4xl font-semibold text-slate-900
-```
-
----
-
-### 3. `src/components/seller/SellerInventory.tsx`
-**Lines 140-210** - Replace neo-brutalist stat cards:
-
-```text
-Before:
-- border-2 border-black shadow-neobrutalism
-- Colored icon boxes (h-12 w-12)
-- text-2xl font-bold
-
-After:
-- bg-white border rounded p-8
-- Clean label + value layout
-- text-4xl font-semibold text-slate-900
-```
-
----
-
-### 4. `src/components/seller/SellerAnalytics.tsx`
-**Lines 246-287** - Update StatCard component inside file:
-
-```text
-Before:
-- border-2 border-black shadow-neobrutalism
-- h-12 w-12 icon boxes with borders
-
-After:
-- bg-white border rounded p-8
-- Simpler layout matching Gumroad
-```
-
----
-
-### 5. `src/components/seller/SellerDashboard.tsx`
-**Lines 294-332** - Change StatCard variant from `neobrutalism` to `gumroad`:
-
+**After:**
 ```tsx
-// Before:
-variant="neobrutalism"
-
-// After:
-variant="gumroad"
+<div className="bg-white border rounded p-8">
+  <div className="text-base text-slate-700 mb-2">Total Orders</div>
+  <div className="text-4xl font-semibold text-slate-900">{stats.total}</div>
+</div>
 ```
 
-Also update Quick Actions cards (lines 335-350) to match.
+Also update:
+- Filters container (line 458): Remove `border-2 border-black shadow-neobrutalism`
+- Skeleton loaders (lines 352-357): Remove `border-2 border-black`
 
----
+### 2. SellerOrders.tsx (Lines 344-362)
 
-### 6. `src/components/dashboard/BuyerDashboardHome.tsx`
-**Lines 292-326** - Change StatCard variant:
-
+**Before:**
 ```tsx
-// Before:
-variant="neobrutalism"
-
-// After:
-variant="gumroad"
+<div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism">
+  <p className="text-xs font-medium text-slate-500 uppercase">Pending</p>
+  <p className="text-2xl font-bold text-amber-600 mt-1">{pendingCount}</p>
+</div>
 ```
 
----
+**After:**
+```tsx
+<div className="bg-white border rounded p-8">
+  <div className="text-base text-slate-700 mb-2">Pending</div>
+  <div className="text-4xl font-semibold text-amber-600">{pendingCount}</div>
+</div>
+```
 
-### 7. `src/components/seller/SellerPerformance.tsx`
-**Lines 142-170** - Keep the dark gradient hero card but update the metric cards below to Gumroad style.
+Also update:
+- Filters container (line 365): Remove `border-2 border-black shadow-neobrutalism`
+- Skeleton loaders: Remove `border-2 border-black`
+
+### 3. SellerCustomers.tsx (Lines 185-295)
+
+Update all stat cards:
+- Total Customers
+- Repeat Customers
+- Retention Rate
+- Avg Order Value
+- Top Spender Card
+- Customer Segments container
+- Customer List container
+
+### 4. BuyerWallet.tsx
+
+Update wallet balance display and method cards to Gumroad style.
+
+### 5. SellerWallet.tsx
+
+Update wallet balance display and withdrawal method cards to Gumroad style.
+
+### 6. SellerDashboard.tsx (Lines 327-540)
+
+Update:
+- Quick action cards (pending orders, flash sales, chat)
+- Completion rate, order status, month summary cards
+- Revenue chart container
+- Top products and recent orders containers
+
+### 7. BuyerAnalytics.tsx (Lines 285-368)
+
+Update:
+- Spending details chart container
+- Category breakdown container
+- Monthly trend container
+
+### 8. SellerReports.tsx
+
+Update:
+- Report selection cards
+- Report preview container
 
 ---
 
 ## Typography Standardization
 
-All stat cards will use consistent typography:
+All stat cards will use:
 
-| Element | Style |
-|---------|-------|
-| Label | `text-base text-slate-700` (16px) |
-| Value | `text-4xl font-semibold text-slate-900` (36px) |
-| Sub-value | `text-sm text-slate-500` (14px) |
-| Trend text | `text-xs font-medium` (12px) |
+| Element | Before | After |
+|---------|--------|-------|
+| Label | `text-xs font-medium text-slate-500` | `text-base text-slate-700` |
+| Value | `text-2xl font-bold` | `text-4xl font-semibold text-slate-900` |
 
 ---
 
-## Implementation Approach
+## Container Standardization
 
-### Step 1: Update StatCard Component
-Add the `gumroad` variant with proper styling and layout adjustments.
+All content containers (charts, tables, lists) will use:
 
-### Step 2: Update All Dashboard Sections
-Replace `neobrutalism` variant with `gumroad` across:
-- Buyer Dashboard
-- Seller Dashboard
-- Analytics pages
-- Inventory page
-- Performance page
-
-### Step 3: Direct Card Updates
-For components not using StatCard, update the inline card styling to match:
+**Before:**
 ```tsx
-<div className="bg-white border rounded p-8">
-  <div className="flex items-center gap-2 text-base mb-2">
-    <span className="text-slate-700">{label}</span>
-  </div>
-  <div className="text-4xl font-semibold text-slate-900">{value}</div>
-</div>
+className="bg-white rounded-lg border-2 border-black shadow-neobrutalism"
+```
+
+**After:**
+```tsx
+className="bg-white border rounded"
 ```
 
 ---
 
-## Exceptions (Keep Current Style)
+## Components NOT Changed
 
-The following will NOT be updated as they follow separate design systems:
+The following will keep their current styling as per exceptions:
 
-1. **Admin Panel** (`src/components/admin/*`) - Uses dark SaaS theme with gradient cards
-2. **Getting Started Checklist** (`GettingStartedSection`) - Uses hover shadows for interactive cards
-3. **Quick Action Cards** - May keep neo-brutalism for visual hierarchy
-4. **Product Cards** - Marketplace product cards have their own design
+1. **Admin Panel** (`src/components/admin/*`) - Dark SaaS theme
+2. **Getting Started Checklist** - Interactive hover effects
+3. **Product Cards** - Marketplace-specific design
+4. **Date Selection Components** - Keep as-is (user requested)
+5. **Filter Tabs/Buttons** - Keep current pill style
 
 ---
 
-## Visual Before/After
+## Implementation Summary
 
-**Before (Neo-brutalism):**
+| File | Stats Cards | Containers | Skeletons |
+|------|-------------|------------|-----------|
+| BuyerOrders.tsx | 5 cards | 1 filter | 6 skeletons |
+| SellerOrders.tsx | 4 cards | 1 filter | 3 skeletons |
+| SellerCustomers.tsx | 4 cards | 4 containers | 2 skeletons |
+| BuyerWallet.tsx | TBD | TBD | TBD |
+| SellerWallet.tsx | TBD | TBD | TBD |
+| SellerDashboard.tsx | 3 quick actions | 6 containers | - |
+| BuyerAnalytics.tsx | - | 3 containers | 2 skeletons |
+| SellerReports.tsx | - | 2 containers | - |
+
+**Total: ~16 files with significant changes**
+
+---
+
+## Visual Summary
+
 ```text
+BEFORE (Neo-brutalism):
 ┌─────────────────────────────────────┐
 │ ╔════════╗  Total Spent            │
 │ ║ $ icon ║  $1,234                 │
 │ ╚════════╝  ↑ 12.5% vs last period │
 │ border-2 border-black shadow-[4px] │
+│ hover:translate-x-1                 │
 └─────────────────────────────────────┘
-```
 
-**After (Gumroad):**
-```text
+AFTER (Gumroad - Clean):
 ┌─────────────────────────────────────┐
 │                                     │
-│ Total Spent  (i)                    │
+│ Total Spent                         │
 │                                     │
 │ $1,234                              │
 │                                     │
@@ -218,18 +243,3 @@ The following will NOT be updated as they follow separate design systems:
 └─────────────────────────────────────┘
 ```
 
----
-
-## Summary
-
-| File | Action |
-|------|--------|
-| `StatCard.tsx` | Add `gumroad` variant |
-| `BuyerAnalytics.tsx` | Replace inline cards |
-| `SellerInventory.tsx` | Replace inline cards |
-| `SellerAnalytics.tsx` | Update StatCard styling |
-| `SellerDashboard.tsx` | Change to `gumroad` variant |
-| `BuyerDashboardHome.tsx` | Change to `gumroad` variant |
-| `SellerPerformance.tsx` | Update metric cards |
-
-Total: **7 files** to modify for consistent Gumroad-style cards.
