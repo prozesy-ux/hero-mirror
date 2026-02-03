@@ -1,155 +1,186 @@
 
-# Apply Gumroad Design to Seller Dashboard
+
+# Seller Dashboard Navigation Restructure
 
 ## Overview
 
-The Buyer Dashboard has been updated with the Gumroad design, but the Seller Dashboard still uses the old styling. This plan will apply the exact same Gumroad aesthetic to the Seller Dashboard for visual consistency.
+Reorganize the Seller Dashboard sidebar to move "Insights" under the Discount section, add "Inventory" to the Discount dropdown, and make the dropdown closed by default (manual open only).
 
 ---
 
-## Current vs Target Design
+## Current Navigation Structure
 
-| Element | Current Seller | Target (Gumroad) |
-|---------|----------------|------------------|
-| Sidebar width | `w-64` (256px) | `w-52` (208px) |
-| Sidebar border | `border-gray-800` | `border-white/50` |
-| Icons | Lucide icons | Custom Gumroad SVG icons |
-| Link padding | `px-4 py-3` | `px-6 py-4` |
-| Active color | `#FF90E8` (correct) | `#FF90E8` (keep) |
-| TopBar offset | `left-[240px]` | `left-52` |
+```text
+Main Section:
+- Home
+- Products
+- Sales
+- Customers
+- Analytics
+- Insights ← MOVE THIS
+- Payouts
 
----
+Discount (dropdown - auto opens):
+  - Coupons
+  - Flash Sales
 
-## Files to Update
-
-### 1. Create Seller-Specific Gumroad Icons
-
-**File:** `src/components/seller/SellerGumroadIcons.tsx` (NEW)
-
-Create seller-specific icons using Gumroad SVG paths:
-- `GumroadSellerHomeIcon` (shop-window)
-- `GumroadSellerProductsIcon` (archive)
-- `GumroadSellerSalesIcon` (cart)
-- `GumroadSellerCustomersIcon` (users)
-- `GumroadSellerAnalyticsIcon` (bar-chart)
-- `GumroadSellerInsightsIcon` (trending)
-- `GumroadSellerPayoutsIcon` (bank)
-- `GumroadSellerDiscountIcon` (percent)
-- `GumroadSellerCouponsIcon` (tag)
-- `GumroadSellerFlashIcon` (zap)
-- `GumroadSellerInventoryIcon` (warehouse)
-- `GumroadSellerReportsIcon` (file)
-- `GumroadSellerPerformanceIcon` (activity)
-- `GumroadSellerChatIcon` (chat)
-- `GumroadSellerSettingsIcon` (gear)
-- `GumroadSellerHelpIcon` (book)
-
----
-
-### 2. Update SellerSidebar.tsx
-
-**Changes:**
-1. Width: `w-64` to `w-52` (208px)
-2. Collapsed width: Keep `w-[72px]`
-3. Border style: `border-gray-800` to `border-white/50`
-4. Link padding: `px-4 py-3` to `px-6 py-4`
-5. Replace Lucide icons with Gumroad SVG icons
-6. Match exact border pattern from Buyer sidebar (`border-t border-white/50`)
-7. Logo styling: Already correct (white "uptoza" text)
-
-**Before:**
-```tsx
-className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-b border-gray-800`}
-```
-
-**After:**
-```tsx
-className={`flex items-center gap-4 px-6 py-4 text-sm font-normal transition-colors border-t border-white/50`}
+After Discount:
+- Inventory ← MOVE TO DROPDOWN
+- Reports
+- Performance
+- Chat
 ```
 
 ---
 
-### 3. Update SellerTopBar.tsx
+## New Navigation Structure
 
-**Changes:**
-1. Left offset for expanded: `left-[240px]` to `left-52`
-2. Left offset for collapsed: Keep `left-[72px]`
+```text
+Main Section:
+- Home
+- Products
+- Sales
+- Customers
+- Analytics
+- Payouts
+
+Discount (dropdown - closed by default, manual open):
+  - Coupons
+  - Flash Sales
+  - Inventory ← MOVED HERE
+
+After Discount:
+- Insights ← MOVED HERE
+- Reports
+- Performance
+- Chat
+```
 
 ---
 
-### 4. Update Seller.tsx (Page Layout)
+## Changes
 
-**Changes:**
-1. Main content margin: Update to match new 208px sidebar width
-2. Collapsed margin: Keep `lg:ml-[72px]`
-3. Expanded margin: Change to `lg:ml-52`
+### 1. Update `SellerSidebar.tsx`
+
+| Change | Before | After |
+|--------|--------|-------|
+| Remove "Insights" from navItems | Line 46 | Remove |
+| Remove "Inventory" from navItemsAfterDiscount | Line 57 | Remove |
+| Add "Inventory" to discountItems | N/A | Add at end |
+| Add "Insights" to navItemsAfterDiscount | N/A | Add at start |
+| Dropdown default state | `useState(true)` | `useState(false)` |
+
+**navItems (Updated):**
+```tsx
+const navItems = [
+  { to: '/seller', icon: GumroadHomeIcon, label: 'Home', exact: true },
+  { to: '/seller/products', icon: GumroadProductsIcon, label: 'Products' },
+  { to: '/seller/orders', icon: GumroadSalesIcon, label: 'Sales' },
+  { to: '/seller/customers', icon: GumroadCustomersIcon, label: 'Customers' },
+  { to: '/seller/analytics', icon: GumroadAnalyticsIcon, label: 'Analytics' },
+  { to: '/seller/wallet', icon: GumroadPayoutsIcon, label: 'Payouts' },
+  // Insights REMOVED from here
+];
+```
+
+**discountItems (Updated):**
+```tsx
+const discountItems = [
+  { to: '/seller/coupons', icon: GumroadCouponsIcon, label: 'Coupons' },
+  { to: '/seller/flash-sales', icon: GumroadFlashSaleIcon, label: 'Flash Sales' },
+  { to: '/seller/inventory', icon: GumroadInventoryIcon, label: 'Inventory' }, // ADDED
+];
+```
+
+**navItemsAfterDiscount (Updated):**
+```tsx
+const navItemsAfterDiscount = [
+  { to: '/seller/product-analytics', icon: GumroadInsightsIcon, label: 'Insights' }, // ADDED
+  { to: '/seller/reports', icon: GumroadReportsIcon, label: 'Reports' },
+  { to: '/seller/performance', icon: GumroadPerformanceIcon, label: 'Performance' },
+  { to: '/seller/chat', icon: GumroadChatIcon, label: 'Chat' },
+];
+```
+
+**Dropdown State:**
+```tsx
+// Before
+const [discountOpen, setDiscountOpen] = useState(true);
+
+// After
+const [discountOpen, setDiscountOpen] = useState(false);
+```
 
 ---
 
-### 5. Update SellerMobileNavigation.tsx
+### 2. Update `SellerMobileNavigation.tsx`
 
-**Changes:**
-1. Sheet width: Currently `w-72`, change to `w-52` for consistency
-2. Border style: Already using black theme, just update borders to `border-white/50`
-3. Link styling: Match exact Gumroad pattern
+Sync the mobile sidebar navigation order with desktop:
 
----
-
-### 6. Update SellerDashboard.tsx (Optional Enhancement)
-
-Add Gumroad-style sections similar to BuyerDashboardHome:
-- **Getting Started** checklist cards for seller onboarding
-- **Activity** section with Gumroad-style stat cards
+```tsx
+const sidebarNavItems = [
+  { to: '/seller', icon: LayoutDashboard, label: 'Home', exact: true },
+  { to: '/seller/products', icon: Package, label: 'Products' },
+  { to: '/seller/orders', icon: ShoppingCart, label: 'Sales' },
+  { to: '/seller/customers', icon: Users, label: 'Customers' },
+  { to: '/seller/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/seller/wallet', icon: Wallet, label: 'Payouts' },
+  // Discount section items
+  { to: '/seller/coupons', icon: Tag, label: 'Coupons' },
+  { to: '/seller/flash-sales', icon: Zap, label: 'Flash Sales' },
+  { to: '/seller/inventory', icon: Warehouse, label: 'Inventory' }, // MOVED
+  // After discount
+  { to: '/seller/product-analytics', icon: TrendingUp, label: 'Insights' }, // MOVED
+  { to: '/seller/reports', icon: FileText, label: 'Reports' },
+  { to: '/seller/performance', icon: Activity, label: 'Performance' },
+  { to: '/seller/chat', icon: MessageSquare, label: 'Chat' },
+];
+```
 
 ---
 
 ## Visual Comparison
 
-**Before (Current Seller Sidebar):**
+**Before:**
 ```text
-┌─────────────────────────┐  <- 256px wide
-│ uptoza                  │
-│─────────────────────────│  <- gray-800 borders
-│ 🏠 Home                 │
-│─────────────────────────│
-│ 📦 Products             │
-│─────────────────────────│
-│ 🛒 Sales                │
-│ ...                     │
-└─────────────────────────┘
+├── Home
+├── Products
+├── Sales
+├── Customers
+├── Analytics
+├── Insights        ← Was here
+├── Payouts
+├── Discount ▼ (auto-open)
+│   ├── Coupons
+│   └── Flash Sales
+├── Inventory       ← Was here
+├── Reports
+├── Performance
+└── Chat
 ```
 
-**After (Gumroad Style):**
+**After:**
 ```text
-┌───────────────────────┐  <- 208px wide
-│ uptoza                │
-│═══════════════════════│  <- white/50 borders
-│ 🏪 Home               │
-│───────────────────────│
-│ 📦 Products           │
-│───────────────────────│
-│ 🛒 Sales              │
-│ ...                   │
-└───────────────────────┘
+├── Home
+├── Products
+├── Sales
+├── Customers
+├── Analytics
+├── Payouts
+├── Discount ▶ (closed by default)
+│   ├── Coupons
+│   ├── Flash Sales
+│   └── Inventory   ← Moved here
+├── Insights        ← Moved here
+├── Reports
+├── Performance
+└── Chat
 ```
 
 ---
 
-## Implementation Order
+## Files to Update
 
-1. Create `SellerGumroadIcons.tsx` with all custom SVG icons
-2. Update `SellerSidebar.tsx` with Gumroad styling + icons
-3. Update `SellerTopBar.tsx` left offset
-4. Update `Seller.tsx` main content margins
-5. Update `SellerMobileNavigation.tsx` for consistency
-6. Test sidebar collapse/expand functionality
-7. Verify all navigation links work correctly
+1. **`src/components/seller/SellerSidebar.tsx`** - Move items and change dropdown default state
+2. **`src/components/seller/SellerMobileNavigation.tsx`** - Sync navigation order
 
----
-
-## Technical Notes
-
-- Reuse the same SVG paths from `GumroadIcons.tsx` for consistency
-- The seller sidebar has a collapsible "Discount" sub-menu - this will be preserved with updated styling
-- The bottom section (Settings, Help, Profile) will match the Buyer sidebar exactly
-- Mobile navigation already has black theme, just needs border updates
