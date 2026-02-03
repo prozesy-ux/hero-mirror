@@ -18,6 +18,9 @@ import BuyerAnalytics from '@/components/dashboard/BuyerAnalytics';
 import BuyerNotifications from '@/components/dashboard/BuyerNotifications';
 import BuyerDashboardHome from '@/components/dashboard/BuyerDashboardHome';
 import BuyerReports from '@/components/dashboard/BuyerReports';
+import BuyerLibrary from '@/components/dashboard/BuyerLibrary';
+import CourseViewer from '@/components/dashboard/CourseViewer';
+import DownloadManager from '@/components/dashboard/DownloadManager';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
 import SessionExpiredBanner from '@/components/ui/session-expired-banner';
 import SessionWarningBanner from '@/components/ui/session-warning-banner';
@@ -57,6 +60,9 @@ const DashboardContent = () => {
           <Route path="analytics" element={<BuyerAnalytics />} />
           <Route path="reports" element={<BuyerReports />} />
           <Route path="notifications" element={<BuyerNotifications />} />
+          <Route path="library" element={<BuyerLibrary />} />
+          <Route path="library/:productId" element={<DownloadManager />} />
+          <Route path="course/:productId" element={<CourseViewer />} />
           <Route path="profile" element={<ProfileSection />} />
           <Route path="chat" element={<ChatSection />} />
         </Routes>
