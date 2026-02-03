@@ -43,18 +43,18 @@ const navItems = [
   { to: '/seller/orders', icon: GumroadSalesIcon, label: 'Sales' },
   { to: '/seller/customers', icon: GumroadCustomersIcon, label: 'Customers' },
   { to: '/seller/analytics', icon: GumroadAnalyticsIcon, label: 'Analytics' },
-  { to: '/seller/product-analytics', icon: GumroadInsightsIcon, label: 'Insights' },
   { to: '/seller/wallet', icon: GumroadPayoutsIcon, label: 'Payouts' },
 ];
 
-// Discount sub-menu items
+// Discount sub-menu items (includes Inventory)
 const discountItems = [
   { to: '/seller/coupons', icon: GumroadCouponsIcon, label: 'Coupons' },
   { to: '/seller/flash-sales', icon: GumroadFlashSaleIcon, label: 'Flash Sales' },
+  { to: '/seller/inventory', icon: GumroadInventoryIcon, label: 'Inventory' },
 ];
 
 const navItemsAfterDiscount = [
-  { to: '/seller/inventory', icon: GumroadInventoryIcon, label: 'Inventory' },
+  { to: '/seller/product-analytics', icon: GumroadInsightsIcon, label: 'Insights' },
   { to: '/seller/reports', icon: GumroadReportsIcon, label: 'Reports' },
   { to: '/seller/performance', icon: GumroadPerformanceIcon, label: 'Performance' },
   { to: '/seller/chat', icon: GumroadChatIcon, label: 'Chat' },
@@ -69,7 +69,7 @@ const SellerSidebar = () => {
   const { isCollapsed, toggleSidebar } = useSellerSidebarContext();
   const { profile } = useSellerContext();
   const location = useLocation();
-  const [discountOpen, setDiscountOpen] = useState(true);
+  const [discountOpen, setDiscountOpen] = useState(false);
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact) return location.pathname === path;
