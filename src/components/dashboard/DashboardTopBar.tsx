@@ -1,17 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, Crown, LogOut, User, ChevronDown, Wallet, X, Check, ExternalLink, MessageCircle } from 'lucide-react';
+import { Bell, Crown, LogOut, User, ChevronDown, Wallet, Check, ExternalLink, MessageCircle } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { useSearchContext } from '@/contexts/SearchContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { playSound } from '@/lib/sounds';
 import { format } from 'date-fns';
 import { CurrencySelector } from '@/components/ui/currency-selector';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import {
-  GumroadProductsIcon,
-} from './GumroadIcons';
+import { GumroadProductsIcon } from './GumroadIcons';
+import { DashboardSearchBar } from './DashboardSearchBar';
 
 interface DashboardTopBarProps {
   sidebarCollapsed?: boolean;
@@ -38,17 +36,12 @@ const DashboardTopBar = ({
     user
   } = useAuthContext();
   const {
-    searchQuery,
-    setSearchQuery
-  } = useSearchContext();
-  const {
     formatAmountOnly
   } = useCurrency();
   const [unreadCount, setUnreadCount] = useState(0);
   const [wallet, setWallet] = useState<{
     balance: number;
   } | null>(null);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const prevUnreadCountRef = useRef<number>(0);
@@ -191,26 +184,11 @@ const DashboardTopBar = ({
             
           </Link>
 
-          {/* Search Bar - Gumroad Style */}
-          <div className={`relative w-64 transition-all duration-300 ${isSearchFocused ? 'w-80' : ''}`}>
-            <div className={`relative flex items-center bg-white rounded border border-black transition-all duration-300 ${isSearchFocused ? 'ring-2 ring-[#FF90E8]/50' : ''}`}>
-              <Search size={16} className="absolute left-3 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                value={searchQuery} 
-                onChange={e => setSearchQuery(e.target.value)} 
-                onFocus={() => setIsSearchFocused(true)} 
-                onBlur={() => setIsSearchFocused(false)} 
-                className="w-full bg-transparent py-2 pl-9 pr-8 text-sm text-slate-900 placeholder-slate-500 focus:outline-none" 
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3 p-0.5 rounded-full hover:bg-slate-100 transition-colors">
-                  <X size={12} className="text-slate-400" />
-                </button>
-              )}
-            </div>
-          </div>
+          {/* Search Bar - Premium Style with Suggestions */}
+          <DashboardSearchBar 
+            placeholder="Search products, prompts..." 
+            className="w-80" 
+          />
 
         </div>
 
