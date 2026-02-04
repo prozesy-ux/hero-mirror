@@ -160,7 +160,7 @@ const SellerTopBar = () => {
         {/* Search Bar - Premium Style with Suggestions */}
         <DashboardSearchBar 
           placeholder="Search products, orders..." 
-          className="flex-1 max-w-3xl" 
+          className="w-80" 
         />
 
       </div>
