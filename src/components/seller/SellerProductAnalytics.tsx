@@ -126,48 +126,36 @@ const SellerProductAnalytics = () => {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Eye className="h-4 w-4 text-blue-500" />
-            </div>
-            <span className="text-xs text-slate-600 font-medium">Total Views</span>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Total Views</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{totals.views.toLocaleString()}</p>
+          <div className="text-4xl font-semibold text-slate-900">{totals.views.toLocaleString()}</div>
         </div>
-        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
-              <MousePointer className="h-4 w-4 text-purple-500" />
-            </div>
-            <span className="text-xs text-slate-600 font-medium">Total Clicks</span>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Total Clicks</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{totals.clicks.toLocaleString()}</p>
+          <div className="text-4xl font-semibold text-slate-900">{totals.clicks.toLocaleString()}</div>
         </div>
-        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <ShoppingCart className="h-4 w-4 text-emerald-500" />
-            </div>
-            <span className="text-xs text-slate-600 font-medium">Total Purchases</span>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Total Purchases</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{totals.purchases.toLocaleString()}</p>
+          <div className="text-4xl font-semibold text-slate-900">{totals.purchases.toLocaleString()}</div>
         </div>
-        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-amber-500" />
-            </div>
-            <span className="text-xs text-slate-600 font-medium">Conversion Rate</span>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Conversion Rate</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">
+          <div className="text-4xl font-semibold text-slate-900">
             {totals.views > 0 ? ((totals.purchases / totals.views) * 100).toFixed(1) : '0'}%
-          </p>
+          </div>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism">
+      <div className="bg-white rounded-lg p-4 border">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-slate-900">Views & Purchases (Last 7 Days)</h3>
           <select
@@ -226,7 +214,7 @@ const SellerProductAnalytics = () => {
       </div>
 
       {/* Product Performance Table */}
-      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism overflow-hidden">
+      <div className="bg-white rounded-lg border overflow-hidden">
         <div className="p-4 border-b border-slate-100">
           <h3 className="font-semibold text-slate-900">Product Performance</h3>
         </div>

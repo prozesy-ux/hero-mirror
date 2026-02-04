@@ -125,13 +125,13 @@ const SellerPerformance = () => {
   if (loading || contextLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-40 rounded-lg border-2 border-black" />
+        <Skeleton className="h-40 rounded-lg border" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />
+            <Skeleton key={i} className="h-28 rounded-lg border" />
           ))}
         </div>
-        <Skeleton className="h-80 rounded-lg border-2 border-black" />
+        <Skeleton className="h-80 rounded-lg border" />
       </div>
     );
   }
@@ -220,7 +220,7 @@ const SellerPerformance = () => {
       {/* Detailed Metrics */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Order Distribution */}
-        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
+        <div className="bg-white rounded-lg p-8 border">
           <h3 className="font-semibold text-slate-800 mb-4">Order Status Distribution</h3>
           {metrics.statusDistribution.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
@@ -250,7 +250,7 @@ const SellerPerformance = () => {
         </div>
 
         {/* Performance Checklist */}
-        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
+        <div className="bg-white rounded-lg p-8 border">
           <h3 className="font-semibold text-slate-800 mb-4">Performance Checklist</h3>
           <div className="space-y-3">
             {[
@@ -279,7 +279,7 @@ const SellerPerformance = () => {
       </div>
 
       {/* Stats Summary */}
-      <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
+      <div className="bg-white rounded-lg p-8 border">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
           <div>
             <p className="text-sm text-slate-500 mb-1">Total Orders</p>
