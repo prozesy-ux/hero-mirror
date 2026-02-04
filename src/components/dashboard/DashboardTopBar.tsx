@@ -11,9 +11,6 @@ import { CurrencySelector } from '@/components/ui/currency-selector';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   GumroadProductsIcon,
-  GumroadDiscoverIcon,
-  GumroadPayoutsIcon,
-  GumroadHelpIcon,
 } from './GumroadIcons';
 
 interface DashboardTopBarProps {
@@ -215,58 +212,6 @@ const DashboardTopBar = ({
             </div>
           </div>
 
-          {/* Navigation Tabs - Gumroad Style */}
-          <nav className="flex items-center gap-1">
-            <Link 
-              to="/dashboard/prompts" 
-              className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-all ${
-                location.pathname === '/dashboard/prompts' 
-                  ? 'bg-[#FF90E8] text-black border border-black' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <GumroadProductsIcon size={16} />
-              Prompts
-            </Link>
-            <Link 
-              to="/dashboard/marketplace" 
-              className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-all ${
-                location.pathname === '/dashboard/marketplace' 
-                  ? 'bg-[#FF90E8] text-black border border-black' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <GumroadDiscoverIcon size={16} />
-              Marketplace
-            </Link>
-            <Link 
-              to="/dashboard/billing" 
-              className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-all ${
-                location.pathname === '/dashboard/billing' 
-                  ? 'bg-[#FF90E8] text-black border border-black' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <GumroadPayoutsIcon size={16} />
-              Billing
-            </Link>
-            <Link 
-              to="/dashboard/chat" 
-              className={`relative flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-all ${
-                location.pathname === '/dashboard/chat' 
-                  ? 'bg-[#FF90E8] text-black border border-black' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <GumroadHelpIcon size={16} />
-              Chat
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </Link>
-          </nav>
         </div>
 
         {/* Spacer to push right section to the end */}
