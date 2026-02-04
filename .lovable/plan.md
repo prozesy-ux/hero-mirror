@@ -1,269 +1,572 @@
 
-# Header Design Standardization - Both Dashboards
+# Full Project Popup & Modal Design Standardization
 
 ## Overview
 
-Standardize both **DashboardTopBar.tsx** (Buyer) and **SellerTopBar.tsx** to use consistent Gumroad-style design with:
-- Same Gumroad SVG icons (from GumroadIcons.tsx)
-- Same Inter font styling
-- Same search bar design
-- Same wallet card design
-- Same button styles
-- Same background styling
-- Same notification dropdown styling
+Standardize **all dialogs, modals, sheets, popovers, and share boxes** across the entire project to match the Gumroad/Neo-brutalism design pattern used in BillingSection.tsx, BuyerOrders.tsx, and the Wallet sections.
 
-## Current Issues Found
+## Reference Design System
 
-### DashboardTopBar.tsx (Buyer Dashboard Header)
-
-| Element | Current | Target |
-|---------|---------|--------|
-| Background | `bg-white/95 backdrop-blur-xl` | `bg-[#FBF8F3]` (warm cream) |
-| Search | `rounded-full bg-gray-100 ring-violet-500` | `rounded border-black bg-slate-50 focus:ring-[#FF90E8]` |
-| Nav tabs | Lucide icons + `bg-violet-100 text-violet-700` | Gumroad icons + `bg-[#FF90E8] text-black border border-black` |
-| Wallet | `bg-violet-100 text-violet-700` | `bg-[#FF90E8] border border-black` |
-| Notification button | `hover:text-violet-600 hover:bg-violet-50` | `hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]` |
-| Profile avatar ring | `from-violet-500 to-purple-600` | `border border-black` |
-| Icons | Lucide icons | Gumroad SVG icons |
-
-### SellerTopBar.tsx
-
-| Element | Current | Target |
-|---------|---------|--------|
-| Background | `bg-[#FBF8F3]` | Already correct |
-| Search | `bg-slate-50 border-slate-200` | `rounded border-black focus:ring-[#FF90E8]` |
-| Nav tabs | Lucide icons + `bg-emerald-50 text-emerald-700` | Gumroad icons + `bg-[#FF90E8] text-black border border-black` |
-| Share button | `border-violet-200 text-violet-700` | `border border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]` |
-| Wallet | `bg-emerald-50 text-emerald-600` | `bg-[#FF90E8] border border-black text-black` |
-| Notification dropdown | `text-emerald-600` | `text-black` |
-| Icons | Lucide icons | Gumroad SVG icons |
-
----
-
-## Design System (Gumroad Style)
-
-### Background
 ```text
-bg-[#FBF8F3] border-b border-black/10
-```
+DIALOG/MODAL CONTAINER:
++----------------------------------------------------------------+
+| bg-white border border-black rounded                           |
+| (no gradients, no shadow-2xl, no rounded-2xl)                  |
++----------------------------------------------------------------+
 
-### Search Bar
-```text
-Container: rounded border-black bg-white
-Focus: ring-2 ring-[#FF90E8]/50 border-black
-Icon: text-slate-400
-```
+MODAL HEADER:
++----------------------------------------------------------------+
+| bg-white border-b p-4/p-6                                      |
+| Optional: Pink accent bar at top (4px height)                  |
+|                                                                |
+| [Icon Box] Title                                               |
+| bg-[#FF90E8]  text-xl font-semibold text-slate-900            |
++----------------------------------------------------------------+
 
-### Navigation Tabs
-```text
-Container: flex items-center gap-1
-Active: bg-[#FF90E8] text-black border border-black rounded
-Inactive: text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded
-Icons: Gumroad SVG icons (16px)
-```
+BUTTONS IN MODALS:
+Primary: bg-[#FF90E8] border border-black text-black rounded
+         hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
 
-### Wallet Card
-```text
-bg-[#FF90E8] border border-black text-black
-rounded px-3 py-2
-Font: font-bold text-sm
+Secondary: bg-white border border-black text-black rounded
+           hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+
+Destructive: bg-red-500 border border-black text-white rounded
+             hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+
+INPUTS IN MODALS:
+rounded border-black focus:ring-2 focus:ring-[#FF90E8]/50
+
+SOCIAL SHARE BUTTONS:
+border border-black text-black rounded
 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-```
-
-### Buttons (CTA)
-```text
-Primary: bg-[#FF90E8] border border-black text-black
-hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-```
-
-### Notification Bell
-```text
-p-2 rounded border border-transparent
-hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-Badge: bg-red-500 text-white
-```
-
-### Profile Avatar
-```text
-ring-2 ring-black (no gradient)
-```
-
-### Typography
-```text
-Font: Inter (inherited)
-Labels: text-sm font-medium text-slate-900
-Values: font-bold text-black
 ```
 
 ---
 
-## Changes Required
+## Files to Update
 
-### File 1: `src/components/dashboard/DashboardTopBar.tsx`
+### 1. Core UI Components (Global Changes)
 
-#### 1. Import Gumroad Icons (Line 3)
-```text
-BEFORE: import { Search, Bell, FileText, Bot, CreditCard, MessageCircle, ... } from 'lucide-react';
+| File | Component | Changes |
+|------|-----------|---------|
+| `src/components/ui/dialog.tsx` | DialogContent | Update default styles to Gumroad pattern |
+| `src/components/ui/alert-dialog.tsx` | AlertDialogContent, Action, Cancel | Standardize button styles |
+| `src/components/ui/sheet.tsx` | SheetContent | Update border and background styles |
+| `src/components/ui/popover.tsx` | PopoverContent | Standardize popover styling |
+| `src/components/ui/confirm-dialog.tsx` | ConfirmDialog | Update icon container and button styles |
 
-ADD IMPORTS:
-import {
-  GumroadProductsIcon,
-  GumroadDiscoverIcon,
-  GumroadPayoutsIcon,
-  GumroadHelpIcon,
-} from './GumroadIcons';
-```
+### 2. Seller Components
 
-#### 2. Header Background (Line 175)
-```text
-BEFORE: bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm
-AFTER:  bg-[#FBF8F3] border-b border-black/10
-```
+| File | Component | Changes |
+|------|-----------|---------|
+| `src/components/seller/ShareStoreModal.tsx` | ShareStoreModal | Full redesign to Gumroad style |
+| `src/components/seller/SellerSettings.tsx` | Sheet modals | Update sheet styling and buttons |
+| `src/components/seller/SellerMarketing.tsx` | Discount dialog | Standardize dialog styling |
 
-#### 3. Search Bar (Lines 184-192)
-```text
-BEFORE: 
-bg-gray-100 rounded-full ring-2 ring-violet-500 bg-white shadow-lg hover:bg-gray-200
+### 3. Marketplace Components
 
-AFTER:
-bg-white rounded border border-black focus-within:ring-2 focus-within:ring-[#FF90E8]/50
-```
+| File | Component | Changes |
+|------|-----------|---------|
+| `src/components/marketplace/QuickViewModal.tsx` | QuickViewModal | Update dialog container and buttons |
+| `src/components/marketplace/GuestPaymentModal.tsx` | GuestPaymentModal | Remove gradients, update button styles |
+| `src/components/marketplace/GumroadQuickViewModal.tsx` | GumroadQuickViewModal | Standardize container styling |
 
-#### 4. Navigation Tabs (Lines 195-215)
-```text
-BEFORE:
-bg-violet-100 text-violet-700 (active)
-text-gray-600 hover:bg-gray-100 (inactive)
-Lucide icons: FileText, Bot, CreditCard, MessageCircle
+### 4. Dashboard Components
 
-AFTER:
-bg-[#FF90E8] text-black border border-black (active)
-text-slate-600 hover:text-slate-900 hover:bg-slate-50 (inactive)
-Gumroad icons: GumroadProductsIcon, GumroadDiscoverIcon, GumroadPayoutsIcon, GumroadHelpIcon
-```
+| File | Component | Changes |
+|------|-----------|---------|
+| `src/components/dashboard/SellerChatModal.tsx` | SellerChatModal | Remove emerald gradients, use pink accents |
+| `src/components/dashboard/AIAccountsSection.tsx` | Detail modals | Standardize modal styling |
+| `src/components/dashboard/BuyerWallet.tsx` | Withdraw & Add Account dialogs | Already Gumroad style (verify) |
+| `src/components/seller/SellerWallet.tsx` | Withdraw & Add Account dialogs | Already Gumroad style (verify) |
 
-#### 5. Become a Seller Button (Lines 227-229)
-```text
-BEFORE: bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg
-AFTER:  bg-[#FF90E8] border border-black text-black rounded font-semibold hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-```
+### 5. Store Components
 
-#### 6. Wallet Button (Lines 232-237)
-```text
-BEFORE: bg-violet-100 hover:bg-violet-200 border border-violet-200 rounded-xl
-        text-violet-600, text-violet-700
+| File | Component | Changes |
+|------|-----------|---------|
+| `src/components/store/ProductDetailModal.tsx` | ProductDetailModal | Update button styles and container |
+| `src/pages/Store.tsx` | Login Modal | Standardize dialog styling |
 
-AFTER:  bg-[#FF90E8] border border-black rounded transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-        text-black
-```
+### 6. Admin Components
 
-#### 7. Notification Bell (Lines 241-248)
-```text
-BEFORE: rounded-xl text-gray-500 hover:text-violet-600 hover:bg-violet-50
-AFTER:  rounded border border-transparent hover:border-black text-slate-600 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-```
+| File | Component | Changes |
+|------|-----------|---------|
+| `src/components/admin/AdminCoupons.tsx` | Create Dialog | Update from slate-900 to white bg with borders |
+| `src/components/admin/ResellersManagement.tsx` | Seller Details Dialog | Standardize styling |
 
-#### 8. Notification Dropdown (Lines 249-297)
-```text
-BEFORE: text-violet-600, bg-violet-50/50, bg-violet-100, bg-violet-500
-AFTER:  text-[#FF90E8], bg-[#FFF5FB], bg-[#FF90E8]/20, bg-[#FF90E8]
-```
+---
 
-#### 9. Profile Avatar (Lines 303-315)
-```text
-BEFORE: bg-gradient-to-br from-violet-500 to-purple-600 p-0.5
-AFTER:  border-2 border-black
-```
+## Detailed Changes
 
-#### 10. Profile Dropdown (Lines 318-370)
-```text
-BEFORE: bg-gradient-to-br from-violet-500 to-purple-600
-        bg-gradient-to-r from-amber-400 to-yellow-500 (PRO badge)
-        text-violet-600 (wallet amount)
+### File 1: `src/components/ui/dialog.tsx`
 
-AFTER:  border-2 border-black (avatar)
-        bg-[#FF90E8] border border-black text-black (PRO badge)
-        text-black font-bold (wallet amount)
-```
+**DialogContent (Lines 30-51)**
 
-### File 2: `src/components/seller/SellerTopBar.tsx`
-
-#### 1. Import Gumroad Icons (Lines 21-37)
-```text
-BEFORE: import { Search, Bell, Wallet, ... LayoutDashboard, Package, ShoppingCart, ... } from 'lucide-react';
-
-ADD IMPORTS:
-import {
-  GumroadHomeIcon,
-  GumroadProductsIcon,
-  GumroadSalesIcon,
-  GumroadChatIcon,
-  GumroadAnalyticsIcon,
-} from './SellerGumroadIcons';
-```
-
-#### 2. Update navItems to use Gumroad Icons (Lines 51-57)
 ```text
 BEFORE:
-{ path: '/seller', label: 'Dashboard', icon: LayoutDashboard },
-{ path: '/seller/products', label: 'Products', icon: Package },
-{ path: '/seller/orders', label: 'Orders', icon: ShoppingCart },
-{ path: '/seller/chat', label: 'Messages', icon: MessageSquare },
-{ path: '/seller/analytics', label: 'Analytics', icon: BarChart3 },
+className="... border bg-background ... sm:rounded-lg"
 
 AFTER:
-{ path: '/seller', label: 'Dashboard', icon: GumroadHomeIcon },
-{ path: '/seller/products', label: 'Products', icon: GumroadProductsIcon },
-{ path: '/seller/orders', label: 'Orders', icon: GumroadSalesIcon },
-{ path: '/seller/chat', label: 'Messages', icon: GumroadChatIcon },
-{ path: '/seller/analytics', label: 'Analytics', icon: GumroadAnalyticsIcon },
+className="... border border-black bg-white ... rounded"
 ```
 
-#### 3. Search Input (Lines 178-186)
-```text
-BEFORE: bg-slate-50 border-slate-200 focus:bg-white
-AFTER:  bg-white rounded border-black focus:ring-2 focus:ring-[#FF90E8]/50
-```
+**DialogClose Button (Line 45)**
 
-#### 4. Navigation Tabs (Lines 189-217)
 ```text
 BEFORE:
-bg-emerald-50 text-emerald-700 (active)
-text-slate-600 hover:text-slate-900 hover:bg-slate-50 (inactive)
+className="absolute right-4 top-4 rounded-sm opacity-70..."
 
 AFTER:
-bg-[#FF90E8] text-black border border-black (active)
-text-slate-600 hover:text-slate-900 hover:bg-slate-50 (inactive)
+className="absolute right-4 top-4 rounded p-1 border border-transparent hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
 ```
 
-#### 5. Share Store Button (Lines 226-233)
+### File 2: `src/components/ui/alert-dialog.tsx`
+
+**AlertDialogContent (Lines 28-43)**
+
 ```text
-BEFORE: border-violet-200 text-violet-700 hover:bg-violet-50 hover:text-violet-800 rounded-xl
-AFTER:  border border-black text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded
+BEFORE:
+className="... border bg-background ... sm:rounded-lg"
+
+AFTER:
+className="... border border-black bg-white ... rounded"
 ```
 
-#### 6. Wallet Balance (Lines 236-244)
+**AlertDialogAction (Lines 72-77)**
+
 ```text
-BEFORE: bg-emerald-50 hover:bg-emerald-100 text-emerald-600, text-emerald-700 rounded-lg
-AFTER:  bg-[#FF90E8] border border-black text-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+BEFORE:
+className={cn(buttonVariants(), className)}
+
+AFTER:
+className={cn(
+  "bg-[#FF90E8] border border-black text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+  className
+)}
 ```
 
-#### 7. Notification Bell (Lines 247-257)
+**AlertDialogCancel (Lines 80-89)**
+
 ```text
-BEFORE: variant="ghost" (standard button)
-AFTER:  rounded border border-transparent hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+BEFORE:
+className={cn(buttonVariants({ variant: "outline" }), "mt-2 sm:mt-0", className)}
+
+AFTER:
+className={cn(
+  "border border-black bg-white text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+  "mt-2 sm:mt-0",
+  className
+)}
 ```
 
-#### 8. Notification Dropdown (Lines 258-292)
+### File 3: `src/components/ui/sheet.tsx`
+
+**SheetContent (Lines 31-48)**
+
 ```text
-BEFORE: text-emerald-600, bg-emerald-50/50
-AFTER:  text-black, bg-[#FFF5FB]
+BEFORE:
+"fixed z-50 gap-4 bg-background p-6 shadow-lg transition..."
+
+AFTER:
+"fixed z-50 gap-4 bg-white p-6 border-black transition..."
 ```
 
-#### 9. Profile Dropdown (Lines 296-357)
+**sheetVariants sides:**
+
 ```text
-BEFORE: bg-emerald-100 text-emerald-700 (avatar fallback)
-AFTER:  bg-[#FF90E8]/20 text-black border border-black
+BEFORE:
+- left: "... border-r ..."
+- right: "... border-l ..."
+- top: "... border-b ..."
+- bottom: "... border-t ..."
+
+AFTER:
+- left: "... border-r border-black ..."
+- right: "... border-l border-black ..."
+- top: "... border-b border-black ..."
+- bottom: "... border-t border-black ..."
+```
+
+**SheetClose Button (Line 60)**
+
+```text
+BEFORE:
+className="absolute right-4 top-4 rounded-sm opacity-70..."
+
+AFTER:
+className="absolute right-4 top-4 rounded p-1 border border-transparent hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+```
+
+### File 4: `src/components/ui/popover.tsx`
+
+**PopoverContent (Lines 10-26)**
+
+```text
+BEFORE:
+className="z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md..."
+
+AFTER:
+className="z-50 w-72 rounded border border-black bg-white p-4 text-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]..."
+```
+
+### File 5: `src/components/ui/confirm-dialog.tsx`
+
+**Icon Container (Lines 48-55)**
+
+```text
+BEFORE:
+className={cn(
+  "w-14 h-14 rounded-full flex items-center justify-center",
+  variant === "destructive"
+    ? "bg-red-100 dark:bg-red-500/20"
+    : "bg-blue-100 dark:bg-blue-500/20"
+)}
+
+AFTER:
+className={cn(
+  "w-14 h-14 rounded border border-black flex items-center justify-center",
+  variant === "destructive"
+    ? "bg-red-100"
+    : "bg-[#FF90E8]"
+)}
+```
+
+**AlertDialogAction (Lines 83-90)**
+
+```text
+BEFORE:
+className={cn(
+  "flex-1",
+  variant === "destructive" &&
+    "bg-red-600 hover:bg-red-700 text-white focus:ring-red-600"
+)}
+
+AFTER:
+className={cn(
+  "flex-1 border border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+  variant === "destructive"
+    ? "bg-red-500 text-white"
+    : "bg-[#FF90E8] text-black"
+)}
+```
+
+### File 6: `src/components/seller/ShareStoreModal.tsx`
+
+**DialogContent (Lines 91, 119)**
+
+```text
+BEFORE:
+className="max-w-md"
+
+AFTER:
+className="max-w-md p-0 overflow-hidden border border-black"
+```
+
+**Header with Pink Accent Bar (Lines 92-99, 120-127)**
+
+```text
+BEFORE:
+<DialogHeader>
+  <DialogTitle className="flex items-center gap-2">
+    <Share2 className="w-5 h-5 text-violet-600" />
+
+AFTER:
+{/* Pink accent bar */}
+<div className="h-1 bg-[#FF90E8]" />
+<DialogHeader className="p-6 pb-0">
+  <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-slate-900">
+    <div className="w-8 h-8 rounded border border-black bg-[#FF90E8] flex items-center justify-center">
+      <Share2 className="w-4 h-4 text-black" />
+    </div>
+```
+
+**Empty State Icon (Lines 102-104)**
+
+```text
+BEFORE:
+<div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+  <Sparkles className="w-8 h-8 text-amber-500" />
+
+AFTER:
+<div className="w-16 h-16 rounded border border-black bg-[#FF90E8] flex items-center justify-center mx-auto mb-4">
+  <Sparkles className="w-8 h-8 text-black" />
+```
+
+**Got it Button (Line 108)**
+
+```text
+BEFORE:
+<Button onClick={() => onOpenChange(false)} variant="outline">
+
+AFTER:
+<button 
+  onClick={() => onOpenChange(false)} 
+  className="px-4 py-2 border border-black rounded text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+>
+```
+
+**Store URL Input (Lines 135-151)**
+
+```text
+BEFORE:
+<Input
+  value={storeUrl || ''}
+  readOnly
+  className="text-sm bg-slate-50"
+/>
+<Button variant="outline" size="icon" onClick={handleCopy} className="shrink-0">
+
+AFTER:
+<input
+  value={storeUrl || ''}
+  readOnly
+  className="flex-1 px-3 py-2 text-sm border border-black rounded bg-white"
+/>
+<button 
+  onClick={handleCopy}
+  className="shrink-0 p-2 border border-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+>
+```
+
+**Preview Button (Lines 156-163)**
+
+```text
+BEFORE:
+<Button variant="outline" className="w-full" onClick={...}>
+
+AFTER:
+<button
+  className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-black rounded text-black font-medium hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+  onClick={...}
+>
+```
+
+**Social Share Buttons (Lines 169-193)**
+
+```text
+BEFORE:
+<Button
+  variant="outline"
+  className="flex flex-col items-center gap-2 h-auto py-4 hover:bg-sky-50 hover:border-sky-200"
+>
+
+AFTER:
+<button
+  onClick={() => handleShare('twitter')}
+  className="flex flex-col items-center gap-2 h-auto py-4 border border-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+>
+```
+
+**QR Code Container (Lines 210-217)**
+
+```text
+BEFORE:
+<div className="flex justify-center p-4 bg-white rounded-xl border border-slate-200">
+
+AFTER:
+<div className="flex justify-center p-4 bg-white rounded border border-black">
+```
+
+**Native Share Button (Lines 223-229)**
+
+```text
+BEFORE:
+<Button
+  className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+
+AFTER:
+<button
+  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#FF90E8] border border-black rounded text-black font-semibold hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+```
+
+### File 7: `src/components/marketplace/GuestPaymentModal.tsx`
+
+**DialogContent (Lines 334-335)**
+
+```text
+BEFORE:
+className="sm:max-w-lg bg-white border-0 shadow-2xl rounded-2xl p-0 overflow-hidden..."
+
+AFTER:
+className="sm:max-w-lg bg-white border border-black rounded p-0 overflow-hidden..."
+```
+
+**Header (Lines 336-346)**
+
+```text
+BEFORE:
+<div className="bg-gradient-to-br from-pink-50 to-purple-50 p-5 border-b border-black/5">
+  ...
+  <div className="p-2 bg-pink-500 rounded-lg">
+    <ShoppingBag className="w-5 h-5 text-white" />
+  </div>
+
+AFTER:
+<div className="h-1 bg-[#FF90E8]" />
+<div className="bg-white p-5 border-b">
+  ...
+  <div className="p-2 bg-[#FF90E8] border border-black rounded">
+    <ShoppingBag className="w-5 h-5 text-black" />
+  </div>
+```
+
+**Payment Method Buttons (Lines 377-404)**
+
+```text
+BEFORE:
+className={`p-3 rounded-xl border-2 transition-all text-center ${
+  selectedMethod === method.code
+    ? 'border-pink-500 bg-pink-50'
+    : 'border-black/10 hover:border-black/20'
+}`}
+
+AFTER:
+className={`p-3 rounded border-2 transition-all text-center ${
+  selectedMethod === method.code
+    ? 'border-black bg-[#FF90E8]'
+    : 'border-black/30 hover:border-black'
+}`}
+```
+
+**Email Input (Lines 426-436)**
+
+```text
+BEFORE:
+className={`w-full px-4 py-3 border-2 rounded-xl ... ${
+  emailError
+    ? 'border-red-300 focus:border-red-500'
+    : 'border-black/10 focus:border-pink-500'
+}`}
+
+AFTER:
+className={`w-full px-4 py-3 border rounded ... ${
+  emailError
+    ? 'border-red-500'
+    : 'border-black focus:ring-2 focus:ring-[#FF90E8]/50'
+}`}
+```
+
+**Submit Button (end of file)**
+
+```text
+BEFORE:
+className="w-full py-4 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-semibold"
+
+AFTER:
+className="w-full py-4 rounded bg-[#FF90E8] border border-black text-black font-semibold hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+```
+
+### File 8: `src/components/dashboard/SellerChatModal.tsx`
+
+**DialogContent (Line 131)**
+
+```text
+BEFORE:
+className="bg-white border-gray-200 max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden"
+
+AFTER:
+className="bg-white border border-black rounded max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden"
+```
+
+**Header (Lines 133-145)**
+
+```text
+BEFORE:
+<div className="p-4 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50">
+  <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+
+AFTER:
+<div className="h-1 bg-[#FF90E8]" />
+<div className="p-4 border-b bg-white">
+  <div className="w-10 h-10 rounded border border-black bg-[#FF90E8] flex items-center justify-center">
+```
+
+**Send Button (Lines 197-206)**
+
+```text
+BEFORE:
+className="px-4 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 text-white rounded-xl..."
+
+AFTER:
+className="px-4 py-3 bg-[#FF90E8] border border-black disabled:bg-gray-200 disabled:border-gray-300 text-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all..."
+```
+
+**Message Bubbles (Lines 166-179)**
+
+```text
+BEFORE:
+msg.sender_type === 'buyer'
+  ? 'bg-emerald-500 text-white rounded-br-md'
+  : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md'
+
+AFTER:
+msg.sender_type === 'buyer'
+  ? 'bg-[#FF90E8] border border-black text-black rounded-br-none'
+  : 'bg-white border border-black text-black rounded-bl-none'
+```
+
+### File 9: `src/components/marketplace/QuickViewModal.tsx`
+
+**DialogContent (Line 476)**
+
+```text
+BEFORE:
+className="max-w-2xl p-4 overflow-hidden bg-white border-black/10"
+
+AFTER:
+className="max-w-2xl p-4 overflow-hidden bg-white border border-black rounded"
+```
+
+**Buy Button (Lines 298-309, 413-424)**
+
+```text
+BEFORE:
+className="flex-1 rounded-xl bg-black hover:bg-black/90 text-white text-xs h-11"
+
+AFTER:
+className="flex-1 rounded bg-[#FF90E8] border border-black text-black font-medium text-xs h-11 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+```
+
+**Chat Button (Lines 289-296, 428-436)**
+
+```text
+BEFORE:
+className="flex-1 rounded-xl border-2 border-black text-black hover:bg-black hover:text-white text-xs h-11"
+
+AFTER:
+className="flex-1 rounded border border-black bg-white text-black font-medium text-xs h-11 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+```
+
+### File 10: `src/components/store/ProductDetailModal.tsx`
+
+**DialogContent (around Line 550)**
+
+```text
+BEFORE:
+className="max-w-3xl p-4 overflow-hidden bg-white border-black/10"
+
+AFTER:
+className="max-w-3xl p-4 overflow-hidden bg-white border border-black rounded"
+```
+
+**Buy Button (Lines 455-466)**
+
+```text
+BEFORE:
+className="w-full h-11 bg-black hover:bg-black/90 text-white font-semibold rounded-lg mb-3"
+
+AFTER:
+className="w-full h-11 bg-[#FF90E8] border border-black text-black font-semibold rounded mb-3 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+```
+
+**Chat Button (Lines 470-477)**
+
+```text
+BEFORE:
+className="w-full h-10 rounded-lg border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors mb-3"
+
+AFTER:
+className="w-full h-10 rounded border border-black bg-white text-black font-medium mb-3 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
 ```
 
 ---
@@ -272,52 +575,59 @@ AFTER:  bg-[#FF90E8]/20 text-black border border-black
 
 | Element | Unified Style |
 |---------|---------------|
-| Header bg | `bg-[#FBF8F3] border-b border-black/10` |
-| Search | `bg-white rounded border-black focus:ring-[#FF90E8]/50` |
-| Active nav tab | `bg-[#FF90E8] text-black border border-black rounded` |
-| Inactive nav tab | `text-slate-600 hover:bg-slate-50` |
-| Wallet card | `bg-[#FF90E8] border border-black text-black font-bold` |
-| CTA buttons | `bg-[#FF90E8] border border-black hover:shadow-[2px_2px_0px]` |
-| Secondary buttons | `border border-black text-black hover:shadow-[2px_2px_0px]` |
-| Bell button | `hover:border-black hover:shadow-[2px_2px_0px]` |
-| Dropdown accents | `text-[#FF90E8]`, `bg-[#FFF5FB]` |
-| Avatar | `border-2 border-black` (no gradient) |
-| Icons | Gumroad SVG icons (16px) |
-| Typography | Inter font, `text-slate-900`, `font-medium/bold` |
+| Dialog container | `bg-white border border-black rounded` |
+| Dialog header | `bg-white border-b` + optional pink accent bar |
+| Icon boxes in headers | `bg-[#FF90E8] border border-black rounded` |
+| Primary buttons | `bg-[#FF90E8] border border-black text-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]` |
+| Secondary buttons | `bg-white border border-black text-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]` |
+| Destructive buttons | `bg-red-500 border border-black text-white rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]` |
+| Inputs in modals | `border border-black rounded focus:ring-2 focus:ring-[#FF90E8]/50` |
+| Close buttons | `border border-transparent hover:border-black hover:shadow-[2px_2px_0px]` |
+| Sheet borders | `border-black` (all sides) |
+| Popovers | `border border-black bg-white rounded` |
 
 ---
 
-## Visual Before/After
+## Color Palette (Consistent Across All Modals)
 
-**Header Before:**
-```text
-+------------------------------------------------------------------+
-| bg-white/95 backdrop-blur                                        |
-| [Search rounded-full] [Prompts] [Marketplace] [Billing] [Chat]   |
-|                       (violet active)        (Lucide icons)      |
-|                                                                  |
-|                  [Become Seller] [Wallet violet] [Bell] [Avatar] |
-|                   (emerald)      (violet-100)    (gray) gradient |
-+------------------------------------------------------------------+
-```
-
-**Header After:**
-```text
-+------------------------------------------------------------------+
-| bg-[#FBF8F3] border-b border-black/10                            |
-| [Search rounded border-black] [Prompts] [Market] [Billing] [Chat]|
-|                               (pink+border active) (Gumroad icons)|
-|                                                                  |
-|                [Become Seller] [Wallet pink] [Bell]    [Avatar]  |
-|                (pink+border)   (pink+border) (+shadow) (bordered)|
-+------------------------------------------------------------------+
-```
+| Color | Usage |
+|-------|-------|
+| `#FF90E8` | Primary accent, icon boxes, primary buttons, hover states |
+| `#FFF5FB` | Light pink tint for backgrounds |
+| `black` | Borders, text |
+| `white` | Modal backgrounds |
+| `slate-900` | Heading text |
+| `slate-600` | Body text |
+| `red-500` | Destructive actions |
 
 ---
 
-## Files to Update
+## Typography (Inter Font)
 
-| File | Changes |
-|------|---------|
-| `src/components/dashboard/DashboardTopBar.tsx` | Icons, bg, search, tabs, buttons, wallet, notifications, profile |
-| `src/components/seller/SellerTopBar.tsx` | Icons, search, tabs, buttons, wallet, notifications, profile |
+| Element | Style |
+|---------|-------|
+| Modal Title | `text-xl font-semibold text-slate-900` |
+| Modal Description | `text-sm text-slate-600` |
+| Labels | `text-sm font-medium text-slate-700` |
+| Button Text | `font-medium` or `font-semibold` |
+
+---
+
+## Files Count: 10 Core Files
+
+1. `src/components/ui/dialog.tsx`
+2. `src/components/ui/alert-dialog.tsx`
+3. `src/components/ui/sheet.tsx`
+4. `src/components/ui/popover.tsx`
+5. `src/components/ui/confirm-dialog.tsx`
+6. `src/components/seller/ShareStoreModal.tsx`
+7. `src/components/marketplace/GuestPaymentModal.tsx`
+8. `src/components/dashboard/SellerChatModal.tsx`
+9. `src/components/marketplace/QuickViewModal.tsx`
+10. `src/components/store/ProductDetailModal.tsx`
+
+Additional files with minor updates:
+- `src/components/marketplace/GumroadQuickViewModal.tsx`
+- `src/components/seller/SellerSettings.tsx`
+- `src/components/admin/AdminCoupons.tsx`
+- `src/pages/Store.tsx`
