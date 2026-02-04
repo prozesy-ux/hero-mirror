@@ -353,36 +353,21 @@ const SellerProducts = () => {
 
         {/* Stats Row - Modern Soft Design */}
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Package className="w-4 h-4 text-blue-600" />
-              </div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">PRODUCTS</p>
-            </div>
-            <p className="text-3xl font-black text-black">
+          <div className="bg-white border rounded p-8">
+            <p className="text-base text-slate-700 mb-2">Products</p>
+            <p className="text-4xl font-semibold text-slate-900">
               <AnimatedCounter value={totalProducts} />
             </p>
           </div>
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-                <Eye className="w-4 h-4 text-green-600" />
-              </div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">LIVE</p>
-            </div>
-            <p className="text-3xl font-black text-black">
+          <div className="bg-white border rounded p-8">
+            <p className="text-base text-slate-700 mb-2">Live</p>
+            <p className="text-4xl font-semibold text-slate-900">
               <AnimatedCounter value={liveProducts} />
             </p>
           </div>
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center">
-                <DollarSign className="w-4 h-4 text-pink-600" />
-              </div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">REVENUE</p>
-            </div>
-            <p className="text-3xl font-black text-black">{formatAmountOnly(totalRevenue)}</p>
+          <div className="bg-white border rounded p-8">
+            <p className="text-base text-slate-700 mb-2">Revenue</p>
+            <p className="text-4xl font-semibold text-slate-900">{formatAmountOnly(totalRevenue)}</p>
           </div>
         </div>
 
@@ -450,7 +435,7 @@ const SellerProducts = () => {
 
         {/* Products Grid - 3 columns for main section */}
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-12 bg-white border border-gray-200 rounded-xl">
+          <div className="text-center py-12 bg-white border rounded">
             <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">No products yet. Create your first product!</p>
           </div>
@@ -607,7 +592,7 @@ const SellerProducts = () => {
       {/* Preview Section - 30% */}
       <div className="lg:col-span-3 space-y-6">
         {/* Comic Illustration */}
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-white border rounded overflow-hidden">
           <img 
             src={gumroadComic} 
             alt="Gumroad Creator" 
@@ -616,44 +601,38 @@ const SellerProducts = () => {
         </div>
 
         {/* Quick Stats Summary */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-pink-500" />
-            Quick Stats
-          </h3>
+        <div className="bg-white border rounded p-8">
+          <h3 className="text-base text-slate-700 mb-4">Quick Stats</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Total Products</span>
-              <span className="font-bold text-black">{totalProducts}</span>
+              <span className="text-sm text-slate-500">Total Products</span>
+              <span className="text-xl font-semibold text-slate-900">{totalProducts}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Live Products</span>
-              <span className="font-bold text-green-600">{liveProducts}</span>
+              <span className="text-sm text-slate-500">Live Products</span>
+              <span className="text-xl font-semibold text-green-600">{liveProducts}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Pending Approval</span>
-              <span className="font-bold text-amber-600">{pendingProducts}</span>
+              <span className="text-sm text-slate-500">Pending Approval</span>
+              <span className="text-xl font-semibold text-amber-600">{pendingProducts}</span>
             </div>
-            <div className="border-t border-gray-100 pt-4">
+            <div className="border-t pt-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Total Sales</span>
-                <span className="font-bold text-black">{totalSales}</span>
+                <span className="text-sm text-slate-500">Total Sales</span>
+                <span className="text-xl font-semibold text-slate-900">{totalSales}</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Total Revenue</span>
-              <span className="font-bold text-pink-600">{formatAmountOnly(totalRevenue)}</span>
+              <span className="text-sm text-slate-500">Total Revenue</span>
+              <span className="text-xl font-semibold text-pink-600">{formatAmountOnly(totalRevenue)}</span>
             </div>
           </div>
         </div>
 
         {/* Selected Product Preview */}
         {previewProduct ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4 text-pink-500" />
-              Selected Product
-            </h3>
+          <div className="bg-white border rounded p-8">
+            <h3 className="text-base text-slate-700 mb-4">Selected Product</h3>
             <div className="space-y-4">
               {previewProduct.icon_url && (
                 <img 
@@ -690,9 +669,9 @@ const SellerProducts = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl p-6 text-center">
+          <div className="bg-gray-50 border border-dashed rounded p-6 text-center">
             <ShoppingBag className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-500">Click a product to preview</p>
+            <p className="text-sm text-slate-500">Click a product to preview</p>
           </div>
         )}
 
