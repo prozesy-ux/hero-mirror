@@ -33,10 +33,10 @@ const ProductTypeSelector = ({
               type="button"
               onClick={() => onTypeSelect(type.id)}
               className={cn(
-                "flex flex-col gap-4 p-4 rounded-xl border-2 text-left transition-all bg-white h-full",
+                "flex flex-col gap-4 p-4 rounded border text-left transition-all bg-white h-full",
                 isSelected
-                  ? "border-black"
-                  : "border-gray-200 hover:border-gray-400"
+                  ? "border-slate-900"
+                  : "border-slate-200 hover:border-slate-400"
               )}
             >
               <div 
@@ -69,10 +69,10 @@ const ProductTypeSelector = ({
               type="button"
               onClick={() => onTypeSelect(type.id)}
               className={cn(
-                "flex flex-col gap-4 p-4 rounded-xl border-2 text-left transition-all bg-white h-full",
+                "flex flex-col gap-4 p-4 rounded border text-left transition-all bg-white h-full",
                 isSelected
-                  ? "border-black"
-                  : "border-gray-200 hover:border-gray-400"
+                  ? "border-slate-900"
+                  : "border-slate-200 hover:border-slate-400"
               )}
             >
               <div 
@@ -109,10 +109,10 @@ const ProductTypeSelector = ({
               type="button"
               onClick={() => onTypeSelect(type.id)}
               className={cn(
-                "flex flex-col gap-4 p-4 rounded-xl border-2 text-left transition-all bg-white h-full",
+                "flex flex-col gap-4 p-4 rounded border text-left transition-all bg-white h-full",
                 isSelected
-                  ? "border-black"
-                  : "border-gray-200 hover:border-gray-400"
+                  ? "border-slate-900"
+                  : "border-slate-200 hover:border-slate-400"
               )}
             >
               <div 

@@ -318,7 +318,7 @@ const NewProduct = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="bg-white rounded border">
           {/* Step 1: Choose Type */}
           {currentStep === 1 && (
             <div className="p-6 lg:p-8">
@@ -333,7 +333,7 @@ const NewProduct = () => {
                   </p>
                   
                   {selectedType && (
-                    <div className="p-4 rounded-md border border-black/20 bg-gray-50">
+                    <div className="p-6 rounded border bg-gray-50">
                       <div className="flex items-center gap-3 mb-2">
                         <SelectedIcon className="w-8 h-8" />
                         <span className="font-medium text-gray-900">{selectedType.name}</span>
@@ -368,7 +368,7 @@ const NewProduct = () => {
                   </p>
                   
                   {/* Summary Card */}
-                  <div className="p-4 bg-gray-50 rounded-md border border-black/10 space-y-4">
+                  <div className="p-6 bg-gray-50 rounded border space-y-4">
                     <div className="flex items-center gap-3">
                       <SelectedIcon className="w-8 h-8" />
                       <div>
@@ -376,13 +376,13 @@ const NewProduct = () => {
                         <p className="font-medium text-gray-900">{selectedType.name}</p>
                       </div>
                     </div>
-                    <div className="border-t border-black/10 pt-4">
+                    <div className="border-t pt-4">
                       <p className="text-xs text-gray-500 uppercase font-bold tracking-wide">Product</p>
                       <p className="font-medium text-gray-900">{name || 'Untitled'}</p>
                       <p className="text-2xl font-bold text-black">${price || '0'}</p>
                     </div>
                     {images.length > 0 && (
-                      <div className="border-t border-black/10 pt-4">
+                      <div className="border-t pt-4">
                         <p className="text-xs text-gray-500 uppercase font-bold tracking-wide mb-2">Preview</p>
                         <div className="aspect-square rounded-md overflow-hidden bg-gray-100">
                           <img src={images[0]} alt="Preview" className="w-full h-full object-cover" />
@@ -390,7 +390,7 @@ const NewProduct = () => {
                       </div>
                     )}
                     {tags.length > 0 && (
-                      <div className="border-t border-black/10 pt-4">
+                      <div className="border-t pt-4">
                         <p className="text-xs text-gray-500 uppercase font-bold tracking-wide mb-2">Tags</p>
                         <div className="flex flex-wrap gap-1">
                           {tags.map((tag) => (
@@ -409,7 +409,7 @@ const NewProduct = () => {
                   
                   {/* SECTION 1: Images (FIRST) */}
                   <div>
-                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-3 block">
+                    <Label className="text-base text-slate-700 mb-3 block">
                       Product Images
                     </Label>
                     <MultiImageUploader
@@ -419,29 +419,29 @@ const NewProduct = () => {
                     />
                   </div>
                   
-                  <div className="border-t border-black/10" />
+                  <div className="border-t" />
                   
                   {/* SECTION 2: Basic Info */}
                   <div className="space-y-5">
                     <div>
-                      <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
+                      <Label className="text-base text-slate-700 mb-2 block">
                         Name
                       </Label>
                       <Input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g., Ultimate Design Bundle"
-                        className="w-full px-4 py-3 bg-white border-2 border-[#e673b3] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#e673b3] focus:ring-opacity-20 transition-all text-gray-900"
+                        className="w-full px-4 py-3 bg-white border rounded h-12 focus:outline-none focus:ring-1 focus:ring-slate-400 transition-all text-slate-900"
                       />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
+                        <Label className="text-base text-slate-700 mb-2 block">
                           Price
                         </Label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
                           <Input
                             type="number"
                             value={price}
@@ -449,12 +449,12 @@ const NewProduct = () => {
                             placeholder="0"
                             min="0"
                             step="0.01"
-                            className="rounded-lg border-2 border-black/10 h-12 text-base pl-8 focus:border-black focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors bg-white"
+                            className="rounded border h-12 text-base pl-8 focus:ring-1 focus:ring-slate-400 focus:outline-none transition-colors bg-white"
                           />
                         </div>
                       </div>
                       <div>
-                        <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
+                        <Label className="text-base text-slate-700 mb-2 block">
                           Stock
                         </Label>
                         <Input
@@ -463,20 +463,20 @@ const NewProduct = () => {
                           onChange={(e) => setStock(e.target.value)}
                           placeholder="Unlimited"
                           min="0"
-                          className="rounded-lg border-2 border-black/10 h-12 text-base focus:border-black focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors bg-white"
+                          className="rounded border h-12 text-base focus:ring-1 focus:ring-slate-400 focus:outline-none transition-colors bg-white"
                         />
                       </div>
                     </div>
                   </div>
                   
-                  <div className="border-t border-black/10" />
+                  <div className="border-t" />
                   
                   {/* SECTION 3: Description */}
                   <div>
-                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
+                    <Label className="text-base text-slate-700 mb-2 block">
                       Description
                     </Label>
-                    <div className="border-2 border-black rounded-lg overflow-hidden bg-white shadow-sm">
+                    <div className="border rounded overflow-hidden bg-white">
                       {/* Black toolbar */}
                       <div className="bg-black text-white px-4 py-2 flex items-center flex-wrap gap-2 sm:gap-4 select-none">
                         {/* Format dropdown */}
@@ -522,11 +522,11 @@ const NewProduct = () => {
                     </div>
                   </div>
                   
-                  <div className="border-t border-black/10" />
+                  <div className="border-t" />
                   
                   {/* SECTION 4: Tags */}
                   <div>
-                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
+                    <Label className="text-base text-slate-700 mb-2 block">
                       Tags
                     </Label>
                     <div className="flex flex-wrap gap-2 mb-3">
@@ -556,7 +556,7 @@ const NewProduct = () => {
                         }
                       }}
                       placeholder="Add a tag..."
-                      className="rounded-lg border-2 border-black/10 h-11 mb-3 focus:border-black focus:ring-0 transition-colors bg-white"
+                      className="rounded border h-11 mb-3 focus:ring-1 focus:ring-slate-400 transition-colors bg-white"
                     />
                     <div className="flex flex-wrap gap-1.5">
                       {popularTags.filter(t => !tags.includes(t)).slice(0, 6).map((tag) => (
@@ -564,7 +564,7 @@ const NewProduct = () => {
                           key={tag}
                           type="button"
                           onClick={() => handleAddTag(tag)}
-                          className="text-xs px-3 py-1.5 border border-black/20 hover:border-black hover:bg-black hover:text-white rounded-md text-gray-600 transition-colors"
+                          className="text-xs px-3 py-1.5 border hover:border-slate-400 hover:bg-slate-100 rounded text-slate-600 transition-colors"
                         >
                           + {tag}
                         </button>
@@ -572,11 +572,11 @@ const NewProduct = () => {
                     </div>
                   </div>
                   
-                  <div className="border-t border-black/10" />
+                  <div className="border-t" />
                   
                   {/* SECTION 5: Categories */}
                   <div>
-                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-2 block">
+                    <Label className="text-base text-slate-700 mb-2 block">
                       Categories
                     </Label>
                     <div className="flex flex-wrap gap-2">
@@ -586,10 +586,10 @@ const NewProduct = () => {
                           type="button"
                           onClick={() => toggleCategory(cat.id)}
                           className={cn(
-                            "px-4 py-2 rounded-md text-sm font-medium border transition-colors",
+                            "px-4 py-2 rounded text-sm font-medium border transition-colors",
                             categoryIds.includes(cat.id)
-                              ? "bg-black text-white border-black"
-                              : "bg-white text-gray-600 border-black/20 hover:border-black"
+                              ? "bg-slate-900 text-white border-slate-900"
+                              : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
                           )}
                         >
                           {cat.name}
@@ -598,34 +598,34 @@ const NewProduct = () => {
                     </div>
                   </div>
                   
-                  <div className="border-t border-black/10" />
+                  <div className="border-t" />
                   
                   {/* SECTION 6: Pricing Options */}
                   <div>
-                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-3 block">
+                    <Label className="text-base text-slate-700 mb-3 block">
                       Pricing Options
                     </Label>
                     <div className="space-y-3">
                       {/* Pay What You Want */}
-                      <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-md border border-pink-200">
+                      <div className="p-6 bg-white rounded border">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <p className="font-medium text-sm text-gray-900">Pay What You Want</p>
-                            <p className="text-xs text-gray-500">Let buyers choose their price</p>
+                            <p className="font-medium text-sm text-slate-900">Pay What You Want</p>
+                            <p className="text-xs text-slate-500">Let buyers choose their price</p>
                           </div>
                           <Switch
                             checked={isPwyw}
                             onCheckedChange={setIsPwyw}
-                            className="data-[state=checked]:bg-pink-500"
+                            className="data-[state=checked]:bg-slate-900"
                           />
                         </div>
                         {isPwyw && (
-                          <div className="pt-2 border-t border-pink-200">
-                            <Label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                          <div className="pt-3 border-t">
+                            <Label className="text-xs font-medium text-slate-700 mb-1.5 block">
                               Minimum Price
                             </Label>
                             <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
                               <Input
                                 type="number"
                                 value={minPrice}
@@ -633,10 +633,10 @@ const NewProduct = () => {
                                 placeholder="0"
                                 min="0"
                                 step="0.01"
-                                className="h-10 pl-8 rounded-md border-pink-200 focus:border-pink-400 focus:ring-pink-200"
+                                className="h-10 pl-8 rounded border focus:ring-1 focus:ring-slate-400"
                               />
                             </div>
-                            <p className="text-xs text-gray-500 mt-1.5">
+                            <p className="text-xs text-slate-500 mt-1.5">
                               Buyers can pay ${minPrice || '0'} or more
                             </p>
                           </div>
@@ -644,22 +644,22 @@ const NewProduct = () => {
                       </div>
                       
                       {/* Pre-order */}
-                      <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-md border border-blue-200">
+                      <div className="p-6 bg-white rounded border">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <p className="font-medium text-sm text-gray-900">Pre-order</p>
-                            <p className="text-xs text-gray-500">Accept orders before product is ready</p>
+                            <p className="font-medium text-sm text-slate-900">Pre-order</p>
+                            <p className="text-xs text-slate-500">Accept orders before product is ready</p>
                           </div>
                           <Switch
                             checked={isPreorder}
                             onCheckedChange={setIsPreorder}
-                            className="data-[state=checked]:bg-blue-500"
+                            className="data-[state=checked]:bg-slate-900"
                           />
                         </div>
                         {isPreorder && (
-                          <div className="pt-2 border-t border-blue-200 space-y-3">
+                          <div className="pt-3 border-t space-y-3">
                             <div>
-                              <Label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                              <Label className="text-xs font-medium text-slate-700 mb-1.5 block">
                                 Release Date
                               </Label>
                               <Input
@@ -667,18 +667,18 @@ const NewProduct = () => {
                                 value={releaseDate}
                                 onChange={(e) => setReleaseDate(e.target.value)}
                                 min={new Date().toISOString().split('T')[0]}
-                                className="h-10 rounded-md border-blue-200 focus:border-blue-400 focus:ring-blue-200"
+                                className="h-10 rounded border focus:ring-1 focus:ring-slate-400"
                               />
                             </div>
                             <div>
-                              <Label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                              <Label className="text-xs font-medium text-slate-700 mb-1.5 block">
                                 Pre-order Message (optional)
                               </Label>
                               <Input
                                 value={preorderMessage}
                                 onChange={(e) => setPreorderMessage(e.target.value)}
                                 placeholder="e.g., Expected delivery: March 2026"
-                                className="h-10 rounded-md border-blue-200 focus:border-blue-400 focus:ring-blue-200"
+                                className="h-10 rounded border focus:ring-1 focus:ring-slate-400"
                               />
                             </div>
                           </div>
@@ -687,47 +687,47 @@ const NewProduct = () => {
                     </div>
                   </div>
                   
-                  <div className="border-t border-black/10" />
+                  <div className="border-t" />
                   
                   {/* SECTION 7: Settings */}
                   <div>
-                    <Label className="text-sm font-bold text-black uppercase tracking-wide mb-3 block">
+                    <Label className="text-base text-slate-700 mb-3 block">
                       Settings
                     </Label>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-black/10">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded border">
                         <div>
-                          <p className="font-medium text-sm text-gray-900">Available for purchase</p>
-                          <p className="text-xs text-gray-500">Show this product in your store</p>
+                          <p className="font-medium text-sm text-slate-900">Available for purchase</p>
+                          <p className="text-xs text-slate-500">Show this product in your store</p>
                         </div>
                         <Switch
                           checked={isAvailable}
                           onCheckedChange={setIsAvailable}
-                          className="data-[state=checked]:bg-black"
+                          className="data-[state=checked]:bg-slate-900"
                         />
                       </div>
                       
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-black/10">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded border">
                         <div>
-                          <p className="font-medium text-sm text-gray-900">Allow chat</p>
-                          <p className="text-xs text-gray-500">Let buyers message you</p>
+                          <p className="font-medium text-sm text-slate-900">Allow chat</p>
+                          <p className="text-xs text-slate-500">Let buyers message you</p>
                         </div>
                         <Switch
                           checked={chatAllowed}
                           onCheckedChange={setChatAllowed}
-                          className="data-[state=checked]:bg-black"
+                          className="data-[state=checked]:bg-slate-900"
                         />
                       </div>
                       
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-black/10">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded border">
                         <div>
-                          <p className="font-medium text-sm text-gray-900">Require email</p>
-                          <p className="text-xs text-gray-500">Ask buyers for their email</p>
+                          <p className="font-medium text-sm text-slate-900">Require email</p>
+                          <p className="text-xs text-slate-500">Ask buyers for their email</p>
                         </div>
                         <Switch
                           checked={requiresEmail}
                           onCheckedChange={setRequiresEmail}
-                          className="data-[state=checked]:bg-black"
+                          className="data-[state=checked]:bg-slate-900"
                         />
                       </div>
                     </div>
