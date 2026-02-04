@@ -47,10 +47,10 @@ export function ConfirmDialog({
         <AlertDialogHeader className="flex flex-col items-center text-center gap-4">
           <div
             className={cn(
-              "w-14 h-14 rounded border border-black flex items-center justify-center",
+              "w-14 h-14 rounded-full flex items-center justify-center",
               variant === "destructive"
                 ? "bg-red-100"
-                : "bg-[#FF90E8]"
+                : "bg-primary/10"
             )}
           >
             {icon ? (
@@ -84,10 +84,9 @@ export function ConfirmDialog({
             onClick={handleConfirm}
             disabled={loading}
             className={cn(
-              "flex-1 border border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
-              variant === "destructive"
-                ? "bg-red-500 text-white hover:bg-red-600"
-                : "bg-[#FF90E8] text-black"
+              "flex-1",
+              variant === "destructive" &&
+                "bg-destructive text-destructive-foreground hover:bg-destructive/90"
             )}
           >
             {loading ? (
