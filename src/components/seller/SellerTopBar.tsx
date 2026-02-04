@@ -30,14 +30,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ShareStoreModal from './ShareStoreModal';
-import {
-  GumroadHomeIcon,
-  GumroadProductsIcon,
-  GumroadSalesIcon,
-  GumroadAnalyticsIcon,
-} from './SellerGumroadIcons';
-import { GumroadHelpIcon } from '@/components/dashboard/GumroadIcons';
-
 interface Notification {
   id: string;
   title: string;
@@ -47,21 +39,6 @@ interface Notification {
   created_at: string;
   link?: string;
 }
-
-interface NavItem {
-  path: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string; size?: number }>;
-  exact?: boolean;
-}
-
-const navItems: NavItem[] = [
-  { path: '/seller', label: 'Dashboard', icon: GumroadHomeIcon, exact: true },
-  { path: '/seller/products', label: 'Products', icon: GumroadProductsIcon },
-  { path: '/seller/orders', label: 'Orders', icon: GumroadSalesIcon },
-  { path: '/seller/chat', label: 'Messages', icon: GumroadHelpIcon },
-  { path: '/seller/analytics', label: 'Analytics', icon: GumroadAnalyticsIcon },
-];
 
 const SellerTopBar = () => {
   const { isCollapsed } = useSellerSidebarContext();
@@ -196,37 +173,6 @@ const SellerTopBar = () => {
           />
         </div>
 
-        {/* Navigation Tabs - Gumroad Style */}
-        <nav className="flex items-center gap-1">
-          {navItems.map((item) => {
-            const active = isActive(item.path, item.exact);
-            const IconComponent = item.icon;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-all ${
-                  active 
-                    ? 'bg-[#FF90E8] text-black border border-black' 
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <IconComponent className="h-4 w-4" size={16} />
-                <span>{item.label}</span>
-                {item.label === 'Orders' && pendingOrders > 0 && (
-                  <Badge className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs">
-                    {pendingOrders}
-                  </Badge>
-                )}
-                {item.label === 'Messages' && unreadChats > 0 && (
-                  <Badge className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs">
-                    {unreadChats}
-                  </Badge>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
       </div>
 
       {/* Right Section - Share, Wallet, Notifications, Profile */}

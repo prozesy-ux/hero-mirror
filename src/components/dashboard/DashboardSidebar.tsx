@@ -24,6 +24,7 @@ const navItems = [
   { to: '/dashboard/wishlist', icon: GumroadLibraryIcon, label: 'Wishlist' },
   { to: '/dashboard/prompts', icon: GumroadProductsIcon, label: 'Prompts' },
   { to: '/dashboard/analytics', icon: GumroadAnalyticsIcon, label: 'Analytics' },
+  { to: '/dashboard/billing', icon: GumroadPayoutsIcon, label: 'Billing' },
   { to: '/dashboard/wallet', icon: GumroadPayoutsIcon, label: 'Wallet' },
 ];
 
