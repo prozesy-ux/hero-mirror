@@ -108,19 +108,19 @@ export function DashboardSearchBar({
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
-      {/* Search Bar Container - Pill shaped */}
+      {/* Search Bar Container - Pill shaped, TALLER */}
       <div
         className={cn(
-          "relative flex items-center bg-white rounded-full border transition-all duration-200",
+          "relative flex items-center bg-white rounded-full border-2 transition-all duration-200",
           isOpen 
             ? "border-black/40 shadow-lg" 
             : "border-black/15 hover:border-black/25"
         )}
       >
-        {/* Search Icon */}
-        <Search className="absolute left-4 h-4 w-4 text-slate-400 pointer-events-none" />
+        {/* Search Icon - Larger */}
+        <Search className="absolute left-4 h-5 w-5 text-slate-400 pointer-events-none" />
 
-        {/* Input */}
+        {/* Input - Taller with more padding */}
         <input
           ref={inputRef}
           type="text"
@@ -129,41 +129,41 @@ export function DashboardSearchBar({
           onChange={(e) => setLocalQuery(e.target.value)}
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
-          className="w-full bg-transparent py-2.5 pl-11 pr-36 text-sm text-slate-900 placeholder-slate-500 focus:outline-none"
+          className="w-full bg-transparent py-3.5 pl-12 pr-40 text-base text-slate-900 placeholder-slate-500 focus:outline-none"
         />
 
-        {/* Clear button */}
+        {/* Clear button - Adjusted position */}
         {localQuery && (
           <button
             onClick={clearSearch}
-            className="absolute right-[120px] p-1 rounded-full hover:bg-slate-100 transition-colors"
+            className="absolute right-[140px] p-1 rounded-full hover:bg-slate-100 transition-colors"
           >
-            <X className="h-3.5 w-3.5 text-slate-400" />
+            <X className="h-4 w-4 text-slate-400" />
           </button>
         )}
 
-        {/* Voice & Image Search Buttons */}
-        <div className="absolute right-[72px] flex items-center gap-1">
+        {/* Voice & Image Search Buttons - Adjusted position */}
+        <div className="absolute right-20 flex items-center gap-1.5">
           <VoiceSearchButton
             isListening={isListening}
             isSupported={voiceSupported}
             error={voiceError}
             onStart={startListening}
             onStop={stopListening}
-            className="h-8 w-8"
+            className="h-9 w-9"
           />
           <ImageSearchButton
             onSearchResult={handleImageSearchResult}
-            className="h-8 w-8"
+            className="h-9 w-9"
           />
         </div>
 
-        {/* Search Button */}
+        {/* Search Button - More prominent */}
         <button
           onClick={handleSearch}
-          className="absolute right-1 top-1 bottom-1 px-4 bg-[#151515] hover:bg-[#222] text-white rounded-full flex items-center gap-2 transition-all text-sm font-medium"
+          className="absolute right-1.5 top-1.5 bottom-1.5 px-6 bg-[#151515] hover:bg-[#222] text-white rounded-full flex items-center gap-2 transition-all text-sm font-semibold"
         >
-          <Search className="h-3.5 w-3.5" />
+          <Search className="h-4 w-4" />
           Search
         </button>
       </div>
