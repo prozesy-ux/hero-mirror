@@ -187,7 +187,7 @@ const DashboardTopBar = ({
           {/* Search Bar - Premium Style with Suggestions */}
           <DashboardSearchBar 
             placeholder="Search products, prompts..." 
-            className="w-80" 
+            className="flex-1 max-w-3xl" 
           />
 
         </div>
