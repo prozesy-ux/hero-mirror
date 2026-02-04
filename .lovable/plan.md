@@ -1,241 +1,184 @@
 
-# Unified Search Bar with Trending Searches for Both Dashboards
+# Standardize Seller Dashboard Card Design to Gumroad Style
 
 ## Overview
 
-Implement a modern, premium search bar design (inspired by the reference image - dark rounded pill with search button) across both Buyer and Seller dashboard headers. When clicked, the search bar will display a dropdown showing trending/popular searches, using the existing `useSearchSuggestions` hook infrastructure.
+Update ALL card designs across the Seller Dashboard to use the standardized Gumroad minimal aesthetic. This removes the neo-brutalist style (`border-2 border-black shadow-neobrutalism`) and replaces it with the clean Gumroad design (`bg-white border rounded`).
 
-## Design Reference
+## Current State Analysis
 
-The reference image shows a clean search bar with:
-- White/light background pill-shaped container
-- Placeholder text: "Search by role, skills, or keywords"
-- Right-aligned dark "Search" button with search icon
-- Optional: Green/lime accent color
+### Old Neo-Brutalist Style (TO BE REMOVED)
+```css
+/* Old pattern - heavy and dated */
+bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism
+hover:shadow-none hover:translate-x-1 hover:translate-y-1
+```
 
-## Current State
+### New Gumroad Minimal Style (STANDARD)
+```css
+/* Stat/Metric Cards */
+bg-white border rounded p-8
+text-base text-slate-700 (labels)
+text-4xl font-semibold text-slate-900 (values)
 
-| Component | Current Search Design |
-|-----------|----------------------|
-| `DashboardTopBar.tsx` | Simple input with `border-black`, expands on focus, no suggestions |
-| `SellerTopBar.tsx` | Simple input with `border-black`, no suggestions |
-| `GumroadHeader.tsx` | Full implementation with scope selector, voice/image search, and `MarketplaceSearchSuggestions` |
+/* Container/List Cards */
+bg-white border rounded
 
-## Proposed Design
-
-A unified premium search bar matching the reference image style:
-
-```text
-+---------------------------------------------------------------+
-|  [Search icon] Search products, orders...     [Mic] [Cam] Search  |
-+---------------------------------------------------------------+
-                           |
-                           v (on focus)
-+---------------------------------------------------------------+
-| Popular Searches                                              |
-| ─────────────────────────────────────────────────────────────|
-| [TrendingUp] AI chatbot developer for support automation      |
-| [TrendingUp] Creative director for a brand identity refresh   |
-| [TrendingUp] Data analyst for churn modeling                  |
-| [TrendingUp] Video and motion editor for promo content        |
-+---------------------------------------------------------------+
+/* Interactive Items (Getting Started, Quick Actions) */
+bg-white border rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
 ```
 
 ---
 
-## Files to Update
+## Files Requiring Updates
 
-| File | Changes |
-|------|---------|
-| `src/components/dashboard/DashboardTopBar.tsx` | Replace simple search with premium search bar + suggestions |
-| `src/components/seller/SellerTopBar.tsx` | Replace simple search with premium search bar + suggestions |
-| `src/components/dashboard/DashboardSearchBar.tsx` | **NEW** - Shared search bar component for both dashboards |
+| File | Current Issue | Fix |
+|------|---------------|-----|
+| `SellerDashboard.tsx` | Quick Actions, Performance Metrics, Charts, Lists use neo-brutalist | Convert to Gumroad style |
+| `SellerPerformance.tsx` | Order Distribution, Performance Checklist, Stats Summary use neo-brutalist | Convert to Gumroad style |
+| `SellerMarketing.tsx` | Stats Cards, Table use neo-brutalist | Convert to Gumroad style |
+| `SellerProductAnalytics.tsx` | Overview Stats, Charts, Table use neo-brutalist | Convert to Gumroad style |
+| `SellerSupport.tsx` | Chat Card uses neo-brutalist | Convert to Gumroad style |
+| `SellerInventory.tsx` | Inventory Health Card uses neo-brutalist | Convert to Gumroad style |
+
+### Already Standardized (No Changes Needed)
+- `SellerOrders.tsx` - Stats cards already use `bg-white border rounded p-8`
+- `SellerAnalytics.tsx` - StatCard component already uses `bg-white border rounded p-8`
+- `SellerReports.tsx` - Already uses `bg-white border rounded`
 
 ---
 
-## Technical Implementation
+## Detailed Changes by File
 
-### Step 1: Create Shared Dashboard Search Bar Component
+### 1. SellerDashboard.tsx (Lines 326-588)
 
-Create a new reusable component that both dashboards will use:
+**Quick Actions Cards (Lines 327-388)**
+- Change: `border-2 border-black shadow-neobrutalism` → `border`
+- Keep hover effect for interactive items: `hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`
 
-**File: `src/components/dashboard/DashboardSearchBar.tsx`**
+**Performance Metrics Cards (Lines 391-451)**
+- Completion Rate, Order Status, Monthly Comparison
+- Change: `p-5 border-2 border-black shadow-neobrutalism` → `p-8 border`
+- Update typography to Gumroad standard
 
-Features:
-- Pill-shaped container with white background and subtle border
-- Left-aligned search icon
-- Placeholder text: "Search products, orders..."
-- Right-aligned voice/image search buttons (h-9 w-9)
-- Dark "Search" button on the right
-- Integration with `useSearchSuggestions` hook for trending data
-- Dropdown panel showing:
-  - "Popular Searches" header
-  - Trending items with TrendingUp icons
-  - Recent searches (if user has search history)
-  - Products/sellers matches (when typing)
+**Revenue Chart Container (Lines 453-505)**
+- Change: `p-5 border-2 border-black shadow-neobrutalism` → `border`
 
-```typescript
-// Component structure
-interface DashboardSearchBarProps {
-  placeholder?: string;
-  onSearch?: (query: string) => void;
-  className?: string;
-}
+**Top Products & Recent Orders (Lines 507-589)**
+- Change: `border-2 border-black shadow-neobrutalism` → `border`
 
-// Uses existing hooks:
-// - useSearchSuggestions() for suggestions data
-// - useVoiceSearch() for voice input
-// - SearchContext for global state sync
-```
+**Skeleton Loaders (Lines 217-221)**
+- Change: `border-2 border-black` → `border`
 
-### Step 2: Update DashboardTopBar.tsx
+### 2. SellerPerformance.tsx (Lines 128-300)
 
-Replace lines 194-213 (current search bar) with the new `DashboardSearchBar` component:
+**Skeleton Loaders (Lines 128-136)**
+- Change: `border-2 border-black` → `border`
 
-**Before (current):**
+**Order Distribution Card (Line 223)**
+- Change: `p-6 border-2 border-black shadow-neobrutalism` → `p-8 border`
+
+**Performance Checklist Card (Line 253)**
+- Change: `p-6 border-2 border-black shadow-neobrutalism` → `p-8 border`
+
+**Stats Summary Card (Line 282)**
+- Change: `p-6 border-2 border-black shadow-neobrutalism` → `p-8 border`
+
+### 3. SellerMarketing.tsx (Lines 319-440)
+
+**Stats Cards (Lines 321, 333, 345)**
+- Change: `p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1` 
+- To: `p-8 border` (or keep hover for interactive)
+
+**Icon Boxes inside cards**
+- Change: `border-2 border-black` → remove border
+
+**Discount Codes Table (Line 359)**
+- Change: `border-2 border-black shadow-neobrutalism` → `border`
+
+### 4. SellerProductAnalytics.tsx (Lines 127-231)
+
+**Overview Stats Cards (Lines 129, 138, 147, 156)**
+- Change: `p-4 border-2 border-black shadow-neobrutalism hover:...` → `p-8 border`
+
+**Icon Boxes**
+- Remove `border-2 border-black` from icon containers
+
+**Chart Container (Line 170)**
+- Change: `p-4 border-2 border-black shadow-neobrutalism` → `border`
+
+**Product Performance Table (Line 229)**
+- Change: `border-2 border-black shadow-neobrutalism` → `border`
+
+### 5. SellerSupport.tsx (Line 457)
+
+**Chat Card Container**
+- Change: `border-2 border-black shadow-neobrutalism` → `border`
+
+### 6. SellerInventory.tsx (Lines 116-200)
+
+**Skeleton Loaders (Lines 116-119)**
+- Change: `border-2 border-black` → `border`
+
+**Inventory Health Card (Line 184)**
+- Change: `p-5 border-2 border-black shadow-neobrutalism` → `p-8 border`
+
+**Table Container (if exists)**
+- Update to `border` style
+
+---
+
+## Typography Standards (Apply Consistently)
+
+| Element | Old Style | New Gumroad Style |
+|---------|-----------|-------------------|
+| Card Labels | `text-sm font-semibold text-slate-800` | `text-base text-slate-700` |
+| Card Values | `text-2xl font-bold` or `text-4xl font-bold` | `text-4xl font-semibold text-slate-900` |
+| Sub-text | Various | `text-sm text-slate-500` |
+| Padding | `p-4`, `p-5` | `p-8` for stat cards |
+
+---
+
+## Icon Container Changes
+
+**Old Style:**
 ```tsx
-<div className={`relative w-64 transition-all duration-300 ${isSearchFocused ? 'w-80' : ''}`}>
-  <div className={`relative flex items-center bg-white rounded border border-black ...`}>
-    <Search size={16} className="absolute left-3 text-slate-400" />
-    <input ... />
-  </div>
-</div>
+<div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center border-2 border-black">
 ```
 
-**After:**
+**New Style:**
 ```tsx
-<DashboardSearchBar 
-  placeholder="Search products, prompts..." 
-  className="w-80" 
-/>
+<div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
 ```
 
-### Step 3: Update SellerTopBar.tsx
+Remove `border-2 border-black` from all icon containers within cards.
 
-Replace lines 162-174 (current search bar) with the new `DashboardSearchBar` component:
+---
 
-**Before (current):**
+## Interactive Elements
+
+For cards that are clickable/actionable (Quick Actions, Getting Started), keep the neo-brutalism hover effect ONLY:
+
 ```tsx
-<div className={`relative transition-all duration-200 ${searchFocused ? 'w-80' : 'w-64'}`}>
-  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-  <input ... placeholder="Search products, orders..." ... />
-</div>
+// Interactive cards keep hover shadow
+className="bg-white border rounded p-4 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer"
 ```
 
-**After:**
+For static display cards (stats, charts, lists), use clean style:
+
 ```tsx
-<DashboardSearchBar 
-  placeholder="Search products, orders..." 
-  className="w-80" 
-/>
+// Static display cards - no hover effects
+className="bg-white border rounded p-8"
 ```
 
 ---
 
-## Component Design Specifications
+## Summary
 
-### Search Bar Container
-- Background: `bg-white`
-- Border: `border border-black/15` (subtle, not harsh black)
-- Border radius: `rounded-full` (pill shape)
-- Hover/Focus: `focus-within:border-black/40 focus-within:shadow-md`
-- Width: `w-80` (fixed, cleaner than expanding)
+| Metric | Count |
+|--------|-------|
+| Files to update | 6 |
+| Neo-brutalist patterns to remove | ~30+ instances |
+| Typography updates | ~20+ instances |
 
-### Search Button (Right side)
-- Background: `bg-[#151515]` (dark, matching reference)
-- Hover: `hover:bg-[#222]`
-- Text: White, font-semibold
-- Icon + "Search" text
-- Border radius: `rounded-full` (right side of pill)
-
-### Voice & Image Buttons
-- Size: `h-8 w-8`
-- Style: Ghost, subtle hover
-- Positioned inside input area, before Search button
-- Use existing `VoiceSearchButton` and `ImageSearchButton` components
-
-### Suggestions Dropdown
-- Position: Below search bar, full width match
-- Background: `bg-white`
-- Border: `border border-black/10`
-- Shadow: `shadow-lg`
-- Sections:
-  - "Popular Searches" with TrendingUp icons
-  - Recent searches with Clock icons
-  - Products/sellers when typing
-
----
-
-## Import Updates
-
-### DashboardTopBar.tsx
-```typescript
-// Remove these (no longer needed for simple search):
-// - isSearchFocused state
-// - X icon for clear button
-
-// Add:
-import { DashboardSearchBar } from './DashboardSearchBar';
-```
-
-### SellerTopBar.tsx
-```typescript
-// Remove:
-// - searchFocused state
-// - searchQuery state
-// - X icon import
-
-// Add:
-import { DashboardSearchBar } from '../dashboard/DashboardSearchBar';
-```
-
----
-
-## Visual Comparison
-
-### Current Design
-```text
-┌──────────────────────────────────────┐
-│ 🔍 Search...                      ✕  │  <- Simple, black border
-└──────────────────────────────────────┘
-```
-
-### New Design (Reference-Inspired)
-```text
-┌───────────────────────────────────────────────────────────────┐
-│  🔍 Search products, orders...          🎤 📷 │ 🔍 Search │  │
-└───────────────────────────────────────────────────────────────┘
-                            ↓ (on click)
-┌───────────────────────────────────────────────────────────────┐
-│  Popular Searches                                             │
-│  ──────────────────────────────────────────────────────────── │
-│  📈 AI chatbot developer for support automation               │
-│  📈 Creative director for brand identity                      │
-│  📈 Data analyst for churn modeling                          │
-│  📈 Video editor for promo content                           │
-└───────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Existing Components to Reuse
-
-| Component | Usage |
-|-----------|-------|
-| `useSearchSuggestions` | Fetch trending/recent/product suggestions |
-| `useVoiceSearch` | Voice input functionality |
-| `VoiceSearchButton` | Voice search UI |
-| `ImageSearchButton` | Image search UI |
-| `MarketplaceSearchSuggestions` | Dropdown UI (may adapt for dashboard context) |
-| `SearchContext` | Global search state sync |
-
----
-
-## Summary of Changes
-
-1. **Create** `DashboardSearchBar.tsx` - New shared component with premium design
-2. **Update** `DashboardTopBar.tsx` - Replace simple search, remove redundant state
-3. **Update** `SellerTopBar.tsx` - Replace simple search, remove redundant state
-4. **Reuse** existing search suggestion infrastructure from marketplace
-
-This approach ensures both dashboards have identical, modern search UX with trending searches visible on focus, maintaining consistency with the design system while leveraging existing hooks.
+This update will create visual consistency across all Seller Dashboard sections, matching the already-standardized components like SellerOrders, SellerAnalytics, and SellerReports.
