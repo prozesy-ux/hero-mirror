@@ -17,7 +17,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { 
-  Search, 
   Bell, 
   Wallet, 
   LogOut, 
@@ -30,6 +29,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ShareStoreModal from './ShareStoreModal';
+import { DashboardSearchBar } from '../dashboard/DashboardSearchBar';
 interface Notification {
   id: string;
   title: string;
@@ -47,8 +47,6 @@ const SellerTopBar = () => {
   const { permission, isSubscribed, isLoading: pushLoading, subscribe, isSupported } = usePushNotifications();
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadChats, setUnreadChats] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -159,19 +157,11 @@ const SellerTopBar = () => {
     >
       {/* Left Section - Search */}
       <div className="flex items-center gap-6">
-        {/* Search Bar - Gumroad Style */}
-        <div className={`relative transition-all duration-200 ${searchFocused ? 'w-80' : 'w-64'}`}>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search products, orders..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full pl-10 pr-4 py-2 bg-white rounded border border-black text-sm text-slate-900 placeholder-slate-500 focus:outline-none transition-all ${searchFocused ? 'ring-2 ring-[#FF90E8]/50' : ''}`}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-          />
-        </div>
+        {/* Search Bar - Premium Style with Suggestions */}
+        <DashboardSearchBar 
+          placeholder="Search products, orders..." 
+          className="w-80" 
+        />
 
       </div>
 
