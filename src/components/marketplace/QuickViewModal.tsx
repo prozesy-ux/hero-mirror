@@ -289,7 +289,7 @@ const QuickViewModal = ({
           <Button
             variant="outline"
             onClick={onChat}
-            className="flex-1 rounded-xl border-2 border-black text-black hover:bg-black hover:text-white text-xs h-11"
+            className="flex-1 rounded border border-black bg-white text-black font-medium text-xs h-11 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
           >
             <MessageCircle className="w-4 h-4 mr-1.5" />
             Chat
@@ -298,7 +298,7 @@ const QuickViewModal = ({
         <Button
           onClick={onBuy}
           disabled={purchasing}
-          className="flex-1 rounded-xl bg-black hover:bg-black/90 text-white text-xs h-11"
+          className="flex-1 rounded bg-[#FF90E8] border border-black text-black font-medium text-xs h-11 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
         >
           {purchasing ? (
             <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
@@ -413,7 +413,7 @@ const QuickViewModal = ({
           <Button
             onClick={onBuy}
             disabled={purchasing}
-            className="w-full h-11 bg-black hover:bg-black/90 text-white font-semibold rounded-lg mb-3"
+            className="w-full h-11 bg-[#FF90E8] border border-black text-black font-semibold rounded mb-3 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
           >
             {purchasing ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -428,7 +428,7 @@ const QuickViewModal = ({
             <Button
               onClick={onChat}
               variant="outline"
-              className="w-full h-10 rounded-lg border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors mb-3"
+              className="w-full h-10 rounded border border-black bg-white text-black font-medium mb-3 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
               <MessageCircle className="w-4 h-4 mr-2" />
               Chat with Seller
@@ -473,7 +473,7 @@ const QuickViewModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-4 overflow-hidden bg-white border-black/10">
+      <DialogContent className="max-w-2xl p-4 overflow-hidden bg-white border border-black rounded">
         <DesktopContent />
       </DialogContent>
     </Dialog>

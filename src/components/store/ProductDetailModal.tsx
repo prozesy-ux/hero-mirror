@@ -291,7 +291,7 @@ const ProductDetailModal = ({
           <Button
             variant="outline"
             onClick={onChat}
-            className="flex-1 rounded-xl border-2 border-black text-black hover:bg-black hover:text-white text-xs h-11"
+            className="flex-1 rounded border border-black bg-white text-black font-medium text-xs h-11 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
           >
             <MessageCircle className="w-4 h-4 mr-1.5" />
             Chat
@@ -300,7 +300,7 @@ const ProductDetailModal = ({
         <Button
           onClick={onBuy}
           disabled={purchasing}
-          className="flex-1 rounded-xl bg-black hover:bg-black/90 text-white text-xs h-11"
+          className="flex-1 rounded bg-[#FF90E8] border border-black text-black font-medium text-xs h-11 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
         >
           {purchasing ? (
             <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
@@ -455,7 +455,7 @@ const ProductDetailModal = ({
           <Button
             onClick={onBuy}
             disabled={purchasing}
-            className="w-full h-11 bg-black hover:bg-black/90 text-white font-semibold rounded-lg mb-3"
+            className="w-full h-11 bg-[#FF90E8] border border-black text-black font-semibold rounded mb-3 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
           >
             {purchasing ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -470,7 +470,7 @@ const ProductDetailModal = ({
             <Button
               onClick={onChat}
               variant="outline"
-              className="w-full h-10 rounded-lg border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors mb-3"
+              className="w-full h-10 rounded border border-black bg-white text-black font-medium mb-3 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
               <MessageCircle className="w-4 h-4 mr-2" />
               Chat with Seller
@@ -556,7 +556,7 @@ const ProductDetailModal = ({
   // Desktop: Use Dialog with 70/30 layout
   return (
     <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl p-4 overflow-hidden rounded-2xl">
+      <DialogContent className="max-w-4xl p-4 overflow-hidden bg-white border border-black rounded">
         <DialogHeader className="sr-only">
           <DialogTitle>{product.name}</DialogTitle>
         </DialogHeader>
