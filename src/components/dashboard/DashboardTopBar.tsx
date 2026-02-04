@@ -1,19 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, FileText, Bot, CreditCard, MessageCircle, Crown, LogOut, User, ChevronDown, Wallet, X, Check, ExternalLink } from 'lucide-react';
+import { Search, Bell, Crown, LogOut, User, ChevronDown, Wallet, X, Check, ExternalLink, MessageCircle } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useSearchContext } from '@/contexts/SearchContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { playSound } from '@/lib/sounds';
-import theLogo from '@/assets/the-logo.png';
 import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
 import { CurrencySelector } from '@/components/ui/currency-selector';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  GumroadProductsIcon,
+  GumroadDiscoverIcon,
+  GumroadPayoutsIcon,
+  GumroadHelpIcon,
+} from './GumroadIcons';
+
 interface DashboardTopBarProps {
   sidebarCollapsed?: boolean;
 }
+
 interface Notification {
   id: string;
   type: string;
@@ -23,6 +29,7 @@ interface Notification {
   is_read: boolean;
   created_at: string;
 }
+
 const DashboardTopBar = ({
   sidebarCollapsed = false
 }: DashboardTopBarProps) => {
@@ -140,19 +147,23 @@ const DashboardTopBar = ({
       supabase.removeChannel(notifChannel);
     };
   }, [user]);
+
   const unreadNotifications = notifications.filter(n => !n.is_read).length;
   const totalUnread = unreadCount + unreadNotifications;
+
   const markNotificationAsRead = async (notificationId: string) => {
     await supabase.from('notifications').update({
       is_read: true
     }).eq('id', notificationId);
   };
+
   const markAllNotificationsAsRead = async () => {
     if (!user) return;
     await supabase.from('notifications').update({
       is_read: true
     }).eq('user_id', user.id).eq('is_read', false);
   };
+
   const handleNotificationClick = (notification: Notification) => {
     markNotificationAsRead(notification.id);
     if (notification.link) {
@@ -160,57 +171,100 @@ const DashboardTopBar = ({
     }
     setNotificationsOpen(false);
   };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'message':
-        return <MessageCircle size={14} className="text-violet-500" />;
+        return <MessageCircle size={14} className="text-[#FF90E8]" />;
       case 'purchase':
-        return <Bot size={14} className="text-green-500" />;
+        return <GumroadProductsIcon size={14} className="text-green-500" />;
       case 'topup':
         return <Wallet size={14} className="text-blue-500" />;
       default:
         return <Bell size={14} className="text-gray-500" />;
     }
   };
-  return <header className={`hidden lg:flex fixed top-0 right-0 z-50 h-16 bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm transition-all duration-300 ${sidebarCollapsed ? 'left-[72px]' : 'left-52'}`}>
-      <div className="flex items-center justify-between w-full px-6 bg-white">
+
+  return (
+    <header className={`hidden lg:flex fixed top-0 right-0 z-50 h-16 bg-[#FBF8F3] border-b border-black/10 transition-all duration-300 ${sidebarCollapsed ? 'left-[72px]' : 'left-52'}`}>
+      <div className="flex items-center justify-between w-full px-6">
         {/* Left Section - Logo, Search & Navigation */}
         <div className="flex items-center gap-4">
           <Link to="/dashboard/prompts" className="flex items-center gap-3 flex-shrink-0">
             
           </Link>
 
-          {/* Search Bar */}
+          {/* Search Bar - Gumroad Style */}
           <div className={`relative w-64 transition-all duration-300 ${isSearchFocused ? 'w-80' : ''}`}>
-            <div className={`relative flex items-center bg-gray-100 rounded-full transition-all duration-300 ${isSearchFocused ? 'ring-2 ring-violet-500 bg-white shadow-lg' : 'hover:bg-gray-200'}`}>
-              <Search size={16} className="absolute left-3 text-gray-400" />
-              <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setIsSearchFocused(false)} className="w-full bg-transparent py-2 pl-9 pr-8 text-sm text-gray-900 placeholder-gray-500 focus:outline-none" />
-              {searchQuery && <button onClick={() => setSearchQuery('')} className="absolute right-3 p-0.5 rounded-full hover:bg-gray-200 transition-colors">
-                  <X size={12} className="text-gray-400" />
-                </button>}
+            <div className={`relative flex items-center bg-white rounded border border-black transition-all duration-300 ${isSearchFocused ? 'ring-2 ring-[#FF90E8]/50' : ''}`}>
+              <Search size={16} className="absolute left-3 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)} 
+                onFocus={() => setIsSearchFocused(true)} 
+                onBlur={() => setIsSearchFocused(false)} 
+                className="w-full bg-transparent py-2 pl-9 pr-8 text-sm text-slate-900 placeholder-slate-500 focus:outline-none" 
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 p-0.5 rounded-full hover:bg-slate-100 transition-colors">
+                  <X size={12} className="text-slate-400" />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Navigation Tabs */}
+          {/* Navigation Tabs - Gumroad Style */}
           <nav className="flex items-center gap-1">
-            <Link to="/dashboard/prompts" className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/dashboard/prompts' ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
-              <FileText size={16} />
+            <Link 
+              to="/dashboard/prompts" 
+              className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-all ${
+                location.pathname === '/dashboard/prompts' 
+                  ? 'bg-[#FF90E8] text-black border border-black' 
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <GumroadProductsIcon size={16} />
               Prompts
             </Link>
-            <Link to="/dashboard/marketplace" className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/dashboard/marketplace' ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
-              <Bot size={16} />
+            <Link 
+              to="/dashboard/marketplace" 
+              className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-all ${
+                location.pathname === '/dashboard/marketplace' 
+                  ? 'bg-[#FF90E8] text-black border border-black' 
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <GumroadDiscoverIcon size={16} />
               Marketplace
             </Link>
-            <Link to="/dashboard/billing" className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/dashboard/billing' ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
-              <CreditCard size={16} />
+            <Link 
+              to="/dashboard/billing" 
+              className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-all ${
+                location.pathname === '/dashboard/billing' 
+                  ? 'bg-[#FF90E8] text-black border border-black' 
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <GumroadPayoutsIcon size={16} />
               Billing
             </Link>
-            <Link to="/dashboard/chat" className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/dashboard/chat' ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
-              <MessageCircle size={16} />
+            <Link 
+              to="/dashboard/chat" 
+              className={`relative flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-all ${
+                location.pathname === '/dashboard/chat' 
+                  ? 'bg-[#FF90E8] text-black border border-black' 
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <GumroadHelpIcon size={16} />
               Chat
-              {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                   {unreadCount > 9 ? '9+' : unreadCount}
-                </span>}
+                </span>
+              )}
             </Link>
           </nav>
         </div>
@@ -223,144 +277,181 @@ const DashboardTopBar = ({
           {/* Currency Selector */}
           <CurrencySelector variant="minimal" />
 
-          {/* Become a Seller CTA - Fiverr/Upwork Style (Text-only, No Icon) */}
-          <Link to="/seller" className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold text-sm tracking-wide transition-all duration-200">
+          {/* Become a Seller CTA - Gumroad Style */}
+          <Link 
+            to="/seller" 
+            className="px-4 py-2 bg-[#FF90E8] border border-black text-black rounded font-semibold text-sm transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+          >
             Become a Seller
           </Link>
 
-          {/* Wallet Balance */}
-          <button onClick={() => navigate('/dashboard/billing')} className="flex items-center gap-2 bg-violet-100 hover:bg-violet-200 border border-violet-200 px-3 py-2 rounded-xl transition-colors">
-            <Wallet size={16} className="text-violet-600" />
-            <span className="text-violet-700 font-bold text-sm">
+          {/* Wallet Balance - Gumroad Style */}
+          <button 
+            onClick={() => navigate('/dashboard/billing')} 
+            className="flex items-center gap-2 bg-[#FF90E8] border border-black px-3 py-2 rounded transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+          >
+            <Wallet size={16} className="text-black" />
+            <span className="text-black font-bold text-sm">
               {formatAmountOnly(wallet?.balance || 0)}
             </span>
           </button>
 
-          {/* Notification Bell with Dropdown */}
+          {/* Notification Bell with Dropdown - Gumroad Style */}
           <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <DropdownMenuTrigger asChild>
-              <button className="relative p-2.5 rounded-xl text-gray-500 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200">
+              <button className="relative p-2.5 rounded border border-transparent text-slate-600 transition-all hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <Bell size={20} />
-                {totalUnread > 0 && <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                {totalUnread > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                     {totalUnread > 9 ? '9+' : totalUnread}
-                  </span>}
+                  </span>
+                )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 p-0 max-h-[400px] overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <h3 className="font-semibold text-gray-900">Notifications</h3>
-                {unreadNotifications > 0 && <button onClick={markAllNotificationsAsRead} className="text-xs text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1">
+            <DropdownMenuContent align="end" className="w-80 p-0 max-h-[400px] overflow-hidden border border-black rounded">
+              <div className="flex items-center justify-between px-4 py-3 border-b">
+                <h3 className="font-semibold text-slate-900">Notifications</h3>
+                {unreadNotifications > 0 && (
+                  <button onClick={markAllNotificationsAsRead} className="text-xs text-[#FF90E8] hover:text-black font-medium flex items-center gap-1">
                     <Check size={12} />
                     Mark all read
-                  </button>}
+                  </button>
+                )}
               </div>
               
               <div className="max-h-[320px] overflow-y-auto">
                 {/* Unread Messages Section */}
-                {unreadCount > 0 && <button onClick={() => {
-                navigate('/dashboard/chat');
-                setNotificationsOpen(false);
-              }} className="w-full flex items-start gap-3 px-4 py-3 hover:bg-violet-50 transition-colors border-b border-gray-50 bg-violet-50/50">
-                    <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-                      <MessageCircle size={14} className="text-violet-600" />
+                {unreadCount > 0 && (
+                  <button 
+                    onClick={() => {
+                      navigate('/dashboard/chat');
+                      setNotificationsOpen(false);
+                    }} 
+                    className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b bg-[#FFF5FB]"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-[#FF90E8]/20 flex items-center justify-center flex-shrink-0">
+                      <MessageCircle size={14} className="text-[#FF90E8]" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-medium text-gray-900">Message from Support Team</p>
-                      <p className="text-xs text-gray-500">You have {unreadCount} unread message{unreadCount > 1 ? 's' : ''}</p>
-                      <p className="text-[10px] text-violet-500 mt-0.5 font-medium">Tap to view conversation</p>
+                      <p className="text-sm font-medium text-slate-900">Message from Support Team</p>
+                      <p className="text-xs text-slate-500">You have {unreadCount} unread message{unreadCount > 1 ? 's' : ''}</p>
+                      <p className="text-[10px] text-[#FF90E8] mt-0.5 font-medium">Tap to view conversation</p>
                     </div>
-                    <ExternalLink size={14} className="text-gray-400 mt-1" />
-                  </button>}
+                    <ExternalLink size={14} className="text-slate-400 mt-1" />
+                  </button>
+                )}
 
                 {/* Notifications List */}
-                {notifications.length > 0 ? notifications.map(notification => <button key={notification.id} onClick={() => handleNotificationClick(notification)} className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 ${!notification.is_read ? 'bg-violet-50/50' : ''}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${!notification.is_read ? 'bg-violet-100' : 'bg-gray-100'}`}>
-                        {getNotificationIcon(notification.type)}
-                      </div>
-                      <div className="flex-1 text-left min-w-0">
-                        <p className={`text-sm truncate ${!notification.is_read ? 'font-medium text-gray-900' : 'text-gray-700'}`}>
-                          {notification.title}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">{notification.message}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          {format(new Date(notification.created_at), 'MMM d, h:mm a')}
-                        </p>
-                      </div>
-                      {!notification.is_read && <span className="w-2 h-2 bg-violet-500 rounded-full flex-shrink-0 mt-2" />}
-                    </button>) : unreadCount === 0 ? <div className="px-4 py-8 text-center">
-                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                      <Bell size={20} className="text-gray-400" />
+                {notifications.length > 0 ? notifications.map(notification => (
+                  <button 
+                    key={notification.id} 
+                    onClick={() => handleNotificationClick(notification)} 
+                    className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b ${!notification.is_read ? 'bg-[#FFF5FB]' : ''}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${!notification.is_read ? 'bg-[#FF90E8]/20' : 'bg-slate-100'}`}>
+                      {getNotificationIcon(notification.type)}
                     </div>
-                    <p className="text-sm text-gray-500">No notifications yet</p>
-                  </div> : null}
+                    <div className="flex-1 text-left min-w-0">
+                      <p className={`text-sm truncate ${!notification.is_read ? 'font-medium text-slate-900' : 'text-slate-700'}`}>
+                        {notification.title}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">{notification.message}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {format(new Date(notification.created_at), 'MMM d, h:mm a')}
+                      </p>
+                    </div>
+                    {!notification.is_read && <span className="w-2 h-2 bg-[#FF90E8] rounded-full flex-shrink-0 mt-2" />}
+                  </button>
+                )) : unreadCount === 0 ? (
+                  <div className="px-4 py-8 text-center">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                      <Bell size={20} className="text-slate-400" />
+                    </div>
+                    <p className="text-sm text-slate-500">No notifications yet</p>
+                  </div>
+                ) : null}
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Profile Dropdown */}
+          {/* Profile Dropdown - Gumroad Style */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-gray-100 transition-colors">
+              <button className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-slate-100 transition-colors">
                 <div className="relative">
-                  <div className="rounded-full bg-gradient-to-br from-violet-500 to-purple-600 p-0.5 w-9 h-9">
-                    {profile?.avatar_url ? <img src={profile.avatar_url} alt="Avatar" className="w-full h-full rounded-full object-cover bg-white" /> : <div className="w-full h-full rounded-full bg-violet-500 flex items-center justify-center text-white font-bold text-sm">
+                  <div className="rounded-full border-2 border-black w-9 h-9 overflow-hidden">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-[#FF90E8] flex items-center justify-center text-black font-bold text-sm">
                         {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
-                      </div>}
+                      </div>
+                    )}
                   </div>
-                  {profile?.is_pro && <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center ring-2 ring-white">
+                  {profile?.is_pro && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-[#FF90E8] border border-black rounded-full flex items-center justify-center">
                       <Crown size={8} className="text-black" />
-                    </div>}
+                    </div>
+                  )}
                 </div>
-                <ChevronDown size={16} className="text-gray-400" />
+                <ChevronDown size={16} className="text-slate-400" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 p-2">
+            <DropdownMenuContent align="end" className="w-64 p-2 border border-black rounded">
               <DropdownMenuLabel className="px-3 py-2">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-gradient-to-br from-violet-500 to-purple-600 p-0.5 w-10 h-10">
-                    {profile?.avatar_url ? <img src={profile.avatar_url} alt="Avatar" className="w-full h-full rounded-full object-cover bg-white" /> : <div className="w-full h-full rounded-full bg-violet-500 flex items-center justify-center text-white font-bold text-sm">
+                  <div className="rounded-full border-2 border-black w-10 h-10 overflow-hidden">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-[#FF90E8] flex items-center justify-center text-black font-bold text-sm">
                         {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
-                      </div>}
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate flex items-center gap-2">
+                    <p className="text-sm font-semibold text-slate-900 truncate flex items-center gap-2">
                       {profile?.full_name || 'User'}
-                      {profile?.is_pro && <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gradient-to-r from-amber-400 to-yellow-500 rounded text-[10px] font-bold text-black">
+                      {profile?.is_pro && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#FF90E8] border border-black rounded text-[10px] font-bold text-black">
                           <Crown size={10} />
                           PRO
-                        </span>}
+                        </span>
+                      )}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">{profile?.email}</p>
+                    <p className="text-xs text-slate-500 truncate">{profile?.email}</p>
                   </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link to="/dashboard/profile" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer">
-                  <User size={16} className="text-gray-500" />
+                  <User size={16} className="text-slate-500" />
                   <span>Profile Settings</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/dashboard/billing" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer">
-                  <Wallet size={16} className="text-gray-500" />
+                  <Wallet size={16} className="text-slate-500" />
                   <span>Wallet & Billing</span>
-                  <span className="ml-auto text-xs font-semibold text-violet-600">
+                  <span className="ml-auto text-xs font-bold text-black">
                     ${wallet?.balance?.toFixed(2) || '0.00'}
                   </span>
                 </Link>
               </DropdownMenuItem>
-              {!profile?.is_pro && <>
+              {!profile?.is_pro && (
+                <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/dashboard/billing" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer bg-gradient-to-r from-amber-50 to-yellow-50 hover:from-amber-100 hover:to-yellow-100">
-                      <Crown size={16} className="text-amber-600" />
-                      <span className="font-semibold text-amber-700">Upgrade to Pro</span>
+                    <Link to="/dashboard/billing" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer bg-[#FFF5FB] hover:bg-[#FF90E8]/20 rounded">
+                      <Crown size={16} className="text-[#FF90E8]" />
+                      <span className="font-medium">Upgrade to PRO</span>
                     </Link>
                   </DropdownMenuItem>
-                </>}
+                </>
+              )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={signOut} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50">
+              <DropdownMenuItem onClick={() => signOut()} className="flex items-center gap-3 px-3 py-2.5 text-red-600 cursor-pointer">
                 <LogOut size={16} />
                 <span>Sign Out</span>
               </DropdownMenuItem>
@@ -368,7 +459,8 @@ const DashboardTopBar = ({
           </DropdownMenu>
         </div>
       </div>
-
-    </header>;
+    </header>
+  );
 };
+
 export default DashboardTopBar;

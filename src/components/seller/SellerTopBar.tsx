@@ -7,8 +7,6 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { CurrencySelector } from '@/components/ui/currency-selector';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -25,18 +23,20 @@ import {
   LogOut, 
   Settings, 
   ChevronDown,
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  MessageSquare,
-  BarChart3,
   Share2,
   Lightbulb,
   BellRing,
   X
 } from 'lucide-react';
-import theLogo from '@/assets/the-logo.png';
+import { Button } from '@/components/ui/button';
 import ShareStoreModal from './ShareStoreModal';
+import {
+  GumroadHomeIcon,
+  GumroadProductsIcon,
+  GumroadSalesIcon,
+  GumroadAnalyticsIcon,
+} from './SellerGumroadIcons';
+import { GumroadHelpIcon } from '@/components/dashboard/GumroadIcons';
 
 interface Notification {
   id: string;
@@ -48,12 +48,19 @@ interface Notification {
   link?: string;
 }
 
-const navItems = [
-  { path: '/seller', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { path: '/seller/products', label: 'Products', icon: Package },
-  { path: '/seller/orders', label: 'Orders', icon: ShoppingCart },
-  { path: '/seller/chat', label: 'Messages', icon: MessageSquare },
-  { path: '/seller/analytics', label: 'Analytics', icon: BarChart3 },
+interface NavItem {
+  path: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
+  exact?: boolean;
+}
+
+const navItems: NavItem[] = [
+  { path: '/seller', label: 'Dashboard', icon: GumroadHomeIcon, exact: true },
+  { path: '/seller/products', label: 'Products', icon: GumroadProductsIcon },
+  { path: '/seller/orders', label: 'Orders', icon: GumroadSalesIcon },
+  { path: '/seller/chat', label: 'Messages', icon: GumroadHelpIcon },
+  { path: '/seller/analytics', label: 'Analytics', icon: GumroadAnalyticsIcon },
 ];
 
 const SellerTopBar = () => {
@@ -64,6 +71,7 @@ const SellerTopBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchFocused, setSearchFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadChats, setUnreadChats] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -174,32 +182,36 @@ const SellerTopBar = () => {
     >
       {/* Left Section - Search */}
       <div className="flex items-center gap-6">
-
+        {/* Search Bar - Gumroad Style */}
         <div className={`relative transition-all duration-200 ${searchFocused ? 'w-80' : 'w-64'}`}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
+          <input
+            type="text"
             placeholder="Search products, orders..."
-            className="pl-10 bg-slate-50 border-slate-200 focus:bg-white"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={`w-full pl-10 pr-4 py-2 bg-white rounded border border-black text-sm text-slate-900 placeholder-slate-500 focus:outline-none transition-all ${searchFocused ? 'ring-2 ring-[#FF90E8]/50' : ''}`}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
           />
         </div>
 
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs - Gumroad Style */}
         <nav className="flex items-center gap-1">
           {navItems.map((item) => {
             const active = isActive(item.path, item.exact);
+            const IconComponent = item.icon;
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-all ${
                   active 
-                    ? 'bg-emerald-50 text-emerald-700' 
+                    ? 'bg-[#FF90E8] text-black border border-black' 
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                <item.icon className="h-4 w-4" />
+                <IconComponent className="h-4 w-4" size={16} />
                 <span>{item.label}</span>
                 {item.label === 'Orders' && pendingOrders > 0 && (
                   <Badge className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-xs">
@@ -222,46 +234,45 @@ const SellerTopBar = () => {
         {/* Currency Selector */}
         <CurrencySelector variant="minimal" />
 
-        {/* Share Store Button */}
-        <Button
-          variant="outline"
+        {/* Share Store Button - Gumroad Style */}
+        <button
           onClick={() => setShowShareModal(true)}
-          className="gap-2 rounded-xl border-violet-200 text-violet-700 hover:bg-violet-50 hover:text-violet-800"
+          className="flex items-center gap-2 px-3 py-2 rounded border border-black text-black text-sm font-medium transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
         >
           <Share2 className="h-4 w-4" />
           <span className="hidden xl:inline">Share Store</span>
-        </Button>
+        </button>
 
-        {/* Wallet Balance */}
+        {/* Wallet Balance - Gumroad Style */}
         <Link 
           to="/seller/wallet"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded bg-[#FF90E8] border border-black transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
         >
-          <Wallet className="h-4 w-4 text-emerald-600" />
-          <span className="font-semibold text-emerald-700">
+          <Wallet className="h-4 w-4 text-black" />
+          <span className="font-bold text-black text-sm">
             {formatAmountOnly(Number(wallet?.balance || 0))}
           </span>
         </Link>
 
-        {/* Notifications */}
+        {/* Notifications - Gumroad Style */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5 text-slate-600" />
+            <button className="relative p-2.5 rounded border border-transparent text-slate-600 transition-all hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <Bell className="h-5 w-5" />
               {unreadNotifications > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
                   {unreadNotifications}
                 </span>
               )}
-            </Button>
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent align="end" className="w-80 border border-black rounded">
             <DropdownMenuLabel className="flex items-center justify-between">
               <span>Notifications</span>
               {unreadNotifications > 0 && (
                 <button 
                   onClick={markAllAsRead}
-                  className="text-xs text-emerald-600 hover:text-emerald-700"
+                  className="text-xs text-[#FF90E8] hover:text-black font-medium"
                 >
                   Mark all read
                 </button>
@@ -277,7 +288,7 @@ const SellerTopBar = () => {
                 <DropdownMenuItem 
                   key={notification.id}
                   className={`flex flex-col items-start gap-1 p-3 cursor-pointer ${
-                    !notification.is_read ? 'bg-emerald-50/50' : ''
+                    !notification.is_read ? 'bg-[#FFF5FB]' : ''
                   }`}
                   onClick={() => {
                     markAsRead(notification.id);
@@ -292,13 +303,13 @@ const SellerTopBar = () => {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Profile Dropdown */}
+        {/* Profile Dropdown - Gumroad Style */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 px-2">
-              <Avatar className="h-8 w-8">
+            <button className="flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-100 transition-colors">
+              <Avatar className="h-8 w-8 border-2 border-black">
                 <AvatarImage src={profile?.store_logo_url || ''} />
-                <AvatarFallback className="bg-emerald-100 text-emerald-700 font-semibold">
+                <AvatarFallback className="bg-[#FF90E8]/20 text-black font-semibold">
                   {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
                 </AvatarFallback>
               </Avatar>
@@ -309,14 +320,14 @@ const SellerTopBar = () => {
                 <span className="text-xs text-slate-500">Seller</span>
               </div>
               <ChevronDown className="h-4 w-4 text-slate-400" />
-            </Button>
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="w-56 border border-black rounded">
             <DropdownMenuLabel>
               <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-10 w-10 border-2 border-black">
                   <AvatarImage src={profile?.store_logo_url || ''} />
-                  <AvatarFallback className="bg-emerald-100 text-emerald-700">
+                  <AvatarFallback className="bg-[#FF90E8]/20 text-black">
                     {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
                   </AvatarFallback>
                 </Avatar>
@@ -368,14 +379,14 @@ const SellerTopBar = () => {
       {/* Push Notification Permission Banner */}
       {isSupported && permission === 'default' && !pushBannerDismissed && !isSubscribed && (
         <div className="fixed bottom-6 right-6 z-50 max-w-sm animate-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl shadow-2xl p-5 text-white">
+          <div className="bg-[#FF90E8] border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 text-black">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                <BellRing className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-xl bg-black/10 flex items-center justify-center shrink-0">
+                <BellRing className="w-6 h-6 text-black" />
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-lg">Never Miss an Order!</h3>
-                <p className="text-sm text-white/80 mt-1">
+                <p className="text-sm text-black/70 mt-1">
                   Get instant alerts for new orders, messages & payments.
                 </p>
                 <div className="flex items-center gap-3 mt-4">
@@ -383,7 +394,7 @@ const SellerTopBar = () => {
                     size="sm"
                     onClick={handleEnablePush}
                     disabled={pushLoading}
-                    className="bg-white text-emerald-700 hover:bg-white/90 font-semibold"
+                    className="bg-black text-white hover:bg-black/80 font-semibold border-0"
                   >
                     {pushLoading ? 'Enabling...' : 'Enable'}
                   </Button>
@@ -391,7 +402,7 @@ const SellerTopBar = () => {
                     size="sm"
                     variant="ghost"
                     onClick={dismissPushBanner}
-                    className="text-white/70 hover:text-white hover:bg-white/10"
+                    className="text-black/70 hover:text-black hover:bg-black/10"
                   >
                     Later
                   </Button>
@@ -399,7 +410,7 @@ const SellerTopBar = () => {
               </div>
               <button
                 onClick={dismissPushBanner}
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-black/60 hover:text-black transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
