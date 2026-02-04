@@ -186,10 +186,10 @@ const SellerMarketing = () => {
       <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />
+            <Skeleton key={i} className="h-28 rounded-lg border" />
           ))}
         </div>
-        <Skeleton className="h-96 rounded-lg border-2 border-black" />
+        <Skeleton className="h-96 rounded-lg border" />
       </div>
     );
   }
@@ -318,45 +318,30 @@ const SellerMarketing = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center border-2 border-black">
-              <Tag className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total Codes</p>
-              <p className="text-2xl font-bold text-slate-800">{discountCodes.length}</p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Total Codes</span>
           </div>
+          <div className="text-4xl font-semibold text-slate-900">{discountCodes.length}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center border-2 border-black">
-              <ToggleRight className="w-6 h-6 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Active Codes</p>
-              <p className="text-2xl font-bold text-emerald-600">{activeCount}</p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Active Codes</span>
           </div>
+          <div className="text-4xl font-semibold text-emerald-600">{activeCount}</div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-violet-100 flex items-center justify-center border-2 border-black">
-              <Percent className="w-6 h-6 text-violet-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total Uses</p>
-              <p className="text-2xl font-bold text-violet-600">{totalUses}</p>
-            </div>
+        <div className="bg-white border rounded p-8">
+          <div className="flex items-center gap-2 text-base mb-2">
+            <span className="text-slate-700">Total Uses</span>
           </div>
+          <div className="text-4xl font-semibold text-violet-600">{totalUses}</div>
         </div>
       </div>
 
       {/* Discount Codes Table */}
-      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism overflow-hidden">
+      <div className="bg-white rounded-lg border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">

@@ -111,12 +111,12 @@ const SellerInventory = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />
+            <Skeleton key={i} className="h-28 rounded-lg border" />
           ))}
         </div>
-        <Skeleton className="h-96 rounded-lg border-2 border-black" />
+        <Skeleton className="h-96 rounded-lg border" />
       </div>
     );
   }
@@ -181,7 +181,7 @@ const SellerInventory = () => {
       </div>
 
       {/* Inventory Health */}
-      <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism">
+      <div className="bg-white rounded-lg p-8 border">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-slate-800">Inventory Health Score</h3>
           <span className={`text-lg font-bold ${
@@ -228,7 +228,7 @@ const SellerInventory = () => {
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism overflow-hidden">
+      <div className="bg-white rounded-lg border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">
