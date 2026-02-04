@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { 
   Copy, 
@@ -88,10 +86,14 @@ const ShareStoreModal = ({ open, onOpenChange, storeSlug, storeName }: ShareStor
   if (!storeSlug) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Share2 className="w-5 h-5 text-violet-600" />
+        <DialogContent className="max-w-md p-0 overflow-hidden">
+          {/* Pink accent bar */}
+          <div className="h-1 bg-[#FF90E8]" />
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-slate-900">
+              <div className="w-8 h-8 rounded border border-black bg-[#FF90E8] flex items-center justify-center">
+                <Share2 className="w-4 h-4 text-black" />
+              </div>
               Share Your Store
             </DialogTitle>
             <DialogDescription>
@@ -99,15 +101,18 @@ const ShareStoreModal = ({ open, onOpenChange, storeSlug, storeName }: ShareStor
             </DialogDescription>
           </DialogHeader>
           <div className="p-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-amber-500" />
+            <div className="w-16 h-16 rounded border border-black bg-[#FF90E8] flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-8 h-8 text-black" />
             </div>
             <p className="text-slate-600 mb-4">
               Go to Settings and save your store information to generate your unique store URL.
             </p>
-            <Button onClick={() => onOpenChange(false)} variant="outline">
+            <button 
+              onClick={() => onOpenChange(false)} 
+              className="px-4 py-2 border border-black rounded text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+            >
               Got it
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
@@ -116,10 +121,14 @@ const ShareStoreModal = ({ open, onOpenChange, storeSlug, storeName }: ShareStor
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Share2 className="w-5 h-5 text-violet-600" />
+      <DialogContent className="max-w-md p-0 overflow-hidden">
+        {/* Pink accent bar */}
+        <div className="h-1 bg-[#FF90E8]" />
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-slate-900">
+            <div className="w-8 h-8 rounded border border-black bg-[#FF90E8] flex items-center justify-center">
+              <Share2 className="w-4 h-4 text-black" />
+            </div>
             Share Your Store
           </DialogTitle>
           <DialogDescription>
@@ -127,77 +136,70 @@ const ShareStoreModal = ({ open, onOpenChange, storeSlug, storeName }: ShareStor
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 pt-4">
+        <div className="space-y-6 p-6 pt-4">
           {/* Store URL */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Your Store Link</label>
             <div className="flex gap-2">
-              <Input
+              <input
                 value={storeUrl || ''}
                 readOnly
-                className="text-sm bg-slate-50"
+                className="flex-1 px-3 py-2 text-sm border border-black rounded bg-white"
               />
-              <Button 
-                variant="outline" 
-                size="icon"
+              <button 
                 onClick={handleCopy}
-                className="shrink-0"
+                className="shrink-0 p-2 border border-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
               >
                 {copied ? (
                   <Check className="w-4 h-4 text-emerald-500" />
                 ) : (
                   <Copy className="w-4 h-4" />
                 )}
-              </Button>
+              </button>
             </div>
           </div>
 
           {/* Preview Button */}
-          <Button
-            variant="outline"
-            className="w-full"
+          <button
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-black rounded text-black font-medium hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
             onClick={() => window.open(storeUrl!, '_blank')}
           >
-            <ExternalLink className="w-4 h-4 mr-2" />
+            <ExternalLink className="w-4 h-4" />
             Preview Your Store
-          </Button>
+          </button>
 
           {/* Social Share Buttons */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Share on Social Media</label>
             <div className="grid grid-cols-3 gap-3">
-              <Button
-                variant="outline"
+              <button
                 onClick={() => handleShare('twitter')}
-                className="flex flex-col items-center gap-2 h-auto py-4 hover:bg-sky-50 hover:border-sky-200"
+                className="flex flex-col items-center gap-2 h-auto py-4 border border-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
               >
                 <Twitter className="w-5 h-5 text-sky-500" />
                 <span className="text-xs">Twitter</span>
-              </Button>
-              <Button
-                variant="outline"
+              </button>
+              <button
                 onClick={() => handleShare('facebook')}
-                className="flex flex-col items-center gap-2 h-auto py-4 hover:bg-blue-50 hover:border-blue-200"
+                className="flex flex-col items-center gap-2 h-auto py-4 border border-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
               >
                 <Facebook className="w-5 h-5 text-blue-600" />
                 <span className="text-xs">Facebook</span>
-              </Button>
-              <Button
-                variant="outline"
+              </button>
+              <button
                 onClick={() => handleShare('whatsapp')}
-                className="flex flex-col items-center gap-2 h-auto py-4 hover:bg-green-50 hover:border-green-200"
+                className="flex flex-col items-center gap-2 h-auto py-4 border border-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
               >
                 <MessageCircle className="w-5 h-5 text-green-500" />
                 <span className="text-xs">WhatsApp</span>
-              </Button>
+              </button>
             </div>
           </div>
 
           {/* QR Code */}
           <div className="space-y-2">
-            <Button
-              variant="ghost"
-              className="w-full justify-between"
+            <button
+              className="w-full flex items-center justify-between px-4 py-2 border border-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
               onClick={() => setShowQR(!showQR)}
             >
               <span className="flex items-center gap-2">
@@ -205,10 +207,10 @@ const ShareStoreModal = ({ open, onOpenChange, storeSlug, storeName }: ShareStor
                 QR Code
               </span>
               <span className="text-xs text-slate-500">{showQR ? 'Hide' : 'Show'}</span>
-            </Button>
+            </button>
             
             {showQR && qrCodeUrl && (
-              <div className="flex justify-center p-4 bg-white rounded-xl border border-slate-200">
+              <div className="flex justify-center p-4 bg-white rounded border border-black">
                 <img 
                   src={qrCodeUrl} 
                   alt="Store QR Code" 
@@ -220,13 +222,13 @@ const ShareStoreModal = ({ open, onOpenChange, storeSlug, storeName }: ShareStor
 
           {/* Native Share (if available) */}
           {'share' in navigator && (
-            <Button
-              className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+            <button
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#FF90E8] border border-black rounded text-black font-semibold hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
               onClick={handleNativeShare}
             >
-              <Share2 className="w-4 h-4 mr-2" />
+              <Share2 className="w-4 h-4" />
               Share...
-            </Button>
+            </button>
           )}
         </div>
       </DialogContent>

@@ -167,7 +167,6 @@ const GuestPaymentModal = ({
               productName: product.name,
               price: product.price,
               productType: product.type,
-              // No guestEmail - Stripe will collect it
             }),
           }
         );
@@ -200,7 +199,6 @@ const GuestPaymentModal = ({
               productName: product.name,
               price: product.price,
               productType: product.type,
-              // No guestEmail - Razorpay will collect it
             }),
           }
         );
@@ -221,7 +219,6 @@ const GuestPaymentModal = ({
           name: 'Uptoza',
           description: `Purchase: ${product.name}`,
           order_id: data.order_id,
-          // No prefill email - let user enter in Razorpay popup
           handler: async (response: { 
             razorpay_order_id: string; 
             razorpay_payment_id: string; 
@@ -268,7 +265,7 @@ const GuestPaymentModal = ({
               toast.error('Payment verification failed. Contact support.');
             }
           },
-          theme: { color: '#ec4899' },
+          theme: { color: '#FF90E8' },
           modal: {
             ondismiss: () => {
               setLoading(false);
@@ -332,13 +329,16 @@ const GuestPaymentModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg bg-white border-0 shadow-2xl rounded-2xl p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg bg-white border border-black rounded p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
+        {/* Pink accent bar */}
+        <div className="h-1 bg-[#FF90E8]" />
+        
         {/* Header */}
-        <div className="bg-gradient-to-br from-pink-50 to-purple-50 p-5 border-b border-black/5">
+        <div className="bg-white p-5 border-b">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-lg font-bold text-black">
-              <div className="p-2 bg-pink-500 rounded-lg">
-                <ShoppingBag className="w-5 h-5 text-white" />
+              <div className="p-2 bg-[#FF90E8] border border-black rounded">
+                <ShoppingBag className="w-5 h-5 text-black" />
               </div>
               Complete Your Purchase
             </DialogTitle>
@@ -347,16 +347,16 @@ const GuestPaymentModal = ({
 
         <div className="p-5 space-y-5">
           {/* Product Summary */}
-          <div className="flex items-center gap-4 p-4 bg-black/[0.02] rounded-xl">
+          <div className="flex items-center gap-4 p-4 bg-[#FBF8F3] rounded border border-black/10">
             {product.iconUrl ? (
               <img
                 src={product.iconUrl}
                 alt={product.name}
-                className="w-14 h-14 rounded-lg object-cover border border-black/10"
+                className="w-14 h-14 rounded border border-black/10 object-cover"
               />
             ) : (
-              <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
-                <ShoppingBag className="w-6 h-6 text-pink-500" />
+              <div className="w-14 h-14 rounded border border-black/10 bg-[#FF90E8] flex items-center justify-center">
+                <ShoppingBag className="w-6 h-6 text-black" />
               </div>
             )}
             <div className="flex-1 min-w-0">
@@ -378,10 +378,10 @@ const GuestPaymentModal = ({
                 <button
                   key={method.id}
                   onClick={() => setSelectedMethod(method.code)}
-                  className={`p-3 rounded-xl border-2 transition-all text-center ${
+                  className={`p-3 rounded border-2 transition-all text-center ${
                     selectedMethod === method.code
-                      ? 'border-pink-500 bg-pink-50'
-                      : 'border-black/10 hover:border-black/20'
+                      ? 'border-black bg-[#FF90E8]'
+                      : 'border-black/30 hover:border-black'
                   }`}
                 >
                   {method.icon_url ? (
@@ -406,8 +406,8 @@ const GuestPaymentModal = ({
 
           {/* Automatic Payment Note */}
           {currentMethod?.is_automatic && (
-            <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
-              <p className="text-sm text-blue-700 flex items-center gap-2">
+            <div className="p-3 bg-[#FFF5FB] rounded border border-[#FF90E8]/30">
+              <p className="text-sm text-black/70 flex items-center gap-2">
                 <ExternalLink className="w-4 h-4" />
                 You'll enter your email on the secure payment page
               </p>
@@ -428,10 +428,10 @@ const GuestPaymentModal = ({
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
                   placeholder="you@example.com"
-                  className={`w-full px-4 py-3 border-2 rounded-xl text-black placeholder-black/40 focus:outline-none transition-colors ${
+                  className={`w-full px-4 py-3 border rounded text-black placeholder-black/40 focus:outline-none transition-colors ${
                     emailError
-                      ? 'border-red-300 focus:border-red-500'
-                      : 'border-black/10 focus:border-pink-500'
+                      ? 'border-red-500'
+                      : 'border-black focus:ring-2 focus:ring-[#FF90E8]/50'
                   }`}
                 />
                 {emailError && (
@@ -440,7 +440,7 @@ const GuestPaymentModal = ({
               </div>
 
               {/* Manual Payment Instructions */}
-              <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 space-y-3">
+              <div className="p-4 bg-amber-50 rounded border border-amber-200 space-y-3">
                 <div className="flex items-start gap-2">
                   <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div>
@@ -453,7 +453,7 @@ const GuestPaymentModal = ({
 
                 {/* Account Details */}
                 {currentMethod.account_number && (
-                  <div className="bg-white p-3 rounded-lg">
+                  <div className="bg-white p-3 rounded border border-black/10">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs text-black/50">Account Number</p>
@@ -464,7 +464,7 @@ const GuestPaymentModal = ({
                       </div>
                       <button
                         onClick={() => copyToClipboard(currentMethod.account_number!)}
-                        className="p-2 hover:bg-black/5 rounded-lg transition-colors"
+                        className="p-2 hover:bg-black/5 rounded border border-transparent hover:border-black transition-all"
                       >
                         <Copy className="w-4 h-4 text-black/40" />
                       </button>
@@ -478,7 +478,7 @@ const GuestPaymentModal = ({
                     <img 
                       src={currentMethod.qr_image_url} 
                       alt="Payment QR Code"
-                      className="w-32 h-32 rounded-lg border border-black/10"
+                      className="w-32 h-32 rounded border border-black/10"
                     />
                   </div>
                 )}
@@ -498,7 +498,7 @@ const GuestPaymentModal = ({
                     value={transactionId}
                     onChange={(e) => setTransactionId(e.target.value)}
                     placeholder="Enter your transaction ID"
-                    className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl focus:outline-none focus:border-amber-400"
+                    className="w-full px-4 py-3 border border-amber-200 rounded focus:outline-none focus:border-amber-400"
                   />
                 </div>
               </div>
@@ -509,7 +509,7 @@ const GuestPaymentModal = ({
           <button
             onClick={handlePayment}
             disabled={loading || (isManualPayment && (!email || !transactionId.trim()))}
-            className="w-full py-3.5 bg-pink-500 text-white font-semibold rounded-xl hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-[#FF90E8] border border-black text-black font-semibold rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -536,7 +536,7 @@ const GuestPaymentModal = ({
             <p className="text-sm text-black/60 mb-1">Already have an account?</p>
             <Link
               to="/signin"
-              className="inline-flex items-center gap-2 text-sm font-medium text-pink-500 hover:text-pink-600 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-medium text-[#FF90E8] hover:underline transition-colors"
             >
               Sign in for faster checkout
             </Link>
