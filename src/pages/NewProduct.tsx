@@ -318,7 +318,7 @@ const NewProduct = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white rounded border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+        <div className="bg-white rounded border">
           {/* Step 1: Choose Type */}
           {currentStep === 1 && (
             <div className="p-6 lg:p-8">
@@ -368,7 +368,7 @@ const NewProduct = () => {
                   </p>
                   
                   {/* Summary Card */}
-                  <div className="p-6 bg-gray-50 rounded border space-y-4 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+                  <div className="p-6 bg-gray-50 rounded border space-y-4">
                     <div className="flex items-center gap-3">
                       <SelectedIcon className="w-8 h-8" />
                       <div>
@@ -607,7 +607,7 @@ const NewProduct = () => {
                     </Label>
                     <div className="space-y-3">
                       {/* Pay What You Want */}
-                      <div className="p-6 bg-white rounded border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+                      <div className="p-6 bg-white rounded border">
                         <div className="flex items-center justify-between mb-3">
                           <div>
                             <p className="font-medium text-sm text-slate-900">Pay What You Want</p>
@@ -644,7 +644,7 @@ const NewProduct = () => {
                       </div>
                       
                       {/* Pre-order */}
-                      <div className="p-6 bg-white rounded border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+                      <div className="p-6 bg-white rounded border">
                         <div className="flex items-center justify-between mb-3">
                           <div>
                             <p className="font-medium text-sm text-slate-900">Pre-order</p>
