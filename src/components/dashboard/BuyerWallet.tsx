@@ -868,7 +868,7 @@ const BuyerWallet = () => {
                   return (
                     <div 
                       key={method.id}
-                      className="p-4 bg-white border rounded text-center transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                      className="p-4 bg-white border rounded text-center transition-colors hover:bg-slate-50"
                     >
                       {logoUrl ? (
                         <img 
@@ -909,7 +909,7 @@ const BuyerWallet = () => {
               return (
                 <div 
                   key={account.id}
-                  className="p-4 border rounded bg-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all relative"
+                  className="p-4 border rounded bg-white transition-colors hover:bg-slate-50 relative"
                 >
                   {account.is_primary && (
                     <Badge className="absolute -top-2 -right-2 bg-violet-600 text-white text-[10px]">
@@ -960,7 +960,7 @@ const BuyerWallet = () => {
             {/* Add Account Card */}
             <button 
               onClick={() => setShowAddAccountModal(true)}
-              className="p-6 border-2 border-dashed border-black rounded transition-all flex flex-col items-center justify-center gap-2 min-h-[140px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFF5FB]"
+              className="p-6 border-2 border-dashed border-black rounded transition-colors flex flex-col items-center justify-center gap-2 min-h-[140px] hover:bg-[#FFF5FB]"
             >
               <div className="w-12 h-12 rounded-full bg-[#FF90E8] flex items-center justify-center">
                 <Plus className="text-black" size={24} />

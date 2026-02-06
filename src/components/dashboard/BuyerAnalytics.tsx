@@ -284,7 +284,7 @@ const BuyerAnalytics = () => {
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Spending Details Chart */}
-        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
+        <div className="bg-white rounded-lg p-6 border">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-slate-800">Spending Details</h3>
           </div>
@@ -333,7 +333,7 @@ const BuyerAnalytics = () => {
         </div>
 
         {/* Category Breakdown */}
-        <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
+        <div className="bg-white rounded-lg p-6 border">
           <h3 className="font-semibold text-slate-800 mb-4">Spending by Product</h3>
           {spendingByCategory.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
@@ -364,7 +364,7 @@ const BuyerAnalytics = () => {
       </div>
 
       {/* Monthly Trend */}
-      <div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
+      <div className="bg-white rounded-lg p-6 border">
         <h3 className="font-semibold text-slate-800 mb-4">Monthly Spending Trend</h3>
         {monthlyTrend.length > 0 ? (
           <ResponsiveContainer width="100%" height={200}>
