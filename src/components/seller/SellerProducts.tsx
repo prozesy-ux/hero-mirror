@@ -449,7 +449,7 @@ const SellerProducts = () => {
                 <div 
                   key={product.id} 
                   onClick={() => setSelectedProduct(product.id)}
-                  className={`bg-white border rounded-xl overflow-hidden group shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer ${
+                  className={`bg-white border rounded-xl overflow-hidden group hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer ${
                     isSelected ? 'border-pink-500 ring-2 ring-pink-100' : 'border-gray-200'
                   }`}
                 >
