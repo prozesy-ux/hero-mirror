@@ -321,7 +321,7 @@ const BuyerDashboardHome = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Add Funds - Primary CTA */}
         <Link to="/dashboard/billing">
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg p-5 text-white border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg p-5 text-white border transition-colors hover:opacity-90 cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Plus className="w-5 h-5" />
@@ -337,7 +337,7 @@ const BuyerDashboardHome = () => {
 
         {/* Browse Marketplace */}
         <Link to="/dashboard/marketplace">
-          <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
+          <div className="bg-white rounded-lg p-5 border transition-colors hover:bg-slate-50 cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-xl bg-blue-50 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-blue-600" />
@@ -353,7 +353,7 @@ const BuyerDashboardHome = () => {
 
         {/* View Wishlist */}
         <Link to="/dashboard/wishlist">
-          <div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
+          <div className="bg-white rounded-lg p-5 border transition-colors hover:bg-slate-50 cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-xl bg-pink-50 flex items-center justify-center">
                 <Heart className="w-5 h-5 text-pink-600" />
@@ -369,7 +369,7 @@ const BuyerDashboardHome = () => {
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism">
+      <div className="bg-white rounded-lg border">
         <div className="flex items-center justify-between p-5 border-b border-slate-100">
           <h2 className="text-lg font-semibold text-slate-900">Recent Orders</h2>
           <Link 
@@ -452,7 +452,7 @@ const BuyerDashboardHome = () => {
 
       {/* Quick Stats Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
+        <div className="bg-white rounded-lg p-4 border">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
               <CheckCircle className="h-5 w-5 text-emerald-600" />
@@ -464,7 +464,7 @@ const BuyerDashboardHome = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
+        <div className="bg-white rounded-lg p-4 border">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
               <Package className="h-5 w-5 text-blue-600" />
@@ -476,7 +476,7 @@ const BuyerDashboardHome = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
+        <div className="bg-white rounded-lg p-4 border">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
               <Clock className="h-5 w-5 text-amber-600" />
@@ -489,7 +489,7 @@ const BuyerDashboardHome = () => {
         </div>
 
         <Link to="/dashboard/wishlist">
-          <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
+          <div className="bg-white rounded-lg p-4 border transition-colors hover:bg-slate-50">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-pink-100 flex items-center justify-center">
                 <Heart className="h-5 w-5 text-pink-600" />
