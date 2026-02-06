@@ -318,21 +318,21 @@ const SellerMarketing = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white border rounded p-8">
+        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Total Codes</span>
           </div>
           <div className="text-4xl font-semibold text-slate-900">{discountCodes.length}</div>
         </div>
 
-        <div className="bg-white border rounded p-8">
+        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Active Codes</span>
           </div>
           <div className="text-4xl font-semibold text-emerald-600">{activeCount}</div>
         </div>
 
-        <div className="bg-white border rounded p-8">
+        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Total Uses</span>
           </div>
@@ -341,7 +341,7 @@ const SellerMarketing = () => {
       </div>
 
       {/* Discount Codes Table */}
-      <div className="bg-white rounded-lg border overflow-hidden">
+      <div className="bg-white rounded-lg border overflow-hidden hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">

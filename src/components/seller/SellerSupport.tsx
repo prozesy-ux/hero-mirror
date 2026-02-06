@@ -454,7 +454,7 @@ const SellerSupport = () => {
       />
 
       {/* Chat Card */}
-      <div className="bg-white rounded-lg border overflow-hidden h-[calc(100vh-140px)] flex flex-col">
+      <div className="bg-white rounded-lg border overflow-hidden h-[calc(100vh-140px)] flex flex-col hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
         {/* Chat Header */}
         <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3 bg-gradient-to-r from-violet-50 to-purple-50">
           <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
