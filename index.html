@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://yenvbateuuoharllzbds.supabase.co https://*.supabase.co https://*.jsdelivr.net https://*.unpkg.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://*.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.gpteng.co data:; img-src 'self' data: https:;">
+    
     <!-- Critical CSS - Inline for instant first paint -->
     <style>
       *,*::before,*::after{box-sizing:border-box}
@@ -29,6 +32,7 @@
     
     <!-- Preconnect to critical origins -->
     <link rel="preconnect" href="https://abpbafflztnmyixumaqi.supabase.co" crossorigin />
+    <link rel="preconnect" href="https://yenvbateuuoharllzbds.supabase.co" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     
@@ -69,6 +73,18 @@
       "description": "Uptoza powers global digital commerce. A unified platform for digital products, premium services, and AI-driven solutions. Trusted by creators and businesses worldwide.",
       "sameAs": ["https://twitter.com/Uptoza"]
     }
+    </script>
+
+    <!-- Analytics Tracker (Advanced) -->
+    <script>
+      (function(w,d,s,l,i){
+        w[l]=w[l]||[];
+        var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s);
+        j.async=true;
+        j.src='https://yenvbateuuoharllzbds.supabase.co/functions/v1/tracker-script?id='+i;
+        f.parentNode.insertBefore(j,f);
+      })(window,document,'script','_analytics','0386ad7b-fd79-4b9a-8fe5-c31fe30e7382');
     </script>
   </head>
 
