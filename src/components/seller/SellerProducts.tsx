@@ -353,19 +353,19 @@ const SellerProducts = () => {
 
         {/* Stats Row - Modern Soft Design */}
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-white border rounded p-8">
+          <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
             <p className="text-base text-slate-700 mb-2">Products</p>
             <p className="text-4xl font-semibold text-slate-900">
               <AnimatedCounter value={totalProducts} />
             </p>
           </div>
-          <div className="bg-white border rounded p-8">
+          <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
             <p className="text-base text-slate-700 mb-2">Live</p>
             <p className="text-4xl font-semibold text-slate-900">
               <AnimatedCounter value={liveProducts} />
             </p>
           </div>
-          <div className="bg-white border rounded p-8">
+          <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
             <p className="text-base text-slate-700 mb-2">Revenue</p>
             <p className="text-4xl font-semibold text-slate-900">{formatAmountOnly(totalRevenue)}</p>
           </div>
@@ -592,7 +592,7 @@ const SellerProducts = () => {
       {/* Preview Section - 30% */}
       <div className="lg:col-span-3 space-y-6">
         {/* Comic Illustration */}
-        <div className="bg-white border rounded overflow-hidden">
+        <div className="bg-white border rounded overflow-hidden hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <img 
             src={gumroadComic} 
             alt="Gumroad Creator" 
@@ -601,7 +601,7 @@ const SellerProducts = () => {
         </div>
 
         {/* Quick Stats Summary */}
-        <div className="bg-white border rounded p-8">
+        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <h3 className="text-base text-slate-700 mb-4">Quick Stats</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -631,7 +631,7 @@ const SellerProducts = () => {
 
         {/* Selected Product Preview */}
         {previewProduct ? (
-          <div className="bg-white border rounded p-8">
+          <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
             <h3 className="text-base text-slate-700 mb-4">Selected Product</h3>
             <div className="space-y-4">
               {previewProduct.icon_url && (

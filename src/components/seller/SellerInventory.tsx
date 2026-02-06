@@ -140,7 +140,7 @@ const SellerInventory = () => {
       {/* Stats Cards - Gumroad Style */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total Products */}
-        <div className="bg-white border rounded p-8">
+        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Total Products</span>
           </div>
@@ -148,7 +148,7 @@ const SellerInventory = () => {
         </div>
 
         {/* Total Units */}
-        <div className="bg-white border rounded p-8">
+        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Total Units</span>
           </div>
@@ -156,7 +156,7 @@ const SellerInventory = () => {
         </div>
 
         {/* In Stock */}
-        <div className="bg-white border rounded p-8">
+        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">In Stock</span>
           </div>
@@ -164,7 +164,7 @@ const SellerInventory = () => {
         </div>
 
         {/* Low Stock */}
-        <div className="bg-white border rounded p-8">
+        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Low Stock</span>
           </div>
@@ -172,7 +172,7 @@ const SellerInventory = () => {
         </div>
 
         {/* Out of Stock */}
-        <div className="bg-white border rounded p-8">
+        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Out of Stock</span>
           </div>
@@ -181,7 +181,7 @@ const SellerInventory = () => {
       </div>
 
       {/* Inventory Health */}
-      <div className="bg-white rounded-lg p-8 border">
+      <div className="bg-white rounded-lg p-8 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-slate-800">Inventory Health Score</h3>
           <span className={`text-lg font-bold ${
@@ -228,7 +228,7 @@ const SellerInventory = () => {
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-lg border overflow-hidden">
+      <div className="bg-white rounded-lg border overflow-hidden hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">

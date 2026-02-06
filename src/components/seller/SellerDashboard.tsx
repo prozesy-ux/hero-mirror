@@ -326,7 +326,7 @@ const SellerDashboard = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Link to="/seller/orders">
-          <div className="bg-white rounded-lg p-4 border transition-colors hover:bg-slate-50 cursor-pointer group">
+          <div className="bg-white rounded-lg p-4 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-amber-600" />
@@ -341,7 +341,7 @@ const SellerDashboard = () => {
         </Link>
 
         <Link to="/seller/flash-sales">
-          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-lg p-4 text-white border transition-colors hover:opacity-90 cursor-pointer group">
+          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-lg p-4 text-white border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-white/20 flex items-center justify-center">
                 <Zap className="w-5 h-5" />
@@ -356,7 +356,7 @@ const SellerDashboard = () => {
         </Link>
 
         <Link to="/seller/chat">
-          <div className="bg-white rounded-lg p-4 border transition-colors hover:bg-slate-50 cursor-pointer group">
+          <div className="bg-white rounded-lg p-4 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer group">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
                 <MessageSquare className="w-5 h-5 text-blue-600" />
@@ -373,7 +373,7 @@ const SellerDashboard = () => {
         <Button 
           onClick={handleExport}
           variant="outline"
-          className="bg-white border rounded-lg h-auto p-4 justify-start transition-colors hover:bg-slate-50"
+          className="bg-white border rounded-lg h-auto p-4 justify-start hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow"
         >
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
@@ -390,7 +390,7 @@ const SellerDashboard = () => {
       {/* Performance Metrics Row */}
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Completion Rate */}
-        <div className="bg-white rounded-lg p-8 border">
+        <div className="bg-white rounded-lg p-8 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <div className="flex items-center justify-between mb-4">
             <span className="text-base text-slate-700">Completion Rate</span>
             <Target className="w-5 h-5 text-emerald-500" />
@@ -407,7 +407,7 @@ const SellerDashboard = () => {
         </div>
 
         {/* Order Status */}
-        <div className="bg-white rounded-lg p-8 border">
+        <div className="bg-white rounded-lg p-8 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <span className="text-base text-slate-700 mb-4 block">Order Status</span>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2">
@@ -434,7 +434,7 @@ const SellerDashboard = () => {
         </div>
 
         {/* Month Summary */}
-        <div className="bg-white rounded-lg p-8 border">
+        <div className="bg-white rounded-lg p-8 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <span className="text-base text-slate-700 mb-4 block">Monthly Comparison</span>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -450,7 +450,7 @@ const SellerDashboard = () => {
       </div>
 
       {/* Revenue Chart */}
-      <div className="bg-white rounded-lg p-5 border">
+      <div className="bg-white rounded-lg p-5 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-slate-900">Revenue Trend</h3>
           <div className="flex items-center gap-2">
@@ -506,7 +506,7 @@ const SellerDashboard = () => {
       {/* Top Products & Recent Orders */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Top Products */}
-        <div className="bg-white rounded-lg border">
+        <div className="bg-white rounded-lg border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-900">Top Products</h3>
             <Link to="/seller/product-analytics" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
@@ -536,7 +536,7 @@ const SellerDashboard = () => {
         </div>
 
         {/* Recent Orders */}
-        <div className="bg-white rounded-lg border">
+        <div className="bg-white rounded-lg border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-900">Recent Orders</h3>
             <Link to="/seller/orders" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
