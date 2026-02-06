@@ -1,157 +1,144 @@
 
-# Remove Hover Effects from All Dashboard Cards
+# Add Neo-Brutalist Hover Effects to All Seller Dashboard Cards
 
 ## Overview
 
-Remove the neo-brutalist hover effects (`hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`, `shadow-neobrutalism`, `hover:shadow-none hover:translate-x-1 hover:translate-y-1`) from static display cards across the Seller Dashboard and Buyer Dashboard to match the clean Gumroad minimal style already applied to SellerProducts section.
+Add the neo-brutalist hover effect (`hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`) to ALL cards across the Seller Dashboard sections. This will give every card interactive feedback when hovered, matching the style used in Getting Started cards and interactive buttons.
 
-## Design Principle
+## Hover Effect Pattern
 
-**Static display cards** (stats, charts, lists, containers) should have NO hover effects - clean `bg-white border rounded` style.
+```css
+hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer
+```
 
-**Interactive cards** (Getting Started checklist items that need action) can keep the neo-brutalism hover effect since they are explicit CTAs.
+This creates a 4px solid black shadow on hover that shifts to the bottom-right, creating a "lifted" paper effect.
 
 ---
 
-## Files Requiring Updates
+## Files to Update
 
-### Seller Dashboard
+### 1. SellerDashboard.tsx
 
-| File | Cards to Update |
-|------|-----------------|
-| `src/components/seller/SellerDashboard.tsx` | Quick Actions (Lines 329, 344, 359, 376) - Remove hover shadow, keep clickable styling |
+**Stats Row (Lines 295-324)** - StatCards already use `variant="gumroad"` which needs updating
 
-### Buyer Dashboard
+**Quick Actions (Lines 328-388)** - Already have hover, but verify consistency
 
-| File | Cards to Update |
-|------|-----------------|
-| `src/components/dashboard/BuyerDashboardHome.tsx` | Quick Actions (Lines 324, 340, 356), Recent Orders container (Line 372), Quick Stats Summary (Lines 455, 467, 479, 492) |
-| `src/components/dashboard/BuyerAnalytics.tsx` | Spending Charts (Lines 287, 336, 367) |
-| `src/components/dashboard/GumroadSections.tsx` | Getting Started cards (Line 141) - These are interactive so keep hover |
-| `src/components/dashboard/BuyerWallet.tsx` | Payment methods cards, account cards, withdrawal cards, buttons (Lines 811, 871, 912, 963, 1121, 1255, 1301, 1684) |
+**Performance Metrics (Lines 391-451)**
+- Completion Rate card (Line 393)
+- Order Status card (Line 410)
+- Monthly Comparison card (Line 437)
+
+**Revenue Chart (Lines 453-505)**
+- Main chart container
+
+**Top Products & Recent Orders (Lines 507-589)**
+- Top Products container
+- Recent Orders container
+
+### 2. SellerPerformance.tsx
+
+**Key Metrics Grid (Lines 184-222)**
+- Trust Score card (Line 186)
+- Fulfillment Rate card (Line 196)
+- Response Time card (Line 207)
+- Delivery Time card (Line 217)
+
+**Order Distribution (Line 225)**
+**Performance Checklist (Line 255)**
+**Stats Summary (Line 284)**
+
+### 3. SellerMarketing.tsx
+
+**Stats Cards (Lines 330-358)**
+- Total Codes card
+- Active Codes card
+- Total Uses card
+
+**Discount Codes Table container (Line 360)**
+
+### 4. SellerProductAnalytics.tsx
+
+**Overview Stats (Lines 129-166)**
+- Total Views card
+- Total Clicks card
+- Total Purchases card
+- Conversion Rate card
+
+**Chart Container (Line 168)**
+**Product Performance Table (Line 199)**
+
+### 5. SellerProducts.tsx
+
+**Stats Row (Lines 354-372)**
+- Products card
+- Live card
+- Revenue card
+
+**Sidebar Cards (Lines 609-700)**
+- Comic Illustration card
+- Quick Stats card
+- Product Preview card
+
+### 6. SellerInventory.tsx
+
+**Stats Cards (Lines 140-200)**
+- Total Products
+- Total Units
+- In Stock
+- Low Stock
+- Out of Stock
+
+**Inventory Table container**
+
+### 7. SellerSupport.tsx
+
+**Chat Container card**
+
+### 8. StatCard Component
+
+Update the `gumroad` variant to include hover effect:
+
+```tsx
+gumroad: cn(
+  "bg-white border rounded p-8",
+  "hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer"
+)
+```
 
 ---
 
-## Detailed Changes
+## Standard Pattern for All Cards
 
-### 1. SellerDashboard.tsx (Lines 329-388)
-
-**Quick Action Cards - Keep functional but simplify:**
-
-Change from:
+**Before (plain card):**
 ```tsx
-<div className="bg-white rounded-lg p-4 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer group">
+<div className="bg-white border rounded p-8">
 ```
 
-Change to:
+**After (with hover):**
 ```tsx
-<div className="bg-white rounded-lg p-4 border transition-colors hover:bg-slate-50 cursor-pointer group">
+<div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer">
 ```
 
-Apply to:
-- Pending Orders card (Line 329)
-- Flash Sales card (Line 344)
-- Messages card (Line 359)
-- Export Report button (Line 376)
-
-### 2. BuyerDashboardHome.tsx (Lines 324-503)
-
-**Quick Actions - Update all 3 cards:**
-
-Change from:
+For non-clickable containers (charts, tables):
 ```tsx
-<div className="bg-white rounded-lg p-5 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer group">
-```
-
-Change to:
-```tsx
-<div className="bg-white rounded-lg p-5 border transition-colors hover:bg-slate-50 cursor-pointer group">
-```
-
-**Recent Orders Container:**
-
-Change from:
-```tsx
-<div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism">
-```
-
-Change to:
-```tsx
-<div className="bg-white rounded-lg border">
-```
-
-**Quick Stats Summary - Update all 4 cards:**
-
-Change from:
-```tsx
-<div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
-```
-
-Change to:
-```tsx
-<div className="bg-white rounded-lg p-4 border">
-```
-
-### 3. BuyerAnalytics.tsx (Lines 287-384)
-
-**Chart Containers - Update all 3:**
-
-Change from:
-```tsx
-<div className="bg-white rounded-lg p-6 border-2 border-black shadow-neobrutalism">
-```
-
-Change to:
-```tsx
-<div className="bg-white rounded-lg p-6 border">
-```
-
-Apply to:
-- Spending Details Chart (Line 287)
-- Category Breakdown (Line 336)
-- Monthly Trend (Line 367)
-
-### 4. BuyerWallet.tsx (Lines 809-1684)
-
-**Interactive Buttons - Keep hover for CTAs:**
-- Withdraw button, Verify OTP, Add Account - These are true buttons, hover is appropriate
-
-**Card containers - Remove heavy hover:**
-
-Change from:
-```tsx
-<div className="p-4 bg-white border rounded text-center transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-```
-
-Change to:
-```tsx
-<div className="p-4 bg-white border rounded text-center transition-colors hover:bg-slate-50">
-```
-
-Apply to:
-- Payment methods cards (Line 871)
-- Saved accounts cards (Line 912)
-- Withdrawal history cards (Line 1121)
-- Add account card (Line 963)
-
-### 5. GumroadSections.tsx (Line 141) - KEEP AS-IS
-
-The Getting Started checklist items ARE interactive action items - keep the neo-brutalism hover effect:
-```tsx
-className="relative bg-white border rounded p-4 text-center hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer"
+<div className="bg-white border rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
 ```
 
 ---
 
 ## Summary of Changes
 
-| Component | Change Type | Count |
-|-----------|-------------|-------|
-| SellerDashboard.tsx | Remove `hover:shadow-[4px...]` from Quick Actions | 4 cards |
-| BuyerDashboardHome.tsx | Remove `shadow-neobrutalism` and hover effects | 8 cards |
-| BuyerAnalytics.tsx | Remove `border-2 border-black shadow-neobrutalism` | 3 containers |
-| BuyerWallet.tsx | Simplify hover effects on non-button cards | ~6 cards |
+| File | Cards to Update | Type |
+|------|-----------------|------|
+| StatCard.tsx | Update gumroad variant | Component |
+| SellerDashboard.tsx | ~10 cards | Add hover |
+| SellerPerformance.tsx | ~7 cards | Add hover |
+| SellerMarketing.tsx | ~4 cards | Add hover |
+| SellerProductAnalytics.tsx | ~6 cards | Add hover |
+| SellerProducts.tsx | ~6 cards | Add hover |
+| SellerInventory.tsx | ~6 cards | Add hover |
+| SellerSupport.tsx | ~1 card | Add hover |
 
-**Total: ~21 elements to update**
+**Total: ~40 elements to update**
 
-This will create visual consistency with the SellerProducts section where hover effects were removed from static display cards.
+This will create a consistent neo-brutalist interactive feel across the entire Seller Dashboard where every card responds to hover with the signature 4px black shadow effect.
