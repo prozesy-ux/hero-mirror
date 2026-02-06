@@ -1,130 +1,109 @@
 
-# Add Neo-Brutalist Hover Effects to Products Section & New Product Page
+# Add Analytics Tracker Script and Content Security Policy
 
 ## Overview
 
-Add the neo-brutalist hover effect (`hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`) to all cards in the SellerProducts section and NewProduct page. The shadow only appears on hover, creating interactive feedback.
+Add an external analytics tracker script and Content Security Policy (CSP) meta tags to the `index.html` file to enable advanced tracking and enforce security policies for resource loading.
 
-## Hover Effect Pattern
+---
 
-```css
-hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow
+## Changes to index.html
+
+### 1. Content Security Policy Meta Tag
+
+Add a single, comprehensive CSP meta tag that covers all required sources. The CSP will be placed early in the `<head>` section after the viewport meta tag.
+
+**Location**: After line 5 (viewport meta)
+
+```html
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://yenvbateuuoharllzbds.supabase.co https://*.supabase.co https://*.jsdelivr.net https://*.unpkg.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://*.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.gpteng.co data:; img-src 'self' data: https:;">
+```
+
+**Note**: Only ONE CSP meta tag should be used. Multiple CSP tags create conflicting policies.
+
+---
+
+### 2. Analytics Tracker Script
+
+Add the analytics tracker script at the end of `<head>` section, after all other scripts but before the closing `</head>` tag.
+
+**Location**: After line 72 (after JSON-LD schema, before `</head>`)
+
+```html
+<!-- Analytics Tracker (Advanced) -->
+<script>
+  (function(w,d,s,l,i){
+    w[l]=w[l]||[];
+    var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s);
+    j.async=true;
+    j.src='https://yenvbateuuoharllzbds.supabase.co/functions/v1/tracker-script?id='+i;
+    f.parentNode.insertBefore(j,f);
+  })(window,document,'script','_analytics','0386ad7b-fd79-4b9a-8fe5-c31fe30e7382');
+</script>
 ```
 
 ---
 
-## Files to Update
+### 3. Preconnect for Analytics Domain
 
-### 1. SellerProducts.tsx
+Add a preconnect link for the analytics Supabase domain to improve script loading performance.
 
-**Product Grid Cards (Line 452)**
+**Location**: After line 31 (with other preconnect links)
 
-Current:
-```tsx
-className={`bg-white border rounded-xl overflow-hidden group shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer ${...}`}
+```html
+<link rel="preconnect" href="https://yenvbateuuoharllzbds.supabase.co" crossorigin />
 ```
-
-Change to:
-```tsx
-className={`bg-white border rounded-xl overflow-hidden group hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer ${...}`}
-```
-
-Remove: `shadow-sm`, `hover:shadow-md`, `hover:-translate-y-0.5`
 
 ---
 
-### 2. ProductTypeSelector.tsx
+## Final Structure
 
-**Compact Mode Cards (Lines 35-40)**
-
-Current:
-```tsx
-className={cn(
-  "flex flex-col gap-4 p-4 rounded border text-left transition-all bg-white h-full",
-  isSelected
-    ? "border-slate-900"
-    : "border-slate-200 hover:border-slate-400"
-)}
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="...">
+    
+    <!-- Critical CSS -->
+    <style>...</style>
+    
+    <!-- Favicons -->
+    ...
+    
+    <!-- Preconnect (including new analytics domain) -->
+    <link rel="preconnect" href="https://yenvbateuuoharllzbds.supabase.co" crossorigin />
+    ...
+    
+    <!-- SEO Meta Tags -->
+    ...
+    
+    <!-- JSON-LD Schema -->
+    <script type="application/ld+json">...</script>
+    
+    <!-- Analytics Tracker (Advanced) -->
+    <script>
+      (function(w,d,s,l,i){...})(window,document,'script','_analytics','0386ad7b-fd79-4b9a-8fe5-c31fe30e7382');
+    </script>
+  </head>
+  <body>
+    ...
+  </body>
+</html>
 ```
-
-Change to:
-```tsx
-className={cn(
-  "flex flex-col gap-4 p-4 rounded border text-left transition-shadow bg-white h-full hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
-  isSelected
-    ? "border-slate-900"
-    : "border-slate-200"
-)}
-```
-
-**Products Grid Cards (Lines 71-76)**
-
-Same pattern - add `hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`
-
-**Services Grid Cards (Lines 111-116)**
-
-Same pattern - add `hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`
 
 ---
 
-### 3. NewProduct.tsx
+## Summary
 
-**Main Content Container (Line 321)**
+| Change | Location | Purpose |
+|--------|----------|---------|
+| CSP Meta Tag | After viewport meta | Security policy for resources |
+| Preconnect | With other preconnects | Faster analytics script load |
+| Analytics Script | End of head section | External tracking integration |
 
-Current:
-```tsx
-<div className="bg-white rounded border">
-```
-
-Change to:
-```tsx
-<div className="bg-white rounded border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-```
-
-**Summary Card (Line 371)**
-
-Current:
-```tsx
-<div className="p-6 bg-gray-50 rounded border space-y-4">
-```
-
-Change to:
-```tsx
-<div className="p-6 bg-gray-50 rounded border space-y-4 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-```
-
-**Pay What You Want Card (Line 610)**
-
-Current:
-```tsx
-<div className="p-6 bg-white rounded border">
-```
-
-Change to:
-```tsx
-<div className="p-6 bg-white rounded border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-```
-
-**Pre-order Card (Line 647)**
-
-Same pattern - add hover shadow
-
-**Availability Card (if exists)**
-
-Same pattern - add hover shadow
-
----
-
-## Summary of Changes
-
-| File | Element | Change |
-|------|---------|--------|
-| SellerProducts.tsx | Product grid cards | Replace `hover:shadow-md` with neo-brutalist hover |
-| ProductTypeSelector.tsx | Type selection cards (3 grids) | Add neo-brutalist hover |
-| NewProduct.tsx | Main container | Add neo-brutalist hover |
-| NewProduct.tsx | Summary card | Add neo-brutalist hover |
-| NewProduct.tsx | Pricing option cards | Add neo-brutalist hover |
-
-**Total: ~15 card elements to update**
-
-This will ensure all cards in the Products section and New Product page have the consistent neo-brutalist hover effect that only shows when hovering.
+**File to update**: `index.html`
