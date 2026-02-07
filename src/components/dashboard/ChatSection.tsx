@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   Send, Loader2, Image, Video, Paperclip, 
-  X, Download, FileText, StopCircle, Circle, Headphones, Store, ArrowLeft, Search, AlertTriangle,
+  X, Download, FileText, StopCircle, Circle, Headphones, Store, ArrowLeft, Search,
   Phone, MoreVertical, MessageCircle, Film, ChevronDown
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +12,99 @@ import { playSound } from '@/lib/sounds';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
-// Types
+// Demo data exactly from HTML reference
+const DEMO_CONTACTS = [
+  {
+    id: 'demo-1',
+    name: 'Eten Hunt',
+    avatar: 'https://c.animaapp.com/mlcbgbe2563Pxt/img/photo.png',
+    role: 'Agents',
+    lastMessage: 'Thank you very much. I\'m glad ...',
+    unread: false,
+    active: true
+  },
+  {
+    id: 'demo-2',
+    name: 'Jakob Saris',
+    avatar: 'https://c.animaapp.com/mlcbgbe2563Pxt/img/people.png',
+    role: 'Property manager',
+    lastMessage: 'You : Sure! let me tell you about w…',
+    unread: false,
+    active: false
+  },
+  {
+    id: 'demo-3',
+    name: 'Jeremy Zucker',
+    avatar: 'https://c.animaapp.com/mlcbgbe2563Pxt/img/people-1.png',
+    role: '4 m Ago',
+    lastMessage: 'You : Sure! let me teach you about  ...',
+    unread: false,
+    active: false
+  },
+  {
+    id: 'demo-4',
+    name: 'Nadia Lauren',
+    avatar: 'https://c.animaapp.com/mlcbgbe2563Pxt/img/people-2.png',
+    role: '5 m Ago',
+    lastMessage: 'Is there anything I can help? Just ...',
+    unread: true,
+    active: false
+  },
+  {
+    id: 'demo-5',
+    name: 'Jeremy Zucker',
+    avatar: 'https://c.animaapp.com/mlcbgbe2563Pxt/img/people-3.png',
+    role: '4 m Ago',
+    lastMessage: 'You : Sure! let me teach you about  ...',
+    unread: false,
+    active: false
+  }
+];
+
+const DEMO_MESSAGES = {
+  received: [
+    {
+      id: 'r1',
+      images: [
+        'https://c.animaapp.com/mlcbgbe2563Pxt/img/image-2.png',
+        'https://c.animaapp.com/mlcbgbe2563Pxt/img/image-3.png'
+      ],
+      text: 'Good question. How about just discussing it?',
+      time: 'Today 11:55'
+    },
+    {
+      id: 'r2',
+      images: [],
+      text: 'Yes of course, Are there problems with your job?',
+      time: 'Today 11:53'
+    },
+    {
+      id: 'r3',
+      images: [
+        'https://c.animaapp.com/mlcbgbe2563Pxt/img/-----image-1.png',
+        'https://c.animaapp.com/mlcbgbe2563Pxt/img/-----image-1.png'
+      ],
+      text: 'Good question. How about just discussing it?',
+      time: 'Today 11:55'
+    }
+  ],
+  sent: [
+    {
+      id: 's1',
+      hasVoice: true,
+      text: 'Of course. Thank you so much for taking your time.',
+      time: 'Today 11:56'
+    },
+    {
+      id: 's2',
+      hasVoice: false,
+      text: 'Morning Eten Hunt, I have a question about my job!',
+      time: 'Today 11:52'
+    }
+  ]
+};
+
+// Types for real data
 interface SupportMessage {
   id: string;
   user_id: string;
@@ -55,36 +147,31 @@ interface Conversation {
   sellerId?: string;
 }
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 const ChatSection = () => {
   const { user } = useAuthContext();
   
-  // Conversations state
+  // Demo state
+  const [selectedDemoContact, setSelectedDemoContact] = useState(DEMO_CONTACTS[0]);
+  
+  // Real data state
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Messages state
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
   const [sellerMessages, setSellerMessages] = useState<SellerMessage[]>([]);
   const [attachments, setAttachments] = useState<Map<string, ChatAttachment[]>>(new Map());
-  
-  // Input state
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  
-  // Screen Recording State (only for support chat)
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Mobile view state
   const [showChatOnMobile, setShowChatOnMobile] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -96,47 +183,39 @@ const ChatSection = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Fetch all conversations
+  // Fetch real conversations from database
   useEffect(() => {
     if (user) {
       fetchConversations();
       
       const supportChannel = supabase
         .channel('support-messages-multichat')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'support_messages',
-            filter: `user_id=eq.${user.id}`,
-          },
-          () => {
-            fetchConversations();
-            if (selectedConversation?.type === 'support') {
-              fetchSupportMessages();
-            }
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'support_messages',
+          filter: `user_id=eq.${user.id}`,
+        }, () => {
+          fetchConversations();
+          if (selectedConversation?.type === 'support') {
+            fetchSupportMessages();
           }
-        )
+        })
         .subscribe();
       
       const sellerChannel = supabase
         .channel('seller-chats-multichat')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'seller_chats',
-            filter: `buyer_id=eq.${user.id}`,
-          },
-          () => {
-            fetchConversations();
-            if (selectedConversation?.type === 'seller') {
-              fetchSellerMessages(selectedConversation.sellerId!);
-            }
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'seller_chats',
+          filter: `buyer_id=eq.${user.id}`,
+        }, () => {
+          fetchConversations();
+          if (selectedConversation?.type === 'seller') {
+            fetchSellerMessages(selectedConversation.sellerId!);
           }
-        )
+        })
         .subscribe();
 
       return () => {
@@ -149,6 +228,8 @@ const ChatSection = () => {
           clearInterval(recordingTimerRef.current);
         }
       };
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
@@ -464,170 +545,13 @@ const ChatSection = () => {
     setPendingFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const startRecording = async () => {
-    if (!user || selectedConversation?.type !== 'support') return;
-    
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { mediaSource: 'screen' } as any,
-        audio: true
-      });
-      
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
-          ? 'video/webm;codecs=vp9' 
-          : 'video/webm'
-      });
-      
-      recordedChunksRef.current = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-      
-      mediaRecorder.onstop = async () => {
-        if (recordingTimerRef.current) {
-          clearInterval(recordingTimerRef.current);
-          recordingTimerRef.current = null;
-        }
-        setRecordingTime(0);
-        
-        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-        const file = new File([blob], `screen-recording-${Date.now()}.webm`, { type: 'video/webm' });
-        
-        await uploadAndSendRecording(file);
-        stream.getTracks().forEach(track => track.stop());
-      };
-      
-      stream.getVideoTracks()[0].onended = () => {
-        if (mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
-        }
-        setIsRecording(false);
-      };
-      
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(1000);
-      setIsRecording(true);
-      
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-      
-      toast.success('Screen recording started!');
-    } catch (error) {
-      console.error('Screen recording error:', error);
-      toast.error('Failed to start screen recording');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      toast.info('Processing recording...');
-    }
-  };
-
-  const uploadAndSendRecording = async (file: File) => {
-    if (!user) return;
-    
-    setUploadingFile(true);
-    setSendingMessage(true);
-    
-    try {
-      const attachment = await uploadFile(file);
-      
-      if (attachment) {
-        const { data: messageData, error: messageError } = await supabase
-          .from('support_messages')
-          .insert({
-            user_id: user.id,
-            message: '🎥 Screen Recording',
-            sender_type: 'user',
-            is_read: false,
-          })
-          .select()
-          .single();
-
-        if (messageError) throw messageError;
-
-        await supabase.from('chat_attachments').insert({
-          message_id: messageData.id,
-          user_id: user.id,
-          file_url: attachment.file_url,
-          file_type: 'video',
-          file_name: file.name,
-          file_size: file.size
-        });
-
-        playSound('messageSent');
-        toast.success('Screen recording sent!');
-        fetchSupportMessages();
-        fetchConversations();
-      }
-    } catch (error) {
-      console.error('Error sending recording:', error);
-      toast.error('Failed to send recording');
-    } finally {
-      setUploadingFile(false);
-      setSendingMessage(false);
-    }
-  };
-
   const formatRecordingTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const renderAttachment = (att: ChatAttachment) => {
-    if (att.file_type === 'image') {
-      return (
-        <a href={att.file_url} target="_blank" rel="noopener noreferrer" className="block">
-          <img 
-            src={att.file_url} 
-            alt={att.file_name} 
-            className="w-[112px] h-[120px] rounded-[12px] object-cover"
-          />
-        </a>
-      );
-    }
-    
-    if (att.file_type === 'video') {
-      return (
-        <div className="relative max-w-[280px]">
-          <video 
-            src={att.file_url} 
-            controls 
-            className="rounded-[12px] max-h-[200px] w-full"
-          />
-        </div>
-      );
-    }
-    
-    return (
-      <a 
-        href={att.file_url} 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 px-3 py-2 bg-[#f7f7fd] rounded-[12px] hover:bg-[#eeeef5] transition-colors"
-      >
-        <FileText size={18} className="text-[#757575]" />
-        <span className="text-[14px] truncate max-w-[150px] text-[#000929] font-medium tracking-[-0.28px]">{att.file_name}</span>
-        <Download size={14} className="text-[#757575]" />
-      </a>
-    );
-  };
-
-  const filteredConversations = conversations.filter(conv =>
-    conv.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const currentMessages = selectedConversation?.type === 'support' ? supportMessages : sellerMessages;
-  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+  const hasRealData = user && (conversations.length > 0 || supportMessages.length > 0 || sellerMessages.length > 0);
 
   if (loading) {
     return (
@@ -636,13 +560,6 @@ const ChatSection = () => {
       </div>
     );
   }
-
-  const handleConversationSelect = (conv: Conversation) => {
-    setSelectedConversation(conv);
-    setShowChatOnMobile(true);
-    setNewMessage('');
-    setPendingFiles([]);
-  };
 
   return (
     <div className="flex h-[882px] lg:h-[calc(100vh-140px)] overflow-hidden bg-[#f7f7fd]">
@@ -662,15 +579,13 @@ const ChatSection = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1 px-1">
               <h1 className="text-[24px] font-semibold tracking-[-0.72px] text-[#000929]">Messaging</h1>
-              {totalUnread > 0 && (
-                <span className="bg-[#ff3e46] text-[#9b171c] text-[12px] font-normal px-[3px] py-1 rounded-[2px]">
-                  {totalUnread}
-                </span>
-              )}
+              <span className="bg-[#ff3e46] text-[#9b171c] text-[12px] font-normal px-[3px] py-1 rounded-[2px]">
+                137
+              </span>
             </div>
             <button className="flex items-center gap-1 px-1 py-1 border border-[#f7f7fd] bg-white rounded text-[14px] font-medium text-[#000929] font-raleway">
               <span>Agents</span>
-              <ChevronDown className="w-5 h-5" />
+              <ChevronDown className="w-6 h-6" />
             </button>
           </div>
           
@@ -687,47 +602,38 @@ const ChatSection = () => {
           </div>
         </div>
 
-        {/* Contacts List */}
+        {/* Contacts List - Demo Data */}
         <div className="flex-1 overflow-y-auto">
-          {filteredConversations.map((conv, index) => (
-            <div key={conv.id}>
+          {DEMO_CONTACTS.map((contact, index) => (
+            <div key={contact.id}>
               <button
-                onClick={() => handleConversationSelect(conv)}
+                onClick={() => {
+                  setSelectedDemoContact(contact);
+                  setShowChatOnMobile(true);
+                }}
                 className={cn(
                   "w-full flex items-center gap-3 p-[10px_20px] text-left transition-colors",
-                  selectedConversation?.id === conv.id 
+                  selectedDemoContact.id === contact.id 
                     ? "bg-[#f7f7fd] rounded-[10px]" 
                     : "bg-transparent hover:bg-[#f7f7fd]"
                 )}
               >
                 {/* Avatar */}
-                <div className={cn(
-                  "w-[52px] h-[52px] rounded-[30px] flex items-center justify-center flex-shrink-0",
-                  conv.type === 'support' ? "bg-[#000929]" : "bg-[#2e3b5b]"
-                )}>
-                  {conv.type === 'support' ? (
-                    <Headphones className="w-6 h-6 text-white" />
-                  ) : conv.avatar ? (
-                    <Avatar className="w-[52px] h-[52px]">
-                      <AvatarImage src={conv.avatar} alt={conv.name} className="object-cover" />
-                      <AvatarFallback className="bg-[#2e3b5b] text-white">
-                        <Store className="w-5 h-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <Store className="w-6 h-6 text-white" />
-                  )}
-                </div>
+                <img 
+                  src={contact.avatar} 
+                  alt={contact.name}
+                  className="w-[52px] h-[52px] rounded-[30px] object-cover flex-shrink-0"
+                />
 
                 {/* Contact Info */}
                 <div className="flex-1 min-w-0 flex flex-col gap-2">
-                  {/* Name & Time Row */}
+                  {/* Name & Role Row */}
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-inter font-medium text-[14px] tracking-[-0.28px] text-[#000929] whitespace-nowrap">
-                      {conv.name}
+                      {contact.name}
                     </span>
                     <span className="text-[12px] tracking-[-0.12px] text-[#76767c]/80 whitespace-nowrap">
-                      {conv.lastMessageTime ? format(new Date(conv.lastMessageTime), 'h:mm a') : ''}
+                      {contact.role}
                     </span>
                   </div>
                   
@@ -735,37 +641,31 @@ const ChatSection = () => {
                   <div className="flex items-center justify-between gap-2">
                     <p className={cn(
                       "text-[12px] tracking-[-0.24px] overflow-hidden text-ellipsis whitespace-nowrap",
-                      conv.unreadCount > 0 ? "text-[#000929] font-medium" : "text-[#76767c]/80"
+                      contact.unread ? "text-[#000929] font-medium" : "text-[#76767c]/80"
                     )}>
-                      {conv.lastMessage}
+                      {contact.lastMessage}
                     </p>
-                    {conv.unreadCount > 0 ? (
+                    {contact.unread ? (
                       <div className="w-[18px] h-[18px] flex items-center justify-center flex-shrink-0">
                         <div className="w-2 h-2 bg-[#d82027] rounded-full" />
                       </div>
                     ) : (
-                      <div className="w-[18px] h-[18px] flex-shrink-0" />
+                      <img 
+                        src="https://c.animaapp.com/mlcbgbe2563Pxt/img/done-all.svg" 
+                        alt="Read" 
+                        className="w-[18px] h-[18px] flex-shrink-0"
+                      />
                     )}
                   </div>
                 </div>
               </button>
               
               {/* Separator */}
-              {index < filteredConversations.length - 1 && (
+              {index < DEMO_CONTACTS.length - 1 && (
                 <div className="w-[312px] h-[1px] bg-[#e5e5e5] mx-auto" />
               )}
             </div>
           ))}
-          
-          {filteredConversations.length === 0 && (
-            <div className="p-8 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#f7f7fd] flex items-center justify-center">
-                <MessageCircle className="w-8 h-8 text-[#bababa]" />
-              </div>
-              <p className="font-medium text-[#000929]">No conversations found</p>
-              <p className="text-sm mt-1 text-[#757575]">Start a new conversation</p>
-            </div>
-          )}
         </div>
       </aside>
 
@@ -774,290 +674,211 @@ const ChatSection = () => {
         "flex-1 h-[882px] lg:h-full relative flex flex-col",
         !showChatOnMobile && "hidden lg:flex"
       )}>
-        {selectedConversation ? (
-          <>
-            {/* Chat Header - 100px */}
-            <header className="h-[100px] bg-white border-b border-[#e5e5e5] flex items-center justify-between px-6 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                {/* Mobile back button */}
-                <button
-                  onClick={() => setShowChatOnMobile(false)}
-                  className="lg:hidden p-2 -ml-2 hover:bg-[#f7f7fd] rounded-lg transition-colors"
-                >
-                  <ArrowLeft className="w-5 h-5 text-[#000929]" />
-                </button>
-                
-                {/* Avatar */}
-                <div className={cn(
-                  "w-[44px] h-[44px] rounded-[40px] flex items-center justify-center",
-                  selectedConversation.type === 'support' ? "bg-[#000929]" : "bg-[#2e3b5b]"
-                )}>
-                  {selectedConversation.type === 'support' ? (
-                    <Headphones className="w-5 h-5 text-white" />
-                  ) : (
-                    <Store className="w-5 h-5 text-white" />
-                  )}
+        {/* Chat Header - 100px */}
+        <header className="h-[100px] bg-white border-b border-[#e5e5e5] flex items-center justify-between px-6 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            {/* Mobile back button */}
+            <button
+              onClick={() => setShowChatOnMobile(false)}
+              className="lg:hidden p-2 -ml-2 hover:bg-[#f7f7fd] rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-[#000929]" />
+            </button>
+            
+            {/* Avatar */}
+            <img 
+              src="https://c.animaapp.com/mlcbgbe2563Pxt/img/people-13.png"
+              alt={selectedDemoContact.name}
+              className="w-[44px] h-[44px] rounded-[40px] object-cover"
+            />
+            
+            {/* User Details */}
+            <div className="flex flex-col gap-2">
+              <h2 className="text-[16px] font-semibold tracking-[-0.32px] text-[#000929]">
+                {selectedDemoContact.name}
+              </h2>
+              <div className="flex items-center gap-2">
+                <div className="w-[18px] h-[18px] flex items-center justify-center">
+                  <div className="w-2 h-2 bg-[#33b843] rounded-full" />
                 </div>
-                
-                {/* User Details */}
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-[16px] font-semibold tracking-[-0.32px] text-[#000929]">
-                    {selectedConversation.name}
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <div className="w-[18px] h-[18px] flex items-center justify-center">
-                      <div className="w-2 h-2 bg-[#33b843] rounded-full" />
+                <span className="text-[12px] tracking-[-0.24px] text-[#bababa] font-medium">Online</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Action Buttons - gap 24px */}
+          <div className="flex items-center gap-6">
+            <button className="p-0 bg-transparent border-none cursor-pointer">
+              <Film className="w-6 h-6 text-[#000929]" />
+            </button>
+            <button className="p-0 bg-transparent border-none cursor-pointer">
+              <Phone className="w-6 h-6 text-[#000929]" />
+            </button>
+            <button className="p-0 bg-transparent border-none cursor-pointer">
+              <MoreVertical className="w-6 h-6 text-[#000929]" />
+            </button>
+          </div>
+        </header>
+
+        {/* Today Badge */}
+        <div className="flex justify-center pt-1 bg-white">
+          <span className="bg-white text-[#2e2a40] shadow-[0px_1px_3px_rgba(237,98,20,0.1)] py-2 px-3 rounded text-[14px] font-semibold tracking-[-0.28px]">
+            Today
+          </span>
+        </div>
+
+        {/* Messages Container - Exact HTML Layout */}
+        <div className="flex-1 overflow-y-auto p-[8px_24px] bg-white">
+          <div className="flex justify-between gap-4">
+            {/* Received Messages - Left Side */}
+            <div className="flex flex-col gap-[53px]">
+              {DEMO_MESSAGES.received.map((msg) => (
+                <div key={msg.id} className="flex flex-col gap-[7px]">
+                  {/* Images */}
+                  {msg.images.length > 0 && (
+                    <div className="flex gap-3">
+                      {msg.images.map((img, idx) => (
+                        <img 
+                          key={idx}
+                          src={img} 
+                          alt="Message" 
+                          className="w-[112px] h-[120px] rounded-[12px] object-cover"
+                        />
+                      ))}
                     </div>
-                    <span className="text-[12px] tracking-[-0.24px] text-[#bababa] font-medium">Online</span>
+                  )}
+                  
+                  {/* Message Bubble */}
+                  <div className="flex flex-col gap-[10px] w-[272px]">
+                    <div className="bg-[#000929] rounded-[0px_10px_10px_10px] shadow-[0px_1px_3px_rgba(237,98,20,0.1)] p-[8px_12px]">
+                      <p className="font-raleway font-medium text-[14px] tracking-[-0.28px] leading-[21px] text-white">
+                        {msg.text}
+                      </p>
+                    </div>
+                    <span className="text-[12px] tracking-[-0.12px] text-[#757575]">
+                      {msg.time}
+                    </span>
                   </div>
                 </div>
-              </div>
-              
-              {/* Action Buttons - gap 24px */}
-              <div className="flex items-center gap-6">
-                {/* Request Support for seller chats */}
-                {selectedConversation.type === 'seller' && selectedConversation.sellerId && (
-                  <button
-                    onClick={async () => {
-                      const reason = prompt('Please describe the issue you need help with:');
-                      if (!reason) return;
-                      
-                      const { error } = await supabase.from('chat_join_requests').insert({
-                        buyer_id: user?.id,
-                        seller_id: selectedConversation.sellerId,
-                        reason: reason,
-                        description: `Requested support for chat with ${selectedConversation.name}`
-                      });
-                      
-                      if (error) {
-                        toast.error('Failed to request support');
-                      } else {
-                        toast.success('Support request sent! Our team will review and join if needed.');
-                      }
-                    }}
-                    className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
-                  >
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    Request Support
-                  </button>
-                )}
-                <button className="p-0 bg-transparent border-none cursor-pointer">
-                  <Film className="w-6 h-6 text-[#000929]" />
-                </button>
-                <button className="p-0 bg-transparent border-none cursor-pointer">
-                  <Phone className="w-6 h-6 text-[#000929]" />
-                </button>
-                <button className="p-0 bg-transparent border-none cursor-pointer">
-                  <MoreVertical className="w-6 h-6 text-[#000929]" />
-                </button>
-              </div>
-            </header>
-
-            {/* Today Badge */}
-            <div className="flex justify-center pt-1 bg-white">
-              <span className="bg-white text-[#2e2a40] shadow-[0px_1px_3px_rgba(237,98,20,0.1)] py-2 px-3 rounded text-[14px] font-semibold tracking-[-0.28px]">
-                Today
-              </span>
+              ))}
             </div>
 
-            {/* Messages Container - 700px height in reference */}
-            <div className="flex-1 overflow-y-auto p-[8px_24px] bg-white">
-              {currentMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full">
-                  <div className="w-20 h-20 rounded-2xl bg-[#f7f7fd] flex items-center justify-center mb-4">
-                    <MessageCircle className="w-10 h-10 text-[#bababa]" />
-                  </div>
-                  <p className="text-lg font-semibold text-[#000929]">No messages yet</p>
-                  <p className="text-sm text-[#757575] mt-1">Start the conversation!</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {selectedConversation.type === 'support' ? (
-                    supportMessages.map((msg) => {
-                      const isUser = msg.sender_type === 'user';
-                      const messageAttachments = attachments.get(msg.id) || [];
-                      
-                      return (
-                        <div key={msg.id} className={cn("flex", isUser ? "justify-end" : "justify-start")}>
-                          <div className={cn("flex flex-col gap-[10px]", isUser ? "w-[303px] items-end" : "w-[272px]")}>
-                            {/* Attachments */}
-                            {messageAttachments.length > 0 && (
-                              <div className="flex gap-3">
-                                {messageAttachments.map(att => (
-                                  <div key={att.id}>{renderAttachment(att)}</div>
-                                ))}
-                              </div>
-                            )}
-                            
-                            {/* Message Bubble */}
-                            <div className={cn(
-                              "p-[8px_12px] shadow-[0px_1px_3px_rgba(237,98,20,0.1)]",
-                              isUser 
-                                ? "bg-[#2e3b5b] rounded-[10px_0px_10px_10px] w-full" 
-                                : "bg-[#000929] rounded-[0px_10px_10px_10px]"
-                            )}>
-                              <p className="font-raleway font-medium text-[14px] tracking-[-0.28px] leading-[21px] text-white whitespace-pre-wrap break-words">
-                                {msg.message}
-                              </p>
-                            </div>
-                            
-                            {/* Time */}
-                            <span className={cn(
-                              "text-[12px] tracking-[-0.12px] text-[#757575]",
-                              isUser ? "text-right" : "text-left"
-                            )}>
-                              Today {msg.created_at && format(new Date(msg.created_at), 'HH:mm')}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    sellerMessages.map((msg) => {
-                      const isBuyer = msg.sender_type === 'buyer';
-                      const isSystem = msg.sender_type === 'system';
-                      
-                      if (isSystem) {
-                        return (
-                          <div key={msg.id} className="flex justify-center my-4">
-                            <div className="bg-amber-50 rounded-xl px-4 py-2.5 max-w-[85%] border border-amber-200">
-                              <p className="text-sm text-amber-700 text-center whitespace-pre-wrap">
-                                {msg.message}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      }
-                      
-                      return (
-                        <div key={msg.id} className={cn("flex", isBuyer ? "justify-end" : "justify-start")}>
-                          <div className={cn("flex flex-col gap-[10px]", isBuyer ? "w-[303px] items-end" : "w-[272px]")}>
-                            <div className={cn(
-                              "p-[8px_12px] shadow-[0px_1px_3px_rgba(237,98,20,0.1)]",
-                              isBuyer 
-                                ? "bg-[#2e3b5b] rounded-[10px_0px_10px_10px] w-full" 
-                                : "bg-[#000929] rounded-[0px_10px_10px_10px]"
-                            )}>
-                              <p className="font-raleway font-medium text-[14px] tracking-[-0.28px] leading-[21px] text-white whitespace-pre-wrap break-words">
-                                {msg.message}
-                              </p>
-                            </div>
-                            <span className={cn(
-                              "text-[12px] tracking-[-0.12px] text-[#757575]",
-                              isBuyer ? "text-right" : "text-left"
-                            )}>
-                              Today {msg.created_at && format(new Date(msg.created_at), 'HH:mm')}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-            </div>
-
-            {/* Pending Files Preview */}
-            {pendingFiles.length > 0 && (
-              <div className="px-4 py-2 bg-[#f7f7fd] border-t border-[#e5e5e5]">
-                <div className="flex gap-2 flex-wrap">
-                  {pendingFiles.map((file, index) => (
-                    <div key={index} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-[#e5e5e5]">
-                      {file.type.startsWith('image/') ? (
-                        <Image size={14} className="text-[#2e3b5b]" />
-                      ) : file.type.startsWith('video/') ? (
-                        <Video size={14} className="text-[#2e3b5b]" />
-                      ) : (
-                        <Paperclip size={14} className="text-[#2e3b5b]" />
-                      )}
-                      <span className="text-xs truncate max-w-[100px] text-[#000929]">{file.name}</span>
-                      <button onClick={() => removePendingFile(index)} className="text-[#757575] hover:text-red-500">
-                        <X size={12} />
-                      </button>
+            {/* Sent Messages - Right Side */}
+            <div className="flex flex-col gap-[170px]">
+              {DEMO_MESSAGES.sent.map((msg) => (
+                <div key={msg.id} className="flex flex-col gap-[10px]">
+                  {/* Voice Message */}
+                  {msg.hasVoice && (
+                    <div className="w-[264px] h-[53.05px] bg-[#2e3b5b] rounded-[10px_10px_4px_10px] relative self-end">
+                      <img 
+                        src="https://c.animaapp.com/mlcbgbe2563Pxt/img/group-1000002505.png"
+                        alt="Voice"
+                        className="absolute top-4 left-9 w-[176px] h-[21px]"
+                      />
+                      <img 
+                        src="https://c.animaapp.com/mlcbgbe2563Pxt/img/polygon-2.svg"
+                        alt="Play"
+                        className="absolute top-[19px] left-[14px] w-[15px] h-[15px]"
+                      />
+                      <span className="absolute top-[19px] left-[223px] text-[12px] text-white">10:12</span>
                     </div>
-                  ))}
+                  )}
+                  
+                  {/* Message Bubble */}
+                  <div className="flex flex-col gap-[10px] w-[303px] items-end">
+                    <div className="bg-[#2e3b5b] rounded-[10px_0px_10px_10px] shadow-[0px_1px_3px_rgba(115,20,237,0.1)] p-[8px_12px] w-full">
+                      <p className="font-raleway font-medium text-[14px] tracking-[-0.28px] leading-[21px] text-white">
+                        {msg.text}
+                      </p>
+                    </div>
+                    <span className="text-[12px] tracking-[-0.12px] text-[#757575] text-right">
+                      {msg.time}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
+          </div>
+          <div ref={messagesEndRef} />
+        </div>
 
-            {/* Recording Indicator */}
-            {isRecording && (
-              <div className="px-4 py-2 bg-red-50 border-t border-red-200 flex items-center gap-3">
-                <div className="flex items-center gap-2 text-red-600">
-                  <Circle className="w-3 h-3 fill-current animate-pulse" />
-                  <span className="text-sm font-medium">Recording: {formatRecordingTime(recordingTime)}</span>
-                </div>
-                <button
-                  onClick={stopRecording}
-                  className="ml-auto px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
-                >
-                  <StopCircle size={16} />
-                  Stop Recording
-                </button>
-              </div>
-            )}
-
-            {/* Chat Footer - 80px height, gap 24px, padding 0 15px */}
-            <footer className="h-[80px] bg-white border-t border-[#e5e5e5] flex items-center gap-6 px-[15px] flex-shrink-0">
-              {/* Attachment buttons (only for support) */}
-              {selectedConversation.type === 'support' && !isRecording && (
-                <>
-                  <button onClick={() => fileInputRef.current?.click()} className="p-0 bg-transparent border-none cursor-pointer">
-                    <MoreVertical className="w-6 h-6 text-[#000929]" />
+        {/* Pending Files Preview */}
+        {pendingFiles.length > 0 && (
+          <div className="px-4 py-2 bg-[#f7f7fd] border-t border-[#e5e5e5]">
+            <div className="flex gap-2 flex-wrap">
+              {pendingFiles.map((file, index) => (
+                <div key={index} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-[#e5e5e5]">
+                  {file.type.startsWith('image/') ? (
+                    <Image size={14} className="text-[#2e3b5b]" />
+                  ) : file.type.startsWith('video/') ? (
+                    <Video size={14} className="text-[#2e3b5b]" />
+                  ) : (
+                    <Paperclip size={14} className="text-[#2e3b5b]" />
+                  )}
+                  <span className="text-xs truncate max-w-[100px] text-[#000929]">{file.name}</span>
+                  <button onClick={() => removePendingFile(index)} className="text-[#757575] hover:text-red-500">
+                    <X size={12} />
                   </button>
-                </>
-              )}
-              
-              {selectedConversation.type === 'seller' && (
-                <button className="p-0 bg-transparent border-none cursor-pointer">
-                  <MoreVertical className="w-6 h-6 text-[#000929]" />
-                </button>
-              )}
-              
-              {/* Message Input Wrapper - 60px height, 20px radius */}
-              <div className="flex-1 h-[60px] bg-[#f7f7fd] rounded-[20px] flex items-center px-4">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder="Type your message"
-                  disabled={sendingMessage || isRecording}
-                  className="flex-1 border-none bg-transparent text-[14px] text-[#92929d] outline-none font-poppins"
-                />
-              </div>
-
-              {/* Attachment button */}
-              <button onClick={() => fileInputRef.current?.click()} className="p-0 bg-transparent border-none cursor-pointer">
-                <Paperclip className="w-6 h-6 text-[#000929]" />
-              </button>
-              
-              {/* Send Button - 10px radius, primary color */}
-              <button
-                onClick={sendMessage}
-                disabled={sendingMessage || isRecording || (!newMessage.trim() && pendingFiles.length === 0)}
-                className="bg-[#2e3b5b] border-none p-[10px] rounded-[10px] cursor-pointer flex items-center justify-center disabled:bg-[#bababa]"
-              >
-                {sendingMessage ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-white" />
-                ) : (
-                  <Send className="w-6 h-6 text-white" />
-                )}
-              </button>
-            </footer>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center bg-[#f7f7fd]">
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-white flex items-center justify-center shadow-sm">
-                <MessageCircle className="w-10 h-10 text-[#2e3b5b]" />
-              </div>
-              <p className="text-lg font-semibold text-[#000929]">Select a conversation</p>
-              <p className="text-sm text-[#757575]">Choose a chat from the list to start messaging</p>
+                </div>
+              ))}
             </div>
           </div>
         )}
+
+        {/* Recording Indicator */}
+        {isRecording && (
+          <div className="px-4 py-2 bg-red-50 border-t border-red-200 flex items-center gap-3">
+            <div className="flex items-center gap-2 text-red-600">
+              <Circle className="w-3 h-3 fill-current animate-pulse" />
+              <span className="text-sm font-medium">Recording: {formatRecordingTime(recordingTime)}</span>
+            </div>
+            <button
+              className="ml-auto px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+            >
+              <StopCircle size={16} />
+              Stop Recording
+            </button>
+          </div>
+        )}
+
+        {/* Chat Footer - 80px height, gap 24px, padding 0 15px */}
+        <footer className="h-[80px] bg-white border-t border-[#e5e5e5] flex items-center gap-6 px-[15px] flex-shrink-0">
+          {/* More options button */}
+          <button className="p-0 bg-transparent border-none cursor-pointer">
+            <MoreVertical className="w-6 h-6 text-[#000929]" />
+          </button>
+          
+          {/* Message Input Wrapper - 60px height, 20px radius */}
+          <div className="flex-1 h-[60px] bg-[#f7f7fd] rounded-[20px] flex items-center px-4">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Type your message"
+              disabled={sendingMessage || isRecording}
+              className="flex-1 border-none bg-transparent text-[14px] text-[#92929d] outline-none font-poppins"
+            />
+          </div>
+
+          {/* Attachment button */}
+          <button onClick={() => fileInputRef.current?.click()} className="p-0 bg-transparent border-none cursor-pointer">
+            <Paperclip className="w-6 h-6 text-[#000929]" />
+          </button>
+          
+          {/* Send Button - 10px radius, primary color */}
+          <button
+            onClick={sendMessage}
+            disabled={sendingMessage || isRecording || (!newMessage.trim() && pendingFiles.length === 0)}
+            className="bg-[#2e3b5b] border-none p-[10px] rounded-[10px] cursor-pointer flex items-center justify-center disabled:bg-[#bababa]"
+          >
+            {sendingMessage ? (
+              <Loader2 className="w-6 h-6 animate-spin text-white" />
+            ) : (
+              <Send className="w-6 h-6 text-white" />
+            )}
+          </button>
+        </footer>
       </main>
     </div>
   );
