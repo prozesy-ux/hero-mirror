@@ -45,9 +45,9 @@ const navItems = [
   { to: '/seller/wallet', icon: GumroadPayoutsIcon, label: 'Payouts' },
 ];
 
-// Discount sub-menu items (includes Inventory)
-const discountItems = [
-  { to: '/seller/products', icon: GumroadProductsIcon, label: 'Products' },
+// Products sub-menu items
+const productSubItems = [
+  { to: '/seller/discount', icon: GumroadDiscountIcon, label: 'Discount' },
   { to: '/seller/coupons', icon: GumroadCouponsIcon, label: 'Coupons' },
   { to: '/seller/flash-sales', icon: GumroadFlashSaleIcon, label: 'Flash Sales' },
   { to: '/seller/inventory', icon: GumroadInventoryIcon, label: 'Inventory' },
@@ -69,14 +69,14 @@ const SellerSidebar = () => {
   const { isCollapsed, toggleSidebar } = useSellerSidebarContext();
   const { profile } = useSellerContext();
   const location = useLocation();
-  const [discountOpen, setDiscountOpen] = useState(false);
+  const [productsOpen, setProductsOpen] = useState(false);
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact) return location.pathname === path;
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
-  const isDiscountActive = discountItems.some(item => isActive(item.to));
+  const isProductsActive = productSubItems.some(item => isActive(item.to)) || isActive('/seller/products');
 
   const renderNavItem = (item: { to: string; icon: any; label: string; exact?: boolean }) => {
     const active = isActive(item.to, item.exact);
@@ -143,11 +143,28 @@ const SellerSidebar = () => {
           {/* First section of nav items */}
           {navItems.map(renderNavItem)}
 
-          {/* Discount Section with Sub-menu */}
+          {/* Products Section with Sub-menu */}
           {isCollapsed ? (
-            // Collapsed: Show icons for discount sub-items
+            // Collapsed: Show icons for product sub-items
             <>
-              {discountItems.map((item) => {
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/seller/products"
+                    className={`flex items-center justify-center w-full py-4 transition-colors border-t border-white/50 ${
+                      isProductsActive 
+                        ? 'text-[#FF90E8]' 
+                        : 'text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <GumroadProductsIcon size={16} />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="bg-white text-black border-0">
+                  <p>Products</p>
+                </TooltipContent>
+              </Tooltip>
+              {productSubItems.map((item) => {
                 const active = isActive(item.to);
                 const Icon = item.icon;
                 return (
@@ -172,19 +189,19 @@ const SellerSidebar = () => {
               })}
             </>
           ) : (
-            // Expanded: Show collapsible Discount section
-            <Collapsible open={discountOpen} onOpenChange={setDiscountOpen}>
+            // Expanded: Show collapsible Products section
+            <Collapsible open={productsOpen} onOpenChange={setProductsOpen}>
               <CollapsibleTrigger className={`flex items-center justify-between w-full px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
-                isDiscountActive ? 'text-[#FF90E8]' : 'text-white hover:bg-white/5'
+                isProductsActive ? 'text-[#FF90E8]' : 'text-white hover:bg-white/5'
               }`}>
                 <div className="flex items-center gap-4">
-                  <GumroadDiscountIcon size={16} />
-                  <span>Discount</span>
+                  <GumroadProductsIcon size={16} />
+                  <span>Products</span>
                 </div>
-                <GumroadChevronDownIcon size={16} className={`transition-transform duration-200 ${discountOpen ? 'rotate-180' : ''}`} />
+                <GumroadChevronDownIcon size={16} className={`transition-transform duration-200 ${productsOpen ? 'rotate-180' : ''}`} />
               </CollapsibleTrigger>
               <CollapsibleContent>
-                {discountItems.map((item) => {
+                {productSubItems.map((item) => {
                   const active = isActive(item.to);
                   const Icon = item.icon;
                   return (
