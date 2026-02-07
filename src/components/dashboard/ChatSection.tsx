@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   MessageCircle, Send, Loader2, Image, Video, Paperclip, 
-  X, Download, FileText, StopCircle, Circle, Headphones, Store, ArrowLeft, Search, AlertTriangle
+  X, Download, FileText, StopCircle, Circle, Headphones, Store, ArrowLeft, Search, AlertTriangle,
+  Phone, MoreVertical
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -10,7 +11,6 @@ import { format } from 'date-fns';
 import { playSound } from '@/lib/sounds';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 // Types
@@ -102,7 +102,6 @@ const ChatSection = () => {
     if (user) {
       fetchConversations();
       
-      // Subscribe to support messages
       const supportChannel = supabase
         .channel('support-messages-multichat')
         .on(
@@ -122,7 +121,6 @@ const ChatSection = () => {
         )
         .subscribe();
       
-      // Subscribe to seller chats
       const sellerChannel = supabase
         .channel('seller-chats-multichat')
         .on(
@@ -155,7 +153,6 @@ const ChatSection = () => {
     }
   }, [user]);
 
-  // Fetch messages when conversation changes
   useEffect(() => {
     if (selectedConversation) {
       if (selectedConversation.type === 'support') {
@@ -176,7 +173,6 @@ const ChatSection = () => {
     try {
       const convos: Conversation[] = [];
       
-      // 1. Fetch support conversation
       const { data: supportData } = await supabase
         .from('support_messages')
         .select('*')
@@ -200,7 +196,6 @@ const ChatSection = () => {
         unreadCount: supportUnread || 0,
       });
       
-      // 2. Fetch seller conversations
       const { data: sellerChats } = await supabase
         .from('seller_chats')
         .select('seller_id, message, created_at, is_read, sender_type')
@@ -208,7 +203,6 @@ const ChatSection = () => {
         .order('created_at', { ascending: false });
       
       if (sellerChats && sellerChats.length > 0) {
-        // Group by seller_id
         const sellerGroups = new Map<string, { lastMessage: string; lastTime: string; unread: number }>();
         
         sellerChats.forEach(chat => {
@@ -219,14 +213,12 @@ const ChatSection = () => {
               unread: 0
             });
           }
-          // Count unread from seller
           if (chat.sender_type === 'seller' && !chat.is_read) {
             const group = sellerGroups.get(chat.seller_id)!;
             group.unread++;
           }
         });
         
-        // Get seller profiles
         const sellerIds = Array.from(sellerGroups.keys());
         const { data: sellerProfiles } = await supabase
           .from('seller_profiles')
@@ -252,7 +244,6 @@ const ChatSection = () => {
         }
       }
       
-      // Sort by last message time (support always first if no messages)
       convos.sort((a, b) => {
         if (a.type === 'support' && !a.lastMessageTime) return -1;
         if (b.type === 'support' && !b.lastMessageTime) return 1;
@@ -261,7 +252,6 @@ const ChatSection = () => {
       
       setConversations(convos);
       
-      // Auto-select first conversation
       if (!selectedConversation && convos.length > 0) {
         setSelectedConversation(convos[0]);
       }
@@ -285,7 +275,6 @@ const ChatSection = () => {
       if (error) throw error;
       setSupportMessages(data || []);
       
-      // Fetch attachments for all messages
       if (data && data.length > 0) {
         const messageIds = data.map(m => m.id);
         const { data: attachmentData } = await supabase
@@ -303,7 +292,6 @@ const ChatSection = () => {
         }
       }
       
-      // Mark as read
       await supabase
         .from('support_messages')
         .update({ is_read: true })
@@ -330,7 +318,6 @@ const ChatSection = () => {
       if (error) throw error;
       setSellerMessages(data || []);
       
-      // Mark as read
       await supabase
         .from('seller_chats')
         .update({ is_read: true })
@@ -339,7 +326,6 @@ const ChatSection = () => {
         .eq('sender_type', 'seller')
         .eq('is_read', false);
         
-      // Refresh conversations to update unread count
       fetchConversations();
     } catch (error) {
       console.error('Error fetching seller messages:', error);
@@ -396,7 +382,6 @@ const ChatSection = () => {
     
     try {
       if (selectedConversation.type === 'support') {
-        // Send support message
         const { data: messageData, error: messageError } = await supabase
           .from('support_messages')
           .insert({
@@ -410,7 +395,6 @@ const ChatSection = () => {
 
         if (messageError) throw messageError;
 
-        // Upload files and create attachment records
         for (const file of pendingFiles) {
           const attachment = await uploadFile(file);
           if (attachment && messageData) {
@@ -427,7 +411,6 @@ const ChatSection = () => {
         
         fetchSupportMessages();
       } else if (selectedConversation.sellerId) {
-        // Send seller message
         const { error: messageError } = await supabase
           .from('seller_chats')
           .insert({
@@ -482,7 +465,6 @@ const ChatSection = () => {
     setPendingFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Screen Recording Functions (only for support)
   const startRecording = async () => {
     if (!user || selectedConversation?.type !== 'support') return;
     
@@ -609,7 +591,7 @@ const ChatSection = () => {
           <img 
             src={att.file_url} 
             alt={att.file_name} 
-            className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-border shadow-sm"
+            className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-[#e5e5e5] shadow-sm"
           />
         </a>
       );
@@ -632,11 +614,11 @@ const ChatSection = () => {
         href={att.file_url} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors border border-border"
+        className="flex items-center gap-2 px-3 py-2 bg-[#f7f7fd] rounded-lg hover:bg-[#eeeef5] transition-colors border border-[#e5e5e5]"
       >
-        <FileText size={18} className="text-muted-foreground" />
-        <span className="text-sm truncate max-w-[150px]">{att.file_name}</span>
-        <Download size={14} className="text-muted-foreground" />
+        <FileText size={18} className="text-[#757575]" />
+        <span className="text-sm truncate max-w-[150px] text-[#000929]">{att.file_name}</span>
+        <Download size={14} className="text-[#757575]" />
       </a>
     );
   };
@@ -650,7 +632,7 @@ const ChatSection = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#bababa]" />
       </div>
     );
   }
@@ -662,8 +644,10 @@ const ChatSection = () => {
     setPendingFiles([]);
   };
 
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+
   return (
-    <div className="flex h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] bg-background rounded-2xl border border-border/50 overflow-hidden shadow-xl">
+    <div className="flex h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] border border-[#e5e5e5] rounded-xl overflow-hidden bg-white shadow-lg">
       {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
@@ -689,21 +673,31 @@ const ChatSection = () => {
         onChange={handleFileSelect}
       />
 
-      {/* Conversations List Panel - Modern Design */}
+      {/* Conversations List Panel - Reference Design */}
       <div className={cn(
-        "w-full lg:w-80 border-r border-border/50 flex flex-col bg-gradient-to-b from-card to-card/95",
+        "w-full lg:w-80 border-r border-[#e5e5e5] flex flex-col bg-white",
         showChatOnMobile && "hidden lg:flex"
       )}>
-        {/* Header with gradient */}
-        <div className="p-4 border-b border-border/50 bg-gradient-to-r from-violet-50/50 to-purple-50/50 dark:from-violet-950/20 dark:to-purple-950/20">
-          <h2 className="text-xl font-bold tracking-tight mb-3 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Messages</h2>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
+        {/* Header */}
+        <div className="p-4 border-b border-[#e5e5e5]">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h1 className="text-[20px] font-semibold text-[#000929] tracking-[-0.4px]">Messaging</h1>
+              {totalUnread > 0 && (
+                <span className="bg-[#ff3e46] text-[#9b171c] text-[12px] px-1.5 py-0.5 rounded">
+                  {totalUnread}
+                </span>
+              )}
+            </div>
+          </div>
+          {/* Search */}
+          <div className="relative h-[46px] bg-[#f7f7fd] rounded flex items-center px-4">
+            <Search className="w-5 h-5 text-[#92929d]" />
+            <input
               placeholder="Search conversations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-white/80 dark:bg-gray-900/80 border-0 shadow-sm focus-visible:ring-violet-500/30"
+              className="flex-1 bg-transparent ml-3 text-[14px] text-[#000929] placeholder:text-[#92929d] outline-none"
             />
           </div>
         </div>
@@ -711,83 +705,79 @@ const ChatSection = () => {
         {/* Conversations List */}
         <div className="flex-1 overflow-y-auto">
           {filteredConversations.map((conv, index) => (
-            <button
-              key={conv.id}
-              onClick={() => handleConversationSelect(conv)}
-              className={cn(
-                "w-full p-4 flex items-start gap-3 transition-all duration-200 text-left border-b border-border/30 group",
-                "hover:bg-gradient-to-r hover:from-violet-50/50 hover:to-transparent dark:hover:from-violet-950/20",
-                selectedConversation?.id === conv.id && "bg-gradient-to-r from-violet-100/80 to-purple-50/50 dark:from-violet-950/40 dark:to-purple-950/20",
-                index === 0 && "animate-fade-up"
-              )}
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              {/* Avatar with online indicator */}
-              <div className="relative">
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-md transition-transform group-hover:scale-105",
-                  conv.type === 'support' 
-                    ? "bg-gradient-to-br from-violet-500 to-purple-600" 
-                    : "bg-gradient-to-br from-emerald-500 to-teal-600"
-                )}>
-                  {conv.type === 'support' ? (
-                    <Headphones className="w-6 h-6 text-white" />
-                  ) : conv.avatar ? (
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={conv.avatar} alt={conv.name} className="object-cover" />
-                      <AvatarFallback className="bg-emerald-100 text-emerald-700">
-                        <Store className="w-5 h-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <Store className="w-6 h-6 text-white" />
-                  )}
-                </div>
-                {/* Online indicator */}
-                {conv.type === 'support' && (
-                  <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-gray-900 rounded-full" />
+            <div key={conv.id}>
+              <button
+                onClick={() => handleConversationSelect(conv)}
+                className={cn(
+                  "w-full p-4 flex items-start gap-3 transition-all text-left",
+                  selectedConversation?.id === conv.id 
+                    ? "bg-[#f7f7fd] rounded-[10px]" 
+                    : "hover:bg-[#f7f7fd]"
                 )}
-              </div>
-              
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold truncate text-foreground">{conv.name}</span>
-                  {conv.lastMessageTime && (
-                    <span className="text-[10px] text-muted-foreground flex-shrink-0 font-medium">
-                      {format(new Date(conv.lastMessageTime), 'MMM d')}
-                    </span>
+              >
+                {/* Avatar */}
+                <div className="relative">
+                  <div className={cn(
+                    "w-[52px] h-[52px] rounded-[30px] flex items-center justify-center flex-shrink-0",
+                    conv.type === 'support' 
+                      ? "bg-[#000929]" 
+                      : "bg-[#2e3b5b]"
+                  )}>
+                    {conv.type === 'support' ? (
+                      <Headphones className="w-6 h-6 text-white" />
+                    ) : conv.avatar ? (
+                      <Avatar className="w-[52px] h-[52px]">
+                        <AvatarImage src={conv.avatar} alt={conv.name} className="object-cover" />
+                        <AvatarFallback className="bg-[#2e3b5b] text-white">
+                          <Store className="w-5 h-5" />
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <Store className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                  {/* Online indicator for support */}
+                  {conv.type === 'support' && (
+                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#33b843] border-2 border-white rounded-full" />
                   )}
                 </div>
-                <div className="flex items-center justify-between gap-2 mt-1">
-                  <p className="text-sm text-muted-foreground truncate">
-                    {conv.lastMessage}
-                  </p>
-                  {conv.unreadCount > 0 && (
-                    <Badge 
-                      variant="default"
-                      className={cn(
-                        "flex-shrink-0 h-5 min-w-[20px] flex items-center justify-center text-[10px] font-bold shadow-lg animate-pulse",
-                        conv.type === 'support' 
-                          ? "bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700" 
-                          : "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
-                      )}
-                    >
-                      {conv.unreadCount}
-                    </Badge>
-                  )}
+                
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-[14px] text-[#000929] truncate tracking-[-0.28px]">{conv.name}</span>
+                    {conv.lastMessageTime && (
+                      <span className="text-[12px] text-[#76767c]/80 flex-shrink-0 tracking-[-0.12px]">
+                        {format(new Date(conv.lastMessageTime), 'h:mm a')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 mt-1">
+                    <p className={cn(
+                      "text-[12px] truncate tracking-[-0.24px]",
+                      conv.unreadCount > 0 ? "text-[#000929] font-medium" : "text-[#76767c]/80"
+                    )}>
+                      {conv.lastMessage}
+                    </p>
+                    {conv.unreadCount > 0 && (
+                      <div className="w-2 h-2 bg-[#d82027] rounded-full flex-shrink-0" />
+                    )}
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
+              {index < filteredConversations.length - 1 && (
+                <div className="mx-auto w-[312px] h-[1px] bg-[#e5e5e5]" />
+              )}
+            </div>
           ))}
           
           {filteredConversations.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
-                <MessageCircle className="w-8 h-8 opacity-50" />
+            <div className="p-8 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#f7f7fd] flex items-center justify-center">
+                <MessageCircle className="w-8 h-8 text-[#bababa]" />
               </div>
-              <p className="font-medium">No conversations found</p>
-              <p className="text-sm mt-1">Start a new conversation</p>
+              <p className="font-medium text-[#000929]">No conversations found</p>
+              <p className="text-sm mt-1 text-[#757575]">Start a new conversation</p>
             </div>
           )}
         </div>
@@ -795,123 +785,118 @@ const ChatSection = () => {
 
       {/* Chat Area */}
       <div className={cn(
-        "flex-1 flex flex-col",
+        "flex-1 flex flex-col bg-white",
         !showChatOnMobile && "hidden lg:flex"
       )}>
         {selectedConversation ? (
           <>
-            {/* Chat Header */}
-            <div className={cn(
-              "p-4 border-b border-border flex items-center gap-3",
-              selectedConversation.type === 'support' 
-                ? "bg-violet-50 dark:bg-violet-950/20" 
-                : "bg-emerald-50 dark:bg-emerald-950/20"
-            )}>
-              {/* Back button for mobile */}
-              <button
-                onClick={() => setShowChatOnMobile(false)}
-                className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center",
-                selectedConversation.type === 'support' 
-                  ? "bg-violet-100 dark:bg-violet-900/30" 
-                  : "bg-emerald-100 dark:bg-emerald-900/30"
-              )}>
-                {selectedConversation.type === 'support' ? (
-                  <Headphones className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-                ) : (
-                  <Store className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold">{selectedConversation.name}</h3>
-                <p className="text-xs text-muted-foreground">
-                  {selectedConversation.type === 'support' 
-                    ? 'Uptoza Support Team - We typically reply within a few hours' 
-                    : 'Seller chat'}
-                </p>
-              </div>
-              
-              {/* Request Support Button for Seller Chats */}
-              {selectedConversation.type === 'seller' && selectedConversation.sellerId && (
+            {/* Chat Header - 100px height */}
+            <div className="h-[100px] bg-white border-b border-[#e5e5e5] flex items-center justify-between px-6">
+              <div className="flex items-center gap-3">
+                {/* Back button for mobile */}
                 <button
-                  onClick={async () => {
-                    const reason = prompt('Please describe the issue you need help with:');
-                    if (!reason) return;
-                    
-                    const { error } = await supabase.from('chat_join_requests').insert({
-                      buyer_id: user?.id,
-                      seller_id: selectedConversation.sellerId,
-                      reason: reason,
-                      description: `Requested support for chat with ${selectedConversation.name}`
-                    });
-                    
-                    if (error) {
-                      toast.error('Failed to request support');
-                    } else {
-                      toast.success('Support request sent! Our team will review and join if needed.');
-                    }
-                  }}
-                  className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
+                  onClick={() => setShowChatOnMobile(false)}
+                  className="lg:hidden p-2 -ml-2 hover:bg-[#f7f7fd] rounded-lg transition-colors"
                 >
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  Request Support
+                  <ArrowLeft className="w-5 h-5 text-[#000929]" />
                 </button>
-              )}
+                
+                <div className={cn(
+                  "w-11 h-11 rounded-[40px] flex items-center justify-center",
+                  selectedConversation.type === 'support' 
+                    ? "bg-[#000929]" 
+                    : "bg-[#2e3b5b]"
+                )}>
+                  {selectedConversation.type === 'support' ? (
+                    <Headphones className="w-5 h-5 text-white" />
+                  ) : (
+                    <Store className="w-5 h-5 text-white" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <h3 className="font-semibold text-[16px] text-[#000929] tracking-[-0.32px]">{selectedConversation.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-[#33b843] rounded-full" />
+                    <span className="text-[12px] text-[#bababa] tracking-[-0.24px] font-medium">Online</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                {/* Request Support Button for Seller Chats */}
+                {selectedConversation.type === 'seller' && selectedConversation.sellerId && (
+                  <button
+                    onClick={async () => {
+                      const reason = prompt('Please describe the issue you need help with:');
+                      if (!reason) return;
+                      
+                      const { error } = await supabase.from('chat_join_requests').insert({
+                        buyer_id: user?.id,
+                        seller_id: selectedConversation.sellerId,
+                        reason: reason,
+                        description: `Requested support for chat with ${selectedConversation.name}`
+                      });
+                      
+                      if (error) {
+                        toast.error('Failed to request support');
+                      } else {
+                        toast.success('Support request sent! Our team will review and join if needed.');
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Request Support
+                  </button>
+                )}
+                <button className="p-2 hover:bg-[#f7f7fd] rounded-lg transition-colors">
+                  <Phone size={20} className="text-[#000929]" />
+                </button>
+                <button className="p-2 hover:bg-[#f7f7fd] rounded-lg transition-colors">
+                  <Video size={20} className="text-[#000929]" />
+                </button>
+                <button className="p-2 hover:bg-[#f7f7fd] rounded-lg transition-colors">
+                  <MoreVertical size={20} className="text-[#000929]" />
+                </button>
+              </div>
             </div>
 
-            {/* Messages Area - Modern Design */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-950/50 dark:to-gray-900">
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
               {currentMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 flex items-center justify-center mb-4">
-                    <MessageCircle className="w-10 h-10 text-violet-500 opacity-60" />
+                <div className="flex flex-col items-center justify-center h-full">
+                  <div className="w-20 h-20 rounded-2xl bg-[#f7f7fd] flex items-center justify-center mb-4">
+                    <MessageCircle className="w-10 h-10 text-[#bababa]" />
                   </div>
-                  <p className="text-lg font-semibold">No messages yet</p>
-                  <p className="text-sm text-muted-foreground mt-1">Start the conversation!</p>
+                  <p className="text-lg font-semibold text-[#000929]">No messages yet</p>
+                  <p className="text-sm text-[#757575] mt-1">Start the conversation!</p>
                 </div>
               ) : (
-                selectedConversation.type === 'support' ? (
-                  // Support messages with modern bubbles
-                  supportMessages.map((msg, index) => {
-                    const isUser = msg.sender_type === 'user';
-                    const messageAttachments = attachments.get(msg.id) || [];
-                    const senderLabel = isUser ? 'You' : '🛡️ Uptoza Support';
-                    const showTimeDivider = index === 0 || (
-                      msg.created_at && supportMessages[index - 1]?.created_at &&
-                      format(new Date(msg.created_at), 'MMM d') !== format(new Date(supportMessages[index - 1].created_at!), 'MMM d')
-                    );
-                    
-                    return (
-                      <div key={msg.id}>
-                        {/* Date divider */}
-                        {showTimeDivider && msg.created_at && (
-                          <div className="flex items-center justify-center my-4">
-                            <span className="px-3 py-1 bg-muted/80 rounded-full text-xs text-muted-foreground font-medium">
-                              {format(new Date(msg.created_at), 'MMMM d, yyyy')}
-                            </span>
-                          </div>
-                        )}
-                        <div className={cn("flex animate-fade-up", isUser ? "justify-end" : "justify-start")} style={{ animationDelay: `${index * 20}ms` }}>
-                          <div className="max-w-[80%]">
-                            {/* Sender Label */}
-                            <p className={cn(
-                              "text-[10px] text-muted-foreground mb-1.5 px-2 font-medium",
-                              isUser ? "text-right" : "text-left"
-                            )}>
-                              {senderLabel}
-                            </p>
+                <>
+                  {/* Today Badge */}
+                  <div className="flex justify-center py-1">
+                    <span className="bg-white px-3 py-2 rounded text-[14px] font-semibold text-[#2e2a40] tracking-[-0.28px] shadow-sm border border-[#e5e5e5]">
+                      Today
+                    </span>
+                  </div>
+                  
+                  {selectedConversation.type === 'support' ? (
+                    supportMessages.map((msg) => {
+                      const isUser = msg.sender_type === 'user';
+                      const messageAttachments = attachments.get(msg.id) || [];
+                      
+                      return (
+                        <div key={msg.id} className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+                          <div className="flex flex-col gap-2 max-w-[303px]">
                             <div className={cn(
-                              "rounded-2xl px-4 py-3 shadow-sm",
+                              "px-3 py-2 shadow-sm",
                               isUser 
-                                ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white rounded-br-md" 
-                                : "bg-white dark:bg-gray-800 rounded-bl-md border border-border/50"
+                                ? "bg-[#2e3b5b] rounded-[10px_0px_10px_10px]" 
+                                : "bg-[#000929] rounded-[0px_10px_10px_10px]"
                             )}>
-                              <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.message}</p>
+                              <p className="font-raleway font-medium text-[14px] text-white tracking-[-0.28px] leading-[21px] whitespace-pre-wrap break-words">
+                                {msg.message}
+                              </p>
                               
                               {messageAttachments.length > 0 && (
                                 <div className="mt-3 space-y-2">
@@ -920,106 +905,84 @@ const ChatSection = () => {
                                   ))}
                                 </div>
                               )}
-                              
-                              <div className={cn(
-                                "flex items-center gap-1.5 mt-2",
-                                isUser ? "justify-end" : "justify-start"
-                              )}>
-                                <p className={cn(
-                                  "text-[10px]",
-                                  isUser ? "text-violet-200" : "text-muted-foreground"
-                                )}>
-                                  {msg.created_at && format(new Date(msg.created_at), 'h:mm a')}
-                                </p>
-                                {/* Read receipt for user messages */}
-                                {isUser && msg.is_read && (
-                                  <span className="text-violet-200 text-[10px]">✓✓</span>
-                                )}
-                              </div>
                             </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  // Seller messages
-                  sellerMessages.map((msg) => {
-                    const isBuyer = msg.sender_type === 'buyer';
-                    const isSupport = msg.sender_type === 'support';
-                    const isSystem = msg.sender_type === 'system';
-                    
-                    // Sender label
-                    const senderLabel = isBuyer ? 'You' : 
-                                        isSupport ? '🛡️ Uptoza Support' : 
-                                        isSystem ? '' : 
-                                        selectedConversation?.name || 'Seller';
-                    
-                    if (isSystem) {
-                      return (
-                        <div key={msg.id} className="flex justify-center my-4">
-                          <div className="bg-amber-50 dark:bg-amber-900/30 rounded-xl px-4 py-2.5 max-w-[85%] border border-amber-200 dark:border-amber-800">
-                            <p className="text-sm text-amber-700 dark:text-amber-300 text-center whitespace-pre-wrap">
-                              {msg.message}
-                            </p>
-                            <p className="text-[10px] text-amber-500 text-center mt-1">
-                              {msg.created_at && format(new Date(msg.created_at), 'MMM d, h:mm a')}
-                            </p>
+                            <span className={cn(
+                              "text-[12px] text-[#757575] tracking-[-0.12px]",
+                              isUser ? "text-right" : "text-left"
+                            )}>
+                              Today {msg.created_at && format(new Date(msg.created_at), 'HH:mm')}
+                            </span>
                           </div>
                         </div>
                       );
-                    }
-                    
-                    return (
-                      <div key={msg.id} className={cn("flex", isBuyer ? "justify-end" : "justify-start")}>
-                        <div className="max-w-[80%]">
-                          {/* Sender Label */}
-                          <p className={cn(
-                            "text-[10px] text-muted-foreground mb-1 px-2",
-                            isBuyer ? "text-right" : "text-left"
-                          )}>
-                            {senderLabel}
-                          </p>
-                          <div className={cn(
-                            "rounded-2xl px-4 py-2.5",
-                            isBuyer 
-                              ? "bg-emerald-500 text-white rounded-br-md" 
-                              : isSupport
-                                ? "bg-blue-600 text-white rounded-bl-md"
-                                : "bg-muted rounded-bl-md"
-                          )}>
-                            <p className="whitespace-pre-wrap break-words">{msg.message}</p>
-                            <p className={cn(
-                              "text-[10px] mt-1",
-                              isBuyer ? "text-emerald-200" : isSupport ? "text-blue-200" : "text-muted-foreground"
+                    })
+                  ) : (
+                    sellerMessages.map((msg) => {
+                      const isBuyer = msg.sender_type === 'buyer';
+                      const isSupport = msg.sender_type === 'support';
+                      const isSystem = msg.sender_type === 'system';
+                      
+                      if (isSystem) {
+                        return (
+                          <div key={msg.id} className="flex justify-center my-4">
+                            <div className="bg-amber-50 rounded-xl px-4 py-2.5 max-w-[85%] border border-amber-200">
+                              <p className="text-sm text-amber-700 text-center whitespace-pre-wrap">
+                                {msg.message}
+                              </p>
+                              <p className="text-[10px] text-amber-500 text-center mt-1">
+                                {msg.created_at && format(new Date(msg.created_at), 'MMM d, h:mm a')}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div key={msg.id} className={cn("flex", isBuyer ? "justify-end" : "justify-start")}>
+                          <div className="flex flex-col gap-2 max-w-[303px]">
+                            <div className={cn(
+                              "px-3 py-2 shadow-sm",
+                              isBuyer 
+                                ? "bg-[#2e3b5b] rounded-[10px_0px_10px_10px]" 
+                                : isSupport
+                                  ? "bg-blue-600 rounded-[0px_10px_10px_10px]"
+                                  : "bg-[#000929] rounded-[0px_10px_10px_10px]"
                             )}>
-                              {msg.created_at && format(new Date(msg.created_at), 'h:mm a')}
-                            </p>
+                              <p className="font-raleway font-medium text-[14px] text-white tracking-[-0.28px] leading-[21px] whitespace-pre-wrap break-words">
+                                {msg.message}
+                              </p>
+                            </div>
+                            <span className={cn(
+                              "text-[12px] text-[#757575] tracking-[-0.12px]",
+                              isBuyer ? "text-right" : "text-left"
+                            )}>
+                              Today {msg.created_at && format(new Date(msg.created_at), 'HH:mm')}
+                            </span>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
-                )
+                      );
+                    })
+                  )}
+                </>
               )}
               <div ref={messagesEndRef} />
             </div>
 
             {/* Pending Files Preview */}
             {pendingFiles.length > 0 && selectedConversation.type === 'support' && (
-              <div className="px-4 py-2 border-t border-border bg-muted/50">
+              <div className="px-4 py-2 border-t border-[#e5e5e5] bg-[#f7f7fd]">
                 <div className="flex flex-wrap gap-2">
                   {pendingFiles.map((file, index) => (
-                    <div key={index} className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-full border border-border">
+                    <div key={index} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-[#e5e5e5]">
                       {file.type.startsWith('image/') ? (
-                        <Image size={14} className="text-violet-500" />
+                        <Image size={14} className="text-[#2e3b5b]" />
                       ) : file.type.startsWith('video/') ? (
-                        <Video size={14} className="text-violet-500" />
+                        <Video size={14} className="text-[#2e3b5b]" />
                       ) : (
-                        <Paperclip size={14} className="text-violet-500" />
+                        <Paperclip size={14} className="text-[#2e3b5b]" />
                       )}
-                      <span className="text-xs truncate max-w-[100px]">{file.name}</span>
-                      <button onClick={() => removePendingFile(index)} className="text-muted-foreground hover:text-destructive">
+                      <span className="text-xs truncate max-w-[100px] text-[#000929]">{file.name}</span>
+                      <button onClick={() => removePendingFile(index)} className="text-[#757575] hover:text-red-500">
                         <X size={12} />
                       </button>
                     </div>
@@ -1030,7 +993,7 @@ const ChatSection = () => {
 
             {/* Recording Indicator */}
             {isRecording && (
-              <div className="px-4 py-2 bg-red-50 dark:bg-red-950/30 border-t border-red-200 dark:border-red-900 flex items-center gap-3">
+              <div className="px-4 py-2 bg-red-50 border-t border-red-200 flex items-center gap-3">
                 <div className="flex items-center gap-2 text-red-600">
                   <Circle className="w-3 h-3 fill-current animate-pulse" />
                   <span className="text-sm font-medium">Recording: {formatRecordingTime(recordingTime)}</span>
@@ -1045,86 +1008,91 @@ const ChatSection = () => {
               </div>
             )}
 
-            {/* Input Area */}
-            <div className="p-4 border-t border-border bg-background">
-              <div className="flex items-end gap-2">
-                {/* Attachment buttons (only for support) */}
-                {selectedConversation.type === 'support' && !isRecording && (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => imageInputRef.current?.click()}
-                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
-                      title="Add image"
-                    >
-                      <Image size={20} />
-                    </button>
-                    <button
-                      onClick={() => videoInputRef.current?.click()}
-                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
-                      title="Add video"
-                    >
-                      <Video size={20} />
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
-                      title="Add file"
-                    >
-                      <Paperclip size={20} />
-                    </button>
-                    <button
-                      onClick={startRecording}
-                      className="p-2 text-muted-foreground hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-lg transition-colors"
-                      title="Record screen"
-                    >
-                      <Circle size={20} />
-                    </button>
-                  </div>
-                )}
-                
-                {/* Message Input */}
-                <div className="flex-1 relative">
-                  <textarea
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    placeholder={
-                      selectedConversation.type === 'support'
-                        ? "Type your message..."
-                        : `Message ${selectedConversation.name}...`
-                    }
-                    disabled={sendingMessage || isRecording}
-                    className="w-full px-4 py-3 bg-muted rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 min-h-[48px] max-h-[120px]"
-                    rows={1}
-                  />
+            {/* Input Area - 80px height */}
+            <div className="h-[80px] bg-white border-t border-[#e5e5e5] flex items-center gap-4 px-4">
+              {/* Attachment buttons (only for support) */}
+              {selectedConversation.type === 'support' && !isRecording && (
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => imageInputRef.current?.click()}
+                    className="p-2 text-[#000929] hover:bg-[#f7f7fd] rounded-lg transition-colors"
+                    title="Add image"
+                  >
+                    <Image size={20} />
+                  </button>
+                  <button
+                    onClick={() => videoInputRef.current?.click()}
+                    className="p-2 text-[#000929] hover:bg-[#f7f7fd] rounded-lg transition-colors"
+                    title="Add video"
+                  >
+                    <Video size={20} />
+                  </button>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 text-[#000929] hover:bg-[#f7f7fd] rounded-lg transition-colors"
+                    title="Add file"
+                  >
+                    <Paperclip size={20} />
+                  </button>
+                  <button
+                    onClick={startRecording}
+                    className="p-2 text-[#000929] hover:bg-[#f7f7fd] rounded-lg transition-colors"
+                    title="Record screen"
+                  >
+                    <Circle size={20} />
+                  </button>
                 </div>
-                
-                {/* Send Button */}
-                <button
-                  onClick={sendMessage}
-                  disabled={sendingMessage || isRecording || (!newMessage.trim() && pendingFiles.length === 0)}
-                  className={cn(
-                    "p-3 rounded-xl text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    selectedConversation.type === 'support'
-                      ? "bg-violet-500 hover:bg-violet-600"
-                      : "bg-emerald-500 hover:bg-emerald-600"
-                  )}
-                >
-                  {sendingMessage ? (
-                    <Loader2 size={20} className="animate-spin" />
-                  ) : (
-                    <Send size={20} />
-                  )}
+              )}
+              
+              {selectedConversation.type === 'seller' && (
+                <button className="p-2 text-[#000929] hover:bg-[#f7f7fd] rounded-lg transition-colors">
+                  <Paperclip size={24} />
                 </button>
+              )}
+              
+              {/* Message Input */}
+              <div className="flex-1 h-[60px] bg-[#f7f7fd] rounded-[20px] flex items-center px-4">
+                <input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder={
+                    selectedConversation.type === 'support'
+                      ? "Type your message..."
+                      : `Message ${selectedConversation.name}...`
+                  }
+                  disabled={sendingMessage || isRecording}
+                  className="flex-1 bg-transparent text-[14px] text-[#000929] placeholder:text-[#92929d] outline-none font-raleway"
+                />
               </div>
+              
+              {/* Send Button */}
+              <button
+                onClick={sendMessage}
+                disabled={sendingMessage || isRecording || (!newMessage.trim() && pendingFiles.length === 0)}
+                className={cn(
+                  "w-11 h-11 rounded-[10px] flex items-center justify-center transition-colors disabled:bg-[#bababa]",
+                  selectedConversation.type === 'support'
+                    ? "bg-[#000929] hover:bg-[#1a1f3d]"
+                    : "bg-[#2e3b5b] hover:bg-[#3d4d6d]"
+                )}
+              >
+                {sendingMessage ? (
+                  <Loader2 size={20} className="animate-spin text-white" />
+                ) : (
+                  <Send size={20} className="text-white" />
+                )}
+              </button>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
+          <div className="flex-1 flex items-center justify-center bg-[#f7f7fd]">
             <div className="text-center">
-              <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-30" />
-              <p className="text-lg">Select a conversation</p>
-              <p className="text-sm">Choose a chat from the list to start messaging</p>
+              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                <MessageCircle className="w-10 h-10 text-[#2e3b5b]" />
+              </div>
+              <p className="text-lg font-semibold text-[#000929]">Select a conversation</p>
+              <p className="text-sm text-[#757575]">Choose a chat from the list to start messaging</p>
             </div>
           </div>
         )}

@@ -9,7 +9,8 @@ import {
   Loader2, 
   MessageCircle, 
   ChevronUp,
-  Headphones
+  Headphones,
+  Paperclip
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ChatSession, useFloatingChat } from '@/contexts/FloatingChatContext';
@@ -145,14 +146,14 @@ const FloatingSupportChatBox = ({ session }: FloatingSupportChatBoxProps) => {
     return (
       <button
         onClick={() => expandChat(session.id)}
-        className="relative flex items-center gap-2 px-4 py-2.5 bg-violet-500 hover:bg-violet-600 text-white rounded-full shadow-lg transition-all hover:scale-105"
+        className="relative flex items-center gap-2 px-4 py-2.5 bg-[#000929] hover:bg-[#1a1f3d] text-white rounded-full shadow-lg transition-all hover:scale-105"
       >
         <Headphones size={16} />
         <span className="text-sm font-medium max-w-[100px] truncate">
           Uptoza Support
         </span>
         {session.unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#ff3e46] text-white text-xs rounded-full flex items-center justify-center font-bold">
             {session.unreadCount > 9 ? '9+' : session.unreadCount}
           </span>
         )}
@@ -163,31 +164,32 @@ const FloatingSupportChatBox = ({ session }: FloatingSupportChatBoxProps) => {
 
   // Expanded chat box
   return (
-    <div className="w-[340px] h-[450px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-violet-50 to-purple-50 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-full bg-violet-500 flex items-center justify-center">
-            <Headphones size={16} className="text-white" />
+    <div className="w-[340px] h-[480px] bg-white rounded-xl shadow-2xl border border-[#e5e5e5] flex flex-col overflow-hidden">
+      {/* Header - Reference design style */}
+      <div className="h-[80px] bg-white border-b border-[#e5e5e5] flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-[#000929] flex items-center justify-center">
+            <Headphones size={18} className="text-white" />
           </div>
-          <div className="min-w-0">
-            <h3 className="font-bold text-gray-900 text-sm truncate">Uptoza Support</h3>
-            {session.productName && (
-              <p className="text-[10px] text-gray-500 truncate">Re: {session.productName}</p>
-            )}
+          <div className="min-w-0 flex flex-col gap-1">
+            <h3 className="font-semibold text-[#000929] text-[14px] truncate tracking-[-0.28px]">Uptoza Support</h3>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-[#33b843] rounded-full" />
+              <span className="text-[11px] text-[#bababa] tracking-[-0.22px]">Online</span>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => minimizeChat(session.id)}
-            className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
             title="Minimize"
           >
-            <Minus size={14} className="text-gray-600" />
+            <Minus size={14} className="text-[#000929]" />
           </button>
           <button
             onClick={() => closeChat(session.id)}
-            className="p-1.5 hover:bg-red-100 text-gray-600 hover:text-red-600 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-red-50 text-[#000929] hover:text-red-600 rounded-lg transition-colors"
             title="Close"
           >
             <X size={14} />
@@ -196,67 +198,82 @@ const FloatingSupportChatBox = ({ session }: FloatingSupportChatBoxProps) => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            <Loader2 className="w-5 h-5 animate-spin text-[#bababa]" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <MessageCircle size={32} className="text-gray-300 mb-2" />
-            <p className="text-gray-500 text-xs">No messages yet</p>
-            <p className="text-gray-400 text-[10px]">Ask us anything!</p>
+            <MessageCircle size={32} className="text-[#bababa] mb-2" />
+            <p className="text-[#000929] text-xs font-medium">No messages yet</p>
+            <p className="text-[#757575] text-[10px]">Ask us anything!</p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[85%] rounded-2xl px-3 py-2 ${
-                  msg.sender_type === 'user'
-                    ? 'bg-violet-500 text-white rounded-br-md'
-                    : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md'
-                }`}
-              >
-                <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
-                <p className={`text-[9px] mt-0.5 ${
-                  msg.sender_type === 'user' ? 'text-violet-100' : 'text-gray-400'
-                }`}>
-                  {format(new Date(msg.created_at), 'HH:mm')}
-                </p>
-              </div>
+          <>
+            {/* Today Badge */}
+            <div className="flex justify-center py-1">
+              <span className="bg-white px-2 py-1.5 rounded text-[12px] font-semibold text-[#2e2a40] tracking-[-0.24px] shadow-sm border border-[#e5e5e5]">
+                Today
+              </span>
             </div>
-          ))
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className="flex flex-col gap-1.5">
+                  <div
+                    className={`max-w-[230px] px-3 py-2 shadow-sm ${
+                      msg.sender_type === 'user'
+                        ? 'bg-[#2e3b5b] rounded-[10px_0px_10px_10px]'
+                        : 'bg-[#000929] rounded-[0px_10px_10px_10px]'
+                    }`}
+                  >
+                    <p className="font-raleway font-medium text-[13px] text-white tracking-[-0.26px] leading-[20px] whitespace-pre-wrap break-words">
+                      {msg.message}
+                    </p>
+                  </div>
+                  <span className={`text-[10px] text-[#757575] tracking-[-0.1px] ${
+                    msg.sender_type === 'user' ? 'text-right' : 'text-left'
+                  }`}>
+                    {format(new Date(msg.created_at), 'HH:mm')}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-3 border-t border-gray-200 bg-white">
-        <div className="flex gap-2">
+      {/* Input - Reference design style */}
+      <div className="h-[70px] bg-white border-t border-[#e5e5e5] flex items-center gap-3 px-3">
+        <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+          <Paperclip size={18} className="text-[#000929]" />
+        </button>
+        <div className="flex-1 h-[46px] bg-[#f7f7fd] rounded-[16px] flex items-center px-3">
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
-            className="flex-1 px-3 py-2 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+            className="flex-1 bg-transparent text-[13px] text-[#000929] placeholder:text-[#92929d] outline-none font-raleway"
             disabled={sending}
           />
-          <button
-            onClick={sendMessage}
-            disabled={!newMessage.trim() || sending}
-            className="px-3 py-2 bg-violet-500 hover:bg-violet-600 disabled:bg-gray-300 text-white rounded-xl transition-colors flex items-center"
-          >
-            {sending ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Send size={16} />
-            )}
-          </button>
         </div>
+        <button
+          onClick={sendMessage}
+          disabled={!newMessage.trim() || sending}
+          className="w-10 h-10 bg-[#000929] disabled:bg-[#bababa] rounded-[10px] flex items-center justify-center transition-colors hover:bg-[#1a1f3d]"
+        >
+          {sending ? (
+            <Loader2 size={16} className="animate-spin text-white" />
+          ) : (
+            <Send size={16} className="text-white" />
+          )}
+        </button>
       </div>
     </div>
   );
