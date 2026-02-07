@@ -675,14 +675,14 @@ const ChatSection = () => {
 
       {/* Conversations List Panel - Reference Design */}
       <div className={cn(
-        "w-full lg:w-80 border-r border-[#e5e5e5] flex flex-col bg-white",
+        "w-full lg:w-[400px] border-r border-[#e5e5e5] flex flex-col bg-white",
         showChatOnMobile && "hidden lg:flex"
       )}>
         {/* Header */}
-        <div className="p-4 border-b border-[#e5e5e5]">
+        <div className="py-6 px-5 border-b border-[#e5e5e5]">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <h1 className="text-[20px] font-semibold text-[#000929] tracking-[-0.4px]">Messaging</h1>
+              <h1 className="text-[24px] font-semibold text-[#000929] tracking-[-0.72px]">Messaging</h1>
               {totalUnread > 0 && (
                 <span className="bg-[#ff3e46] text-[#9b171c] text-[12px] px-1.5 py-0.5 rounded">
                   {totalUnread}
@@ -706,10 +706,10 @@ const ChatSection = () => {
         <div className="flex-1 overflow-y-auto">
           {filteredConversations.map((conv, index) => (
             <div key={conv.id}>
-              <button
-                onClick={() => handleConversationSelect(conv)}
-                className={cn(
-                  "w-full p-4 flex items-start gap-3 transition-all text-left",
+                <button
+                  onClick={() => handleConversationSelect(conv)}
+                  className={cn(
+                    "w-full py-[10px] px-5 flex items-start gap-3 transition-all text-left",
                   selectedConversation?.id === conv.id 
                     ? "bg-[#f7f7fd] rounded-[10px]" 
                     : "hover:bg-[#f7f7fd]"
@@ -822,7 +822,7 @@ const ChatSection = () => {
                 </div>
               </div>
               
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                 {/* Request Support Button for Seller Chats */}
                 {selectedConversation.type === 'seller' && selectedConversation.sellerId && (
                   <button
@@ -862,7 +862,7 @@ const ChatSection = () => {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
+            <div className="flex-1 overflow-y-auto py-2 px-6 space-y-4 bg-white">
               {currentMessages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full">
                   <div className="w-20 h-20 rounded-2xl bg-[#f7f7fd] flex items-center justify-center mb-4">
@@ -1009,7 +1009,7 @@ const ChatSection = () => {
             )}
 
             {/* Input Area - 80px height */}
-            <div className="h-[80px] bg-white border-t border-[#e5e5e5] flex items-center gap-4 px-4">
+            <div className="h-[80px] bg-white border-t border-[#e5e5e5] flex items-center gap-6 px-[15px]">
               {/* Attachment buttons (only for support) */}
               {selectedConversation.type === 'support' && !isRecording && (
                 <div className="flex gap-1">
