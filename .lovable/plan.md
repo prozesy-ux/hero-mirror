@@ -1,31 +1,10 @@
 
 
-# Move Products Under Discount Section in Seller Sidebar
+# Fix Seller Sidebar: Products as Dropdown Parent
 
 ## Overview
 
-Reorganize the Seller Dashboard sidebar navigation by removing "Products" from the main navigation and adding it as a sub-item under the collapsible "Discount" section.
-
----
-
-## Current Structure
-
-```text
-Home
-Products        ← REMOVE FROM HERE
-Sales
-Customers
-Analytics
-Payouts
-▼ Discount
-  ├─ Coupons
-  ├─ Flash Sales
-  └─ Inventory
-Insights
-Reports
-Performance
-Chat
-```
+Correct the sidebar structure so that "Products" is the main collapsible dropdown item, with Discount, Coupons, Flash Sales, and Inventory as its sub-items.
 
 ---
 
@@ -37,8 +16,8 @@ Sales
 Customers
 Analytics
 Payouts
-▼ Discount
-  ├─ Products   ← ADD HERE (first item)
+▼ Products (dropdown parent - opens on hover/click)
+  ├─ Discount
   ├─ Coupons
   ├─ Flash Sales
   └─ Inventory
@@ -46,59 +25,81 @@ Insights
 Reports
 Performance
 Chat
+───────────
+Settings
+Help
+Collapse
+User Profile
 ```
 
 ---
 
 ## Changes to SellerSidebar.tsx
 
-### 1. Update Main Nav Items (Line 40-47)
+### 1. Rename Section and Update Items
 
-Remove "Products" from `navItems`:
-
-**Before:**
-```tsx
-const navItems = [
-  { to: '/seller', icon: GumroadHomeIcon, label: 'Home', exact: true },
-  { to: '/seller/products', icon: GumroadProductsIcon, label: 'Products' },
-  { to: '/seller/orders', icon: GumroadSalesIcon, label: 'Sales' },
-  ...
-];
-```
-
-**After:**
-```tsx
-const navItems = [
-  { to: '/seller', icon: GumroadHomeIcon, label: 'Home', exact: true },
-  { to: '/seller/orders', icon: GumroadSalesIcon, label: 'Sales' },
-  ...
-];
-```
-
----
-
-### 2. Update Discount Sub-menu Items (Line 49-54)
-
-Add "Products" as the first item in `discountItems`:
-
-**Before:**
+**Current (Wrong):**
 ```tsx
 const discountItems = [
+  { to: '/seller/products', icon: GumroadProductsIcon, label: 'Products' },
+  { to: '/seller/coupons', icon: GumroadCouponsIcon, label: 'Coupons' },
+  ...
+];
+```
+
+**New (Correct):**
+```tsx
+const productSubItems = [
+  { to: '/seller/discount', icon: GumroadDiscountIcon, label: 'Discount' },
   { to: '/seller/coupons', icon: GumroadCouponsIcon, label: 'Coupons' },
   { to: '/seller/flash-sales', icon: GumroadFlashSaleIcon, label: 'Flash Sales' },
   { to: '/seller/inventory', icon: GumroadInventoryIcon, label: 'Inventory' },
 ];
 ```
 
-**After:**
+### 2. Update State Variable Name
+
+**Current:**
 ```tsx
-const discountItems = [
-  { to: '/seller/products', icon: GumroadProductsIcon, label: 'Products' },
-  { to: '/seller/coupons', icon: GumroadCouponsIcon, label: 'Coupons' },
-  { to: '/seller/flash-sales', icon: GumroadFlashSaleIcon, label: 'Flash Sales' },
-  { to: '/seller/inventory', icon: GumroadInventoryIcon, label: 'Inventory' },
-];
+const [discountOpen, setDiscountOpen] = useState(false);
 ```
+
+**New:**
+```tsx
+const [productsOpen, setProductsOpen] = useState(false);
+```
+
+### 3. Update Active Check
+
+**Current:**
+```tsx
+const isDiscountActive = discountItems.some(item => isActive(item.to));
+```
+
+**New:**
+```tsx
+const isProductsActive = productSubItems.some(item => isActive(item.to)) || isActive('/seller/products');
+```
+
+### 4. Update Collapsible Section
+
+Change the dropdown trigger from "Discount" icon/label to "Products" icon/label:
+
+**Current:**
+```tsx
+<GumroadDiscountIcon size={16} />
+<span>Discount</span>
+```
+
+**New:**
+```tsx
+<GumroadProductsIcon size={16} />
+<span>Products</span>
+```
+
+### 5. Add Products Page Link (Optional)
+
+If clicking "Products" should also navigate to `/seller/products`, make it a link that also toggles the dropdown.
 
 ---
 
@@ -106,11 +107,14 @@ const discountItems = [
 
 | File | Change |
 |------|--------|
-| `src/components/seller/SellerSidebar.tsx` | Move Products from main nav to Discount sub-menu |
+| `src/components/seller/SellerSidebar.tsx` | Rename dropdown to "Products", add Discount as sub-item |
 
 ---
 
 ## Result
 
-The sidebar will now show "Products" inside the collapsible "Discount" section instead of as a standalone top-level navigation item. This groups product management with discount-related features (coupons, flash sales, inventory) for a more organized seller workflow.
+The sidebar will show:
+- **Products** as the main collapsible section
+- Sub-items: Discount, Coupons, Flash Sales, Inventory
+- Opens on hover or click
 
