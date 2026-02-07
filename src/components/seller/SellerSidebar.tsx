@@ -39,7 +39,6 @@ import {
 // Gumroad-style navigation labels with custom SVG icons
 const navItems = [
   { to: '/seller', icon: GumroadHomeIcon, label: 'Home', exact: true },
-  { to: '/seller/products', icon: GumroadProductsIcon, label: 'Products' },
   { to: '/seller/orders', icon: GumroadSalesIcon, label: 'Sales' },
   { to: '/seller/customers', icon: GumroadCustomersIcon, label: 'Customers' },
   { to: '/seller/analytics', icon: GumroadAnalyticsIcon, label: 'Analytics' },
@@ -48,6 +47,7 @@ const navItems = [
 
 // Discount sub-menu items (includes Inventory)
 const discountItems = [
+  { to: '/seller/products', icon: GumroadProductsIcon, label: 'Products' },
   { to: '/seller/coupons', icon: GumroadCouponsIcon, label: 'Coupons' },
   { to: '/seller/flash-sales', icon: GumroadFlashSaleIcon, label: 'Flash Sales' },
   { to: '/seller/inventory', icon: GumroadInventoryIcon, label: 'Inventory' },
