@@ -1,109 +1,116 @@
 
-# Add Analytics Tracker Script and Content Security Policy
+
+# Move Products Under Discount Section in Seller Sidebar
 
 ## Overview
 
-Add an external analytics tracker script and Content Security Policy (CSP) meta tags to the `index.html` file to enable advanced tracking and enforce security policies for resource loading.
+Reorganize the Seller Dashboard sidebar navigation by removing "Products" from the main navigation and adding it as a sub-item under the collapsible "Discount" section.
 
 ---
 
-## Changes to index.html
+## Current Structure
 
-### 1. Content Security Policy Meta Tag
-
-Add a single, comprehensive CSP meta tag that covers all required sources. The CSP will be placed early in the `<head>` section after the viewport meta tag.
-
-**Location**: After line 5 (viewport meta)
-
-```html
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://yenvbateuuoharllzbds.supabase.co https://*.supabase.co https://*.jsdelivr.net https://*.unpkg.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://*.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.gpteng.co data:; img-src 'self' data: https:;">
-```
-
-**Note**: Only ONE CSP meta tag should be used. Multiple CSP tags create conflicting policies.
-
----
-
-### 2. Analytics Tracker Script
-
-Add the analytics tracker script at the end of `<head>` section, after all other scripts but before the closing `</head>` tag.
-
-**Location**: After line 72 (after JSON-LD schema, before `</head>`)
-
-```html
-<!-- Analytics Tracker (Advanced) -->
-<script>
-  (function(w,d,s,l,i){
-    w[l]=w[l]||[];
-    var f=d.getElementsByTagName(s)[0],
-        j=d.createElement(s);
-    j.async=true;
-    j.src='https://yenvbateuuoharllzbds.supabase.co/functions/v1/tracker-script?id='+i;
-    f.parentNode.insertBefore(j,f);
-  })(window,document,'script','_analytics','0386ad7b-fd79-4b9a-8fe5-c31fe30e7382');
-</script>
+```text
+Home
+Products        ← REMOVE FROM HERE
+Sales
+Customers
+Analytics
+Payouts
+▼ Discount
+  ├─ Coupons
+  ├─ Flash Sales
+  └─ Inventory
+Insights
+Reports
+Performance
+Chat
 ```
 
 ---
 
-### 3. Preconnect for Analytics Domain
+## New Structure
 
-Add a preconnect link for the analytics Supabase domain to improve script loading performance.
-
-**Location**: After line 31 (with other preconnect links)
-
-```html
-<link rel="preconnect" href="https://yenvbateuuoharllzbds.supabase.co" crossorigin />
+```text
+Home
+Sales
+Customers
+Analytics
+Payouts
+▼ Discount
+  ├─ Products   ← ADD HERE (first item)
+  ├─ Coupons
+  ├─ Flash Sales
+  └─ Inventory
+Insights
+Reports
+Performance
+Chat
 ```
 
 ---
 
-## Final Structure
+## Changes to SellerSidebar.tsx
 
-```html
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="...">
-    
-    <!-- Critical CSS -->
-    <style>...</style>
-    
-    <!-- Favicons -->
-    ...
-    
-    <!-- Preconnect (including new analytics domain) -->
-    <link rel="preconnect" href="https://yenvbateuuoharllzbds.supabase.co" crossorigin />
-    ...
-    
-    <!-- SEO Meta Tags -->
-    ...
-    
-    <!-- JSON-LD Schema -->
-    <script type="application/ld+json">...</script>
-    
-    <!-- Analytics Tracker (Advanced) -->
-    <script>
-      (function(w,d,s,l,i){...})(window,document,'script','_analytics','0386ad7b-fd79-4b9a-8fe5-c31fe30e7382');
-    </script>
-  </head>
-  <body>
-    ...
-  </body>
-</html>
+### 1. Update Main Nav Items (Line 40-47)
+
+Remove "Products" from `navItems`:
+
+**Before:**
+```tsx
+const navItems = [
+  { to: '/seller', icon: GumroadHomeIcon, label: 'Home', exact: true },
+  { to: '/seller/products', icon: GumroadProductsIcon, label: 'Products' },
+  { to: '/seller/orders', icon: GumroadSalesIcon, label: 'Sales' },
+  ...
+];
+```
+
+**After:**
+```tsx
+const navItems = [
+  { to: '/seller', icon: GumroadHomeIcon, label: 'Home', exact: true },
+  { to: '/seller/orders', icon: GumroadSalesIcon, label: 'Sales' },
+  ...
+];
 ```
 
 ---
 
-## Summary
+### 2. Update Discount Sub-menu Items (Line 49-54)
 
-| Change | Location | Purpose |
-|--------|----------|---------|
-| CSP Meta Tag | After viewport meta | Security policy for resources |
-| Preconnect | With other preconnects | Faster analytics script load |
-| Analytics Script | End of head section | External tracking integration |
+Add "Products" as the first item in `discountItems`:
 
-**File to update**: `index.html`
+**Before:**
+```tsx
+const discountItems = [
+  { to: '/seller/coupons', icon: GumroadCouponsIcon, label: 'Coupons' },
+  { to: '/seller/flash-sales', icon: GumroadFlashSaleIcon, label: 'Flash Sales' },
+  { to: '/seller/inventory', icon: GumroadInventoryIcon, label: 'Inventory' },
+];
+```
+
+**After:**
+```tsx
+const discountItems = [
+  { to: '/seller/products', icon: GumroadProductsIcon, label: 'Products' },
+  { to: '/seller/coupons', icon: GumroadCouponsIcon, label: 'Coupons' },
+  { to: '/seller/flash-sales', icon: GumroadFlashSaleIcon, label: 'Flash Sales' },
+  { to: '/seller/inventory', icon: GumroadInventoryIcon, label: 'Inventory' },
+];
+```
+
+---
+
+## File to Update
+
+| File | Change |
+|------|--------|
+| `src/components/seller/SellerSidebar.tsx` | Move Products from main nav to Discount sub-menu |
+
+---
+
+## Result
+
+The sidebar will now show "Products" inside the collapsible "Discount" section instead of as a standalone top-level navigation item. This groups product management with discount-related features (coupons, flash sales, inventory) for a more organized seller workflow.
+
