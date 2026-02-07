@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
-  MessageCircle, Send, Loader2, Image, Video, Paperclip, 
+  Send, Loader2, Image, Video, Paperclip, 
   X, Download, FileText, StopCircle, Circle, Headphones, Store, ArrowLeft, Search, AlertTriangle,
-  Phone, MoreVertical
+  Phone, MoreVertical, MessageCircle, Film, ChevronDown
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { playSound } from '@/lib/sounds';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 // Types
@@ -591,7 +590,7 @@ const ChatSection = () => {
           <img 
             src={att.file_url} 
             alt={att.file_name} 
-            className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-[#e5e5e5] shadow-sm"
+            className="w-[112px] h-[120px] rounded-[12px] object-cover"
           />
         </a>
       );
@@ -603,7 +602,7 @@ const ChatSection = () => {
           <video 
             src={att.file_url} 
             controls 
-            className="rounded-lg max-h-[200px] w-full"
+            className="rounded-[12px] max-h-[200px] w-full"
           />
         </div>
       );
@@ -614,10 +613,10 @@ const ChatSection = () => {
         href={att.file_url} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="flex items-center gap-2 px-3 py-2 bg-[#f7f7fd] rounded-lg hover:bg-[#eeeef5] transition-colors border border-[#e5e5e5]"
+        className="flex items-center gap-2 px-3 py-2 bg-[#f7f7fd] rounded-[12px] hover:bg-[#eeeef5] transition-colors"
       >
         <FileText size={18} className="text-[#757575]" />
-        <span className="text-sm truncate max-w-[150px] text-[#000929]">{att.file_name}</span>
+        <span className="text-[14px] truncate max-w-[150px] text-[#000929] font-medium tracking-[-0.28px]">{att.file_name}</span>
         <Download size={14} className="text-[#757575]" />
       </a>
     );
@@ -628,6 +627,7 @@ const ChatSection = () => {
   );
 
   const currentMessages = selectedConversation?.type === 'support' ? supportMessages : sellerMessages;
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
   if (loading) {
     return (
@@ -644,129 +644,115 @@ const ChatSection = () => {
     setPendingFiles([]);
   };
 
-  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
-
   return (
-    <div className="flex h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] border border-[#e5e5e5] rounded-xl overflow-hidden bg-white shadow-lg">
+    <div className="flex h-[882px] lg:h-[calc(100vh-140px)] overflow-hidden bg-[#f7f7fd]">
       {/* Hidden file inputs */}
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={handleFileSelect}
-      />
-      <input
-        ref={videoInputRef}
-        type="file"
-        accept="video/*"
-        multiple
-        className="hidden"
-        onChange={handleFileSelect}
-      />
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={handleFileSelect}
-      />
+      <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
+      <input ref={videoInputRef} type="file" accept="video/*" multiple className="hidden" onChange={handleFileSelect} />
+      <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
 
-      {/* Conversations List Panel - Reference Design */}
-      <div className={cn(
-        "w-full lg:w-[400px] border-r border-[#e5e5e5] flex flex-col bg-white",
+      {/* ========== CONTACTS SIDEBAR - Exact HTML Reference ========== */}
+      <aside className={cn(
+        "w-full lg:w-[400px] bg-white flex-shrink-0 flex flex-col",
         showChatOnMobile && "hidden lg:flex"
       )}>
-        {/* Header */}
-        <div className="py-6 px-5 border-b border-[#e5e5e5]">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h1 className="text-[24px] font-semibold text-[#000929] tracking-[-0.72px]">Messaging</h1>
+        {/* Contacts Header */}
+        <div className="p-[24px_20px] flex flex-col gap-3">
+          {/* Title Row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 px-1">
+              <h1 className="text-[24px] font-semibold tracking-[-0.72px] text-[#000929]">Messaging</h1>
               {totalUnread > 0 && (
-                <span className="bg-[#ff3e46] text-[#9b171c] text-[12px] px-1.5 py-0.5 rounded">
+                <span className="bg-[#ff3e46] text-[#9b171c] text-[12px] font-normal px-[3px] py-1 rounded-[2px]">
                   {totalUnread}
                 </span>
               )}
             </div>
+            <button className="flex items-center gap-1 px-1 py-1 border border-[#f7f7fd] bg-white rounded text-[14px] font-medium text-[#000929] font-raleway">
+              <span>Agents</span>
+              <ChevronDown className="w-5 h-5" />
+            </button>
           </div>
+          
           {/* Search */}
-          <div className="relative h-[46px] bg-[#f7f7fd] rounded flex items-center px-4">
+          <div className="relative h-[46px] bg-[#f7f7fd] flex items-center px-4 rounded">
             <Search className="w-5 h-5 text-[#92929d]" />
             <input
-              placeholder="Search conversations..."
+              type="text"
+              placeholder="Search in dashboard..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent ml-3 text-[14px] text-[#000929] placeholder:text-[#92929d] outline-none"
+              className="flex-1 border-none bg-transparent ml-3 text-[14px] text-[#92929d] outline-none font-poppins"
             />
           </div>
         </div>
-        
-        {/* Conversations List */}
+
+        {/* Contacts List */}
         <div className="flex-1 overflow-y-auto">
           {filteredConversations.map((conv, index) => (
             <div key={conv.id}>
-                <button
-                  onClick={() => handleConversationSelect(conv)}
-                  className={cn(
-                    "w-full py-[10px] px-5 flex items-start gap-3 transition-all text-left",
+              <button
+                onClick={() => handleConversationSelect(conv)}
+                className={cn(
+                  "w-full flex items-center gap-3 p-[10px_20px] text-left transition-colors",
                   selectedConversation?.id === conv.id 
                     ? "bg-[#f7f7fd] rounded-[10px]" 
-                    : "hover:bg-[#f7f7fd]"
+                    : "bg-transparent hover:bg-[#f7f7fd]"
                 )}
               >
                 {/* Avatar */}
-                <div className="relative">
-                  <div className={cn(
-                    "w-[52px] h-[52px] rounded-[30px] flex items-center justify-center flex-shrink-0",
-                    conv.type === 'support' 
-                      ? "bg-[#000929]" 
-                      : "bg-[#2e3b5b]"
-                  )}>
-                    {conv.type === 'support' ? (
-                      <Headphones className="w-6 h-6 text-white" />
-                    ) : conv.avatar ? (
-                      <Avatar className="w-[52px] h-[52px]">
-                        <AvatarImage src={conv.avatar} alt={conv.name} className="object-cover" />
-                        <AvatarFallback className="bg-[#2e3b5b] text-white">
-                          <Store className="w-5 h-5" />
-                        </AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <Store className="w-6 h-6 text-white" />
-                    )}
-                  </div>
-                  {/* Online indicator for support */}
-                  {conv.type === 'support' && (
-                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#33b843] border-2 border-white rounded-full" />
+                <div className={cn(
+                  "w-[52px] h-[52px] rounded-[30px] flex items-center justify-center flex-shrink-0",
+                  conv.type === 'support' ? "bg-[#000929]" : "bg-[#2e3b5b]"
+                )}>
+                  {conv.type === 'support' ? (
+                    <Headphones className="w-6 h-6 text-white" />
+                  ) : conv.avatar ? (
+                    <Avatar className="w-[52px] h-[52px]">
+                      <AvatarImage src={conv.avatar} alt={conv.name} className="object-cover" />
+                      <AvatarFallback className="bg-[#2e3b5b] text-white">
+                        <Store className="w-5 h-5" />
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <Store className="w-6 h-6 text-white" />
                   )}
                 </div>
-                
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-[14px] text-[#000929] truncate tracking-[-0.28px]">{conv.name}</span>
-                    {conv.lastMessageTime && (
-                      <span className="text-[12px] text-[#76767c]/80 flex-shrink-0 tracking-[-0.12px]">
-                        {format(new Date(conv.lastMessageTime), 'h:mm a')}
-                      </span>
-                    )}
+
+                {/* Contact Info */}
+                <div className="flex-1 min-w-0 flex flex-col gap-2">
+                  {/* Name & Time Row */}
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-inter font-medium text-[14px] tracking-[-0.28px] text-[#000929] whitespace-nowrap">
+                      {conv.name}
+                    </span>
+                    <span className="text-[12px] tracking-[-0.12px] text-[#76767c]/80 whitespace-nowrap">
+                      {conv.lastMessageTime ? format(new Date(conv.lastMessageTime), 'h:mm a') : ''}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between gap-2 mt-1">
+                  
+                  {/* Message & Indicator Row */}
+                  <div className="flex items-center justify-between gap-2">
                     <p className={cn(
-                      "text-[12px] truncate tracking-[-0.24px]",
+                      "text-[12px] tracking-[-0.24px] overflow-hidden text-ellipsis whitespace-nowrap",
                       conv.unreadCount > 0 ? "text-[#000929] font-medium" : "text-[#76767c]/80"
                     )}>
                       {conv.lastMessage}
                     </p>
-                    {conv.unreadCount > 0 && (
-                      <div className="w-2 h-2 bg-[#d82027] rounded-full flex-shrink-0" />
+                    {conv.unreadCount > 0 ? (
+                      <div className="w-[18px] h-[18px] flex items-center justify-center flex-shrink-0">
+                        <div className="w-2 h-2 bg-[#d82027] rounded-full" />
+                      </div>
+                    ) : (
+                      <div className="w-[18px] h-[18px] flex-shrink-0" />
                     )}
                   </div>
                 </div>
               </button>
+              
+              {/* Separator */}
               {index < filteredConversations.length - 1 && (
-                <div className="mx-auto w-[312px] h-[1px] bg-[#e5e5e5]" />
+                <div className="w-[312px] h-[1px] bg-[#e5e5e5] mx-auto" />
               )}
             </div>
           ))}
@@ -781,19 +767,19 @@ const ChatSection = () => {
             </div>
           )}
         </div>
-      </div>
+      </aside>
 
-      {/* Chat Area */}
-      <div className={cn(
-        "flex-1 flex flex-col bg-white",
+      {/* ========== CHAT AREA - Exact HTML Reference ========== */}
+      <main className={cn(
+        "flex-1 h-[882px] lg:h-full relative flex flex-col",
         !showChatOnMobile && "hidden lg:flex"
       )}>
         {selectedConversation ? (
           <>
-            {/* Chat Header - 100px height */}
-            <div className="h-[100px] bg-white border-b border-[#e5e5e5] flex items-center justify-between px-6">
+            {/* Chat Header - 100px */}
+            <header className="h-[100px] bg-white border-b border-[#e5e5e5] flex items-center justify-between px-6 flex-shrink-0">
               <div className="flex items-center gap-3">
-                {/* Back button for mobile */}
+                {/* Mobile back button */}
                 <button
                   onClick={() => setShowChatOnMobile(false)}
                   className="lg:hidden p-2 -ml-2 hover:bg-[#f7f7fd] rounded-lg transition-colors"
@@ -801,11 +787,10 @@ const ChatSection = () => {
                   <ArrowLeft className="w-5 h-5 text-[#000929]" />
                 </button>
                 
+                {/* Avatar */}
                 <div className={cn(
-                  "w-11 h-11 rounded-[40px] flex items-center justify-center",
-                  selectedConversation.type === 'support' 
-                    ? "bg-[#000929]" 
-                    : "bg-[#2e3b5b]"
+                  "w-[44px] h-[44px] rounded-[40px] flex items-center justify-center",
+                  selectedConversation.type === 'support' ? "bg-[#000929]" : "bg-[#2e3b5b]"
                 )}>
                   {selectedConversation.type === 'support' ? (
                     <Headphones className="w-5 h-5 text-white" />
@@ -813,17 +798,24 @@ const ChatSection = () => {
                     <Store className="w-5 h-5 text-white" />
                   )}
                 </div>
-                <div className="flex flex-col gap-1">
-                  <h3 className="font-semibold text-[16px] text-[#000929] tracking-[-0.32px]">{selectedConversation.name}</h3>
+                
+                {/* User Details */}
+                <div className="flex flex-col gap-2">
+                  <h2 className="text-[16px] font-semibold tracking-[-0.32px] text-[#000929]">
+                    {selectedConversation.name}
+                  </h2>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-[#33b843] rounded-full" />
-                    <span className="text-[12px] text-[#bababa] tracking-[-0.24px] font-medium">Online</span>
+                    <div className="w-[18px] h-[18px] flex items-center justify-center">
+                      <div className="w-2 h-2 bg-[#33b843] rounded-full" />
+                    </div>
+                    <span className="text-[12px] tracking-[-0.24px] text-[#bababa] font-medium">Online</span>
                   </div>
                 </div>
               </div>
               
+              {/* Action Buttons - gap 24px */}
               <div className="flex items-center gap-6">
-                {/* Request Support Button for Seller Chats */}
+                {/* Request Support for seller chats */}
                 {selectedConversation.type === 'seller' && selectedConversation.sellerId && (
                   <button
                     onClick={async () => {
@@ -849,20 +841,27 @@ const ChatSection = () => {
                     Request Support
                   </button>
                 )}
-                <button className="p-2 hover:bg-[#f7f7fd] rounded-lg transition-colors">
-                  <Phone size={20} className="text-[#000929]" />
+                <button className="p-0 bg-transparent border-none cursor-pointer">
+                  <Film className="w-6 h-6 text-[#000929]" />
                 </button>
-                <button className="p-2 hover:bg-[#f7f7fd] rounded-lg transition-colors">
-                  <Video size={20} className="text-[#000929]" />
+                <button className="p-0 bg-transparent border-none cursor-pointer">
+                  <Phone className="w-6 h-6 text-[#000929]" />
                 </button>
-                <button className="p-2 hover:bg-[#f7f7fd] rounded-lg transition-colors">
-                  <MoreVertical size={20} className="text-[#000929]" />
+                <button className="p-0 bg-transparent border-none cursor-pointer">
+                  <MoreVertical className="w-6 h-6 text-[#000929]" />
                 </button>
               </div>
+            </header>
+
+            {/* Today Badge */}
+            <div className="flex justify-center pt-1 bg-white">
+              <span className="bg-white text-[#2e2a40] shadow-[0px_1px_3px_rgba(237,98,20,0.1)] py-2 px-3 rounded text-[14px] font-semibold tracking-[-0.28px]">
+                Today
+              </span>
             </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto py-2 px-6 space-y-4 bg-white">
+            {/* Messages Container - 700px height in reference */}
+            <div className="flex-1 overflow-y-auto p-[8px_24px] bg-white">
               {currentMessages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full">
                   <div className="w-20 h-20 rounded-2xl bg-[#f7f7fd] flex items-center justify-center mb-4">
@@ -872,14 +871,7 @@ const ChatSection = () => {
                   <p className="text-sm text-[#757575] mt-1">Start the conversation!</p>
                 </div>
               ) : (
-                <>
-                  {/* Today Badge */}
-                  <div className="flex justify-center py-1">
-                    <span className="bg-white px-3 py-2 rounded text-[14px] font-semibold text-[#2e2a40] tracking-[-0.28px] shadow-sm border border-[#e5e5e5]">
-                      Today
-                    </span>
-                  </div>
-                  
+                <div className="flex flex-col gap-4">
                   {selectedConversation.type === 'support' ? (
                     supportMessages.map((msg) => {
                       const isUser = msg.sender_type === 'user';
@@ -887,27 +879,31 @@ const ChatSection = () => {
                       
                       return (
                         <div key={msg.id} className={cn("flex", isUser ? "justify-end" : "justify-start")}>
-                          <div className="flex flex-col gap-2 max-w-[303px]">
+                          <div className={cn("flex flex-col gap-[10px]", isUser ? "w-[303px] items-end" : "w-[272px]")}>
+                            {/* Attachments */}
+                            {messageAttachments.length > 0 && (
+                              <div className="flex gap-3">
+                                {messageAttachments.map(att => (
+                                  <div key={att.id}>{renderAttachment(att)}</div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Message Bubble */}
                             <div className={cn(
-                              "px-3 py-2 shadow-sm",
+                              "p-[8px_12px] shadow-[0px_1px_3px_rgba(237,98,20,0.1)]",
                               isUser 
-                                ? "bg-[#2e3b5b] rounded-[10px_0px_10px_10px]" 
+                                ? "bg-[#2e3b5b] rounded-[10px_0px_10px_10px] w-full" 
                                 : "bg-[#000929] rounded-[0px_10px_10px_10px]"
                             )}>
-                              <p className="font-raleway font-medium text-[14px] text-white tracking-[-0.28px] leading-[21px] whitespace-pre-wrap break-words">
+                              <p className="font-raleway font-medium text-[14px] tracking-[-0.28px] leading-[21px] text-white whitespace-pre-wrap break-words">
                                 {msg.message}
                               </p>
-                              
-                              {messageAttachments.length > 0 && (
-                                <div className="mt-3 space-y-2">
-                                  {messageAttachments.map(att => (
-                                    <div key={att.id}>{renderAttachment(att)}</div>
-                                  ))}
-                                </div>
-                              )}
                             </div>
+                            
+                            {/* Time */}
                             <span className={cn(
-                              "text-[12px] text-[#757575] tracking-[-0.12px]",
+                              "text-[12px] tracking-[-0.12px] text-[#757575]",
                               isUser ? "text-right" : "text-left"
                             )}>
                               Today {msg.created_at && format(new Date(msg.created_at), 'HH:mm')}
@@ -919,7 +915,6 @@ const ChatSection = () => {
                   ) : (
                     sellerMessages.map((msg) => {
                       const isBuyer = msg.sender_type === 'buyer';
-                      const isSupport = msg.sender_type === 'support';
                       const isSystem = msg.sender_type === 'system';
                       
                       if (isSystem) {
@@ -929,9 +924,6 @@ const ChatSection = () => {
                               <p className="text-sm text-amber-700 text-center whitespace-pre-wrap">
                                 {msg.message}
                               </p>
-                              <p className="text-[10px] text-amber-500 text-center mt-1">
-                                {msg.created_at && format(new Date(msg.created_at), 'MMM d, h:mm a')}
-                              </p>
                             </div>
                           </div>
                         );
@@ -939,21 +931,19 @@ const ChatSection = () => {
                       
                       return (
                         <div key={msg.id} className={cn("flex", isBuyer ? "justify-end" : "justify-start")}>
-                          <div className="flex flex-col gap-2 max-w-[303px]">
+                          <div className={cn("flex flex-col gap-[10px]", isBuyer ? "w-[303px] items-end" : "w-[272px]")}>
                             <div className={cn(
-                              "px-3 py-2 shadow-sm",
+                              "p-[8px_12px] shadow-[0px_1px_3px_rgba(237,98,20,0.1)]",
                               isBuyer 
-                                ? "bg-[#2e3b5b] rounded-[10px_0px_10px_10px]" 
-                                : isSupport
-                                  ? "bg-blue-600 rounded-[0px_10px_10px_10px]"
-                                  : "bg-[#000929] rounded-[0px_10px_10px_10px]"
+                                ? "bg-[#2e3b5b] rounded-[10px_0px_10px_10px] w-full" 
+                                : "bg-[#000929] rounded-[0px_10px_10px_10px]"
                             )}>
-                              <p className="font-raleway font-medium text-[14px] text-white tracking-[-0.28px] leading-[21px] whitespace-pre-wrap break-words">
+                              <p className="font-raleway font-medium text-[14px] tracking-[-0.28px] leading-[21px] text-white whitespace-pre-wrap break-words">
                                 {msg.message}
                               </p>
                             </div>
                             <span className={cn(
-                              "text-[12px] text-[#757575] tracking-[-0.12px]",
+                              "text-[12px] tracking-[-0.12px] text-[#757575]",
                               isBuyer ? "text-right" : "text-left"
                             )}>
                               Today {msg.created_at && format(new Date(msg.created_at), 'HH:mm')}
@@ -963,17 +953,17 @@ const ChatSection = () => {
                       );
                     })
                   )}
-                </>
+                  <div ref={messagesEndRef} />
+                </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Pending Files Preview */}
-            {pendingFiles.length > 0 && selectedConversation.type === 'support' && (
-              <div className="px-4 py-2 border-t border-[#e5e5e5] bg-[#f7f7fd]">
-                <div className="flex flex-wrap gap-2">
+            {pendingFiles.length > 0 && (
+              <div className="px-4 py-2 bg-[#f7f7fd] border-t border-[#e5e5e5]">
+                <div className="flex gap-2 flex-wrap">
                   {pendingFiles.map((file, index) => (
-                    <div key={index} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-[#e5e5e5]">
+                    <div key={index} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-[#e5e5e5]">
                       {file.type.startsWith('image/') ? (
                         <Image size={14} className="text-[#2e3b5b]" />
                       ) : file.type.startsWith('video/') ? (
@@ -1008,82 +998,54 @@ const ChatSection = () => {
               </div>
             )}
 
-            {/* Input Area - 80px height */}
-            <div className="h-[80px] bg-white border-t border-[#e5e5e5] flex items-center gap-6 px-[15px]">
+            {/* Chat Footer - 80px height, gap 24px, padding 0 15px */}
+            <footer className="h-[80px] bg-white border-t border-[#e5e5e5] flex items-center gap-6 px-[15px] flex-shrink-0">
               {/* Attachment buttons (only for support) */}
               {selectedConversation.type === 'support' && !isRecording && (
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => imageInputRef.current?.click()}
-                    className="p-2 text-[#000929] hover:bg-[#f7f7fd] rounded-lg transition-colors"
-                    title="Add image"
-                  >
-                    <Image size={20} />
+                <>
+                  <button onClick={() => fileInputRef.current?.click()} className="p-0 bg-transparent border-none cursor-pointer">
+                    <MoreVertical className="w-6 h-6 text-[#000929]" />
                   </button>
-                  <button
-                    onClick={() => videoInputRef.current?.click()}
-                    className="p-2 text-[#000929] hover:bg-[#f7f7fd] rounded-lg transition-colors"
-                    title="Add video"
-                  >
-                    <Video size={20} />
-                  </button>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2 text-[#000929] hover:bg-[#f7f7fd] rounded-lg transition-colors"
-                    title="Add file"
-                  >
-                    <Paperclip size={20} />
-                  </button>
-                  <button
-                    onClick={startRecording}
-                    className="p-2 text-[#000929] hover:bg-[#f7f7fd] rounded-lg transition-colors"
-                    title="Record screen"
-                  >
-                    <Circle size={20} />
-                  </button>
-                </div>
+                </>
               )}
               
               {selectedConversation.type === 'seller' && (
-                <button className="p-2 text-[#000929] hover:bg-[#f7f7fd] rounded-lg transition-colors">
-                  <Paperclip size={24} />
+                <button className="p-0 bg-transparent border-none cursor-pointer">
+                  <MoreVertical className="w-6 h-6 text-[#000929]" />
                 </button>
               )}
               
-              {/* Message Input */}
+              {/* Message Input Wrapper - 60px height, 20px radius */}
               <div className="flex-1 h-[60px] bg-[#f7f7fd] rounded-[20px] flex items-center px-4">
                 <input
+                  type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyPress}
-                  placeholder={
-                    selectedConversation.type === 'support'
-                      ? "Type your message..."
-                      : `Message ${selectedConversation.name}...`
-                  }
+                  placeholder="Type your message"
                   disabled={sendingMessage || isRecording}
-                  className="flex-1 bg-transparent text-[14px] text-[#000929] placeholder:text-[#92929d] outline-none font-raleway"
+                  className="flex-1 border-none bg-transparent text-[14px] text-[#92929d] outline-none font-poppins"
                 />
               </div>
+
+              {/* Attachment button */}
+              <button onClick={() => fileInputRef.current?.click()} className="p-0 bg-transparent border-none cursor-pointer">
+                <Paperclip className="w-6 h-6 text-[#000929]" />
+              </button>
               
-              {/* Send Button */}
+              {/* Send Button - 10px radius, primary color */}
               <button
                 onClick={sendMessage}
                 disabled={sendingMessage || isRecording || (!newMessage.trim() && pendingFiles.length === 0)}
-                className={cn(
-                  "w-11 h-11 rounded-[10px] flex items-center justify-center transition-colors disabled:bg-[#bababa]",
-                  selectedConversation.type === 'support'
-                    ? "bg-[#000929] hover:bg-[#1a1f3d]"
-                    : "bg-[#2e3b5b] hover:bg-[#3d4d6d]"
-                )}
+                className="bg-[#2e3b5b] border-none p-[10px] rounded-[10px] cursor-pointer flex items-center justify-center disabled:bg-[#bababa]"
               >
                 {sendingMessage ? (
-                  <Loader2 size={20} className="animate-spin text-white" />
+                  <Loader2 className="w-6 h-6 animate-spin text-white" />
                 ) : (
-                  <Send size={20} className="text-white" />
+                  <Send className="w-6 h-6 text-white" />
                 )}
               </button>
-            </div>
+            </footer>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-[#f7f7fd]">
@@ -1096,7 +1058,7 @@ const ChatSection = () => {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };
