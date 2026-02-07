@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Send, Loader2, Store, MessageCircle } from 'lucide-react';
+import { Send, Loader2, Store, MessageCircle, Phone, Video, MoreVertical, Paperclip, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface SellerChatMessage {
@@ -126,89 +126,125 @@ const SellerChatModal = ({ open, onOpenChange, sellerId, sellerName, productId, 
     }
   };
 
+  // Check if we should show "Today" badge
+  const shouldShowTodayBadge = messages.length > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white border border-black rounded max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden">
-        {/* Pink accent bar */}
-        <div className="h-1 bg-[#FF90E8]" />
-        
-        {/* Header */}
-        <div className="p-4 border-b bg-white">
+      <DialogContent className="bg-white border-0 rounded-xl max-w-lg max-h-[600px] flex flex-col p-0 overflow-hidden shadow-2xl gap-0">
+        {/* Chat Header - 100px height */}
+        <div className="h-[100px] bg-white border-b border-[#e5e5e5] flex items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded border border-black bg-[#FF90E8] flex items-center justify-center">
-              <Store size={18} className="text-black" />
+            <div className="w-11 h-11 rounded-full bg-[#2e3b5b] flex items-center justify-center">
+              <Store size={20} className="text-white" />
             </div>
-            <div>
-              <h3 className="font-bold text-slate-900">{sellerName}</h3>
-              {productName && (
-                <p className="text-xs text-slate-500">About: {productName}</p>
-              )}
+            <div className="flex flex-col gap-1">
+              <span className="text-[16px] font-semibold text-[#000929] tracking-[-0.32px]">{sellerName}</span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-[#33b843] rounded-full" />
+                <span className="text-[12px] text-[#bababa] tracking-[-0.24px] font-medium">Online</span>
+              </div>
             </div>
+          </div>
+          {/* Action buttons */}
+          <div className="flex items-center gap-4">
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <Phone size={20} className="text-[#000929]" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <Video size={20} className="text-[#000929]" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <MoreVertical size={20} className="text-[#000929]" />
+            </button>
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] bg-[#FBF8F3]">
+        {/* Messages Container */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-[350px] bg-white">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+              <Loader2 className="w-6 h-6 animate-spin text-[#bababa]" />
             </div>
           ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <MessageCircle size={40} className="text-slate-300 mb-3" />
-              <p className="text-slate-500 text-sm">No messages yet</p>
-              <p className="text-slate-400 text-xs">Start the conversation with the seller!</p>
+              <MessageCircle size={48} className="text-[#bababa] mb-3" />
+              <p className="text-[#000929] text-sm font-medium">No messages yet</p>
+              <p className="text-[#757575] text-xs mt-1">Start the conversation with the seller!</p>
             </div>
           ) : (
-            messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.sender_type === 'buyer' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                    msg.sender_type === 'buyer'
-                      ? 'bg-[#FF90E8] border border-black text-black rounded-br-none'
-                      : 'bg-white border border-black text-black rounded-bl-none'
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                  <p className={`text-[10px] mt-1 ${
-                    msg.sender_type === 'buyer' ? 'text-black/60' : 'text-slate-400'
-                  }`}>
-                    {format(new Date(msg.created_at), 'HH:mm')}
-                  </p>
+            <>
+              {/* Today Badge */}
+              {shouldShowTodayBadge && (
+                <div className="flex justify-center py-1">
+                  <span className="bg-white px-3 py-2 rounded text-[14px] font-semibold text-[#2e2a40] tracking-[-0.28px] shadow-sm border border-[#e5e5e5]">
+                    Today
+                  </span>
                 </div>
-              </div>
-            ))
+              )}
+              
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.sender_type === 'buyer' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className="flex flex-col gap-2">
+                    <div
+                      className={`max-w-[272px] px-3 py-2 shadow-sm ${
+                        msg.sender_type === 'buyer'
+                          ? 'bg-[#2e3b5b] rounded-[10px_0px_10px_10px]'
+                          : 'bg-[#000929] rounded-[0px_10px_10px_10px]'
+                      }`}
+                    >
+                      <p className="font-raleway font-medium text-[14px] text-white tracking-[-0.28px] leading-[21px] whitespace-pre-wrap">
+                        {msg.message}
+                      </p>
+                    </div>
+                    <span className={`text-[12px] text-[#757575] tracking-[-0.12px] ${
+                      msg.sender_type === 'buyer' ? 'text-right' : 'text-left'
+                    }`}>
+                      Today {format(new Date(msg.created_at), 'HH:mm')}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="p-4 border-t bg-white">
-          <div className="flex gap-2">
+        {/* Chat Footer - 80px height */}
+        <div className="h-[80px] bg-white border-t border-[#e5e5e5] flex items-center gap-4 px-4">
+          {/* Attach button */}
+          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <Paperclip size={24} className="text-[#000929]" />
+          </button>
+          
+          {/* Input field */}
+          <div className="flex-1 h-[60px] bg-[#f7f7fd] rounded-[20px] flex items-center px-4">
             <input
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
-              className="flex-1 px-4 py-3 bg-white border border-black rounded text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF90E8]/50"
+              className="flex-1 bg-transparent text-[14px] text-[#000929] placeholder:text-[#92929d] outline-none font-raleway"
               disabled={sending}
             />
-            <button
-              onClick={sendMessage}
-              disabled={!newMessage.trim() || sending}
-              className="px-4 py-3 bg-[#FF90E8] border border-black disabled:bg-slate-200 disabled:border-slate-300 text-black rounded hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-2"
-            >
-              {sending ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <Send size={18} />
-              )}
-            </button>
           </div>
+          
+          {/* Send button */}
+          <button
+            onClick={sendMessage}
+            disabled={!newMessage.trim() || sending}
+            className="w-11 h-11 bg-[#2e3b5b] disabled:bg-[#bababa] rounded-[10px] flex items-center justify-center transition-colors hover:bg-[#3d4d6d]"
+          >
+            {sending ? (
+              <Loader2 size={20} className="animate-spin text-white" />
+            ) : (
+              <Send size={20} className="text-white" />
+            )}
+          </button>
         </div>
       </DialogContent>
     </Dialog>

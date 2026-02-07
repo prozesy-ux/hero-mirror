@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -14,7 +13,11 @@ import {
   Loader2, 
   MessageSquare,
   Search,
-  User
+  User,
+  Paperclip,
+  Phone,
+  Video,
+  MoreVertical
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -55,7 +58,6 @@ const SellerChat = () => {
     return cleanup;
   }, [profile.id]);
 
-  // Auto-open first chat when loaded
   useEffect(() => {
     if (chatUsers.length > 0 && !selectedUser && !loading) {
       setSelectedUser(chatUsers[0].buyer_id);
@@ -208,7 +210,6 @@ const SellerChat = () => {
 
       if (error) throw error;
       setNewMessage('');
-      // FIX: Refetch messages after sending so seller sees their own message
       await fetchMessages(selectedUser);
       fetchChatUsers();
     } catch (error: any) {
@@ -235,138 +236,179 @@ const SellerChat = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-32 mb-6 border-2 border-black rounded-lg" />
+        <Skeleton className="h-8 w-32 mb-6 rounded-lg" />
         <div className="grid grid-cols-3 gap-4 h-[calc(100vh-180px)]">
-          <Skeleton className="col-span-1 rounded-lg border-2 border-black" />
-          <Skeleton className="col-span-2 rounded-lg border-2 border-black" />
+          <Skeleton className="col-span-1 rounded-xl" />
+          <Skeleton className="col-span-2 rounded-xl" />
         </div>
       </div>
     );
   }
 
-
+  const selectedUserData = chatUsers.find(u => u.buyer_id === selectedUser);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Unread Badge */}
       {totalUnread > 0 && (
-        <div className="flex justify-end mb-3 sm:mb-4">
-          <Badge className="bg-emerald-500 text-white text-xs">
+        <div className="flex justify-end">
+          <Badge className="bg-[#ff3e46] text-white text-xs px-2 py-1">
             {totalUnread} unread
           </Badge>
         </div>
       )}
 
-      {/* Chat Interface */}
-      <div className="flex h-[calc(100vh-180px)] sm:h-[calc(100vh-200px)] gap-3 sm:gap-4">
-        {/* Users List - Hidden on mobile when chat is open */}
-        <div className={`bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col ${
+      {/* Chat Interface - Reference Design */}
+      <div className="flex h-[calc(100vh-180px)] sm:h-[calc(100vh-200px)] border border-[#e5e5e5] rounded-xl overflow-hidden bg-white shadow-lg">
+        {/* Users List - Contacts Sidebar */}
+        <div className={`bg-white border-r border-[#e5e5e5] overflow-hidden flex flex-col ${
           showChatOnMobile ? 'hidden lg:flex' : 'flex'
         } w-full lg:w-80 flex-shrink-0`}>
-          <div className="p-3 border-b border-slate-100">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
+          {/* Header */}
+          <div className="p-4 border-b border-[#e5e5e5]">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <h1 className="text-[20px] font-semibold text-[#000929] tracking-[-0.4px]">Messaging</h1>
+                {totalUnread > 0 && (
+                  <span className="bg-[#ff3e46] text-[#9b171c] text-[12px] px-1.5 py-0.5 rounded">
+                    {totalUnread}
+                  </span>
+                )}
+              </div>
+            </div>
+            {/* Search */}
+            <div className="relative h-[46px] bg-[#f7f7fd] rounded flex items-center px-4">
+              <Search className="w-5 h-5 text-[#92929d]" />
+              <input
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 border-slate-200 bg-slate-50"
+                className="flex-1 bg-transparent ml-3 text-[14px] text-[#000929] placeholder:text-[#92929d] outline-none"
               />
             </div>
           </div>
 
+          {/* Contacts List */}
           <ScrollArea className="flex-1">
             {filteredUsers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 px-4">
-                <MessageSquare className="h-10 w-10 text-slate-300 mb-3" />
-                <p className="text-slate-500 text-sm">No conversations</p>
+                <MessageSquare className="h-10 w-10 text-[#bababa] mb-3" />
+                <p className="text-[#757575] text-sm">No conversations</p>
               </div>
             ) : (
-              <div className="p-2 space-y-1">
-                {filteredUsers.map((chatUser) => (
-                  <button
-                    key={chatUser.buyer_id}
-                    onClick={() => {
-                      setSelectedUser(chatUser.buyer_id);
-                      setShowChatOnMobile(true);
-                    }}
-                    className={`w-full p-3 rounded-lg text-left transition-all min-h-[64px] ${
-                      selectedUser === chatUser.buyer_id
-                        ? 'bg-emerald-50 border border-emerald-100'
-                        : 'hover:bg-slate-50 active:bg-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10 flex-shrink-0">
-                        <AvatarFallback className="bg-slate-100 text-slate-600 text-sm">
+              <div className="py-2">
+                {filteredUsers.map((chatUser, index) => (
+                  <div key={chatUser.buyer_id}>
+                    <button
+                      onClick={() => {
+                        setSelectedUser(chatUser.buyer_id);
+                        setShowChatOnMobile(true);
+                      }}
+                      className={`w-full p-3 flex items-center gap-3 transition-all min-h-[72px] text-left ${
+                        selectedUser === chatUser.buyer_id
+                          ? 'bg-[#f7f7fd] rounded-[10px]'
+                          : 'hover:bg-[#f7f7fd]'
+                      }`}
+                    >
+                      <Avatar className="h-[52px] w-[52px] flex-shrink-0 rounded-[30px]">
+                        <AvatarFallback className="bg-[#2e3b5b] text-white text-sm">
                           {(chatUser.full_name || chatUser.email).charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="font-medium text-sm text-slate-900 truncate">
+                          <p className="font-medium text-[14px] text-[#000929] truncate tracking-[-0.28px]">
                             {chatUser.full_name || chatUser.email.split('@')[0]}
                           </p>
+                          <span className="text-[12px] text-[#76767c]/80 tracking-[-0.12px] flex-shrink-0">
+                            {chatUser.last_message_time && format(new Date(chatUser.last_message_time), 'h:mm a')}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 mt-1">
+                          <p className={`text-[12px] truncate tracking-[-0.24px] ${
+                            chatUser.unread_count > 0 ? 'text-[#000929] font-medium' : 'text-[#76767c]/80'
+                          }`}>
+                            {chatUser.last_message}
+                          </p>
                           {chatUser.unread_count > 0 && (
-                            <Badge className="bg-emerald-500 text-white text-[10px] h-5 min-w-[18px] flex-shrink-0">
-                              {chatUser.unread_count}
-                            </Badge>
+                            <div className="w-2 h-2 bg-[#d82027] rounded-full flex-shrink-0" />
                           )}
                         </div>
-                        <p className="text-xs text-slate-500 truncate">{chatUser.last_message}</p>
                       </div>
-                    </div>
-                  </button>
+                    </button>
+                    {index < filteredUsers.length - 1 && (
+                      <div className="mx-auto w-[312px] h-[1px] bg-[#e5e5e5]" />
+                    )}
+                  </div>
                 ))}
               </div>
             )}
           </ScrollArea>
         </div>
 
-        {/* Chat Area - Full screen on mobile when active */}
-        <div className={`flex-1 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col ${
+        {/* Chat Area */}
+        <div className={`flex-1 flex flex-col bg-white ${
           !showChatOnMobile ? 'hidden lg:flex' : 'flex'
         }`}>
           {selectedUser ? (
             <>
-              {/* Chat Header with back button */}
-              <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
-                {/* Back button for mobile */}
-                <button 
-                  onClick={() => setShowChatOnMobile(false)}
-                  className="lg:hidden p-2 -ml-1 hover:bg-slate-100 rounded-lg active:scale-95 transition-all"
-                >
-                  <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarFallback className="bg-slate-100">
-                    <User className="h-4 w-4 text-slate-500" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-900 truncate">
-                    {chatUsers.find(u => u.buyer_id === selectedUser)?.full_name || 
-                     chatUsers.find(u => u.buyer_id === selectedUser)?.email}
-                  </p>
-                  <p className="text-xs text-slate-500">Customer</p>
+              {/* Chat Header - 100px height */}
+              <div className="h-[100px] bg-white border-b border-[#e5e5e5] flex items-center justify-between px-6">
+                <div className="flex items-center gap-3">
+                  {/* Back button for mobile */}
+                  <button 
+                    onClick={() => setShowChatOnMobile(false)}
+                    className="lg:hidden p-2 -ml-2 hover:bg-[#f7f7fd] rounded-lg"
+                  >
+                    <svg className="w-5 h-5 text-[#000929]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <Avatar className="h-11 w-11 rounded-[40px]">
+                    <AvatarFallback className="bg-[#2e3b5b] text-white">
+                      <User className="h-5 w-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col gap-1">
+                    <p className="font-semibold text-[16px] text-[#000929] tracking-[-0.32px]">
+                      {selectedUserData?.full_name || selectedUserData?.email}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#33b843] rounded-full" />
+                      <span className="text-[12px] text-[#bababa] tracking-[-0.24px] font-medium">Online</span>
+                    </div>
+                  </div>
+                </div>
+                {/* Action buttons */}
+                <div className="flex items-center gap-4">
+                  <button className="p-2 hover:bg-[#f7f7fd] rounded-lg transition-colors">
+                    <Phone size={20} className="text-[#000929]" />
+                  </button>
+                  <button className="p-2 hover:bg-[#f7f7fd] rounded-lg transition-colors">
+                    <Video size={20} className="text-[#000929]" />
+                  </button>
+                  <button className="p-2 hover:bg-[#f7f7fd] rounded-lg transition-colors">
+                    <MoreVertical size={20} className="text-[#000929]" />
+                  </button>
                 </div>
               </div>
 
               {/* Messages */}
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-3">
+              <ScrollArea className="flex-1 p-6">
+                <div className="space-y-4">
+                  {/* Today Badge */}
+                  {messages.length > 0 && (
+                    <div className="flex justify-center py-1">
+                      <span className="bg-white px-3 py-2 rounded text-[14px] font-semibold text-[#2e2a40] tracking-[-0.28px] shadow-sm border border-[#e5e5e5]">
+                        Today
+                      </span>
+                    </div>
+                  )}
+                  
                   {messages.map((msg) => {
                     const isSeller = msg.sender_type === 'seller';
                     const isSupport = msg.sender_type === 'support';
                     const isSystem = msg.sender_type === 'system';
-                    
-                    // Sender label
-                    const senderLabel = isSeller ? 'You' : 
-                                        isSupport ? '🛡️ Uptoza Support' : 
-                                        isSystem ? '' : 
-                                        'Customer';
                     
                     if (isSystem) {
                       return (
@@ -386,25 +428,23 @@ const SellerChat = () => {
                         key={msg.id}
                         className={`flex ${isSeller ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div className="max-w-[75%]">
-                          {/* Sender Label */}
-                          <p className={`text-[10px] text-slate-500 mb-1 px-2 ${isSeller ? 'text-right' : 'text-left'}`}>
-                            {senderLabel}
-                          </p>
-                          <div className={`rounded-2xl px-4 py-2.5 ${
+                        <div className="flex flex-col gap-2">
+                          <div className={`max-w-[303px] px-3 py-2 shadow-sm ${
                             isSeller
-                              ? 'bg-emerald-500 text-white'
+                              ? 'bg-[#2e3b5b] rounded-[10px_0px_10px_10px]'
                               : isSupport
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-slate-100 text-slate-900'
+                                ? 'bg-blue-600 rounded-[0px_10px_10px_10px]'
+                                : 'bg-[#000929] rounded-[0px_10px_10px_10px]'
                           }`}>
-                            <p className="text-sm">{msg.message}</p>
-                            <p className={`text-[10px] mt-1 ${
-                              isSeller ? 'text-emerald-100' : isSupport ? 'text-blue-100' : 'text-slate-400'
-                            }`}>
-                              {format(new Date(msg.created_at), 'h:mm a')}
+                            <p className="font-raleway font-medium text-[14px] text-white tracking-[-0.28px] leading-[21px] whitespace-pre-wrap">
+                              {msg.message}
                             </p>
                           </div>
+                          <span className={`text-[12px] text-[#757575] tracking-[-0.12px] ${
+                            isSeller ? 'text-right' : 'text-left'
+                          }`}>
+                            Today {format(new Date(msg.created_at), 'HH:mm')}
+                          </span>
                         </div>
                       </div>
                     );
@@ -413,38 +453,41 @@ const SellerChat = () => {
                 </div>
               </ScrollArea>
 
-              {/* Input */}
-              <div className="p-3 sm:p-4 border-t border-slate-100">
-                <div className="flex gap-2">
-                  <Input
+              {/* Input - 80px height */}
+              <div className="h-[80px] bg-white border-t border-[#e5e5e5] flex items-center gap-4 px-4">
+                <button className="p-2 hover:bg-[#f7f7fd] rounded-lg transition-colors">
+                  <Paperclip size={24} className="text-[#000929]" />
+                </button>
+                <div className="flex-1 h-[60px] bg-[#f7f7fd] rounded-[20px] flex items-center px-4">
+                  <input
                     placeholder="Type a message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={sending}
-                    className="border-slate-200 h-10 sm:h-auto"
+                    className="flex-1 bg-transparent text-[14px] text-[#000929] placeholder:text-[#92929d] outline-none font-raleway"
                   />
-                  <Button
-                    onClick={sendMessage}
-                    disabled={sending || !newMessage.trim()}
-                    className="bg-emerald-500 hover:bg-emerald-600 px-3 sm:px-4 min-w-[44px]"
-                  >
-                    {sending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
                 </div>
+                <button
+                  onClick={sendMessage}
+                  disabled={sending || !newMessage.trim()}
+                  className="w-11 h-11 bg-[#2e3b5b] disabled:bg-[#bababa] rounded-[10px] flex items-center justify-center transition-colors hover:bg-[#3d4d6d]"
+                >
+                  {sending ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-white" />
+                  ) : (
+                    <Send className="h-5 w-5 text-white" />
+                  )}
+                </button>
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full bg-slate-50/50">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-emerald-50 flex items-center justify-center">
-                <MessageSquare className="h-10 w-10 text-emerald-500" />
+            <div className="flex flex-col items-center justify-center h-full bg-[#f7f7fd]">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                <MessageSquare className="h-10 w-10 text-[#2e3b5b]" />
               </div>
-              <h3 className="font-semibold text-slate-900 mb-2">Select a conversation</h3>
-              <p className="text-slate-500 text-sm text-center px-4">Choose a customer from the list to start messaging</p>
+              <h3 className="font-semibold text-[#000929] mb-2">Select a conversation</h3>
+              <p className="text-[#757575] text-sm text-center px-4">Choose a customer from the list to start messaging</p>
             </div>
           )}
         </div>
