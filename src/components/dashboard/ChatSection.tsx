@@ -1,8 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { 
-  Send, Loader2, Image, Video, Paperclip, 
-  X, Search, Phone, MoreVertical, Film, ChevronDown
-} from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Send, Search, Phone, MoreVertical, ChevronDown, Paperclip, Play, Pause } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -104,7 +101,7 @@ const DEMO_SENT_MESSAGES = [
 ];
 
 // =====================================================
-// COMPONENT
+// COMPONENT - EXACT HTML COPY
 // =====================================================
 
 const ChatSection = () => {
@@ -113,9 +110,8 @@ const ChatSection = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [isPlaying, setIsPlaying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -125,24 +121,22 @@ const ChatSection = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() && pendingFiles.length === 0) return;
+    if (!newMessage.trim()) return;
     if (!user || sendingMessage) return;
 
     setSendingMessage(true);
     try {
-      // Send to support_messages table
       await supabase
         .from('support_messages')
         .insert({
           user_id: user.id,
-          message: newMessage.trim() || `[${pendingFiles.length} attachment(s)]`,
+          message: newMessage.trim(),
           sender_type: 'user',
           is_read: false,
         });
 
       playSound('messageSent');
       setNewMessage('');
-      setPendingFiles([]);
       toast.success('Message sent');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -152,34 +146,13 @@ const ChatSection = () => {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-    
-    const validFiles = files.filter(file => {
-      if (file.size > 50 * 1024 * 1024) {
-        toast.error(`${file.name} is too large. Max 50MB.`);
-        return false;
-      }
-      return true;
-    });
-    
-    setPendingFiles(prev => [...prev, ...validFiles]);
-    e.target.value = '';
-  };
-
-  const removePendingFile = (index: number) => {
-    setPendingFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
   return (
     <div className="flex h-[882px]" style={{ fontFamily: "'Plus Jakarta Sans', Helvetica, sans-serif" }}>
       {/* Hidden file input */}
-      <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
+      <input ref={fileInputRef} type="file" multiple className="hidden" />
 
       {/* =====================================================
-          CONTACTS SIDEBAR - EXACT HTML COPY
-          width: 400px, background: white
+          CONTACTS SIDEBAR - width: 400px
           ===================================================== */}
       <aside className="w-[400px] bg-white overflow-hidden flex-shrink-0">
         {/* Contacts Header - padding: 24px 20px, gap: 12px */}
@@ -188,7 +161,10 @@ const ChatSection = () => {
           <div className="flex items-center justify-between">
             {/* Title with badge */}
             <div className="flex items-center gap-1 px-1">
-              <h1 className="text-[24px] font-semibold tracking-[-0.72px]" style={{ color: 'rgba(0, 9, 41, 1)' }}>
+              <h1 
+                className="text-[24px] font-semibold tracking-[-0.72px]" 
+                style={{ color: 'rgba(0, 9, 41, 1)' }}
+              >
                 Messaging
               </h1>
               <span 
@@ -325,8 +301,7 @@ const ChatSection = () => {
       </aside>
 
       {/* =====================================================
-          CHAT AREA - EXACT HTML COPY
-          width: 881px, height: 882px, position: relative
+          CHAT AREA - width: 881px, height: 882px
           ===================================================== */}
       <div className="w-[881px] h-[882px] relative flex flex-col">
         {/* Chat Header - height: 100px, padding: 0 24px */}
@@ -469,31 +444,38 @@ const ChatSection = () => {
                   {/* Voice Message - width: 264px, height: 53.05px */}
                   {msg.hasVoice && (
                     <div 
-                      className="w-[264px] h-[53.05px] rounded-[10px_10px_4px_10px] relative self-end"
+                      className="w-[264px] h-[53.05px] rounded-[10px_10px_4px_10px] flex items-center px-3 gap-2 self-end"
                       style={{ backgroundColor: 'rgba(46, 59, 91, 1)' }}
                     >
-                      <img 
-                        src="https://c.animaapp.com/mlcbgbe2563Pxt/img/group-1000002505.png"
-                        alt="Voice waveform"
-                        className="absolute top-4 left-9 w-[176px] h-[21px]"
-                      />
-                      <img 
-                        src="https://c.animaapp.com/mlcbgbe2563Pxt/img/polygon-2.svg"
-                        alt="Play"
-                        className="absolute top-[19px] left-[14px] w-[15px] h-[15px]"
-                      />
-                      <span 
-                        className="absolute top-[19px] left-[223px] text-[12px]"
-                        style={{ color: 'white' }}
+                      <button 
+                        onClick={() => setIsPlaying(!isPlaying)}
+                        className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
                       >
-                        10:12
-                      </span>
+                        {isPlaying ? (
+                          <Pause className="w-4 h-4 text-white" />
+                        ) : (
+                          <Play className="w-4 h-4 text-white ml-0.5" />
+                        )}
+                      </button>
+                      {/* Waveform visualization */}
+                      <div className="flex items-center gap-[2px] flex-1">
+                        {[...Array(30)].map((_, i) => (
+                          <div 
+                            key={i}
+                            className="w-[2px] rounded-full bg-white/60"
+                            style={{ 
+                              height: `${Math.random() * 20 + 5}px`
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-white text-[12px]">10:12</span>
                     </div>
                   )}
                   
                   {/* Sent Bubble Wrapper - width: 303px, gap: 10px */}
                   <div className="flex flex-col gap-[10px] w-[303px] items-end">
-                    {/* Sent Bubble - bg: primary, radius: 10 0 10 10 */}
+                    {/* Sent Bubble - bg: rentsell-primary, radius: 10 0 10 10 */}
                     <div 
                       className="rounded-[10px_0px_10px_10px] p-[8px_12px] w-full"
                       style={{ 
@@ -511,7 +493,7 @@ const ChatSection = () => {
                         {msg.text}
                       </p>
                     </div>
-                    {/* Message Time */}
+                    {/* Message Time - right aligned */}
                     <span 
                       className="text-[12px] tracking-[-0.12px] text-right"
                       style={{ color: 'rgba(117, 117, 117, 1)' }}
@@ -523,34 +505,10 @@ const ChatSection = () => {
               ))}
             </div>
           </div>
-          <div ref={messagesEndRef} />
         </div>
 
-        {/* Pending Files Preview */}
-        {pendingFiles.length > 0 && (
-          <div className="px-4 py-2 border-t" style={{ backgroundColor: 'rgba(247, 247, 253, 1)', borderColor: '#e5e5e5' }}>
-            <div className="flex gap-2 flex-wrap">
-              {pendingFiles.map((file, index) => (
-                <div key={index} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-[#e5e5e5]">
-                  {file.type.startsWith('image/') ? (
-                    <Image size={14} style={{ color: 'rgba(46, 59, 91, 1)' }} />
-                  ) : file.type.startsWith('video/') ? (
-                    <Video size={14} style={{ color: 'rgba(46, 59, 91, 1)' }} />
-                  ) : (
-                    <Paperclip size={14} style={{ color: 'rgba(46, 59, 91, 1)' }} />
-                  )}
-                  <span className="text-xs truncate max-w-[100px]" style={{ color: 'rgba(0, 9, 41, 1)' }}>{file.name}</span>
-                  <button onClick={() => removePendingFile(index)} className="hover:text-red-500" style={{ color: 'rgba(117, 117, 117, 1)' }}>
-                    <X size={12} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* ===== CHAT FOOTER ===== */}
-        {/* position: absolute, bottom: 0, height: 80px, gap: 24px, padding: 0 15px */}
+        {/* height: 80px, gap: 24px, padding: 0 15px */}
         <footer 
           className="absolute bottom-0 left-0 w-full h-[80px] flex items-center gap-6 px-[15px]"
           style={{ 
@@ -558,23 +516,22 @@ const ChatSection = () => {
             borderTop: '1px solid #e5e5e5'
           }}
         >
-          {/* More options button */}
+          {/* More Button */}
           <button className="p-0 bg-transparent border-none cursor-pointer">
             <MoreVertical className="w-6 h-6" style={{ color: 'rgba(0, 9, 41, 1)' }} />
           </button>
-          
-          {/* Message Input Wrapper - height: 60px, radius: 20px */}
+
+          {/* Input Wrapper - height: 60px, radius: 20px */}
           <div 
             className="flex-1 h-[60px] rounded-[20px] flex items-center px-4"
             style={{ backgroundColor: 'rgba(247, 247, 253, 1)' }}
           >
             <input
               type="text"
+              placeholder="Type your message"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Type your message"
-              disabled={sendingMessage}
+              onKeyPress={handleKeyPress}
               className="flex-1 border-none bg-transparent text-[14px] outline-none"
               style={{ 
                 fontFamily: "'Poppins', Helvetica",
@@ -583,26 +540,22 @@ const ChatSection = () => {
             />
           </div>
 
-          {/* Attachment button */}
+          {/* Attachment Button */}
           <button 
-            onClick={() => fileInputRef.current?.click()} 
+            onClick={() => fileInputRef.current?.click()}
             className="p-0 bg-transparent border-none cursor-pointer"
           >
             <Paperclip className="w-6 h-6" style={{ color: 'rgba(0, 9, 41, 1)' }} />
           </button>
-          
+
           {/* Send Button - padding: 10px, radius: 10px */}
-          <button
+          <button 
             onClick={handleSendMessage}
-            disabled={sendingMessage || (!newMessage.trim() && pendingFiles.length === 0)}
-            className="border-none p-[10px] rounded-[10px] cursor-pointer flex items-center justify-center disabled:opacity-50"
+            disabled={sendingMessage || !newMessage.trim()}
+            className="p-[10px] rounded-[10px] border-none cursor-pointer flex items-center justify-center disabled:opacity-50"
             style={{ backgroundColor: 'rgba(46, 59, 91, 1)' }}
           >
-            {sendingMessage ? (
-              <Loader2 className="w-6 h-6 animate-spin text-white" />
-            ) : (
-              <Send className="w-6 h-6 text-white" />
-            )}
+            <Send className="w-6 h-6 text-white" />
           </button>
         </footer>
       </div>
