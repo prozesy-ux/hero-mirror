@@ -36,9 +36,13 @@ import {
   GumroadChevronDownIcon,
 } from './SellerGumroadIcons';
 
-// Gumroad-style navigation labels with custom SVG icons
-const navItems = [
+// Navigation items BEFORE Products dropdown
+const navItemsBefore = [
   { to: '/seller', icon: GumroadHomeIcon, label: 'Home', exact: true },
+];
+
+// Navigation items AFTER Products dropdown
+const navItemsAfter = [
   { to: '/seller/orders', icon: GumroadSalesIcon, label: 'Sales' },
   { to: '/seller/customers', icon: GumroadCustomersIcon, label: 'Customers' },
   { to: '/seller/analytics', icon: GumroadAnalyticsIcon, label: 'Analytics' },
@@ -140,10 +144,10 @@ const SellerSidebar = () => {
 
         {/* Main Navigation */}
         <nav className="flex-1 overflow-y-auto">
-          {/* First section of nav items */}
-          {navItems.map(renderNavItem)}
+          {/* Home */}
+          {navItemsBefore.map(renderNavItem)}
 
-          {/* Products Section with Sub-menu */}
+          {/* Products Section with Sub-menu (right after Home) */}
           {isCollapsed ? (
             // Collapsed: Show icons for product sub-items
             <>
@@ -223,7 +227,10 @@ const SellerSidebar = () => {
             </Collapsible>
           )}
 
-          {/* Rest of nav items */}
+          {/* Sales, Customers, Analytics, Payouts */}
+          {navItemsAfter.map(renderNavItem)}
+
+          {/* Insights, Reports, Performance, Chat */}
           {navItemsAfterDiscount.map(renderNavItem)}
         </nav>
 
