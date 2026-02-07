@@ -6,7 +6,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import { useMarketplaceData } from '@/hooks/useMarketplaceData';
 import GumroadHeader from '@/components/marketplace/GumroadHeader';
-import GumroadProductCard from '@/components/marketplace/GumroadProductCard';
+import ProductCardRenderer from '@/components/marketplace/cards/ProductCardRenderer';
 
 import GumroadFilterSidebar from '@/components/marketplace/GumroadFilterSidebar';
 import ProductHoverCard from '@/components/marketplace/ProductHoverCard';
@@ -35,6 +35,7 @@ interface Product {
   type: 'ai' | 'seller';
   tags?: string[];
   categoryId?: string | null;
+  productType?: string;
 }
 
 type SortOption = 'trending' | 'best_sellers' | 'new';
@@ -684,19 +685,24 @@ const Marketplace = () => {
                     onChat={() => handleHoverChat(product)}
                     isAuthenticated={!!user}
                   >
-                    <GumroadProductCard
-                      id={product.id}
-                      name={product.name}
-                      price={product.price}
-                      iconUrl={product.iconUrl}
-                      sellerName={product.sellerName}
-                      storeSlug={product.storeSlug}
-                      isVerified={product.isVerified}
-                      rating={product.rating}
-                      reviewCount={product.reviewCount}
-                      soldCount={product.soldCount}
-                      type={product.type}
-                      onClick={() => {}} // Navigation handled by HoverCard wrapper
+                    <ProductCardRenderer
+                      product={{
+                        id: product.id,
+                        name: product.name,
+                        description: product.description,
+                        price: product.price,
+                        iconUrl: product.iconUrl,
+                        sellerName: product.sellerName,
+                        sellerAvatar: product.sellerAvatar,
+                        storeSlug: product.storeSlug,
+                        isVerified: product.isVerified,
+                        rating: product.rating,
+                        reviewCount: product.reviewCount,
+                        soldCount: product.soldCount,
+                        tags: product.tags,
+                        productType: product.productType,
+                      }}
+                      onClick={() => handleProductClick(product)}
                     />
                   </ProductHoverCard>
                 ))}
