@@ -234,14 +234,14 @@ export const useAuth = () => {
   };
 
   const signInWithGoogle = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        // Return to the current Sign In URL so post-auth redirect logic can run
-        redirectTo: window.location.href
-      }
+    const { lovable } = await import('@/integrations/lovable/index');
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
     });
-    return { data, error };
+    if (result.error) {
+      return { data: null, error: result.error };
+    }
+    return { data: result, error: null };
   };
 
   // OPTIMISTIC AUTH: Consider authenticated if we have a session OR
