@@ -1,28 +1,51 @@
 
 
-# Update Apple Sign-In Branding to "Uptoza"
+# Switch Google & Apple OAuth from Lovable Cloud to Direct Supabase
 
-## What We'll Change
+## What's Changing
 
-The Apple Sign-In consent screen currently shows "Sign in to Lovable" -- this needs to display "Uptoza" instead so users see the correct brand during authentication.
+Replace the Lovable Cloud OAuth handler (`lovable.auth.signInWithOAuth`) with Supabase's native `supabase.auth.signInWithOAuth` for both Google and Apple sign-in. This will fix the `redirect_uri_mismatch` error because the redirect URI will go directly through your Supabase project callback (`https://bzooojifrzwdyvbuyoel.supabase.co/auth/v1/callback`), which you can control in Google Cloud Console.
 
 ## Technical Details
 
-### Modified File: `src/pages/SignIn.tsx`
-- Update the Apple Sign-In button label from "Continue with Apple" to "Use your Apple Account to sign in to Uptoza" (or keep it as "Continue with Apple" -- the button text itself is fine)
+### File: `src/hooks/useAuth.ts`
 
-### Key Note
-The "Sign in to Lovable" text that appears during the Apple OAuth flow is controlled by the **Lovable Cloud authentication configuration**, not by the frontend code. The button text on your sign-in page already says "Continue with Apple" which is correct.
+**Google Sign-In** (lines 236-245) -- Replace with:
+```typescript
+const signInWithGoogle = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin + '/signin',
+    }
+  });
+  return { data, error };
+};
+```
 
-To change the branding shown during the Apple OAuth consent screen:
-- This requires configuring your own Apple Developer account with Apple Sign-In credentials (Service ID, Team ID, Key ID, Private Key)
-- The display name shown during Apple Sign-In is set in your **Apple Developer Console** under Services IDs configuration
+**Apple Sign-In** (lines 247-256) -- Replace with:
+```typescript
+const signInWithApple = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'apple',
+    options: {
+      redirectTo: window.location.origin + '/signin',
+    }
+  });
+  return { data, error };
+};
+```
 
-### What We Can Do in Code
-- Update any references to "Lovable" on the sign-in page to say "Uptoza"
-- Ensure all visible branding on the sign-in form references "Uptoza"
+### Google Cloud Console -- Required Redirect URI
 
-### File: `src/pages/SignIn.tsx`
-- Scan for any "Lovable" text references and replace with "Uptoza"
-- Ensure page title, headings, and meta tags reference "Uptoza"
+After this change, the redirect URI sent to Google will be:
+- `https://bzooojifrzwdyvbuyoel.supabase.co/auth/v1/callback`
+
+Make sure this exact URI is in your Google Cloud Console under **Authorized redirect URIs**.
+
+### No Other Files Need Changes
+
+- `SignIn.tsx` already calls `signInWithGoogle()` / `signInWithApple()` -- no changes needed
+- `AuthContext.tsx` passes through from `useAuth` -- no changes needed
+- The `src/integrations/lovable/index.ts` file will remain but won't be used for OAuth anymore
 
