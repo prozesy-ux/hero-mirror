@@ -244,6 +244,17 @@ export const useAuth = () => {
     return { data: result, error: null };
   };
 
+  const signInWithApple = async () => {
+    const { lovable } = await import('@/integrations/lovable/index');
+    const result = await lovable.auth.signInWithOAuth("apple", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      return { data: null, error: result.error };
+    }
+    return { data: result, error: null };
+  };
+
   // OPTIMISTIC AUTH: Consider authenticated if we have a session OR
   // we have a local token that isn't definitely expired
   const isAuthenticated = !!session || (hasLocalSession() && !isDefinitelyExpired());
@@ -257,6 +268,7 @@ export const useAuth = () => {
     signIn,
     signOut,
     signInWithGoogle,
+    signInWithApple,
     isAuthenticated,
     isPro: profile?.is_pro ?? false,
     isAdmin
