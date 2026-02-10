@@ -1,36 +1,46 @@
 
-# Fix Google Sign-In: Remove Supabase URL and Show Uptoza Inc Branding
+# Create Privacy Policy and Terms of Service Pages
 
-## Problem
-Google OAuth currently redirects through `bzooojifrzwdyvbuyoel.supabase.co`, which:
-- Shows the Supabase URL on Google's consent screen instead of your brand
-- Requires complex manual Google Cloud Console configuration
-- Is slow and error-prone to set up
+## What We'll Build
+Two new pages for **uptoza.com** — a Privacy Policy page (`/privacy`) and a Terms of Service page (`/terms`). These are needed for Google OAuth verification and general legal compliance.
 
-## Solution
-Switch to **Lovable Cloud's managed Google OAuth**, which:
-- Handles all redirect URLs automatically (no manual Google Console setup needed)
-- Shows "Uptoza Inc" branding when configured in Cloud settings
-- Works instantly without waiting for DNS or Google propagation
+## Pages
 
-## Changes Required
+### 1. Privacy Policy (`/privacy`)
+Covers:
+- What data Uptoza collects (name, email, payment info)
+- How data is used (account management, marketplace, communications)
+- Third-party services (Google OAuth, payment processors)
+- Data storage and security
+- User rights (access, delete, update data)
+- Cookie usage
+- Contact information
 
-### 1. Configure Lovable Cloud Google OAuth
-- Use the built-in tool to generate the managed OAuth module (`src/integrations/lovable/`)
-- This creates the `lovable.auth.signInWithOAuth("google", ...)` function
+### 2. Terms of Service (`/terms`)
+Covers:
+- Account registration and responsibilities
+- Marketplace rules (buying and selling)
+- Intellectual property rights
+- Payment and refund policies
+- Prohibited activities
+- Limitation of liability
+- Termination of accounts
+- Contact information
 
-### 2. Update `src/hooks/useAuth.ts`
-- Replace `supabase.auth.signInWithOAuth({ provider: 'google' })` with `lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin })`
+## Technical Details
 
-### 3. Update `src/pages/Seller.tsx`
-- Replace the direct `supabase.auth.signInWithOAuth` call in `handleGoogleAuth` with the Lovable managed OAuth call
-- Keep the seller-specific redirect logic
+### New Files
+- `src/pages/PrivacyPolicy.tsx` — Full privacy policy page with SEOHead
+- `src/pages/TermsOfService.tsx` — Full terms of service page with SEOHead
 
-### 4. Remove Old Google Console Config (Optional)
-- You can remove or keep the old Google Cloud Console OAuth client -- it won't be used anymore
-- Lovable Cloud manages the Google credentials automatically
+### Modified Files
+- `src/App.tsx` — Add two new lazy-loaded routes: `/privacy` and `/terms`
 
-## Result
-- Google consent screen will no longer show `bzooojifrzwdyvbuyoel.supabase.co`
-- No manual Google Cloud Console configuration needed
-- Sign-in works immediately after approval
+### Design
+- Clean, readable layout with the existing Header component
+- Proper heading hierarchy (h1, h2, h3)
+- Consistent with existing site styling (Inter font, dark/light theme)
+- Footer links back to home
+- "Last updated" date shown at top
+- Company name: **Uptoza Inc**
+- Website: **uptoza.com**
