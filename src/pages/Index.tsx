@@ -78,6 +78,15 @@ const Index = () => {
           <TestimonialsSection />
         </Suspense>
       </main>
+      <footer className="border-t border-border bg-background py-8">
+        <div className="mx-auto max-w-screen-2xl px-4 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+          <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} Uptoza Inc. All rights reserved.</p>
+          <nav className="flex items-center gap-6">
+            <a href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
+            <a href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms of Service</a>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 };
