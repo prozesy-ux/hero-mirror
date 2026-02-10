@@ -5,6 +5,7 @@ import SEOHead from "@/components/seo/SEOHead";
 
 // Lazy load below-fold components for faster First Contentful Paint
 const AsSeenIn = lazy(() => import("@/components/AsSeenIn"));
+const AboutSection = lazy(() => import("@/components/AboutSection"));
 const CompleteBundleCard = lazy(() => import("@/components/CompleteBundleCard"));
 const ChatGPTPromptsSection = lazy(() => import("@/components/ChatGPTPromptsSection"));
 const AddonsSection = lazy(() => import("@/components/AddonsSection"));
@@ -55,6 +56,9 @@ const Index = () => {
         {/* Below the fold - lazy loaded */}
         <Suspense fallback={<SectionPlaceholder />}>
           <AsSeenIn />
+        </Suspense>
+        <Suspense fallback={<SectionPlaceholder />}>
+          <AboutSection />
         </Suspense>
         <Suspense fallback={<SectionPlaceholder />}>
           <CompleteBundleCard />
