@@ -176,7 +176,7 @@ const DashboardTopBar = ({
   };
 
   return (
-    <header className={`hidden lg:flex fixed top-0 right-0 z-50 h-16 bg-[#FBF8F3] border-b border-black/10 transition-all duration-300 ${sidebarCollapsed ? 'left-[72px]' : 'left-52'}`}>
+    <header className={`hidden lg:flex fixed top-0 right-0 z-50 h-20 bg-white border-b border-[#E5E5E5] transition-all duration-300 ${sidebarCollapsed ? 'left-[72px]' : 'left-[240px]'}`}>
       <div className="flex items-center justify-between w-full px-6">
         {/* Left Section - Logo, Search & Navigation */}
         <div className="flex items-center gap-4">
@@ -200,21 +200,21 @@ const DashboardTopBar = ({
           {/* Currency Selector */}
           <CurrencySelector variant="minimal" />
 
-          {/* Become a Seller CTA - Gumroad Style */}
+          {/* Become a Seller CTA - EzMart Style */}
           <Link 
             to="/seller" 
-            className="px-4 py-2 bg-[#FF90E8] border border-black text-black rounded font-semibold text-sm transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+            className="px-4 py-2.5 bg-[#FF8A00] text-white rounded-lg font-semibold text-sm transition-all hover:bg-[#FF9933] hover:scale-105"
           >
             Become a Seller
           </Link>
 
-          {/* Wallet Balance - Gumroad Style */}
+          {/* Wallet Balance - EzMart Style */}
           <button 
             onClick={() => navigate('/dashboard/billing')} 
-            className="flex items-center gap-2 bg-[#FF90E8] border border-black px-3 py-2 rounded transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+            className="flex items-center gap-2 bg-[#FF8A00] px-4 py-2.5 rounded-lg transition-all hover:bg-[#FF9933] hover:scale-105"
           >
-            <Wallet size={16} className="text-black" />
-            <span className="text-black font-bold text-sm">
+            <Wallet size={16} className="text-white" />
+            <span className="text-white font-bold text-sm">
               {formatAmountOnly(wallet?.balance || 0)}
             </span>
           </button>
@@ -222,7 +222,7 @@ const DashboardTopBar = ({
           {/* Notification Bell with Dropdown - Gumroad Style */}
           <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <DropdownMenuTrigger asChild>
-              <button className="relative p-2.5 rounded border border-transparent text-slate-600 transition-all hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <button className="relative p-2.5 rounded-lg text-[#666] transition-all hover:bg-[#F5F5F5] hover:scale-110">
                 <Bell size={20} />
                 {totalUnread > 0 && (
                   <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
@@ -231,11 +231,11 @@ const DashboardTopBar = ({
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 p-0 max-h-[400px] overflow-hidden border border-black rounded">
+            <DropdownMenuContent align="end" className="w-80 p-0 max-h-[400px] overflow-hidden border border-[#E5E5E5] rounded-xl">
               <div className="flex items-center justify-between px-4 py-3 border-b">
                 <h3 className="font-semibold text-slate-900">Notifications</h3>
                 {unreadNotifications > 0 && (
-                  <button onClick={markAllNotificationsAsRead} className="text-xs text-[#FF90E8] hover:text-black font-medium flex items-center gap-1">
+                  <button onClick={markAllNotificationsAsRead} className="text-xs text-[#FF8A00] hover:text-[#333] font-medium flex items-center gap-1">
                     <Check size={12} />
                     Mark all read
                   </button>
@@ -250,15 +250,15 @@ const DashboardTopBar = ({
                       navigate('/dashboard/chat');
                       setNotificationsOpen(false);
                     }} 
-                    className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b bg-[#FFF5FB]"
+                    className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b bg-[#FFF5EB]"
                   >
-                    <div className="w-8 h-8 rounded-full bg-[#FF90E8]/20 flex items-center justify-center flex-shrink-0">
-                      <MessageCircle size={14} className="text-[#FF90E8]" />
+                    <div className="w-8 h-8 rounded-full bg-[#FF8A00]/20 flex items-center justify-center flex-shrink-0">
+                      <MessageCircle size={14} className="text-[#FF8A00]" />
                     </div>
                     <div className="flex-1 text-left">
                       <p className="text-sm font-medium text-slate-900">Message from Support Team</p>
                       <p className="text-xs text-slate-500">You have {unreadCount} unread message{unreadCount > 1 ? 's' : ''}</p>
-                      <p className="text-[10px] text-[#FF90E8] mt-0.5 font-medium">Tap to view conversation</p>
+                      <p className="text-[10px] text-[#FF8A00] mt-0.5 font-medium">Tap to view conversation</p>
                     </div>
                     <ExternalLink size={14} className="text-slate-400 mt-1" />
                   </button>
@@ -269,9 +269,9 @@ const DashboardTopBar = ({
                   <button 
                     key={notification.id} 
                     onClick={() => handleNotificationClick(notification)} 
-                    className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b ${!notification.is_read ? 'bg-[#FFF5FB]' : ''}`}
+                    className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b ${!notification.is_read ? 'bg-[#FFF5EB]' : ''}`}
                   >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${!notification.is_read ? 'bg-[#FF90E8]/20' : 'bg-slate-100'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${!notification.is_read ? 'bg-[#FF8A00]/20' : 'bg-slate-100'}`}>
                       {getNotificationIcon(notification.type)}
                     </div>
                     <div className="flex-1 text-left min-w-0">
@@ -283,7 +283,7 @@ const DashboardTopBar = ({
                         {format(new Date(notification.created_at), 'MMM d, h:mm a')}
                       </p>
                     </div>
-                    {!notification.is_read && <span className="w-2 h-2 bg-[#FF90E8] rounded-full flex-shrink-0 mt-2" />}
+                    {!notification.is_read && <span className="w-2 h-2 bg-[#FF8A00] rounded-full flex-shrink-0 mt-2" />}
                   </button>
                 )) : unreadCount === 0 ? (
                   <div className="px-4 py-8 text-center">
@@ -300,34 +300,34 @@ const DashboardTopBar = ({
           {/* Profile Dropdown - Gumroad Style */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-slate-100 transition-colors">
+              <button className="flex items-center gap-2 p-1 pr-3 rounded-lg hover:bg-[#F5F5F5] transition-colors">
                 <div className="relative">
-                  <div className="rounded-full border-2 border-black w-9 h-9 overflow-hidden">
+                  <div className="rounded-full border-2 border-[#E5E5E5] w-9 h-9 overflow-hidden">
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-[#FF90E8] flex items-center justify-center text-black font-bold text-sm">
+                      <div className="w-full h-full bg-[#FF8A00]/20 flex items-center justify-center text-[#FF8A00] font-bold text-sm">
                         {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
                       </div>
                     )}
                   </div>
                   {profile?.is_pro && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-[#FF90E8] border border-black rounded-full flex items-center justify-center">
-                      <Crown size={8} className="text-black" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-[#FF8A00] border border-white rounded-full flex items-center justify-center">
+                      <Crown size={8} className="text-white" />
                     </div>
                   )}
                 </div>
                 <ChevronDown size={16} className="text-slate-400" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 p-2 border border-black rounded">
+            <DropdownMenuContent align="end" className="w-64 p-2 border border-[#E5E5E5] rounded-xl">
               <DropdownMenuLabel className="px-3 py-2">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-full border-2 border-black w-10 h-10 overflow-hidden">
+                  <div className="rounded-full border-2 border-[#E5E5E5] w-10 h-10 overflow-hidden">
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-[#FF90E8] flex items-center justify-center text-black font-bold text-sm">
+                      <div className="w-full h-full bg-[#FF8A00]/20 flex items-center justify-center text-[#FF8A00] font-bold text-sm">
                         {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
                       </div>
                     )}
@@ -336,7 +336,7 @@ const DashboardTopBar = ({
                     <p className="text-sm font-semibold text-slate-900 truncate flex items-center gap-2">
                       {profile?.full_name || 'User'}
                       {profile?.is_pro && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#FF90E8] border border-black rounded text-[10px] font-bold text-black">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#FF8A00] rounded text-[10px] font-bold text-white">
                           <Crown size={10} />
                           PRO
                         </span>
@@ -366,8 +366,8 @@ const DashboardTopBar = ({
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/dashboard/billing" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer bg-[#FFF5FB] hover:bg-[#FF90E8]/20 rounded">
-                      <Crown size={16} className="text-[#FF90E8]" />
+                    <Link to="/dashboard/billing" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer bg-[#FFF5EB] hover:bg-[#FFECD1] rounded">
+                      <Crown size={16} className="text-[#FF8A00]" />
                       <span className="font-medium">Upgrade to PRO</span>
                     </Link>
                   </DropdownMenuItem>

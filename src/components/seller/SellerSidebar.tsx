@@ -94,16 +94,16 @@ const SellerSidebar = () => {
           <TooltipTrigger asChild>
             <Link
               to={item.to}
-              className={`flex items-center justify-center w-full py-4 transition-colors border-t border-white/50 ${
+              className={`flex items-center justify-center w-full py-3.5 transition-all duration-200 ${
                 active 
-                  ? 'text-[#FF90E8]' 
-                  : 'text-white hover:bg-white/5'
+                  ? 'bg-[#FF8A00] text-white shadow-ezmart-sidebar' 
+                  : 'text-[#666] hover:bg-[#F5F5F5]'
               }`}
             >
-              <Icon size={16} />
+              <Icon size={18} />
             </Link>
           </TooltipTrigger>
-          <TooltipContent side="right" className="bg-white text-black border-0">
+          <TooltipContent side="right" className="bg-white text-[#333] border border-[#E5E5E5]">
             <p>{item.label}</p>
           </TooltipContent>
         </Tooltip>
@@ -114,13 +114,13 @@ const SellerSidebar = () => {
       <Link
         key={item.to}
         to={item.to}
-        className={`flex items-center gap-4 px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
+        className={`flex items-center gap-3 mx-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
           active 
-            ? 'text-[#FF90E8]' 
-            : 'text-white hover:bg-white/5'
+            ? 'bg-[#FF8A00] text-white shadow-ezmart-sidebar' 
+            : 'text-[#666] hover:bg-[#F5F5F5] hover:translate-x-1'
         }`}
       >
-        <Icon size={16} />
+        <Icon size={18} />
         <span>{item.label}</span>
       </Link>
     );
@@ -129,44 +129,43 @@ const SellerSidebar = () => {
   return (
     <TooltipProvider>
       <aside 
-        className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-50 bg-black transition-all duration-300 ${
-          isCollapsed ? 'w-[72px]' : 'w-52'
+        className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-50 bg-white border-r border-[#E5E5E5] transition-all duration-300 ${
+          isCollapsed ? 'w-[72px]' : 'w-[240px]'
         }`}
       >
-        {/* Logo Section - Gumroad style text logo */}
-        <div className={`py-6 flex items-center border-b border-white/50 ${isCollapsed ? 'justify-center px-3' : 'px-6'}`}>
+        {/* Logo Section */}
+        <div className={`py-6 flex items-center border-b border-[#F0F0F0] ${isCollapsed ? 'justify-center px-3' : 'px-6'}`}>
           <Link to="/seller" className="flex items-center">
             {isCollapsed ? (
-              <span className="text-white text-lg font-bold tracking-tight">u</span>
+              <span className="text-[#333] text-lg font-bold tracking-tight">u</span>
             ) : (
-              <span className="text-white text-2xl font-bold tracking-tight">uptoza</span>
+              <span className="text-[#333] text-2xl font-bold tracking-tight">uptoza</span>
             )}
           </Link>
         </div>
 
         {/* Main Navigation */}
-        <nav className="flex-1 overflow-y-auto">
+        <nav className="flex-1 overflow-y-auto py-3 space-y-0.5">
           {/* Home */}
           {navItemsBefore.map(renderNavItem)}
 
-          {/* Products Section with Sub-menu (right after Home) */}
+          {/* Products Section with Sub-menu */}
           {isCollapsed ? (
-            // Collapsed: Show icons for product sub-items
             <>
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Link
                     to="/seller/products"
-                    className={`flex items-center justify-center w-full py-4 transition-colors border-t border-white/50 ${
+                    className={`flex items-center justify-center w-full py-3.5 transition-all duration-200 ${
                       isProductsActive 
-                        ? 'text-[#FF90E8]' 
-                        : 'text-white hover:bg-white/5'
+                        ? 'bg-[#FF8A00] text-white shadow-ezmart-sidebar' 
+                        : 'text-[#666] hover:bg-[#F5F5F5]'
                     }`}
                   >
-                    <GumroadProductsIcon size={16} />
+                    <GumroadProductsIcon size={18} />
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="bg-white text-black border-0">
+                <TooltipContent side="right" className="bg-white text-[#333] border border-[#E5E5E5]">
                   <p>Products</p>
                 </TooltipContent>
               </Tooltip>
@@ -178,16 +177,16 @@ const SellerSidebar = () => {
                     <TooltipTrigger asChild>
                       <Link
                         to={item.to}
-                        className={`flex items-center justify-center w-full py-4 transition-colors border-t border-white/50 ${
+                        className={`flex items-center justify-center w-full py-3.5 transition-all duration-200 ${
                           active 
-                            ? 'text-[#FF90E8]' 
-                            : 'text-white hover:bg-white/5'
+                            ? 'bg-[#FF8A00] text-white shadow-ezmart-sidebar' 
+                            : 'text-[#666] hover:bg-[#F5F5F5]'
                         }`}
                       >
-                        <Icon size={16} />
+                        <Icon size={18} />
                       </Link>
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="bg-white text-black border-0">
+                    <TooltipContent side="right" className="bg-white text-[#333] border border-[#E5E5E5]">
                       <p>{item.label}</p>
                     </TooltipContent>
                   </Tooltip>
@@ -195,17 +194,16 @@ const SellerSidebar = () => {
               })}
             </>
           ) : (
-            // Expanded: Show collapsible Products section
             <Collapsible open={productsOpen} onOpenChange={setProductsOpen}>
-              <div className={`flex items-center justify-between w-full px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
-                isProductsActive ? 'text-[#FF90E8]' : 'text-white hover:bg-white/5'
+              <div className={`flex items-center justify-between mx-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                isProductsActive ? 'bg-[#FF8A00] text-white shadow-ezmart-sidebar' : 'text-[#666] hover:bg-[#F5F5F5]'
               }`}>
-                <Link to="/seller/products" className="flex items-center gap-4 flex-1">
-                  <GumroadProductsIcon size={16} />
+                <Link to="/seller/products" className="flex items-center gap-3 flex-1">
+                  <GumroadProductsIcon size={18} />
                   <span>Products</span>
                 </Link>
                 <CollapsibleTrigger asChild>
-                  <button className="p-1 hover:bg-white/10 rounded transition-colors">
+                  <button className={`p-1 rounded transition-colors ${isProductsActive ? 'hover:bg-white/20' : 'hover:bg-[#E5E5E5]'}`}>
                     <GumroadChevronDownIcon size={16} className={`transition-transform duration-200 ${productsOpen ? 'rotate-180' : ''}`} />
                   </button>
                 </CollapsibleTrigger>
@@ -218,10 +216,10 @@ const SellerSidebar = () => {
                     <Link
                       key={item.to}
                       to={item.to}
-                      className={`flex items-center gap-4 pl-12 pr-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
+                      className={`flex items-center gap-3 mx-3 pl-9 pr-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                         active 
-                          ? 'text-[#FF90E8]' 
-                          : 'text-white/60 hover:bg-white/5'
+                          ? 'bg-[#FF8A00] text-white shadow-ezmart-sidebar' 
+                          : 'text-[#999] hover:bg-[#F5F5F5] hover:text-[#666] hover:translate-x-1'
                       }`}
                     >
                       <Icon size={16} />
@@ -241,54 +239,56 @@ const SellerSidebar = () => {
         </nav>
 
         {/* Bottom Section */}
-        <div className="border-t border-white/50">
+        <div className="border-t border-[#F0F0F0]">
           {/* Settings & Help */}
-          {bottomNavItems.map((item) => {
-            const active = isActive(item.to);
-            const Icon = item.icon;
+          <div className="py-2 space-y-0.5">
+            {bottomNavItems.map((item) => {
+              const active = isActive(item.to);
+              const Icon = item.icon;
 
-            if (isCollapsed) {
+              if (isCollapsed) {
+                return (
+                  <Tooltip key={item.to} delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={item.to}
+                        className={`flex items-center justify-center w-full py-3.5 transition-all duration-200 ${
+                          active 
+                            ? 'bg-[#FF8A00] text-white shadow-ezmart-sidebar' 
+                            : 'text-[#666] hover:bg-[#F5F5F5]'
+                        }`}
+                      >
+                        <Icon size={18} />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="bg-white text-[#333] border border-[#E5E5E5]">
+                      <p>{item.label}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
               return (
-                <Tooltip key={item.to} delayDuration={0}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to={item.to}
-                      className={`flex items-center justify-center w-full py-4 transition-colors border-t border-white/50 ${
-                        active 
-                          ? 'text-[#FF90E8]' 
-                          : 'text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <Icon size={16} />
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-white text-black border-0">
-                    <p>{item.label}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`flex items-center gap-3 mx-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    active 
+                      ? 'bg-[#FF8A00] text-white shadow-ezmart-sidebar' 
+                      : 'text-[#666] hover:bg-[#F5F5F5] hover:translate-x-1'
+                  }`}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </Link>
               );
-            }
-
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`flex items-center gap-4 px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
-                  active 
-                    ? 'text-[#FF90E8]' 
-                    : 'text-white hover:bg-white/5'
-                }`}
-              >
-                <Icon size={16} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+            })}
+          </div>
 
           {/* Collapse Toggle */}
           <button
             onClick={toggleSidebar}
-            className={`flex items-center gap-4 w-full py-4 text-white/50 hover:text-white transition-colors border-t border-white/50 ${
+            className={`flex items-center gap-3 w-full py-3 text-[#999] hover:text-[#666] transition-all duration-200 border-t border-[#F0F0F0] ${
               isCollapsed ? 'justify-center' : 'px-6'
             }`}
           >
@@ -297,29 +297,29 @@ const SellerSidebar = () => {
             ) : (
               <>
                 <GumroadCollapseIcon size={16} />
-                <span className="text-sm font-normal">Collapse</span>
+                <span className="text-sm font-medium">Collapse</span>
               </>
             )}
           </button>
 
           {/* User Profile */}
-          <div className={`py-4 border-t border-white/50 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+          <div className={`py-4 border-t border-[#F0F0F0] ${isCollapsed ? 'px-3' : 'px-4'}`}>
             <Link 
               to="/seller/settings"
-              className={`flex items-center gap-3 py-2 rounded-lg hover:bg-white/5 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+              className={`flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-[#F5F5F5] transition-all duration-200 ${isCollapsed ? 'justify-center' : ''}`}
             >
-              <Avatar className="h-8 w-8 ring-1 ring-white/20">
+              <Avatar className="h-8 w-8 ring-1 ring-[#E5E5E5]">
                 <AvatarImage src={profile?.store_logo_url || ''} />
-                <AvatarFallback className="bg-white/10 text-white text-xs font-medium">
+                <AvatarFallback className="bg-[#FF8A00]/10 text-[#FF8A00] text-xs font-medium">
                   {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
                 </AvatarFallback>
               </Avatar>
               {!isCollapsed && (
                 <div className="flex-1 min-w-0 flex items-center gap-2">
-                  <p className="text-sm text-white font-medium truncate">
+                  <p className="text-sm text-[#333] font-medium truncate">
                     {profile?.store_name || 'My Store'}
                   </p>
-                  <GumroadChevronDownIcon size={14} className="text-white/50 flex-shrink-0" />
+                  <GumroadChevronDownIcon size={14} className="text-[#999] flex-shrink-0" />
                 </div>
               )}
             </Link>

@@ -551,9 +551,9 @@ const SellerMainContent = () => {
   
   return (
     <main className={`
-      min-h-screen bg-[#FBF8F3] transition-all duration-300
+      min-h-screen ezmart-bg transition-all duration-300
       pt-0 pb-20 lg:pb-0
-      lg:pt-16 ${isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-52'}
+      lg:pt-20 ${isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[240px]'}
     `}>
       <div className="p-3 sm:p-4 lg:p-6">
         <Routes>
@@ -587,7 +587,7 @@ const SellerMainContent = () => {
 const SellerContent = () => {
   return (
     <SellerSidebarProvider>
-      <div className="min-h-screen bg-[#FBF8F3] overflow-x-hidden">
+      <div className="min-h-screen ezmart-bg overflow-x-hidden">
         
         {/* Desktop Sidebar */}
         <SellerSidebar />
