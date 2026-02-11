@@ -1,86 +1,79 @@
 
-# Fix: Seller Product Section - Multiple Critical Bugs
 
-## Issues Identified
+# Fix: Product Page Data Counting + Draft Mode on Edit
 
-### 1. Image Loading Fails in Product Section
-**Root Cause:** The `MultiImageUploader` uploads to `store-media` bucket, which IS public. However, the image optimizer (`prepareImageForUpload`) may fail silently on certain image types or browsers, causing broken uploads. The upload path and public URL generation look correct.
-**Action:** Add error handling and fallback in `MultiImageUploader` to handle failed compression gracefully (skip optimization if it fails, upload original).
+## Problems Found
 
-### 2. Course Lessons Not Being Saved
-**Root Cause:** In `NewProduct.tsx` (lines 603-604), `LessonBuilder` is rendered with hardcoded empty props:
-```
-lessons={[]}
-onChange={() => {}}
-```
-The component appears but data is never stored in state or saved to the database. The `handleSubmit` function does not save lessons to `product_content` table.
-**Action:** Add `lessons` state variable, wire `LessonBuilder` onChange to it, and save lessons to `product_content` table on submit.
+### 1. Product Stats Not Counting Correctly
+The Products page calculates revenue as `sold_count * price` (an approximation). This is inaccurate because:
+- Products may have been sold at different prices over time
+- Discounts, coupons, and PWYW pricing are not reflected
+- The actual earnings data exists in `orders` from SellerContext but is not used
 
-### 3. File Download Not Working
-**Root Cause:** Same issue as lessons -- `FileContentUploader` (lines 583-584) is rendered with:
-```
-files={[]}
-onChange={() => {}}
-```
-Files are never stored in state or saved to the database.
-**Action:** Add `files` state variable, wire `FileContentUploader` onChange to it, and save files to `product_content` table on submit.
+**Fix:** Use real order data from `useSellerContext()` to calculate accurate revenue per product, and show real sales counts from orders.
 
-### 4. Product Section Missing from Sidebar/Navbar
-**Root Cause:** The `SellerSidebar` has a "Products" link at `/seller/products`, but the sub-menu items under Products are `Discount`, `Coupons`, `Flash Sales`, `Inventory` -- there is no direct "All Products" or "My Products" sub-item. The Products link itself in the sidebar navigates to `/seller/products` but it is only the parent collapsible trigger, not a direct link in expanded mode. When clicked it toggles the dropdown instead of navigating.
-**Action:** Make the "Products" text in the sidebar a direct link to `/seller/products` while keeping the chevron as the collapsible toggle. Add "All Products" as the first sub-item.
+### 2. Edited Products Should Go to Draft Mode
+Currently, when a seller edits a published product, it stays live (`is_approved` remains `true`). The user wants edited products to go into a "draft" state requiring re-approval.
 
-### 5. AvailabilityEditor Not Saving
-**Root Cause:** Same pattern -- `AvailabilityEditor` (lines 622-627) uses hardcoded empty props. Availability data is never saved.
-**Action:** Add `timeSlots` and `callDuration` state, wire to component, save to `product_metadata`.
+**Fix:** When updating a product in `NewProduct.tsx`, set `is_approved = false` so the product goes back to pending/draft status after editing. Add a "Save as Draft" button alongside the "Publish" button so sellers can choose.
 
-### 6. Edit Mode Doesn't Load Content Data
-**Root Cause:** When loading a product for editing (lines 120-156), only basic fields are loaded. Lessons, files, and availability are NOT fetched from `product_content` table.
-**Action:** In the `loadProduct` function, also fetch associated `product_content` records and populate the respective state variables.
+### 3. Missing Draft Status + Save as Draft Button
+The product editor only has a "Publish" button. There is no way to save a product as a draft without publishing it.
+
+**Fix:** Add a "Save as Draft" button that saves the product with `is_available = false` and `is_approved = false`. Add "Draft" as a status filter option in `SellerProducts.tsx`.
+
+### 4. Status Badge Missing "Draft"
+Product cards only show "Live" or "Pending" badges. Need to add "Draft" status for products that were saved but not yet submitted for approval.
 
 ---
 
-## Technical Implementation Plan
+## Technical Changes
 
-### Step 1: Add State Variables for Content Types
-Add to `NewProduct.tsx`:
-- `files` state (FileItem[]) for downloadable content
-- `lessons` state (Lesson[]) for course content
-- `timeSlots` state (TimeSlot[]) for call availability
-- `callDuration` state (number) for call duration
+### File 1: `src/pages/NewProduct.tsx`
+- Add a `handleSaveDraft` function that saves the product with `is_available: false` (draft mode, not published)
+- Add a "Save as Draft" button in the header alongside "Publish"
+- When editing an already-approved product, set `is_approved: false` on update so it goes back to pending review
+- Show a warning message when editing a live product: "Editing will move this product back to review"
 
-### Step 2: Wire Content Components to State
-Replace the hardcoded empty props:
-- `FileContentUploader`: `files={files}` and `onChange={setFiles}`
-- `LessonBuilder`: `lessons={lessons}` and `onChange={setLessons}`
-- `AvailabilityEditor`: `slots={timeSlots}` and `onChange={setTimeSlots}`, `duration={callDuration}`, `onDurationChange={setCallDuration}`
+### File 2: `src/components/seller/SellerProducts.tsx`
+- Fix revenue calculation: Use `orders` from `useSellerContext()` to calculate real revenue per product instead of `sold_count * price`
+- Add "Draft" to the status filter dropdown (products where `is_available = false` AND `is_approved = false`)
+- Update status badge to show "Draft" for draft products (distinct from "Pending" which means submitted for approval)
+- Add a draft count to the stats row
 
-### Step 3: Save Content on Submit
-In `handleSubmit`, after creating/updating the product:
-- For file types: Insert/upsert rows into `product_content` with content_type='file'
-- For course types: Insert/upsert rows into `product_content` with content_type='lesson'
-- For call types: Save availability data to `product_metadata` JSON field
-
-### Step 4: Load Content in Edit Mode
-In `loadProduct`, after fetching the product:
-- Fetch `product_content` rows for this product
-- Populate `files` and `lessons` state from the results
-- Parse `product_metadata` for availability data
-
-### Step 5: Fix Sidebar Navigation
-In `SellerSidebar.tsx`:
-- Make the "Products" label a direct `Link` to `/seller/products`
-- Add "All Products" as the first sub-item under the Products dropdown
-- Keep the chevron icon as the collapsible toggle (separate from the link)
-
-### Step 6: Image Upload Resilience
-In `MultiImageUploader.tsx`:
-- Wrap `prepareImageForUpload` in try/catch
-- If compression fails, fall back to uploading the original file
-- Show a warning toast instead of blocking the upload
+### File 3: `src/components/seller/SellerDashboard.tsx`
+- Add a "Draft Products" count to the dashboard stats using the products data
+- Show draft products count alongside active products
 
 ---
 
-## Files to Modify
-1. `src/pages/NewProduct.tsx` -- Wire state, save/load content data
-2. `src/components/seller/SellerSidebar.tsx` -- Fix Products navigation
-3. `src/components/seller/MultiImageUploader.tsx` -- Add image upload fallback
+## Stats Calculation Fix (Detail)
+
+Current (inaccurate):
+```
+totalRevenue = products.reduce((sum, p) => sum + (p.sold_count * p.price), 0)
+```
+
+Fixed (using real order data):
+```
+totalRevenue = orders.reduce((sum, o) => sum + Number(o.seller_earning), 0)
+totalSales = orders.length
+```
+
+Per-product revenue will be calculated by matching `orders` to `product_id`.
+
+---
+
+## Draft Mode Flow
+
+```text
+New Product --> [Save as Draft] --> Draft (not visible to buyers)
+                                    |
+Draft ---------> [Publish] -------> Pending Approval --> Admin Approves --> Live
+                                    |
+Live ----------> [Edit & Save] ---> Pending Approval --> Admin Approves --> Live
+```
+
+- "Save as Draft": `is_available = false`, `is_approved = false`
+- "Publish": `is_available = true`, `is_approved = false` (goes to admin review)
+- When editing a live product: `is_approved` resets to `false`
