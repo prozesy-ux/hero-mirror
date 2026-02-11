@@ -1,66 +1,67 @@
 
 
-## Redesign Buyer and Seller Dashboard Home to Match EzMart HTML Design
+## Rewrite EzMartDashboardGrid to Exactly Match HTML
 
-Copy the exact layout, cards, charts, text, and visual schema from the provided HTML file into both `BuyerDashboardHome.tsx` and `SellerDashboard.tsx`. No changes to Header or Sidebar -- only the dashboard content area.
+The current component has many deviations from the HTML file. This plan rewrites `EzMartDashboardGrid.tsx` to be a pixel-perfect copy.
 
-### Design Schema from HTML (to be replicated exactly)
+### All Differences Found (Current vs HTML)
 
-The dashboard uses a **4-column grid** layout with these sections:
+**1. Stat Cards**
+- HTML: Label TOP-LEFT, icon TOP-RIGHT (36x36px, 8px radius). Value is 28px font. Badge is plain text "+3.34%" (no pill background, no TrendingUp/Down icons). Period text "vs last week" inline after badge.
+- Current: Icon LEFT in 48px circle, badge RIGHT in pill with arrow icons. Value is 24px. Period on separate line.
 
-1. **Row 1 -- 4 Stat Cards** (1 column each):
-   - Total Sales: `$983,410`, `+3.34% vs last week`, orange dollar icon
-   - Total Orders: `58,375`, `-2.89% vs last week`, gray cart icon
-   - Total Visitors: `237,782`, `+8.02% vs last week`, gray user icon
-   - (4th column is occupied by Top Categories spanning 2 rows)
+**2. Top Categories**
+- HTML: Has "See All" link in header. Donut uses `<circle>` with `stroke-dasharray` and `rotate(-90deg)`. Center text uses absolute positioned div (not SVG text). Category list shows dollar amounts ($1,200,000) not percentages. Dots are square (2px border-radius).
+- Current: No "See All". Uses arc paths. SVG text center. Shows percentages. Round dots.
 
-2. **Row 2 -- Revenue Analytics (span 2 cols) + Monthly Target (span 1 col) + Top Categories continues**:
-   - Revenue Analytics: dual-line chart (solid orange = Revenue, dashed light orange = Orders), "Last 8 Days" dropdown, date axis labels
-   - Monthly Target: semi-circle gauge at 85%, "+8.02%", "Great Progress!" message, Target vs Revenue stats in orange background box
+**3. Revenue Analytics**
+- HTML: Has orange filled "Last 8 Days" dropdown button (bg orange, white text). Chart is raw SVG with hand-drawn path curves and a tooltip bubble showing "$14,521". X-axis: "12 Aug" to "19 Aug". Y-axis: 16K/12K/8K/4K/0.
+- Current: Uses Recharts LineChart with legend. No dropdown button.
 
-3. **Row 3 -- Active User (span 1 col) + Conversion Rate (span 2 cols) + Traffic Sources (span 1 col)**:
-   - Active User: 2,758 total, country progress bars (US 36%, UK 24%, Indonesia 17.5%, Russia 15%)
-   - Conversion Rate: 5-column funnel (Product Views 25K, Add to Cart 12K, Checkout 8.5K, Purchases 6.2K, Abandoned 3K) with gradient funnel bars
-   - Traffic Sources: segmented bar + list (Direct 40%, Organic 30%, Social 15%, Referral 10%, Email 5%)
+**4. Monthly Target**
+- HTML: Has "..." (more-horizontal) icon instead of percentage badge. Gauge uses `<circle>` with stroke-dasharray inside rotated SVG. Text below says "Great Progress!" with party emoji, then "Our achievement increased by $200,000; let's reach 100% next month." Target shows "$600.000" / "$510.000".
+- Current: Has percentage badge with TrendingUp. Uses arc paths. Different text. Shows dynamic amounts.
 
-4. **Top Categories** (right column, spans 2 rows): donut chart with center text "$3.4M Total Sales", category list (Electronics, Fashion, Home & Kitchen, Beauty & Care)
+**5. Active Users**
+- HTML: Has "..." icon. Shows "Users" label with "+8.02%" green badge floating right. No flags. Progress bar colors alternate: #f97316, #fdba74, #f97316, #fed7aa. 6px height bars.
+- Current: Has flags. All bars same orange. 8px bars. No "Users" subtitle or badge.
 
-### Color System
-- Background: `#f4f5f7`
-- Cards: `#ffffff`, border-radius 16px, padding 24px
-- Primary orange: `#FF7F00`
-- Orange shades: `#FDBA74`, `#FED7AA`, `#FFEDD5`, `#FFC482`, `#FFB362`, `#FF9F42`
-- Text main: `#1F2937`, Text muted: `#6B7280`
-- Success green: `#10B981`, Danger red: `#EF4444`
+**6. Conversion Rate**
+- HTML: Has "This Week" dropdown button. 5-column grid showing label (with line breaks), then large value (25,000 not 25K), then small green/red badge (+9%, -5%). Below: funnel bars 100px tall with specific colors (#ffe4c2, #ffd4a2, #ffc482, #ffb362, #ff9f42), rounded top corners only.
+- Current: Single row with gradient bars and percentage-based heights. Values show "25K" shorthand. No badges.
 
-### Technical Implementation
+**7. Traffic Sources**
+- HTML: Has "..." icon. Bars are 50px tall (not 3px). Colors: #ffedd5, #fed7aa, #fdba74, #fb923c, #f97316. Labels: "Direct Traffic", "Organic Search", "Social Media", "Referral Traffic", "Email Campaigns". Dots are square (2px radius).
+- Current: 12px thin bar. Different colors. Short labels. Round dots.
 
-#### File 1: `src/components/dashboard/BuyerDashboardHome.tsx`
-- **Remove**: GettingStartedSection, ActivityStatsSection, old stat cards, quick actions grid, old recent orders, old quick stats
-- **Replace with**: Exact EzMart grid layout with all 9 cards
-- **Keep**: All data fetching logic, caching, session handling, error states, loading skeleton
-- **Map data**: wallet balance to "Total Sales", order count to "Total Orders", etc.
-- **Charts**: Use Recharts (already installed) for Revenue Analytics line chart, and SVG for gauge/donut/funnel
-- **Same text**: Use the exact same labels, values format, and percentages from the HTML
+**8. Grid Gap**
+- HTML: 24px gap. Current: 20px (gap-5).
 
-#### File 2: `src/components/seller/SellerDashboard.tsx`
-- **Remove**: Current stat cards, quick actions, performance metrics row, current revenue chart, top products/recent orders
-- **Replace with**: Same EzMart grid layout with all 9 cards
-- **Keep**: All data fetching, metrics calculation, date range picker, export, share store modal
-- **Map data**: seller revenue to "Total Sales", seller orders to "Total Orders", etc.
-- **Charts**: Same Recharts line chart and SVG components as buyer
+### Changes
 
-#### File 3: New shared component `src/components/dashboard/EzMartDashboardGrid.tsx`
-- Shared reusable component for the 4-column dashboard grid
-- Contains: `Dashboard_StatCard`, `Dashboard_RevenueChart`, `Dashboard_MonthlyTarget`, `Dashboard_TopCategories`, `Dashboard_ActiveUsers`, `Dashboard_ConversionRate`, `Dashboard_TrafficSources`
-- Props for dynamic data while keeping the exact same visual layout
-- All SVG gauges, donuts, and funnels built inline (matching HTML exactly)
+**File: `src/components/dashboard/EzMartDashboardGrid.tsx`** -- Full rewrite
 
-### What Will NOT Change
-- Header / TopBar components
-- Sidebar components
-- Mobile navigation
-- Routing structure
-- Data fetching / API calls
-- Session management
-- Context providers
+Every sub-component will be rewritten to match the HTML exactly:
+
+- `Dashboard_StatCard`: Label top-left, 36x36 icon top-right (8px radius), 28px value, plain text badge (no pills/arrows), inline "vs last week"
+- `Dashboard_RevenueChart`: Remove Recharts, use pure SVG paths matching HTML curves exactly. Orange "Last 8 Days" button. Tooltip bubble at the specific point. Y-axis labels. X-axis "12 Aug" through "19 Aug"
+- `Dashboard_MonthlyTarget`: More-horizontal icon. Circle-based gauge with rotate(-90deg). Exact text with emoji and "$200,000" message. Static "$600.000" / "$510.000"
+- `Dashboard_TopCategories`: "See All" link. Circle-based donut with stroke-dasharray. Absolute-positioned center text div. Dollar amounts in list. Square dots
+- `Dashboard_ActiveUsers`: More-horizontal icon. "Users" subtitle with floating "+8.02%" badge. No flags. Alternating bar colors. 6px bars
+- `Dashboard_ConversionRate`: "This Week" dropdown. 5-column grid with full numbers (25,000), green/red badges. Funnel bars with specific colors and 100px height
+- `Dashboard_TrafficSources`: More-horizontal icon. 50px tall segmented bars. Specific colors. Full labels. Square dots
+- Grid gap: 24px
+
+**File: `src/components/dashboard/BuyerDashboardHome.tsx`** -- Update data props
+
+- Update `trafficSources` colors to match HTML (#ffedd5, #fed7aa, #fdba74, #fb923c, #f97316) and full labels ("Direct Traffic", "Organic Search", etc.)
+- Update `conversionFunnel` to include full numbers and badge values
+- Remove flags from `activeUsersByCountry`, add bar colors
+- Update `topCategories` to include dollar amounts
+
+**File: `src/components/seller/SellerDashboard.tsx`** -- Same data prop updates as buyer
+
+### What Does NOT Change
+- Header, Sidebar, mobile navigation -- untouched
+- All data fetching, caching, session logic -- untouched
+- Routing, context providers -- untouched
