@@ -2699,6 +2699,15 @@ export type Database = {
           auto_approve_products: boolean | null
           banner_height: string | null
           banner_type: string | null
+          card_accent_color: string | null
+          card_border_radius: string | null
+          card_button_color: string | null
+          card_button_text: string | null
+          card_button_text_color: string | null
+          card_show_badge: boolean | null
+          card_show_rating: boolean | null
+          card_show_seller_name: boolean | null
+          card_style: string | null
           commission_rate: number | null
           country: string | null
           created_at: string | null
@@ -2733,6 +2742,15 @@ export type Database = {
           auto_approve_products?: boolean | null
           banner_height?: string | null
           banner_type?: string | null
+          card_accent_color?: string | null
+          card_border_radius?: string | null
+          card_button_color?: string | null
+          card_button_text?: string | null
+          card_button_text_color?: string | null
+          card_show_badge?: boolean | null
+          card_show_rating?: boolean | null
+          card_show_seller_name?: boolean | null
+          card_style?: string | null
           commission_rate?: number | null
           country?: string | null
           created_at?: string | null
@@ -2767,6 +2785,15 @@ export type Database = {
           auto_approve_products?: boolean | null
           banner_height?: string | null
           banner_type?: string | null
+          card_accent_color?: string | null
+          card_border_radius?: string | null
+          card_button_color?: string | null
+          card_button_text?: string | null
+          card_button_text_color?: string | null
+          card_show_badge?: boolean | null
+          card_show_rating?: boolean | null
+          card_show_seller_name?: boolean | null
+          card_style?: string | null
           commission_rate?: number | null
           country?: string | null
           created_at?: string | null
