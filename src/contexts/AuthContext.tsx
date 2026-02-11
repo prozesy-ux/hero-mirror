@@ -34,6 +34,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<any>;
   signInWithGoogle: () => Promise<any>;
+  signInWithApple: () => Promise<any>;
   isAuthenticated: boolean;
   isPro: boolean;
   isAdmin: boolean;

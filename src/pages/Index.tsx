@@ -5,6 +5,7 @@ import SEOHead from "@/components/seo/SEOHead";
 
 // Lazy load below-fold components for faster First Contentful Paint
 const AsSeenIn = lazy(() => import("@/components/AsSeenIn"));
+const AboutSection = lazy(() => import("@/components/AboutSection"));
 const CompleteBundleCard = lazy(() => import("@/components/CompleteBundleCard"));
 const ChatGPTPromptsSection = lazy(() => import("@/components/ChatGPTPromptsSection"));
 const AddonsSection = lazy(() => import("@/components/AddonsSection"));
@@ -57,6 +58,9 @@ const Index = () => {
           <AsSeenIn />
         </Suspense>
         <Suspense fallback={<SectionPlaceholder />}>
+          <AboutSection />
+        </Suspense>
+        <Suspense fallback={<SectionPlaceholder />}>
           <CompleteBundleCard />
         </Suspense>
         <Suspense fallback={<SectionPlaceholder />}>
@@ -78,6 +82,15 @@ const Index = () => {
           <TestimonialsSection />
         </Suspense>
       </main>
+      <footer className="border-t border-border bg-background py-8">
+        <div className="mx-auto max-w-screen-2xl px-4 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+          <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} Uptoza Inc. All rights reserved.</p>
+          <nav className="flex items-center gap-6">
+            <a href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
+            <a href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms of Service</a>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 };
