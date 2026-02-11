@@ -1089,6 +1089,9 @@ const SellerProducts = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="instant">Instant Download</SelectItem>
+                          <SelectItem value="auto_account">Auto Account Delivery</SelectItem>
+                          <SelectItem value="auto_license">Auto License Key</SelectItem>
+                          <SelectItem value="auto_download">Auto Unique Download</SelectItem>
                           <SelectItem value="manual">Manual Delivery</SelectItem>
                           <SelectItem value="email">Email Delivery</SelectItem>
                         </SelectContent>
@@ -1099,6 +1102,12 @@ const SellerProducts = () => {
                       <Textarea value={formData.thank_you_message} onChange={(e) => setFormData(prev => ({ ...prev, thank_you_message: e.target.value }))}
                         placeholder="Instructions shown to buyer after purchase..." rows={3} className="border-black/10 rounded-lg text-sm" />
                     </div>
+                    {['auto_account', 'auto_license', 'auto_download'].includes(formData.delivery_type) && editSheetProductId && (
+                      <div className="pt-2 border-t border-black/5">
+                        <p className="text-[10px] text-black/40 uppercase tracking-widest font-bold mb-2">Pool Inventory</p>
+                        <p className="text-xs text-black/50 mb-2">Manage delivery items for this product in the <a href="/seller/delivery-inventory" className="text-pink-500 underline">Delivery Inventory</a> page.</p>
+                      </div>
+                    )}
                   </CollapsibleContent>
                 </Collapsible>
 

@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { 
   Download, Play, BookOpen, Users, Briefcase, Coffee, 
   Calendar, Clock, Package, ExternalLink, CheckCircle,
-  FileText, Video, Music, Image as ImageIcon, Archive
+  FileText, Video, Music, Image as ImageIcon, Archive, Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getProductTypeById } from '@/components/icons/ProductTypeIcons';
@@ -45,7 +45,19 @@ interface ContentAccess {
   progress?: number; // For courses
 }
 
-type FilterTab = 'all' | 'downloads' | 'courses' | 'memberships' | 'services';
+type FilterTab = 'all' | 'downloads' | 'courses' | 'memberships' | 'services' | 'delivered';
+
+interface DeliveredItem {
+  id: string;
+  buyer_id: string;
+  order_id: string;
+  product_id: string;
+  delivery_type: string;
+  delivered_data: Record<string, any>;
+  delivered_at: string;
+  is_revealed: boolean;
+  product?: { id: string; name: string; icon_url: string | null; product_type: string; seller_id: string; seller?: { store_name: string } };
+}
 
 const FILTER_TABS: { id: FilterTab; label: string; icon: any }[] = [
   { id: 'all', label: 'All', icon: Package },
@@ -53,17 +65,21 @@ const FILTER_TABS: { id: FilterTab; label: string; icon: any }[] = [
   { id: 'courses', label: 'Courses', icon: BookOpen },
   { id: 'memberships', label: 'Memberships', icon: Users },
   { id: 'services', label: 'Services', icon: Briefcase },
+  { id: 'delivered', label: 'Delivered', icon: CheckCircle },
 ];
 
 const BuyerLibrary = () => {
   const { user } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [accessItems, setAccessItems] = useState<ContentAccess[]>([]);
+  const [deliveredItems, setDeliveredItems] = useState<DeliveredItem[]>([]);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
       fetchLibraryItems();
+      fetchDeliveredItems();
     }
   }, [user]);
 
@@ -145,14 +161,42 @@ const BuyerLibrary = () => {
     }
   };
 
+  const fetchDeliveredItems = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('buyer_delivered_items')
+      .select(`*, product:seller_products(id, name, icon_url, product_type, seller_id, seller:seller_profiles(store_name))`)
+      .eq('buyer_id', user.id)
+      .order('delivered_at', { ascending: false });
+    if (!error && data) setDeliveredItems((data || []) as DeliveredItem[]);
+  };
+
+  const revealItem = async (itemId: string) => {
+    setRevealedIds(prev => new Set(prev).add(itemId));
+    await supabase.from('buyer_delivered_items').update({ is_revealed: true }).eq('id', itemId);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard');
+  };
+
+  const maskEmail = (email: string) => {
+    const [user, domain] = email.split('@');
+    return user.charAt(0) + '***@' + domain;
+  };
+
   const filteredItems = accessItems.filter(item => {
     if (activeTab === 'all') return true;
+    if (activeTab === 'delivered') return false; // handled separately
     if (activeTab === 'downloads') return ['download', 'stream'].includes(item.access_type);
     if (activeTab === 'courses') return item.access_type === 'course';
     if (activeTab === 'memberships') return item.access_type === 'membership';
     if (activeTab === 'services') return item.access_type === 'service';
     return true;
   });
+
+  const filteredDelivered = activeTab === 'all' || activeTab === 'delivered' ? deliveredItems : [];
 
   const getAccessIcon = (accessType: string) => {
     switch (accessType) {
@@ -250,7 +294,7 @@ const BuyerLibrary = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Library</h1>
           <p className="text-sm text-gray-500">
-            {accessItems.length} item{accessItems.length !== 1 ? 's' : ''} in your library
+          {accessItems.length + deliveredItems.length} item{(accessItems.length + deliveredItems.length) !== 1 ? 's' : ''} in your library
           </p>
         </div>
       </div>
@@ -260,8 +304,10 @@ const BuyerLibrary = () => {
         {FILTER_TABS.map((tab) => {
           const Icon = tab.icon;
           const count = tab.id === 'all' 
-            ? accessItems.length 
-            : accessItems.filter(item => {
+            ? accessItems.length + deliveredItems.length
+            : tab.id === 'delivered'
+              ? deliveredItems.length
+              : accessItems.filter(item => {
                 if (tab.id === 'downloads') return ['download', 'stream'].includes(item.access_type);
                 if (tab.id === 'courses') return item.access_type === 'course';
                 if (tab.id === 'memberships') return item.access_type === 'membership';
@@ -298,7 +344,7 @@ const BuyerLibrary = () => {
       </div>
 
       {/* Library Grid */}
-      {filteredItems.length === 0 ? (
+      {filteredItems.length === 0 && filteredDelivered.length === 0 ? (
         <Card className="p-12 text-center">
           <Package className="w-12 h-12 mx-auto text-gray-300 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -317,6 +363,7 @@ const BuyerLibrary = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredItems.map((item) => {
+            // ... keep existing code
             const AccessIcon = getAccessIcon(item.access_type);
             const productType = item.product?.product_type || 'digital_product';
             const typeInfo = getProductTypeById(productType);
@@ -331,83 +378,113 @@ const BuyerLibrary = () => {
                   isExpired && "opacity-60"
                 )}
               >
-                {/* Product Image */}
                 <div className="aspect-video bg-gray-100 relative">
                   {item.product?.icon_url ? (
-                    <img 
-                      src={item.product.icon_url} 
-                      alt={item.product?.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={item.product.icon_url} alt={item.product?.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <TypeIcon className="w-16 h-16 text-gray-300" />
                     </div>
                   )}
-                  
-                  {/* Access Type Badge */}
-                  <Badge 
-                    className={cn(
-                      "absolute top-3 left-3 gap-1",
-                      item.access_type === 'course' && "bg-purple-500",
-                      item.access_type === 'membership' && "bg-blue-500",
-                      item.access_type === 'download' && "bg-green-500",
-                      item.access_type === 'service' && "bg-orange-500"
-                    )}
-                  >
-                    <AccessIcon className="w-3 h-3" />
-                    {item.access_type}
+                  <Badge className={cn("absolute top-3 left-3 gap-1",
+                    item.access_type === 'course' && "bg-purple-500",
+                    item.access_type === 'membership' && "bg-blue-500",
+                    item.access_type === 'download' && "bg-green-500",
+                    item.access_type === 'service' && "bg-orange-500"
+                  )}>
+                    <AccessIcon className="w-3 h-3" />{item.access_type}
                   </Badge>
-
-                  {/* Course Progress */}
                   {item.access_type === 'course' && (item.progress || 0) > 0 && (
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
-                      <div 
-                        className="h-full bg-green-500"
-                        style={{ width: `${item.progress}%` }}
-                      />
+                      <div className="h-full bg-green-500" style={{ width: `${item.progress}%` }} />
                     </div>
                   )}
                 </div>
-
                 <CardContent className="p-4">
-                  {/* Product Name */}
-                  <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">
-                    {item.product?.name || 'Unknown Product'}
-                  </h3>
-
-                  {/* Seller */}
-                  <p className="text-sm text-gray-500 mb-3">
-                    by {item.product?.seller?.store_name || 'Unknown Seller'}
-                  </p>
-
-                  {/* Status Info */}
+                  <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">{item.product?.name || 'Unknown Product'}</h3>
+                  <p className="text-sm text-gray-500 mb-3">by {item.product?.seller?.store_name || 'Unknown Seller'}</p>
                   <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
                     <Clock className="w-3 h-3" />
                     <span>Purchased {formatDate(item.access_granted_at)}</span>
-                    
-                    {item.access_type === 'course' && (item.progress || 0) > 0 && (
+                    {item.access_type === 'course' && (item.progress || 0) > 0 && (<><span>•</span><span className="text-green-600 font-medium">{item.progress}% complete</span></>)}
+                    {item.access_expires_at && (<><span>•</span><span className={isExpired ? "text-red-500" : "text-orange-500"}>{isExpired ? 'Expired' : `Expires ${formatDate(item.access_expires_at)}`}</span></>)}
+                  </div>
+                  <div className="flex justify-end">{getActionButton(item)}</div>
+                </CardContent>
+              </Card>
+            );
+          })}
+
+          {/* Auto-Delivered Items */}
+          {filteredDelivered.map((item) => {
+            const isRevealed = revealedIds.has(item.id) || item.is_revealed;
+            return (
+              <Card key={`del-${item.id}`} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="aspect-video bg-gray-100 relative">
+                  {item.product?.icon_url ? (
+                    <img src={item.product.icon_url} alt={item.product?.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package className="w-16 h-16 text-gray-300" />
+                    </div>
+                  )}
+                  <Badge className="absolute top-3 left-3 gap-1 bg-black">
+                    <CheckCircle className="w-3 h-3" />Delivered
+                  </Badge>
+                </div>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">{item.product?.name || 'Unknown Product'}</h3>
+                  <p className="text-sm text-gray-500 mb-3">by {item.product?.seller?.store_name || 'Unknown Seller'}</p>
+                  
+                  {/* Delivered Content */}
+                  <div className="p-3 bg-gray-50 rounded-lg border mb-3 space-y-2">
+                    {item.delivery_type === 'account' && (
                       <>
-                        <span>•</span>
-                        <span className="text-green-600 font-medium">
-                          {item.progress}% complete
-                        </span>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Email</span>
+                          <span className="font-mono text-gray-900">
+                            {isRevealed ? item.delivered_data.email : maskEmail(item.delivered_data.email || '')}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Password</span>
+                          <span className="font-mono text-gray-900">
+                            {isRevealed ? item.delivered_data.password : '••••••••'}
+                          </span>
+                        </div>
                       </>
                     )}
-
-                    {item.access_expires_at && (
-                      <>
-                        <span>•</span>
-                        <span className={isExpired ? "text-red-500" : "text-orange-500"}>
-                          {isExpired ? 'Expired' : `Expires ${formatDate(item.access_expires_at)}`}
+                    {item.delivery_type === 'license_key' && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500">Key</span>
+                        <span className="font-mono text-gray-900">
+                          {isRevealed ? item.delivered_data.key : '••••-••••-••••'}
                         </span>
-                      </>
+                      </div>
                     )}
                   </div>
 
-                  {/* Action Button */}
-                  <div className="flex justify-end">
-                    {getActionButton(item)}
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                    <Clock className="w-3 h-3" />
+                    <span>Delivered {formatDate(item.delivered_at)}</span>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    {!isRevealed && (
+                      <Button size="sm" variant="outline" className="gap-1" onClick={() => revealItem(item.id)}>
+                        <Eye className="w-3.5 h-3.5" />Reveal
+                      </Button>
+                    )}
+                    {isRevealed && (
+                      <Button size="sm" variant="outline" className="gap-1" onClick={() => {
+                        const text = item.delivery_type === 'account' 
+                          ? `${item.delivered_data.email}\n${item.delivered_data.password}`
+                          : item.delivered_data.key || '';
+                        copyToClipboard(text);
+                      }}>
+                        <FileText className="w-3.5 h-3.5" />Copy
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

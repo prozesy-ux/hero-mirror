@@ -18,6 +18,7 @@ import AvailabilityEditor from '@/components/seller/AvailabilityEditor';
 import { ProductTypeId, getProductTypeById } from '@/components/icons/ProductTypeIcons';
 import { cn } from '@/lib/utils';
 import CardCustomizer from '@/components/seller/CardCustomizer';
+import DeliveryInventoryManager from '@/components/seller/DeliveryInventoryManager';
 import { CardSettings } from '@/components/marketplace/card-types';
 
 interface Category {
@@ -118,6 +119,10 @@ const NewProduct = () => {
 
   // Card appearance overrides
   const [cardOverrides, setCardOverrides] = useState<Partial<CardSettings>>({});
+  
+  // Delivery mode
+  const [deliveryMode, setDeliveryMode] = useState<string>('instant_download');
+  const [savedProductId, setSavedProductId] = useState<string | null>(productId || null);
 
   useEffect(() => {
     fetchCategories();
@@ -211,6 +216,7 @@ const NewProduct = () => {
       if (metadata.time_slots) setTimeSlots(metadata.time_slots);
       if (metadata.call_duration) setCallDuration(metadata.call_duration);
       if (metadata.card_overrides) setCardOverrides(metadata.card_overrides);
+      if ((data as any).delivery_type) setDeliveryMode((data as any).delivery_type);
       
       setLoadingProduct(false);
     };
@@ -334,6 +340,8 @@ const NewProduct = () => {
           .select('id')
           .single();
         if (error) throw error;
+        savedProductId || setSavedProductId(insertedProduct.id);
+        // Use the new ID for subsequent operations
         savedProductId = insertedProduct.id;
       }
 
