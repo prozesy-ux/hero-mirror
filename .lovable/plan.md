@@ -1,108 +1,112 @@
 
 
-# Redesign: Seller Product Edit as Side Panel + Enhanced Left Sidebar
+# Enhanced Seller Products Section: Full Redesign
 
 ## Overview
-Replace the full-page navigation edit flow with an inline slide-over panel (Sheet) in the seller products page. Redesign the right sidebar into a rich "Product Command Center" with more actions, quick stats per product, and better visual labels. Add a functional left-side action bar when a product is selected.
+Major upgrade to the seller products management page with a 3-column layout, richer card labels, an expanded edit sheet, and new functional panels on both left and right sides.
 
 ---
 
 ## Changes
 
-### 1. SellerProducts.tsx -- Replace Full-Page Edit with Sheet Panel
+### 1. Three-Column Layout (Left Panel | Grid | Right Panel)
 
-**Current behavior:** Clicking "Edit" navigates to `/seller/products/edit/:id` (full page `NewProduct.tsx`).
+Replace the current 2-column (7+3) layout with a 3-column layout:
 
-**New behavior:** Clicking "Edit" opens a `Sheet` (slide-over drawer) from the right side, containing all editable fields inline. The product grid stays visible behind it.
+```text
++------------------+------------------------------+--------------------+
+|  Left Panel (2)  |    Product Grid (6)          |  Right Panel (2)   |
+|                  |                              |                    |
+|  - Cart/Queue    |  - Enhanced cards            |  - Preview         |
+|  - Quick Stats   |  - Status, Type, Labels      |  - Actions         |
+|  - Filters       |  - Sales, Price overlays     |  - Stats           |
+|  - Categories    |                              |  - Danger Zone     |
++------------------+------------------------------+--------------------+
+```
 
-- Import `Sheet, SheetContent, SheetHeader, SheetTitle` from `@/components/ui/sheet`
-- Add state: `editSheetProduct` (the product being edited inline)
-- The Sheet will contain:
-  - Product name, description (textarea), price, stock, compare-at price
-  - Multi-image uploader (compact)
-  - Category chips selection
-  - Tags input with popular suggestions
-  - Toggles: Available, Chat Allowed, Requires Email
-  - Card Appearance customizer (collapsed by default via `Collapsible`)
-  - Save / Save as Draft / Cancel buttons at the bottom
-- Keep the full-page `NewProduct.tsx` route for **creating new** products only (it has the type selector wizard which makes sense as full-page)
-- The edit Sheet reuses existing `handleSubmit` logic but scoped to the selected product
+**Left Panel Contents:**
+- **Product Queue / Cart**: Shows a mini-list of recently edited or selected products (like a shopping cart sidebar). Clicking items scrolls to them in the grid.
+- **Quick Stats Dashboard**: Total products, live, pending, drafts, total revenue, total sales -- each as compact stat cards with icons
+- **Category Filters**: Vertical list of categories with product counts, clickable to filter the grid
+- **Status Filters**: Visual pills for All/Live/Pending/Draft/Hidden with counts
+- **Sort Controls**: Dropdown moved here from the top bar
+- **Bulk Mode Toggle**: Moved from top bar into this panel
 
-### 2. Right Sidebar -- Product Command Center (when product selected)
+### 2. Enhanced Product Grid Cards
 
-When a product is clicked, the right sidebar transforms from the default stats view into a rich "Product Command Center":
+Redesign the card overlay system with richer visual labels:
 
-**Card Preview Section:**
-- `ProductCardRenderer` preview (already exists)
-- Below: "As seen by buyers" label
+- **Product Type Icon + Label**: Pill badge at top-left with icon (e.g., Video icon + "Course") using colored backgrounds per type
+- **Status Bar**: Bottom gradient bar with status icon+label on left, price on right
+- **Sales Counter Badge**: Small pill showing "X sold" with ShoppingBag icon, only if sales > 0
+- **Stock Warning**: If stock < 5, show amber "Low Stock" pill
+- **Compare Price**: Show crossed-out original price next to current price if compare_at_price exists
+- **Category Tags**: Small faded category name labels below the card renderer
+- **Hover Overlay**: Semi-transparent dark overlay with centered action buttons (Edit, Duplicate, Copy Link, View Store, Delete) arranged vertically with labels -- replaces the current small icon-only buttons
 
-**Quick Actions Grid (2x2):**
-- Edit (opens Sheet)
-- Duplicate
-- Copy Link
-- View in Store (opens store URL)
+### 3. Expanded Edit Sheet
 
-**Product Stats Card:**
-- Sales count for this product
-- Revenue earned
-- Views (if tracked)
-- Status badge (Live / Pending / Draft / Hidden)
-- Created date
-- Last updated date
+Add more fields and sections to the edit Sheet:
 
-**Danger Zone:**
-- Toggle visibility (Show/Hide)
-- Delete product (with confirmation)
+- **SEO Section** (Collapsible): Slug editor, meta description preview
+- **Pricing Section**: Add "Pay what you want" toggle, minimum price field
+- **Delivery Settings** (Collapsible): Instant download toggle, delivery instructions textarea
+- **Product Type Display**: Show the current product type as a read-only badge at the top of the sheet (cannot change type after creation)
+- **Live Preview**: Small card preview at the top of the sheet that updates as the user edits fields
+- **Changelog**: "Last saved X minutes ago" timestamp at the bottom
 
-**When no product selected:** Show the existing stats summary + comic illustration
+### 4. Right Panel -- Product Command Center (Enhanced)
 
-### 3. Product Grid Cards -- Enhanced Labels and Info
+When a product is selected:
+- **Card Preview**: Larger preview with "Buyer View" label (already exists, keep)
+- **Quick Actions**: Change from 2x2 grid to vertical list with icons + descriptions:
+  - Edit -- "Open editor panel"
+  - Duplicate -- "Create a copy"
+  - Copy Link -- "Share URL"
+  - View Store -- "Open in new tab"
+  - Analytics -- "View product stats" (navigates to SellerProductAnalytics)
+  - Share -- "Social share options"
+- **Stats Card**: Enhanced with mini sparkline/bar for sales trend (using existing recharts), conversion rate calculation
+- **Danger Zone**: Keep as-is
 
-Update the card overlay system on the product grid:
-
-- **Status badge**: Move from top-left to a bottom bar overlay with icon + label
-- **Product type badge**: Show the product type (e.g., "Course", "E-book", "Bundle") as a small pill in the top-right
-- **Sales counter**: Small badge showing sold count at bottom-left
-- **Price tag**: Prominent price label overlay
-- **Hover actions**: Keep Edit, Copy, More menu but improve styling with tooltips
-
-### 4. Bulk Actions Bar
-
-Add a bulk selection mode:
-- Checkbox on each card (visible on hover, always visible when in bulk mode)
-- When 1+ products selected, show a floating action bar at bottom:
-  - "X selected" count
-  - Bulk Hide / Show
-  - Bulk Delete
-  - Bulk Change Category
-  - Clear Selection
+When no product selected:
+- Show overall store health summary
+- "Top Performing" mini-card showing best-selling product
+- "Needs Attention" section showing products with 0 sales or low stock
 
 ---
 
 ## Technical Details
 
-### Sheet Edit Form
-The edit form inside the Sheet will use the same `supabase.from('seller_products').update()` pattern already in `handleSubmit`. The form state will be initialized from the selected product when the Sheet opens.
+### File: `src/components/seller/SellerProducts.tsx`
 
+**Layout Change:**
 ```text
-State flow:
-1. User clicks Edit on product card
-2. editSheetProduct = product (populate form fields)
-3. Sheet opens from right
-4. User edits fields
-5. Save -> supabase update -> refreshProducts() -> close Sheet
+Current:  lg:grid-cols-10 -> col-span-7 + col-span-3
+New:      lg:grid-cols-12 -> col-span-2 + col-span-7 + col-span-3
 ```
 
-### Files Modified
-1. **`src/components/seller/SellerProducts.tsx`** -- Major rewrite:
-   - Add Sheet-based edit panel
-   - Redesign right sidebar as Product Command Center
-   - Add product type badges + sales counters on grid cards
-   - Add bulk selection mode with floating action bar
+On mobile, left panel becomes a collapsible drawer or hidden entirely. Grid and right panel stack vertically.
 
-### Dependencies
-- Uses existing `Sheet` component from `@/components/ui/sheet`
-- Uses existing `Collapsible` from Radix
-- Uses existing `CardCustomizer`, `MultiImageUploader`, `ProductCardRenderer`
-- No new packages needed
+**Left Panel State:**
+- `recentlyEdited: string[]` -- tracks last 5 edited product IDs for the "queue" section
+- Category counts computed from `products` array
+- Status counts already exist (`liveProducts`, `pendingProducts`, etc.)
+
+**Card Overlay Redesign:**
+- Replace the current small hover buttons with a full-card dark overlay containing vertically stacked labeled buttons
+- Add `PRODUCT_TYPE_COLORS` map for colored type badges (e.g., Course = purple, E-book = blue, Software = green)
+- Add stock warning logic: `product.stock > 0 && product.stock < 5`
+
+**Edit Sheet Additions:**
+- Add `slug` field to `ProductFormData` interface
+- Add `meta_description` field
+- Add `pay_what_you_want` boolean and `minimum_price` number
+- Add `delivery_instructions` textarea
+- These fields map to existing or new columns in `seller_products`
+
+**No new dependencies needed** -- uses existing Sheet, Collapsible, ScrollArea, recharts, Badge, Tooltip components.
+
+### Database Consideration
+The `slug`, `meta_description`, and `delivery_instructions` fields may need to be verified as existing columns in `seller_products`. If not present, a migration will be created to add them. The `pay_what_you_want` and `minimum_price` fields would also need columns if not present.
 
