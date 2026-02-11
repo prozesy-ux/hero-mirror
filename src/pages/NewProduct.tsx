@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, Loader2, X, Check, Bold, Italic, Underline, Strikethrough, Quote, Link2, Image, Video, Music, ChevronDown, Undo, Redo, Package } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, X, Check, Package } from 'lucide-react';
+import RichTextEditor from '@/components/admin/RichTextEditor';
 import ProductTypeSelector from '@/components/seller/ProductTypeSelector';
 import MultiImageUploader from '@/components/seller/MultiImageUploader';
 import FileContentUploader from '@/components/seller/FileContentUploader';
@@ -74,16 +74,22 @@ const BUNDLE_TYPES = ['bundle'];
 
 const NewProduct = () => {
   const navigate = useNavigate();
+  const { productId } = useParams();
+  const [searchParams] = useSearchParams();
+  const duplicateId = searchParams.get('duplicate');
+  const isEditMode = !!productId;
   const { profile, refreshProducts } = useSellerContext();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(isEditMode ? 2 : 1);
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingProduct, setLoadingProduct] = useState(isEditMode || !!duplicateId);
   
   // Form state
   const [productType, setProductType] = useState<ProductTypeId>('digital_product');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [originalPrice, setOriginalPrice] = useState('');
   const [stock, setStock] = useState('');
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
@@ -105,6 +111,49 @@ const NewProduct = () => {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  // Load product data for edit or duplicate mode
+  useEffect(() => {
+    const loadId = productId || duplicateId;
+    if (!loadId) return;
+    
+    const loadProduct = async () => {
+      setLoadingProduct(true);
+      const { data, error } = await supabase
+        .from('seller_products')
+        .select('*')
+        .eq('id', loadId)
+        .single();
+      
+      if (error || !data) {
+        toast.error('Failed to load product');
+        navigate('/seller/products');
+        return;
+      }
+      
+      setProductType((data as any).product_type || 'digital_product');
+      setName(duplicateId ? `${data.name} (Copy)` : data.name);
+      setDescription(data.description || '');
+      setPrice(String(data.price || ''));
+      setOriginalPrice(String((data as any).original_price || ''));
+      setStock(String(data.stock || ''));
+      setCategoryIds((data as any).category_ids || (data.category_id ? [data.category_id] : []));
+      setTags((data as any).tags || []);
+      setImages((data as any).images || []);
+      setIsAvailable(data.is_available);
+      setChatAllowed(data.chat_allowed !== false);
+      setIsPwyw((data as any).is_pwyw || false);
+      setMinPrice(String((data as any).min_price || ''));
+      setIsPreorder((data as any).is_preorder || false);
+      setReleaseDate((data as any).release_date ? new Date((data as any).release_date).toISOString().split('T')[0] : '');
+      setPreorderMessage((data as any).preorder_message || '');
+      setRequiresEmail((data as any).requires_email || false);
+      
+      setLoadingProduct(false);
+    };
+    
+    loadProduct();
+  }, [productId, duplicateId]);
 
   const fetchCategories = async () => {
     const { data } = await supabase
@@ -175,6 +224,7 @@ const NewProduct = () => {
         name: name.trim(),
         description: description.trim() || null,
         price: parseFloat(price) || 0,
+        original_price: originalPrice ? (parseFloat(originalPrice) || null) : null,
         stock: parseInt(stock) || 0,
         category_id: categoryIds[0] || null,
         category_ids: categoryIds,
@@ -195,13 +245,20 @@ const NewProduct = () => {
         preorder_message: isPreorder ? preorderMessage.trim() || null : null,
       };
 
-      const { error } = await supabase
-        .from('seller_products')
-        .insert(productData);
-      
-      if (error) throw error;
-      
-      toast.success('Product created! Awaiting approval.');
+      if (isEditMode && productId) {
+        const { error } = await supabase
+          .from('seller_products')
+          .update(productData)
+          .eq('id', productId);
+        if (error) throw error;
+        toast.success('Product updated!');
+      } else {
+        const { error } = await supabase
+          .from('seller_products')
+          .insert(productData);
+        if (error) throw error;
+        toast.success('Product created! Awaiting approval.');
+      }
       refreshProducts();
       navigate('/seller/products');
     } catch (error: any) {
@@ -213,6 +270,13 @@ const NewProduct = () => {
 
   const selectedType = getProductTypeById(productType);
   const SelectedIcon = selectedType.Icon;
+  if (loadingProduct) {
+    return (
+      <div className="min-h-screen bg-[#f4f4f0] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f4f4f0]" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -227,7 +291,7 @@ const NewProduct = () => {
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div>
-              <h1 className="font-semibold text-xl text-gray-900">New Product</h1>
+              <h1 className="font-semibold text-xl text-gray-900">{isEditMode ? 'Edit Product' : 'New Product'}</h1>
               <p className="text-sm text-gray-500">Step {currentStep} of {STEPS.length}</p>
             </div>
           </div>
@@ -260,12 +324,12 @@ const NewProduct = () => {
                 {submitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Publishing...
+                    {isEditMode ? 'Saving...' : 'Publishing...'}
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2" />
-                    Publish
+                    {isEditMode ? 'Save Changes' : 'Publish'}
                   </>
                 )}
               </Button>
@@ -435,7 +499,7 @@ const NewProduct = () => {
                       />
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <Label className="text-base text-slate-700 mb-2 block">
                           Price
@@ -452,6 +516,28 @@ const NewProduct = () => {
                             className="rounded border h-12 text-base pl-8 focus:ring-1 focus:ring-slate-400 focus:outline-none transition-colors bg-white"
                           />
                         </div>
+                      </div>
+                      <div>
+                        <Label className="text-base text-slate-700 mb-2 block">
+                          Compare-at Price
+                        </Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
+                          <Input
+                            type="number"
+                            value={originalPrice}
+                            onChange={(e) => setOriginalPrice(e.target.value)}
+                            placeholder="Optional"
+                            min="0"
+                            step="0.01"
+                            className="rounded border h-12 text-base pl-8 focus:ring-1 focus:ring-slate-400 focus:outline-none transition-colors bg-white"
+                          />
+                        </div>
+                        {originalPrice && parseFloat(originalPrice) > 0 && parseFloat(price) > 0 && (
+                          <p className="text-xs text-green-600 mt-1">
+                            {Math.round((1 - parseFloat(price) / parseFloat(originalPrice)) * 100)}% off
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label className="text-base text-slate-700 mb-2 block">
@@ -476,51 +562,72 @@ const NewProduct = () => {
                     <Label className="text-base text-slate-700 mb-2 block">
                       Description
                     </Label>
-                    <div className="border rounded overflow-hidden bg-white">
-                      {/* Black toolbar */}
-                      <div className="bg-black text-white px-4 py-2 flex items-center flex-wrap gap-2 sm:gap-4 select-none">
-                        {/* Format dropdown */}
-                        <div className="flex items-center gap-1 cursor-pointer hover:bg-gray-800 px-2 py-1 rounded transition-colors">
-                          <span className="text-sm font-medium">Text</span>
-                          <ChevronDown size={14} />
-                        </div>
-                        <div className="h-4 w-[1px] bg-gray-600 mx-1" />
-                        {/* Formatting buttons */}
-                        <div className="flex items-center gap-3">
-                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Bold size={18} /></button>
-                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Italic size={18} /></button>
-                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Underline size={18} /></button>
-                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Strikethrough size={18} /></button>
-                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Quote size={18} /></button>
-                        </div>
-                        <div className="h-4 w-[1px] bg-gray-600 mx-1" />
-                        <div className="flex items-center gap-3">
-                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Link2 size={18} /></button>
-                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Image size={18} /></button>
-                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Video size={18} /></button>
-                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors"><Music size={18} /></button>
-                        </div>
-                        <div className="h-4 w-[1px] bg-gray-600 mx-1" />
-                        {/* Insert dropdown */}
-                        <div className="flex items-center gap-1 cursor-pointer hover:bg-gray-800 px-2 py-1 rounded transition-colors">
-                          <span className="text-sm font-medium">Insert</span>
-                          <ChevronDown size={14} />
-                        </div>
-                        {/* Undo/Redo on right */}
-                        <div className="ml-auto flex items-center gap-3">
-                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors text-white/60"><Undo size={18} /></button>
-                          <button type="button" className="hover:bg-gray-800 p-1 rounded transition-colors text-white/60"><Redo size={18} /></button>
-                        </div>
-                      </div>
-                      {/* Text area */}
-                      <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Describe your product..."
-                        className="w-full h-48 p-4 focus:outline-none resize-none text-gray-800 placeholder-gray-400"
-                      />
-                    </div>
+                    <RichTextEditor
+                      value={description}
+                      onChange={setDescription}
+                      placeholder="Describe your product..."
+                    />
                   </div>
+                  
+                  {/* SECTION 3.5: Content/Files (type-specific) */}
+                  {INSTANT_DOWNLOAD_TYPES.includes(productType) && (
+                    <>
+                      <div className="border-t" />
+                      <div>
+                        <Label className="text-base text-slate-700 mb-3 block">
+                          Product Files
+                        </Label>
+                        <p className="text-sm text-slate-500 mb-3">
+                          Upload the files buyers will receive after purchase
+                        </p>
+                        <FileContentUploader
+                          files={[]}
+                          onChange={() => {}}
+                          sellerId={profile?.id || ''}
+                          maxFiles={20}
+                        />
+                      </div>
+                    </>
+                  )}
+                  
+                  {COURSE_TYPES.includes(productType) && (
+                    <>
+                      <div className="border-t" />
+                      <div>
+                        <Label className="text-base text-slate-700 mb-3 block">
+                          Course Lessons
+                        </Label>
+                        <p className="text-sm text-slate-500 mb-3">
+                          Build your course curriculum
+                        </p>
+                        <LessonBuilder
+                          lessons={[]}
+                          onChange={() => {}}
+                          sellerId={profile?.id || ''}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {CALL_TYPES.includes(productType) && (
+                    <>
+                      <div className="border-t" />
+                      <div>
+                        <Label className="text-base text-slate-700 mb-3 block">
+                          Availability
+                        </Label>
+                        <p className="text-sm text-slate-500 mb-3">
+                          Set your available time slots for calls
+                        </p>
+                        <AvailabilityEditor
+                          slots={[]}
+                          onChange={() => {}}
+                          duration={30}
+                          onDurationChange={() => {}}
+                        />
+                      </div>
+                    </>
+                  )}
                   
                   <div className="border-t" />
                   

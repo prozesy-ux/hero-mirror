@@ -559,6 +559,7 @@ const SellerMainContent = () => {
           <Route path="/" element={<SellerDashboard />} />
           <Route path="/products" element={<SellerProducts />} />
           <Route path="/products/new" element={<NewProduct />} />
+          <Route path="/products/edit/:productId" element={<NewProduct />} />
           <Route path="/orders" element={<SellerOrders />} />
           <Route path="/analytics" element={<SellerAnalytics />} />
           <Route path="/inventory" element={<SellerInventory />} />

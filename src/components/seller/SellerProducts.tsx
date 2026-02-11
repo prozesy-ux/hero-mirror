@@ -521,7 +521,7 @@ const SellerProducts = () => {
                         variant="outline"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleOpenDialog(product.id);
+                          navigate(`/seller/products/edit/${product.id}`);
                         }}
                         className="flex-1 h-9 border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 rounded-lg font-medium transition-colors"
                       >
@@ -568,6 +568,14 @@ const SellerProducts = () => {
                                 Show
                               </>
                             )}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => navigate(`/seller/products/new?duplicate=${product.id}`)}
+                            className="rounded-md"
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Duplicate
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 

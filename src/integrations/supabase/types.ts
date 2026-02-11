@@ -626,6 +626,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           name: string
+          parent_id: string | null
         }
         Insert: {
           category_type?: string | null
@@ -638,6 +639,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           name: string
+          parent_id?: string | null
         }
         Update: {
           category_type?: string | null
@@ -650,8 +652,17 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           name?: string
+          parent_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_attachments: {
         Row: {
@@ -2548,20 +2559,27 @@ export type Database = {
           images: string[] | null
           is_approved: boolean | null
           is_available: boolean | null
+          is_featured: boolean | null
           is_preorder: boolean | null
           is_pwyw: boolean | null
           membership_period: string | null
           min_price: number | null
           name: string
+          original_price: number | null
           preorder_message: string | null
           price: number
           product_metadata: Json | null
           product_type: string | null
+          published_at: string | null
+          refund_policy: string | null
           release_date: string | null
           requires_email: boolean | null
           seller_id: string
+          seo_description: string | null
+          seo_title: string | null
           slug: string | null
           sold_count: number | null
+          sort_order: number | null
           stock: number | null
           tags: string[] | null
           thank_you_message: string | null
@@ -2583,20 +2601,27 @@ export type Database = {
           images?: string[] | null
           is_approved?: boolean | null
           is_available?: boolean | null
+          is_featured?: boolean | null
           is_preorder?: boolean | null
           is_pwyw?: boolean | null
           membership_period?: string | null
           min_price?: number | null
           name: string
+          original_price?: number | null
           preorder_message?: string | null
           price?: number
           product_metadata?: Json | null
           product_type?: string | null
+          published_at?: string | null
+          refund_policy?: string | null
           release_date?: string | null
           requires_email?: boolean | null
           seller_id: string
+          seo_description?: string | null
+          seo_title?: string | null
           slug?: string | null
           sold_count?: number | null
+          sort_order?: number | null
           stock?: number | null
           tags?: string[] | null
           thank_you_message?: string | null
@@ -2618,20 +2643,27 @@ export type Database = {
           images?: string[] | null
           is_approved?: boolean | null
           is_available?: boolean | null
+          is_featured?: boolean | null
           is_preorder?: boolean | null
           is_pwyw?: boolean | null
           membership_period?: string | null
           min_price?: number | null
           name?: string
+          original_price?: number | null
           preorder_message?: string | null
           price?: number
           product_metadata?: Json | null
           product_type?: string | null
+          published_at?: string | null
+          refund_policy?: string | null
           release_date?: string | null
           requires_email?: boolean | null
           seller_id?: string
+          seo_description?: string | null
+          seo_title?: string | null
           slug?: string | null
           sold_count?: number | null
+          sort_order?: number | null
           stock?: number | null
           tags?: string[] | null
           thank_you_message?: string | null
