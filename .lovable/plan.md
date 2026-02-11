@@ -1,43 +1,25 @@
 
+## Remove /help Path Route
 
-# Route help.uptoza.com to Show the Help Page
+Since `help.uptoza.com` subdomain is now working correctly with the subdomain detection logic, the `/help` path route is no longer needed. This keeps the routing clean and directs all help traffic through the dedicated subdomain.
 
-## Problem
+### File to Modify
 
-The subdomain `help.uptoza.com` is connected to the project, but when users visit it, the app loads the `/` route which shows the **Index (landing) page** instead of the Help Center. This is because React Router only looks at the URL path (`/`), not the hostname/subdomain.
+**`src/App.tsx`**
+- Remove the `/help` route at lines 117-121
+- Keep all other routes unchanged
+- The Help page will still be accessible via:
+  - `help.uptoza.com/` (subdomain - main access point)
+  - Any internal routes within Help that use relative paths
 
-## Solution
+### What This Accomplishes
+- Eliminates duplicate access points (cleaner architecture)
+- Forces all help traffic through the dedicated `help.uptoza.com` subdomain
+- Reduces potential confusion with multiple routes serving the same content
+- Users navigating to `/help` on main domain will get 404 (expected behavior)
 
-Add subdomain detection logic in `App.tsx` that checks if the current hostname starts with `help.` and, if so, renders the Help page at the `/` route instead of the Index page.
-
-## File to Modify
-
-### `src/App.tsx`
-- Add a constant that detects the `help.` subdomain: `const isHelpSubdomain = window.location.hostname.startsWith('help.')`
-- Change the `/` route to conditionally render `<Help />` when on the help subdomain, and `<Index />` otherwise
-- This way, `help.uptoza.com/` shows the Help Center, while `uptoza.com/` still shows the landing page
-- All other routes (`/help`, `/marketplace`, etc.) continue to work normally on both domains
-
-## Technical Details
-
-```text
-// Detection logic added at top of App component:
-const isHelpSubdomain = window.location.hostname.startsWith('help.');
-
-// Route change:
-<Route path="/" element={
-  isHelpSubdomain ? (
-    <Suspense fallback={<AppShell />}>
-      <Help />
-    </Suspense>
-  ) : (
-    <Index />
-  )
-} />
-```
-
-## What Stays the Same
-- The `/help` route still works on the main domain (uptoza.com/help)
-- All other routes remain unchanged
-- No backend or DNS changes needed -- the subdomain is already connected
-
+### No Changes Needed To
+- Header component (doesn't currently link to `/help`)
+- Help component code
+- Subdomain detection logic (stays as-is)
+- Any other routes
