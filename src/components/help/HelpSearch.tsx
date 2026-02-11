@@ -10,6 +10,8 @@ interface HelpSearchProps {
 const HelpSearch: React.FC<HelpSearchProps> = ({ value, onChange, variant = 'compact' }) => {
   const [localValue, setLocalValue] = useState(value);
   const isFirstRender = useRef(true);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     setLocalValue(value);
@@ -21,10 +23,10 @@ const HelpSearch: React.FC<HelpSearchProps> = ({ value, onChange, variant = 'com
       return;
     }
     const timer = setTimeout(() => {
-      onChange(localValue);
+      onChangeRef.current(localValue);
     }, 300);
     return () => clearTimeout(timer);
-  }, [localValue, onChange]);
+  }, [localValue]);
 
   if (variant === 'hero') {
     return (
@@ -38,14 +40,14 @@ const HelpSearch: React.FC<HelpSearchProps> = ({ value, onChange, variant = 'com
           className="w-full h-14 px-6 pr-16 rounded-full text-[#001e00] text-base placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#14A800]/30 shadow-lg"
         />
         <button
-          onClick={() => onChange(localValue)}
+          onClick={() => onChangeRef.current(localValue)}
           className="absolute right-1 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#14A800] rounded-full flex items-center justify-center hover:bg-[#108a00] transition shadow-md"
         >
           <Search className="h-5 w-5 text-white" />
         </button>
         {localValue && (
           <button
-            onClick={() => { setLocalValue(''); onChange(''); }}
+            onClick={() => { setLocalValue(''); onChangeRef.current(''); }}
             className="absolute right-16 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
             <X className="h-4 w-4" />
@@ -67,7 +69,7 @@ const HelpSearch: React.FC<HelpSearchProps> = ({ value, onChange, variant = 'com
       />
       {localValue && (
         <button
-          onClick={() => { setLocalValue(''); onChange(''); }}
+          onClick={() => { setLocalValue(''); onChangeRef.current(''); }}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-[#5e6d55] hover:text-[#001e00]"
         >
           <X className="h-4 w-4" />

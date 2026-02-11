@@ -51,9 +51,10 @@ const Help: React.FC = () => {
     } else {
       const newParams: Record<string, string> = {};
       if (activeCategorySlug) newParams.category = activeCategorySlug;
+      if (activeArticleSlug) newParams.article = activeArticleSlug;
       setSearchParams(newParams);
     }
-  }, [setSearchParams, activeCategorySlug]);
+  }, [setSearchParams, activeCategorySlug, activeArticleSlug]);
 
   const setRole = useCallback((role: string) => {
     const newParams: Record<string, string> = {};
@@ -187,16 +188,21 @@ const Help: React.FC = () => {
           </div>
         </header>
 
-        {/* Hero Section — Green gradient */}
+        {/* Hero Section — Green gradient with bg image */}
         {showHero && (
-          <section className="relative bg-[#f2f7f2] overflow-hidden">
+          <section className="relative bg-gradient-to-br from-[#001e00] via-[#0d3b0d] to-[#14A800] overflow-hidden">
+            {/* Background image overlay */}
+            <div 
+              className="absolute inset-0 opacity-20 bg-cover bg-center"
+              style={{ backgroundImage: "url('https://support.upwork.com/hc/theming_assets/01K1BK8D2665NP4ZR79NVGSEG8')" }}
+            />
             <div className="relative max-w-[1600px] mx-auto px-6 py-20 lg:py-28">
               <div className="max-w-3xl">
-                <p className="text-sm font-medium mb-3 text-[#5e6d55] uppercase tracking-wide">Help Center</p>
-                <h1 className="text-5xl lg:text-6xl font-semibold mb-8 text-[#001e00] leading-tight">
+                <p className="text-sm font-medium mb-3 text-white/80 uppercase tracking-wide">Help Center</p>
+                <h1 className="text-5xl lg:text-6xl font-semibold mb-8 text-white leading-tight">
                   Find solutions fast.
                 </h1>
-                <p className="text-lg mb-8 text-[#5e6d55]">
+                <p className="text-lg mb-8 text-white/90">
                   Search hundreds of articles on Uptoza Help
                 </p>
 
@@ -207,12 +213,12 @@ const Help: React.FC = () => {
 
                 {/* Popular tags */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-sm text-[#5e6d55]">Popular:</span>
+                  <span className="text-sm text-white/80">Popular:</span>
                   {POPULAR_TAGS.map(tag => (
                     <button
                       key={tag}
                       onClick={() => setSearch(tag)}
-                      className="px-4 py-2 bg-[#e4ebe4] rounded-full text-sm text-[#001e00] hover:bg-[#d5e0d5] transition"
+                      className="px-4 py-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full text-sm text-white hover:bg-white/25 transition"
                     >
                       {tag}
                     </button>
@@ -344,7 +350,7 @@ const Help: React.FC = () => {
               </div>
 
               {/* 4-column category grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredCategories.map(cat => (
                   <HelpCategoryCard
                     key={cat.slug}
