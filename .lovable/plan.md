@@ -1,105 +1,96 @@
 
 
-# Redesign Help Center to Match Upwork-Style Design
+# Fix Help Center -- Navigation Bug, Design Polish, and Layout Corrections
 
-## What Changes
+## Issues Found
 
-Completely restyle the `/help` page and its components to match the uploaded `help.html` design exactly. All existing functionality (134 articles, search, filtering, article view, sidebar navigation) stays intact -- only the visual design changes.
+### 1. CRITICAL BUG: Article navigation broken
+The `HelpSearch` component's `useEffect` fires on mount with empty `localValue`, calling `onChange('')` which triggers `setSearch('')` in Help.tsx, which calls `setSearchParams({})` -- wiping ALL query params including `?article=` and `?category=`. This breaks all navigation.
 
-## Design Elements from help.html
+**Root cause**: In `HelpSearch.tsx` lines 17-22, the debounced `useEffect` runs on mount and calls `onChange(localValue)` with an empty string, clearing the URL params.
 
-### 1. Header (white, not black)
-- White background with bottom border `border-[#e4ebe4]`
-- Uptoza logo on left with `|` divider and "Help Center" text
-- Desktop nav links in center (category shortcuts)
-- Search icon button + green "Log in" button on right
-- Mobile hamburger menu
-- Height: `h-16`, max-width: `1600px`
+**Fix**: Only call `onChange` when `localValue` actually changes from the previous value, not on initial mount.
 
-### 2. Hero Section (green gradient -- NEW, does not exist currently)
-- Gradient: `from-[#001e00] via-[#0d3b0d] to-[#14A800]`
-- "Help Center" subtitle + large heading "Find solutions fast."
-- Subtext: "Search hundreds of articles on Uptoza Help"
-- Full-width rounded search bar with green search button inside
-- Popular tags as pill buttons (`bg-white/15 backdrop-blur-sm border border-white/20`)
-- Padding: `py-20 lg:py-28`
+### 2. Category grid should be 2 columns (not 4)
+The reference `help.html` design shows category cards in a **2-column grid** (visible in page_1.jpg and page_2.jpg screenshots), not the current 4-column grid. Cards are large with generous padding.
 
-### 3. Role Tabs (underline style, not pill style)
-- Bottom border with gap-8 between tabs
-- Active tab: `border-b-2 border-[#14A800] text-[#001e00]`
-- Inactive: `text-[#5e6d55]` with `border-transparent`
-- Labels: "Seller" | "Buyer" | "All" (mapped from Freelancer/Agency/Client)
+### 3. Hero section has no background image
+The reference design shows a plain light gray/white hero background -- NOT the green gradient currently used. The hero text "Find solutions fast." is in light gray color, not white. The background is clean white/light, not dark green gradient.
 
-### 4. Category Grid (4 columns, not 3)
-- `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`
-- Each card: white bg, `border border-[#d5e0d5]`, `rounded-lg`
-- Hover: `border-[#14A800]` + `shadow-lg`
-- Icon in green `text-[#14A800]`, 32x32px SVGs
-- Title: `text-xl font-semibold text-[#001e00]`, hover turns green
-- Description: `text-sm text-[#5e6d55]`
+### 4. Header logo too small
+The Uptoza logo in the header (`h-7`) is too small. Should be `h-8` for better visibility and match the reference sizing.
 
-### 5. Footer (dark green -- NEW)
-- Background: `bg-[#001e00]`
-- 4-column grid: For Sellers, For Buyers, Resources, Company
-- Social links row with circular icon buttons
-- Copyright + Terms/Privacy links at bottom
-- Uptoza branding adapted from Upwork footer
+### 5. Article view needs proper Upwork-style colors
+The article view (`HelpArticle.tsx`) still uses generic `text-muted-foreground` and `border-black/10` instead of the green color system (`#14A800`, `#001e00`, `#5e6d55`, `#d5e0d5`).
 
-### 6. Article View & Category View
-- Keep existing functionality but update colors:
-  - Primary accent: `#14A800` (green) instead of black
-  - Text: `#001e00` for headings, `#5e6d55` for muted
-  - Borders: `#d5e0d5` instead of `black/10`
+### 6. Back button in article view needs to work properly
+The `onBack` handler navigates to the category, but should also work to go back to `/help` home.
 
 ## Files to Modify
 
-### `src/pages/Help.tsx` -- Major redesign
-- Replace black header with white Upwork-style header
-- Add green gradient hero section with search bar and popular tags
-- Change role tabs from pill-style to underline-style
-- Update category grid to 4 columns with Upwork card styling
-- Add dark green footer section
-- Update all color tokens to match the green theme
-- Move search from header into hero section
-- Keep all existing logic (useSearchParams, filtering, etc.)
+### `src/components/help/HelpSearch.tsx`
+- Fix the mount-time useEffect that wipes search params
+- Add a ref to track if the component has mounted to prevent the initial empty onChange call
+- Keep the debounced search behavior for actual user input
 
-### `src/components/help/HelpCategoryCard.tsx` -- Restyle cards
-- Change to Upwork card design: white bg, green border on hover
-- Larger icon (32x32) in green color
-- Title `text-xl` that turns green on hover
-- Description in `text-[#5e6d55]`
-- Remove article count badge or make it subtle
+### `src/pages/Help.tsx`
+- Change hero section from green gradient to light/white background matching reference (light gray `bg-[#f2f7f2]`)
+- Hero text "Find solutions fast." in light muted color (large, not bold white)
+- Change category grid from 4 columns to 2 columns: `grid-cols-1 md:grid-cols-2`
+- Make category cards larger with more padding to match reference
+- Fix `setSearch` callback to not wipe article/category params when called with empty string on mount
+- Increase header logo size from `h-7` to `h-8`
 
-### `src/components/help/HelpSearch.tsx` -- Restyle search
-- Rounded-full search input (pill shape)
-- Green circular search button inside the input on the right
-- Larger height `h-14`
-- White background with shadow
+### `src/components/help/HelpArticle.tsx`
+- Update all color references to use the Upwork green system:
+  - `text-muted-foreground` to `text-[#5e6d55]`
+  - `border-black/10` to `border-[#d5e0d5]`
+  - Back button hover: green accent
+  - Related articles hover: green text
+- Ensure "Back" button always navigates correctly
 
-### `src/components/help/HelpSidebar.tsx` -- Update colors
-- Replace black active states with `#14A800` green
-- Update hover states to `#f7f7f7`
-- Border colors to `#d5e0d5`
+### `src/components/help/HelpCategoryCard.tsx`
+- Make cards larger with more padding (`p-8` instead of `p-6`)
+- Icon size increase to match reference (larger green outline icons)
+- More spacing between icon and text
 
-### `src/components/help/HelpArticle.tsx` -- Update colors
-- Green accent for role badges
-- Green back button hover
-- Updated border colors to `#d5e0d5`
+## Technical Details
 
-## Color System (Upwork-style)
-- Primary green: `#14A800`
-- Primary green hover: `#108a00`
-- Dark text: `#001e00`
-- Muted text: `#5e6d55`
-- Border: `#d5e0d5` / `#e4ebe4`
-- Background: white
-- Footer bg: `#001e00`
-- Hero gradient: `#001e00` to `#14A800`
+### Search Bug Fix (HelpSearch.tsx)
+```text
+Current problematic code:
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onChange(localValue);  // Fires on mount with '' -> wipes all params
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localValue, onChange]);
 
-## What Stays the Same
-- All 134 articles data (`help-docs.ts`) -- no changes
-- URL routing logic (query params for article, category, search, role)
-- Article rendering with feedback and related articles
-- Mobile sidebar sheet
-- SEO head component
+Fix: Add mount guard using useRef:
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      onChange(localValue);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localValue, onChange]);
+```
+
+### Hero Design Change
+Change from dark green gradient to the reference light background:
+- Background: `bg-[#f2f7f2]` (very light green-gray)
+- "Help Center" subtitle: `text-[#5e6d55]`
+- "Find solutions fast." heading: `text-[#001e00]` with lighter weight, large size
+- Subtext: `text-[#5e6d55]`
+- Search bar: white with shadow (already correct)
+- Popular tags: `bg-[#e4ebe4]` with `text-[#001e00]`
+
+### Category Grid
+- Change to 2-column grid: `grid-cols-1 md:grid-cols-2 gap-6`
+- Each card: larger padding, left green border accent on hover
+- Match the reference vertical stacking layout
 
