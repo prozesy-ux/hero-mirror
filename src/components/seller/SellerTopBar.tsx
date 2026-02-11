@@ -151,8 +151,8 @@ const SellerTopBar = () => {
 
   return (
     <header 
-      className={`fixed top-0 right-0 h-20 bg-white border-b border-[#E5E5E5] z-40 transition-all duration-300 hidden lg:flex items-center justify-between px-8 ${
-        isCollapsed ? 'left-[72px]' : 'left-[240px]'
+      className={`fixed top-0 right-0 h-16 bg-[#FBF8F3] border-b border-black/10 z-40 transition-all duration-300 hidden lg:flex items-center justify-between px-6 ${
+        isCollapsed ? 'left-[72px]' : 'left-52'
       }`}
     >
       {/* Left Section - Search */}
@@ -173,7 +173,7 @@ const SellerTopBar = () => {
         {/* Share Store Button - Gumroad Style */}
         <button
           onClick={() => setShowShareModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#F5F5F5] text-[#333] text-sm font-medium transition-all hover:bg-[#E5E5E5] hover:scale-105"
+          className="flex items-center gap-2 px-3 py-2 rounded border border-black text-black text-sm font-medium transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
         >
           <Share2 className="h-4 w-4" />
           <span className="hidden xl:inline">Share Store</span>
@@ -182,10 +182,10 @@ const SellerTopBar = () => {
         {/* Wallet Balance - Gumroad Style */}
         <Link 
           to="/seller/wallet"
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#FF8A00] transition-all hover:bg-[#FF9933] hover:scale-105"
+          className="flex items-center gap-2 px-3 py-2 rounded bg-[#FF90E8] border border-black transition-all hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
         >
-          <Wallet className="h-4 w-4 text-white" />
-          <span className="font-bold text-white text-sm">
+          <Wallet className="h-4 w-4 text-black" />
+          <span className="font-bold text-black text-sm">
             {formatAmountOnly(Number(wallet?.balance || 0))}
           </span>
         </Link>
@@ -202,13 +202,13 @@ const SellerTopBar = () => {
               )}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 border border-[#E5E5E5] rounded-xl">
+          <DropdownMenuContent align="end" className="w-80 border border-black rounded">
             <DropdownMenuLabel className="flex items-center justify-between">
               <span>Notifications</span>
               {unreadNotifications > 0 && (
                 <button 
                   onClick={markAllAsRead}
-                  className="text-xs text-[#FF8A00] hover:text-[#333] font-medium"
+                  className="text-xs text-[#FF90E8] hover:text-black font-medium"
                 >
                   Mark all read
                 </button>
@@ -224,7 +224,7 @@ const SellerTopBar = () => {
                 <DropdownMenuItem 
                   key={notification.id}
                   className={`flex flex-col items-start gap-1 p-3 cursor-pointer ${
-                    !notification.is_read ? 'bg-[#FFF5EB]' : ''
+                    !notification.is_read ? 'bg-[#FFF5FB]' : ''
                   }`}
                   onClick={() => {
                     markAsRead(notification.id);
@@ -242,10 +242,10 @@ const SellerTopBar = () => {
         {/* Profile Dropdown - Gumroad Style */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-[#F5F5F5] transition-colors">
-              <Avatar className="h-8 w-8 border-2 border-[#E5E5E5]">
+            <button className="flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-100 transition-colors">
+              <Avatar className="h-8 w-8 border-2 border-black">
                 <AvatarImage src={profile?.store_logo_url || ''} />
-                <AvatarFallback className="bg-[#FF8A00]/10 text-[#FF8A00] font-semibold">
+                <AvatarFallback className="bg-[#FF90E8]/20 text-black font-semibold">
                   {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
                 </AvatarFallback>
               </Avatar>
@@ -258,12 +258,12 @@ const SellerTopBar = () => {
               <ChevronDown className="h-4 w-4 text-slate-400" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 border border-[#E5E5E5] rounded-xl">
+          <DropdownMenuContent align="end" className="w-56 border border-black rounded">
             <DropdownMenuLabel>
               <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 border-2 border-[#E5E5E5]">
+                <Avatar className="h-10 w-10 border-2 border-black">
                   <AvatarImage src={profile?.store_logo_url || ''} />
-                  <AvatarFallback className="bg-[#FF8A00]/10 text-[#FF8A00]">
+                  <AvatarFallback className="bg-[#FF90E8]/20 text-black">
                     {profile?.store_name?.charAt(0).toUpperCase() || 'S'}
                   </AvatarFallback>
                 </Avatar>

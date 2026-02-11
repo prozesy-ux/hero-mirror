@@ -234,170 +234,178 @@ const SellerAnalytics = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-lg border-2 border-black" />)}
         </div>
-        <Skeleton className="h-80 rounded-xl" />
+        <Skeleton className="h-80 rounded-lg border-2 border-black" />
       </div>
     );
   }
 
+  // Stat Card Component - Gumroad Style
+  const StatCard = ({ 
+    title, 
+    value, 
+    change
+  }: { 
+    title: string; 
+    value: string | number; 
+    change?: number;
+    icon?: React.ElementType;
+  }) => (
+    <div className="bg-white border rounded p-8">
+      <div className="flex items-center gap-2 text-base mb-2">
+        <span className="text-slate-700">{title}</span>
+      </div>
+      <div className="text-4xl font-semibold text-slate-900">{value}</div>
+      {change !== undefined && (
+        <p className="text-sm text-slate-500 mt-2">
+          {change >= 0 ? '+' : ''}{change.toFixed(1)}% from yesterday
+        </p>
+      )}
+    </div>
+  );
+
+  // Quick Stat Item Component - Gumroad Style
+  const QuickStatItem = ({ 
+    icon: Icon, 
+    iconColor, 
+    value, 
+    label 
+  }: { 
+    icon: React.ElementType; 
+    iconColor: string; 
+    value: React.ReactNode; 
+    label: string; 
+  }) => (
+    <div className="bg-white border rounded p-8">
+      <div className="flex items-center gap-2 text-base mb-2">
+        <span className="text-slate-700">{label}</span>
+      </div>
+      <div className="text-4xl font-semibold text-slate-900">{value}</div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header with Date Filter + Export - EzMart Style */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-[32px] font-bold" style={{ color: '#333' }}>Analytics</h1>
-        
-        <div className="flex items-center gap-3">
-          {/* Date Range Picker */}
-          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="bg-white rounded-lg h-10 px-4 text-sm font-medium hover:bg-[#F5F5F5] transition-all"
-                style={{ borderColor: '#F0F0F0', color: '#666' }}
-              >
-                <CalendarIcon className="w-4 h-4 mr-2" style={{ color: '#FF8A00' }} />
-                {dateRange.from && dateRange.to ? (
-                  <span>{format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}</span>
-                ) : (
-                  <span>Pick a date range</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-white" align="end">
-              <Calendar
-                mode="range"
-                selected={dateRange}
-                onSelect={(range) => {
-                  setDateRange(range || { from: undefined, to: undefined });
-                  if (range?.from && range?.to) {
-                    setPeriod('custom');
-                    setCalendarOpen(false);
-                  }
-                }}
-                numberOfMonths={2}
-                className="pointer-events-auto"
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-
-          {/* Period Dropdown */}
-          <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
-            <SelectTrigger 
-              className="w-[130px] bg-white rounded-lg h-10 text-sm font-medium"
-              style={{ borderColor: '#F0F0F0', color: '#666' }}
+      {/* Header - No Title, Just Date Filter + Export (Shopeers Style) */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+        {/* Date Range Picker */}
+        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+          <PopoverTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="bg-white border-2 border-black rounded-lg h-9 px-3 text-sm font-medium text-slate-800 shadow-neobrutalism hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-white rounded-lg border" style={{ borderColor: '#F0F0F0' }}>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
-              <SelectItem value="custom">Custom</SelectItem>
-            </SelectContent>
-          </Select>
+              <CalendarIcon className="w-4 h-4 mr-2 text-slate-600" />
+              {dateRange.from && dateRange.to ? (
+                <span>
+                  {format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}
+                </span>
+              ) : (
+                <span>Pick a date range</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 bg-white" align="end">
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onSelect={(range) => {
+                setDateRange(range || { from: undefined, to: undefined });
+                if (range?.from && range?.to) {
+                  setPeriod('custom');
+                  setCalendarOpen(false);
+                }
+              }}
+              numberOfMonths={2}
+              className="pointer-events-auto"
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
 
-          {/* Export Button */}
-          <Button 
-            onClick={handleExport}
-            className="text-white rounded-lg h-10 px-4 hover:opacity-90 transition-all"
-            style={{ backgroundColor: '#FF8A00' }}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-        </div>
+        {/* Period Dropdown */}
+        <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+          <SelectTrigger className="w-[130px] bg-white border-2 border-black rounded-lg h-9 text-sm font-medium shadow-neobrutalism hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-white border-2 border-black rounded-lg">
+            <SelectItem value="7d">Last 7 days</SelectItem>
+            <SelectItem value="30d">Last 30 days</SelectItem>
+            <SelectItem value="90d">Last 90 days</SelectItem>
+            <SelectItem value="custom">Custom</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Export Button */}
+        <Button 
+          onClick={handleExport}
+          className="bg-black text-white hover:bg-slate-800 rounded-lg h-9 px-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Export
+        </Button>
       </div>
 
-      {/* Top Stats - 3 Column EzMart Style */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="ezmart-card">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium mb-2" style={{ color: '#666' }}>Today's Orders</p>
-              <p className="text-[28px] font-bold" style={{ color: '#333' }}>{analyticsData.todayOrders.toString().padStart(2, '0')}</p>
-              {analyticsData.ordersChange !== 0 && (
-                <p className="text-xs mt-2 flex items-center gap-1" style={{ color: analyticsData.ordersChange >= 0 ? '#10B981' : '#EF4444' }}>
-                  {analyticsData.ordersChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                  {analyticsData.ordersChange >= 0 ? '+' : ''}{analyticsData.ordersChange.toFixed(1)}% from yesterday
-                </p>
-              )}
-            </div>
-            <div className="ezmart-icon-box">
-              <ShoppingCart className="w-5 h-5 text-white" />
-            </div>
-          </div>
-        </div>
-
-        <div className="ezmart-card">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium mb-2" style={{ color: '#666' }}>Today's Sales</p>
-              <p className="text-[28px] font-bold" style={{ color: '#333' }}>{formatAmountOnly(analyticsData.todaySales)}</p>
-              {analyticsData.salesChange !== 0 && (
-                <p className="text-xs mt-2 flex items-center gap-1" style={{ color: analyticsData.salesChange >= 0 ? '#10B981' : '#EF4444' }}>
-                  {analyticsData.salesChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                  {analyticsData.salesChange >= 0 ? '+' : ''}{analyticsData.salesChange.toFixed(1)}% from yesterday
-                </p>
-              )}
-            </div>
-            <div className="ezmart-icon-box">
-              <DollarSign className="w-5 h-5 text-white" />
-            </div>
-          </div>
-        </div>
-
-        <div className="ezmart-card" style={{ backgroundColor: '#FFECD1' }}>
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium mb-2" style={{ color: '#666' }}>Total Balance</p>
-              <p className="text-[28px] font-bold" style={{ color: '#333' }}>{formatAmountOnly(analyticsData.totalBalance)}</p>
-              <p className="text-xs mt-2" style={{ color: '#999' }}>Available for withdrawal</p>
-            </div>
-            <div className="ezmart-icon-box">
-              <Wallet className="w-5 h-5 text-white" />
-            </div>
-          </div>
-        </div>
+      {/* Top Stats Grid - Amazon Seller Central Style */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard 
+          title="Today's Order" 
+          value={analyticsData.todayOrders.toString().padStart(2, '0')} 
+          change={analyticsData.ordersChange}
+          icon={ShoppingCart}
+        />
+        <StatCard 
+          title="Today's Sale" 
+          value={formatAmountOnly(analyticsData.todaySales)} 
+          change={analyticsData.salesChange}
+          icon={DollarSign}
+        />
+        <StatCard 
+          title="Total Balance" 
+          value={formatAmountOnly(analyticsData.totalBalance)}
+          icon={Wallet}
+        />
+        <StatCard 
+          title="Returns & Refunds" 
+          value={analyticsData.returnsRefunds.toString().padStart(2, '0')}
+          icon={RotateCcw}
+        />
       </div>
 
-      {/* Main Content Row - 2fr:1fr */}
+      {/* Main Content Row */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Sales Details Chart - 2/3 width */}
-        <div className="lg:col-span-2 ezmart-card !p-0">
-          <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: '#F0F0F0' }}>
-            <h3 className="text-lg font-semibold" style={{ color: '#333' }}>Sales Details</h3>
-            <button className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ backgroundColor: '#FFF5EB', color: '#FF8A00' }}>
-              Revenue
-            </button>
+        <div className="lg:col-span-2 bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
           </div>
           {/* Chart Legend */}
-          <div className="flex items-center gap-4 px-6 pt-4">
+          <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FF8A00' }} />
-              <span className="text-xs" style={{ color: '#666' }}>Revenue</span>
+              <div className="w-3 h-3 rounded-full bg-orange-500" />
+              <span className="text-xs text-slate-600">Revenue</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FFCC99' }} />
-              <span className="text-xs" style={{ color: '#666' }}>Orders</span>
+              <div className="w-3 h-3 rounded-full bg-slate-400" />
+              <span className="text-xs text-slate-600">Orders</span>
             </div>
           </div>
           
-          <div className="h-[280px] px-6 pb-6 pt-2">
+          <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analyticsData.dailyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 11, fill: '#999' }} 
+                  tick={{ fontSize: 11, fill: '#64748B' }} 
                   axisLine={false} 
                   tickLine={false}
                   interval="preserveStartEnd"
                 />
                 <YAxis 
-                  tick={{ fontSize: 11, fill: '#999' }} 
+                  tick={{ fontSize: 11, fill: '#64748B' }} 
                   axisLine={false} 
                   tickLine={false}
                   tickFormatter={(v) => {
@@ -410,8 +418,8 @@ const SellerAnalytics = () => {
                 <Tooltip 
                   contentStyle={{ 
                     borderRadius: 12, 
-                    border: '1px solid #F0F0F0', 
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                    border: 'none', 
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                     padding: '12px 16px', 
                     fontSize: 12,
                     backgroundColor: 'white'
@@ -424,7 +432,7 @@ const SellerAnalytics = () => {
                 />
                 <Bar 
                   dataKey="percentage" 
-                  fill="#FF8A00" 
+                  fill="#F97316" 
                   radius={[6, 6, 0, 0]} 
                 />
               </BarChart>
@@ -432,167 +440,146 @@ const SellerAnalytics = () => {
           </div>
         </div>
 
-        {/* Quick Stats - 2x2 Grid - EzMart Style */}
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold" style={{ color: '#333' }}>Quick Stats</h3>
+        {/* Quick Stats 2x2 Grid - 1/3 width */}
+        <div className="space-y-4">
+          <h3 className="text-base font-semibold text-slate-800">Quick Stats</h3>
           <div className="grid grid-cols-2 gap-4">
-            <div className="ezmart-card">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#3B82F6' }}>
-                  <Globe className="h-5 w-5 text-white" />
+            <QuickStatItem 
+              icon={Globe} 
+              iconColor="text-blue-500" 
+              value="01" 
+              label="Market Place" 
+            />
+            <QuickStatItem 
+              icon={MessageSquare} 
+              iconColor="text-blue-500" 
+              value={analyticsData.buyerMessages.toString().padStart(2, '0')} 
+              label="Buyer's Message" 
+            />
+            <QuickStatItem 
+              icon={TrendingUp} 
+              iconColor="text-emerald-500" 
+              value={`${analyticsData.conversionRate.toFixed(0)}%`} 
+              label="Buy Box Wins" 
+            />
+            <div className="bg-white rounded-lg p-4 border-2 border-black shadow-neobrutalism hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer">
+              <div className="flex items-center gap-3">
+                <Star className="h-6 w-6 text-amber-500" />
+                <div>
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4].map(i => (
+                      <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    ))}
+                    <Star className="h-4 w-4 text-slate-300" />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">Customer Feedback</p>
                 </div>
               </div>
-              <p className="text-xl font-bold mt-3" style={{ color: '#333' }}>01</p>
-              <p className="text-xs" style={{ color: '#999' }}>Marketplace</p>
-            </div>
-            <div className="ezmart-card">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#8B5CF6' }}>
-                  <MessageSquare className="h-5 w-5 text-white" />
-                </div>
-              </div>
-              <p className="text-xl font-bold mt-3" style={{ color: '#333' }}>{analyticsData.buyerMessages.toString().padStart(2, '0')}</p>
-              <p className="text-xs" style={{ color: '#999' }}>Buyer Messages</p>
-            </div>
-            <div className="ezmart-card">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#10B981' }}>
-                  <TrendingUp className="h-5 w-5 text-white" />
-                </div>
-              </div>
-              <p className="text-xl font-bold mt-3" style={{ color: '#333' }}>{`${analyticsData.conversionRate.toFixed(0)}%`}</p>
-              <p className="text-xs" style={{ color: '#999' }}>Buy Box Wins</p>
-            </div>
-            <div className="ezmart-card">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#F59E0B' }}>
-                  <Star className="h-5 w-5 text-white" />
-                </div>
-              </div>
-              <div className="flex gap-0.5 mt-3">
-                {[1, 2, 3, 4].map(i => (
-                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                ))}
-                <Star className="h-4 w-4" style={{ color: '#CCC' }} />
-              </div>
-              <p className="text-xs mt-1" style={{ color: '#999' }}>Customer Feedback</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Second Row - 3 Column */}
+      {/* Second Row */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Order Status Donut Chart */}
-        <div className="ezmart-card !p-0">
-          <div className="p-6 border-b" style={{ borderColor: '#F0F0F0' }}>
-            <h3 className="text-lg font-semibold" style={{ color: '#333' }}>Order Status</h3>
-          </div>
-          <div className="p-6">
-            {analyticsData.statusBreakdown.length > 0 ? (
-              <>
-                <div className="h-48 flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie 
-                        data={analyticsData.statusBreakdown} 
-                        cx="50%" 
-                        cy="50%" 
-                        innerRadius={50} 
-                        outerRadius={70} 
-                        paddingAngle={4} 
-                        dataKey="value" 
-                        strokeWidth={0}
-                      >
-                        {analyticsData.statusBreakdown.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ 
-                          borderRadius: 12, 
-                          border: '1px solid #F0F0F0', 
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.08)', 
-                          fontSize: 12,
-                          backgroundColor: 'white'
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mt-4">
-                  {analyticsData.statusBreakdown.map((item) => (
-                    <div key={item.name} className="flex items-center gap-2 p-2 rounded-lg" style={{ backgroundColor: '#FAFAFA' }}>
-                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                      <span className="text-xs" style={{ color: '#666' }}>{item.name}</span>
-                      <span className="text-xs font-bold ml-auto" style={{ color: '#333' }}>{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="h-48 flex items-center justify-center text-sm" style={{ color: '#999' }}>
-                No orders yet
+        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Order Status</h3>
+          {analyticsData.statusBreakdown.length > 0 ? (
+            <>
+              <div className="h-48 flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie 
+                      data={analyticsData.statusBreakdown} 
+                      cx="50%" 
+                      cy="50%" 
+                      innerRadius={50} 
+                      outerRadius={70} 
+                      paddingAngle={4} 
+                      dataKey="value" 
+                      strokeWidth={0}
+                    >
+                      {analyticsData.statusBreakdown.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        borderRadius: 12, 
+                        border: 'none', 
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)', 
+                        fontSize: 12,
+                        backgroundColor: 'white'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Top Products */}
-        <div className="ezmart-card !p-0">
-          <div className="p-6 border-b" style={{ borderColor: '#F0F0F0' }}>
-            <h3 className="text-lg font-semibold" style={{ color: '#333' }}>Top Products</h3>
-          </div>
-          <div className="p-6">
-            {analyticsData.topProducts.length > 0 ? (
-              <div className="space-y-3">
-                {analyticsData.topProducts.map((product, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: '#FAFAFA' }}>
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#FF8A00' }}>
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: '#333' }}>{product.name}</p>
-                      <p className="text-xs" style={{ color: '#999' }}>{product.sold} sold</p>
-                    </div>
-                    <span className="text-sm font-bold" style={{ color: '#333' }}>${product.revenue.toFixed(0)}</span>
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                {analyticsData.statusBreakdown.map((item) => (
+                  <div key={item.name} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
+                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-xs text-slate-600">{item.name}</span>
+                    <span className="text-xs font-bold text-slate-800 ml-auto">{item.value}</span>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="h-48 flex items-center justify-center text-sm" style={{ color: '#999' }}>
-                No sales yet
-              </div>
-            )}
-          </div>
+            </>
+          ) : (
+            <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
+              No orders yet
+            </div>
+          )}
+        </div>
+
+        {/* Top Products */}
+        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Top Products</h3>
+          {analyticsData.topProducts.length > 0 ? (
+            <div className="space-y-3">
+              {analyticsData.topProducts.map((product, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{product.name}</p>
+                    <p className="text-xs text-slate-500">{product.sold} sold</p>
+                  </div>
+                  <span className="text-sm font-bold text-slate-800">${product.revenue.toFixed(0)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
+              No sales yet
+            </div>
+          )}
         </div>
 
         {/* Revenue by Day */}
-        <div className="ezmart-card !p-0">
-          <div className="p-6 border-b" style={{ borderColor: '#F0F0F0' }}>
-            <h3 className="text-lg font-semibold" style={{ color: '#333' }}>Revenue by Day</h3>
-          </div>
-          <div className="p-6">
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analyticsData.dayOfWeekData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: '#999' }} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="day" tick={{ fontSize: 11, fill: '#666' }} axisLine={false} tickLine={false} width={35} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: 12, 
-                      border: '1px solid #F0F0F0', 
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.08)', 
-                      fontSize: 12,
-                      backgroundColor: 'white'
-                    }}
-                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
-                  />
-                  <Bar dataKey="revenue" fill="#FF8A00" radius={[0, 6, 6, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+        <div className="bg-white rounded-lg border-2 border-black shadow-neobrutalism p-5">
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Revenue by Day</h3>
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analyticsData.dayOfWeekData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="day" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} width={35} />
+                <Tooltip 
+                  contentStyle={{ 
+                    borderRadius: 12, 
+                    border: 'none', 
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)', 
+                    fontSize: 12,
+                    backgroundColor: 'white'
+                  }}
+                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
+                />
+                <Bar dataKey="revenue" fill="#3B82F6" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

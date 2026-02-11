@@ -8,13 +8,15 @@ import { isSessionValid } from '@/lib/session-persistence';
 import { 
   Wallet, ShoppingBag, TrendingUp, Clock, Package, ArrowRight, 
   Plus, Heart, Store, CheckCircle, AlertCircle, WifiOff, Zap, 
-  ChevronRight, Star, Eye, Sparkles, DollarSign, CreditCard
+  ChevronRight, Star, Eye, Sparkles 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import SessionExpiredBanner from '@/components/ui/session-expired-banner';
 import FlashSaleSection from '@/components/flash-sale/FlashSaleSection';
+import StatCard from '@/components/marketplace/StatCard';
+import { GettingStartedSection, ActivityStatsSection } from './GumroadSections';
 
 interface Order {
   id: string;
@@ -58,7 +60,7 @@ const BuyerDashboardHome = () => {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const navigate = useNavigate();
 
-  // Load cache on mount
+  // Load cached data on mount for instant UI
   useEffect(() => {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
@@ -79,8 +81,10 @@ const BuyerDashboardHome = () => {
     
     const result = await bffApi.getBuyerDashboard();
     
+    // SOFT RECONNECTING STATE: If within 12h grace and just reconnecting
     if (result.isReconnecting) {
       setIsReconnecting(true);
+      // Keep existing data visible, show reconnecting notice
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         try {
@@ -90,15 +94,19 @@ const BuyerDashboardHome = () => {
         } catch (e) { /* ignore */ }
       }
       setLoading(false);
+      // Auto-retry in 5 seconds
       setTimeout(() => fetchData(), 5000);
       return;
     }
     
+    // UNAUTHORIZED: Check if truly expired or just transient
     if (result.isUnauthorized) {
+      // Only show expired banner if truly outside 12h window
       if (!isSessionValid()) {
         setSessionExpiredLocal(true);
         setSessionExpired?.(true);
       } else {
+        // Within 12h - treat as reconnecting, not expired
         setIsReconnecting(true);
         setTimeout(() => fetchData(), 5000);
       }
@@ -200,13 +208,13 @@ const BuyerDashboardHome = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 p-4 lg:p-8">
-        <Skeleton className="h-8 w-48 rounded-lg" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
+      <div className="space-y-6 p-4 lg:p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
+        <Skeleton className="h-48 rounded-xl" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
     );
@@ -215,12 +223,12 @@ const BuyerDashboardHome = () => {
   if (error && !data) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: '#FFF5EB' }}>
-          <AlertCircle className="w-10 h-10" style={{ color: '#FF8A00' }} />
+        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-4">
+          <AlertCircle className="w-10 h-10 text-red-400" />
         </div>
-        <h3 className="text-lg font-bold mb-2" style={{ color: '#333' }}>Something went wrong</h3>
-        <p className="mb-6" style={{ color: '#666' }}>{error}</p>
-        <Button onClick={fetchData} style={{ backgroundColor: '#FF8A00' }} className="text-white hover:opacity-90">
+        <h3 className="text-lg font-semibold text-slate-900 mb-2">Something went wrong</h3>
+        <p className="text-slate-500 mb-6">{error}</p>
+        <Button onClick={fetchData} className="bg-emerald-500 hover:bg-emerald-600 text-white">
           Try Again
         </Button>
       </div>
@@ -229,13 +237,13 @@ const BuyerDashboardHome = () => {
 
   return (
     <div className="space-y-6">
-      {/* Session Expired Banner */}
+      {/* Session Expired Banner - only show if truly expired */}
       {sessionExpiredLocal && !isReconnecting && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
       
-      {/* Reconnecting Notice */}
+      {/* Reconnecting Notice - soft state, not "expired" */}
       {isReconnecting && (
-        <div className="flex items-center gap-2 rounded-xl border px-4 py-3 text-sm" style={{ borderColor: '#FFB366', backgroundColor: '#FFF5EB', color: '#333' }}>
-          <div className="h-4 w-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#FF8A00', borderTopColor: 'transparent' }} />
+        <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
           <span>Reconnecting to server...</span>
           <Button size="sm" variant="ghost" onClick={fetchData} className="ml-auto">
             Retry Now
@@ -245,8 +253,8 @@ const BuyerDashboardHome = () => {
       
       {/* Offline/Cached Notice */}
       {usingCachedData && !isReconnecting && (
-        <div className="flex items-center gap-2 rounded-xl border px-4 py-3 text-sm" style={{ borderColor: '#FFCC99', backgroundColor: '#FFF5EB', color: '#333' }}>
-          <WifiOff className="h-4 w-4" style={{ color: '#FF8A00' }} />
+        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <WifiOff className="h-4 w-4" />
           <span>Using cached data - some info may be outdated</span>
           <Button size="sm" variant="ghost" onClick={fetchData} className="ml-auto">
             Refresh
@@ -254,120 +262,119 @@ const BuyerDashboardHome = () => {
         </div>
       )}
 
-      {/* EzMart Page Title */}
-      <h1 className="text-[32px] font-bold" style={{ color: '#333' }}>Dashboard</h1>
+      {/* Dashboard Header - Gumroad style */}
+      <header className="border-b border-slate-200 -mx-3 sm:-mx-4 lg:-mx-8 px-4 lg:px-8 pb-4 mb-6">
+        <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
+      </header>
 
-      {/* Stats Row - 3 Column EzMart Style */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Wallet Balance */}
-        <Link to="/dashboard/wallet">
-          <div className="ezmart-card group cursor-pointer">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium mb-2" style={{ color: '#666' }}>Wallet Balance</p>
-                <p className="text-[28px] font-bold" style={{ color: '#333' }}>{formatAmountOnly(wallet.balance)}</p>
-                <p className="text-xs mt-2 flex items-center gap-1" style={{ color: '#10B981' }}>
-                  <TrendingUp className="w-3 h-3" />
-                  Available to spend
-                </p>
-              </div>
-              <div className="ezmart-icon-box">
-                <Wallet className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-        </Link>
+      {/* Getting Started Section - Gumroad style */}
+      <GettingStartedSection 
+        onboardingProgress={{
+          accountCreated: true,
+          profileCustomized: !!user?.email,
+          firstProductCreated: false,
+          firstFollower: false,
+          firstSale: false,
+          firstPayout: false,
+          firstEmailBlast: false,
+          smallBetsSignup: false,
+        }}
+      />
 
-        {/* Total Spent */}
-        <div className="ezmart-card">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium mb-2" style={{ color: '#666' }}>Total Spent</p>
-              <p className="text-[28px] font-bold" style={{ color: '#333' }}>{formatAmountOnly(stats.totalSpent)}</p>
-              <p className="text-xs mt-2" style={{ color: '#999' }}>Lifetime purchases</p>
-            </div>
-            <div className="ezmart-icon-box">
-              <DollarSign className="w-5 h-5 text-white" />
-            </div>
-          </div>
-        </div>
-
-        {/* Total Orders - Highlight */}
-        <Link to="/dashboard/orders">
-          <div className="ezmart-card group cursor-pointer" style={{ backgroundColor: '#FFECD1' }}>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium mb-2" style={{ color: '#666' }}>Total Orders</p>
-                <p className="text-[28px] font-bold" style={{ color: '#333' }}>{stats.total}</p>
-                <p className="text-xs mt-2 flex items-center gap-1" style={{ color: '#10B981' }}>
-                  <CheckCircle className="w-3 h-3" />
-                  {stats.completed} completed
-                </p>
-              </div>
-              <div className="ezmart-icon-box">
-                <ShoppingBag className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-        </Link>
+      {/* Activity Stats - Gumroad style */}
+      <ActivityStatsSection
+        balance={wallet.balance}
+        last7Days={stats.totalSpent * 0.1} // Placeholder calculation
+        last28Days={stats.totalSpent * 0.4} // Placeholder calculation  
+        totalEarnings={stats.totalSpent}
+        formatAmount={formatAmountOnly}
+      />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Wallet Balance"
+          value={formatAmountOnly(wallet.balance)}
+          variant="gumroad"
+          href="/dashboard/wallet"
+        />
+        <StatCard
+          label="Total Spent"
+          value={formatAmountOnly(stats.totalSpent)}
+          subValue="Lifetime"
+          variant="gumroad"
+        />
+        <StatCard
+          label="Total Orders"
+          value={stats.total}
+          subValue={`${stats.completed} completed`}
+          variant="gumroad"
+          href="/dashboard/orders"
+        />
+        <StatCard
+          label="Pending Delivery"
+          value={stats.pending + stats.delivered}
+          subValue={stats.delivered > 0 ? `${stats.delivered} awaiting approval` : undefined}
+          variant="gumroad"
+        />
       </div>
 
-      {/* Quick Actions - 3 Column EzMart Style */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      {/* Quick Actions Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Add Funds - Primary CTA */}
         <Link to="/dashboard/billing">
-          <div className="ezmart-card group cursor-pointer">
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg p-5 text-white border transition-colors hover:opacity-90 cursor-pointer group">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#10B981' }}>
-                <Plus className="w-5 h-5 text-white" />
+              <div className="h-11 w-11 rounded-xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Plus className="w-5 h-5" />
               </div>
-              <div className="flex-1">
-                <p className="font-semibold text-sm" style={{ color: '#333' }}>Add Funds</p>
-                <p className="text-xs" style={{ color: '#999' }}>Top up your wallet</p>
+              <div>
+                <p className="font-semibold">Add Funds</p>
+                <p className="text-sm text-white/80">Top up your wallet</p>
               </div>
-              <ChevronRight className="w-5 h-5" style={{ color: '#999' }} />
+              <ChevronRight className="w-5 h-5 ml-auto opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
             </div>
           </div>
         </Link>
 
+        {/* Browse Marketplace */}
         <Link to="/dashboard/marketplace">
-          <div className="ezmart-card group cursor-pointer">
+          <div className="bg-white rounded-lg p-5 border transition-colors hover:bg-slate-50 cursor-pointer group">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#3B82F6' }}>
-                <Sparkles className="w-5 h-5 text-white" />
+              <div className="h-11 w-11 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-blue-600" />
               </div>
-              <div className="flex-1">
-                <p className="font-semibold text-sm" style={{ color: '#333' }}>Marketplace</p>
-                <p className="text-xs" style={{ color: '#999' }}>Discover products</p>
+              <div>
+                <p className="font-semibold text-slate-800">Marketplace</p>
+                <p className="text-sm text-slate-500">Discover products</p>
               </div>
-              <ChevronRight className="w-5 h-5" style={{ color: '#999' }} />
+              <ChevronRight className="w-5 h-5 ml-auto text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
             </div>
           </div>
         </Link>
 
+        {/* View Wishlist */}
         <Link to="/dashboard/wishlist">
-          <div className="ezmart-card group cursor-pointer">
+          <div className="bg-white rounded-lg p-5 border transition-colors hover:bg-slate-50 cursor-pointer group">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#EC4899' }}>
-                <Heart className="w-5 h-5 text-white" />
+              <div className="h-11 w-11 rounded-xl bg-pink-50 flex items-center justify-center">
+                <Heart className="w-5 h-5 text-pink-600" />
               </div>
-              <div className="flex-1">
-                <p className="font-semibold text-sm" style={{ color: '#333' }}>Wishlist</p>
-                <p className="text-xs" style={{ color: '#999' }}>{wishlistCount} saved items</p>
+              <div>
+                <p className="font-semibold text-slate-800">Wishlist</p>
+                <p className="text-sm text-slate-500">{wishlistCount} saved items</p>
               </div>
-              <ChevronRight className="w-5 h-5" style={{ color: '#999' }} />
+              <ChevronRight className="w-5 h-5 ml-auto text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
             </div>
           </div>
         </Link>
       </div>
 
-      {/* Recent Orders - EzMart Card */}
-      <div className="bg-white rounded-xl border p-0 transition-all hover:shadow-lg" style={{ borderColor: '#F0F0F0' }}>
-        <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: '#F0F0F0' }}>
-          <h2 className="text-lg font-semibold" style={{ color: '#333' }}>Recent Orders</h2>
+      {/* Recent Orders */}
+      <div className="bg-white rounded-lg border">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <h2 className="text-lg font-semibold text-slate-900">Recent Orders</h2>
           <Link 
             to="/dashboard/orders" 
-            className="text-sm font-medium flex items-center gap-1 hover:opacity-80"
-            style={{ color: '#FF8A00' }}
+            className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
           >
             View All <ArrowRight className="w-4 h-4" />
           </Link>
@@ -375,53 +382,55 @@ const BuyerDashboardHome = () => {
 
         {recentOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: '#FFF5EB' }}>
-              <ShoppingBag className="w-8 h-8" style={{ color: '#FF8A00' }} />
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+              <ShoppingBag className="w-8 h-8 text-slate-400" />
             </div>
-            <h3 className="text-base font-semibold mb-1" style={{ color: '#333' }}>No orders yet</h3>
-            <p className="text-sm mb-4 max-w-sm" style={{ color: '#666' }}>
+            <h3 className="text-base font-semibold text-slate-900 mb-1">No orders yet</h3>
+            <p className="text-slate-500 text-sm mb-4 max-w-sm">
               Start exploring our marketplace to find the perfect products for your needs.
             </p>
             <Button 
               onClick={() => navigate('/dashboard/marketplace')}
-              className="text-white hover:opacity-90"
-              style={{ backgroundColor: '#FF8A00' }}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white"
             >
               Browse Marketplace
             </Button>
           </div>
         ) : (
-          <div className="divide-y" style={{ borderColor: '#F0F0F0' }}>
+          <div className="divide-y divide-slate-100">
             {recentOrders.map((order) => (
               <div 
                 key={order.id} 
-                className="flex items-center gap-4 p-4 hover:bg-[#FAFAFA] transition-colors cursor-pointer"
+                className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors cursor-pointer"
                 onClick={() => navigate(`/dashboard/orders`)}
               >
+                {/* Product Image/Icon */}
                 {order.product?.icon_url ? (
                   <img 
                     src={order.product.icon_url} 
                     alt={order.product.name}
-                    className="w-12 h-12 rounded-xl object-cover"
+                    className="w-12 h-12 rounded-lg object-cover"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#FFF5EB' }}>
-                    <Package className="w-5 h-5" style={{ color: '#FF8A00' }} />
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-slate-400" />
                   </div>
                 )}
 
+                {/* Order Info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium truncate text-[15px]" style={{ color: '#333' }}>
+                  <h4 className="font-medium text-slate-900 truncate text-[15px]">
                     {order.product?.name || 'Order'}
                   </h4>
-                  <p className="text-sm mt-0.5" style={{ color: '#999' }}>
+                  <p className="text-sm text-slate-500 mt-0.5">
                     {order.seller?.store_name && `by ${order.seller.store_name} • `}
                     {format(new Date(order.created_at), 'MMM d, yyyy')}
                   </p>
                 </div>
 
+                {/* Status & Amount */}
                 <div className="text-right flex-shrink-0">
-                  <p className="font-semibold" style={{ color: '#333' }}>{formatAmountOnly(order.amount)}</p>
+                  <p className="font-semibold text-slate-900">{formatAmountOnly(order.amount)}</p>
                   <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full mt-1 ${
                     order.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
                     order.status === 'delivered' ? 'bg-blue-100 text-blue-700' :
@@ -434,60 +443,60 @@ const BuyerDashboardHome = () => {
                   </span>
                 </div>
 
-                <ChevronRight className="w-5 h-5 flex-shrink-0" style={{ color: '#CCC' }} />
+                <ChevronRight className="w-5 h-5 text-slate-300 flex-shrink-0" />
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Bottom Stats - 4 Column Small Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="ezmart-card">
+      {/* Quick Stats Summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg p-4 border">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#10B981' }}>
-              <CheckCircle className="h-5 w-5 text-white" />
+            <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+              <CheckCircle className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-xs font-medium" style={{ color: '#999' }}>Completed</p>
-              <p className="text-xl font-bold" style={{ color: '#333' }}>{stats.completed}</p>
+              <p className="text-xs font-medium text-slate-500">Completed</p>
+              <p className="text-xl font-bold text-emerald-600">{stats.completed}</p>
             </div>
           </div>
         </div>
 
-        <div className="ezmart-card">
+        <div className="bg-white rounded-lg p-4 border">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#3B82F6' }}>
-              <Package className="h-5 w-5 text-white" />
+            <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Package className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-xs font-medium" style={{ color: '#999' }}>Delivered</p>
-              <p className="text-xl font-bold" style={{ color: '#333' }}>{stats.delivered}</p>
+              <p className="text-xs font-medium text-slate-500">Delivered</p>
+              <p className="text-xl font-bold text-blue-600">{stats.delivered}</p>
             </div>
           </div>
         </div>
 
-        <div className="ezmart-card">
+        <div className="bg-white rounded-lg p-4 border">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#F59E0B' }}>
-              <Clock className="h-5 w-5 text-white" />
+            <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+              <Clock className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-xs font-medium" style={{ color: '#999' }}>Pending</p>
-              <p className="text-xl font-bold" style={{ color: '#333' }}>{stats.pending}</p>
+              <p className="text-xs font-medium text-slate-500">Pending</p>
+              <p className="text-xl font-bold text-amber-600">{stats.pending}</p>
             </div>
           </div>
         </div>
 
         <Link to="/dashboard/wishlist">
-          <div className="ezmart-card group cursor-pointer">
+          <div className="bg-white rounded-lg p-4 border transition-colors hover:bg-slate-50">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#EC4899' }}>
-                <Heart className="h-5 w-5 text-white" />
+              <div className="h-10 w-10 rounded-lg bg-pink-100 flex items-center justify-center">
+                <Heart className="h-5 w-5 text-pink-600" />
               </div>
               <div>
-                <p className="text-xs font-medium" style={{ color: '#999' }}>Wishlist</p>
-                <p className="text-xl font-bold" style={{ color: '#333' }}>{wishlistCount}</p>
+                <p className="text-xs font-medium text-slate-500">Wishlist</p>
+                <p className="text-xl font-bold text-slate-800">{wishlistCount}</p>
               </div>
             </div>
           </div>

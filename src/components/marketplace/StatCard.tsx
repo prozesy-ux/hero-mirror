@@ -13,9 +13,8 @@ interface StatCardProps {
     label?: string;
     isPositive?: boolean;
   };
-  variant?: 'default' | 'gradient' | 'bordered' | 'minimal' | 'neobrutalism' | 'gumroad' | 'ezmart';
+  variant?: 'default' | 'gradient' | 'bordered' | 'minimal' | 'neobrutalism' | 'gumroad';
   accentColor?: 'emerald' | 'violet' | 'blue' | 'orange' | 'pink' | 'amber';
-  highlight?: boolean;
   href?: string;
   onClick?: () => void;
   className?: string;
@@ -74,7 +73,6 @@ const StatCard = ({
   trend,
   variant = 'default',
   accentColor = 'emerald',
-  highlight,
   href,
   onClick,
   className,
@@ -82,108 +80,79 @@ const StatCard = ({
   const colors = accentColors[accentColor];
 
   const isGumroad = variant === 'gumroad';
-  const isEzmart = variant === 'ezmart';
+  
   const cardContent = (
     <>
-      {isEzmart ? (
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <p className="ezmart-stat-label mb-1">{label}</p>
-            <p className="ezmart-stat-value">{value}</p>
-            {trend && (
-              <div className="flex items-center gap-1 mt-2">
-                {(trend.isPositive ?? trend.value >= 0) ? (
-                  <TrendingUp className="w-3.5 h-3.5 text-[#10B981]" />
-                ) : (
-                  <TrendingDown className="w-3.5 h-3.5 text-[#EF4444]" />
-                )}
-                <span className={cn(
-                  "text-xs font-medium",
-                  (trend.isPositive ?? trend.value >= 0) ? "text-[#10B981]" : "text-[#EF4444]"
-                )}>
-                  {trend.value >= 0 ? '+' : ''}{trend.value.toFixed(1)}%
-                </span>
-                {trend.label && <span className="text-xs text-[#999]">{trend.label}</span>}
+      <div className={cn("flex items-start justify-between", isGumroad && "flex-col")}>
+        <div className="flex-1 min-w-0">
+          {isGumroad ? (
+            <>
+              <div className="flex items-center gap-2 text-base mb-2">
+                <span className="text-slate-700">{label}</span>
               </div>
-            )}
-            {!trend && subValue && <p className="text-xs text-[#999] mt-2">{subValue}</p>}
-          </div>
-          {icon && (
-            <div className="ezmart-icon-box">
-              <div className="text-white">{icon}</div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className={cn("flex items-start justify-between", isGumroad && "flex-col")}>
-          <div className="flex-1 min-w-0">
-            {isGumroad ? (
-              <>
-                <div className="flex items-center gap-2 text-base mb-2">
-                  <span className="text-slate-700">{label}</span>
-                </div>
-                <div className="text-4xl font-semibold text-slate-900">{value}</div>
-                {subValue && (
-                  <p className="text-sm text-slate-500 mt-2">{subValue}</p>
-                )}
-              </>
-            ) : (
-              <>
-                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1">
-                  {label}
-                </p>
-                <p className="text-[28px] font-bold text-slate-900 leading-none tracking-tight">
-                  {value}
-                </p>
-                
-                {trend && (
-                  <div className="flex items-center gap-1 mt-2">
-                    {trend.isPositive !== undefined ? (
-                      trend.isPositive ? (
-                        <TrendingUp className="w-3 h-3 text-emerald-500" />
-                      ) : (
-                        <TrendingDown className="w-3 h-3 text-red-500" />
-                      )
-                    ) : trend.value >= 0 ? (
+              <div className="text-4xl font-semibold text-slate-900">{value}</div>
+              {subValue && (
+                <p className="text-sm text-slate-500 mt-2">{subValue}</p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1">
+                {label}
+              </p>
+              <p className="text-[28px] font-bold text-slate-900 leading-none tracking-tight">
+                {value}
+              </p>
+              
+              {/* Trend or SubValue */}
+              {trend && (
+                <div className="flex items-center gap-1 mt-2">
+                  {trend.isPositive !== undefined ? (
+                    trend.isPositive ? (
                       <TrendingUp className="w-3 h-3 text-emerald-500" />
                     ) : (
                       <TrendingDown className="w-3 h-3 text-red-500" />
+                    )
+                  ) : trend.value >= 0 ? (
+                    <TrendingUp className="w-3 h-3 text-emerald-500" />
+                  ) : (
+                    <TrendingDown className="w-3 h-3 text-red-500" />
+                  )}
+                  <span
+                    className={cn(
+                      "text-[11px] font-medium",
+                      (trend.isPositive ?? trend.value >= 0)
+                        ? "text-emerald-600"
+                        : "text-red-600"
                     )}
-                    <span
-                      className={cn(
-                        "text-[11px] font-medium",
-                        (trend.isPositive ?? trend.value >= 0)
-                          ? "text-emerald-600"
-                          : "text-red-600"
-                      )}
-                    >
-                      {trend.value >= 0 ? '+' : ''}{trend.value.toFixed(1)}%
-                    </span>
-                    {trend.label && (
-                      <span className="text-[11px] text-slate-400">{trend.label}</span>
-                    )}
-                  </div>
-                )}
-                
-                {!trend && subValue && (
-                  <p className="text-xs text-slate-500 mt-1">{subValue}</p>
-                )}
-              </>
-            )}
-          </div>
-
-          {icon && !isGumroad && (
-            <div
-              className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
-                colors.bg
+                  >
+                    {trend.value >= 0 ? '+' : ''}{trend.value.toFixed(1)}%
+                  </span>
+                  {trend.label && (
+                    <span className="text-[11px] text-slate-400">{trend.label}</span>
+                  )}
+                </div>
               )}
-            >
-              <div className={colors.text}>{icon}</div>
-            </div>
+              
+              {!trend && subValue && (
+                <p className="text-xs text-slate-500 mt-1">{subValue}</p>
+              )}
+            </>
           )}
         </div>
-      )}
+
+        {/* Icon - only show for non-gumroad variants */}
+        {icon && !isGumroad && (
+          <div
+            className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+              colors.bg
+            )}
+          >
+            <div className={colors.text}>{icon}</div>
+          </div>
+        )}
+      </div>
     </>
   );
 
@@ -220,11 +189,6 @@ const StatCard = ({
     gumroad: cn(
       "bg-white border rounded p-8",
       "hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer"
-    ),
-    ezmart: cn(
-      "bg-white border border-[#F0F0F0] rounded-xl p-6",
-      "hover:shadow-ezmart hover:-translate-y-0.5 transition-all duration-300",
-      highlight && "bg-[#FFECD1]"
     ),
   };
 
