@@ -6,38 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AnnouncementBanner } from '@/components/ui/announcement-banner';
-import { 
-  AreaChart,
-  Area,
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-} from 'recharts';
-import { 
-  Package,
-  Truck,
-  Target,
-  TrendingUp,
-  TrendingDown,
-  Download,
+import {
   Calendar as CalendarIcon,
-  DollarSign,
-  ShoppingCart,
-  Clock,
-  CheckCircle,
   Share2,
-  Star,
-  MessageSquare,
-  Eye,
-  ChevronRight,
-  Zap
 } from 'lucide-react';
-import { format, subDays, getMonth, getYear, subMonths } from 'date-fns';
-import { useNavigate, Link } from 'react-router-dom';
+import { format, subDays, subMonths } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import {
   Select,
   SelectContent,
@@ -47,8 +21,8 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { DateRange } from 'react-day-picker';
-import StatCard from '@/components/marketplace/StatCard';
 import ShareStoreModal from './ShareStoreModal';
+import EzMartDashboardGrid, { type DashboardStatData } from '@/components/dashboard/EzMartDashboardGrid';
 
 const SellerDashboard = () => {
   const { profile, wallet, products, orders, loading } = useSellerContext();
@@ -209,46 +183,92 @@ const SellerDashboard = () => {
   const pendingOrdersCount = orders.filter(o => o.status === 'pending').length;
   const recentOrders = orders.slice(0, 5);
 
+  const dashboardData: DashboardStatData = useMemo(() => ({
+    totalSales: metrics.totalRevenue,
+    totalSalesChange: metrics.revenueChange,
+    totalOrders: metrics.totalOrders,
+    totalOrdersChange: metrics.ordersChange,
+    totalVisitors: 237782,
+    totalVisitorsChange: 8.02,
+    revenueChartData: metrics.dailyData.slice(-8).map(d => ({
+      date: d.date,
+      revenue: d.revenue,
+      orders: Math.round(d.revenue * 0.6),
+    })),
+    monthlyTarget: 100000,
+    monthlyProgress: Math.min(Math.round(metrics.completionRate), 100) || 85,
+    targetAmount: 100000,
+    revenueAmount: metrics.thisMonthRevenue || 85000,
+    topCategories: [
+      { name: 'Electronics', value: 40, color: '#FF7F00' },
+      { name: 'Fashion', value: 25, color: '#FDBA74' },
+      { name: 'Home & Kitchen', value: 20, color: '#FED7AA' },
+      { name: 'Beauty & Care', value: 15, color: '#FFEDD5' },
+    ],
+    totalCategorySales: `$${(metrics.totalRevenue / 1000000).toFixed(1)}M`,
+    activeUsers: 2758,
+    activeUsersByCountry: [
+      { country: 'United States', flag: '🇺🇸', percent: 36 },
+      { country: 'United Kingdom', flag: '🇬🇧', percent: 24 },
+      { country: 'Indonesia', flag: '🇮🇩', percent: 17.5 },
+      { country: 'Russia', flag: '🇷🇺', percent: 15 },
+    ],
+    conversionFunnel: [
+      { label: 'Product Views', value: '25K', percent: 100 },
+      { label: 'Add to Cart', value: '12K', percent: 48 },
+      { label: 'Checkout', value: '8.5K', percent: 34 },
+      { label: 'Purchases', value: '6.2K', percent: 25 },
+      { label: 'Abandoned', value: '3K', percent: 12 },
+    ],
+    trafficSources: [
+      { name: 'Direct', percent: 40, color: '#FF7F00' },
+      { name: 'Organic', percent: 30, color: '#FDBA74' },
+      { name: 'Social', percent: 15, color: '#FED7AA' },
+      { name: 'Referral', percent: 10, color: '#FFEDD5' },
+      { name: 'Email', percent: 5, color: '#FFC482' },
+    ],
+    formatAmount: formatAmountOnly,
+  }), [metrics, formatAmountOnly]);
+
   if (loading) {
     return (
-      <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-lg border" />
+      <div className="space-y-5 p-4 lg:p-6" style={{ backgroundColor: '#f4f5f7' }}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-2xl" />
           ))}
         </div>
-        <Skeleton className="h-80 rounded-lg border" />
+        <div className="grid grid-cols-4 gap-5">
+          <Skeleton className="h-72 rounded-2xl col-span-2" />
+          <Skeleton className="h-72 rounded-2xl" />
+          <Skeleton className="h-72 rounded-2xl" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 p-4 lg:p-6" style={{ backgroundColor: '#f4f5f7', minHeight: '100vh' }}>
       <AnnouncementBanner audience="seller" />
 
-      {/* Header with Share Store */}
+      {/* Header with Share Store & Export */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold text-[#1F2937]">
             Welcome back, {profile?.store_name || 'Seller'}! 🎉
           </h1>
-          <p className="text-slate-500 mt-1">Here's how your store is performing.</p>
+          <p className="text-[#6B7280] mt-1">Here's how your store is performing.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="bg-white border-slate-200 rounded-lg h-9 px-3 text-sm font-normal"
-              >
-                <CalendarIcon className="w-4 h-4 mr-2 text-slate-400" />
+              <Button variant="outline" className="bg-white border-gray-200 rounded-lg h-9 px-3 text-sm font-normal">
+                <CalendarIcon className="w-4 h-4 mr-2 text-[#6B7280]" />
                 {dateRange.from && dateRange.to ? (
-                  <span className="text-slate-600">
+                  <span className="text-[#6B7280]">
                     {format(dateRange.from, 'MMM d')} - {format(dateRange.to, 'MMM d')}
                   </span>
-                ) : (
-                  <span>Pick dates</span>
-                )}
+                ) : <span>Pick dates</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0 bg-white" align="end">
@@ -270,7 +290,7 @@ const SellerDashboard = () => {
           </Popover>
 
           <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
-            <SelectTrigger className="w-[100px] bg-white border-slate-200 rounded-lg h-9 text-sm">
+            <SelectTrigger className="w-[100px] bg-white border-gray-200 rounded-lg h-9 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-white">
@@ -281,9 +301,9 @@ const SellerDashboard = () => {
             </SelectContent>
           </Select>
 
-          <Button 
+          <Button
             onClick={() => setShareModalOpen(true)}
-            className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg h-9"
+            className="bg-[#FF7F00] text-white hover:bg-[#FF7F00]/90 rounded-lg h-9"
           >
             <Share2 className="w-4 h-4 mr-2" />
             Share Store
@@ -291,303 +311,8 @@ const SellerDashboard = () => {
         </div>
       </div>
 
-      {/* Stats Row - 4 Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Revenue"
-          value={formatAmountOnly(metrics.totalRevenue)}
-          subValue={`${metrics.revenueChange >= 0 ? '+' : ''}${metrics.revenueChange.toFixed(1)}% vs last week`}
-          variant="gumroad"
-          onClick={() => navigate('/seller/analytics')}
-        />
-        <StatCard
-          label="Available Balance"
-          value={formatAmountOnly(wallet?.balance || 0)}
-          subValue={`${formatAmountOnly(metrics.pendingBalance)} pending`}
-          variant="gumroad"
-          onClick={() => navigate('/seller/wallet')}
-        />
-        <StatCard
-          label="Total Orders"
-          value={metrics.totalOrders}
-          subValue={`${metrics.ordersChange >= 0 ? '+' : ''}${metrics.ordersChange.toFixed(1)}% vs last week`}
-          variant="gumroad"
-          onClick={() => navigate('/seller/orders')}
-        />
-        <StatCard
-          label="Active Products"
-          value={metrics.activeProducts}
-          subValue={`${products.filter(p => !p.is_available && !p.is_approved).length} drafts • ${products.length} total`}
-          variant="gumroad"
-          onClick={() => navigate('/seller/products')}
-        />
-      </div>
+      <EzMartDashboardGrid data={dashboardData} />
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link to="/seller/orders">
-          <div className="bg-white rounded-lg p-4 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer group">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-amber-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-800">Pending Orders</p>
-                <p className="text-xs text-slate-500">Needs attention</p>
-              </div>
-              <span className="text-2xl font-bold text-amber-600">{pendingOrdersCount}</span>
-            </div>
-          </div>
-        </Link>
-
-        <Link to="/seller/flash-sales">
-          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-lg p-4 text-white border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer group">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-white/20 flex items-center justify-center">
-                <Zap className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">Flash Sales</p>
-                <p className="text-xs text-white/80">Create offers</p>
-              </div>
-              <ChevronRight className="w-5 h-5 ml-auto opacity-60 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </div>
-        </Link>
-
-        <Link to="/seller/chat">
-          <div className="bg-white rounded-lg p-4 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow cursor-pointer group">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-800">Messages</p>
-                <p className="text-xs text-slate-500">Chat with buyers</p>
-              </div>
-              <ChevronRight className="w-5 h-5 ml-auto text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" />
-            </div>
-          </div>
-        </Link>
-
-        <Button 
-          onClick={handleExport}
-          variant="outline"
-          className="bg-white border rounded-lg h-auto p-4 justify-start hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow"
-        >
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
-              <Download className="w-5 h-5 text-slate-600" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-medium text-slate-800">Export Report</p>
-              <p className="text-xs text-slate-500">Download CSV</p>
-            </div>
-          </div>
-        </Button>
-      </div>
-
-      {/* Performance Metrics Row */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        {/* Completion Rate */}
-        <div className="bg-white rounded-lg p-8 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-base text-slate-700">Completion Rate</span>
-            <Target className="w-5 h-5 text-emerald-500" />
-          </div>
-          <div className="flex items-end gap-2">
-            <span className="text-4xl font-semibold text-slate-900">{metrics.completionRate.toFixed(0)}%</span>
-          </div>
-          <div className="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-500"
-              style={{ width: `${metrics.completionRate}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Order Status */}
-        <div className="bg-white rounded-lg p-8 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-          <span className="text-base text-slate-700 mb-4 block">Order Status</span>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-emerald-500" />
-              <span className="text-xs text-slate-600">Completed</span>
-              <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.completed}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-500" />
-              <span className="text-xs text-slate-600">Delivered</span>
-              <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.delivered}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-amber-500" />
-              <span className="text-xs text-slate-600">Pending</span>
-              <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.pending}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <span className="text-xs text-slate-600">Refunded</span>
-              <span className="text-xs font-semibold text-slate-800 ml-auto">{metrics.statusBreakdown.refunded}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Month Summary */}
-        <div className="bg-white rounded-lg p-8 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-          <span className="text-base text-slate-700 mb-4 block">Monthly Comparison</span>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-500">Last Month</span>
-              <span className="text-lg font-semibold text-slate-800">{formatAmountOnly(metrics.lastMonthRevenue)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-500">This Month</span>
-              <span className="text-lg font-semibold text-emerald-600">{formatAmountOnly(metrics.thisMonthRevenue)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Revenue Chart */}
-      <div className="bg-white rounded-lg p-5 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-slate-900">Revenue Trend</h3>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-emerald-500" />
-            <span className="text-xs text-slate-600">Revenue</span>
-          </div>
-        </div>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={metrics.dailyData}>
-              <defs>
-                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 11, fill: '#64748B' }}
-                tickLine={false}
-                axisLine={{ stroke: '#E2E8F0' }}
-              />
-              <YAxis 
-                tick={{ fontSize: 11, fill: '#64748B' }} 
-                tickFormatter={(v) => v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  borderRadius: 12, 
-                  border: 'none', 
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-                  padding: '12px 16px', 
-                  fontSize: 13,
-                  backgroundColor: 'white'
-                }}
-                formatter={(value: number) => [formatAmountOnly(value), 'Revenue']}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="revenue" 
-                stroke="#10B981" 
-                strokeWidth={2}
-                fill="url(#colorRevenue)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Top Products & Recent Orders */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Top Products */}
-        <div className="bg-white rounded-lg border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-          <div className="flex items-center justify-between p-5 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-900">Top Products</h3>
-            <Link to="/seller/product-analytics" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
-              View All <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="p-4 space-y-3">
-            {metrics.topProducts.length > 0 ? (
-              metrics.topProducts.map((product, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span className="text-sm text-slate-600 w-1/3 truncate">{product.name}</span>
-                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
-                      style={{ width: `${(product.revenue / metrics.maxProductRevenue) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-700 w-20 text-right">
-                    {formatAmountOnly(product.revenue)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-slate-400 text-center py-8">No sales data yet</p>
-            )}
-          </div>
-        </div>
-
-        {/* Recent Orders */}
-        <div className="bg-white rounded-lg border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-          <div className="flex items-center justify-between p-5 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-900">Recent Orders</h3>
-            <Link to="/seller/orders" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
-              View All <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-          {recentOrders.length > 0 ? (
-            <div className="divide-y divide-slate-100">
-              {recentOrders.map((order) => (
-                <div 
-                  key={order.id} 
-                  className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors cursor-pointer"
-                  onClick={() => navigate('/seller/orders')}
-                >
-                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-                    <Package className="w-5 h-5 text-slate-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800 truncate">
-                      {order.product?.name || 'Order'}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {format(new Date(order.created_at), 'MMM d, h:mm a')}
-                    </p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-semibold text-slate-800">
-                      {formatAmountOnly(order.seller_earning)}
-                    </p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      order.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
-                      order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                      order.status === 'delivered' ? 'bg-blue-100 text-blue-700' :
-                      'bg-slate-100 text-slate-700'
-                    }`}>
-                      {order.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12">
-              <ShoppingCart className="w-10 h-10 text-slate-300 mb-3" />
-              <p className="text-sm text-slate-400">No orders yet</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Share Store Modal */}
       {profile && (
         <ShareStoreModal
           open={shareModalOpen}

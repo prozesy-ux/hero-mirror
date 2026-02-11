@@ -1,22 +1,15 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { bffApi } from '@/lib/api-fetch';
 import { isSessionValid } from '@/lib/session-persistence';
-import { 
-  Wallet, ShoppingBag, TrendingUp, Clock, Package, ArrowRight, 
-  Plus, Heart, Store, CheckCircle, AlertCircle, WifiOff, Zap, 
-  ChevronRight, Star, Eye, Sparkles 
-} from 'lucide-react';
+import { AlertCircle, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
 import SessionExpiredBanner from '@/components/ui/session-expired-banner';
-import FlashSaleSection from '@/components/flash-sale/FlashSaleSection';
-import StatCard from '@/components/marketplace/StatCard';
-import { GettingStartedSection, ActivityStatsSection } from './GumroadSections';
+import EzMartDashboardGrid, { type DashboardStatData } from './EzMartDashboardGrid';
 
 interface Order {
   id: string;
@@ -201,21 +194,74 @@ const BuyerDashboardHome = () => {
     return () => window.removeEventListener('session-refreshed', handleSessionRefresh);
   }, [setupRealtimeSubscriptions]);
 
-  const recentOrders = data?.sellerOrders?.slice(0, 5) || [];
-  const stats = data?.orderStats || { total: 0, pending: 0, delivered: 0, completed: 0, totalSpent: 0 };
-  const wishlistCount = data?.wishlistCount || 0;
+  const stats = data?.orderStats || { total: 0, pending: 0, delivered: 0, completed: 0, totalSpent: 0, cancelled: 0 };
   const wallet = data?.wallet || { balance: 0 };
+
+  const dashboardData: DashboardStatData = useMemo(() => ({
+    totalSales: wallet.balance + stats.totalSpent,
+    totalSalesChange: 3.34,
+    totalOrders: stats.total,
+    totalOrdersChange: -2.89,
+    totalVisitors: 237782,
+    totalVisitorsChange: 8.02,
+    revenueChartData: [
+      { date: 'Mon', revenue: 4200, orders: 2800 },
+      { date: 'Tue', revenue: 3800, orders: 2600 },
+      { date: 'Wed', revenue: 5100, orders: 3200 },
+      { date: 'Thu', revenue: 4600, orders: 3000 },
+      { date: 'Fri', revenue: 5800, orders: 3500 },
+      { date: 'Sat', revenue: 4900, orders: 3100 },
+      { date: 'Sun', revenue: 5500, orders: 3400 },
+      { date: 'Today', revenue: 6200, orders: 3800 },
+    ],
+    monthlyTarget: 100000,
+    monthlyProgress: 85,
+    targetAmount: 100000,
+    revenueAmount: 85000,
+    topCategories: [
+      { name: 'Electronics', value: 40, color: '#FF7F00' },
+      { name: 'Fashion', value: 25, color: '#FDBA74' },
+      { name: 'Home & Kitchen', value: 20, color: '#FED7AA' },
+      { name: 'Beauty & Care', value: 15, color: '#FFEDD5' },
+    ],
+    totalCategorySales: '$3.4M',
+    activeUsers: 2758,
+    activeUsersByCountry: [
+      { country: 'United States', flag: '🇺🇸', percent: 36 },
+      { country: 'United Kingdom', flag: '🇬🇧', percent: 24 },
+      { country: 'Indonesia', flag: '🇮🇩', percent: 17.5 },
+      { country: 'Russia', flag: '🇷🇺', percent: 15 },
+    ],
+    conversionFunnel: [
+      { label: 'Product Views', value: '25K', percent: 100 },
+      { label: 'Add to Cart', value: '12K', percent: 48 },
+      { label: 'Checkout', value: '8.5K', percent: 34 },
+      { label: 'Purchases', value: '6.2K', percent: 25 },
+      { label: 'Abandoned', value: '3K', percent: 12 },
+    ],
+    trafficSources: [
+      { name: 'Direct', percent: 40, color: '#FF7F00' },
+      { name: 'Organic', percent: 30, color: '#FDBA74' },
+      { name: 'Social', percent: 15, color: '#FED7AA' },
+      { name: 'Referral', percent: 10, color: '#FFEDD5' },
+      { name: 'Email', percent: 5, color: '#FFC482' },
+    ],
+    formatAmount: formatAmountOnly,
+  }), [wallet.balance, stats, formatAmountOnly]);
 
   if (loading) {
     return (
-      <div className="space-y-6 p-4 lg:p-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="space-y-5 p-4 lg:p-6" style={{ backgroundColor: '#f4f5f7' }}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-xl" />
+            <Skeleton key={i} className="h-32 rounded-2xl" />
           ))}
         </div>
-        <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
+        <div className="grid grid-cols-4 gap-5">
+          <Skeleton className="h-72 rounded-2xl col-span-2" />
+          <Skeleton className="h-72 rounded-2xl" />
+          <Skeleton className="h-72 rounded-2xl" />
+        </div>
       </div>
     );
   }
@@ -226,9 +272,9 @@ const BuyerDashboardHome = () => {
         <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-4">
           <AlertCircle className="w-10 h-10 text-red-400" />
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">Something went wrong</h3>
-        <p className="text-slate-500 mb-6">{error}</p>
-        <Button onClick={fetchData} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+        <h3 className="text-lg font-semibold text-[#1F2937] mb-2">Something went wrong</h3>
+        <p className="text-[#6B7280] mb-6">{error}</p>
+        <Button onClick={fetchData} className="bg-[#FF7F00] hover:bg-[#FF7F00]/90 text-white">
           Try Again
         </Button>
       </div>
@@ -236,11 +282,9 @@ const BuyerDashboardHome = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Session Expired Banner - only show if truly expired */}
+    <div className="space-y-5 p-4 lg:p-6" style={{ backgroundColor: '#f4f5f7', minHeight: '100vh' }}>
       {sessionExpiredLocal && !isReconnecting && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
       
-      {/* Reconnecting Notice - soft state, not "expired" */}
       {isReconnecting && (
         <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -251,7 +295,6 @@ const BuyerDashboardHome = () => {
         </div>
       )}
       
-      {/* Offline/Cached Notice */}
       {usingCachedData && !isReconnecting && (
         <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <WifiOff className="h-4 w-4" />
@@ -262,246 +305,7 @@ const BuyerDashboardHome = () => {
         </div>
       )}
 
-      {/* Dashboard Header - Gumroad style */}
-      <header className="border-b border-slate-200 -mx-3 sm:-mx-4 lg:-mx-8 px-4 lg:px-8 pb-4 mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-      </header>
-
-      {/* Getting Started Section - Gumroad style */}
-      <GettingStartedSection 
-        onboardingProgress={{
-          accountCreated: true,
-          profileCustomized: !!user?.email,
-          firstProductCreated: false,
-          firstFollower: false,
-          firstSale: false,
-          firstPayout: false,
-          firstEmailBlast: false,
-          smallBetsSignup: false,
-        }}
-      />
-
-      {/* Activity Stats - Gumroad style */}
-      <ActivityStatsSection
-        balance={wallet.balance}
-        last7Days={stats.totalSpent * 0.1} // Placeholder calculation
-        last28Days={stats.totalSpent * 0.4} // Placeholder calculation  
-        totalEarnings={stats.totalSpent}
-        formatAmount={formatAmountOnly}
-      />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Wallet Balance"
-          value={formatAmountOnly(wallet.balance)}
-          variant="gumroad"
-          href="/dashboard/wallet"
-        />
-        <StatCard
-          label="Total Spent"
-          value={formatAmountOnly(stats.totalSpent)}
-          subValue="Lifetime"
-          variant="gumroad"
-        />
-        <StatCard
-          label="Total Orders"
-          value={stats.total}
-          subValue={`${stats.completed} completed`}
-          variant="gumroad"
-          href="/dashboard/orders"
-        />
-        <StatCard
-          label="Pending Delivery"
-          value={stats.pending + stats.delivered}
-          subValue={stats.delivered > 0 ? `${stats.delivered} awaiting approval` : undefined}
-          variant="gumroad"
-        />
-      </div>
-
-      {/* Quick Actions Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Add Funds - Primary CTA */}
-        <Link to="/dashboard/billing">
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg p-5 text-white border transition-colors hover:opacity-90 cursor-pointer group">
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Plus className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="font-semibold">Add Funds</p>
-                <p className="text-sm text-white/80">Top up your wallet</p>
-              </div>
-              <ChevronRight className="w-5 h-5 ml-auto opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-            </div>
-          </div>
-        </Link>
-
-        {/* Browse Marketplace */}
-        <Link to="/dashboard/marketplace">
-          <div className="bg-white rounded-lg p-5 border transition-colors hover:bg-slate-50 cursor-pointer group">
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-blue-50 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-slate-800">Marketplace</p>
-                <p className="text-sm text-slate-500">Discover products</p>
-              </div>
-              <ChevronRight className="w-5 h-5 ml-auto text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
-            </div>
-          </div>
-        </Link>
-
-        {/* View Wishlist */}
-        <Link to="/dashboard/wishlist">
-          <div className="bg-white rounded-lg p-5 border transition-colors hover:bg-slate-50 cursor-pointer group">
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-pink-50 flex items-center justify-center">
-                <Heart className="w-5 h-5 text-pink-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-slate-800">Wishlist</p>
-                <p className="text-sm text-slate-500">{wishlistCount} saved items</p>
-              </div>
-              <ChevronRight className="w-5 h-5 ml-auto text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      {/* Recent Orders */}
-      <div className="bg-white rounded-lg border">
-        <div className="flex items-center justify-between p-5 border-b border-slate-100">
-          <h2 className="text-lg font-semibold text-slate-900">Recent Orders</h2>
-          <Link 
-            to="/dashboard/orders" 
-            className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
-          >
-            View All <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        {recentOrders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-              <ShoppingBag className="w-8 h-8 text-slate-400" />
-            </div>
-            <h3 className="text-base font-semibold text-slate-900 mb-1">No orders yet</h3>
-            <p className="text-slate-500 text-sm mb-4 max-w-sm">
-              Start exploring our marketplace to find the perfect products for your needs.
-            </p>
-            <Button 
-              onClick={() => navigate('/dashboard/marketplace')}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white"
-            >
-              Browse Marketplace
-            </Button>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {recentOrders.map((order) => (
-              <div 
-                key={order.id} 
-                className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors cursor-pointer"
-                onClick={() => navigate(`/dashboard/orders`)}
-              >
-                {/* Product Image/Icon */}
-                {order.product?.icon_url ? (
-                  <img 
-                    src={order.product.icon_url} 
-                    alt={order.product.name}
-                    className="w-12 h-12 rounded-lg object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                    <Package className="w-5 h-5 text-slate-400" />
-                  </div>
-                )}
-
-                {/* Order Info */}
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-slate-900 truncate text-[15px]">
-                    {order.product?.name || 'Order'}
-                  </h4>
-                  <p className="text-sm text-slate-500 mt-0.5">
-                    {order.seller?.store_name && `by ${order.seller.store_name} • `}
-                    {format(new Date(order.created_at), 'MMM d, yyyy')}
-                  </p>
-                </div>
-
-                {/* Status & Amount */}
-                <div className="text-right flex-shrink-0">
-                  <p className="font-semibold text-slate-900">{formatAmountOnly(order.amount)}</p>
-                  <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full mt-1 ${
-                    order.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
-                    order.status === 'delivered' ? 'bg-blue-100 text-blue-700' :
-                    order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                    'bg-slate-100 text-slate-700'
-                  }`}>
-                    {order.status === 'completed' && <CheckCircle className="w-3 h-3" />}
-                    {order.status === 'pending' && <Clock className="w-3 h-3" />}
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                  </span>
-                </div>
-
-                <ChevronRight className="w-5 h-5 text-slate-300 flex-shrink-0" />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Quick Stats Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <CheckCircle className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Completed</p>
-              <p className="text-xl font-bold text-emerald-600">{stats.completed}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-4 border">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Package className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Delivered</p>
-              <p className="text-xl font-bold text-blue-600">{stats.delivered}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-4 border">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-              <Clock className="h-5 w-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Pending</p>
-              <p className="text-xl font-bold text-amber-600">{stats.pending}</p>
-            </div>
-          </div>
-        </div>
-
-        <Link to="/dashboard/wishlist">
-          <div className="bg-white rounded-lg p-4 border transition-colors hover:bg-slate-50">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-pink-100 flex items-center justify-center">
-                <Heart className="h-5 w-5 text-pink-600" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-slate-500">Wishlist</p>
-                <p className="text-xl font-bold text-slate-800">{wishlistCount}</p>
-              </div>
-            </div>
-          </div>
-        </Link>
-      </div>
+      <EzMartDashboardGrid data={dashboardData} />
     </div>
   );
 };
