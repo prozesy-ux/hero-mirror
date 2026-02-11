@@ -14,6 +14,21 @@ export interface ProductSummary {
   sellerName: string | null;
   storeSlug: string | null;
   isVerified: boolean;
+  sellerId?: string | null;
+  sellerAvatar?: string | null;
+  productType?: string | null;
+  productMetadata?: Record<string, any> | null;
+  sellerCardSettings?: {
+    style: string;
+    buttonText: string;
+    buttonColor: string;
+    buttonTextColor: string;
+    accentColor: string;
+    borderRadius: string;
+    showRating: boolean;
+    showSellerName: boolean;
+    showBadge: boolean;
+  } | null;
 }
 
 export interface CategoryWithCount {
