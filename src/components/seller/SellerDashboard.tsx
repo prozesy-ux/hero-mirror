@@ -317,7 +317,7 @@ const SellerDashboard = () => {
         <StatCard
           label="Active Products"
           value={metrics.activeProducts}
-          subValue={`${products.length} total`}
+          subValue={`${products.filter(p => !p.is_available && !p.is_approved).length} drafts • ${products.length} total`}
           variant="gumroad"
           onClick={() => navigate('/seller/products')}
         />
