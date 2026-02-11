@@ -61,13 +61,16 @@ import {
   AlertTriangle,
   Bell,
   BellRing,
-  ChevronLeft
+  ChevronLeft,
+  CreditCard
 } from 'lucide-react';
 import VideoUploader from './VideoUploader';
+import CardCustomizer from './CardCustomizer';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import MenuListItem from '@/components/profile/MenuListItem';
 import SectionHeader from '@/components/profile/SectionHeader';
 import StatusToggleCard from '@/components/profile/StatusToggleCard';
+import { CardSettings, DEFAULT_CARD_SETTINGS } from '@/components/marketplace/card-types';
 
 type BannerHeight = 'small' | 'medium' | 'large';
 type BannerType = 'image' | 'video';
@@ -122,6 +125,7 @@ const SellerSettings = () => {
     show_description: true,
     show_social_links: true
   });
+  const [cardSettings, setCardSettings] = useState<CardSettings>(DEFAULT_CARD_SETTINGS);
 
   // Calculate stats
   const totalSalesCount = orders.filter(o => o.status === 'completed').length;
@@ -155,6 +159,17 @@ const SellerSettings = () => {
         show_social_links: p.show_social_links !== false
       });
       setBannerType(p.banner_type || 'image');
+      setCardSettings({
+        style: p.card_style || 'classic',
+        buttonText: p.card_button_text || 'Buy',
+        buttonColor: p.card_button_color || '#10b981',
+        buttonTextColor: p.card_button_text_color || '#ffffff',
+        accentColor: p.card_accent_color || '#000000',
+        borderRadius: p.card_border_radius || 'rounded',
+        showRating: p.card_show_rating !== false,
+        showSellerName: p.card_show_seller_name !== false,
+        showBadge: p.card_show_badge !== false,
+      });
     }
   }, [profile]);
 
@@ -187,7 +202,16 @@ const SellerSettings = () => {
         show_product_count: displaySettings.show_product_count,
         show_order_count: displaySettings.show_order_count,
         show_description: displaySettings.show_description,
-        show_social_links: displaySettings.show_social_links
+        show_social_links: displaySettings.show_social_links,
+        card_style: cardSettings.style,
+        card_button_text: cardSettings.buttonText,
+        card_button_color: cardSettings.buttonColor,
+        card_button_text_color: cardSettings.buttonTextColor,
+        card_accent_color: cardSettings.accentColor,
+        card_border_radius: cardSettings.borderRadius,
+        card_show_rating: cardSettings.showRating,
+        card_show_seller_name: cardSettings.showSellerName,
+        card_show_badge: cardSettings.showBadge
       })
       .eq('id', profile.id);
 
@@ -439,6 +463,14 @@ const SellerSettings = () => {
         />
         
         <MenuListItem
+          icon={CreditCard}
+          label="Card Design"
+          description="Customize product card appearance"
+          onClick={() => setActiveSheet('card-design')}
+          iconColor="text-amber-500"
+        />
+        
+        <MenuListItem
           icon={Link2}
           label="Social Media Links"
           description="Instagram, Twitter, TikTok, YouTube"
@@ -601,6 +633,26 @@ const SellerSettings = () => {
               </div>
             </div>
           </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Card Design Sheet */}
+      <Sheet open={activeSheet === 'card-design'} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="flex flex-row items-center gap-3 pb-6">
+            <Button variant="ghost" size="icon" onClick={() => setActiveSheet(null)}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <SheetTitle>Card Design</SheetTitle>
+          </SheetHeader>
+          <CardCustomizer
+            settings={cardSettings}
+            onChange={(newSettings) => {
+              setCardSettings(newSettings);
+              setHasChanges(true);
+            }}
+            mode="store"
+          />
         </SheetContent>
       </Sheet>
 
