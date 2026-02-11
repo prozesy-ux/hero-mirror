@@ -93,6 +93,9 @@ const DeliveryInventoryManager = ({ productId, sellerId, deliveryMode, onDeliver
     } else if (itemType === 'license_key') {
       if (!newKey) { toast.error('License key required'); setAdding(false); return; }
       credentials = { key: newKey, activation_url: newActivationUrl };
+    } else if (itemType === 'download') {
+      if (!newLabel) { toast.error('File URL required'); setAdding(false); return; }
+      credentials = { file_url: newLabel, file_name: newActivationUrl || 'File' };
     }
 
     const { error } = await supabase.from('delivery_pool_items').insert({
@@ -139,6 +142,14 @@ const DeliveryInventoryManager = ({ productId, sellerId, deliveryMode, onDeliver
           seller_id: sellerId,
           item_type: 'license_key',
           credentials: { key: line },
+          display_order: items.length + i,
+        });
+      } else if (itemType === 'download') {
+        rows.push({
+          product_id: productId,
+          seller_id: sellerId,
+          item_type: 'download',
+          credentials: { file_url: line, file_name: `File ${items.length + i + 1}` },
           display_order: items.length + i,
         });
       }
@@ -196,8 +207,14 @@ const DeliveryInventoryManager = ({ productId, sellerId, deliveryMode, onDeliver
   const saveUsageGuide = async () => {
     if (!productId) return;
     setSavingGuide(true);
+    // Fetch existing metadata to merge
+    const { data: existing } = await supabase.from('seller_products')
+      .select('product_metadata')
+      .eq('id', productId)
+      .single();
+    const existingMeta = (existing?.product_metadata as Record<string, any>) || {};
     const { error } = await supabase.from('seller_products')
-      .update({ product_metadata: { delivery_guide: usageGuide } })
+      .update({ product_metadata: { ...existingMeta, delivery_guide: usageGuide } })
       .eq('id', productId);
     if (error) toast.error('Failed to save guide');
     else toast.success('Usage guide saved');
@@ -319,6 +336,13 @@ const DeliveryInventoryManager = ({ productId, sellerId, deliveryMode, onDeliver
                     <div className="space-y-2">
                       <Input placeholder="License key / serial number" value={newKey} onChange={e => setNewKey(e.target.value)} className="h-9 text-sm border-black/10" />
                       <Input placeholder="Activation URL (optional)" value={newActivationUrl} onChange={e => setNewActivationUrl(e.target.value)} className="h-9 text-sm border-black/10" />
+                    </div>
+                  )}
+
+                  {itemType === 'download' && (
+                    <div className="space-y-2">
+                      <Input placeholder="File URL" value={newLabel} onChange={e => setNewLabel(e.target.value)} className="h-9 text-sm border-black/10" />
+                      <Input placeholder="File name (optional)" value={newActivationUrl} onChange={e => setNewActivationUrl(e.target.value)} className="h-9 text-sm border-black/10" />
                     </div>
                   )}
 

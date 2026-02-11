@@ -191,8 +191,14 @@ const SellerDeliveryInventory = () => {
 
   const saveUsageGuide = async () => {
     if (!selectedProduct) return;
+    // First fetch existing metadata to merge
+    const { data: existing } = await supabase.from('seller_products')
+      .select('product_metadata')
+      .eq('id', selectedProduct)
+      .single();
+    const existingMeta = (existing?.product_metadata as Record<string, any>) || {};
     const { error } = await supabase.from('seller_products')
-      .update({ product_metadata: { delivery_guide: usageGuide } })
+      .update({ product_metadata: { ...existingMeta, delivery_guide: usageGuide } })
       .eq('id', selectedProduct);
     if (error) toast.error('Failed to save guide');
     else toast.success('Usage guide saved');

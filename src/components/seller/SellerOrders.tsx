@@ -559,10 +559,22 @@ const SellerOrders = () => {
                         const isAutoDelivery = ['auto_account', 'auto_license', 'auto_download'].includes(deliveryType);
                         if (isAutoDelivery) {
                           return (
-                            <Badge className="bg-emerald-100 text-emerald-700 border-0 text-xs font-semibold">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Auto-Delivery
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-emerald-100 text-emerald-700 border-0 text-xs font-semibold">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Auto-Delivery
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedOrder(order.id)}
+                                className="text-xs text-slate-400 hover:text-slate-600 h-7 px-2"
+                                title="Manual fallback if auto-delivery failed"
+                              >
+                                <Send className="h-3 w-3 mr-1" />
+                                Manual
+                              </Button>
+                            </div>
                           );
                         }
                         return (
