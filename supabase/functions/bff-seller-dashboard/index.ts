@@ -84,7 +84,7 @@ serve(async (req) => {
         .from('seller_orders')
         .select(`
           *,
-          product:seller_products(name, icon_url)
+          product:seller_products(name, icon_url, delivery_type)
         `)
         .eq('seller_id', sellerId)
         .order('created_at', { ascending: false }),

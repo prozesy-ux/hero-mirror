@@ -462,6 +462,19 @@ const BuyerLibrary = () => {
                         </span>
                       </div>
                     )}
+                    {item.delivery_type === 'download' && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500">File</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-900 truncate max-w-[150px]">{item.delivered_data.file_name || 'Download'}</span>
+                          {isRevealed && item.delivered_data.file_url && (
+                            <a href={item.delivered_data.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700">
+                              <Download className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Usage Guide */}
