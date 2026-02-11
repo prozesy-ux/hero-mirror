@@ -121,7 +121,7 @@ const NewProduct = () => {
   const [cardOverrides, setCardOverrides] = useState<Partial<CardSettings>>({});
   
   // Delivery mode
-  const [deliveryMode, setDeliveryMode] = useState<string>('instant_download');
+  const [deliveryMode, setDeliveryMode] = useState<'auto_account' | 'auto_license' | 'auto_download' | 'instant_download' | 'manual'>('instant_download');
   const [savedProductId, setSavedProductId] = useState<string | null>(productId || null);
 
   useEffect(() => {
@@ -313,6 +313,7 @@ const NewProduct = () => {
       is_preorder: isPreorder,
       release_date: isPreorder && releaseDate ? new Date(releaseDate).toISOString() : null,
       preorder_message: isPreorder ? preorderMessage.trim() || null : null,
+      delivery_type: deliveryMode,
     };
   };
 
@@ -958,6 +959,27 @@ const NewProduct = () => {
                       mode="product"
                     />
                   </div>
+
+                  {['digital_product', 'ebook', 'template', 'graphics', 'audio', 'video', 'software'].includes(productType) && (
+                    <>
+                      <div className="border-t" />
+                      <div>
+                        <Label className="text-base text-slate-700 mb-3 block">
+                          Delivery Settings
+                        </Label>
+                        <p className="text-sm text-slate-500 mb-3">
+                          Choose how this product is delivered to buyers
+                        </p>
+                        <DeliveryInventoryManager
+                          productId={savedProductId}
+                          sellerId={profile.id}
+                          deliveryMode={deliveryMode}
+                          onDeliveryModeChange={setDeliveryMode}
+                          productType={productType}
+                        />
+                      </div>
+                    </>
+                  )}
 
                   <div className="border-t" />
                   <div>
