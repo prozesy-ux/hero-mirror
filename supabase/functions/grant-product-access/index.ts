@@ -182,6 +182,15 @@ async function handleAutoDelivery(
 ) {
   const { order_id, buyer_id, product_id, seller_id } = params;
 
+  // Fetch delivery guide from product metadata
+  const { data: productMeta } = await supabase
+    .from('seller_products')
+    .select('product_metadata')
+    .eq('id', product_id)
+    .single();
+  
+  const deliveryGuide = (productMeta?.product_metadata as any)?.delivery_guide || null;
+
   // Use the atomic RPC function to claim next available item
   const { data: result, error } = await supabase.rpc('assign_delivery_pool_item', {
     p_product_id: product_id,
@@ -196,8 +205,19 @@ async function handleAutoDelivery(
 
   if (!result?.success) {
     console.error('Auto-delivery: no items available');
-    // Don't mark order complete - needs manual intervention
     return { success: false, error: result?.error || 'No items available in pool' };
+  }
+
+  // Update the delivered_data to include the delivery_guide
+  if (deliveryGuide) {
+    await supabase
+      .from('buyer_delivered_items')
+      .update({ 
+        delivered_data: { ...result.credentials, delivery_guide: deliveryGuide } 
+      })
+      .eq('order_id', order_id)
+      .eq('buyer_id', buyer_id)
+      .eq('product_id', product_id);
   }
 
   // Also create content access record for library view

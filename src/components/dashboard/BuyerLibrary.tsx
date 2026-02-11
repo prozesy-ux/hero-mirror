@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { 
   Download, Play, BookOpen, Users, Briefcase, Coffee, 
   Calendar, Clock, Package, ExternalLink, CheckCircle,
-  FileText, Video, Music, Image as ImageIcon, Archive, Eye
+  FileText, Video, Music, Image as ImageIcon, Archive, Eye, Copy as CopyIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getProductTypeById } from '@/components/icons/ProductTypeIcons';
@@ -464,7 +464,19 @@ const BuyerLibrary = () => {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                  {/* Usage Guide */}
+                  {item.delivered_data?.delivery_guide && (
+                    <details className="mt-2 text-xs">
+                      <summary className="cursor-pointer text-blue-600 font-medium flex items-center gap-1">
+                        <BookOpen className="w-3 h-3" />How to Use
+                      </summary>
+                      <div className="mt-2 p-2 bg-blue-50 rounded-lg text-gray-700 whitespace-pre-line">
+                        {item.delivered_data.delivery_guide}
+                      </div>
+                    </details>
+                  )}
+
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-3 mt-2">
                     <Clock className="w-3 h-3" />
                     <span>Delivered {formatDate(item.delivered_at)}</span>
                   </div>
