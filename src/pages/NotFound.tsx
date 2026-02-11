@@ -12,31 +12,6 @@ const NotFound = () => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
   }, [location.pathname]);
 
-  // Load video as blob and render to canvas
-  useEffect(() => {
-    const loadVideoAsBlob = async () => {
-      try {
-        const response = await fetch('/videos/404-panda.mp4');
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        
-        if (videoRef.current) {
-          videoRef.current.src = blobUrl;
-          videoRef.current.load();
-        }
-      } catch (error) {
-        console.error('Video load error:', error);
-      }
-    };
-
-    loadVideoAsBlob();
-
-    return () => {
-      if (videoRef.current?.src) {
-        URL.revokeObjectURL(videoRef.current.src);
-      }
-    };
-  }, []);
 
   // Render video frames to canvas
   useEffect(() => {
@@ -94,6 +69,7 @@ const NotFound = () => {
       {/* Hidden video source - never visible in DOM */}
       <video
         ref={videoRef}
+        src="/videos/404-panda.mp4"
         loop
         muted
         playsInline
