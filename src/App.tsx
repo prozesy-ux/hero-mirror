@@ -114,11 +114,6 @@ const App = () => (
                   <TermsOfService />
                 </Suspense>
               } />
-              <Route path="/help" element={
-                <Suspense fallback={<AppShell />}>
-                  <Help />
-                </Suspense>
-              } />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
