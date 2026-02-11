@@ -1,154 +1,114 @@
 
-# Auto-Delivery System: Accounts, Licenses, Downloads Pool
+## Complete Integration of DeliveryInventoryManager into NewProduct Step 2
 
-## Overview
-Build a complete auto-delivery infrastructure that automatically delivers unique content to each buyer upon purchase. This covers 5 delivery modes that sellers can configure per product:
+### Current State Analysis
+The `DeliveryInventoryManager` component exists and is properly imported in `NewProduct.tsx` (line 21), but it's **not rendered anywhere in the Step 2 form**. The component is designed to accept:
+- `productId: string | null` -- needed after product is saved
+- `sellerId: string` -- available from `profile.id`
+- `deliveryMode: string` -- stored in state as `deliveryMode` (line 124)
+- `onDeliveryModeChange: (mode: DeliveryMode) => void` -- callback to update state
+- `productType: string` -- available as `productType` state variable
 
-1. **Account Pool** -- Seller uploads multiple account credentials (email/password pairs); each buyer gets one unique account automatically
-2. **License Keys** -- Seller uploads a pool of license keys/serial numbers; one key assigned per buyer
-3. **Single Download** -- Current behavior (all buyers get the same file set)
-4. **Multi-Download Pool** -- Seller uploads multiple unique download items; each buyer gets the next available one
-5. **Manual Delivery** -- Seller delivers manually (existing behavior for services/commissions)
+### Root Cause
+The integration attempt failed due to a line-matching issue during the edit operation. The `DeliveryInventoryManager` needs to be properly rendered as a new section in Step 2 after the "Card Appearance" section and before the content-type-specific sections (files, lessons, etc.).
 
----
+### Implementation Plan
 
-## Database Changes
+#### 1. **Add Delivery Mode Selector Section (Step 2)**
+Insert a new section after "Card Appearance" (around line 965) with:
+- **Section Header**: "Delivery Settings"
+- **Description**: Explain auto-delivery options
+- **Render**: The full `DeliveryInventoryManager` component
 
-### New Table: `delivery_pool_items`
-Stores the pool of deliverable items (accounts, license keys, unique downloads) that get assigned one-per-buyer.
+**Code placement**: After the Card Appearance divider and before FileContentUploader/LessonBuilder sections
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| product_id | uuid | FK to seller_products |
-| seller_id | uuid | FK to seller_profiles |
-| item_type | text | 'account', 'license_key', 'download' |
-| label | text | Display label (e.g., "Netflix Premium", "Pro License") |
-| credentials | jsonb | For accounts: `{email, password, notes}`. For licenses: `{key, activation_url}`. For downloads: `{file_url, file_name, file_size}` |
-| is_assigned | boolean | false = available, true = claimed |
-| assigned_to | uuid | Buyer user_id (null until assigned) |
-| assigned_order_id | uuid | Order that claimed this item |
-| assigned_at | timestamptz | When it was assigned |
-| created_at | timestamptz | Default now() |
-| display_order | integer | Sort order |
-
-### New Table: `buyer_delivered_items`
-Records what was delivered to each buyer (the buyer-facing view of their delivered content).
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| buyer_id | uuid | FK to user |
-| order_id | uuid | FK to seller_orders |
-| product_id | uuid | FK to seller_products |
-| delivery_type | text | 'account', 'license_key', 'download', 'files' |
-| delivered_data | jsonb | The actual credentials/key/link delivered |
-| delivered_at | timestamptz | Default now() |
-| is_revealed | boolean | Whether buyer has viewed it (for security masking) |
-
-### Update `seller_products` column usage
-- Use existing `delivery_type` column with new values: `'auto_account'`, `'auto_license'`, `'auto_download'`, `'instant_download'`, `'manual'`
-- Use existing `product_metadata` JSONB to store delivery config: `{ max_per_buyer, reveal_after_hours, delivery_instructions }`
-
-### RLS Policies
-- `delivery_pool_items`: Sellers can CRUD their own items. Service role only for assignment.
-- `buyer_delivered_items`: Buyers can SELECT their own rows. Service role inserts on purchase.
-
----
-
-## Seller-Side: Delivery Inventory Manager
-
-### Integration into Product Editor (NewProduct.tsx + SellerProducts.tsx edit Sheet)
-
-When seller selects a product type that supports auto-delivery (digital_product, software, template, ebook, etc.), show a **Delivery Mode Selector**:
-
-```
-[Auto Accounts] [License Keys] [File Downloads] [Manual]
+**Props passed**:
+```tsx
+<DeliveryInventoryManager
+  productId={savedProductId}  // null initially, set after first save
+  sellerId={profile.id}
+  deliveryMode={deliveryMode}
+  onDeliveryModeChange={setDeliveryMode}
+  productType={productType}
+/>
 ```
 
-Based on selection, show the appropriate inventory panel:
+#### 2. **Update State & Lifecycle**
+- `deliveryMode` state already exists (line 124)
+- `savedProductId` state already tracks product ID after creation (line 125)
+- No changes needed here
 
-**Account Pool Panel:**
-- Table with columns: Label | Email | Password | Notes | Status (Available/Assigned)
-- "Add Account" button -- opens a row to type email/password/notes
-- "Bulk Import" button -- paste CSV or multi-line text (email:password format)
-- Stock counter auto-syncs: available accounts = product stock
-- Warning banner when pool is running low (< 5 remaining)
+#### 3. **Add Conditional Rendering Logic**
+- Only show DeliveryInventoryManager for product types that support auto-delivery
+- Use the `SUPPORTED_PRODUCT_TYPES` array from DeliveryInventoryManager: `['digital_product', 'ebook', 'template', 'graphics', 'audio', 'video', 'software']`
+- Show a notice if product isn't saved yet: "Save the product first to add delivery inventory"
 
-**License Keys Panel:**
-- List view of keys with status badges
-- "Add Key" -- single input field
-- "Bulk Import" -- paste multiple keys (one per line)
-- Optional: Activation URL field per key
-- Stock auto-sync with available keys count
+#### 4. **Integrate Delivery Mode with Save Logic**
+- Add `delivery_type: deliveryMode` to the `buildProductData()` function
+- Currently, product data saves but doesn't capture delivery mode -- need to add this field
 
-**Multi-Download Pool Panel:**
-- Uses existing FileContentUploader but marks each file as "unique" (one per buyer)
-- Toggle: "Each buyer gets a unique file" vs "All buyers get all files"
-- Shows assigned/available counts per file
-
-### Standalone Seller Inventory Page
-A new section in the Seller Sidebar: **"Delivery Inventory"** -- shows:
-- Overview cards: Total items, Available, Assigned, Low Stock warnings
-- Filterable table of all delivery_pool_items across all products
-- Quick-add items to any product
-- Bulk import wizard
-- Assignment history log
-
----
-
-## Edge Function Update: `grant-product-access`
-
-Enhance the existing function to handle auto-delivery:
-
-```
-For product types with auto_account/auto_license/auto_download delivery_type:
-  1. Find next unassigned item from delivery_pool_items (ORDER BY display_order, created_at)
-  2. Lock the row (SELECT FOR UPDATE) to prevent race conditions
-  3. Mark as assigned (is_assigned=true, assigned_to, assigned_order_id, assigned_at)
-  4. Insert into buyer_delivered_items with the credentials/key/link
-  5. Update product stock (decrement by 1)
-  6. If pool is empty after assignment, mark product as unavailable
-  7. Send notification to buyer with delivery confirmation
-  8. Send notification to seller if stock is low (< 5 remaining)
-```
-
-For existing `instant_download` type (unchanged): all buyers get the same product_content files.
-
----
-
-## Buyer-Side: Delivered Content View
-
-### BuyerLibrary.tsx Enhancement
-When a buyer views their library, for auto-delivered items:
-- **Account type**: Show masked credentials (e.g., `n***@gmail.com` / `****`) with a "Reveal" button
-- **License key type**: Show masked key with "Copy" button
-- **Download type**: Show download button for their unique file
-- Each item shows: Product name, delivery date, "Delivered" badge
-
-### buyer_delivered_items query
-Join with `buyer_content_access` or query directly from `buyer_delivered_items` to show in the library.
-
----
-
-## Technical Details
-
-### Files to Create
-1. **Migration SQL** -- Create `delivery_pool_items` and `buyer_delivered_items` tables with RLS
-2. **`src/components/seller/DeliveryInventoryManager.tsx`** -- The inventory panel component (accounts/licenses/downloads CRUD)
-3. **`src/components/seller/BulkImportModal.tsx`** -- CSV/text paste import for bulk adding items
-4. **`src/components/seller/SellerDeliveryInventory.tsx`** -- Standalone inventory page for sidebar
+#### 5. **Handle Stock Auto-Sync**
+- The edge function and database trigger handle this automatically once items are added
+- No additional work needed in the UI
 
 ### Files to Modify
-1. **`supabase/functions/grant-product-access/index.ts`** -- Add auto-assignment logic with row locking
-2. **`src/pages/NewProduct.tsx`** -- Add Delivery Mode Selector and embed DeliveryInventoryManager
-3. **`src/components/seller/SellerProducts.tsx`** -- Add delivery inventory to edit Sheet
-4. **`src/components/seller/SellerSidebar.tsx`** -- Add "Delivery Inventory" nav item
-5. **`src/components/dashboard/BuyerLibrary.tsx`** -- Add delivered items display with reveal/copy
-6. **`src/pages/Seller.tsx`** -- Add route for delivery inventory page
+1. **`src/pages/NewProduct.tsx`** (single file change):
+   - Add new section in Step 2 form for Delivery Settings
+   - Update `buildProductData()` to include `delivery_type: deliveryMode`
+   - Conditionally render DeliveryInventoryManager only for supported types
 
-### Race Condition Prevention
-The edge function uses `SELECT ... FOR UPDATE` to lock the next available item, preventing two simultaneous purchases from getting the same account/key. This is critical for unique delivery.
+### Technical Details
 
-### Stock Auto-Sync
-When seller adds/removes items from the pool, the product's `stock` column is automatically updated to match the count of unassigned items. This keeps the storefront accurate.
+**Location in Step 2**: After CardCustomizer (line 965), before content-type conditionals (FileContentUploader at line 972, LessonBuilder at line 983, etc.)
+
+**Conditional check**:
+```tsx
+const SUPPORTED_FOR_DELIVERY = ['digital_product', 'ebook', 'template', 'graphics', 'audio', 'video', 'software'];
+
+// In Step 2 form:
+{SUPPORTED_FOR_DELIVERY.includes(productType) && (
+  <>
+    <div className="border-t" />
+    <div>
+      <Label className="text-base text-slate-700 mb-3 block">
+        Delivery Settings
+      </Label>
+      {!savedProductId && (
+        <p className="text-sm text-amber-600 mb-3">Save the product first to configure delivery inventory.</p>
+      )}
+      <DeliveryInventoryManager
+        productId={savedProductId}
+        sellerId={profile.id}
+        deliveryMode={deliveryMode}
+        onDeliveryModeChange={setDeliveryMode}
+        productType={productType}
+      />
+    </div>
+  </>
+)}
+```
+
+**Update buildProductData()** (around line 281):
+- Add `delivery_type: deliveryMode` to the returned object
+
+### Edge Cases Handled
+- **Product not yet saved**: Component shows warning message, prevents adding items
+- **Type change**: If user changes product type after selecting auto-delivery, inventory is preserved but selector hides if type no longer supports it
+- **Switching between delivery modes**: Inventory auto-updates based on item_type selection in manager
+- **Load on edit**: Existing `deliveryMode` loads from product data (line 219 already handles this)
+
+### No Breaking Changes
+- All existing functionality preserved
+- Component is optional/hidden for unsupported types
+- No new dependencies required
+- Only CSS classes already in use (same styling as Card Appearance section)
+
+### Testing Checklist
+After implementation:
+- [ ] Create new product → Type selector → Details page → Delivery Settings visible
+- [ ] Add accounts/license keys → See them list below
+- [ ] Bulk import credentials → Count updates correctly
+- [ ] Save product → Delivery mode persists on reload
+- [ ] Edit existing product → Delivery inventory loads with existing items
+- [ ] Switch delivery modes → Inventory updates dynamically
+- [ ] Test on mobile → Layout responsive
