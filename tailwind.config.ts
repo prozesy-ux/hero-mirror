@@ -92,6 +92,8 @@ export default {
         "stat": "0 1px 3px rgba(0, 0, 0, 0.04)",
         "stat-hover": "0 4px 12px rgba(0, 0, 0, 0.08)",
         "card-premium": "0 2px 8px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06)",
+        "ezmart": "0 8px 24px rgba(0, 0, 0, 0.08)",
+        "ezmart-sidebar": "0 4px 12px rgba(255, 138, 0, 0.3)",
       },
       keyframes: {
         "accordion-down": {
