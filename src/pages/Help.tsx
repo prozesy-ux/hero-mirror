@@ -146,7 +146,7 @@ const Help: React.FC = () => {
                 </Sheet>
 
                 <Link to="/" className="shrink-0">
-                  <img src={uptозаLogo} alt="Uptoza" className="h-7" />
+                  <img src={uptозаLogo} alt="Uptoza" className="h-8" />
                 </Link>
                 <span className="text-[#d5e0d5] text-2xl font-light mx-1 hidden sm:inline">|</span>
                 <span className="text-[#001e00] text-base font-medium hidden sm:inline">Help Center</span>
@@ -189,14 +189,14 @@ const Help: React.FC = () => {
 
         {/* Hero Section — Green gradient */}
         {showHero && (
-          <section className="relative bg-gradient-to-br from-[#001e00] via-[#0d3b0d] to-[#14A800] text-white overflow-hidden">
+          <section className="relative bg-[#f2f7f2] overflow-hidden">
             <div className="relative max-w-[1600px] mx-auto px-6 py-20 lg:py-28">
               <div className="max-w-3xl">
-                <p className="text-xl font-medium mb-3 text-white/90">Help Center</p>
-                <h1 className="text-5xl lg:text-6xl font-semibold mb-8 text-white leading-tight">
+                <p className="text-sm font-medium mb-3 text-[#5e6d55] uppercase tracking-wide">Help Center</p>
+                <h1 className="text-5xl lg:text-6xl font-semibold mb-8 text-[#001e00] leading-tight">
                   Find solutions fast.
                 </h1>
-                <p className="text-lg mb-8 text-white/80">
+                <p className="text-lg mb-8 text-[#5e6d55]">
                   Search hundreds of articles on Uptoza Help
                 </p>
 
@@ -207,12 +207,12 @@ const Help: React.FC = () => {
 
                 {/* Popular tags */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-sm text-white/70">Popular:</span>
+                  <span className="text-sm text-[#5e6d55]">Popular:</span>
                   {POPULAR_TAGS.map(tag => (
                     <button
                       key={tag}
                       onClick={() => setSearch(tag)}
-                      className="px-4 py-2 bg-white/15 backdrop-blur-sm rounded-full text-sm text-white hover:bg-white/25 transition border border-white/20"
+                      className="px-4 py-2 bg-[#e4ebe4] rounded-full text-sm text-[#001e00] hover:bg-[#d5e0d5] transition"
                     >
                       {tag}
                     </button>
@@ -344,7 +344,7 @@ const Help: React.FC = () => {
               </div>
 
               {/* 4-column category grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredCategories.map(cat => (
                   <HelpCategoryCard
                     key={cat.slug}

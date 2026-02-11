@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 
 interface HelpSearchProps {
@@ -9,12 +9,17 @@ interface HelpSearchProps {
 
 const HelpSearch: React.FC<HelpSearchProps> = ({ value, onChange, variant = 'compact' }) => {
   const [localValue, setLocalValue] = useState(value);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
     setLocalValue(value);
   }, [value]);
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     const timer = setTimeout(() => {
       onChange(localValue);
     }, 300);
@@ -30,7 +35,7 @@ const HelpSearch: React.FC<HelpSearchProps> = ({ value, onChange, variant = 'com
           placeholder="Search articles"
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
-          className="w-full h-14 px-6 pr-16 rounded-full text-[#001e00] text-base placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
+          className="w-full h-14 px-6 pr-16 rounded-full text-[#001e00] text-base placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#14A800]/30 shadow-lg"
         />
         <button
           onClick={() => onChange(localValue)}
