@@ -23,13 +23,13 @@ const HelpCategoryCard: React.FC<HelpCategoryCardProps> = ({ category, articleCo
 
   return (
     <button
-      className="group p-6 bg-white border border-[#d5e0d5] rounded-lg hover:border-[#14A800] hover:shadow-lg transition-all duration-200 text-left w-full"
+      className="group p-8 bg-white border border-[#d5e0d5] rounded-lg hover:border-[#14A800] hover:shadow-lg transition-all duration-200 text-left w-full"
       onClick={onClick}
     >
-      <div className="mb-5 text-[#14A800]">
-        <Icon className="h-8 w-8" strokeWidth={1.5} />
+      <div className="mb-6 text-[#14A800]">
+        <Icon className="h-10 w-10" strokeWidth={1.5} />
       </div>
-      <h3 className="text-xl font-semibold mb-2 text-[#001e00] group-hover:text-[#14A800] transition">
+      <h3 className="text-xl font-semibold mb-3 text-[#001e00] group-hover:text-[#14A800] transition">
         {category.name}
       </h3>
       <p className="text-sm text-[#5e6d55] leading-relaxed">

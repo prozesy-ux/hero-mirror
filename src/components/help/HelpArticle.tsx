@@ -41,20 +41,20 @@ const HelpArticleView: React.FC<HelpArticleProps> = ({ article, onBack, relatedA
 
       {/* Content */}
       <article
-        className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-code:bg-black/5 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-black/5 prose-pre:text-sm"
+        className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-[#001e00] prose-p:text-[#5e6d55] prose-li:text-[#5e6d55] prose-strong:text-[#001e00] prose-code:bg-[#f2f7f2] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-[#f2f7f2] prose-pre:text-sm"
         dangerouslySetInnerHTML={{ __html: article.content }}
       />
 
       {/* Tags */}
-      <div className="flex flex-wrap gap-1.5 mt-8 pt-6 border-t border-black/10">
+      <div className="flex flex-wrap gap-1.5 mt-8 pt-6 border-t border-[#d5e0d5]">
         {article.tags.map(tag => (
-          <span key={tag} className="px-2 py-0.5 bg-black/5 rounded text-xs text-muted-foreground">{tag}</span>
+          <span key={tag} className="px-2 py-0.5 bg-[#f2f7f2] rounded text-xs text-[#5e6d55]">{tag}</span>
         ))}
       </div>
 
       {/* Feedback */}
-      <div className="mt-8 pt-6 border-t border-black/10">
-        <p className="text-sm font-medium mb-3">Was this article helpful?</p>
+      <div className="mt-8 pt-6 border-t border-[#d5e0d5]">
+        <p className="text-sm font-medium mb-3 text-[#001e00]">Was this article helpful?</p>
         <div className="flex gap-2">
           <Button
             variant={feedback === 'yes' ? 'default' : 'outline'}
@@ -74,20 +74,20 @@ const HelpArticleView: React.FC<HelpArticleProps> = ({ article, onBack, relatedA
           </Button>
         </div>
         {feedback && (
-          <p className="text-xs text-muted-foreground mt-2">Thanks for your feedback!</p>
+          <p className="text-xs text-[#5e6d55] mt-2">Thanks for your feedback!</p>
         )}
       </div>
 
       {/* Related Articles */}
       {relatedArticles.length > 0 && (
-        <div className="mt-8 pt-6 border-t border-black/10">
+        <div className="mt-8 pt-6 border-t border-[#d5e0d5]">
           <h3 className="text-sm font-semibold mb-3">Related Articles</h3>
           <div className="space-y-2">
             {relatedArticles.map(ra => (
               <button
                 key={ra.slug}
                 onClick={() => onArticleClick(ra.slug)}
-                className="block w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+                className="block w-full text-left text-sm text-[#5e6d55] hover:text-[#14A800] transition-colors py-1"
               >
                 → {ra.title}
               </button>
