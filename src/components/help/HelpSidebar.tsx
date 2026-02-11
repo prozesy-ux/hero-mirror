@@ -31,7 +31,7 @@ const HelpSidebar: React.FC<HelpSidebarProps> = ({
       <button
         onClick={() => onCategoryClick('')}
         className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-          !activeCategory && !activeArticle ? 'bg-black text-white' : 'hover:bg-black/5 text-foreground'
+          !activeCategory && !activeArticle ? 'bg-[#14A800] text-white' : 'hover:bg-[#f7f7f7] text-[#001e00]'
         }`}
       >
         All Categories
@@ -48,8 +48,8 @@ const HelpSidebar: React.FC<HelpSidebarProps> = ({
               <button
                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                   activeCategory === cat.slug && !activeArticle
-                    ? 'bg-black/10 text-black font-semibold'
-                    : 'hover:bg-black/5 text-foreground'
+                    ? 'bg-[#14A800]/10 text-[#14A800] font-semibold'
+                    : 'hover:bg-[#f7f7f7] text-[#001e00]'
                 }`}
                 onClick={() => onCategoryClick(cat.slug)}
               >
@@ -59,15 +59,15 @@ const HelpSidebar: React.FC<HelpSidebarProps> = ({
               </button>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="ml-6 mt-1 space-y-0.5 border-l border-black/10 pl-3">
+              <div className="ml-6 mt-1 space-y-0.5 border-l border-[#d5e0d5] pl-3">
                 {catArticles.map((article) => (
                   <button
                     key={article.slug}
                     onClick={() => onArticleClick(article.slug)}
                     className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                       activeArticle === article.slug
-                        ? 'bg-black text-white font-medium'
-                        : 'hover:bg-black/5 text-muted-foreground hover:text-foreground'
+                        ? 'bg-[#14A800] text-white font-medium'
+                        : 'hover:bg-[#f7f7f7] text-[#5e6d55] hover:text-[#001e00]'
                     }`}
                   >
                     {article.title}

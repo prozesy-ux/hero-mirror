@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Rocket, UserPlus, Package, PlusCircle, Zap, GraduationCap,
   ShoppingCart, Users, BarChart3, Wallet, Megaphone, Store,
@@ -23,23 +22,20 @@ const HelpCategoryCard: React.FC<HelpCategoryCardProps> = ({ category, articleCo
   const Icon = iconMap[category.icon] || Package;
 
   return (
-    <Card
-      className="cursor-pointer hover:shadow-md hover:border-black/20 transition-all group"
+    <button
+      className="group p-6 bg-white border border-[#d5e0d5] rounded-lg hover:border-[#14A800] hover:shadow-lg transition-all duration-200 text-left w-full"
       onClick={onClick}
     >
-      <CardContent className="p-5">
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-black/5 group-hover:bg-black/10 transition-colors">
-            <Icon className="h-5 w-5 text-black/70" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm text-foreground">{category.name}</h3>
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{category.description}</p>
-            <span className="text-xs text-muted-foreground mt-2 inline-block">{articleCount} articles</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      <div className="mb-5 text-[#14A800]">
+        <Icon className="h-8 w-8" strokeWidth={1.5} />
+      </div>
+      <h3 className="text-xl font-semibold mb-2 text-[#001e00] group-hover:text-[#14A800] transition">
+        {category.name}
+      </h3>
+      <p className="text-sm text-[#5e6d55] leading-relaxed">
+        {category.description}
+      </p>
+    </button>
   );
 };
 
