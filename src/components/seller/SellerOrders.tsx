@@ -554,14 +554,28 @@ const SellerOrders = () => {
                   {/* Actions */}
                   <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
                     {order.status === 'pending' && (
-                      <Button
-                        size="sm"
-                        onClick={() => setSelectedOrder(order.id)}
-                        className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-                      >
-                        <Send className="h-4 w-4 mr-1" />
-                        Deliver
-                      </Button>
+                      (() => {
+                        const deliveryType = (order.product as any)?.delivery_type;
+                        const isAutoDelivery = ['auto_account', 'auto_license', 'auto_download'].includes(deliveryType);
+                        if (isAutoDelivery) {
+                          return (
+                            <Badge className="bg-emerald-100 text-emerald-700 border-0 text-xs font-semibold">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Auto-Delivery
+                            </Badge>
+                          );
+                        }
+                        return (
+                          <Button
+                            size="sm"
+                            onClick={() => setSelectedOrder(order.id)}
+                            className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                          >
+                            <Send className="h-4 w-4 mr-1" />
+                            Deliver
+                          </Button>
+                        );
+                      })()
                     )}
                     {order.status === 'delivered' && (
                       <Button

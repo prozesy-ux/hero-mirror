@@ -179,6 +179,31 @@ const DeliveryInventoryManager = ({ productId, sellerId, deliveryMode, onDeliver
   const available = items.filter(i => !i.is_assigned).length;
   const assigned = items.filter(i => i.is_assigned).length;
 
+  // Usage guide state
+  const [usageGuide, setUsageGuide] = useState('');
+  const [savingGuide, setSavingGuide] = useState(false);
+
+  useEffect(() => {
+    if (productId) {
+      supabase.from('seller_products').select('product_metadata').eq('id', productId).single()
+        .then(({ data }) => {
+          const meta = data?.product_metadata as Record<string, any> | null;
+          setUsageGuide(meta?.delivery_guide || '');
+        });
+    }
+  }, [productId]);
+
+  const saveUsageGuide = async () => {
+    if (!productId) return;
+    setSavingGuide(true);
+    const { error } = await supabase.from('seller_products')
+      .update({ product_metadata: { delivery_guide: usageGuide } })
+      .eq('id', productId);
+    if (error) toast.error('Failed to save guide');
+    else toast.success('Usage guide saved');
+    setSavingGuide(false);
+  };
+
   if (!SUPPORTED_PRODUCT_TYPES.includes(productType)) return null;
 
   return (
@@ -211,6 +236,39 @@ const DeliveryInventoryManager = ({ productId, sellerId, deliveryMode, onDeliver
           })}
         </div>
       </div>
+
+      {/* Auto/Manual Explanation */}
+      <div className="p-3 bg-black/[0.02] rounded-lg border border-black/5 text-xs text-black/60">
+        {isAutoMode
+          ? '✅ Auto Mode: Orders auto-deliver from pool. No manual action needed.'
+          : deliveryMode === 'instant_download'
+            ? '📁 File Download: Same files delivered to all buyers automatically.'
+            : '🤚 Manual Mode: You manually deliver each order from the Sales page.'}
+      </div>
+
+      {/* Usage Guide */}
+      {isAutoMode && productId && (
+        <div className="space-y-2 p-3 border border-black/10 rounded-lg">
+          <p className="text-[10px] text-black/40 uppercase tracking-widest font-bold">Usage Guide for Buyers</p>
+          <Textarea
+            value={usageGuide} onChange={e => setUsageGuide(e.target.value)}
+            placeholder="How to use this product (shown to buyer after delivery)..."
+            rows={3} className="text-sm border-black/10"
+          />
+          <Button size="sm" variant="outline" onClick={saveUsageGuide} disabled={savingGuide} className="h-7 text-xs border-black/10">
+            {savingGuide ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+            Save Guide
+          </Button>
+        </div>
+      )}
+
+      {/* Link to full dashboard */}
+      {isAutoMode && (
+        <a href="/seller/delivery-inventory" className="flex items-center gap-1.5 text-xs text-black/40 hover:text-black/70 transition-colors">
+          <Package className="w-3.5 h-3.5" />
+          Manage all inventory in Delivery Dashboard →
+        </a>
+      )}
 
       {/* Pool Inventory (only for auto modes) */}
       {isAutoMode && (
