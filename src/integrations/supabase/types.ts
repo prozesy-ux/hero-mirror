@@ -446,6 +446,54 @@ export type Database = {
           },
         ]
       }
+      buyer_delivered_items: {
+        Row: {
+          buyer_id: string
+          delivered_at: string
+          delivered_data: Json
+          delivery_type: string
+          id: string
+          is_revealed: boolean
+          order_id: string | null
+          product_id: string
+        }
+        Insert: {
+          buyer_id: string
+          delivered_at?: string
+          delivered_data?: Json
+          delivery_type: string
+          id?: string
+          is_revealed?: boolean
+          order_id?: string | null
+          product_id: string
+        }
+        Update: {
+          buyer_id?: string
+          delivered_at?: string
+          delivered_data?: Json
+          delivery_type?: string
+          id?: string
+          is_revealed?: boolean
+          order_id?: string | null
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_delivered_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "seller_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_delivered_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buyer_payment_accounts: {
         Row: {
           account_details: Json | null
@@ -841,6 +889,80 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_pool_items: {
+        Row: {
+          assigned_at: string | null
+          assigned_order_id: string | null
+          assigned_to: string | null
+          created_at: string
+          credentials: Json
+          display_order: number
+          id: string
+          is_assigned: boolean
+          item_type: string
+          label: string | null
+          product_id: string
+          seller_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_order_id?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          credentials?: Json
+          display_order?: number
+          id?: string
+          is_assigned?: boolean
+          item_type: string
+          label?: string | null
+          product_id: string
+          seller_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_order_id?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          credentials?: Json
+          display_order?: number
+          id?: string
+          is_assigned?: boolean
+          item_type?: string
+          label?: string | null
+          product_id?: string
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_pool_items_assigned_order_id_fkey"
+            columns: ["assigned_order_id"]
+            isOneToOne: false
+            referencedRelation: "seller_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_pool_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_pool_items_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_pool_items_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3760,6 +3882,10 @@ export type Database = {
       approve_seller_delivery: {
         Args: { p_buyer_id: string; p_order_id: string }
         Returns: undefined
+      }
+      assign_delivery_pool_item: {
+        Args: { p_buyer_id: string; p_order_id: string; p_product_id: string }
+        Returns: Json
       }
       check_admin_rate_limit: { Args: { p_ip_address: string }; Returns: Json }
       clean_old_rate_limits: { Args: never; Returns: undefined }

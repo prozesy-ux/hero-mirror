@@ -29,6 +29,7 @@ import SellerSettings from '@/components/seller/SellerSettings';
 import SellerFeatureRequests from '@/components/seller/SellerFeatureRequests';
 import SellerAnalytics from '@/components/seller/SellerAnalytics';
 import SellerInventory from '@/components/seller/SellerInventory';
+import SellerDeliveryInventory from '@/components/seller/SellerDeliveryInventory';
 import SellerFlashSales from '@/components/seller/SellerFlashSales';
 import SellerProductAnalytics from '@/components/seller/SellerProductAnalytics';
 import SellerCustomers from '@/components/seller/SellerCustomers';
@@ -563,6 +564,7 @@ const SellerMainContent = () => {
           <Route path="/orders" element={<SellerOrders />} />
           <Route path="/analytics" element={<SellerAnalytics />} />
           <Route path="/inventory" element={<SellerInventory />} />
+          <Route path="/delivery-inventory" element={<SellerDeliveryInventory />} />
           <Route path="/customers" element={<SellerCustomers />} />
           <Route path="/marketing" element={<SellerMarketing />} />
           <Route path="/coupons" element={<SellerMarketing />} />

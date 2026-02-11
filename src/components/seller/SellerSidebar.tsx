@@ -52,6 +52,7 @@ const navItemsAfter = [
 // Products sub-menu items
 const productSubItems = [
   { to: '/seller/products', icon: GumroadProductsIcon, label: 'All Products' },
+  { to: '/seller/delivery-inventory', icon: GumroadInventoryIcon, label: 'Delivery Pool' },
   { to: '/seller/discount', icon: GumroadDiscountIcon, label: 'Discount' },
   { to: '/seller/coupons', icon: GumroadCouponsIcon, label: 'Coupons' },
   { to: '/seller/flash-sales', icon: GumroadFlashSaleIcon, label: 'Flash Sales' },
