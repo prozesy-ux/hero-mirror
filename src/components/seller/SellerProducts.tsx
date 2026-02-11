@@ -83,7 +83,7 @@ const popularTags = ['Digital', 'Premium', 'Instant Delivery', 'Lifetime', 'Subs
 
 const SellerProducts = () => {
   const navigate = useNavigate();
-  const { profile, products, refreshProducts, loading } = useSellerContext();
+  const { profile, products, orders, refreshProducts, loading } = useSellerContext();
   const { formatAmountOnly } = useCurrency();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -282,9 +282,11 @@ const SellerProducts = () => {
     if (statusFilter === 'live') {
       filteredProducts = filteredProducts.filter(p => p.is_approved && p.is_available);
     } else if (statusFilter === 'pending') {
-      filteredProducts = filteredProducts.filter(p => !p.is_approved);
+      filteredProducts = filteredProducts.filter(p => !p.is_approved && p.is_available);
+    } else if (statusFilter === 'draft') {
+      filteredProducts = filteredProducts.filter(p => !p.is_available && !p.is_approved);
     } else if (statusFilter === 'hidden') {
-      filteredProducts = filteredProducts.filter(p => !p.is_available);
+      filteredProducts = filteredProducts.filter(p => !p.is_available && p.is_approved);
     }
   }
 
@@ -309,12 +311,13 @@ const SellerProducts = () => {
     filteredProducts = [...filteredProducts].sort((a, b) => (b.sold_count || 0) - (a.sold_count || 0));
   }
 
-  // Calculate stats
+  // Calculate stats using real order data
   const totalProducts = products.length;
   const liveProducts = products.filter(p => p.is_approved && p.is_available).length;
-  const pendingProducts = products.filter(p => !p.is_approved).length;
-  const totalRevenue = products.reduce((sum, p) => sum + (p.sold_count || 0) * p.price, 0);
-  const totalSales = products.reduce((sum, p) => sum + (p.sold_count || 0), 0);
+  const pendingProducts = products.filter(p => !p.is_approved && p.is_available).length;
+  const draftProducts = products.filter(p => !p.is_available && !p.is_approved).length;
+  const totalRevenue = orders.reduce((sum, o) => sum + Number(o.seller_earning || 0), 0);
+  const totalSales = orders.length;
 
   const getCategoryNames = (product: any) => {
     const ids = product.category_ids || (product.category_id ? [product.category_id] : []);
@@ -395,6 +398,7 @@ const SellerProducts = () => {
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="live">Live</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="hidden">Hidden</SelectItem>
               </SelectContent>
             </Select>
@@ -470,11 +474,13 @@ const SellerProducts = () => {
                     {/* Status Badge - Modern */}
                     <div className="absolute top-3 left-3">
                       <span className={`inline-flex items-center px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full ${
-                        product.is_approved 
+                        product.is_approved && product.is_available
                           ? 'bg-green-500 text-white' 
-                          : 'bg-amber-100 text-amber-700'
+                          : !product.is_available && !product.is_approved
+                            ? 'bg-gray-200 text-gray-600'
+                            : 'bg-amber-100 text-amber-700'
                       }`}>
-                        {product.is_approved ? 'Live' : 'Pending'}
+                        {product.is_approved && product.is_available ? 'Live' : !product.is_available && !product.is_approved ? 'Draft' : 'Pending'}
                       </span>
                     </div>
                     
@@ -623,6 +629,10 @@ const SellerProducts = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-500">Pending Approval</span>
               <span className="text-xl font-semibold text-amber-600">{pendingProducts}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-500">Drafts</span>
+              <span className="text-xl font-semibold text-gray-500">{draftProducts}</span>
             </div>
             <div className="border-t pt-4">
               <div className="flex items-center justify-between">

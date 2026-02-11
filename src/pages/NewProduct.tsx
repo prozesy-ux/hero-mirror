@@ -266,7 +266,37 @@ const NewProduct = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const buildProductData = (isDraft: boolean) => {
+    const primaryImage = images.length > 0 ? images[0] : null;
+    return {
+      seller_id: profile.id,
+      name: name.trim(),
+      description: description.trim() || null,
+      price: parseFloat(price) || 0,
+      original_price: originalPrice ? (parseFloat(originalPrice) || null) : null,
+      stock: parseInt(stock) || 0,
+      category_id: categoryIds[0] || null,
+      category_ids: categoryIds,
+      tags,
+      icon_url: primaryImage,
+      images,
+      is_available: isDraft ? false : isAvailable,
+      is_approved: false, // Always reset to pending on create/edit
+      chat_allowed: chatAllowed,
+      requires_email: requiresEmail,
+      product_type: productType,
+      product_metadata: (CALL_TYPES.includes(productType)
+        ? JSON.parse(JSON.stringify({ time_slots: timeSlots, call_duration: callDuration }))
+        : {}) as any,
+      is_pwyw: isPwyw,
+      min_price: isPwyw ? (parseFloat(minPrice) || 0) : 0,
+      is_preorder: isPreorder,
+      release_date: isPreorder && releaseDate ? new Date(releaseDate).toISOString() : null,
+      preorder_message: isPreorder ? preorderMessage.trim() || null : null,
+    };
+  };
+
+  const saveProduct = async (isDraft: boolean) => {
     if (!name.trim() || !price) {
       toast.error('Name and price are required');
       return;
@@ -274,36 +304,7 @@ const NewProduct = () => {
 
     setSubmitting(true);
     try {
-      const primaryImage = images.length > 0 ? images[0] : null;
-      
-      const productData = {
-        seller_id: profile.id,
-        name: name.trim(),
-        description: description.trim() || null,
-        price: parseFloat(price) || 0,
-        original_price: originalPrice ? (parseFloat(originalPrice) || null) : null,
-        stock: parseInt(stock) || 0,
-        category_id: categoryIds[0] || null,
-        category_ids: categoryIds,
-        tags,
-        icon_url: primaryImage,
-        images,
-        is_available: isAvailable,
-        chat_allowed: chatAllowed,
-        requires_email: requiresEmail,
-        product_type: productType,
-        product_metadata: (CALL_TYPES.includes(productType)
-          ? JSON.parse(JSON.stringify({ time_slots: timeSlots, call_duration: callDuration }))
-          : {}) as any,
-        // PWYW fields
-        is_pwyw: isPwyw,
-        min_price: isPwyw ? (parseFloat(minPrice) || 0) : 0,
-        // Pre-order fields
-        is_preorder: isPreorder,
-        release_date: isPreorder && releaseDate ? new Date(releaseDate).toISOString() : null,
-        preorder_message: isPreorder ? preorderMessage.trim() || null : null,
-      };
-
+      const productData = buildProductData(isDraft);
       let savedProductId = productId;
 
       if (isEditMode && productId) {
@@ -324,7 +325,6 @@ const NewProduct = () => {
 
       // Save files to product_content
       if (savedProductId && INSTANT_DOWNLOAD_TYPES.includes(productType) && files.length > 0) {
-        // Delete existing content first if editing
         if (isEditMode) {
           await supabase.from('product_content').delete().eq('product_id', savedProductId).in('content_type', ['file', 'link']);
         }
@@ -362,15 +362,22 @@ const NewProduct = () => {
         await supabase.from('course_lessons').insert(lessonRows);
       }
 
-      toast.success(isEditMode ? 'Product updated!' : 'Product created! Awaiting approval.');
+      if (isDraft) {
+        toast.success('Product saved as draft!');
+      } else {
+        toast.success(isEditMode ? 'Product updated! Sent for review.' : 'Product created! Awaiting approval.');
+      }
       refreshProducts();
       navigate('/seller/products');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create product');
+      toast.error(error.message || 'Failed to save product');
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleSubmit = () => saveProduct(false);
+  const handleSaveDraft = () => saveProduct(true);
 
   const selectedType = getProductTypeById(productType);
   const SelectedIcon = selectedType.Icon;
@@ -420,23 +427,38 @@ const NewProduct = () => {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
-              <Button 
-                onClick={handleSubmit}
-                disabled={submitting || !canProceed()}
-                className="rounded-md bg-black hover:bg-black/90 text-white px-6"
-              >
-                {submitting ? (
-                  <>
+              <>
+                <Button 
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={submitting || !canProceed()}
+                  className="rounded-md border border-gray-300 hover:bg-gray-50 text-gray-700 px-5"
+                >
+                  {submitting ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {isEditMode ? 'Saving...' : 'Publishing...'}
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    {isEditMode ? 'Save Changes' : 'Publish'}
-                  </>
-                )}
-              </Button>
+                  ) : (
+                    <Package className="w-4 h-4 mr-2" />
+                  )}
+                  Save as Draft
+                </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={submitting || !canProceed()}
+                  className="rounded-md bg-black hover:bg-black/90 text-white px-6"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {isEditMode ? 'Saving...' : 'Publishing...'}
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      {isEditMode ? 'Save & Submit for Review' : 'Publish'}
+                    </>
+                  )}
+                </Button>
+              </>
             )}
           </div>
         </div>
