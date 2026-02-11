@@ -234,25 +234,23 @@ export const useAuth = () => {
   };
 
   const signInWithGoogle = async () => {
-    const { lovable } = await import('@/integrations/lovable/index');
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/signin',
+      }
     });
-    if (result.error) {
-      return { data: null, error: result.error };
-    }
-    return { data: result, error: null };
+    return { data, error };
   };
 
   const signInWithApple = async () => {
-    const { lovable } = await import('@/integrations/lovable/index');
-    const result = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: window.location.origin,
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: window.location.origin + '/signin',
+      }
     });
-    if (result.error) {
-      return { data: null, error: result.error };
-    }
-    return { data: result, error: null };
+    return { data, error };
   };
 
   // OPTIMISTIC AUTH: Consider authenticated if we have a session OR
