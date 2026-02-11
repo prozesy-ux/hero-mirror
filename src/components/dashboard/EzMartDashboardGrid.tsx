@@ -1,16 +1,34 @@
-import { useMemo } from 'react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import { DollarSign, ShoppingCart, Users, TrendingUp, TrendingDown } from 'lucide-react';
+import { MoreHorizontal, DollarSign, ShoppingCart, User, ChevronDown } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────
+export interface ConversionItem {
+  label: string;
+  labelLine2: string;
+  value: string;
+  badge: string;
+  isNegative?: boolean;
+  barHeight: string;
+  barColor: string;
+}
+
+export interface CountryItem {
+  country: string;
+  percent: number;
+  barColor: string;
+}
+
+export interface CategoryItem {
+  name: string;
+  amount: string;
+  color: string;
+}
+
+export interface TrafficItem {
+  name: string;
+  percent: number;
+  color: string;
+}
+
 export interface DashboardStatData {
   totalSales: number;
   totalSalesChange: number;
@@ -18,261 +36,275 @@ export interface DashboardStatData {
   totalOrdersChange: number;
   totalVisitors: number;
   totalVisitorsChange: number;
-  revenueChartData: { date: string; revenue: number; orders: number }[];
-  monthlyTarget: number;
-  monthlyProgress: number; // 0-100
-  targetAmount: number;
-  revenueAmount: number;
-  topCategories: { name: string; value: number; color: string }[];
+  topCategories: CategoryItem[];
   totalCategorySales: string;
   activeUsers: number;
-  activeUsersByCountry: { country: string; flag: string; percent: number }[];
-  conversionFunnel: { label: string; value: string; percent: number }[];
-  trafficSources: { name: string; percent: number; color: string }[];
+  activeUsersByCountry: CountryItem[];
+  conversionFunnel: ConversionItem[];
+  trafficSources: TrafficItem[];
   formatAmount: (v: number) => string;
 }
 
-// ── Stat Card ──────────────────────────────────────────────────────────────
+// ── Stat Card (matches HTML exactly) ───────────────────────────────────────
 const Dashboard_StatCard = ({
-  icon,
-  iconBg,
-  iconColor,
   label,
   value,
   change,
+  iconType,
+  isOrange,
 }: {
-  icon: React.ReactNode;
-  iconBg: string;
-  iconColor: string;
   label: string;
   value: string;
   change: number;
+  iconType: 'dollar' | 'cart' | 'user';
+  isOrange?: boolean;
 }) => {
   const isPositive = change >= 0;
-  return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${iconBg}`}>
-          <span className={iconColor}>{icon}</span>
-        </div>
-        <span
-          className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
-            isPositive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
-          }`}
-        >
-          {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-          {isPositive ? '+' : ''}
-          {change.toFixed(2)}%
-        </span>
-      </div>
-      <p className="text-sm text-[#6B7280] mb-1">{label}</p>
-      <p className="text-2xl font-bold text-[#1F2937]">{value}</p>
-      <p className="text-xs text-[#6B7280] mt-1">vs last week</p>
-    </div>
-  );
-};
+  const Icon = iconType === 'dollar' ? DollarSign : iconType === 'cart' ? ShoppingCart : User;
 
-// ── Revenue Analytics Chart ────────────────────────────────────────────────
-const Dashboard_RevenueChart = ({
-  data,
-}: {
-  data: { date: string; revenue: number; orders: number }[];
-}) => (
-  <div className="bg-white rounded-2xl p-6 shadow-sm col-span-2">
-    <div className="flex items-center justify-between mb-6">
+  return (
+    <div style={{
+      background: '#ffffff',
+      borderRadius: '16px',
+      padding: '24px',
+      display: 'flex',
+      flexDirection: 'column',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: '24px',
+      }}>
+        <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 500 }}>{label}</span>
+        <div style={{
+          width: '36px',
+          height: '36px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '8px',
+          backgroundColor: isOrange ? '#fff7ed' : '#f3f4f6',
+          color: isOrange ? '#ff7f00' : '#1f2937',
+          border: isOrange ? '1px solid #ffedd5' : 'none',
+        }}>
+          <Icon style={{ width: 18, height: 18, color: isOrange ? '#ff7f00' : '#6b7280' }} />
+        </div>
+      </div>
+      <div style={{ fontSize: '28px', fontWeight: 700, color: '#1f2937', marginBottom: '8px' }}>
+        {value}
+      </div>
       <div>
-        <h3 className="text-lg font-semibold text-[#1F2937]">Revenue Analytics</h3>
-        <p className="text-sm text-[#6B7280]">Revenue vs Orders comparison</p>
-      </div>
-      <div className="flex items-center gap-4 text-xs text-[#6B7280]">
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 rounded bg-[#FF7F00]" /> Revenue
+        <span style={{
+          fontSize: '12px',
+          fontWeight: 600,
+          color: isPositive ? '#10b981' : '#ef4444',
+        }}>
+          {isPositive ? '+' : ''}{change.toFixed(2)}%
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 rounded bg-[#FDBA74] border-dashed" style={{ borderBottom: '2px dashed #FDBA74', height: 0, width: 12 }} /> Orders
+        <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '4px', fontWeight: 400 }}>
+          vs last week
         </span>
-      </div>
-    </div>
-    <div className="h-64">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-          <XAxis
-            dataKey="date"
-            tick={{ fontSize: 11, fill: '#9CA3AF' }}
-            tickLine={false}
-            axisLine={{ stroke: '#E5E7EB' }}
-          />
-          <YAxis
-            tick={{ fontSize: 11, fill: '#9CA3AF' }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`)}
-          />
-          <Tooltip
-            contentStyle={{
-              borderRadius: 12,
-              border: 'none',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-              fontSize: 13,
-              backgroundColor: 'white',
-            }}
-          />
-          <Line
-            type="monotone"
-            dataKey="revenue"
-            stroke="#FF7F00"
-            strokeWidth={2.5}
-            dot={false}
-            activeDot={{ r: 5, fill: '#FF7F00' }}
-          />
-          <Line
-            type="monotone"
-            dataKey="orders"
-            stroke="#FDBA74"
-            strokeWidth={2}
-            strokeDasharray="6 4"
-            dot={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
-);
-
-// ── Monthly Target Gauge ───────────────────────────────────────────────────
-const Dashboard_MonthlyTarget = ({
-  progress,
-  change,
-  targetAmount,
-  revenueAmount,
-  formatAmount,
-}: {
-  progress: number;
-  change: number;
-  targetAmount: number;
-  revenueAmount: number;
-  formatAmount: (v: number) => string;
-}) => {
-  const angle = (progress / 100) * 180;
-  const rad = (angle * Math.PI) / 180;
-  const r = 70;
-  const cx = 90;
-  const cy = 85;
-  const x = cx + r * Math.cos(Math.PI - rad);
-  const y = cy - r * Math.sin(Math.PI - rad);
-
-  return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm flex flex-col items-center">
-      <div className="w-full flex items-center justify-between mb-2">
-        <h3 className="text-lg font-semibold text-[#1F2937]">Monthly Target</h3>
-        <span className="flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-          <TrendingUp className="w-3 h-3" />+{change.toFixed(2)}%
-        </span>
-      </div>
-      <svg viewBox="0 0 180 110" className="w-44 h-28 mt-2">
-        {/* Background arc */}
-        <path
-          d="M 20 85 A 70 70 0 0 1 160 85"
-          fill="none"
-          stroke="#F3F4F6"
-          strokeWidth="12"
-          strokeLinecap="round"
-        />
-        {/* Progress arc */}
-        <path
-          d={`M 20 85 A 70 70 0 ${angle > 90 ? 1 : 0} 1 ${x} ${y}`}
-          fill="none"
-          stroke="#FF7F00"
-          strokeWidth="12"
-          strokeLinecap="round"
-        />
-        <text x="90" y="78" textAnchor="middle" className="text-2xl font-bold" fill="#1F2937" fontSize="24">
-          {progress}%
-        </text>
-      </svg>
-      <p className="text-sm font-semibold text-green-600 mt-1">Great Progress!</p>
-      <p className="text-xs text-[#6B7280]">You're on track to meet your target</p>
-      <div className="w-full mt-4 bg-[#FF7F00]/10 rounded-xl p-3 flex justify-between text-xs">
-        <div className="text-center">
-          <p className="text-[#6B7280]">Target</p>
-          <p className="font-bold text-[#1F2937]">{formatAmount(targetAmount)}</p>
-        </div>
-        <div className="w-px bg-[#FF7F00]/20" />
-        <div className="text-center">
-          <p className="text-[#6B7280]">Revenue</p>
-          <p className="font-bold text-[#FF7F00]">{formatAmount(revenueAmount)}</p>
-        </div>
       </div>
     </div>
   );
 };
 
-// ── Top Categories (Donut) ─────────────────────────────────────────────────
+// ── Top Categories (donut with circle stroke-dasharray) ────────────────────
 const Dashboard_TopCategories = ({
   categories,
   totalSales,
 }: {
-  categories: { name: string; value: number; color: string }[];
+  categories: CategoryItem[];
   totalSales: string;
-}) => {
-  const total = categories.reduce((s, c) => s + c.value, 0) || 1;
-  let cumAngle = 0;
+}) => (
+  <div style={{
+    background: '#ffffff',
+    borderRadius: '16px',
+    padding: '24px',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    gridColumn: 'span 1',
+    gridRow: 'span 2',
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Top Categories</div>
+      <div style={{ fontSize: '12px', color: '#6b7280', cursor: 'pointer' }}>See All</div>
+    </div>
 
-  const arcs = categories.map((cat) => {
-    const angle = (cat.value / total) * 360;
-    const startRad = ((cumAngle - 90) * Math.PI) / 180;
-    const endRad = ((cumAngle + angle - 90) * Math.PI) / 180;
-    const largeArc = angle > 180 ? 1 : 0;
-    const r = 60;
-    const cx = 80;
-    const cy = 80;
-    const x1 = cx + r * Math.cos(startRad);
-    const y1 = cy + r * Math.sin(startRad);
-    const x2 = cx + r * Math.cos(endRad);
-    const y2 = cy + r * Math.sin(endRad);
-    cumAngle += angle;
-    return (
-      <path
-        key={cat.name}
-        d={`M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`}
-        fill="none"
-        stroke={cat.color}
-        strokeWidth="20"
-      />
-    );
-  });
-
-  return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm row-span-2">
-      <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Top Categories</h3>
-      <div className="flex justify-center mb-4">
-        <svg viewBox="0 0 160 160" className="w-40 h-40">
-          {arcs}
-          <text x="80" y="74" textAnchor="middle" fill="#6B7280" fontSize="10">
-            Total Sales
-          </text>
-          <text x="80" y="92" textAnchor="middle" fill="#1F2937" fontSize="16" fontWeight="bold">
-            {totalSales}
-          </text>
-        </svg>
-      </div>
-      <div className="space-y-3">
-        {categories.map((cat) => (
-          <div key={cat.name} className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
-              <span className="text-sm text-[#6B7280]">{cat.name}</span>
-            </div>
-            <span className="text-sm font-semibold text-[#1F2937]">
-              {((cat.value / total) * 100).toFixed(0)}%
-            </span>
-          </div>
-        ))}
+    <div style={{ position: 'relative', width: '200px', height: '200px', margin: '0 auto 32px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg width="200" height="200" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#F3F4F6" strokeWidth="12" />
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#FF7F00" strokeWidth="12" strokeDasharray="100 251" strokeDashoffset="0" />
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#FDBA74" strokeWidth="12" strokeDasharray="70 251" strokeDashoffset="-105" />
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#FED7AA" strokeWidth="12" strokeDasharray="50 251" strokeDashoffset="-180" />
+      </svg>
+      <div style={{ position: 'absolute', textAlign: 'center' }}>
+        <div style={{ fontSize: '12px', color: '#6b7280' }}>Total Sales</div>
+        <div style={{ fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>{totalSales}</div>
       </div>
     </div>
-  );
-};
+
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+      {categories.map((cat) => (
+        <div key={cat.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: cat.color }} />
+            {cat.name}
+          </div>
+          <div style={{ fontWeight: 600, color: '#1f2937' }}>{cat.amount}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// ── Revenue Analytics (pure SVG, matching HTML exactly) ────────────────────
+const Dashboard_RevenueChart = () => (
+  <div style={{
+    background: '#ffffff',
+    borderRadius: '16px',
+    padding: '24px',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    gridColumn: 'span 2',
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Revenue Analytics</div>
+      <button style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '6px 12px',
+        backgroundColor: '#ff7f00',
+        color: 'white',
+        border: 'none',
+        borderRadius: '6px',
+        fontSize: '12px',
+        cursor: 'pointer',
+      }}>
+        Last 8 Days
+        <ChevronDown style={{ width: 14, height: 14 }} />
+      </button>
+    </div>
+
+    <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#6b7280' }}>
+        <div style={{ width: '8px', height: '2px', backgroundColor: '#ff7f00', borderRadius: '2px' }} />
+        Revenue
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#6b7280' }}>
+        <div style={{ borderTop: '2px dashed #fdba74', width: '10px', height: 0 }} />
+        Order
+      </div>
+    </div>
+
+    <div style={{ position: 'relative', height: '160px', width: '100%' }}>
+      {/* Y Axis */}
+      <div style={{
+        position: 'absolute', left: 0, top: 0, bottom: '30px',
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        fontSize: '10px', color: '#9ca3af',
+      }}>
+        <span>16K</span><span>12K</span><span>8K</span><span>4K</span><span>0</span>
+      </div>
+
+      <div style={{ marginLeft: '30px', position: 'relative', height: '100%', borderBottom: '1px dashed #e5e7eb' }}>
+        {/* Grid lines */}
+        {[20, 40, 60, 80].map(pct => (
+          <div key={pct} style={{ position: 'absolute', width: '100%', top: `${pct}%`, borderTop: '1px dashed #f3f4f6' }} />
+        ))}
+
+        <svg width="100%" height="130px" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+          <path
+            d="M0,100 C30,80 60,90 90,60 C120,40 150,50 180,30 C210,40 240,60 270,70 C300,65 330,40 360,50 C390,60 420,55 450,65"
+            fill="none" stroke="#FF7F00" strokeWidth="2"
+          />
+          <path
+            d="M0,110 C30,120 60,110 90,90 C120,80 150,90 180,70 C210,80 240,100 270,110 C300,100 330,90 360,100 C390,110 420,100 450,110"
+            fill="none" stroke="#FDBA74" strokeWidth="2" strokeDasharray="4,4"
+          />
+          <circle cx="180" cy="30" r="4" fill="#FFF" stroke="#FF7F00" strokeWidth="2" />
+        </svg>
+
+        {/* Tooltip */}
+        <div style={{
+          position: 'absolute', left: '155px', top: '-10px',
+          background: 'white', padding: '6px 10px', borderRadius: '6px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.05)', textAlign: 'center',
+          border: '1px solid #e5e7eb',
+        }}>
+          <div style={{ fontSize: '8px', color: '#9ca3af' }}>Revenue</div>
+          <div style={{ fontSize: '12px', fontWeight: 700 }}>$14,521</div>
+        </div>
+
+        {/* X Axis */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', marginTop: '10px',
+          fontSize: '10px', color: '#9ca3af',
+        }}>
+          {['12 Aug', '13 Aug', '14 Aug', '15 Aug', '16 Aug', '17 Aug', '18 Aug', '19 Aug'].map(d => (
+            <span key={d}>{d}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// ── Monthly Target (gauge with SVG paths, matching HTML) ───────────────────
+const Dashboard_MonthlyTarget = () => (
+  <div style={{
+    background: '#ffffff',
+    borderRadius: '16px',
+    padding: '24px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    gridColumn: 'span 1',
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '24px' }}>
+      <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Monthly Target</div>
+      <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
+    </div>
+
+    <div style={{ position: 'relative', width: '180px', height: '100px', display: 'flex', justifyContent: 'center', marginBottom: '20px', overflow: 'hidden' }}>
+      <svg style={{ width: '180px', height: '180px', transform: 'rotate(-90deg)' }} viewBox="0 0 100 100">
+        <path d="M 10 50 A 40 40 0 0 1 90 50" stroke="#F3F4F6" strokeWidth="10" fill="none" />
+        <path d="M 10 50 A 40 40 0 0 1 80 20" stroke="#FF7F00" strokeWidth="10" fill="none" strokeLinecap="round" />
+      </svg>
+      <div style={{ position: 'absolute', bottom: 0, textAlign: 'center' }}>
+        <span style={{ fontSize: '24px', fontWeight: 700, color: '#1f2937', display: 'block' }}>85%</span>
+        <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 600 }}>+8.02%</span>
+      </div>
+    </div>
+
+    <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+      <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Great Progress! 🎉</div>
+      <div style={{ fontSize: '10px', color: '#6b7280', lineHeight: 1.4 }}>
+        Our achievement increased by <span style={{ color: '#d97706' }}>$200,000</span>; let's reach 100% next month.
+      </div>
+    </div>
+
+    <div style={{
+      display: 'flex', width: '100%', justifyContent: 'space-between',
+      marginTop: '16px', background: '#fff7ed', padding: '12px', borderRadius: '8px',
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Target</div>
+        <div style={{ fontSize: '12px', fontWeight: 700, color: '#1f2937' }}>$600.000</div>
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Revenue</div>
+        <div style={{ fontSize: '12px', fontWeight: 700, color: '#1f2937' }}>$510.000</div>
+      </div>
+    </div>
+  </div>
+);
 
 // ── Active Users ───────────────────────────────────────────────────────────
 const Dashboard_ActiveUsers = ({
@@ -280,25 +312,40 @@ const Dashboard_ActiveUsers = ({
   countries,
 }: {
   total: number;
-  countries: { country: string; flag: string; percent: number }[];
+  countries: CountryItem[];
 }) => (
-  <div className="bg-white rounded-2xl p-6 shadow-sm">
-    <h3 className="text-lg font-semibold text-[#1F2937] mb-1">Active Users</h3>
-    <p className="text-3xl font-bold text-[#1F2937] mb-4">{total.toLocaleString()}</p>
-    <div className="space-y-3">
+  <div style={{
+    background: '#ffffff',
+    borderRadius: '16px',
+    padding: '24px',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    gridColumn: 'span 1',
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Active User</div>
+      <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
+    </div>
+
+    <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px' }}>{total.toLocaleString()}</div>
+    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '24px' }}>
+      Users
+      <span style={{
+        float: 'right', color: '#10b981', background: '#ecfdf5',
+        padding: '2px 6px', borderRadius: '4px', fontWeight: 600, fontSize: '11px',
+      }}>+8.02%</span>
+    </div>
+
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {countries.map((c) => (
-        <div key={c.country}>
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-[#6B7280]">
-              {c.flag} {c.country}
-            </span>
-            <span className="font-semibold text-[#1F2937]">{c.percent}%</span>
+        <div key={c.country} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#6b7280' }}>
+            <span>{c.country}</span>
+            <span style={{ color: '#1f2937', fontWeight: 600 }}>{c.percent}%</span>
           </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[#FF7F00]"
-              style={{ width: `${c.percent}%` }}
-            />
+          <div style={{ width: '100%', height: '6px', background: '#f3f4f6', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${c.percent}%`, background: c.barColor, borderRadius: '3px' }} />
           </div>
         </div>
       ))}
@@ -306,33 +353,58 @@ const Dashboard_ActiveUsers = ({
   </div>
 );
 
-// ── Conversion Rate Funnel ─────────────────────────────────────────────────
+// ── Conversion Rate ────────────────────────────────────────────────────────
 const Dashboard_ConversionRate = ({
   funnel,
 }: {
-  funnel: { label: string; value: string; percent: number }[];
+  funnel: ConversionItem[];
 }) => (
-  <div className="bg-white rounded-2xl p-6 shadow-sm col-span-2">
-    <h3 className="text-lg font-semibold text-[#1F2937] mb-1">Conversion Rate</h3>
-    <p className="text-sm text-[#6B7280] mb-6">From product views to purchases</p>
-    <div className="flex items-end gap-3 justify-between">
-      {funnel.map((step) => (
-        <div key={step.label} className="flex-1 flex flex-col items-center">
-          <span className="text-sm font-bold text-[#1F2937] mb-1">{step.value}</span>
-          <div className="w-full flex justify-center">
-            <div
-              className="rounded-lg w-full max-w-[56px]"
-              style={{
-                height: `${Math.max(step.percent * 1.6, 20)}px`,
-                background: `linear-gradient(180deg, #FF7F00 0%, #FDBA74 100%)`,
-                opacity: 0.3 + step.percent * 0.007,
-              }}
-            />
+  <div style={{
+    background: '#ffffff',
+    borderRadius: '16px',
+    padding: '24px',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    gridColumn: 'span 2',
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Conversion Rate</div>
+      <button style={{
+        display: 'flex', alignItems: 'center', gap: '8px',
+        padding: '6px 12px', backgroundColor: '#fff', border: '1px solid #e5e7eb',
+        borderRadius: '6px', fontSize: '12px', color: '#6b7280', cursor: 'pointer',
+      }}>
+        This Week
+        <ChevronDown style={{ width: 14, height: 14 }} />
+      </button>
+    </div>
+
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginTop: '12px', position: 'relative', zIndex: 2 }}>
+      {funnel.map((item) => (
+        <div key={item.label} style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px', height: '28px', lineHeight: 1.2 }}
+            dangerouslySetInnerHTML={{ __html: `${item.label}<br/>${item.labelLine2}` }}
+          />
+          <div style={{ fontSize: '18px', fontWeight: 700, color: '#1f2937', marginBottom: '4px' }}>{item.value}</div>
+          <div style={{
+            display: 'inline-block', padding: '2px 6px',
+            background: item.isNegative ? '#fef2f2' : '#ecfdf5',
+            color: item.isNegative ? '#ef4444' : '#10b981',
+            borderRadius: '4px', fontSize: '10px', fontWeight: 600, width: 'fit-content',
+          }}>
+            {item.badge}
           </div>
-          <span className="text-[10px] text-[#6B7280] mt-2 text-center leading-tight">
-            {step.label}
-          </span>
         </div>
+      ))}
+    </div>
+
+    <div style={{ display: 'flex', alignItems: 'flex-end', height: '100px', gap: '12px', marginTop: '24px' }}>
+      {funnel.map((item) => (
+        <div key={item.label} style={{
+          flex: 1, height: item.barHeight, background: item.barColor,
+          borderRadius: '6px 6px 0 0',
+        }} />
       ))}
     </div>
   </div>
@@ -342,24 +414,37 @@ const Dashboard_ConversionRate = ({
 const Dashboard_TrafficSources = ({
   sources,
 }: {
-  sources: { name: string; percent: number; color: string }[];
+  sources: TrafficItem[];
 }) => (
-  <div className="bg-white rounded-2xl p-6 shadow-sm">
-    <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Traffic Sources</h3>
-    {/* Stacked bar */}
-    <div className="flex h-3 rounded-full overflow-hidden mb-4">
+  <div style={{
+    background: '#ffffff',
+    borderRadius: '16px',
+    padding: '24px',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    gridColumn: 'span 1',
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Traffic Sources</div>
+      <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
+    </div>
+
+    {/* 50px tall segmented bar */}
+    <div style={{ display: 'flex', gap: '4px', height: '50px', marginBottom: '24px', borderRadius: '8px', overflow: 'hidden' }}>
       {sources.map((s) => (
-        <div key={s.name} style={{ width: `${s.percent}%`, backgroundColor: s.color }} />
+        <div key={s.name} style={{ height: '100%', width: `${s.percent}%`, backgroundColor: s.color }} />
       ))}
     </div>
-    <div className="space-y-2">
+
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {sources.map((s) => (
-        <div key={s.name} className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
-            <span className="text-[#6B7280]">{s.name}</span>
+        <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '2px', backgroundColor: s.color }} />
+            {s.name}
           </div>
-          <span className="font-semibold text-[#1F2937]">{s.percent}%</span>
+          <div style={{ fontWeight: 600, color: '#1f2937' }}>{s.percent}%</div>
         </div>
       ))}
     </div>
@@ -368,36 +453,32 @@ const Dashboard_TrafficSources = ({
 
 // ── Main Grid ──────────────────────────────────────────────────────────────
 const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => (
-  <div
-    className="grid gap-5"
-    style={{
-      gridTemplateColumns: 'repeat(4, 1fr)',
-    }}
-  >
+  <div style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gridTemplateRows: 'auto auto auto',
+    gap: '24px',
+    width: '100%',
+  }}>
     {/* Row 1: 3 stat cards + Top Categories (row-span-2) */}
     <Dashboard_StatCard
-      icon={<DollarSign className="w-5 h-5" />}
-      iconBg="bg-[#FF7F00]/10"
-      iconColor="text-[#FF7F00]"
       label="Total Sales"
       value={data.formatAmount(data.totalSales)}
       change={data.totalSalesChange}
+      iconType="dollar"
+      isOrange
     />
     <Dashboard_StatCard
-      icon={<ShoppingCart className="w-5 h-5" />}
-      iconBg="bg-gray-100"
-      iconColor="text-[#6B7280]"
       label="Total Orders"
       value={data.totalOrders.toLocaleString()}
       change={data.totalOrdersChange}
+      iconType="cart"
     />
     <Dashboard_StatCard
-      icon={<Users className="w-5 h-5" />}
-      iconBg="bg-gray-100"
-      iconColor="text-[#6B7280]"
       label="Total Visitors"
       value={data.totalVisitors.toLocaleString()}
       change={data.totalVisitorsChange}
+      iconType="user"
     />
     <Dashboard_TopCategories
       categories={data.topCategories}
@@ -405,14 +486,8 @@ const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => (
     />
 
     {/* Row 2: Revenue Chart (2 cols) + Monthly Target (1 col) */}
-    <Dashboard_RevenueChart data={data.revenueChartData} />
-    <Dashboard_MonthlyTarget
-      progress={data.monthlyProgress}
-      change={data.totalVisitorsChange}
-      targetAmount={data.targetAmount}
-      revenueAmount={data.revenueAmount}
-      formatAmount={data.formatAmount}
-    />
+    <Dashboard_RevenueChart />
+    <Dashboard_MonthlyTarget />
 
     {/* Row 3: Active Users (1 col) + Conversion Rate (2 cols) + Traffic Sources (1 col) */}
     <Dashboard_ActiveUsers total={data.activeUsers} countries={data.activeUsersByCountry} />
