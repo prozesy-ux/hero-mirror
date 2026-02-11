@@ -31,9 +31,10 @@ import {
 } from 'lucide-react';
 import { Instagram, Twitter, Youtube, Music } from 'lucide-react';
 import StoreSidebar from '@/components/store/StoreSidebar';
-import StoreProductCard from '@/components/store/StoreProductCard';
 import StoreProductCardCompact from '@/components/store/StoreProductCardCompact';
 import StoreProductHoverCard from '@/components/store/StoreProductHoverCard';
+import ProductCardRenderer from '@/components/marketplace/ProductCardRenderer';
+import { CardSettings, CardProduct } from '@/components/marketplace/card-types';
 import ShareStoreModal from '@/components/seller/ShareStoreModal';
 import MobileStoreHeader from '@/components/store/MobileStoreHeader';
 import StoreCategoryChips from '@/components/store/StoreCategoryChips';
@@ -75,6 +76,16 @@ interface SellerProfile {
   // Rating from BFF
   averageRating?: number;
   totalReviews?: number;
+  // Card customization
+  card_style?: string;
+  card_button_text?: string;
+  card_button_color?: string;
+  card_button_text_color?: string;
+  card_accent_color?: string;
+  card_border_radius?: string;
+  card_show_rating?: boolean;
+  card_show_seller_name?: boolean;
+  card_show_badge?: boolean;
 }
 
 interface SellerProduct {
@@ -95,6 +106,39 @@ interface SellerProduct {
   chat_allowed: boolean | null;
   seller_id: string;
   view_count?: number | null;
+  product_type?: string | null;
+  product_metadata?: Record<string, any> | null;
+}
+
+function extractCardSettings(seller: SellerProfile): Partial<CardSettings> {
+  return {
+    style: (seller.card_style as CardSettings['style']) || 'classic',
+    buttonText: seller.card_button_text || 'Buy',
+    buttonColor: seller.card_button_color || '#10b981',
+    buttonTextColor: seller.card_button_text_color || '#ffffff',
+    accentColor: seller.card_accent_color || '#000000',
+    borderRadius: (seller.card_border_radius as CardSettings['borderRadius']) || 'rounded',
+    showRating: seller.card_show_rating ?? true,
+    showSellerName: seller.card_show_seller_name ?? true,
+    showBadge: seller.card_show_badge ?? true,
+  };
+}
+
+function toCardProduct(p: SellerProduct): CardProduct {
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    price: p.price,
+    icon_url: p.icon_url,
+    category_id: p.category_id,
+    tags: p.tags,
+    sold_count: p.sold_count,
+    chat_allowed: p.chat_allowed,
+    seller_id: p.seller_id,
+    product_type: p.product_type,
+    product_metadata: p.product_metadata,
+  };
 }
 
 interface Category {
@@ -401,7 +445,7 @@ const StoreContent = () => {
         ]);
 
         console.log('[Store] Direct query products:', productsResult.data?.length || 0);
-        if (productsResult.data) setProducts(productsResult.data);
+        if (productsResult.data) setProducts(productsResult.data as unknown as SellerProduct[]);
         if (categoriesResult.data) setCategories(categoriesResult.data);
       } catch (fallbackError) {
         console.error('[Store] Fallback also failed:', fallbackError);
@@ -1180,15 +1224,17 @@ const StoreContent = () => {
                       walletBalance={wallet?.balance}
                       purchasing={purchasing === product.id}
                     >
-                      <StoreProductCard
-                        product={product}
-                        storeName={seller.store_name}
-                        hasEnoughBalance={hasEnoughBalance(product.price)}
-                        isLoggedIn={!!user}
-                        purchasing={purchasing === product.id}
-                        onChat={() => handleChat(product)}
-                        onView={() => {}} // Navigation handled by HoverCard wrapper
+                      <ProductCardRenderer
+                        product={toCardProduct(product)}
+                        storeCardSettings={extractCardSettings(seller)}
+                        sellerName={seller.store_name}
+                        sellerAvatar={seller.store_logo_url}
+                        onClick={() => {}}
                         onBuy={() => handlePurchase(product)}
+                        onChat={() => handleChat(product)}
+                        purchasing={purchasing === product.id}
+                        isLoggedIn={!!user}
+                        hasEnoughBalance={hasEnoughBalance(product.price)}
                       />
                     </StoreProductHoverCard>
                   );

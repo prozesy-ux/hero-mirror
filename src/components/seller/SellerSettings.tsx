@@ -648,7 +648,7 @@ const SellerSettings = () => {
           <CardCustomizer
             settings={cardSettings}
             onChange={(newSettings) => {
-              setCardSettings(newSettings);
+              setCardSettings(newSettings as CardSettings);
               setHasChanges(true);
             }}
             mode="store"
