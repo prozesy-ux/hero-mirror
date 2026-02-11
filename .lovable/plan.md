@@ -1,154 +1,154 @@
 
-
-# Redesign: Seller Products Section -- Gumroad-Style, Text/Icon-Based, No Images
+# Auto-Delivery System: Accounts, Licenses, Downloads Pool
 
 ## Overview
-Remove the 2 decorative images (`gumroad-banner.png`, `gumroad-comic.png`) and replace everything with a clean, premium Gumroad-style design using only icons, text, and black-based typography. Redesign left and right panels with richer card layouts and more functional labels.
+Build a complete auto-delivery infrastructure that automatically delivers unique content to each buyer upon purchase. This covers 5 delivery modes that sellers can configure per product:
+
+1. **Account Pool** -- Seller uploads multiple account credentials (email/password pairs); each buyer gets one unique account automatically
+2. **License Keys** -- Seller uploads a pool of license keys/serial numbers; one key assigned per buyer
+3. **Single Download** -- Current behavior (all buyers get the same file set)
+4. **Multi-Download Pool** -- Seller uploads multiple unique download items; each buyer gets the next available one
+5. **Manual Delivery** -- Seller delivers manually (existing behavior for services/commissions)
 
 ---
 
-## Changes
+## Database Changes
 
-### 1. Remove Images, Replace with Icon/Text Design
+### New Table: `delivery_pool_items`
+Stores the pool of deliverable items (accounts, license keys, unique downloads) that get assigned one-per-buyer.
 
-**Remove:**
-- `gumroad-banner.png` (line 518) -- replace with a styled text banner card: black background, white bold heading "Your Products", subtitle with product count, and a decorative icon pattern
-- `gumroad-comic.png` (line 792) -- replace with an icon-based "Store Health" card using large stat numbers and premium typography
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| product_id | uuid | FK to seller_products |
+| seller_id | uuid | FK to seller_profiles |
+| item_type | text | 'account', 'license_key', 'download' |
+| label | text | Display label (e.g., "Netflix Premium", "Pro License") |
+| credentials | jsonb | For accounts: `{email, password, notes}`. For licenses: `{key, activation_url}`. For downloads: `{file_url, file_name, file_size}` |
+| is_assigned | boolean | false = available, true = claimed |
+| assigned_to | uuid | Buyer user_id (null until assigned) |
+| assigned_order_id | uuid | Order that claimed this item |
+| assigned_at | timestamptz | When it was assigned |
+| created_at | timestamptz | Default now() |
+| display_order | integer | Sort order |
 
-**New Banner (replaces image):**
-- Black card with white text: "Your Products" (24px bold), "{count} products in your store" subtitle
-- Right side: decorative Package icon cluster (semi-transparent)
-- Small action pills: "X Live", "X Pending" inline
+### New Table: `buyer_delivered_items`
+Records what was delivered to each buyer (the buyer-facing view of their delivered content).
 
-**New Default Right Panel (replaces comic image):**
-- Icon-based welcome card with ShoppingBag icon, "Select a product" text, and quick-tip bullets
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| buyer_id | uuid | FK to user |
+| order_id | uuid | FK to seller_orders |
+| product_id | uuid | FK to seller_products |
+| delivery_type | text | 'account', 'license_key', 'download', 'files' |
+| delivered_data | jsonb | The actual credentials/key/link delivered |
+| delivered_at | timestamptz | Default now() |
+| is_revealed | boolean | Whether buyer has viewed it (for security masking) |
 
-### 2. Black-Base Typography System
+### Update `seller_products` column usage
+- Use existing `delivery_type` column with new values: `'auto_account'`, `'auto_license'`, `'auto_download'`, `'instant_download'`, `'manual'`
+- Use existing `product_metadata` JSONB to store delivery config: `{ max_per_buyer, reveal_after_hours, delivery_instructions }`
 
-Apply across ALL text in the section:
-- Headings: `text-black font-bold` (not slate-500/900)
-- Labels: `text-black/60` (semi-transparent black instead of slate-400/500)
-- Values/Numbers: `text-black font-extrabold`
-- Accents: Keep pink-500 for active states and CTAs only
-- Card borders: `border-black/10` (Gumroad style)
-- Section headers: `text-black/40 uppercase tracking-widest text-[10px] font-bold`
+### RLS Policies
+- `delivery_pool_items`: Sellers can CRUD their own items. Service role only for assignment.
+- `buyer_delivered_items`: Buyers can SELECT their own rows. Service role inserts on purchase.
 
-### 3. Left Panel -- Gumroad Card Design
+---
 
-Redesign each section as distinct Gumroad-style cards:
+## Seller-Side: Delivery Inventory Manager
 
-**Quick Stats Card:**
-- White card, `border-black/10`, no shadow
-- Stats in a single column list (not 2x2 grid) with icon + label on left, bold number on right
-- Each row separated by thin `border-black/5` divider
-- Revenue row highlighted with black background pill
+### Integration into Product Editor (NewProduct.tsx + SellerProducts.tsx edit Sheet)
 
-**Status Filters Card:**
-- Each filter as a full-width row with dot indicator (colored circle) + label + count
-- Active state: black background, white text (Gumroad toggle style)
-- Inactive: transparent with `text-black/60`
+When seller selects a product type that supports auto-delivery (digital_product, software, template, ebook, etc.), show a **Delivery Mode Selector**:
 
-**Category Card:**
-- Minimal list, each category as `text-black/50` with count badge
-- Active: underline style, `text-black font-bold`
+```
+[Auto Accounts] [License Keys] [File Downloads] [Manual]
+```
 
-**Sort Card:**
-- Dropdown with black border, `text-black` values
-- Bulk select button: black outline, `text-black`
+Based on selection, show the appropriate inventory panel:
 
-**Recently Edited Card:**
-- Product mini-rows with small square thumbnail placeholder (black/5 bg if no image), name in `text-black text-xs font-medium`, and a small arrow icon
+**Account Pool Panel:**
+- Table with columns: Label | Email | Password | Notes | Status (Available/Assigned)
+- "Add Account" button -- opens a row to type email/password/notes
+- "Bulk Import" button -- paste CSV or multi-line text (email:password format)
+- Stock counter auto-syncs: available accounts = product stock
+- Warning banner when pool is running low (< 5 remaining)
 
-### 4. Product Grid Cards -- Gumroad Label System
+**License Keys Panel:**
+- List view of keys with status badges
+- "Add Key" -- single input field
+- "Bulk Import" -- paste multiple keys (one per line)
+- Optional: Activation URL field per key
+- Stock auto-sync with available keys count
 
-**Bottom Info Bar redesign:**
-- Remove gradient overlay, use a clean white bar at bottom
-- Status: small dot (green/amber/red) + label in `text-black/50 text-[10px]`
-- Price: `text-black font-extrabold text-sm` on right side
-- Sales count: `text-black/40 text-[10px]` inline
+**Multi-Download Pool Panel:**
+- Uses existing FileContentUploader but marks each file as "unique" (one per buyer)
+- Toggle: "Each buyer gets a unique file" vs "All buyers get all files"
+- Shows assigned/available counts per file
 
-**Product Type Badge:**
-- Top-left: black pill with white icon + white text (e.g., black bg "Course" pill)
-- Replaces the colored type badges
+### Standalone Seller Inventory Page
+A new section in the Seller Sidebar: **"Delivery Inventory"** -- shows:
+- Overview cards: Total items, Available, Assigned, Low Stock warnings
+- Filterable table of all delivery_pool_items across all products
+- Quick-add items to any product
+- Bulk import wizard
+- Assignment history log
 
-**Hover Overlay:**
-- Keep dark overlay but use Gumroad pink accent for primary action (Edit)
-- Other actions: white/transparent buttons with black text
+---
 
-**Category Tags below card:**
-- `text-black/30` with no background, just plain text separated by " / "
+## Edge Function Update: `grant-product-access`
 
-### 5. Right Panel -- Command Center Gumroad Style
+Enhance the existing function to handle auto-delivery:
 
-**When product selected:**
+```
+For product types with auto_account/auto_license/auto_download delivery_type:
+  1. Find next unassigned item from delivery_pool_items (ORDER BY display_order, created_at)
+  2. Lock the row (SELECT FOR UPDATE) to prevent race conditions
+  3. Mark as assigned (is_assigned=true, assigned_to, assigned_order_id, assigned_at)
+  4. Insert into buyer_delivered_items with the credentials/key/link
+  5. Update product stock (decrement by 1)
+  6. If pool is empty after assignment, mark product as unavailable
+  7. Send notification to buyer with delivery confirmation
+  8. Send notification to seller if stock is low (< 5 remaining)
+```
 
-**Preview Card:**
-- White card, `border-black/10`
-- "Buyer Preview" label in `text-black/30 uppercase text-[10px]`
-- Product card renderer below
+For existing `instant_download` type (unchanged): all buyers get the same product_content files.
 
-**Actions List:**
-- Vertical list, each action as a full-width row:
-  - Icon (black) + Label (`text-black font-medium text-sm`) + description (`text-black/40 text-xs`)
-  - Separated by `border-black/5`
-  - Hover: `bg-black/5`
-- Actions: Edit, Duplicate, Copy Link, View Store, Analytics, Share
+---
 
-**Stats Card:**
-- Clean rows: label in `text-black/50`, value in `text-black font-bold`
-- Sparkline chart with black bars (not colored)
-- Conversion rate with black text
+## Buyer-Side: Delivered Content View
 
-**Danger Zone:**
-- `border-red-500/20` card
-- Buttons: red text, no fill, hover red background
+### BuyerLibrary.tsx Enhancement
+When a buyer views their library, for auto-delivered items:
+- **Account type**: Show masked credentials (e.g., `n***@gmail.com` / `****`) with a "Reveal" button
+- **License key type**: Show masked key with "Copy" button
+- **Download type**: Show download button for their unique file
+- Each item shows: Product name, delivery date, "Delivered" badge
 
-**When no product selected:**
-
-**Store Summary Card:**
-- Large stat numbers in `text-black font-extrabold text-2xl`
-- Labels below in `text-black/40 text-xs`
-- Layout: 2-column mini stat grid
-
-**Top Performing Card:**
-- Black left-border accent card
-- Product name in `text-black font-bold`, sales in `text-black/50`
-
-**Needs Attention Card:**
-- Amber left-border accent card
-- Issue label as pill: "Low Stock" or "0 Sales" in `text-black/50`
-
-**Placeholder (no products):**
-- Clean icon + text, no dashed border, just centered `text-black/30`
-
-### 6. Edit Sheet -- Black Typography
-
-- All labels: `text-black font-semibold`
-- Sub-labels: `text-black/40`
-- Input borders: `border-black/10`
-- Section headers (SEO, Delivery, Card Appearance): `text-black font-bold`
-- Collapsible icons: `text-black/40`
-- Save button: keep pink gradient
-- Draft button: `border-black/10 text-black`
+### buyer_delivered_items query
+Join with `buyer_content_access` or query directly from `buyer_delivered_items` to show in the library.
 
 ---
 
 ## Technical Details
 
-### File Modified
-- **`src/components/seller/SellerProducts.tsx`** -- Full styling overhaul
+### Files to Create
+1. **Migration SQL** -- Create `delivery_pool_items` and `buyer_delivered_items` tables with RLS
+2. **`src/components/seller/DeliveryInventoryManager.tsx`** -- The inventory panel component (accounts/licenses/downloads CRUD)
+3. **`src/components/seller/BulkImportModal.tsx`** -- CSV/text paste import for bulk adding items
+4. **`src/components/seller/SellerDeliveryInventory.tsx`** -- Standalone inventory page for sidebar
 
-### Key Changes
-1. Remove `import gumroadBanner` and `import gumroadComic` (lines 2-3)
-2. Replace banner image (line 517-519) with text/icon banner component
-3. Replace comic image (line 791-793) with icon-based stats card
-4. Update all `text-slate-*` classes to `text-black` / `text-black/XX` opacity variants
-5. Update all `border-slate-*` to `border-black/10`
-6. Update all `bg-slate-50` to `bg-black/[0.02]` (very subtle Gumroad style)
-7. Change type badges from colored to black pill style
-8. Change status dots from colored badges to minimal dot + text
-9. Update hover states to use `bg-black/5` instead of `bg-slate-50`
+### Files to Modify
+1. **`supabase/functions/grant-product-access/index.ts`** -- Add auto-assignment logic with row locking
+2. **`src/pages/NewProduct.tsx`** -- Add Delivery Mode Selector and embed DeliveryInventoryManager
+3. **`src/components/seller/SellerProducts.tsx`** -- Add delivery inventory to edit Sheet
+4. **`src/components/seller/SellerSidebar.tsx`** -- Add "Delivery Inventory" nav item
+5. **`src/components/dashboard/BuyerLibrary.tsx`** -- Add delivered items display with reveal/copy
+6. **`src/pages/Seller.tsx`** -- Add route for delivery inventory page
 
-### No New Dependencies
-All changes are CSS/styling only within the existing component structure.
+### Race Condition Prevention
+The edge function uses `SELECT ... FOR UPDATE` to lock the next available item, preventing two simultaneous purchases from getting the same account/key. This is critical for unique delivery.
 
+### Stock Auto-Sync
+When seller adds/removes items from the pool, the product's `stock` column is automatically updated to match the count of unassigned items. This keeps the storefront accurate.
