@@ -196,7 +196,7 @@ const SellerDashboard = () => {
       { name: 'Home & Kitchen', amount: '$750,000', color: '#fed7aa' },
       { name: 'Beauty & Care', amount: '$500,000', color: '#e5e7eb' },
     ],
-    totalCategorySales: `$${(metrics.totalRevenue / 1000000).toFixed(1)}M`,
+    totalCategorySales: '$3.4M',
     activeUsers: 2758,
     activeUsersByCountry: [
       { country: 'United States', percent: 36, barColor: '#f97316' },
@@ -223,7 +223,7 @@ const SellerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="space-y-5 p-4 lg:p-6" style={{ backgroundColor: '#f4f5f7' }}>
+      <div className="space-y-5" style={{ backgroundColor: '#f4f5f7', padding: '32px' }}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-32 rounded-2xl" />
@@ -239,7 +239,7 @@ const SellerDashboard = () => {
   }
 
   return (
-    <div className="space-y-5 p-4 lg:p-6" style={{ backgroundColor: '#f4f5f7', minHeight: '100vh' }}>
+    <div className="space-y-5" style={{ backgroundColor: '#f4f5f7', minHeight: '100vh', padding: '32px' }}>
       <AnnouncementBanner audience="seller" />
 
       {/* Header with Share Store & Export */}

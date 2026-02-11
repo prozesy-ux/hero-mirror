@@ -459,6 +459,7 @@ const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => (
     gridTemplateRows: 'auto auto auto',
     gap: '24px',
     width: '100%',
+    fontFamily: '"Inter", system-ui, sans-serif',
   }}>
     {/* Row 1: 3 stat cards + Top Categories (row-span-2) */}
     <Dashboard_StatCard
@@ -475,7 +476,7 @@ const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => (
       iconType="cart"
     />
     <Dashboard_StatCard
-      label="Total Visitor"
+      label="Total Visitors"
       value="237,782"
       change={8.02}
       iconType="user"
