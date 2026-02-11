@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
+import ProductCardRenderer from '@/components/marketplace/ProductCardRenderer';
+import { CardSettings, CardProduct } from '@/components/marketplace/card-types';
 import { 
   Plus, 
   Package, 
@@ -327,6 +329,38 @@ const SellerProducts = () => {
   // Get selected product for preview
   const previewProduct = selectedProduct ? products.find(p => p.id === selectedProduct) : null;
 
+  // Extract card settings from seller profile
+  const extractCardSettings = (): Partial<CardSettings> => ({
+    style: (profile as any).card_style || 'classic',
+    buttonText: (profile as any).card_button_text || 'Buy',
+    buttonColor: (profile as any).card_button_color || '#10b981',
+    buttonTextColor: (profile as any).card_button_text_color || '#ffffff',
+    accentColor: (profile as any).card_accent_color || '#000000',
+    borderRadius: (profile as any).card_border_radius || 'rounded',
+    showRating: (profile as any).card_show_rating ?? true,
+    showSellerName: (profile as any).card_show_seller_name ?? true,
+    showBadge: (profile as any).card_show_badge ?? true,
+  });
+
+  const toCardProduct = (p: any): CardProduct => ({
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    price: p.price,
+    icon_url: p.icon_url,
+    category_id: p.category_id,
+    tags: p.tags,
+    sold_count: p.sold_count,
+    chat_allowed: p.chat_allowed,
+    seller_id: p.seller_id || profile.id,
+    product_type: p.product_type || null,
+    product_metadata: p.product_metadata || null,
+    rating: p.rating,
+    review_count: p.review_count,
+  });
+
+  const sellerCardSettings = extractCardSettings();
+
   if (loading) {
     return (
       <div className="p-6 lg:p-8 bg-white min-h-screen">
@@ -446,156 +480,87 @@ const SellerProducts = () => {
         ) : (
           <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {filteredProducts.map((product) => {
-              const categoryNames = getCategoryNames(product);
               const isSelected = selectedProduct === product.id;
               
               return (
                 <div 
                   key={product.id} 
-                  onClick={() => setSelectedProduct(product.id)}
-                  className={`bg-white border rounded-xl overflow-hidden group shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer ${
-                    isSelected ? 'border-pink-500 ring-2 ring-pink-100' : 'border-gray-200'
-                  }`}
+                  className={`relative group ${isSelected ? 'ring-2 ring-pink-500 rounded-xl' : ''}`}
                 >
-                  {/* Image - Square */}
-                  <div className="aspect-square bg-gray-50 relative overflow-hidden">
-                    {product.icon_url ? (
-                      <img 
-                        src={product.icon_url} 
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                        <Package className="h-16 w-16 text-gray-300" />
-                      </div>
-                    )}
-                    
-                    {/* Status Badge - Modern */}
-                    <div className="absolute top-3 left-3">
-                      <span className={`inline-flex items-center px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full ${
-                        product.is_approved && product.is_available
-                          ? 'bg-green-500 text-white' 
-                          : !product.is_available && !product.is_approved
-                            ? 'bg-gray-200 text-gray-600'
-                            : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {product.is_approved && product.is_available ? 'Live' : !product.is_available && !product.is_approved ? 'Draft' : 'Pending'}
-                      </span>
-                    </div>
-                    
-                    {/* Hidden indicator */}
-                    {!product.is_available && (
-                      <div className="absolute top-3 right-3">
-                        <span className="inline-flex items-center px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full bg-gray-100 text-gray-600">
-                          Hidden
-                        </span>
-                      </div>
-                    )}
+                  {/* Status Badge Overlay */}
+                  <div className="absolute top-3 left-3 z-10">
+                    <span className={`inline-flex items-center px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full ${
+                      product.is_approved && product.is_available
+                        ? 'bg-green-500 text-white' 
+                        : !product.is_available && !product.is_approved
+                          ? 'bg-gray-200 text-gray-600'
+                          : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {product.is_approved && product.is_available ? 'Live' : !product.is_available && !product.is_approved ? 'Draft' : 'Pending'}
+                    </span>
                   </div>
 
-                  {/* Content */}
-                  <div className="p-4">
-                    {/* Title */}
-                    <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 min-h-[2.5rem]">
-                      {product.name}
-                    </h3>
-                    
-                    {/* Price */}
-                    <p className="text-xl font-bold text-black mb-2">
-                      {formatAmountOnly(Number(product.price))}
-                    </p>
-                    
-                    {/* Category & Type */}
-                    <p className="text-xs text-gray-500 mb-3">
-                      {(product as any).product_type?.replace(/_/g, ' ') || 'Digital'} 
-                      {categoryNames.length > 0 && ` • ${categoryNames[0]}`}
-                    </p>
-                    
-                    {/* Divider */}
-                    <div className="border-t border-gray-100 my-3" />
-                    
-                    {/* Stats */}
-                    <p className="text-xs text-gray-400 mb-4">
-                      {product.sold_count || 0} sold • {product.stock} in stock
-                    </p>
-                    
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/seller/products/edit/${product.id}`);
-                        }}
-                        className="flex-1 h-9 border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 rounded-lg font-medium transition-colors"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-                        Edit
-                      </Button>
-                      
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyProductLink(product.id, product.name, (product as any).slug);
-                        }}
-                        className="h-9 w-9 p-0 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 rounded-lg transition-colors"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </Button>
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={(e) => e.stopPropagation()}
-                            className="h-9 w-9 p-0 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 rounded-lg transition-colors"
-                          >
-                            <MoreVertical className="h-3.5 w-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="rounded-lg border border-gray-200">
-                          <DropdownMenuItem 
-                            onClick={() => toggleAvailability(product.id, product.is_available)} 
-                            className="rounded-md"
-                          >
-                            {product.is_available ? (
-                              <>
-                                <EyeOff className="h-4 w-4 mr-2" />
-                                Hide
-                              </>
-                            ) : (
-                              <>
-                                <Eye className="h-4 w-4 mr-2" />
-                                Show
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => navigate(`/seller/products/new?duplicate=${product.id}`)}
-                            className="rounded-md"
-                          >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteClick(product.id)}
-                            className="text-red-600 focus:text-red-600 rounded-md"
-                            disabled={deleting}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                  {/* Management Actions Overlay */}
+                  <div className="absolute top-3 right-3 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/seller/products/edit/${product.id}`);
+                      }}
+                      className="h-8 w-8 p-0 bg-white/90 backdrop-blur-sm border-gray-200 hover:bg-white rounded-lg shadow-sm"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyProductLink(product.id, product.name, (product as any).slug);
+                      }}
+                      className="h-8 w-8 p-0 bg-white/90 backdrop-blur-sm border-gray-200 hover:bg-white rounded-lg shadow-sm"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-8 w-8 p-0 bg-white/90 backdrop-blur-sm border-gray-200 hover:bg-white rounded-lg shadow-sm"
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-lg border border-gray-200">
+                        <DropdownMenuItem 
+                          onClick={() => toggleAvailability(product.id, product.is_available)} 
+                          className="rounded-md"
+                        >
+                          {product.is_available ? <><EyeOff className="h-4 w-4 mr-2" />Hide</> : <><Eye className="h-4 w-4 mr-2" />Show</>}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigate(`/seller/products/new?duplicate=${product.id}`)} className="rounded-md">
+                          <Copy className="h-4 w-4 mr-2" />Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleDeleteClick(product.id)} className="text-red-600 focus:text-red-600 rounded-md" disabled={deleting}>
+                          <Trash2 className="h-4 w-4 mr-2" />Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
+
+                  <ProductCardRenderer
+                    product={toCardProduct(product)}
+                    storeCardSettings={sellerCardSettings}
+                    sellerName={profile.store_name}
+                    sellerAvatar={profile.store_logo_url}
+                    onClick={() => setSelectedProduct(product.id)}
+                  />
                 </div>
               );
             })}
@@ -649,41 +614,32 @@ const SellerProducts = () => {
 
         {/* Selected Product Preview */}
         {previewProduct ? (
-          <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+          <div className="bg-white border rounded p-4 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
             <h3 className="text-base text-slate-700 mb-4">Selected Product</h3>
-            <div className="space-y-4">
-              {previewProduct.icon_url && (
-                <img 
-                  src={previewProduct.icon_url} 
-                  alt={previewProduct.name}
-                  className="w-full aspect-video object-cover rounded-lg"
-                />
-              )}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">{previewProduct.name}</h4>
-                <p className="text-2xl font-bold text-black">{formatAmountOnly(previewProduct.price)}</p>
-              </div>
-              <div className="text-sm text-gray-500">
-                <p>{previewProduct.sold_count || 0} sold • {previewProduct.stock} in stock</p>
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  className="flex-1 bg-black text-white hover:bg-black/90 rounded-lg"
-                  onClick={() => handleOpenDialog(previewProduct.id)}
-                >
-                  <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-                  Edit
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="border border-gray-200 rounded-lg"
-                  onClick={() => copyProductLink(previewProduct.id, previewProduct.name, (previewProduct as any).slug)}
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </Button>
-              </div>
+            <ProductCardRenderer
+              product={toCardProduct(previewProduct)}
+              storeCardSettings={sellerCardSettings}
+              sellerName={profile.store_name}
+              sellerAvatar={profile.store_logo_url}
+              onClick={() => {}}
+            />
+            <div className="flex gap-2 mt-4">
+              <Button 
+                size="sm" 
+                className="flex-1 bg-black text-white hover:bg-black/90 rounded-lg"
+                onClick={() => navigate(`/seller/products/edit/${previewProduct.id}`)}
+              >
+                <Edit2 className="w-3.5 h-3.5 mr-1.5" />
+                Edit
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="border border-gray-200 rounded-lg"
+                onClick={() => copyProductLink(previewProduct.id, previewProduct.name, (previewProduct as any).slug)}
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </Button>
             </div>
           </div>
         ) : (
