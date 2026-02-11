@@ -1,96 +1,98 @@
 
 
-# Fix Help Center -- Navigation Bug, Design Polish, and Layout Corrections
+# Fix Article Navigation Bug + Restore Hero Design + Polish Article View
 
-## Issues Found
+## Issues Identified
 
-### 1. CRITICAL BUG: Article navigation broken
-The `HelpSearch` component's `useEffect` fires on mount with empty `localValue`, calling `onChange('')` which triggers `setSearch('')` in Help.tsx, which calls `setSearchParams({})` -- wiping ALL query params including `?article=` and `?category=`. This breaks all navigation.
+### 1. CRITICAL: Article navigation still broken
+**Root cause found**: The `HelpSearch` `useEffect` depends on `[localValue, onChange]`. When user clicks an article, `activeCategorySlug` changes (from a value to null), which causes `setSearch` (the `onChange` prop) to get a new function reference. This triggers the useEffect again (since `onChange` changed), and `isFirstRender` is already false, so it calls `onChange("")` which runs `setSearch("")` which wipes `?article=` from URL params.
 
-**Root cause**: In `HelpSearch.tsx` lines 17-22, the debounced `useEffect` runs on mount and calls `onChange(localValue)` with an empty string, clearing the URL params.
+**Fix**: Use a `useRef` for the onChange callback instead of including it in the useEffect dependency array. This prevents re-firing when the callback reference changes.
 
-**Fix**: Only call `onChange` when `localValue` actually changes from the previous value, not on initial mount.
+### 2. Hero section needs green gradient with background image (not light gray)
+The `help.html` reference clearly uses:
+- `bg-gradient-to-br from-[#001e00] via-[#0d3b0d] to-[#14A800]` (dark green gradient)
+- Background image overlay at 20% opacity: `https://support.upwork.com/hc/theming_assets/01K1BK8D2665NP4ZR79NVGSEG8`
+- ALL text is **white**: `text-white`, `text-white/90`, `text-white/80`
+- Popular tags: `bg-white/15 backdrop-blur-sm border border-white/20 text-white`
 
-### 2. Category grid should be 2 columns (not 4)
-The reference `help.html` design shows category cards in a **2-column grid** (visible in page_1.jpg and page_2.jpg screenshots), not the current 4-column grid. Cards are large with generous padding.
+Currently it uses `bg-[#f2f7f2]` (light gray) with dark text -- this is wrong.
 
-### 3. Hero section has no background image
-The reference design shows a plain light gray/white hero background -- NOT the green gradient currently used. The hero text "Find solutions fast." is in light gray color, not white. The background is clean white/light, not dark green gradient.
+### 3. Sidebar article text should be black/dark
+Left panel article titles in the sidebar should use `text-[#001e00]` (black) for better readability, not the current `text-[#5e6d55]` (gray).
 
-### 4. Header logo too small
-The Uptoza logo in the header (`h-7`) is too small. Should be `h-8` for better visibility and match the reference sizing.
+### 4. Category grid should be 4 columns (matching help.html)
+The reference `help.html` uses `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`. Currently using only 2 columns.
 
-### 5. Article view needs proper Upwork-style colors
-The article view (`HelpArticle.tsx`) still uses generic `text-muted-foreground` and `border-black/10` instead of the green color system (`#14A800`, `#001e00`, `#5e6d55`, `#d5e0d5`).
+### 5. Article view design polish
+- Article content area needs clean white background with proper spacing
+- Back button and breadcrumb should be more prominent
+- Prose content styling should match the clean Upwork article reading experience
 
-### 6. Back button in article view needs to work properly
-The `onBack` handler navigates to the category, but should also work to go back to `/help` home.
+---
 
 ## Files to Modify
 
 ### `src/components/help/HelpSearch.tsx`
-- Fix the mount-time useEffect that wipes search params
-- Add a ref to track if the component has mounted to prevent the initial empty onChange call
-- Keep the debounced search behavior for actual user input
+- Store `onChange` in a `useRef` so it doesn't trigger the useEffect when its reference changes
+- Remove `onChange` from the useEffect dependency array
+- Keep `isFirstRender` guard as additional protection
 
 ### `src/pages/Help.tsx`
-- Change hero section from green gradient to light/white background matching reference (light gray `bg-[#f2f7f2]`)
-- Hero text "Find solutions fast." in light muted color (large, not bold white)
-- Change category grid from 4 columns to 2 columns: `grid-cols-1 md:grid-cols-2`
-- Make category cards larger with more padding to match reference
-- Fix `setSearch` callback to not wipe article/category params when called with empty string on mount
-- Increase header logo size from `h-7` to `h-8`
+- **Hero section**: Restore green gradient (`bg-gradient-to-br from-[#001e00] via-[#0d3b0d] to-[#14A800]`)
+- Add background image overlay div at 20% opacity using the Upwork support background image URL
+- Change all hero text to white: `text-white`, `text-white/90`, `text-white/80`
+- Popular tags: `bg-white/15 backdrop-blur-sm border border-white/20 text-white`
+- Category grid: Change from `md:grid-cols-2` to `md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`
+- Fix `setSearch` to also preserve `activeArticleSlug` param when clearing search
+
+### `src/components/help/HelpSidebar.tsx`
+- Change article text from `text-[#5e6d55]` to `text-[#001e00]` for non-active articles
+- Keep hover state as `hover:text-[#14A800]`
 
 ### `src/components/help/HelpArticle.tsx`
-- Update all color references to use the Upwork green system:
-  - `text-muted-foreground` to `text-[#5e6d55]`
-  - `border-black/10` to `border-[#d5e0d5]`
-  - Back button hover: green accent
-  - Related articles hover: green text
-- Ensure "Back" button always navigates correctly
+- Ensure clean white article reading experience
+- Back button more prominent with green hover
+- Add proper spacing and typography for article content
 
-### `src/components/help/HelpCategoryCard.tsx`
-- Make cards larger with more padding (`p-8` instead of `p-6`)
-- Icon size increase to match reference (larger green outline icons)
-- More spacing between icon and text
+---
 
 ## Technical Details
 
 ### Search Bug Fix (HelpSearch.tsx)
 ```text
-Current problematic code:
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onChange(localValue);  // Fires on mount with '' -> wipes all params
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [localValue, onChange]);
+Current broken flow:
+1. User clicks article -> setArticle('slug') -> setSearchParams({article: 'slug'})
+2. activeCategorySlug changes -> setSearch gets new reference
+3. useEffect fires because onChange (setSearch) changed
+4. Calls onChange('') -> setSearch('') -> setSearchParams({}) -> wipes article param
+5. Article disappears, page goes back to home
 
-Fix: Add mount guard using useRef:
-  const isFirstRender = useRef(true);
+Fix using useRef for onChange:
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
     const timer = setTimeout(() => {
-      onChange(localValue);
+      onChangeRef.current(localValue);
     }, 300);
     return () => clearTimeout(timer);
-  }, [localValue, onChange]);
+  }, [localValue]);  // onChange removed from deps
 ```
 
-### Hero Design Change
-Change from dark green gradient to the reference light background:
-- Background: `bg-[#f2f7f2]` (very light green-gray)
-- "Help Center" subtitle: `text-[#5e6d55]`
-- "Find solutions fast." heading: `text-[#001e00]` with lighter weight, large size
-- Subtext: `text-[#5e6d55]`
-- Search bar: white with shadow (already correct)
-- Popular tags: `bg-[#e4ebe4]` with `text-[#001e00]`
+### Hero Design Restoration
+```text
+Current (wrong):
+  bg-[#f2f7f2] with dark text
 
-### Category Grid
-- Change to 2-column grid: `grid-cols-1 md:grid-cols-2 gap-6`
-- Each card: larger padding, left green border accent on hover
-- Match the reference vertical stacking layout
+Correct (matching help.html):
+  bg-gradient-to-br from-[#001e00] via-[#0d3b0d] to-[#14A800]
+  + absolute overlay div with background-image at opacity-20
+  + all text in white/white-90/white-80
+  + popular tags: bg-white/15 backdrop-blur-sm border-white/20
+```
 
