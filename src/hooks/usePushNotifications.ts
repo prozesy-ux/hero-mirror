@@ -80,7 +80,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         console.log('[Push] Service worker registered:', !!registration);
         
         if (registration) {
-          const subscription = await registration.pushManager.getSubscription();
+          const subscription = await (registration as any).pushManager.getSubscription();
           console.log('[Push] Browser has active subscription:', !!subscription);
         }
       } catch (error) {
@@ -173,7 +173,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
       // 3. Subscribe to push
       const applicationServerKey = urlBase64ToUint8Array(publicKey);
-      const subscription = await registration.pushManager.subscribe({
+      const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
       });
@@ -244,7 +244,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       // Unsubscribe from push manager
       const registration = await navigator.serviceWorker.getRegistration();
       if (registration) {
-        const subscription = await registration.pushManager.getSubscription();
+        const subscription = await (registration as any).pushManager.getSubscription();
         if (subscription) {
           await subscription.unsubscribe();
         }
