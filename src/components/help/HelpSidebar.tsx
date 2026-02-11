@@ -67,7 +67,7 @@ const HelpSidebar: React.FC<HelpSidebarProps> = ({
                     className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                       activeArticle === article.slug
                         ? 'bg-[#14A800] text-white font-medium'
-                        : 'hover:bg-[#f7f7f7] text-[#5e6d55] hover:text-[#001e00]'
+                        : 'hover:bg-[#f7f7f7] text-[#001e00] hover:text-[#14A800]'
                     }`}
                   >
                     {article.title}
