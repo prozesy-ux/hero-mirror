@@ -108,6 +108,12 @@ const NewProduct = () => {
   const [preorderMessage, setPreorderMessage] = useState('');
   const [requiresEmail, setRequiresEmail] = useState(false);
 
+  // Content state (files, lessons, availability)
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [callDuration, setCallDuration] = useState(30);
+
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -148,6 +154,57 @@ const NewProduct = () => {
       setReleaseDate((data as any).release_date ? new Date((data as any).release_date).toISOString().split('T')[0] : '');
       setPreorderMessage((data as any).preorder_message || '');
       setRequiresEmail((data as any).requires_email || false);
+
+      // Load content data (files, lessons)
+      const { data: contentData } = await supabase
+        .from('product_content')
+        .select('*')
+        .eq('product_id', loadId)
+        .order('display_order');
+
+      if (contentData) {
+        const fileItems: FileItem[] = contentData
+          .filter((c: any) => c.content_type === 'file' || c.content_type === 'link')
+          .map((c: any) => ({
+            id: c.id,
+            title: c.title || c.file_name || '',
+            file_url: c.file_url || '',
+            file_name: c.file_name || '',
+            file_size: c.file_size || 0,
+            file_type: c.file_type || '',
+            content_type: c.content_type as 'file' | 'link',
+            external_link: c.external_link || '',
+            is_preview: c.is_preview || false,
+            display_order: c.display_order || 0,
+          }));
+        if (fileItems.length > 0) setFiles(fileItems);
+      }
+
+      // Load lessons from course_lessons table
+      const { data: lessonData } = await supabase
+        .from('course_lessons')
+        .select('*')
+        .eq('product_id', loadId)
+        .order('display_order');
+
+      if (lessonData && lessonData.length > 0) {
+        setLessons(lessonData.map((l: any) => ({
+          id: l.id,
+          title: l.title,
+          description: l.description || '',
+          video_url: l.video_url || '',
+          video_duration: l.video_duration,
+          content_html: l.content_html || '',
+          attachments: (l.attachments as any[]) || [],
+          display_order: l.display_order || 0,
+          is_free_preview: l.is_free_preview || false,
+        })));
+      }
+
+      // Load availability from product_metadata
+      const metadata = (data as any).product_metadata || {};
+      if (metadata.time_slots) setTimeSlots(metadata.time_slots);
+      if (metadata.call_duration) setCallDuration(metadata.call_duration);
       
       setLoadingProduct(false);
     };
@@ -235,7 +292,9 @@ const NewProduct = () => {
         chat_allowed: chatAllowed,
         requires_email: requiresEmail,
         product_type: productType,
-        product_metadata: {},
+        product_metadata: (CALL_TYPES.includes(productType)
+          ? JSON.parse(JSON.stringify({ time_slots: timeSlots, call_duration: callDuration }))
+          : {}) as any,
         // PWYW fields
         is_pwyw: isPwyw,
         min_price: isPwyw ? (parseFloat(minPrice) || 0) : 0,
@@ -245,20 +304,65 @@ const NewProduct = () => {
         preorder_message: isPreorder ? preorderMessage.trim() || null : null,
       };
 
+      let savedProductId = productId;
+
       if (isEditMode && productId) {
         const { error } = await supabase
           .from('seller_products')
           .update(productData)
           .eq('id', productId);
         if (error) throw error;
-        toast.success('Product updated!');
       } else {
-        const { error } = await supabase
+        const { data: insertedProduct, error } = await supabase
           .from('seller_products')
-          .insert(productData);
+          .insert(productData)
+          .select('id')
+          .single();
         if (error) throw error;
-        toast.success('Product created! Awaiting approval.');
+        savedProductId = insertedProduct.id;
       }
+
+      // Save files to product_content
+      if (savedProductId && INSTANT_DOWNLOAD_TYPES.includes(productType) && files.length > 0) {
+        // Delete existing content first if editing
+        if (isEditMode) {
+          await supabase.from('product_content').delete().eq('product_id', savedProductId).in('content_type', ['file', 'link']);
+        }
+        const contentRows = files.map((f, i) => ({
+          product_id: savedProductId!,
+          content_type: f.content_type,
+          title: f.title,
+          file_url: f.file_url || null,
+          file_name: f.file_name || null,
+          file_size: f.file_size || null,
+          file_type: f.file_type || null,
+          external_link: f.external_link || null,
+          is_preview: f.is_preview,
+          display_order: i,
+        }));
+        await supabase.from('product_content').insert(contentRows);
+      }
+
+      // Save lessons to course_lessons
+      if (savedProductId && COURSE_TYPES.includes(productType) && lessons.length > 0) {
+        if (isEditMode) {
+          await supabase.from('course_lessons').delete().eq('product_id', savedProductId);
+        }
+        const lessonRows = lessons.map((l, i) => ({
+          product_id: savedProductId!,
+          title: l.title,
+          description: l.description || null,
+          video_url: l.video_url || null,
+          video_duration: l.video_duration || null,
+          content_html: l.content_html || null,
+          attachments: l.attachments || [],
+          display_order: i,
+          is_free_preview: l.is_free_preview,
+        }));
+        await supabase.from('course_lessons').insert(lessonRows);
+      }
+
+      toast.success(isEditMode ? 'Product updated!' : 'Product created! Awaiting approval.');
       refreshProducts();
       navigate('/seller/products');
     } catch (error: any) {
@@ -581,8 +685,8 @@ const NewProduct = () => {
                           Upload the files buyers will receive after purchase
                         </p>
                         <FileContentUploader
-                          files={[]}
-                          onChange={() => {}}
+                          files={files}
+                          onChange={setFiles}
                           sellerId={profile?.id || ''}
                           maxFiles={20}
                         />
@@ -601,8 +705,8 @@ const NewProduct = () => {
                           Build your course curriculum
                         </p>
                         <LessonBuilder
-                          lessons={[]}
-                          onChange={() => {}}
+                          lessons={lessons}
+                          onChange={setLessons}
                           sellerId={profile?.id || ''}
                         />
                       </div>
@@ -620,10 +724,10 @@ const NewProduct = () => {
                           Set your available time slots for calls
                         </p>
                         <AvailabilityEditor
-                          slots={[]}
-                          onChange={() => {}}
-                          duration={30}
-                          onDurationChange={() => {}}
+                          slots={timeSlots}
+                          onChange={setTimeSlots}
+                          duration={callDuration}
+                          onDurationChange={setCallDuration}
                         />
                       </div>
                     </>

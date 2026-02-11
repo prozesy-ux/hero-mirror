@@ -51,6 +51,7 @@ const navItemsAfter = [
 
 // Products sub-menu items
 const productSubItems = [
+  { to: '/seller/products', icon: GumroadProductsIcon, label: 'All Products' },
   { to: '/seller/discount', icon: GumroadDiscountIcon, label: 'Discount' },
   { to: '/seller/coupons', icon: GumroadCouponsIcon, label: 'Coupons' },
   { to: '/seller/flash-sales', icon: GumroadFlashSaleIcon, label: 'Flash Sales' },
@@ -195,15 +196,19 @@ const SellerSidebar = () => {
           ) : (
             // Expanded: Show collapsible Products section
             <Collapsible open={productsOpen} onOpenChange={setProductsOpen}>
-              <CollapsibleTrigger className={`flex items-center justify-between w-full px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
+              <div className={`flex items-center justify-between w-full px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
                 isProductsActive ? 'text-[#FF90E8]' : 'text-white hover:bg-white/5'
               }`}>
-                <div className="flex items-center gap-4">
+                <Link to="/seller/products" className="flex items-center gap-4 flex-1">
                   <GumroadProductsIcon size={16} />
                   <span>Products</span>
-                </div>
-                <GumroadChevronDownIcon size={16} className={`transition-transform duration-200 ${productsOpen ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
+                </Link>
+                <CollapsibleTrigger asChild>
+                  <button className="p-1 hover:bg-white/10 rounded transition-colors">
+                    <GumroadChevronDownIcon size={16} className={`transition-transform duration-200 ${productsOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </CollapsibleTrigger>
+              </div>
               <CollapsibleContent>
                 {productSubItems.map((item) => {
                   const active = isActive(item.to);

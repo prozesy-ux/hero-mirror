@@ -67,17 +67,24 @@ const MultiImageUploader = ({
     setLastCompression(null);
 
     try {
-      const { file: compressedFile, originalSize, compressedSize } = await prepareImageForUpload(file, 'product');
-      const { percentage } = calculateSavings(originalSize, compressedSize);
-      setLastCompression({ percentage });
+      let uploadFile: File = file;
+      try {
+        const { file: compressedFile, originalSize, compressedSize } = await prepareImageForUpload(file, 'product');
+        const { percentage } = calculateSavings(originalSize, compressedSize);
+        setLastCompression({ percentage });
+        uploadFile = compressedFile;
+      } catch (compressionError) {
+        console.warn('Image compression failed, uploading original:', compressionError);
+        toast.warning('Image optimization failed, uploading original');
+      }
 
-      const fileExt = compressedFile.name.split('.').pop();
+      const fileExt = uploadFile.name.split('.').pop() || file.name.split('.').pop();
       const folder = sellerId ? `products/${sellerId}` : 'products';
       const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('store-media')
-        .upload(fileName, compressedFile, { upsert: true });
+        .upload(fileName, uploadFile, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -86,7 +93,7 @@ const MultiImageUploader = ({
         .getPublicUrl(fileName);
 
       onChange([...images, publicUrl]);
-      toast.success(`Image optimized & uploaded (${percentage}% smaller)`);
+      toast.success(lastCompression ? `Image optimized & uploaded (${lastCompression.percentage}% smaller)` : 'Image uploaded');
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error(error?.message || 'Failed to upload image');
