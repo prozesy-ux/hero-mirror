@@ -463,21 +463,21 @@ const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => (
     {/* Row 1: 3 stat cards + Top Categories (row-span-2) */}
     <Dashboard_StatCard
       label="Total Sales"
-      value={data.formatAmount(data.totalSales)}
-      change={data.totalSalesChange}
+      value="$983,410"
+      change={3.34}
       iconType="dollar"
       isOrange
     />
     <Dashboard_StatCard
       label="Total Orders"
-      value={data.totalOrders.toLocaleString()}
-      change={data.totalOrdersChange}
+      value="58,375"
+      change={-2.89}
       iconType="cart"
     />
     <Dashboard_StatCard
-      label="Total Visitors"
-      value={data.totalVisitors.toLocaleString()}
-      change={data.totalVisitorsChange}
+      label="Total Visitor"
+      value="237,782"
+      change={8.02}
       iconType="user"
     />
     <Dashboard_TopCategories
