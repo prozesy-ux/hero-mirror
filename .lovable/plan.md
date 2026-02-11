@@ -1,114 +1,178 @@
 
-## Complete Integration of DeliveryInventoryManager into NewProduct Step 2
 
-### Current State Analysis
-The `DeliveryInventoryManager` component exists and is properly imported in `NewProduct.tsx` (line 21), but it's **not rendered anywhere in the Step 2 form**. The component is designed to accept:
-- `productId: string | null` -- needed after product is saved
-- `sellerId: string` -- available from `profile.id`
-- `deliveryMode: string` -- stored in state as `deliveryMode` (line 124)
-- `onDeliveryModeChange: (mode: DeliveryMode) => void` -- callback to update state
-- `productType: string` -- available as `productType` state variable
+# Complete Auto-Delivery System Rebuild
 
-### Root Cause
-The integration attempt failed due to a line-matching issue during the edit operation. The `DeliveryInventoryManager` needs to be properly rendered as a new section in Step 2 after the "Card Appearance" section and before the content-type-specific sections (files, lessons, etc.).
+## What This Does
 
-### Implementation Plan
+Rebuilds the Delivery Inventory page into a powerful, standalone Auto-Delivery Management System. Sellers can manage accounts, license keys, and downloads -- all with product selection, bulk operations, editing, usage guides, and automatic/manual delivery toggling that flows through to orders.
 
-#### 1. **Add Delivery Mode Selector Section (Step 2)**
-Insert a new section after "Card Appearance" (around line 965) with:
-- **Section Header**: "Delivery Settings"
-- **Description**: Explain auto-delivery options
-- **Render**: The full `DeliveryInventoryManager` component
+---
 
-**Code placement**: After the Card Appearance divider and before FileContentUploader/LessonBuilder sections
+## Current Problems
 
-**Props passed**:
-```tsx
-<DeliveryInventoryManager
-  productId={savedProductId}  // null initially, set after first save
-  sellerId={profile.id}
-  deliveryMode={deliveryMode}
-  onDeliveryModeChange={setDeliveryMode}
-  productType={productType}
-/>
+1. **SellerDeliveryInventory** is a read-only viewer -- no ability to add/edit items from this page
+2. **DeliveryInventoryManager** only works inside the product editor -- hard to manage at scale
+3. **SellerOrders** always shows "Deliver" button for pending orders, even when auto-delivery is active
+4. No usage guides or instructions for buyers
+5. No inline editing of account credentials or license keys
+6. No multi-product selection when adding items
+7. No clear auto vs manual delivery toggle visibility
+
+## Architecture
+
+The rebuilt system has **3 connected parts**:
+
+```text
++-------------------------------+
+|  Seller Delivery Dashboard    |
+|  (SellerDeliveryInventory)    |
+|                               |
+|  [Accounts] [Licenses] [DL]  |
+|  Product selector + Add/Edit  |
+|  Bulk import + Usage guide    |
++-------------------------------+
+         |
+         v
++-------------------------------+
+|  Product Editor Integration   |
+|  (DeliveryInventoryManager)   |
+|                               |
+|  Auto/Manual toggle per       |
+|  product, linked pool view    |
++-------------------------------+
+         |
+         v
++-------------------------------+
+|  Order Flow                   |
+|  (SellerOrders + BuyerLib)    |
+|                               |
+|  Auto-delivered = no manual   |
+|  Manual = show deliver button |
+|  Buyer sees credentials/keys  |
++-------------------------------+
 ```
 
-#### 2. **Update State & Lifecycle**
-- `deliveryMode` state already exists (line 124)
-- `savedProductId` state already tracks product ID after creation (line 125)
-- No changes needed here
+---
 
-#### 3. **Add Conditional Rendering Logic**
-- Only show DeliveryInventoryManager for product types that support auto-delivery
-- Use the `SUPPORTED_PRODUCT_TYPES` array from DeliveryInventoryManager: `['digital_product', 'ebook', 'template', 'graphics', 'audio', 'video', 'software']`
-- Show a notice if product isn't saved yet: "Save the product first to add delivery inventory"
+## Changes
 
-#### 4. **Integrate Delivery Mode with Save Logic**
-- Add `delivery_type: deliveryMode` to the `buildProductData()` function
-- Currently, product data saves but doesn't capture delivery mode -- need to add this field
+### 1. Rebuild SellerDeliveryInventory.tsx (Full Rewrite)
 
-#### 5. **Handle Stock Auto-Sync**
-- The edge function and database trigger handle this automatically once items are added
-- No additional work needed in the UI
+**Current**: Read-only table viewer
+**New**: Full management dashboard with 3 tabbed sections
+
+**Tab 1 -- Accounts Section:**
+- Product selector dropdown (single or multi-product)
+- Add single account: Email, Password, Notes, Usage Guide fields
+- Bulk import: Paste `email:password` or `email:password:notes` format
+- Table with inline editing (click to edit email/password/notes)
+- Eye/EyeOff toggle for passwords
+- Copy button per row
+- Delete button (only unassigned)
+- Status badges: Available (green), Assigned (gray with buyer info)
+- Usage guide editor per product: Rich text area for "How to use this account"
+
+**Tab 2 -- License Keys Section:**
+- Product selector
+- Add single key with optional activation URL and guide
+- Bulk import: One key per line
+- Table with copy, edit, delete
+- Guide field: "How to activate this license"
+
+**Tab 3 -- Downloads Section:**
+- Product selector
+- File upload or URL input for unique downloads
+- Each file = one delivery item
+- Status tracking
+
+**Top Overview Cards** (existing, keep):
+- Total Items, Available, Assigned, Low Stock
+
+**Filters** (existing, enhanced):
+- Search, Type filter, Status filter, Product filter
+
+**Design**: Gumroad black-base typography system (same as SellerProducts)
+
+### 2. Update DeliveryInventoryManager.tsx
+
+- Add a "usage_guide" text field per delivery mode
+- Save guide to `product_metadata.delivery_guide` JSONB field
+- Show link to full Delivery Dashboard: "Manage all inventory"
+- Auto/Manual toggle with clear explanation:
+  - Auto ON: "Orders auto-deliver from pool. No manual action needed."
+  - Auto OFF: "You manually deliver each order from the Sales page."
+
+### 3. Update SellerOrders.tsx
+
+- Check product's `delivery_type` on each order
+- If `delivery_type` is `auto_account`, `auto_license`, or `auto_download`:
+  - Hide the "Deliver" button for pending orders
+  - Show "Auto-Delivered" badge instead
+  - Show delivered item details (from `buyer_delivered_items` join)
+- If `delivery_type` is `manual` or `instant_download`:
+  - Show "Deliver" button as normal (existing behavior)
+
+### 4. Update BuyerLibrary.tsx
+
+- For delivered items, show the **usage guide** from `product_metadata.delivery_guide`
+- Add a "How to Use" expandable section below credentials/keys
+- Better card design for delivered items with clear copy buttons
+
+### 5. Database: Add delivery_guide to product_metadata
+
+No schema migration needed -- `product_metadata` is already JSONB. The guide will be stored as:
+```json
+{ "delivery_guide": "Step 1: Go to site...\nStep 2: Login with..." }
+```
+
+### 6. Update grant-product-access Edge Function
+
+- After auto-delivery assignment, include the `delivery_guide` from product metadata in the `buyer_delivered_items.delivered_data` JSONB
+- This way buyer always has the guide even if seller changes it later
+
+---
+
+## Technical Details
 
 ### Files to Modify
-1. **`src/pages/NewProduct.tsx`** (single file change):
-   - Add new section in Step 2 form for Delivery Settings
-   - Update `buildProductData()` to include `delivery_type: deliveryMode`
-   - Conditionally render DeliveryInventoryManager only for supported types
 
-### Technical Details
+1. **`src/components/seller/SellerDeliveryInventory.tsx`** -- Full rewrite with tabbed sections, add/edit/bulk import, product selector, usage guide editor, inline editing
+2. **`src/components/seller/DeliveryInventoryManager.tsx`** -- Add usage guide field, auto/manual toggle clarity, link to dashboard
+3. **`src/components/seller/SellerOrders.tsx`** -- Hide deliver button for auto-delivery orders, show auto-delivered badge
+4. **`src/components/dashboard/BuyerLibrary.tsx`** -- Show usage guide in delivered items
+5. **`supabase/functions/grant-product-access/index.ts`** -- Include delivery_guide in delivered_data
 
-**Location in Step 2**: After CardCustomizer (line 965), before content-type conditionals (FileContentUploader at line 972, LessonBuilder at line 983, etc.)
+### Key Features per Section
 
-**Conditional check**:
-```tsx
-const SUPPORTED_FOR_DELIVERY = ['digital_product', 'ebook', 'template', 'graphics', 'audio', 'video', 'software'];
+**Account Management:**
+- Add: Email + Password + Notes + Guide
+- Edit inline: Click any field to edit, save with checkmark
+- Bulk: Paste multi-line `email:password` or `email:password:notes`
+- View: Masked passwords with reveal, copy all
 
-// In Step 2 form:
-{SUPPORTED_FOR_DELIVERY.includes(productType) && (
-  <>
-    <div className="border-t" />
-    <div>
-      <Label className="text-base text-slate-700 mb-3 block">
-        Delivery Settings
-      </Label>
-      {!savedProductId && (
-        <p className="text-sm text-amber-600 mb-3">Save the product first to configure delivery inventory.</p>
-      )}
-      <DeliveryInventoryManager
-        productId={savedProductId}
-        sellerId={profile.id}
-        deliveryMode={deliveryMode}
-        onDeliveryModeChange={setDeliveryMode}
-        productType={productType}
-      />
-    </div>
-  </>
-)}
-```
+**License Key Management:**
+- Add: Key + Activation URL + Guide
+- Edit inline: Click key to edit
+- Bulk: Paste one key per line
+- Copy individual or all keys
 
-**Update buildProductData()** (around line 281):
-- Add `delivery_type: deliveryMode` to the returned object
+**Download Management:**
+- Add: File URL + File Name
+- Track assigned/available
 
-### Edge Cases Handled
-- **Product not yet saved**: Component shows warning message, prevents adding items
-- **Type change**: If user changes product type after selecting auto-delivery, inventory is preserved but selector hides if type no longer supports it
-- **Switching between delivery modes**: Inventory auto-updates based on item_type selection in manager
-- **Load on edit**: Existing `deliveryMode` loads from product data (line 219 already handles this)
+**Auto vs Manual Logic:**
+- Product `delivery_type` = `auto_account`/`auto_license`/`auto_download` -> auto mode
+- Product `delivery_type` = `manual`/`instant_download` -> manual mode
+- In SellerOrders: check `order.product.delivery_type` to decide UI
 
-### No Breaking Changes
-- All existing functionality preserved
-- Component is optional/hidden for unsupported types
-- No new dependencies required
-- Only CSS classes already in use (same styling as Card Appearance section)
+### No New Tables or Migrations
+All data fits existing `delivery_pool_items`, `buyer_delivered_items`, and `product_metadata` JSONB.
 
-### Testing Checklist
-After implementation:
-- [ ] Create new product → Type selector → Details page → Delivery Settings visible
-- [ ] Add accounts/license keys → See them list below
-- [ ] Bulk import credentials → Count updates correctly
-- [ ] Save product → Delivery mode persists on reload
-- [ ] Edit existing product → Delivery inventory loads with existing items
-- [ ] Switch delivery modes → Inventory updates dynamically
-- [ ] Test on mobile → Layout responsive
+### Design System
+- All text: `text-black`, `text-black/XX` opacity variants
+- Borders: `border-black/10`
+- Cards: `bg-white border border-black/10 rounded-xl`
+- Section headers: `text-[10px] text-black/40 uppercase tracking-widest font-bold`
+- Buttons: Black primary, outline secondary
+- Tabs: Black active state, `text-black/50` inactive
+
