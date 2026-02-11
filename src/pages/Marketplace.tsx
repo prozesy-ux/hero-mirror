@@ -36,6 +36,10 @@ interface Product {
   type: 'ai' | 'seller';
   tags?: string[];
   categoryId?: string | null;
+  sellerId?: string | null;
+  productType?: string | null;
+  productMetadata?: Record<string, any> | null;
+  sellerCardSettings?: Record<string, any> | null;
 }
 
 type SortOption = 'trending' | 'best_sellers' | 'new';
@@ -228,6 +232,11 @@ const Marketplace = () => {
         isVerified: p.isVerified,
         soldCount: p.soldCount,
         type: p.type,
+        sellerId: p.sellerId,
+        sellerAvatar: p.sellerAvatar,
+        productType: p.productType,
+        productMetadata: p.productMetadata,
+        sellerCardSettings: p.sellerCardSettings,
       })),
       ...topRated.filter(p => !hotProducts.find(h => h.id === p.id)).map(p => ({
         id: p.id,
@@ -239,6 +248,11 @@ const Marketplace = () => {
         isVerified: p.isVerified,
         soldCount: p.soldCount,
         type: p.type,
+        sellerId: p.sellerId,
+        sellerAvatar: p.sellerAvatar,
+        productType: p.productType,
+        productMetadata: p.productMetadata,
+        sellerCardSettings: p.sellerCardSettings,
       })),
       ...newArrivals.filter(p => 
         !hotProducts.find(h => h.id === p.id) && 
@@ -253,6 +267,11 @@ const Marketplace = () => {
         isVerified: p.isVerified,
         soldCount: p.soldCount,
         type: p.type,
+        sellerId: p.sellerId,
+        sellerAvatar: p.sellerAvatar,
+        productType: p.productType,
+        productMetadata: p.productMetadata,
+        sellerCardSettings: p.sellerCardSettings,
       })),
     ];
     return products;
@@ -696,11 +715,13 @@ const Marketplace = () => {
                         tags: product.tags || null,
                         sold_count: product.soldCount || null,
                         chat_allowed: null,
-                        seller_id: '',
-                        product_type: null,
+                        seller_id: product.sellerId || '',
+                        product_type: product.productType || null,
+                        product_metadata: product.productMetadata || null,
                         rating: product.rating,
                         review_count: product.reviewCount,
                       }}
+                      storeCardSettings={product.sellerCardSettings as any}
                       sellerName={product.sellerName || undefined}
                       sellerAvatar={product.sellerAvatar}
                       onClick={() => {}}

@@ -72,8 +72,10 @@ Deno.serve(async (req) => {
       supabase
         .from('seller_products')
         .select(`
-          id, name, slug, price, icon_url, is_approved, is_available, created_at, sold_count, view_count, category_id,
-          seller_profiles!inner(id, store_name, store_slug, is_verified)
+          id, name, slug, price, icon_url, is_approved, is_available, created_at, sold_count, view_count, category_id, product_type, product_metadata,
+          seller_profiles!inner(id, store_name, store_slug, is_verified, store_logo_url,
+            card_style, card_button_text, card_button_color, card_button_text_color,
+            card_accent_color, card_border_radius, card_show_rating, card_show_seller_name, card_show_badge)
         `)
         .eq('is_available', true)
         .eq('is_approved', true)
@@ -114,20 +116,38 @@ Deno.serve(async (req) => {
         storeSlug: null,
         isVerified: true,
       })),
-      ...(sellerProductsResult.data || []).map(p => ({
-        id: p.id,
-        name: p.name,
-        slug: p.slug || null,
-        price: p.price,
-        iconUrl: p.icon_url,
-        soldCount: p.sold_count || 0,
-        viewCount: p.view_count || 0,
-        createdAt: p.created_at,
-        type: 'seller' as const,
-        sellerName: (p.seller_profiles as any)?.store_name || null,
-        storeSlug: (p.seller_profiles as any)?.store_slug || null,
-        isVerified: (p.seller_profiles as any)?.is_verified || false,
-      })),
+      ...(sellerProductsResult.data || []).map(p => {
+        const sp = p.seller_profiles as any;
+        return {
+          id: p.id,
+          name: p.name,
+          slug: p.slug || null,
+          price: p.price,
+          iconUrl: p.icon_url,
+          soldCount: p.sold_count || 0,
+          viewCount: p.view_count || 0,
+          createdAt: p.created_at,
+          type: 'seller' as const,
+          sellerName: sp?.store_name || null,
+          storeSlug: sp?.store_slug || null,
+          isVerified: sp?.is_verified || false,
+          sellerId: sp?.id || null,
+          sellerAvatar: sp?.store_logo_url || null,
+          productType: (p as any).product_type || null,
+          productMetadata: (p as any).product_metadata || null,
+          sellerCardSettings: sp ? {
+            style: sp.card_style || 'classic',
+            buttonText: sp.card_button_text || 'Buy',
+            buttonColor: sp.card_button_color || '#10b981',
+            buttonTextColor: sp.card_button_text_color || '#ffffff',
+            accentColor: sp.card_accent_color || '#000000',
+            borderRadius: sp.card_border_radius || 'rounded',
+            showRating: sp.card_show_rating !== false,
+            showSellerName: sp.card_show_seller_name !== false,
+            showBadge: sp.card_show_badge !== false,
+          } : null,
+        };
+      }),
     ];
 
     // Hot Products - highest sold count
