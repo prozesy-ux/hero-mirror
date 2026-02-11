@@ -1,29 +1,50 @@
 
 
-## Use Exact HTML Static Data in Dashboard Grid
+## Fix Dashboard to Match HTML Source Exactly
 
-The current `EzMartDashboardGrid` component structure and styling already matches the HTML. The problem is it pulls dynamic values through props. The user wants the **exact same data values from the HTML** hardcoded -- no dynamic data mapping.
+After line-by-line comparison of the HTML source vs the current code, here are all the mismatches found and the fixes needed.
 
-### What Changes
+### Differences Found
 
-**File: `src/components/dashboard/EzMartDashboardGrid.tsx`**
-- Hardcode all stat card values exactly as HTML: `$983,410`, `58,375`, `237,782`
-- Hardcode all badge values: `+3.34%`, `-2.89%`, `+8.02%`
-- Remove the `data.formatAmount()` and `data.totalOrders.toLocaleString()` calls from stat cards
-- Keep the `DashboardStatData` interface and props for future use, but render static HTML values for now
-- All other sub-components (Revenue Chart, Monthly Target, Active Users, Conversion Rate, Traffic Sources) already use hardcoded HTML-matching values -- no changes needed there
+**1. Font Family -- WRONG**
+- HTML: `font-family: "Inter", system-ui, sans-serif` (set on the entire app via CSS variable `--font-family`)
+- Current: No font-family set on the grid -- inherits "DM Sans" from the page
+- Fix: Add `fontFamily: '"Inter", system-ui, sans-serif'` to the grid wrapper div
 
-**File: `src/components/dashboard/BuyerDashboardHome.tsx`**
-- No changes needed -- the grid component will ignore dynamic data and show HTML values
+**2. Stat Card Label -- WRONG**
+- HTML line 859: `Total Visitors` (with S)
+- Current line 478: `Total Visitor` (no S)
+- Fix: Change to "Total Visitors"
 
-**File: `src/components/seller/SellerDashboard.tsx`**
-- No changes needed -- same grid, same static values
+**3. Content Padding -- WRONG**
+- HTML: `.main-content { padding: 32px; }` (32px all sides)
+- Current Buyer: `p-4 lg:p-6` (16px / 24px) 
+- Current Seller: `p-4 lg:p-6` (16px / 24px)
+- Fix: Change both to `padding: 32px`
+
+**4. Seller totalCategorySales -- WRONG**
+- HTML: Static `$3.4M`
+- Current Seller line 199: Dynamic ``$${(metrics.totalRevenue / 1000000).toFixed(1)}M``
+- Fix: Hardcode `$3.4M`
+
+### Files to Change
+
+**File 1: `src/components/dashboard/EzMartDashboardGrid.tsx`**
+- Line 456: Add `fontFamily: '"Inter", system-ui, sans-serif'` to the grid wrapper style
+- Line 478: Change `"Total Visitor"` to `"Total Visitors"`
+
+**File 2: `src/components/dashboard/BuyerDashboardHome.tsx`**
+- Line 271: Change wrapper padding from `className="space-y-5 p-4 lg:p-6"` to inline `style={{ padding: '32px' }}` (remove p-4 lg:p-6)
+- Line 240 (loading state): Same padding fix
+
+**File 3: `src/components/seller/SellerDashboard.tsx`**
+- Line 199: Change `totalCategorySales` from dynamic to static `'$3.4M'`
+- Line 242: Change wrapper padding to 32px
+- Line 226 (loading state): Same padding fix
 
 ### What Does NOT Change
-- Sidebar, Header, mobile navigation -- untouched
+- All card styles, colors, SVG charts, donut, gauge, funnel -- already match HTML
+- Sidebar, Header components -- untouched
 - All data fetching, caching, session logic -- untouched
-- Grid layout, card styling, SVG charts, colors, fonts -- already match HTML
-- Routing and context providers -- untouched
+- All static data values (stat cards, categories, traffic sources, conversion funnel, active users) -- already match HTML
 
-### Summary
-Only the 3 stat card values and their badge percentages need to be hardcoded to match the HTML exactly. Everything else in the component already matches the HTML source.
