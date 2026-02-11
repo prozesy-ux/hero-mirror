@@ -17,6 +17,8 @@ import LessonBuilder from '@/components/seller/LessonBuilder';
 import AvailabilityEditor from '@/components/seller/AvailabilityEditor';
 import { ProductTypeId, getProductTypeById } from '@/components/icons/ProductTypeIcons';
 import { cn } from '@/lib/utils';
+import CardCustomizer from '@/components/seller/CardCustomizer';
+import { CardSettings } from '@/components/marketplace/card-types';
 
 interface Category {
   id: string;
@@ -114,6 +116,9 @@ const NewProduct = () => {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [callDuration, setCallDuration] = useState(30);
 
+  // Card appearance overrides
+  const [cardOverrides, setCardOverrides] = useState<Partial<CardSettings>>({});
+
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -205,6 +210,7 @@ const NewProduct = () => {
       const metadata = (data as any).product_metadata || {};
       if (metadata.time_slots) setTimeSlots(metadata.time_slots);
       if (metadata.call_duration) setCallDuration(metadata.call_duration);
+      if (metadata.card_overrides) setCardOverrides(metadata.card_overrides);
       
       setLoadingProduct(false);
     };
@@ -285,9 +291,17 @@ const NewProduct = () => {
       chat_allowed: chatAllowed,
       requires_email: requiresEmail,
       product_type: productType,
-      product_metadata: (CALL_TYPES.includes(productType)
-        ? JSON.parse(JSON.stringify({ time_slots: timeSlots, call_duration: callDuration }))
-        : {}) as any,
+      product_metadata: ((() => {
+        const meta: Record<string, any> = {};
+        if (CALL_TYPES.includes(productType)) {
+          meta.time_slots = timeSlots;
+          meta.call_duration = callDuration;
+        }
+        if (Object.keys(cardOverrides).length > 0) {
+          meta.card_overrides = cardOverrides;
+        }
+        return JSON.parse(JSON.stringify(meta));
+      })()) as any,
       is_pwyw: isPwyw,
       min_price: isPwyw ? (parseFloat(minPrice) || 0) : 0,
       is_preorder: isPreorder,
@@ -922,7 +936,22 @@ const NewProduct = () => {
                   
                   <div className="border-t" />
                   
-                  {/* SECTION 7: Settings */}
+                  {/* SECTION 6.5: Card Appearance */}
+                  <div>
+                    <Label className="text-base text-slate-700 mb-3 block">
+                      Card Appearance
+                    </Label>
+                    <p className="text-sm text-slate-500 mb-3">
+                      Customize how this product card looks in your store
+                    </p>
+                    <CardCustomizer
+                      settings={cardOverrides}
+                      onChange={setCardOverrides}
+                      mode="product"
+                    />
+                  </div>
+
+                  <div className="border-t" />
                   <div>
                     <Label className="text-base text-slate-700 mb-3 block">
                       Settings

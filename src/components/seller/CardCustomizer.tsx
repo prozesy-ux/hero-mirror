@@ -7,9 +7,9 @@ import { Switch } from '@/components/ui/switch';
 import { Check } from 'lucide-react';
 
 interface CardCustomizerProps {
-  settings: CardSettings;
-  onChange: (settings: CardSettings) => void;
-  mode?: 'store' | 'product'; // product mode shows "Use store default" toggles
+  settings: CardSettings | Partial<CardSettings>;
+  onChange: (settings: CardSettings | Partial<CardSettings>) => void;
+  mode?: 'store' | 'product';
 }
 
 const BORDER_OPTIONS: { value: CardSettings['borderRadius']; label: string }[] = [

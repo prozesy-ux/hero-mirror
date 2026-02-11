@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     // First fetch seller profile
     const { data: seller, error: sellerError } = await supabase
       .from('seller_profiles')
-      .select('id, user_id, store_name, store_description, store_logo_url, store_banner_url, store_video_url, store_tagline, store_slug, is_verified, is_active, total_sales, total_orders, social_links, banner_height, show_reviews, show_product_count, show_order_count, show_description, show_social_links')
+      .select('id, user_id, store_name, store_description, store_logo_url, store_banner_url, store_video_url, store_tagline, store_slug, is_verified, is_active, total_sales, total_orders, social_links, banner_height, show_reviews, show_product_count, show_order_count, show_description, show_social_links, card_style, card_button_text, card_button_color, card_button_text_color, card_accent_color, card_border_radius, card_show_rating, card_show_seller_name, card_show_badge')
       .eq('store_slug', storeSlug)
       .eq('is_active', true)
       .maybeSingle();

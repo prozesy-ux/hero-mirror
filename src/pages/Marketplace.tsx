@@ -6,7 +6,8 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import { useMarketplaceData } from '@/hooks/useMarketplaceData';
 import GumroadHeader from '@/components/marketplace/GumroadHeader';
-import GumroadProductCard from '@/components/marketplace/GumroadProductCard';
+import ProductCardRenderer from '@/components/marketplace/ProductCardRenderer';
+import { CardProduct } from '@/components/marketplace/card-types';
 
 import GumroadFilterSidebar from '@/components/marketplace/GumroadFilterSidebar';
 import ProductHoverCard from '@/components/marketplace/ProductHoverCard';
@@ -684,19 +685,25 @@ const Marketplace = () => {
                     onChat={() => handleHoverChat(product)}
                     isAuthenticated={!!user}
                   >
-                    <GumroadProductCard
-                      id={product.id}
-                      name={product.name}
-                      price={product.price}
-                      iconUrl={product.iconUrl}
-                      sellerName={product.sellerName}
-                      storeSlug={product.storeSlug}
-                      isVerified={product.isVerified}
-                      rating={product.rating}
-                      reviewCount={product.reviewCount}
-                      soldCount={product.soldCount}
-                      type={product.type}
-                      onClick={() => {}} // Navigation handled by HoverCard wrapper
+                    <ProductCardRenderer
+                      product={{
+                        id: product.id,
+                        name: product.name,
+                        description: product.description || null,
+                        price: product.price,
+                        icon_url: product.iconUrl,
+                        category_id: product.categoryId || null,
+                        tags: product.tags || null,
+                        sold_count: product.soldCount || null,
+                        chat_allowed: null,
+                        seller_id: '',
+                        product_type: null,
+                        rating: product.rating,
+                        review_count: product.reviewCount,
+                      }}
+                      sellerName={product.sellerName || undefined}
+                      sellerAvatar={product.sellerAvatar}
+                      onClick={() => {}}
                     />
                   </ProductHoverCard>
                 ))}
