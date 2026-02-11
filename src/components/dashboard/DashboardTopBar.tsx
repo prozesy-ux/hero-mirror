@@ -176,7 +176,7 @@ const DashboardTopBar = ({
   };
 
   return (
-    <header className={`hidden lg:flex fixed top-0 right-0 z-50 h-16 bg-[#FBF8F3] border-b border-black/10 transition-all duration-300 ${sidebarCollapsed ? 'left-[72px]' : 'left-52'}`}>
+    <header className={`hidden lg:flex fixed top-0 right-0 z-50 h-16 bg-[#F3EAE0] border-b border-black/10 transition-all duration-300 ${sidebarCollapsed ? 'left-[72px]' : 'left-52'}`}>
       <div className="flex items-center justify-between w-full px-6">
         {/* Left Section - Logo, Search & Navigation */}
         <div className="flex items-center gap-4">
