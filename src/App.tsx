@@ -26,6 +26,7 @@ const Marketplace = lazy(() => import("./pages/Marketplace"));
 const NewProduct = lazy(() => import("./pages/NewProduct"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const Help = lazy(() => import("./pages/Help"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -101,6 +102,11 @@ const App = () => (
               <Route path="/terms" element={
                 <Suspense fallback={<AppShell />}>
                   <TermsOfService />
+                </Suspense>
+              } />
+              <Route path="/help" element={
+                <Suspense fallback={<AppShell />}>
+                  <Help />
                 </Suspense>
               } />
               <Route path="*" element={<NotFound />} />
