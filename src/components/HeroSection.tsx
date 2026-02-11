@@ -180,12 +180,13 @@ const HeroSection = () => {
 
         {/* Subtitle */}
         <h2 className="mb-4 text-xl font-medium text-white/70 md:text-2xl">
-          The Digital Commerce Platform
+          The #1 Digital Marketplace
         </h2>
 
         {/* Description */}
         <p className="mb-10 max-w-2xl text-base leading-relaxed text-white/60 md:text-lg">
-          Uptoza powers global digital commerce. Browse and purchase digital products, premium services, and AI-driven solutions from trusted creators and businesses worldwide.
+          Search thousands of digital products, premium accounts, and services.
+          Discover the best deals from trusted sellers.
         </p>
 
         {/* Search Bar */}

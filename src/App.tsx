@@ -24,8 +24,6 @@ const ProductFullView = lazy(() => import("./pages/ProductFullView"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const NewProduct = lazy(() => import("./pages/NewProduct"));
-const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
-const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,16 +89,6 @@ const App = () => (
               <Route path="/admin/*" element={
                 <Suspense fallback={<AppShell variant="dashboard" />}>
                   <Admin />
-                </Suspense>
-              } />
-              <Route path="/privacy" element={
-                <Suspense fallback={<AppShell />}>
-                  <PrivacyPolicy />
-                </Suspense>
-              } />
-              <Route path="/terms" element={
-                <Suspense fallback={<AppShell />}>
-                  <TermsOfService />
                 </Suspense>
               } />
               <Route path="*" element={<NotFound />} />
