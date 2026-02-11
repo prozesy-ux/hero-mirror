@@ -39,6 +39,8 @@ const queryClient = new QueryClient({
   },
 });
 
+const isHelpSubdomain = window.location.hostname.startsWith('help.');
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -49,7 +51,15 @@ const App = () => (
           <BrowserRouter>
             <RoutePrefetcher />
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={
+                isHelpSubdomain ? (
+                  <Suspense fallback={<AppShell />}>
+                    <Help />
+                  </Suspense>
+                ) : (
+                  <Index />
+                )
+              } />
               <Route path="/marketplace" element={
                 <Suspense fallback={<AppShell />}>
                   <Marketplace />
