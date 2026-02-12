@@ -150,7 +150,7 @@ const SellerFeatureRequests = () => {
       <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Submit Form */}
         <div className="lg:col-span-1">
-          <Card className="border-2 border-black shadow-neobrutalism rounded-lg">
+          <Card className="border rounded">
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-4">
                 <div className="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center">
@@ -228,7 +228,7 @@ const SellerFeatureRequests = () => {
 
         {/* Requests List */}
         <div className="lg:col-span-2">
-          <Card className="border-2 border-black shadow-neobrutalism rounded-lg">
+          <Card className="border rounded">
             <CardContent className="p-5">
               {/* Tabs - Scrollable on mobile */}
               <div className="flex items-center gap-1 sm:gap-2 mb-4 sm:mb-5 border-b border-slate-100 pb-3 sm:pb-4 overflow-x-auto hide-scrollbar">

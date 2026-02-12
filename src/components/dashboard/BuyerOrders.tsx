@@ -429,14 +429,14 @@ const BuyerOrders = () => {
               placeholder="Search by product, seller, or order ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 rounded border-black focus:ring-2 focus:ring-[#FF90E8]/50"
+              className="pl-10 rounded border-slate-200 focus:ring-2 focus:ring-emerald-500/50"
             />
           </div>
 
           {/* Date Filter */}
           <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto gap-2 rounded border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <Button variant="outline" className="w-full sm:w-auto gap-2 rounded-xl border-slate-200 hover:shadow-sm">
                 <Calendar className="h-4 w-4 text-slate-500" />
                 <span>{getDateLabel()}</span>
               </Button>
@@ -449,7 +449,7 @@ const BuyerOrders = () => {
                     onClick={() => { setDatePreset(preset); if (preset !== 'custom') setShowDatePicker(false); }}
                     className={cn(
                       "w-full text-left px-3 py-2 rounded text-sm transition-colors",
-                      datePreset === preset ? "bg-[#FF90E8] text-black border border-black" : "hover:bg-slate-50"
+                      datePreset === preset ? "bg-slate-900 text-white" : "hover:bg-slate-50"
                     )}
                   >
                     {preset === 'all' ? 'All Time' : 
@@ -464,7 +464,7 @@ const BuyerOrders = () => {
                   onClick={() => setDatePreset('custom')}
                   className={cn(
                     "w-full text-left px-3 py-2 rounded text-sm transition-colors",
-                    datePreset === 'custom' ? "bg-[#FF90E8] text-black border border-black" : "hover:bg-slate-50"
+                    datePreset === 'custom' ? "bg-slate-900 text-white" : "hover:bg-slate-50"
                   )}
                 >
                   Custom Range
@@ -486,7 +486,7 @@ const BuyerOrders = () => {
 
           {/* Sort */}
           <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
-            <SelectTrigger className="w-full sm:w-[160px] rounded border-black">
+            <SelectTrigger className="w-full sm:w-[160px] rounded-xl border-slate-200">
               <ArrowUpDown className="w-4 h-4 mr-2 text-slate-400" />
               <SelectValue />
             </SelectTrigger>
@@ -521,7 +521,7 @@ const BuyerOrders = () => {
                 className={cn(
                   "px-4 py-2 rounded text-sm font-medium transition-all",
                   statusFilter === tab.value
-                    ? "bg-[#FF90E8] text-black border border-black"
+                    ? "bg-slate-900 text-white"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 )}
               >
@@ -551,7 +551,7 @@ const BuyerOrders = () => {
           filteredOrders.map((order) => (
             <div 
               key={order.id} 
-              className="bg-white border rounded p-4 transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              className="bg-white border rounded p-4 transition-all hover:shadow-sm"
             >
               <div className="flex items-start gap-4">
                 {/* Product Image */}

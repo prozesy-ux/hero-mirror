@@ -110,7 +110,7 @@ const BuyerWishlist = () => {
     <div className="space-y-6">
       {/* Wishlist Items */}
       {wishlist.length === 0 ? (
-        <div className="bg-white rounded-2xl p-10 text-center border border-slate-100">
+        <div className="bg-white rounded p-10 text-center border">
           <Heart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-800 mb-2">Your wishlist is empty</h3>
           <p className="text-slate-500 mb-6">Save products you're interested in to buy later</p>
@@ -125,7 +125,7 @@ const BuyerWishlist = () => {
           {wishlist.map((item) => (
             <div 
               key={item.id} 
-              className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden group hover:shadow-md transition-shadow"
+              className="bg-white rounded border overflow-hidden group hover:shadow-sm transition-shadow"
             >
               {/* Product Image */}
               <div className="relative aspect-[4/3] bg-slate-100">
