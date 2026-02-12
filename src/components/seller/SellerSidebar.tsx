@@ -59,16 +59,25 @@ const productSubItems = [
   { to: '/seller/inventory', icon: GumroadInventoryIcon, label: 'Inventory' },
 ];
 
-const navItemsAfterDiscount = [
-  { to: '/seller/product-analytics', icon: GumroadInsightsIcon, label: 'Insights' },
+// Insights sub-menu items
+const insightsSubItems = [
+  { to: '/seller/product-analytics', icon: GumroadInsightsIcon, label: 'Product Analytics' },
   { to: '/seller/reviews', icon: GumroadInsightsIcon, label: 'Reviews' },
   { to: '/seller/refunds', icon: GumroadInsightsIcon, label: 'Refunds' },
-  { to: '/seller/reports', icon: GumroadReportsIcon, label: 'Reports' },
-  { to: '/seller/performance', icon: GumroadPerformanceIcon, label: 'Performance' },
   { to: '/seller/notifications', icon: GumroadInsightsIcon, label: 'Notifications' },
+  { to: '/seller/reports', icon: GumroadReportsIcon, label: 'Reports' },
+];
+
+// Performance sub-menu items
+const performanceSubItems = [
+  { to: '/seller/performance', icon: GumroadPerformanceIcon, label: 'Performance' },
+  { to: '/seller/security', icon: GumroadSettingsIcon, label: 'Security' },
+  { to: '/seller/service-bookings', icon: GumroadChatIcon, label: 'Services' },
+];
+
+// Standalone items
+const standaloneAfterItems = [
   { to: '/seller/chat', icon: GumroadChatIcon, label: 'Chat' },
-   { to: '/seller/security', icon: GumroadSettingsIcon, label: 'Security' },
-   { to: '/seller/service-bookings', icon: GumroadChatIcon, label: 'Services' },
 ];
 
 const bottomNavItems = [
@@ -81,6 +90,8 @@ const SellerSidebar = () => {
   const { profile } = useSellerContext();
   const location = useLocation();
   const [productsOpen, setProductsOpen] = useState(false);
+  const [insightsOpen, setInsightsOpen] = useState(false);
+  const [performanceOpen, setPerformanceOpen] = useState(false);
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact) return location.pathname === path;
@@ -88,6 +99,8 @@ const SellerSidebar = () => {
   };
 
   const isProductsActive = productSubItems.some(item => isActive(item.to)) || isActive('/seller/products');
+  const isInsightsActive = insightsSubItems.some(item => isActive(item.to));
+  const isPerformanceActive = performanceSubItems.some(item => isActive(item.to));
 
   const renderNavItem = (item: { to: string; icon: any; label: string; exact?: boolean }) => {
     const active = isActive(item.to, item.exact);
@@ -241,8 +254,126 @@ const SellerSidebar = () => {
           {/* Sales, Customers, Analytics, Payouts */}
           {navItemsAfter.map(renderNavItem)}
 
-          {/* Insights, Reports, Performance, Chat */}
-          {navItemsAfterDiscount.map(renderNavItem)}
+          {/* Insights Dropdown */}
+          {isCollapsed ? (
+            insightsSubItems.map((item) => {
+              const active = isActive(item.to);
+              const Icon = item.icon;
+              return (
+                <Tooltip key={item.to} delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={item.to}
+                      className={`flex items-center justify-center w-full py-4 transition-colors border-t border-white/50 ${
+                        active ? 'text-[#FF90E8]' : 'text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon size={16} />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="bg-white text-black border-0">
+                    <p>{item.label}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })
+          ) : (
+            <Collapsible open={insightsOpen} onOpenChange={setInsightsOpen}>
+              <div className={`flex items-center justify-between w-full px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
+                isInsightsActive ? 'text-[#FF90E8]' : 'text-white hover:bg-white/5'
+              }`}>
+                <div className="flex items-center gap-4 flex-1">
+                  <GumroadInsightsIcon size={16} />
+                  <span>Insights</span>
+                </div>
+                <CollapsibleTrigger asChild>
+                  <button className="p-1 hover:bg-white/10 rounded transition-colors">
+                    <GumroadChevronDownIcon size={16} className={`transition-transform duration-200 ${insightsOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent>
+                {insightsSubItems.map((item) => {
+                  const active = isActive(item.to);
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={`flex items-center gap-4 pl-12 pr-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
+                        active ? 'text-[#FF90E8]' : 'text-white/60 hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon size={16} />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* Performance Dropdown */}
+          {isCollapsed ? (
+            performanceSubItems.map((item) => {
+              const active = isActive(item.to);
+              const Icon = item.icon;
+              return (
+                <Tooltip key={item.to} delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={item.to}
+                      className={`flex items-center justify-center w-full py-4 transition-colors border-t border-white/50 ${
+                        active ? 'text-[#FF90E8]' : 'text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon size={16} />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="bg-white text-black border-0">
+                    <p>{item.label}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })
+          ) : (
+            <Collapsible open={performanceOpen} onOpenChange={setPerformanceOpen}>
+              <div className={`flex items-center justify-between w-full px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
+                isPerformanceActive ? 'text-[#FF90E8]' : 'text-white hover:bg-white/5'
+              }`}>
+                <div className="flex items-center gap-4 flex-1">
+                  <GumroadPerformanceIcon size={16} />
+                  <span>Performance</span>
+                </div>
+                <CollapsibleTrigger asChild>
+                  <button className="p-1 hover:bg-white/10 rounded transition-colors">
+                    <GumroadChevronDownIcon size={16} className={`transition-transform duration-200 ${performanceOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent>
+                {performanceSubItems.map((item) => {
+                  const active = isActive(item.to);
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={`flex items-center gap-4 pl-12 pr-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${
+                        active ? 'text-[#FF90E8]' : 'text-white/60 hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon size={16} />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* Chat (standalone) */}
+          {standaloneAfterItems.map(renderNavItem)}
         </nav>
 
         {/* Bottom Section */}
