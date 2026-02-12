@@ -1,32 +1,27 @@
 
 
-## Fix Monthly Target Gauge Layout (Both Dashboards)
+## Fix Monthly Target Gauge Rendering
 
 ### Problem
-The Monthly Target gauge section has layout/overlay issues in both Buyer and Seller dashboards:
-1. The SVG `viewBox="0 0 100 55"` clips the top of the arc stroke (stroke extends to y=5 but needs breathing room)
-2. The percentage text at `position: absolute; bottom: 0px` sits awkwardly -- it can overlap with the arc on certain percentages
-3. The container height (110px) doesn't match the SVG height (100px), causing misalignment between the gauge and the percentage text
-4. The motivational text and Target/Revenue summary box are too close together
+The gauge arc has visible orange "blobs" at both endpoints that stick out awkwardly from the grey track. This is caused by:
+- `strokeLinecap="round"` on a very thick stroke (width 10) adds large rounded extensions at both ends of the orange arc
+- The background grey track does NOT use round caps, so the orange endpoints visually protrude
+- The stroke width is too thick relative to the SVG viewBox, amplifying the cap overshoot
 
-### Fix (Single File: `EzMartDashboardGrid.tsx`)
+### Fix (File: `src/components/dashboard/EzMartDashboardGrid.tsx`)
 
-**Gauge SVG Adjustments:**
-- Change `viewBox` from `"0 0 100 55"` to `"0 0 100 58"` to give the arc stroke room at the top
-- Increase container height from `110px` to `120px` for proper vertical spacing
-- Reposition percentage text to `bottom: 5px` so it sits cleanly inside the arc opening without overlapping the arc stroke
+**1. Remove round linecaps from the progress arc**
+- Change `strokeLinecap="round"` to `strokeLinecap="butt"` on the orange progress path so it aligns flush with the grey background track
 
-**Layout Spacing Fixes:**
-- Add `marginBottom: '8px'` to the gauge container to separate it from the motivational text below
-- Reduce `marginTop` on the Target/Revenue summary box from `16px` to `auto` so it pushes to the bottom of the card naturally
-- Set `flex: 1` behavior so the card grows evenly with its grid neighbors
+**2. Reduce stroke width for a cleaner look**
+- Reduce `strokeWidth` from `"10"` to `"8"` on both the background and progress arcs -- this gives the gauge a sleeker appearance and prevents the thick stroke from overflowing the viewBox
 
-### Technical Detail
+**3. Adjust the arc radius and center for better proportions**
+- Update the background path from `M 10 50 A 40 40 0 0 1 90 50` to `M 12 50 A 38 38 0 0 1 88 50` to give slightly more breathing room at the edges
+- Update radius from 40 to 38, and adjust cx/startX accordingly in the JS calculation so the progress arc matches
 
-```
-Before: viewBox="0 0 100 55", container 110px, text bottom:0px
-After:  viewBox="0 0 100 58", container 120px, text bottom:5px
-```
+**4. Widen the viewBox slightly**
+- Change viewBox to `"0 0 100 60"` to ensure nothing clips at the top with the adjusted geometry
 
-These changes apply to the shared `Dashboard_MonthlyTarget` component in `EzMartDashboardGrid.tsx`, so both Buyer and Seller dashboards are fixed automatically.
+These changes apply to the shared component so both Buyer and Seller dashboards are fixed.
 
