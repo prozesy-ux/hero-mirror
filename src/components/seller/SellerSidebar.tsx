@@ -61,9 +61,13 @@ const productSubItems = [
 
 const navItemsAfterDiscount = [
   { to: '/seller/product-analytics', icon: GumroadInsightsIcon, label: 'Insights' },
+  { to: '/seller/reviews', icon: GumroadInsightsIcon, label: 'Reviews' },
+  { to: '/seller/refunds', icon: GumroadInsightsIcon, label: 'Refunds' },
   { to: '/seller/reports', icon: GumroadReportsIcon, label: 'Reports' },
   { to: '/seller/performance', icon: GumroadPerformanceIcon, label: 'Performance' },
+  { to: '/seller/notifications', icon: GumroadInsightsIcon, label: 'Notifications' },
   { to: '/seller/chat', icon: GumroadChatIcon, label: 'Chat' },
+  { to: '/seller/security', icon: GumroadSettingsIcon, label: 'Security' },
 ];
 
 const bottomNavItems = [

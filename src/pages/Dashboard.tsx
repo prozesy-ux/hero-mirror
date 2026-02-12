@@ -19,6 +19,9 @@ import BuyerNotifications from '@/components/dashboard/BuyerNotifications';
 import BuyerDashboardHome from '@/components/dashboard/BuyerDashboardHome';
 import BuyerReports from '@/components/dashboard/BuyerReports';
 import BuyerLibrary from '@/components/dashboard/BuyerLibrary';
+import BuyerReviewsGiven from '@/components/dashboard/BuyerReviewsGiven';
+import BuyerRefundRequests from '@/components/dashboard/BuyerRefundRequests';
+import BuyerSupportTickets from '@/components/dashboard/BuyerSupportTickets';
 import CourseViewer from '@/components/dashboard/CourseViewer';
 import DownloadManager from '@/components/dashboard/DownloadManager';
 import FloatingChatWidget from '@/components/dashboard/FloatingChatWidget';
@@ -65,6 +68,9 @@ const DashboardContent = () => {
           <Route path="course/:productId" element={<CourseViewer />} />
           <Route path="profile" element={<ProfileSection />} />
           <Route path="chat" element={<ChatSection />} />
+          <Route path="my-reviews" element={<BuyerReviewsGiven />} />
+          <Route path="refunds" element={<BuyerRefundRequests />} />
+          <Route path="support" element={<BuyerSupportTickets />} />
         </Routes>
       </div>
       

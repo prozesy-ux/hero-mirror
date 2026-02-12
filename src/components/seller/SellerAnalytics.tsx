@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,24 @@ const SellerAnalytics = () => {
     to: new Date()
   });
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [avgRating, setAvgRating] = useState<number>(0);
+
+  // Fetch real average rating from product_reviews
+  useEffect(() => {
+    const fetchAvgRating = async () => {
+      const productIds = products.map(p => p.id);
+      if (productIds.length === 0) return;
+      const { data } = await supabase
+        .from('product_reviews')
+        .select('rating')
+        .in('product_id', productIds);
+      if (data && data.length > 0) {
+        const avg = data.reduce((sum, r) => sum + r.rating, 0) / data.length;
+        setAvgRating(avg);
+      }
+    };
+    fetchAvgRating();
+  }, [products]);
 
   // Update date range when period changes
   useEffect(() => {
@@ -175,13 +194,9 @@ const SellerAnalytics = () => {
     const topProducts = Object.values(productSales).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
     // Real metrics from data
-    const buyerMessages = filteredOrders.length > 0 ? Math.max(filteredOrders.length * 2, 5) : 0;
     const conversionRate = todayOrders.length > 0 
       ? Math.min((todayOrders.length / Math.max(products.length * 10, 1)) * 100, 100) 
       : 0;
-
-    // Average rating - calculate from orders if we have them
-    const avgRating = filteredOrders.length > 0 ? 4.5 : 0;
 
     return {
       todayOrders: todayOrderCount,
@@ -195,7 +210,6 @@ const SellerAnalytics = () => {
       statusBreakdown,
       topProducts,
       conversionRate,
-      buyerMessages,
       avgRating,
       maxRevenue
     };
@@ -445,37 +459,29 @@ const SellerAnalytics = () => {
           <h3 className="text-base font-semibold text-slate-800">Quick Stats</h3>
           <div className="grid grid-cols-2 gap-4">
             <QuickStatItem 
-              icon={Globe} 
+              icon={Package} 
               iconColor="text-blue-500" 
-              value="01" 
-              label="Market Place" 
-            />
-            <QuickStatItem 
-              icon={MessageSquare} 
-              iconColor="text-blue-500" 
-              value={analyticsData.buyerMessages.toString().padStart(2, '0')} 
-              label="Buyer's Message" 
+              value={products.length.toString().padStart(2, '0')} 
+              label="Total Products" 
             />
             <QuickStatItem 
               icon={TrendingUp} 
               iconColor="text-emerald-500" 
               value={`${analyticsData.conversionRate.toFixed(0)}%`} 
-              label="Buy Box Wins" 
+              label="Conversion Rate" 
             />
-            <div className="bg-white rounded p-8 border">
-              <div className="flex items-center gap-3">
-                <Star className="h-6 w-6 text-amber-500" />
-                <div>
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4].map(i => (
-                      <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    ))}
-                    <Star className="h-4 w-4 text-slate-300" />
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5">Customer Feedback</p>
-                </div>
-              </div>
-            </div>
+            <QuickStatItem 
+              icon={Star} 
+              iconColor="text-amber-500" 
+              value={analyticsData.avgRating > 0 ? analyticsData.avgRating.toFixed(1) : '—'} 
+              label="Avg Rating" 
+            />
+            <QuickStatItem 
+              icon={MessageSquare} 
+              iconColor="text-blue-500" 
+              value={filteredOrders.filter(o => o.status === 'completed').length.toString().padStart(2, '0')} 
+              label="Completed" 
+            />
           </div>
         </div>
       </div>
@@ -547,7 +553,7 @@ const SellerAnalytics = () => {
                     <p className="text-sm font-medium text-slate-800 truncate">{product.name}</p>
                     <p className="text-xs text-slate-500">{product.sold} sold</p>
                   </div>
-                  <span className="text-sm font-bold text-slate-800">${product.revenue.toFixed(0)}</span>
+                  <span className="text-sm font-bold text-slate-800">{formatAmountOnly(product.revenue)}</span>
                 </div>
               ))}
             </div>
@@ -575,7 +581,7 @@ const SellerAnalytics = () => {
                     fontSize: 12,
                     backgroundColor: 'white'
                   }}
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
+                  formatter={(value: number) => [formatAmountOnly(value), 'Revenue']}
                 />
                 <Bar dataKey="revenue" fill="#3B82F6" radius={[0, 4, 4, 0]} />
               </BarChart>

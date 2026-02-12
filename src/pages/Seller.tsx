@@ -36,6 +36,10 @@ import SellerCustomers from '@/components/seller/SellerCustomers';
 import SellerMarketing from '@/components/seller/SellerMarketing';
 import SellerReports from '@/components/seller/SellerReports';
 import SellerPerformance from '@/components/seller/SellerPerformance';
+import SellerReviewsManagement from '@/components/seller/SellerReviewsManagement';
+import SellerNotificationCenter from '@/components/seller/SellerNotificationCenter';
+import SellerRefundManagement from '@/components/seller/SellerRefundManagement';
+import SellerSecurityLogs from '@/components/seller/SellerSecurityLogs';
 import NewProduct from './NewProduct';
 import signinBackground from '@/assets/signin-background.webp';
 import uptozaLogo from '@/assets/uptoza-logo.png';
@@ -576,6 +580,10 @@ const SellerMainContent = () => {
           <Route path="/wallet" element={<SellerWallet />} />
           <Route path="/feature-requests" element={<SellerFeatureRequests />} />
           <Route path="/support" element={<SellerSupport />} />
+          <Route path="/reviews" element={<SellerReviewsManagement />} />
+          <Route path="/notifications" element={<SellerNotificationCenter />} />
+          <Route path="/refunds" element={<SellerRefundManagement />} />
+          <Route path="/security" element={<SellerSecurityLogs />} />
           <Route path="/settings" element={<SellerSettings />} />
         </Routes>
       </div>
