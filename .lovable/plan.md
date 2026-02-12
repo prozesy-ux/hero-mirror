@@ -1,33 +1,21 @@
 
 
-## Fix Monthly Target Gauge -- Remove Orange Blob Artifacts
+## Fix Monthly Target Gauge -- Root Cause
 
-### Problem
-The orange progress arc has visible "blob" artifacts at both endpoints because the background track (grey) and progress arc (orange) use different stroke cap styles, causing visual mismatch. Even with `butt` caps, the thick stroke creates harsh endpoints that look wrong.
+### The Real Problem
+The SVG `large-arc-flag` is incorrectly set. The gauge is a **semicircle** (180 degrees total). At 67% progress, the arc spans ~121 degrees, which is less than 180 degrees. But the code uses:
 
-### Solution (File: `src/components/dashboard/EzMartDashboardGrid.tsx`)
-
-**1. Match stroke caps on both arcs**
-- Set `strokeLinecap="round"` on BOTH the grey background path AND the orange progress path
-- This ensures both arcs have identical visual endpoints -- no mismatch, no blobs
-
-**2. Reduce stroke width from 8 to 6**
-- A thinner stroke produces cleaner, more proportional arcs relative to the viewBox
-- Reduces the visual prominence of the round cap extensions
-
-**3. Keep existing geometry and viewBox**
-- The arc path (`M 12 50 A 38 38 0 0 1 88 50`) and `viewBox="0 0 100 60"` remain unchanged -- they work correctly
-
-### Changes (lines 357-365)
-
-```tsx
-// Before
-<path d="M 12 50 A 38 38 0 0 1 88 50" stroke="#F3F4F6" strokeWidth="8" fill="none" />
-<path ... stroke="#FF7F00" strokeWidth="8" strokeLinecap="butt" />
-
-// After
-<path d="M 12 50 A 38 38 0 0 1 88 50" stroke="#F3F4F6" strokeWidth="6" fill="none" strokeLinecap="round" />
-<path ... stroke="#FF7F00" strokeWidth="6" strokeLinecap="round" />
+```
+largeArc = percentage > 50 ? 1 : 0
 ```
 
-Both Buyer and Seller dashboards share this component, so both are fixed automatically.
+This tells SVG to draw the **longer** path around the full circle when progress exceeds 50%, causing the arc to wrap around incorrectly and overlap itself. The `large-arc-flag` should **always be 0** for a semicircular gauge because no progress arc can ever exceed 180 degrees.
+
+### Fix (Single line change in `EzMartDashboardGrid.tsx`)
+
+**Line 337**: Change `const largeArc = percentage > 50 ? 1 : 0;` to `const largeArc = 0;`
+
+Since the maximum arc is a semicircle (180 degrees), even at 100% the arc is exactly 180 degrees (not "large"), so the large-arc-flag must always be 0.
+
+This single fix resolves the overlay/overlap issue in both Buyer and Seller dashboards. No other changes needed -- the geometry, stroke width, and caps are all correct now.
+
