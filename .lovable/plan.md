@@ -1,50 +1,55 @@
 
 
-## Unify Analytics and Reports Card Styles Across Both Dashboards
+## Rebuild Buyer Analytics to Match Seller Analytics Layout Exactly
 
-### Problem
-The Seller Analytics section uses a **neobrutalism style** (thick black borders, shadow effects, hover translations) while the Buyer Analytics, Buyer Reports, and Seller Reports use a **clean minimal style** (thin borders, rounded corners, p-8 padding). The user wants all analytics/reports sections to use the **same consistent card design** matching the dashboard home style.
+### What Changes
+The Buyer Analytics currently has a different layout and chart structure from the Seller Analytics. This plan will rebuild BuyerAnalytics to use the **exact same layout, cards, charts, and flow** as the Seller Analytics -- just with buyer-relevant labels (e.g., "Total Spent" instead of "Today's Sale").
 
-### Target Style (Clean Dashboard Cards)
-All cards and chart containers will use this consistent pattern:
-- `bg-white border rounded p-8` for stat cards
-- `bg-white border rounded p-6` for chart containers
-- No neobrutalism borders or shadows
-- Font: Inter, text-4xl font-semibold for values, text-base text-slate-700 for labels
+### Current Differences
 
-### Files to Update
+| Feature | Seller Analytics | Buyer Analytics (Current) |
+|---------|-----------------|--------------------------|
+| Stats Grid | 4 cards in 1 row (Today's Order, Today's Sale, Total Balance, Returns) | 4 cards (Total Spent, Total Orders, Avg Order, This Month) |
+| Main Chart Row | 2/3 width bar chart + 1/3 quick stats (2x2 grid) | 2-column: bar chart + pie chart |
+| Second Row | 3-column: Order Status donut + Top Products + Revenue by Day | Separate monthly trend bar chart |
+| Header Controls | Date picker + Period dropdown + Export (right-aligned) | Same style (already matching) |
 
-**1. `src/components/seller/SellerAnalytics.tsx` (Major Changes)**
-- Lines 296-348: Remove neobrutalism styling from date picker, period dropdown, and export button. Use clean `bg-white border-slate-200 rounded-xl` style instead
-- Line 380: Sales Details chart container - change `border-2 border-black shadow-neobrutalism` to `border rounded`
-- Line 465: Quick Stats rating card - remove `border-2 border-black shadow-neobrutalism` styling
-- Line 486: Order Status chart - change to `border rounded`
-- Line 537: Top Products chart - change to `border rounded`
-- Line 562: Revenue by Day chart - change to `border rounded`
+### Target Layout (Copy from Seller Analytics)
 
-**2. `src/components/dashboard/BuyerAnalytics.tsx` (Minor Tweaks)**
-- Lines 190-193: Loading skeletons - remove `border-2 border-black` from skeleton placeholders
-- Line 287: Spending Details chart - already uses `border rounded-lg`, keep consistent
-- Line 336: Category Breakdown chart - already consistent
-- Line 367: Monthly Trend chart - already consistent
+**Row 1: 4 Stat Cards** (already similar, keep buyer labels)
+- Total Spent (with % change vs last period)
+- Total Orders
+- Avg Order Value  
+- This Month spending
 
-**3. `src/components/dashboard/BuyerReports.tsx` (Already Clean)**
-- No changes needed - already uses `bg-white border rounded p-8` style
+**Row 2: Main Content (3-column grid)**
+- **2/3 width**: Spending Details bar chart (orange bars, same chart config as Seller)
+- **1/3 width**: Quick Stats 2x2 grid with:
+  - Products Purchased count
+  - Wishlist Items count
+  - Completion Rate %
+  - Customer Rating (star display)
 
-**4. `src/components/seller/SellerReports.tsx` (Already Clean)**  
-- No changes needed - already uses consistent styling
+**Row 3: Second Content (3-column grid)**  
+- Order Status donut chart (Completed/Delivered/Pending/Refunded)
+- Top Products purchased (ranked list with amounts)
+- Spending by Day of Week (horizontal bar chart)
 
-**5. `src/components/seller/SellerProductAnalytics.tsx` (Minor Tweaks)**
-- Lines 129-154: Stat cards - remove `hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` hover effects
-- Line 158: Chart container - remove hover shadow effect
-- Line 217: Table container - remove hover shadow effect
+### File to Update
 
-### Summary
-- **5 files** reviewed, **2 files** need significant updates
-- All neobrutalism borders (`border-2 border-black shadow-neobrutalism`) replaced with clean borders (`border rounded`)
-- All hover shadow effects removed for consistency
-- Stat cards unified to `bg-white border rounded p-8` with text-4xl values
-- Chart containers unified to `bg-white border rounded p-6`
-- Filter controls unified to `bg-white border-slate-200 rounded-xl` style
-- Export buttons unified to `bg-emerald-500 hover:bg-emerald-600 rounded-xl`
+**`src/components/dashboard/BuyerAnalytics.tsx`** -- Full rewrite to match Seller Analytics structure:
+1. Add missing imports (AreaChart, PieChart, Cell, etc.)
+2. Add day-of-week and status breakdown data calculations
+3. Add StatCard and QuickStatItem inline components (same as Seller)
+4. Restructure JSX layout to match Seller's 3-column grid pattern
+5. Match all chart configurations (colors, tooltips, borders, padding)
+6. Keep all existing buyer data fetching logic unchanged
+
+### Design Consistency
+- All stat cards: `bg-white border rounded p-8`, text-4xl values, text-base labels
+- All chart containers: `bg-white rounded-lg border p-6`
+- Quick stat items: `bg-white border rounded p-8`
+- Header controls: Already matching (date picker + period + export)
+- Font: Inter family throughout
+- Chart colors: Orange (#F97316) for main bar, Blue (#3B82F6) for secondary, Green (#10B981) for success
 
