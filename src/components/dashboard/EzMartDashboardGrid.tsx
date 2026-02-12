@@ -354,14 +354,14 @@ const Dashboard_MonthlyTarget = ({
 
       <div style={{ position: 'relative', width: '180px', height: '120px', display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
         <svg style={{ width: '180px', height: '100px' }} viewBox="0 0 100 60">
-          <path d="M 12 50 A 38 38 0 0 1 88 50" stroke="#F3F4F6" strokeWidth="8" fill="none" />
+          <path d="M 12 50 A 38 38 0 0 1 88 50" stroke="#F3F4F6" strokeWidth="6" fill="none" strokeLinecap="round" />
           {percentage > 0 && (
             <path 
               d={`M 12 50 A 38 38 0 ${largeArc} 1 ${endX.toFixed(1)} ${endY.toFixed(1)}`} 
               stroke="#FF7F00" 
-              strokeWidth="8" 
+              strokeWidth="6" 
               fill="none" 
-              strokeLinecap="butt" 
+              strokeLinecap="round" 
             />
           )}
         </svg>
