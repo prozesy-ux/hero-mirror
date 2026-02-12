@@ -496,7 +496,7 @@ const Dashboard_ConversionRate = ({
       ))}
     </div>
 
-    <div style={{ display: 'flex', alignItems: 'flex-end', height: '100px', gap: '12px', marginTop: '24px' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-end', height: '100px', gap: '12px', marginTop: '24px', overflow: 'hidden' }}>
       {funnel.map((item) => (
         <div key={item.label} style={{
           flex: 1, height: item.barHeight, background: item.barColor,

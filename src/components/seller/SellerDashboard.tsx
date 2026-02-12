@@ -203,10 +203,10 @@ const SellerDashboard = () => {
 
     return [
       { label: 'Product', labelLine2: 'Views', value: totalViews.toLocaleString(), badge: '+9%', barHeight: '100%', barColor: '#ffe4c2' },
-      { label: 'Total', labelLine2: 'Orders', value: totalOrders.toLocaleString(), badge: `${totalOrders > 0 ? '+' : ''}${totalOrders}`, barHeight: `${Math.max((totalOrders / Math.max(totalViews, 1)) * 100 * 5, 15)}%`, barColor: '#ffd4a2' },
-      { label: 'Pending', labelLine2: 'Orders', value: pendingOrders.toLocaleString(), badge: pendingOrders.toString(), barHeight: `${Math.max((pendingOrders / Math.max(totalOrders, 1)) * 100, 10)}%`, barColor: '#ffc482' },
-      { label: 'Completed', labelLine2: 'Orders', value: completedOrders.toLocaleString(), badge: `+${completedOrders}`, barHeight: `${Math.max((completedOrders / Math.max(totalOrders, 1)) * 100, 10)}%`, barColor: '#ffb362' },
-      { label: 'Cancelled', labelLine2: '/ Refunded', value: cancelledOrders.toLocaleString(), badge: `-${cancelledOrders}`, isNegative: cancelledOrders > 0, barHeight: `${Math.max((cancelledOrders / Math.max(totalOrders, 1)) * 100, 5)}%`, barColor: '#ff9f42' },
+      { label: 'Total', labelLine2: 'Orders', value: totalOrders.toLocaleString(), badge: `${totalOrders > 0 ? '+' : ''}${totalOrders}`, barHeight: `${Math.min(Math.max((totalOrders / Math.max(totalViews, 1)) * 100 * 5, 15), 100)}%`, barColor: '#ffd4a2' },
+      { label: 'Pending', labelLine2: 'Orders', value: pendingOrders.toLocaleString(), badge: pendingOrders.toString(), barHeight: `${Math.min(Math.max((pendingOrders / Math.max(totalOrders, 1)) * 100, 10), 100)}%`, barColor: '#ffc482' },
+      { label: 'Completed', labelLine2: 'Orders', value: completedOrders.toLocaleString(), badge: `+${completedOrders}`, barHeight: `${Math.min(Math.max((completedOrders / Math.max(totalOrders, 1)) * 100, 10), 100)}%`, barColor: '#ffb362' },
+      { label: 'Cancelled', labelLine2: '/ Refunded', value: cancelledOrders.toLocaleString(), badge: `-${cancelledOrders}`, isNegative: cancelledOrders > 0, barHeight: `${Math.min(Math.max((cancelledOrders / Math.max(totalOrders, 1)) * 100, 5), 100)}%`, barColor: '#ff9f42' },
     ];
   }, [metrics, filteredOrders]);
 
