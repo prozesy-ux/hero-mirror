@@ -1,70 +1,19 @@
 
 
-## Reorganize Buyer Dashboard Sidebar -- Group Items Under "Insights" and "Activity"
+## Fix: Floating Label Overlapping Placeholder in Digital Wallet Input Fields
 
-### What Changes
+### Problem
+In the "Add Payment Account" modal, the digital wallet number input (e.g., Nagad Number) shows both the floating label text AND the placeholder text ("01XXXXXXXXX") at the same time, causing them to overlap. This happens because the input uses `placeholder={selectedDigitalWallet.placeholder}` instead of `placeholder=" "` which the floating label CSS pattern requires.
 
-The flat list of 11 nav items will be reorganized into core items at the top plus **two collapsible dropdown groups**, matching the seller sidebar pattern.
+### Root Cause
+The floating label pattern uses CSS `peer-placeholder-shown` to detect if the input is empty. When a real placeholder like "01XXXXXXXXX" is set, the browser treats the field as "placeholder shown" even though text is visible, so the label drops down into the input area and overlaps with the placeholder.
 
-### Current Layout (flat)
-```text
-Home
-Marketplace
-My Orders
-Wishlist
-Prompts
-Analytics
-Billing
-Wallet
-Recently Viewed
-My Reviews
-My Services
----
-Notifications
-Support
-Settings
-```
+### Fix (2 files)
+Change the digital wallet input in both **BuyerWallet.tsx** and **SellerWallet.tsx** to use `placeholder=" "` (like all other inputs in the form), so the floating label works correctly. The placeholder hint ("01XXXXXXXXX") will be removed since the floating label already tells the user what to enter.
 
-### New Layout (grouped)
-```text
-Home
-Marketplace
-My Orders
-Wishlist
-Prompts
----
-Insights (dropdown)
-  - Analytics
-  - My Reviews
-  - Recently Viewed
-  - Billing
----
-Activity (dropdown)
-  - Wallet
-  - My Services
-  - Notifications
----
-Support
-Settings
-```
+**Files to change:**
+1. `src/components/dashboard/BuyerWallet.tsx` (line 1620): Change `placeholder={selectedDigitalWallet.placeholder}` to `placeholder=" "`
+2. `src/components/seller/SellerWallet.tsx` (line 1389): Change `placeholder={selectedDigitalWallet.placeholder}` to `placeholder=" "`
 
-### Technical Details (File: `src/components/dashboard/DashboardSidebar.tsx`)
-
-**1. Split `navItems` into three parts:**
-- `coreNavItems`: Home, Marketplace, My Orders, Wishlist, Prompts (stay as flat items)
-- `insightsSubItems`: Analytics, My Reviews, Recently Viewed, Billing
-- `activitySubItems`: Wallet, My Services, Notifications
-
-**2. Add collapsible state:**
-- `insightsOpen` and `activityOpen` state variables (with `useState`)
-
-**3. Import `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent`** from `@/components/ui/collapsible`
-
-**4. Render two collapsible sections** after the core items using the same pattern as the seller sidebar -- collapsed mode shows tooltip icons, expanded mode shows chevron header with indented sub-items.
-
-**5. Update `bottomNavItems`** to only contain Support and Settings (Notifications moves into the Activity group).
-
-**6. Keep Support as standalone** in the bottom section alongside Settings.
-
-This is a single-file change to `src/components/dashboard/DashboardSidebar.tsx` only. No route or component changes needed.
+This is a one-line fix in each file -- no other changes needed.
 
