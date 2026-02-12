@@ -352,8 +352,8 @@ const Dashboard_MonthlyTarget = ({
         <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
       </div>
 
-      <div style={{ position: 'relative', width: '180px', height: '110px', display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
-        <svg style={{ width: '180px', height: '100px' }} viewBox="0 0 100 55">
+      <div style={{ position: 'relative', width: '180px', height: '120px', display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+        <svg style={{ width: '180px', height: '100px' }} viewBox="0 0 100 58">
           <path d="M 10 50 A 40 40 0 0 1 90 50" stroke="#F3F4F6" strokeWidth="10" fill="none" />
           {percentage > 0 && (
             <path 
@@ -365,7 +365,7 @@ const Dashboard_MonthlyTarget = ({
             />
           )}
         </svg>
-        <div style={{ position: 'absolute', bottom: '0px', textAlign: 'center' }}>
+        <div style={{ position: 'absolute', bottom: '5px', textAlign: 'center' }}>
           <span style={{ fontSize: '24px', fontWeight: 700, color: '#1f2937', display: 'block', lineHeight: 1 }}>{percentage.toFixed(0)}%</span>
           <span style={{ fontSize: '10px', color: change >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
             {change >= 0 ? '+' : ''}{change.toFixed(2)}%
@@ -388,7 +388,7 @@ const Dashboard_MonthlyTarget = ({
 
       <div style={{
         display: 'flex', width: '100%', justifyContent: 'space-between',
-        marginTop: '16px', background: '#fff7ed', padding: '12px', borderRadius: '8px',
+        marginTop: 'auto', background: '#fff7ed', padding: '12px', borderRadius: '8px',
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Target</div>
