@@ -1,73 +1,70 @@
 
 
-## Reorganize Seller Sidebar -- Group Items Under "Insights" and "Performance"
+## Reorganize Buyer Dashboard Sidebar -- Group Items Under "Insights" and "Activity"
 
 ### What Changes
 
-The flat list of items after Sales/Customers/Analytics/Payouts will be reorganized into **two collapsible dropdown groups**, matching the existing "Products" dropdown pattern.
+The flat list of 11 nav items will be reorganized into core items at the top plus **two collapsible dropdown groups**, matching the seller sidebar pattern.
 
 ### Current Layout (flat)
 ```text
 Home
-Products (dropdown)
-Sales
-Customers
+Marketplace
+My Orders
+Wishlist
+Prompts
 Analytics
-Payouts
+Billing
+Wallet
+Recently Viewed
+My Reviews
+My Services
 ---
-Insights        (flat)
-Reviews         (flat)
-Refunds         (flat)
-Reports         (flat)
-Performance     (flat)
-Notifications   (flat)
-Chat            (flat)
-Security        (flat)
-Services        (flat)
+Notifications
+Support
+Settings
 ```
 
 ### New Layout (grouped)
 ```text
 Home
-Products (dropdown)
-Sales
-Customers
-Analytics
-Payouts
+Marketplace
+My Orders
+Wishlist
+Prompts
 ---
 Insights (dropdown)
-  - Product Analytics
-  - Reviews
-  - Refunds
+  - Analytics
+  - My Reviews
+  - Recently Viewed
+  - Billing
+---
+Activity (dropdown)
+  - Wallet
+  - My Services
   - Notifications
-  - Reports
 ---
-Performance (dropdown)
-  - Performance
-  - Security
-  - Services
----
-Chat
----
+Support
 Settings
-Help
 ```
 
-### Technical Details (File: `src/components/seller/SellerSidebar.tsx`)
+### Technical Details (File: `src/components/dashboard/DashboardSidebar.tsx`)
 
-**1. Replace the flat `navItemsAfterDiscount` array with two new grouped arrays:**
+**1. Split `navItems` into three parts:**
+- `coreNavItems`: Home, Marketplace, My Orders, Wishlist, Prompts (stay as flat items)
+- `insightsSubItems`: Analytics, My Reviews, Recently Viewed, Billing
+- `activitySubItems`: Wallet, My Services, Notifications
 
-- `insightsSubItems`: Insights (product-analytics), Reviews, Refunds, Notifications, Reports
-- `performanceSubItems`: Performance, Security, Services
+**2. Add collapsible state:**
+- `insightsOpen` and `activityOpen` state variables (with `useState`)
 
-**2. Add two new collapsible state variables:**
-- `insightsOpen` (like `productsOpen`)
-- `performanceOpen`
+**3. Import `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent`** from `@/components/ui/collapsible`
 
-**3. Render two new `<Collapsible>` sections** using the exact same pattern as the existing Products dropdown (collapsed = tooltip icons, expanded = collapsible with chevron and indented sub-items).
+**4. Render two collapsible sections** after the core items using the same pattern as the seller sidebar -- collapsed mode shows tooltip icons, expanded mode shows chevron header with indented sub-items.
 
-**4. Keep Chat as a standalone item** between the two groups and the bottom section.
+**5. Update `bottomNavItems`** to only contain Support and Settings (Notifications moves into the Activity group).
 
-**5. Remove `navItemsAfterDiscount`** -- its items are now distributed into the two groups plus standalone Chat.
+**6. Keep Support as standalone** in the bottom section alongside Settings.
 
-This is a single-file change to `src/components/seller/SellerSidebar.tsx` only. No route or component changes needed.
+This is a single-file change to `src/components/dashboard/DashboardSidebar.tsx` only. No route or component changes needed.
+
