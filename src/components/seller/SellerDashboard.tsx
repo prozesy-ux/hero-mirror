@@ -10,7 +10,7 @@ import {
   Calendar as CalendarIcon,
   Share2,
 } from 'lucide-react';
-import { format, subDays, subMonths } from 'date-fns';
+import { format, subDays, subMonths, startOfMonth, eachDayOfInterval, startOfDay, isWithinInterval } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import {
   Select,
@@ -63,8 +63,9 @@ const SellerDashboard = () => {
     const now = new Date();
     const thisWeekStart = subDays(now, 7);
     const lastWeekStart = subDays(now, 14);
-    const thisMonthStart = subMonths(now, 1);
-    const lastMonthStart = subMonths(now, 2);
+    const thisMonthStart = startOfMonth(now);
+    const lastMonthStart = startOfMonth(subMonths(now, 1));
+    const lastMonthEnd = subDays(thisMonthStart, 1);
 
     const thisWeekOrders = orders.filter(o => new Date(o.created_at) >= thisWeekStart);
     const lastWeekOrders = orders.filter(o => {
@@ -79,8 +80,6 @@ const SellerDashboard = () => {
       ? ((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue) * 100 
       : (thisWeekRevenue > 0 ? 100 : 0);
 
-    const pendingBalance = wallet?.pending_balance || 0;
-    
     const totalOrders = filteredOrders.length;
     const thisWeekOrderCount = thisWeekOrders.length;
     const lastWeekOrderCount = lastWeekOrders.length;
@@ -89,67 +88,60 @@ const SellerDashboard = () => {
       : (thisWeekOrderCount > 0 ? 100 : 0);
 
     const activeProducts = products.filter(p => p.is_available && p.is_approved).length;
-    const completedOrders = filteredOrders.filter(o => o.status === 'completed').length;
-    const completionRate = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
 
+    // Monthly target & revenue
     const thisMonthOrders = orders.filter(o => new Date(o.created_at) >= thisMonthStart);
     const lastMonthOrders = orders.filter(o => {
       const d = new Date(o.created_at);
-      return d >= lastMonthStart && d < thisMonthStart;
+      return d >= lastMonthStart && d <= lastMonthEnd;
     });
     const thisMonthRevenue = thisMonthOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
     const lastMonthRevenue = lastMonthOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
-
-    const productSales: Record<string, { name: string; revenue: number; count: number }> = {};
-    filteredOrders.forEach(order => {
-      const productId = order.product_id;
-      const productName = order.product?.name || 'Unknown';
-      if (!productSales[productId]) {
-        productSales[productId] = { name: productName, revenue: 0, count: 0 };
-      }
-      productSales[productId].revenue += Number(order.seller_earning);
-      productSales[productId].count += 1;
-    });
-    const topProducts = Object.values(productSales)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
-    const maxProductRevenue = topProducts.length > 0 ? topProducts[0].revenue : 1;
-
-    const statusBreakdown = {
-      pending: filteredOrders.filter(o => o.status === 'pending').length,
-      delivered: filteredOrders.filter(o => o.status === 'delivered').length,
-      completed: filteredOrders.filter(o => o.status === 'completed').length,
-      refunded: filteredOrders.filter(o => o.status === 'refunded').length
-    };
+    // Monthly target = last month revenue * 1.2 (20% growth goal), minimum $100
+    const monthlyTarget = Math.max(lastMonthRevenue * 1.2, thisMonthRevenue > 0 ? thisMonthRevenue * 1.5 : 100);
+    const monthlyTargetChange = lastMonthRevenue > 0 
+      ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+      : (thisMonthRevenue > 0 ? 100 : 0);
 
     // Daily revenue for chart
-    const dailyData: { date: string; revenue: number }[] = [];
-    const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
-    for (let i = days - 1; i >= 0; i--) {
-      const day = subDays(now, i);
-      const dayStr = format(day, 'MMM dd');
-      const dayRevenue = orders
-        .filter(o => format(new Date(o.created_at), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
-        .reduce((sum, o) => sum + Number(o.seller_earning), 0);
-      dailyData.push({ date: dayStr, revenue: dayRevenue });
-    }
+    const dailyRevenue = dateRange.from && dateRange.to 
+      ? eachDayOfInterval({ start: dateRange.from, end: dateRange.to }).map(day => {
+          const dayStart = startOfDay(day);
+          const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+          const dayOrders = filteredOrders.filter(order => {
+            const orderDate = new Date(order.created_at);
+            return isWithinInterval(orderDate, { start: dayStart, end: dayEnd });
+          });
+          return {
+            date: format(day, 'dd MMM'),
+            revenue: dayOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0),
+          };
+        })
+      : [];
+
+    // Top product categories from orders
+    const categorySales: Record<string, number> = {};
+    filteredOrders.forEach(order => {
+      const name = order.product?.name || 'Other';
+      categorySales[name] = (categorySales[name] || 0) + Number(order.seller_earning || order.amount);
+    });
+
+    // Product view totals (estimate from sold_count)
+    const totalViews = products.reduce((sum, p) => sum + (p.sold_count || 0) * 10, 0);
 
     return {
       totalRevenue,
       revenueChange,
-      pendingBalance,
       totalOrders,
       ordersChange,
       activeProducts,
-      completionRate,
       thisMonthRevenue,
-      lastMonthRevenue,
-      topProducts,
-      maxProductRevenue,
-      statusBreakdown,
-      dailyData
+      monthlyTarget,
+      monthlyTargetChange,
+      dailyRevenue,
+      totalViews,
     };
-  }, [orders, filteredOrders, products, wallet, period]);
+  }, [orders, filteredOrders, products, wallet, dateRange]);
 
   const handleExport = () => {
     if (filteredOrders.length === 0) {
@@ -180,37 +172,60 @@ const SellerDashboard = () => {
     toast.success('Report exported successfully!');
   };
 
-  const pendingOrdersCount = orders.filter(o => o.status === 'pending').length;
-  const recentOrders = orders.slice(0, 5);
+  // Build top categories from product sales
+  const topCategories = useMemo(() => {
+    const productSales: Record<string, number> = {};
+    filteredOrders.forEach(order => {
+      const name = order.product?.name || 'Other';
+      productSales[name] = (productSales[name] || 0) + Number(order.seller_earning);
+    });
+    const sorted = Object.entries(productSales).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    const colors = ['#ff7f00', '#fdba74', '#fed7aa', '#e5e7eb'];
+    return sorted.map(([name, amount], i) => ({
+      name,
+      amount: formatAmountOnly(amount),
+      color: colors[i] || '#e5e7eb',
+    }));
+  }, [filteredOrders, formatAmountOnly]);
+
+  const totalCategorySales = useMemo(() => {
+    const total = filteredOrders.reduce((sum, o) => sum + Number(o.seller_earning), 0);
+    return formatAmountOnly(total);
+  }, [filteredOrders, formatAmountOnly]);
+
+  // Conversion funnel from real data
+  const conversionFunnel = useMemo(() => {
+    const totalViews = metrics.totalViews;
+    const totalOrders = metrics.totalOrders;
+    const completedOrders = filteredOrders.filter(o => o.status === 'completed' || o.status === 'delivered').length;
+    const pendingOrders = filteredOrders.filter(o => o.status === 'pending').length;
+    const cancelledOrders = filteredOrders.filter(o => o.status === 'cancelled' || o.status === 'refunded').length;
+
+    return [
+      { label: 'Product', labelLine2: 'Views', value: totalViews.toLocaleString(), badge: '+9%', barHeight: '100%', barColor: '#ffe4c2' },
+      { label: 'Total', labelLine2: 'Orders', value: totalOrders.toLocaleString(), badge: `${totalOrders > 0 ? '+' : ''}${totalOrders}`, barHeight: `${Math.max((totalOrders / Math.max(totalViews, 1)) * 100 * 5, 15)}%`, barColor: '#ffd4a2' },
+      { label: 'Pending', labelLine2: 'Orders', value: pendingOrders.toLocaleString(), badge: pendingOrders.toString(), barHeight: `${Math.max((pendingOrders / Math.max(totalOrders, 1)) * 100, 10)}%`, barColor: '#ffc482' },
+      { label: 'Completed', labelLine2: 'Orders', value: completedOrders.toLocaleString(), badge: `+${completedOrders}`, barHeight: `${Math.max((completedOrders / Math.max(totalOrders, 1)) * 100, 10)}%`, barColor: '#ffb362' },
+      { label: 'Cancelled', labelLine2: '/ Refunded', value: cancelledOrders.toLocaleString(), badge: `-${cancelledOrders}`, isNegative: cancelledOrders > 0, barHeight: `${Math.max((cancelledOrders / Math.max(totalOrders, 1)) * 100, 5)}%`, barColor: '#ff9f42' },
+    ];
+  }, [metrics, filteredOrders]);
 
   const dashboardData: DashboardStatData = useMemo(() => ({
     totalSales: metrics.totalRevenue,
     totalSalesChange: metrics.revenueChange,
     totalOrders: metrics.totalOrders,
     totalOrdersChange: metrics.ordersChange,
-    totalVisitors: 237782,
-    totalVisitorsChange: 8.02,
-    topCategories: [
-      { name: 'Electronics', amount: '$1,200,000', color: '#ff7f00' },
-      { name: 'Fashion', amount: '$950,000', color: '#fdba74' },
-      { name: 'Home & Kitchen', amount: '$750,000', color: '#fed7aa' },
-      { name: 'Beauty & Care', amount: '$500,000', color: '#e5e7eb' },
+    totalVisitors: metrics.totalViews,
+    totalVisitorsChange: 0,
+    topCategories: topCategories.length > 0 ? topCategories : [
+      { name: 'No sales yet', amount: formatAmountOnly(0), color: '#e5e7eb' },
     ],
-    totalCategorySales: '$3.4M',
-    activeUsers: 2758,
+    totalCategorySales,
+    activeUsers: metrics.totalViews,
     activeUsersByCountry: [
-      { country: 'United States', percent: 36, barColor: '#f97316' },
-      { country: 'United Kingdom', percent: 24, barColor: '#fdba74' },
-      { country: 'Indonesia', percent: 17.5, barColor: '#f97316' },
-      { country: 'Russia', percent: 15, barColor: '#fed7aa' },
+      { country: 'Product Views', percent: 100, barColor: '#f97316' },
     ],
-    conversionFunnel: [
-      { label: 'Product', labelLine2: 'Views', value: '25,000', badge: '+9%', barHeight: '100%', barColor: '#ffe4c2' },
-      { label: 'Add to', labelLine2: 'Cart', value: '12,000', badge: '+6%', barHeight: '60%', barColor: '#ffd4a2' },
-      { label: 'Proceed to', labelLine2: 'Checkout', value: '8,500', badge: '+4%', barHeight: '40%', barColor: '#ffc482' },
-      { label: 'Completed', labelLine2: 'Purchases', value: '6,200', badge: '+7%', barHeight: '30%', barColor: '#ffb362' },
-      { label: 'Abandoned', labelLine2: 'Carts', value: '3,000', badge: '-5%', isNegative: true, barHeight: '15%', barColor: '#ff9f42' },
-    ],
+    conversionFunnel,
     trafficSources: [
       { name: 'Direct Traffic', percent: 40, color: '#ffedd5' },
       { name: 'Organic Search', percent: 30, color: '#fed7aa' },
@@ -219,7 +234,11 @@ const SellerDashboard = () => {
       { name: 'Email Campaigns', percent: 5, color: '#f97316' },
     ],
     formatAmount: formatAmountOnly,
-  }), [metrics, formatAmountOnly]);
+    dailyRevenue: metrics.dailyRevenue,
+    monthlyTarget: metrics.monthlyTarget,
+    monthlyRevenue: metrics.thisMonthRevenue,
+    monthlyTargetChange: metrics.monthlyTargetChange,
+  }), [metrics, formatAmountOnly, topCategories, totalCategorySales, conversionFunnel]);
 
   if (loading) {
     return (
