@@ -126,25 +126,25 @@ const SellerProductAnalytics = () => {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+        <div className="bg-white border rounded p-8">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Total Views</span>
           </div>
           <div className="text-4xl font-semibold text-slate-900">{totals.views.toLocaleString()}</div>
         </div>
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+        <div className="bg-white border rounded p-8">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Total Clicks</span>
           </div>
           <div className="text-4xl font-semibold text-slate-900">{totals.clicks.toLocaleString()}</div>
         </div>
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+        <div className="bg-white border rounded p-8">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Total Purchases</span>
           </div>
           <div className="text-4xl font-semibold text-slate-900">{totals.purchases.toLocaleString()}</div>
         </div>
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+        <div className="bg-white border rounded p-8">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Conversion Rate</span>
           </div>
@@ -155,7 +155,7 @@ const SellerProductAnalytics = () => {
       </div>
 
       {/* Chart */}
-      <div className="bg-white rounded-lg p-4 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+      <div className="bg-white rounded-lg p-6 border">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-slate-900">Views & Purchases (Last 7 Days)</h3>
           <select
@@ -214,7 +214,7 @@ const SellerProductAnalytics = () => {
       </div>
 
       {/* Product Performance Table */}
-      <div className="bg-white rounded-lg border overflow-hidden hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+      <div className="bg-white rounded-lg border overflow-hidden">
         <div className="p-4 border-b border-slate-100">
           <h3 className="font-semibold text-slate-900">Product Performance</h3>
         </div>
