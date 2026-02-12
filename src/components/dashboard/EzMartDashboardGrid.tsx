@@ -323,11 +323,11 @@ const Dashboard_MonthlyTarget = ({
   const percentage = target > 0 ? Math.min((revenue / target) * 100, 100) : 0;
   const remaining = Math.max(target - revenue, 0);
   
-  // Calculate arc for gauge (semicircle from left to right)
-  // Full arc = M 10 50 A 40 40 0 0 1 90 50 (180 degrees)
-  // We need to fill `percentage` of this arc
-  const radius = 40;
-  const cx = 50, cy = 50;
+   // Calculate arc for gauge (semicircle from left to right)
+   // Full arc = M 12 50 A 38 38 0 0 1 88 50 (180 degrees)
+   // We need to fill `percentage` of this arc
+   const radius = 38;
+   const cx = 50, cy = 50;
   const startAngle = Math.PI; // left side (180 degrees)
   const totalArc = Math.PI; // semicircle (180 degrees)
   const fillAngle = startAngle - (percentage / 100) * totalArc;
@@ -353,15 +353,15 @@ const Dashboard_MonthlyTarget = ({
       </div>
 
       <div style={{ position: 'relative', width: '180px', height: '120px', display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-        <svg style={{ width: '180px', height: '100px' }} viewBox="0 0 100 58">
-          <path d="M 10 50 A 40 40 0 0 1 90 50" stroke="#F3F4F6" strokeWidth="10" fill="none" />
+        <svg style={{ width: '180px', height: '100px' }} viewBox="0 0 100 60">
+          <path d="M 12 50 A 38 38 0 0 1 88 50" stroke="#F3F4F6" strokeWidth="8" fill="none" />
           {percentage > 0 && (
             <path 
-              d={`M 10 50 A 40 40 0 ${largeArc} 1 ${endX.toFixed(1)} ${endY.toFixed(1)}`} 
+              d={`M 12 50 A 38 38 0 ${largeArc} 1 ${endX.toFixed(1)} ${endY.toFixed(1)}`} 
               stroke="#FF7F00" 
-              strokeWidth="10" 
+              strokeWidth="8" 
               fill="none" 
-              strokeLinecap="round" 
+              strokeLinecap="butt" 
             />
           )}
         </svg>
