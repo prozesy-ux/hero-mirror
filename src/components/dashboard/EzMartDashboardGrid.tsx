@@ -42,6 +42,10 @@ export interface DashboardStatData {
   totalOrdersChange: number;
   totalVisitors: number;
   totalVisitorsChange: number;
+  // Optional custom 3rd stat card
+  thirdCardLabel?: string;
+  thirdCardValue?: string;
+  thirdCardIcon?: 'dollar' | 'cart' | 'user';
   topCategories: CategoryItem[];
   totalCategorySales: string;
   activeUsers: number;
@@ -348,8 +352,8 @@ const Dashboard_MonthlyTarget = ({
         <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
       </div>
 
-      <div style={{ position: 'relative', width: '180px', height: '100px', display: 'flex', justifyContent: 'center', marginBottom: '20px', overflow: 'hidden' }}>
-        <svg style={{ width: '180px', height: '180px', transform: 'rotate(-90deg)' }} viewBox="0 0 100 100">
+      <div style={{ position: 'relative', width: '180px', height: '110px', display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+        <svg style={{ width: '180px', height: '100px' }} viewBox="0 0 100 55">
           <path d="M 10 50 A 40 40 0 0 1 90 50" stroke="#F3F4F6" strokeWidth="10" fill="none" />
           {percentage > 0 && (
             <path 
@@ -361,8 +365,8 @@ const Dashboard_MonthlyTarget = ({
             />
           )}
         </svg>
-        <div style={{ position: 'absolute', bottom: 0, textAlign: 'center' }}>
-          <span style={{ fontSize: '24px', fontWeight: 700, color: '#1f2937', display: 'block' }}>{percentage.toFixed(0)}%</span>
+        <div style={{ position: 'absolute', bottom: '0px', textAlign: 'center' }}>
+          <span style={{ fontSize: '24px', fontWeight: 700, color: '#1f2937', display: 'block', lineHeight: 1 }}>{percentage.toFixed(0)}%</span>
           <span style={{ fontSize: '10px', color: change >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
             {change >= 0 ? '+' : ''}{change.toFixed(2)}%
           </span>
@@ -581,10 +585,10 @@ const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => {
         iconType="cart"
       />
       <Dashboard_StatCard
-        label="Total Visitors"
-        value={data.totalVisitors.toLocaleString()}
+        label={data.thirdCardLabel || "Total Visitors"}
+        value={data.thirdCardValue || data.totalVisitors.toLocaleString()}
         change={data.totalVisitorsChange}
-        iconType="user"
+        iconType={data.thirdCardIcon || "user"}
       />
       <Dashboard_TopCategories
         categories={data.topCategories}
