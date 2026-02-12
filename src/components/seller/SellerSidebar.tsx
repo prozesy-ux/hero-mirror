@@ -67,12 +67,13 @@ const navItemsAfterDiscount = [
   { to: '/seller/performance', icon: GumroadPerformanceIcon, label: 'Performance' },
   { to: '/seller/notifications', icon: GumroadInsightsIcon, label: 'Notifications' },
   { to: '/seller/chat', icon: GumroadChatIcon, label: 'Chat' },
-  { to: '/seller/security', icon: GumroadSettingsIcon, label: 'Security' },
+   { to: '/seller/security', icon: GumroadSettingsIcon, label: 'Security' },
+   { to: '/seller/service-bookings', icon: GumroadChatIcon, label: 'Services' },
 ];
 
 const bottomNavItems = [
-  { to: '/seller/settings', icon: GumroadSettingsIcon, label: 'Settings' },
-  { to: '/seller/support', icon: GumroadHelpIcon, label: 'Help' },
+   { to: '/seller/settings', icon: GumroadSettingsIcon, label: 'Settings' },
+   { to: '/seller/support', icon: GumroadHelpIcon, label: 'Help' },
 ];
 
 const SellerSidebar = () => {
