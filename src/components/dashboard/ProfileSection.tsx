@@ -666,7 +666,7 @@ const ProfileSection = () => {
 
       {/* Profile Image Sheet */}
       <Sheet open={activeSheet === 'profile-image'} onOpenChange={(open) => !open && setActiveSheet(null)}>
-        <SheetContent side="bottom" className="rounded-t-xl border-t border-black">
+        <SheetContent side="bottom" className="rounded-t-xl border-t border-slate-200">
           <SheetHeader className="text-center pb-4">
             <SheetTitle className="text-slate-900">Profile Image</SheetTitle>
           </SheetHeader>
@@ -674,7 +674,7 @@ const ProfileSection = () => {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarLoading}
-              className="w-full flex items-center justify-start h-14 text-base px-4 rounded border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+              className="w-full flex items-center justify-start h-14 text-base px-4 rounded border border-slate-200 hover:shadow-sm transition-all"
             >
               <Camera className="w-5 h-5 mr-3 text-black" />
               {avatarLoading ? 'Uploading...' : 'Choose from Library'}
@@ -689,7 +689,7 @@ const ProfileSection = () => {
           <SheetHeader className="flex flex-row items-center gap-3 pb-6">
             <button 
               onClick={() => setActiveSheet(null)}
-              className="p-2 rounded border border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+              className="p-2 rounded border border-slate-200 hover:shadow-sm transition-all"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -702,13 +702,13 @@ const ProfileSection = () => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your name"
-                className="mt-2 rounded border-black focus:ring-2 focus:ring-[#FF90E8]/50"
+                className="mt-2 rounded border-slate-200 focus:ring-2 focus:ring-emerald-500/50"
               />
             </div>
             <button
               onClick={handleSaveName}
               disabled={loading}
-              className="w-full px-4 py-3 bg-[#FF90E8] text-black font-semibold rounded border border-black transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50"
+              className="w-full px-4 py-3 bg-emerald-500 text-white font-semibold rounded-xl transition-all hover:bg-emerald-600 disabled:opacity-50"
             >
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin inline" /> : <Check className="h-4 w-4 mr-2 inline" />}
               Save Changes
@@ -904,7 +904,7 @@ const ProfileSection = () => {
               <button
                 onClick={handlePasswordChange}
                 disabled={passwordLoading || newPassword.length < 8 || !passwordsMatch}
-                className="w-full px-4 py-3 bg-[#FF90E8] text-black font-semibold rounded border border-black transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50"
+                className="w-full px-4 py-3 bg-emerald-500 text-white font-semibold rounded-xl transition-all hover:bg-emerald-600 disabled:opacity-50"
               >
                 {passwordLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin inline" /> : null}
                 Update Password
@@ -956,8 +956,8 @@ const ProfileSection = () => {
                   {sessions.map((session) => (
                     <div
                       key={session.id}
-                      className={`flex items-center justify-between p-3 rounded border transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
-                        session.is_current ? 'bg-[#FFF5FB] border-black' : 'bg-white border-black'
+                      className={`flex items-center justify-between p-3 rounded border transition-all hover:shadow-sm ${
+                        session.is_current ? 'bg-emerald-50 border-slate-200' : 'bg-white border-slate-200'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -972,7 +972,7 @@ const ProfileSection = () => {
                               {session.browser || 'Unknown'} on {session.device_name || 'Unknown'}
                             </p>
                             {session.is_current && (
-                              <Badge className="text-xs bg-[#FF90E8] text-black border border-black">
+                              <Badge className="text-xs bg-emerald-100 text-emerald-700">
                                 Current
                               </Badge>
                             )}
@@ -1011,7 +1011,7 @@ const ProfileSection = () => {
           
           <div className="space-y-4">
             {/* Toggle */}
-            <div className="flex items-center justify-between p-4 rounded bg-white border border-black">
+            <div className="flex items-center justify-between p-4 rounded bg-white border border-slate-200">
               <div>
                 <p className="font-medium text-sm text-slate-900">Enable 2FA Protection</p>
                 <p className="text-xs text-slate-600 mt-0.5">
@@ -1043,7 +1043,7 @@ const ProfileSection = () => {
             
             {/* Status */}
             {(profile as any)?.two_factor_enabled !== false ? (
-              <div className="p-4 rounded bg-[#FFF5FB] border border-black">
+              <div className="p-4 rounded bg-emerald-50 border border-slate-200">
                 <div className="flex items-start gap-3">
                   <Shield className="w-5 h-5 text-emerald-600 mt-0.5" />
                   <div>
@@ -1055,7 +1055,7 @@ const ProfileSection = () => {
                 </div>
               </div>
             ) : (
-              <div className="p-4 rounded bg-amber-50 border border-black">
+              <div className="p-4 rounded bg-amber-50 border border-slate-200">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
                   <div>
@@ -1068,7 +1068,7 @@ const ProfileSection = () => {
               </div>
             )}
             
-            <div className="p-4 rounded bg-white border border-black">
+            <div className="p-4 rounded bg-white border border-slate-200">
               <p className="text-sm font-medium text-slate-900 mb-3">Protected actions:</p>
               <ul className="space-y-2">
                 <li className="flex items-center gap-2 text-sm text-slate-600">

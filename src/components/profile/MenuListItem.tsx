@@ -33,19 +33,19 @@ const MenuListItem = ({
       className={cn(
         "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all",
         "border-b last:border-b-0",
-        isClickable && "hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
+        isClickable && "hover:shadow-sm",
         disabled && "opacity-50 cursor-not-allowed",
         !isClickable && "cursor-default"
       )}
     >
       {/* Icon - Gumroad pink style */}
       <div className={cn(
-        "w-9 h-9 rounded border border-black flex items-center justify-center flex-shrink-0",
-        variant === 'danger' ? "bg-red-100" : "bg-[#FF90E8]"
+        "w-9 h-9 rounded border border-slate-200 flex items-center justify-center flex-shrink-0",
+        variant === 'danger' ? "bg-red-100" : "bg-emerald-100"
       )}>
         <Icon className={cn(
           "w-4 h-4",
-          variant === 'danger' ? "text-red-600" : "text-black"
+          variant === 'danger' ? "text-red-600" : "text-emerald-600"
         )} />
       </div>
 

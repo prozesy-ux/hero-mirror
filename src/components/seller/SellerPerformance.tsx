@@ -183,7 +183,7 @@ const SellerPerformance = () => {
       {/* Key Metrics Grid - Gumroad Style */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Trust Score */}
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+        <div className="bg-white border rounded p-8">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Trust Score</span>
           </div>
@@ -193,7 +193,7 @@ const SellerPerformance = () => {
         </div>
 
         {/* Fulfillment Rate */}
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+        <div className="bg-white border rounded p-8">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Fulfillment Rate</span>
           </div>
@@ -201,7 +201,7 @@ const SellerPerformance = () => {
         </div>
 
         {/* Avg Response Time */}
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+        <div className="bg-white border rounded p-8">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Avg Response</span>
           </div>
@@ -209,7 +209,7 @@ const SellerPerformance = () => {
         </div>
 
         {/* Avg Delivery */}
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+        <div className="bg-white border rounded p-8">
           <div className="flex items-center gap-2 text-base mb-2">
             <span className="text-slate-700">Avg Delivery</span>
           </div>
@@ -220,7 +220,7 @@ const SellerPerformance = () => {
       {/* Detailed Metrics */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Order Distribution */}
-        <div className="bg-white rounded-lg p-8 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+        <div className="bg-white rounded-lg p-8 border">
           <h3 className="font-semibold text-slate-800 mb-4">Order Status Distribution</h3>
           {metrics.statusDistribution.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
@@ -250,7 +250,7 @@ const SellerPerformance = () => {
         </div>
 
         {/* Performance Checklist */}
-        <div className="bg-white rounded-lg p-8 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+        <div className="bg-white rounded-lg p-8 border">
           <h3 className="font-semibold text-slate-800 mb-4">Performance Checklist</h3>
           <div className="space-y-3">
             {[
@@ -279,7 +279,7 @@ const SellerPerformance = () => {
       </div>
 
       {/* Stats Summary */}
-      <div className="bg-white rounded-lg p-8 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+      <div className="bg-white rounded-lg p-8 border">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
           <div>
             <p className="text-sm text-slate-500 mb-1">Total Orders</p>
