@@ -297,10 +297,10 @@ const BuyerDashboardHome = () => {
     const wishlist = data?.wishlistCount || 0;
     return [
       { label: 'Wishlist', labelLine2: 'Items', value: wishlist.toLocaleString(), badge: `${wishlist}`, barHeight: '100%', barColor: '#ffe4c2' },
-      { label: 'Total', labelLine2: 'Orders', value: stats.total.toLocaleString(), badge: `${stats.total}`, barHeight: `${Math.max((stats.total / Math.max(wishlist, stats.total, 1)) * 100, 15)}%`, barColor: '#ffd4a2' },
-      { label: 'Pending', labelLine2: 'Orders', value: stats.pending.toLocaleString(), badge: stats.pending.toString(), barHeight: `${Math.max((stats.pending / Math.max(stats.total, 1)) * 100, 10)}%`, barColor: '#ffc482' },
-      { label: 'Completed', labelLine2: 'Orders', value: (stats.completed + stats.delivered).toLocaleString(), badge: `+${stats.completed + stats.delivered}`, barHeight: `${Math.max(((stats.completed + stats.delivered) / Math.max(stats.total, 1)) * 100, 10)}%`, barColor: '#ffb362' },
-      { label: 'Cancelled', labelLine2: '/ Refunded', value: stats.cancelled.toLocaleString(), badge: `-${stats.cancelled}`, isNegative: stats.cancelled > 0, barHeight: `${Math.max((stats.cancelled / Math.max(stats.total, 1)) * 100, 5)}%`, barColor: '#ff9f42' },
+      { label: 'Total', labelLine2: 'Orders', value: stats.total.toLocaleString(), badge: `${stats.total}`, barHeight: `${Math.min(Math.max((stats.total / Math.max(wishlist, stats.total, 1)) * 100, 15), 100)}%`, barColor: '#ffd4a2' },
+      { label: 'Pending', labelLine2: 'Orders', value: stats.pending.toLocaleString(), badge: stats.pending.toString(), barHeight: `${Math.min(Math.max((stats.pending / Math.max(stats.total, 1)) * 100, 10), 100)}%`, barColor: '#ffc482' },
+      { label: 'Completed', labelLine2: 'Orders', value: (stats.completed + stats.delivered).toLocaleString(), badge: `+${stats.completed + stats.delivered}`, barHeight: `${Math.min(Math.max(((stats.completed + stats.delivered) / Math.max(stats.total, 1)) * 100, 10), 100)}%`, barColor: '#ffb362' },
+      { label: 'Cancelled', labelLine2: '/ Refunded', value: stats.cancelled.toLocaleString(), badge: `-${stats.cancelled}`, isNegative: stats.cancelled > 0, barHeight: `${Math.min(Math.max((stats.cancelled / Math.max(stats.total, 1)) * 100, 5), 100)}%`, barColor: '#ff9f42' },
     ];
   }, [stats, data?.wishlistCount]);
 
