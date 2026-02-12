@@ -25,13 +25,16 @@ const navItems = [
   { to: '/dashboard/prompts', icon: GumroadProductsIcon, label: 'Prompts' },
   { to: '/dashboard/analytics', icon: GumroadAnalyticsIcon, label: 'Analytics' },
   { to: '/dashboard/billing', icon: GumroadPayoutsIcon, label: 'Billing' },
-  { to: '/dashboard/wallet', icon: GumroadPayoutsIcon, label: 'Wallet' },
+   { to: '/dashboard/wallet', icon: GumroadPayoutsIcon, label: 'Wallet' },
+   { to: '/dashboard/recently-viewed', icon: GumroadLibraryIcon, label: 'Recently Viewed' },
+   { to: '/dashboard/my-reviews', icon: GumroadAnalyticsIcon, label: 'My Reviews' },
+   { to: '/dashboard/service-bookings', icon: GumroadCheckoutIcon, label: 'My Services' },
 ];
 
 const bottomNavItems = [
-  { to: '/dashboard/notifications', icon: GumroadSettingsIcon, label: 'Notifications' },
-  { to: '/dashboard/chat', icon: GumroadHelpIcon, label: 'Support' },
-  { to: '/dashboard/profile', icon: GumroadSettingsIcon, label: 'Settings' },
+   { to: '/dashboard/notifications', icon: GumroadSettingsIcon, label: 'Notifications' },
+   { to: '/dashboard/chat', icon: GumroadHelpIcon, label: 'Support' },
+   { to: '/dashboard/profile', icon: GumroadSettingsIcon, label: 'Settings' },
 ];
 
 const DashboardSidebar = () => {
