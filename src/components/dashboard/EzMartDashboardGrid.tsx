@@ -334,7 +334,7 @@ const Dashboard_MonthlyTarget = ({
   
   const endX = cx + radius * Math.cos(fillAngle);
   const endY = cy - radius * Math.sin(fillAngle);
-  const largeArc = percentage > 50 ? 1 : 0;
+  const largeArc = 0;
 
   return (
     <div style={{
