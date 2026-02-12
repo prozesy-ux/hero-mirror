@@ -355,11 +355,16 @@ const BuyerDashboardHome = () => {
       { country: 'Cancelled', percent: stats.total > 0 ? Math.round((stats.cancelled / stats.total) * 100) : 0, barColor: '#ef4444' },
     ],
     conversionFunnel,
-    trafficSources: [
-      { name: 'Wallet Balance', percent: wallet.balance > 0 ? 50 : 0, color: '#ffedd5' },
-      { name: 'Total Spent', percent: stats.totalSpent > 0 ? 30 : 0, color: '#fed7aa' },
-      { name: 'Wishlist', percent: (data?.wishlistCount || 0) > 0 ? 20 : 0, color: '#fdba74' },
-    ],
+    trafficSources: (() => {
+      // Buyer spending breakdown by order status
+      const total = stats.total || 1;
+      return [
+        { name: 'Completed', percent: Math.round((stats.completed / total) * 100), color: '#10b981' },
+        { name: 'Delivered', percent: Math.round((stats.delivered / total) * 100), color: '#3b82f6' },
+        { name: 'Pending', percent: Math.round((stats.pending / total) * 100), color: '#f59e0b' },
+        { name: 'Cancelled', percent: Math.round((stats.cancelled / total) * 100), color: '#ef4444' },
+      ].filter(s => s.percent > 0);
+    })(),
     formatAmount: formatAmountOnly,
     dailyRevenue,
     monthlyTarget: monthlyMetrics.monthlyTarget,

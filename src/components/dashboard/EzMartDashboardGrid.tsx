@@ -151,10 +151,25 @@ const Dashboard_TopCategories = ({
 
     <div style={{ position: 'relative', width: '200px', height: '200px', margin: '0 auto 32px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <svg width="200" height="200" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="50" cy="50" r="40" fill="none" stroke="#F3F4F6" strokeWidth="12" />
-        <circle cx="50" cy="50" r="40" fill="none" stroke="#FF7F00" strokeWidth="12" strokeDasharray="100 251" strokeDashoffset="0" />
-        <circle cx="50" cy="50" r="40" fill="none" stroke="#FDBA74" strokeWidth="12" strokeDasharray="70 251" strokeDashoffset="-105" />
-        <circle cx="50" cy="50" r="40" fill="none" stroke="#FED7AA" strokeWidth="12" strokeDasharray="50 251" strokeDashoffset="-180" />
+        {(() => {
+          const circumference = 2 * Math.PI * 40; // ~251.3
+          const totalAmount = categories.reduce((sum, c) => sum + parseFloat(c.amount.replace(/[^0-9.-]/g, '') || '0'), 0) || 1;
+          let offset = 0;
+          return (
+            <>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#F3F4F6" strokeWidth="12" />
+              {categories.map((cat, i) => {
+                const proportion = parseFloat(cat.amount.replace(/[^0-9.-]/g, '') || '0') / totalAmount;
+                const dashLength = proportion * circumference;
+                const currentOffset = -offset;
+                offset += dashLength;
+                return (
+                  <circle key={i} cx="50" cy="50" r="40" fill="none" stroke={cat.color} strokeWidth="12" strokeDasharray={`${dashLength} ${circumference}`} strokeDashoffset={currentOffset} />
+                );
+              })}
+            </>
+          );
+        })()}
       </svg>
       <div style={{ position: 'absolute', textAlign: 'center' }}>
         <div style={{ fontSize: '12px', color: '#6b7280' }}>Total Sales</div>
@@ -427,11 +442,7 @@ const Dashboard_ActiveUsers = ({
 
     <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px' }}>{total.toLocaleString()}</div>
     <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '24px' }}>
-      Users
-      <span style={{
-        float: 'right', color: '#10b981', background: '#ecfdf5',
-        padding: '2px 6px', borderRadius: '4px', fontWeight: 600, fontSize: '11px',
-      }}>+8.02%</span>
+      Breakdown
     </div>
 
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -523,7 +534,7 @@ const Dashboard_TrafficSources = ({
     gridColumn: 'span 1',
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-      <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Traffic Sources</div>
+      <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Order Breakdown</div>
       <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
     </div>
 

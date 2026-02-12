@@ -126,8 +126,8 @@ const SellerDashboard = () => {
       categorySales[name] = (categorySales[name] || 0) + Number(order.seller_earning || order.amount);
     });
 
-    // Product view totals (estimate from sold_count)
-    const totalViews = products.reduce((sum, p) => sum + (p.sold_count || 0) * 10, 0);
+    // Product view totals - use sold_count as proxy until view_count is added to context
+    const totalViews = products.reduce((sum, p) => sum + ((p as any).view_count || p.sold_count || 0), 0);
 
     return {
       totalRevenue,
@@ -226,13 +226,20 @@ const SellerDashboard = () => {
       { country: 'Product Views', percent: 100, barColor: '#f97316' },
     ],
     conversionFunnel,
-    trafficSources: [
-      { name: 'Direct Traffic', percent: 40, color: '#ffedd5' },
-      { name: 'Organic Search', percent: 30, color: '#fed7aa' },
-      { name: 'Social Media', percent: 15, color: '#fdba74' },
-      { name: 'Referral Traffic', percent: 10, color: '#fb923c' },
-      { name: 'Email Campaigns', percent: 5, color: '#f97316' },
-    ],
+    trafficSources: (() => {
+      // Real traffic breakdown from order statuses
+      const total = filteredOrders.length || 1;
+      const completed = filteredOrders.filter(o => o.status === 'completed').length;
+      const delivered = filteredOrders.filter(o => o.status === 'delivered').length;
+      const pending = filteredOrders.filter(o => o.status === 'pending').length;
+      const refunded = filteredOrders.filter(o => o.status === 'refunded' || o.status === 'cancelled').length;
+      return [
+        { name: 'Completed Orders', percent: Math.round((completed / total) * 100), color: '#10b981' },
+        { name: 'Delivered', percent: Math.round((delivered / total) * 100), color: '#3b82f6' },
+        { name: 'Pending', percent: Math.round((pending / total) * 100), color: '#f59e0b' },
+        { name: 'Cancelled/Refunded', percent: Math.round((refunded / total) * 100), color: '#ef4444' },
+      ].filter(s => s.percent > 0);
+    })(),
     formatAmount: formatAmountOnly,
     dailyRevenue: metrics.dailyRevenue,
     monthlyTarget: metrics.monthlyTarget,

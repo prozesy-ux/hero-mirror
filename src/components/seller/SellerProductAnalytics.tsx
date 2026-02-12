@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BarChart3, Eye, MousePointer, ShoppingCart, TrendingUp, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSellerContext } from '@/contexts/SellerContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subDays } from 'date-fns';
 
@@ -27,6 +28,7 @@ interface ProductWithAnalytics {
 
 const SellerProductAnalytics = () => {
   const { products } = useSellerContext();
+  const { formatAmountOnly } = useCurrency();
   const [analytics, setAnalytics] = useState<ProductAnalytic[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
@@ -248,7 +250,7 @@ const SellerProductAnalytics = () => {
                   <td className="text-right px-4 py-3 text-sm text-slate-600">{product.totalViews}</td>
                   <td className="text-right px-4 py-3 text-sm text-slate-600">{product.totalClicks}</td>
                   <td className="text-right px-4 py-3 text-sm text-slate-600">{product.totalPurchases}</td>
-                  <td className="text-right px-4 py-3 text-sm font-medium text-emerald-600">${product.totalRevenue.toFixed(2)}</td>
+                  <td className="text-right px-4 py-3 text-sm font-medium text-emerald-600">{formatAmountOnly(product.totalRevenue)}</td>
                   <td className="text-right px-4 py-3">
                     <span className={`text-xs font-medium px-2 py-0.5 rounded ${
                       product.conversionRate > 5 ? 'bg-emerald-100 text-emerald-700' :
