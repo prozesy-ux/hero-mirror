@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import SessionExpiredBanner from '@/components/ui/session-expired-banner';
 import EzMartDashboardGrid, { type DashboardStatData } from './EzMartDashboardGrid';
+import { format, subDays, startOfMonth, subMonths, eachDayOfInterval, startOfDay, isWithinInterval } from 'date-fns';
 
 interface Order {
   id: string;
@@ -74,10 +75,8 @@ const BuyerDashboardHome = () => {
     
     const result = await bffApi.getBuyerDashboard();
     
-    // SOFT RECONNECTING STATE: If within 12h grace and just reconnecting
     if (result.isReconnecting) {
       setIsReconnecting(true);
-      // Keep existing data visible, show reconnecting notice
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         try {
@@ -87,19 +86,15 @@ const BuyerDashboardHome = () => {
         } catch (e) { /* ignore */ }
       }
       setLoading(false);
-      // Auto-retry in 5 seconds
       setTimeout(() => fetchData(), 5000);
       return;
     }
     
-    // UNAUTHORIZED: Check if truly expired or just transient
     if (result.isUnauthorized) {
-      // Only show expired banner if truly outside 12h window
       if (!isSessionValid()) {
         setSessionExpiredLocal(true);
         setSessionExpired?.(true);
       } else {
-        // Within 12h - treat as reconnecting, not expired
         setIsReconnecting(true);
         setTimeout(() => fetchData(), 5000);
       }
@@ -196,44 +191,111 @@ const BuyerDashboardHome = () => {
 
   const stats = data?.orderStats || { total: 0, pending: 0, delivered: 0, completed: 0, totalSpent: 0, cancelled: 0 };
   const wallet = data?.wallet || { balance: 0 };
+  const orders = data?.sellerOrders || [];
+
+  // Compute real daily spending from orders
+  const dailyRevenue = useMemo(() => {
+    const now = new Date();
+    const from = subDays(now, 30);
+    return eachDayOfInterval({ start: from, end: now }).map(day => {
+      const dayStart = startOfDay(day);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+      const dayOrders = orders.filter(order => {
+        const orderDate = new Date(order.created_at);
+        return isWithinInterval(orderDate, { start: dayStart, end: dayEnd });
+      });
+      return {
+        date: format(day, 'dd MMM'),
+        revenue: dayOrders.reduce((sum, o) => sum + o.amount, 0),
+      };
+    });
+  }, [orders]);
+
+  // Monthly target calculations
+  const monthlyMetrics = useMemo(() => {
+    const now = new Date();
+    const thisMonthStart = startOfMonth(now);
+    const lastMonthStart = startOfMonth(subMonths(now, 1));
+    const lastMonthEnd = subDays(thisMonthStart, 1);
+
+    const thisMonthOrders = orders.filter(o => new Date(o.created_at) >= thisMonthStart);
+    const lastMonthOrders = orders.filter(o => {
+      const d = new Date(o.created_at);
+      return d >= lastMonthStart && d <= lastMonthEnd;
+    });
+    const thisMonthSpent = thisMonthOrders.reduce((sum, o) => sum + o.amount, 0);
+    const lastMonthSpent = lastMonthOrders.reduce((sum, o) => sum + o.amount, 0);
+    const monthlyTarget = Math.max(lastMonthSpent * 1.2, thisMonthSpent > 0 ? thisMonthSpent * 1.5 : 100);
+    const monthlyChange = lastMonthSpent > 0 
+      ? ((thisMonthSpent - lastMonthSpent) / lastMonthSpent) * 100 
+      : (thisMonthSpent > 0 ? 100 : 0);
+
+    return { thisMonthSpent, monthlyTarget, monthlyChange };
+  }, [orders]);
+
+  // Top products from orders
+  const topCategories = useMemo(() => {
+    const productSpending: Record<string, number> = {};
+    orders.forEach(order => {
+      const name = order.product?.name || 'Other';
+      productSpending[name] = (productSpending[name] || 0) + order.amount;
+    });
+    const sorted = Object.entries(productSpending).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    const colors = ['#ff7f00', '#fdba74', '#fed7aa', '#e5e7eb'];
+    return sorted.map(([name, amount], i) => ({
+      name,
+      amount: formatAmountOnly(amount),
+      color: colors[i] || '#e5e7eb',
+    }));
+  }, [orders, formatAmountOnly]);
+
+  // Conversion funnel from real order data
+  const conversionFunnel = useMemo(() => {
+    const totalOrders = stats.total;
+    const completed = stats.completed + stats.delivered;
+    const pending = stats.pending;
+    const cancelled = stats.cancelled;
+    const wishlist = data?.wishlistCount || 0;
+
+    return [
+      { label: 'Wishlist', labelLine2: 'Items', value: wishlist.toLocaleString(), badge: `${wishlist}`, barHeight: '100%', barColor: '#ffe4c2' },
+      { label: 'Total', labelLine2: 'Orders', value: totalOrders.toLocaleString(), badge: `${totalOrders}`, barHeight: `${Math.max((totalOrders / Math.max(wishlist, totalOrders, 1)) * 100, 15)}%`, barColor: '#ffd4a2' },
+      { label: 'Pending', labelLine2: 'Orders', value: pending.toLocaleString(), badge: pending.toString(), barHeight: `${Math.max((pending / Math.max(totalOrders, 1)) * 100, 10)}%`, barColor: '#ffc482' },
+      { label: 'Completed', labelLine2: 'Orders', value: completed.toLocaleString(), badge: `+${completed}`, barHeight: `${Math.max((completed / Math.max(totalOrders, 1)) * 100, 10)}%`, barColor: '#ffb362' },
+      { label: 'Cancelled', labelLine2: '/ Refunded', value: cancelled.toLocaleString(), badge: `-${cancelled}`, isNegative: cancelled > 0, barHeight: `${Math.max((cancelled / Math.max(totalOrders, 1)) * 100, 5)}%`, barColor: '#ff9f42' },
+    ];
+  }, [stats, data?.wishlistCount]);
 
   const dashboardData: DashboardStatData = useMemo(() => ({
-    totalSales: wallet.balance + stats.totalSpent,
-    totalSalesChange: 3.34,
+    totalSales: stats.totalSpent,
+    totalSalesChange: 0,
     totalOrders: stats.total,
-    totalOrdersChange: -2.89,
-    totalVisitors: 237782,
-    totalVisitorsChange: 8.02,
-    topCategories: [
-      { name: 'Electronics', amount: '$1,200,000', color: '#ff7f00' },
-      { name: 'Fashion', amount: '$950,000', color: '#fdba74' },
-      { name: 'Home & Kitchen', amount: '$750,000', color: '#fed7aa' },
-      { name: 'Beauty & Care', amount: '$500,000', color: '#e5e7eb' },
+    totalOrdersChange: 0,
+    totalVisitors: data?.wishlistCount || 0,
+    totalVisitorsChange: 0,
+    topCategories: topCategories.length > 0 ? topCategories : [
+      { name: 'No purchases yet', amount: formatAmountOnly(0), color: '#e5e7eb' },
     ],
-    totalCategorySales: '$3.4M',
-    activeUsers: 2758,
+    totalCategorySales: formatAmountOnly(stats.totalSpent),
+    activeUsers: stats.total,
     activeUsersByCountry: [
-      { country: 'United States', percent: 36, barColor: '#f97316' },
-      { country: 'United Kingdom', percent: 24, barColor: '#fdba74' },
-      { country: 'Indonesia', percent: 17.5, barColor: '#f97316' },
-      { country: 'Russia', percent: 15, barColor: '#fed7aa' },
+      { country: 'Completed', percent: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0, barColor: '#10b981' },
+      { country: 'Delivered', percent: stats.total > 0 ? Math.round((stats.delivered / stats.total) * 100) : 0, barColor: '#3b82f6' },
+      { country: 'Pending', percent: stats.total > 0 ? Math.round((stats.pending / stats.total) * 100) : 0, barColor: '#f59e0b' },
+      { country: 'Cancelled', percent: stats.total > 0 ? Math.round((stats.cancelled / stats.total) * 100) : 0, barColor: '#ef4444' },
     ],
-    conversionFunnel: [
-      { label: 'Product', labelLine2: 'Views', value: '25,000', badge: '+9%', barHeight: '100%', barColor: '#ffe4c2' },
-      { label: 'Add to', labelLine2: 'Cart', value: '12,000', badge: '+6%', barHeight: '60%', barColor: '#ffd4a2' },
-      { label: 'Proceed to', labelLine2: 'Checkout', value: '8,500', badge: '+4%', barHeight: '40%', barColor: '#ffc482' },
-      { label: 'Completed', labelLine2: 'Purchases', value: '6,200', badge: '+7%', barHeight: '30%', barColor: '#ffb362' },
-      { label: 'Abandoned', labelLine2: 'Carts', value: '3,000', badge: '-5%', isNegative: true, barHeight: '15%', barColor: '#ff9f42' },
-    ],
+    conversionFunnel,
     trafficSources: [
-      { name: 'Direct Traffic', percent: 40, color: '#ffedd5' },
-      { name: 'Organic Search', percent: 30, color: '#fed7aa' },
-      { name: 'Social Media', percent: 15, color: '#fdba74' },
-      { name: 'Referral Traffic', percent: 10, color: '#fb923c' },
-      { name: 'Email Campaigns', percent: 5, color: '#f97316' },
+      { name: 'Wallet Balance', percent: wallet.balance > 0 ? 50 : 0, color: '#ffedd5' },
+      { name: 'Total Spent', percent: stats.totalSpent > 0 ? 30 : 0, color: '#fed7aa' },
+      { name: 'Wishlist', percent: (data?.wishlistCount || 0) > 0 ? 20 : 0, color: '#fdba74' },
     ],
     formatAmount: formatAmountOnly,
-  }), [wallet.balance, stats, formatAmountOnly]);
+    dailyRevenue,
+    monthlyTarget: monthlyMetrics.monthlyTarget,
+    monthlyRevenue: monthlyMetrics.thisMonthSpent,
+    monthlyTargetChange: monthlyMetrics.monthlyChange,
+  }), [wallet.balance, stats, formatAmountOnly, topCategories, conversionFunnel, dailyRevenue, monthlyMetrics, data?.wishlistCount]);
 
   if (loading) {
     return (

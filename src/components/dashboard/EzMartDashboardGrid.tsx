@@ -1,4 +1,5 @@
 import { MoreHorizontal, DollarSign, ShoppingCart, User, ChevronDown } from 'lucide-react';
+import { format, subDays } from 'date-fns';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 export interface ConversionItem {
@@ -29,6 +30,11 @@ export interface TrafficItem {
   color: string;
 }
 
+export interface DailyRevenueItem {
+  date: string;
+  revenue: number;
+}
+
 export interface DashboardStatData {
   totalSales: number;
   totalSalesChange: number;
@@ -43,6 +49,11 @@ export interface DashboardStatData {
   conversionFunnel: ConversionItem[];
   trafficSources: TrafficItem[];
   formatAmount: (v: number) => string;
+  // Real data for charts
+  dailyRevenue?: DailyRevenueItem[];
+  monthlyTarget?: number;
+  monthlyRevenue?: number;
+  monthlyTargetChange?: number;
 }
 
 // ── Stat Card (matches HTML exactly) ───────────────────────────────────────
@@ -161,150 +172,232 @@ const Dashboard_TopCategories = ({
   </div>
 );
 
-// ── Revenue Analytics (pure SVG, matching HTML exactly) ────────────────────
-const Dashboard_RevenueChart = () => (
-  <div style={{
-    background: '#ffffff',
-    borderRadius: '16px',
-    padding: '24px',
-    display: 'flex',
-    flexDirection: 'column',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-    gridColumn: 'span 2',
-  }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-      <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Revenue Analytics</div>
-      <button style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '6px 12px',
-        backgroundColor: '#ff7f00',
-        color: 'white',
-        border: 'none',
-        borderRadius: '6px',
-        fontSize: '12px',
-        cursor: 'pointer',
-      }}>
-        Last 8 Days
-        <ChevronDown style={{ width: 14, height: 14 }} />
-      </button>
-    </div>
+// ── Revenue Analytics (dynamic SVG chart using real data) ──────────────────
+const Dashboard_RevenueChart = ({
+  dailyRevenue,
+  formatAmount,
+}: {
+  dailyRevenue: DailyRevenueItem[];
+  formatAmount: (v: number) => string;
+}) => {
+  // Use last 8 data points for display
+  const chartData = dailyRevenue.slice(-8);
+  const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1);
+  
+  // Generate SVG path from real data
+  const width = 450;
+  const height = 130;
+  const padding = 0;
+  
+  const points = chartData.map((d, i) => {
+    const x = chartData.length > 1 ? (i / (chartData.length - 1)) * width : width / 2;
+    const y = height - (d.revenue / maxRevenue) * (height - 10) - 5;
+    return { x, y, ...d };
+  });
 
-    <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#6b7280' }}>
-        <div style={{ width: '8px', height: '2px', backgroundColor: '#ff7f00', borderRadius: '2px' }} />
-        Revenue
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#6b7280' }}>
-        <div style={{ borderTop: '2px dashed #fdba74', width: '10px', height: 0 }} />
-        Order
-      </div>
-    </div>
+  // Create smooth curve path
+  const pathD = points.length > 1
+    ? points.reduce((acc, p, i) => {
+        if (i === 0) return `M${p.x},${p.y}`;
+        const prev = points[i - 1];
+        const cpx1 = prev.x + (p.x - prev.x) * 0.4;
+        const cpx2 = p.x - (p.x - prev.x) * 0.4;
+        return `${acc} C${cpx1},${prev.y} ${cpx2},${p.y} ${p.x},${p.y}`;
+      }, '')
+    : `M${width / 2},${height / 2}`;
 
-    <div style={{ position: 'relative', height: '160px', width: '100%' }}>
-      {/* Y Axis */}
-      <div style={{
-        position: 'absolute', left: 0, top: 0, bottom: '30px',
-        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-        fontSize: '10px', color: '#9ca3af',
-      }}>
-        <span>16K</span><span>12K</span><span>8K</span><span>4K</span><span>0</span>
-      </div>
+  // Find peak point for tooltip
+  const peakIdx = points.reduce((best, p, i) => p.revenue > points[best].revenue ? i : best, 0);
+  const peak = points[peakIdx];
 
-      <div style={{ marginLeft: '30px', position: 'relative', height: '100%', borderBottom: '1px dashed #e5e7eb' }}>
-        {/* Grid lines */}
-        {[20, 40, 60, 80].map(pct => (
-          <div key={pct} style={{ position: 'absolute', width: '100%', top: `${pct}%`, borderTop: '1px dashed #f3f4f6' }} />
-        ))}
+  // Y axis labels
+  const yLabels = [maxRevenue, maxRevenue * 0.75, maxRevenue * 0.5, maxRevenue * 0.25, 0];
+  const formatYLabel = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v.toFixed(0);
 
-        <svg width="100%" height="130px" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
-          <path
-            d="M0,100 C30,80 60,90 90,60 C120,40 150,50 180,30 C210,40 240,60 270,70 C300,65 330,40 360,50 C390,60 420,55 450,65"
-            fill="none" stroke="#FF7F00" strokeWidth="2"
-          />
-          <path
-            d="M0,110 C30,120 60,110 90,90 C120,80 150,90 180,70 C210,80 240,100 270,110 C300,100 330,90 360,100 C390,110 420,100 450,110"
-            fill="none" stroke="#FDBA74" strokeWidth="2" strokeDasharray="4,4"
-          />
-          <circle cx="180" cy="30" r="4" fill="#FFF" stroke="#FF7F00" strokeWidth="2" />
-        </svg>
-
-        {/* Tooltip */}
+  return (
+    <div style={{
+      background: '#ffffff',
+      borderRadius: '16px',
+      padding: '24px',
+      display: 'flex',
+      flexDirection: 'column',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      gridColumn: 'span 2',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Revenue Analytics</div>
         <div style={{
-          position: 'absolute', left: '155px', top: '-10px',
-          background: 'white', padding: '6px 10px', borderRadius: '6px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.05)', textAlign: 'center',
-          border: '1px solid #e5e7eb',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '6px 12px',
+          backgroundColor: '#ff7f00',
+          color: 'white',
+          border: 'none',
+          borderRadius: '6px',
+          fontSize: '12px',
         }}>
-          <div style={{ fontSize: '8px', color: '#9ca3af' }}>Revenue</div>
-          <div style={{ fontSize: '12px', fontWeight: 700 }}>$14,521</div>
+          Last {chartData.length} Days
+          <ChevronDown style={{ width: 14, height: 14 }} />
         </div>
+      </div>
 
-        {/* X Axis */}
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#6b7280' }}>
+          <div style={{ width: '8px', height: '2px', backgroundColor: '#ff7f00', borderRadius: '2px' }} />
+          Revenue
+        </div>
+      </div>
+
+      <div style={{ position: 'relative', height: '160px', width: '100%' }}>
+        {/* Y Axis */}
         <div style={{
-          display: 'flex', justifyContent: 'space-between', marginTop: '10px',
+          position: 'absolute', left: 0, top: 0, bottom: '30px',
+          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           fontSize: '10px', color: '#9ca3af',
         }}>
-          {['12 Aug', '13 Aug', '14 Aug', '15 Aug', '16 Aug', '17 Aug', '18 Aug', '19 Aug'].map(d => (
-            <span key={d}>{d}</span>
+          {yLabels.map((v, i) => <span key={i}>{formatYLabel(v)}</span>)}
+        </div>
+
+        <div style={{ marginLeft: '30px', position: 'relative', height: '100%', borderBottom: '1px dashed #e5e7eb' }}>
+          {/* Grid lines */}
+          {[20, 40, 60, 80].map(pct => (
+            <div key={pct} style={{ position: 'absolute', width: '100%', top: `${pct}%`, borderTop: '1px dashed #f3f4f6' }} />
           ))}
+
+          <svg width="100%" height="130px" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+            <path d={pathD} fill="none" stroke="#FF7F00" strokeWidth="2" />
+            {peak && (
+              <circle cx={peak.x} cy={peak.y} r="4" fill="#FFF" stroke="#FF7F00" strokeWidth="2" />
+            )}
+          </svg>
+
+          {/* Tooltip on peak */}
+          {peak && chartData.length > 0 && (
+            <div style={{
+              position: 'absolute',
+              left: `${(peakIdx / Math.max(chartData.length - 1, 1)) * 100}%`,
+              top: '-10px',
+              transform: 'translateX(-50%)',
+              background: 'white', padding: '6px 10px', borderRadius: '6px',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.05)', textAlign: 'center',
+              border: '1px solid #e5e7eb',
+              whiteSpace: 'nowrap',
+            }}>
+              <div style={{ fontSize: '8px', color: '#9ca3af' }}>Revenue</div>
+              <div style={{ fontSize: '12px', fontWeight: 700 }}>{formatAmount(peak.revenue)}</div>
+            </div>
+          )}
+
+          {/* X Axis */}
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', marginTop: '10px',
+            fontSize: '10px', color: '#9ca3af',
+          }}>
+            {chartData.map(d => (
+              <span key={d.date}>{d.date}</span>
+            ))}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-// ── Monthly Target (gauge with SVG paths, matching HTML) ───────────────────
-const Dashboard_MonthlyTarget = () => (
-  <div style={{
-    background: '#ffffff',
-    borderRadius: '16px',
-    padding: '24px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-    gridColumn: 'span 1',
-  }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '24px' }}>
-      <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Monthly Target</div>
-      <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
-    </div>
+// ── Monthly Target (gauge with SVG paths, using real data) ─────────────────
+const Dashboard_MonthlyTarget = ({
+  target,
+  revenue,
+  change,
+  formatAmount,
+}: {
+  target: number;
+  revenue: number;
+  change: number;
+  formatAmount: (v: number) => string;
+}) => {
+  const percentage = target > 0 ? Math.min((revenue / target) * 100, 100) : 0;
+  const remaining = Math.max(target - revenue, 0);
+  
+  // Calculate arc for gauge (semicircle from left to right)
+  // Full arc = M 10 50 A 40 40 0 0 1 90 50 (180 degrees)
+  // We need to fill `percentage` of this arc
+  const radius = 40;
+  const cx = 50, cy = 50;
+  const startAngle = Math.PI; // left side (180 degrees)
+  const totalArc = Math.PI; // semicircle (180 degrees)
+  const fillAngle = startAngle - (percentage / 100) * totalArc;
+  
+  const endX = cx + radius * Math.cos(fillAngle);
+  const endY = cy - radius * Math.sin(fillAngle);
+  const largeArc = percentage > 50 ? 1 : 0;
 
-    <div style={{ position: 'relative', width: '180px', height: '100px', display: 'flex', justifyContent: 'center', marginBottom: '20px', overflow: 'hidden' }}>
-      <svg style={{ width: '180px', height: '180px', transform: 'rotate(-90deg)' }} viewBox="0 0 100 100">
-        <path d="M 10 50 A 40 40 0 0 1 90 50" stroke="#F3F4F6" strokeWidth="10" fill="none" />
-        <path d="M 10 50 A 40 40 0 0 1 80 20" stroke="#FF7F00" strokeWidth="10" fill="none" strokeLinecap="round" />
-      </svg>
-      <div style={{ position: 'absolute', bottom: 0, textAlign: 'center' }}>
-        <span style={{ fontSize: '24px', fontWeight: 700, color: '#1f2937', display: 'block' }}>85%</span>
-        <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 600 }}>+8.02%</span>
-      </div>
-    </div>
-
-    <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-      <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Great Progress! 🎉</div>
-      <div style={{ fontSize: '10px', color: '#6b7280', lineHeight: 1.4 }}>
-        Our achievement increased by <span style={{ color: '#d97706' }}>$200,000</span>; let's reach 100% next month.
-      </div>
-    </div>
-
+  return (
     <div style={{
-      display: 'flex', width: '100%', justifyContent: 'space-between',
-      marginTop: '16px', background: '#fff7ed', padding: '12px', borderRadius: '8px',
+      background: '#ffffff',
+      borderRadius: '16px',
+      padding: '24px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      gridColumn: 'span 1',
     }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Target</div>
-        <div style={{ fontSize: '12px', fontWeight: 700, color: '#1f2937' }}>$600.000</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '24px' }}>
+        <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Monthly Target</div>
+        <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
       </div>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Revenue</div>
-        <div style={{ fontSize: '12px', fontWeight: 700, color: '#1f2937' }}>$510.000</div>
+
+      <div style={{ position: 'relative', width: '180px', height: '100px', display: 'flex', justifyContent: 'center', marginBottom: '20px', overflow: 'hidden' }}>
+        <svg style={{ width: '180px', height: '180px', transform: 'rotate(-90deg)' }} viewBox="0 0 100 100">
+          <path d="M 10 50 A 40 40 0 0 1 90 50" stroke="#F3F4F6" strokeWidth="10" fill="none" />
+          {percentage > 0 && (
+            <path 
+              d={`M 10 50 A 40 40 0 ${largeArc} 1 ${endX.toFixed(1)} ${endY.toFixed(1)}`} 
+              stroke="#FF7F00" 
+              strokeWidth="10" 
+              fill="none" 
+              strokeLinecap="round" 
+            />
+          )}
+        </svg>
+        <div style={{ position: 'absolute', bottom: 0, textAlign: 'center' }}>
+          <span style={{ fontSize: '24px', fontWeight: 700, color: '#1f2937', display: 'block' }}>{percentage.toFixed(0)}%</span>
+          <span style={{ fontSize: '10px', color: change >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+            {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+          </span>
+        </div>
+      </div>
+
+      <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+        <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>
+          {percentage >= 100 ? 'Target Reached! 🎉' : percentage >= 75 ? 'Great Progress! 🎉' : percentage >= 50 ? 'Halfway There! 💪' : 'Keep Going! 🚀'}
+        </div>
+        <div style={{ fontSize: '10px', color: '#6b7280', lineHeight: 1.4 }}>
+          {remaining > 0 ? (
+            <>Need <span style={{ color: '#d97706' }}>{formatAmount(remaining)}</span> more to reach target.</>
+          ) : (
+            <>You've exceeded your target by <span style={{ color: '#10b981' }}>{formatAmount(revenue - target)}</span>!</>
+          )}
+        </div>
+      </div>
+
+      <div style={{
+        display: 'flex', width: '100%', justifyContent: 'space-between',
+        marginTop: '16px', background: '#fff7ed', padding: '12px', borderRadius: '8px',
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Target</div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#1f2937' }}>{formatAmount(target)}</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Revenue</div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#1f2937' }}>{formatAmount(revenue)}</div>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ── Active Users ───────────────────────────────────────────────────────────
 const Dashboard_ActiveUsers = ({
@@ -370,14 +463,14 @@ const Dashboard_ConversionRate = ({
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
       <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Conversion Rate</div>
-      <button style={{
+      <div style={{
         display: 'flex', alignItems: 'center', gap: '8px',
         padding: '6px 12px', backgroundColor: '#fff', border: '1px solid #e5e7eb',
-        borderRadius: '6px', fontSize: '12px', color: '#6b7280', cursor: 'pointer',
+        borderRadius: '6px', fontSize: '12px', color: '#6b7280',
       }}>
         This Week
         <ChevronDown style={{ width: 14, height: 14 }} />
-      </button>
+      </div>
     </div>
 
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginTop: '12px', position: 'relative', zIndex: 2 }}>
@@ -452,49 +545,70 @@ const Dashboard_TrafficSources = ({
 );
 
 // ── Main Grid ──────────────────────────────────────────────────────────────
-const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => (
-  <div style={{
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gridTemplateRows: 'auto auto auto',
-    gap: '24px',
-    width: '100%',
-    fontFamily: '"Inter", system-ui, sans-serif',
-  }}>
-    {/* Row 1: 3 stat cards + Top Categories (row-span-2) */}
-    <Dashboard_StatCard
-      label="Total Sales"
-      value="$983,410"
-      change={3.34}
-      iconType="dollar"
-      isOrange
-    />
-    <Dashboard_StatCard
-      label="Total Orders"
-      value="58,375"
-      change={-2.89}
-      iconType="cart"
-    />
-    <Dashboard_StatCard
-      label="Total Visitors"
-      value="237,782"
-      change={8.02}
-      iconType="user"
-    />
-    <Dashboard_TopCategories
-      categories={data.topCategories}
-      totalSales={data.totalCategorySales}
-    />
+const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => {
+  // Default daily revenue if not provided
+  const defaultDaily: DailyRevenueItem[] = Array.from({ length: 8 }, (_, i) => ({
+    date: format(subDays(new Date(), 7 - i), 'dd MMM'),
+    revenue: 0,
+  }));
 
-    {/* Row 2: Revenue Chart (2 cols) + Monthly Target (1 col) */}
-    <Dashboard_RevenueChart />
-    <Dashboard_MonthlyTarget />
+  const dailyRevenue = data.dailyRevenue && data.dailyRevenue.length > 0 ? data.dailyRevenue : defaultDaily;
+  const monthlyTarget = data.monthlyTarget ?? 0;
+  const monthlyRevenue = data.monthlyRevenue ?? 0;
+  const monthlyTargetChange = data.monthlyTargetChange ?? 0;
 
-    {/* Row 3: Active Users (1 col) + Conversion Rate (2 cols) + Traffic Sources (1 col) */}
-    <Dashboard_ActiveUsers total={data.activeUsers} countries={data.activeUsersByCountry} />
-    <Dashboard_ConversionRate funnel={data.conversionFunnel} />
-    <Dashboard_TrafficSources sources={data.trafficSources} />
-  </div>
-);
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gridTemplateRows: 'auto auto auto',
+      gap: '24px',
+      width: '100%',
+      fontFamily: '"Inter", system-ui, sans-serif',
+    }}>
+      {/* Row 1: 3 stat cards + Top Categories (row-span-2) */}
+      <Dashboard_StatCard
+        label="Total Sales"
+        value={data.formatAmount(data.totalSales)}
+        change={data.totalSalesChange}
+        iconType="dollar"
+        isOrange
+      />
+      <Dashboard_StatCard
+        label="Total Orders"
+        value={data.totalOrders.toLocaleString()}
+        change={data.totalOrdersChange}
+        iconType="cart"
+      />
+      <Dashboard_StatCard
+        label="Total Visitors"
+        value={data.totalVisitors.toLocaleString()}
+        change={data.totalVisitorsChange}
+        iconType="user"
+      />
+      <Dashboard_TopCategories
+        categories={data.topCategories}
+        totalSales={data.totalCategorySales}
+      />
+
+      {/* Row 2: Revenue Chart (2 cols) + Monthly Target (1 col) */}
+      <Dashboard_RevenueChart 
+        dailyRevenue={dailyRevenue} 
+        formatAmount={data.formatAmount} 
+      />
+      <Dashboard_MonthlyTarget 
+        target={monthlyTarget}
+        revenue={monthlyRevenue}
+        change={monthlyTargetChange}
+        formatAmount={data.formatAmount}
+      />
+
+      {/* Row 3: Active Users (1 col) + Conversion Rate (2 cols) + Traffic Sources (1 col) */}
+      <Dashboard_ActiveUsers total={data.activeUsers} countries={data.activeUsersByCountry} />
+      <Dashboard_ConversionRate funnel={data.conversionFunnel} />
+      <Dashboard_TrafficSources sources={data.trafficSources} />
+    </div>
+  );
+};
 
 export default EzMartDashboardGrid;
