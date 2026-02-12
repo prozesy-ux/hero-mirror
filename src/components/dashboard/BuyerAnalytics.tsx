@@ -187,10 +187,10 @@ const BuyerAnalytics = () => {
       <div className="space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl border-2 border-black" />
+            <Skeleton key={i} className="h-28 rounded-lg border" />
           ))}
         </div>
-        <Skeleton className="h-80 rounded-2xl border-2 border-black" />
+        <Skeleton className="h-80 rounded-lg border" />
       </div>
     );
   }
