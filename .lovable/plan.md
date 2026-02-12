@@ -1,27 +1,33 @@
 
 
-## Fix Monthly Target Gauge Rendering
+## Fix Monthly Target Gauge -- Remove Orange Blob Artifacts
 
 ### Problem
-The gauge arc has visible orange "blobs" at both endpoints that stick out awkwardly from the grey track. This is caused by:
-- `strokeLinecap="round"` on a very thick stroke (width 10) adds large rounded extensions at both ends of the orange arc
-- The background grey track does NOT use round caps, so the orange endpoints visually protrude
-- The stroke width is too thick relative to the SVG viewBox, amplifying the cap overshoot
+The orange progress arc has visible "blob" artifacts at both endpoints because the background track (grey) and progress arc (orange) use different stroke cap styles, causing visual mismatch. Even with `butt` caps, the thick stroke creates harsh endpoints that look wrong.
 
-### Fix (File: `src/components/dashboard/EzMartDashboardGrid.tsx`)
+### Solution (File: `src/components/dashboard/EzMartDashboardGrid.tsx`)
 
-**1. Remove round linecaps from the progress arc**
-- Change `strokeLinecap="round"` to `strokeLinecap="butt"` on the orange progress path so it aligns flush with the grey background track
+**1. Match stroke caps on both arcs**
+- Set `strokeLinecap="round"` on BOTH the grey background path AND the orange progress path
+- This ensures both arcs have identical visual endpoints -- no mismatch, no blobs
 
-**2. Reduce stroke width for a cleaner look**
-- Reduce `strokeWidth` from `"10"` to `"8"` on both the background and progress arcs -- this gives the gauge a sleeker appearance and prevents the thick stroke from overflowing the viewBox
+**2. Reduce stroke width from 8 to 6**
+- A thinner stroke produces cleaner, more proportional arcs relative to the viewBox
+- Reduces the visual prominence of the round cap extensions
 
-**3. Adjust the arc radius and center for better proportions**
-- Update the background path from `M 10 50 A 40 40 0 0 1 90 50` to `M 12 50 A 38 38 0 0 1 88 50` to give slightly more breathing room at the edges
-- Update radius from 40 to 38, and adjust cx/startX accordingly in the JS calculation so the progress arc matches
+**3. Keep existing geometry and viewBox**
+- The arc path (`M 12 50 A 38 38 0 0 1 88 50`) and `viewBox="0 0 100 60"` remain unchanged -- they work correctly
 
-**4. Widen the viewBox slightly**
-- Change viewBox to `"0 0 100 60"` to ensure nothing clips at the top with the adjusted geometry
+### Changes (lines 357-365)
 
-These changes apply to the shared component so both Buyer and Seller dashboards are fixed.
+```tsx
+// Before
+<path d="M 12 50 A 38 38 0 0 1 88 50" stroke="#F3F4F6" strokeWidth="8" fill="none" />
+<path ... stroke="#FF7F00" strokeWidth="8" strokeLinecap="butt" />
 
+// After
+<path d="M 12 50 A 38 38 0 0 1 88 50" stroke="#F3F4F6" strokeWidth="6" fill="none" strokeLinecap="round" />
+<path ... stroke="#FF7F00" strokeWidth="6" strokeLinecap="round" />
+```
+
+Both Buyer and Seller dashboards share this component, so both are fixed automatically.
