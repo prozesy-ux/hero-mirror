@@ -1,62 +1,67 @@
 
-## Verify & Apply Font Styling from HTML Design to Dashboard
+## Fix: Force "Inter" Font on All Dashboard Elements
 
-### Current Analysis
+### Root Cause
+The inline `fontFamily: "Inter"` on dashboard wrapper divs is being **overridden** by:
+1. `src/index.css` line 208: `html { font-family: "DM Sans" }` -- sets DM Sans globally
+2. `tailwind.config.ts` line 17: `font-sans: ['DM Sans']` -- Tailwind's default sans maps to DM Sans
+3. `seller-dashboard` CSS class: forces "Plus Jakarta Sans" on some seller components
+4. Browser default: child elements (buttons, inputs) inherit from `html`, not from parent divs
 
-**What the HTML Code Uses (new-4.html):**
-- **Font Family**: `"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
-- **Background**: `#f1f5f9` (already applied)
-- **Typography Details**:
-  - `.export-wrapper` and `.app-container`: 44-50px Inter font
-  - `.stat-header`: 12px, uppercase, `var(--text-secondary)`
-  - `.stat-value`: 24px, font-weight 600
-  - `.card-title`: 15px, font-weight 600
-  - `.time-filter`: 11px font size
-  - `.substat-label`: 12px, `var(--text-secondary)`
-  - All elements use Inter font globally
+The inline style on the wrapper only affects that specific div. All children (text, buttons, inputs, headings) still inherit "DM Sans" from the `html` rule.
 
-**Current Dashboard Status:**
-- ✅ Background color `#f1f5f9` is applied to all 24 dashboard files
-- ✅ Font "Inter" explicitly set in `src/pages/Dashboard.tsx` line 91
-- ✅ Font "Inter" explicitly set in all 24 dashboard components via inline style
-- ⚠️ **ISSUE**: Global `src/index.css` still imports DM Sans (lines 1-4) which may create font fallback conflicts
-- ⚠️ **ISSUE**: Some dashboard components may not have consistent font weight scaling (12px, 15px, 24px specifications from HTML not fully verified)
+### Solution
+Add a single CSS class `.dashboard-inter` in `src/index.css` that forces Inter on the element AND all descendants:
 
-### The Plan
+```css
+.dashboard-inter,
+.dashboard-inter * {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+```
 
-**Step 1: Verify Font Inheritance Chain**
-- Check if Inter font is properly inherited in ALL nested dashboard elements
-- Verify no competing fonts from global CSS (DM Sans in index.css)
-- Ensure font weights (400, 500, 600, 700, 800) are applied correctly
+Then replace the inline `style={{ fontFamily: ... }}` on all 24 dashboard files with this CSS class instead.
 
-**Step 2: Apply Precise Typography Specs**
-Review the HTML design's type hierarchy and apply to dashboard sections:
-- **Stat cards**: 12px uppercase labels, 24px bold values, 40x40px icon boxes
-- **Card titles**: 15px, 600 weight
-- **Secondary text**: 12px with `#64748b` color
-- **Time filters**: 11px, active state with `#3b82f6` background
+### Files to Change
 
-**Step 3: Scope**
-- ✅ **Only Dashboard sections** (buyer + seller dashboards)
-- ✅ **Skip sidebar** (as per previous constraint)
-- ✅ **Skip global CSS** (don't modify index.css broadly—may affect other pages)
+**1. `src/index.css`** -- Add the `.dashboard-inter` class (1 addition, ~4 lines)
 
-**Step 4: Key Files to Audit**
-1. `src/pages/Dashboard.tsx` - Verify wrapper has Inter + font weights
-2. `src/pages/Seller.tsx` - Same verification
-3. Dashboard sub-components: stat cards, cards, typography elements
-4. Verify that no `DM Sans` is being applied via class names or Tailwind
+**2. All 24 dashboard files** -- Replace inline font style with `className="dashboard-inter"`:
+- `src/pages/Dashboard.tsx` (main wrapper)
+- `src/pages/Seller.tsx` (main wrapper)
+- `src/components/dashboard/DashboardTopBar.tsx`
+- `src/components/seller/SellerTopBar.tsx`
+- `src/components/dashboard/BuyerDashboardHome.tsx` (loading + main)
+- `src/components/seller/SellerDashboard.tsx` (loading + main)
+- `src/components/dashboard/BuyerAnalytics.tsx` (loading + main)
+- `src/components/seller/SellerAnalytics.tsx` (loading + main)
+- `src/components/seller/SellerOrders.tsx` (also remove `seller-dashboard` class)
+- `src/components/seller/SellerInventory.tsx`
+- `src/components/seller/SellerPerformance.tsx`
+- `src/components/seller/SellerReports.tsx`
+- `src/components/seller/SellerMarketing.tsx`
+- `src/components/seller/SellerCustomers.tsx`
+- `src/components/seller/SellerSupport.tsx`
+- `src/components/seller/SellerSecurityLogs.tsx`
+- `src/components/seller/SellerNotificationCenter.tsx`
+- `src/components/seller/SellerProductAnalytics.tsx`
+- `src/components/seller/SellerServiceBookings.tsx`
+- `src/components/seller/SellerReviewsManagement.tsx`
+- `src/components/seller/SellerFeatureRequests.tsx`
+- `src/components/seller/SellerRefundManagement.tsx`
+- `src/components/seller/SellerFlashSales.tsx`
+- `src/components/seller/SellerDeliveryInventory.tsx`
 
-**What Won't Change:**
-- Background color `#f1f5f9` stays
-- Sidebar styling untouched
-- Data logic & backend
-- Border colors, spacing, layout
+**3. `src/components/seller/SellerSettings.tsx`** -- Replace `seller-dashboard` class with `dashboard-inter`
 
-### Deliverable
-A complete audit showing:
-1. **Font hierarchy matches HTML**: All text sizes, weights, and family names align
-2. **No conflicting fonts**: Inter is the sole font for dashboard
-3. **Consistent colors**: Text primary (`#0f172a`), secondary (`#64748b`), and accents
-4. **All 24 dashboard files verified** for font consistency
+### Why This Works
+- The `!important` flag overrides both `html { font-family: "DM Sans" }` and the `seller-dashboard` class
+- The `*` wildcard selector ensures ALL child elements (buttons, inputs, spans, headings) use Inter
+- A single CSS class is cleaner than inline styles on every component
+- Only affects dashboard sections -- landing page, marketplace, and other pages keep their existing fonts
 
+### What Stays the Same
+- Sidebar (left panel) -- NOT touched
+- Background color `#f1f5f9` -- stays
+- All data logic and backend -- NOT touched
+- Non-dashboard pages keep "DM Sans"
