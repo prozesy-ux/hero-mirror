@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { DateRange } from 'react-day-picker';
 import EzMartDashboardGrid, { DashboardStatData } from '@/components/dashboard/EzMartDashboardGrid';
 
-const CATEGORY_COLORS = ['#FF7F00', '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899'];
+const CATEGORY_COLORS = ['#ff7f00', '#fdba74', '#fed7aa', '#e5e7eb'];
 
 const SellerAnalytics = () => {
   const { orders, products, wallet, loading } = useSellerContext();
@@ -100,14 +100,16 @@ const SellerAnalytics = () => {
       if (!productSales[name]) productSales[name] = { name, revenue: 0 };
       productSales[name].revenue += Number(order.seller_earning);
     });
-    const topProducts = Object.values(productSales).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+    const topProducts = Object.values(productSales).sort((a, b) => b.revenue - a.revenue).slice(0, 4);
     const totalFilteredSales = filteredOrders.reduce((s, o) => s + Number(o.seller_earning), 0);
 
-    const topCategories = topProducts.map((p, i) => ({
+    const topCategories = topProducts.length > 0 ? topProducts.map((p, i) => ({
       name: p.name,
       amount: formatAmountOnly(p.revenue),
-      color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
-    }));
+      color: CATEGORY_COLORS[i] || '#e5e7eb',
+    })) : [
+      { name: 'No sales yet', amount: formatAmountOnly(0), color: '#e5e7eb' },
+    ];
 
     // Daily revenue for chart
     const dailyRevenue = dateRange.from && dateRange.to
@@ -149,33 +151,29 @@ const SellerAnalytics = () => {
 
     const maxFunnel = Math.max(totalViews, totalOrders, 1);
     const conversionFunnel = [
-      { label: 'Product', labelLine2: 'Views', value: totalViews.toLocaleString(), badge: '100%', barHeight: `${Math.min((totalViews / maxFunnel) * 100, 100)}%`, barColor: '#FF7F00' },
-      { label: 'Total', labelLine2: 'Orders', value: totalOrders.toLocaleString(), badge: totalViews > 0 ? `${((totalOrders / totalViews) * 100).toFixed(1)}%` : '0%', barHeight: `${Math.min((totalOrders / maxFunnel) * 100, 100)}%`, barColor: '#3B82F6' },
-      { label: 'Pending', labelLine2: 'Orders', value: pendingOrders.toLocaleString(), badge: totalOrders > 0 ? `${((pendingOrders / totalOrders) * 100).toFixed(1)}%` : '0%', barHeight: `${Math.min((pendingOrders / maxFunnel) * 100, 100)}%`, barColor: '#F59E0B' },
-      { label: 'Completed', labelLine2: 'Orders', value: completedOrders.toLocaleString(), badge: totalOrders > 0 ? `${((completedOrders / totalOrders) * 100).toFixed(1)}%` : '0%', barHeight: `${Math.min((completedOrders / maxFunnel) * 100, 100)}%`, barColor: '#10B981' },
-      { label: 'Cancelled', labelLine2: 'Orders', value: cancelledOrders.toLocaleString(), badge: totalOrders > 0 ? `${((cancelledOrders / totalOrders) * 100).toFixed(1)}%` : '0%', isNegative: true, barHeight: `${Math.min((cancelledOrders / maxFunnel) * 100, 100)}%`, barColor: '#EF4444' },
+      { label: 'Product', labelLine2: 'Views', value: totalViews.toLocaleString(), badge: '+9%', barHeight: '100%', barColor: '#ffe4c2' },
+      { label: 'Total', labelLine2: 'Orders', value: totalOrders.toLocaleString(), badge: `${totalOrders > 0 ? '+' : ''}${totalOrders}`, barHeight: `${Math.min(Math.max((totalOrders / maxFunnel) * 100 * 5, 15), 100)}%`, barColor: '#ffd4a2' },
+      { label: 'Pending', labelLine2: 'Orders', value: pendingOrders.toLocaleString(), badge: pendingOrders.toString(), barHeight: `${Math.min(Math.max((pendingOrders / Math.max(totalOrders, 1)) * 100, 10), 100)}%`, barColor: '#ffc482' },
+      { label: 'Completed', labelLine2: 'Orders', value: completedOrders.toLocaleString(), badge: `+${completedOrders}`, barHeight: `${Math.min(Math.max((completedOrders / Math.max(totalOrders, 1)) * 100, 10), 100)}%`, barColor: '#ffb362' },
+      { label: 'Cancelled', labelLine2: '/ Refunded', value: cancelledOrders.toLocaleString(), badge: `-${cancelledOrders}`, isNegative: cancelledOrders > 0, barHeight: `${Math.min(Math.max((cancelledOrders / Math.max(totalOrders, 1)) * 100, 5), 100)}%`, barColor: '#ff9f42' },
     ];
 
-    // Active users by country (from buyer metadata or mock breakdown)
     const activeUsersByCountry = [
-      { country: 'Direct', percent: 45, barColor: '#FF7F00' },
-      { country: 'Social', percent: 30, barColor: '#3B82F6' },
-      { country: 'Organic', percent: 15, barColor: '#10B981' },
-      { country: 'Referral', percent: 10, barColor: '#8B5CF6' },
+      { country: 'Product Views', percent: 100, barColor: '#f97316' },
     ];
 
     // Traffic/Order breakdown
-    const completedPct = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 40;
-    const pendingPct = totalOrders > 0 ? Math.round((pendingOrders / totalOrders) * 100) : 30;
-    const cancelledPct = totalOrders > 0 ? Math.round((cancelledOrders / totalOrders) * 100) : 10;
-    const otherPct = Math.max(100 - completedPct - pendingPct - cancelledPct, 0);
-
+    const total = totalOrders || 1;
+    const completed = filteredOrders.filter(o => o.status === 'completed').length;
+    const delivered = filteredOrders.filter(o => o.status === 'delivered').length;
+    const pending = pendingOrders;
+    const refunded = cancelledOrders;
     const trafficSources = [
-      { name: 'Completed', percent: completedPct || 1, color: '#10B981' },
-      { name: 'Pending', percent: pendingPct || 1, color: '#F59E0B' },
-      { name: 'Cancelled/Refunded', percent: cancelledPct || 1, color: '#EF4444' },
-      { name: 'Other', percent: otherPct || 1, color: '#6B7280' },
-    ];
+      { name: 'Completed Orders', percent: Math.round((completed / total) * 100), color: '#10b981' },
+      { name: 'Delivered', percent: Math.round((delivered / total) * 100), color: '#3b82f6' },
+      { name: 'Pending', percent: Math.round((pending / total) * 100), color: '#f59e0b' },
+      { name: 'Cancelled/Refunded', percent: Math.round((refunded / total) * 100), color: '#ef4444' },
+    ].filter(s => s.percent > 0);
 
     // Recent orders
     const recentOrders = filteredOrders.slice(0, 10).map((o, i) => ({
