@@ -1,54 +1,26 @@
 
 
-## Redesign Seller Analytics to Match Dashboard Home Card Style
+## Make Seller Analytics an Exact Copy of Dashboard Home Design
 
-### What Changes
+### Current Situation
+Both `SellerAnalytics.tsx` and `SellerDashboard.tsx` already use the same `<EzMartDashboardGrid />` component, so the core layout and charts are identical. However, there are small data-mapping differences that cause visual inconsistencies:
 
-Replace the current recharts-based Analytics page with the same EzMart dashboard grid design system used on the Dashboard Home page. This means using the same raw SVG charts, inline style cards, and layout patterns from `EzMartDashboardGrid.tsx`.
+1. **Category colors**: Analytics uses 6 mixed colors (`#FF7F00, #3B82F6, #10B981...`), Dashboard Home uses 4 orange-gradient shades (`#ff7f00, #fdba74, #fed7aa, #e5e7eb`)
+2. **Conversion funnel bars**: Analytics uses distinct colors per bar (`#FF7F00, #3B82F6, #F59E0B...`), Dashboard Home uses orange gradient shades (`#ffe4c2, #ffd4a2, #ffc482...`)
+3. **Active Users section**: Analytics shows hardcoded "Direct/Social/Organic/Referral", Dashboard Home shows "Product Views"
+4. **Traffic sources**: Different calculation logic for order breakdown percentages
 
-### Current vs New
+### Changes (1 file)
 
-**Current Analytics Page**: Uses recharts library (BarChart, PieChart, AreaChart) with Tailwind classes, has a different visual feel from the dashboard home.
+**File: `src/components/seller/SellerAnalytics.tsx`**
 
-**New Analytics Page**: Will use the same raw SVG-based charts and inline style cards as the Dashboard Home -- Revenue Analytics line chart, Monthly Target gauge, Top Categories donut, Conversion Rate funnel, Active Users, and Order Breakdown sections.
+Align all data mapping to exactly match `SellerDashboard.tsx`:
 
-### New Layout Structure
+- Change `CATEGORY_COLORS` from mixed rainbow to orange gradient: `['#ff7f00', '#fdba74', '#fed7aa', '#e5e7eb']`
+- Update `conversionFunnel` to use orange gradient bar colors (`#ffe4c2`, `#ffd4a2`, `#ffc482`, `#ffb362`, `#ff9f42`) and match the badge/barHeight calculation from Dashboard Home
+- Update `activeUsersByCountry` to use real product view data instead of hardcoded percentages
+- Update `trafficSources` to match Dashboard Home's order status breakdown logic (Completed, Delivered, Pending, Cancelled/Refunded with green/blue/amber/red)
+- Keep Analytics-specific features: date range picker, period selector, and Export CSV button in the header
 
-```text
-Row 1: [Total Sales] [Total Orders] [Total Balance] [Top Categories (spans 2 rows)]
-Row 2: [Revenue Analytics (2 cols)]              [Monthly Target]  [    ...continued    ]
-Row 3: [Active Users] [Conversion Rate (2 cols)]                   [Order Breakdown]
-```
-
-### Sections (matching screenshot exactly)
-
-1. **Stat Cards (3)**: Total Sales (with % change vs last week), Total Orders (with % change), Total Visitors/Balance (with % change) -- same card component as Dashboard Home
-2. **Top Categories**: Donut chart with product category breakdown and legend -- same SVG donut as Dashboard Home
-3. **Revenue Analytics**: SVG line chart with orange filter dropdown (Last 7/14/30 Days, All Time) -- same component as Dashboard Home
-4. **Monthly Target**: Semicircular gauge showing monthly progress % -- same gauge as Dashboard Home
-5. **Active Users**: Count with country breakdown bars -- same as Dashboard Home
-6. **Conversion Rate**: Product Views, Total Orders, Pending, Completed, Cancelled with funnel bars -- same as Dashboard Home
-7. **Order Breakdown**: Horizontal stacked bar + legend percentages -- same as Dashboard Home
-
-### Technical Plan
-
-**File: `src/components/seller/SellerAnalytics.tsx`** (full rewrite)
-
-- Remove all recharts imports (AreaChart, BarChart, PieChart, etc.)
-- Import `EzMartDashboardGrid` and its `DashboardStatData` interface from the existing grid component
-- Keep the existing data computation logic (date range filtering, period selection, export button, avg rating fetch)
-- Instead of rendering custom recharts, compute and pass data into `EzMartDashboardGrid` using the same `DashboardStatData` shape:
-  - `totalSales` = filtered period total earnings
-  - `totalOrders` = filtered period order count  
-  - `totalVisitors` = unique buyer count from filtered orders
-  - `topCategories` = top products mapped as categories with colors
-  - `dailyRevenue` = daily revenue array for the SVG line chart
-  - `monthlyTarget` / `monthlyRevenue` = computed from current vs previous month
-  - `conversionFunnel` = Product Views, Total Orders, Pending, Completed, Cancelled
-  - `activeUsers` = unique buyers with country breakdown
-  - `recentOrders` / `recentActivity` = from filtered orders
-- Keep the header with date range picker, period selector, and Export button above the grid
-- Render `<EzMartDashboardGrid data={dashboardData} />` for the main content
-
-This reuses the existing pixel-perfect EzMart grid component rather than duplicating its code, ensuring the Analytics page looks identical to the Dashboard Home while showing analytics-specific filtered data.
-
+### Result
+The Analytics page will be a pixel-perfect visual match of the Dashboard Home grid, with the only difference being the Analytics header toolbar (date filters + export).
