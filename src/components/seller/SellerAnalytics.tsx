@@ -357,7 +357,7 @@ const SellerAnalytics = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
+      <div className="bg-[#FCFCFC] min-h-screen p-8 space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
         </div>
@@ -374,7 +374,7 @@ const SellerAnalytics = () => {
   );
 
   return (
-    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
+    <div className="bg-[#FCFCFC] min-h-screen p-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
