@@ -146,14 +146,14 @@ const SellerFlashSales = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#F3EAE0] min-h-screen p-8 flex items-center justify-center">
+      <div className="bg-[#FCFCFC] min-h-screen p-8 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-[#FF7F00]" />
       </div>
     );
   }
 
   return (
-    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
+    <div className="bg-[#FCFCFC] min-h-screen p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
