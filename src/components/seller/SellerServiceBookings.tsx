@@ -57,7 +57,7 @@ const SellerServiceBookings = () => {
   };
 
   if (loading) return (
-    <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-4">
+    <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-4" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
     </div>
   );

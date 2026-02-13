@@ -146,7 +146,7 @@ const SellerFlashSales = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#f1f5f9] min-h-screen p-8 flex items-center justify-center">
+      <div className="bg-[#f1f5f9] min-h-screen p-8 flex items-center justify-center" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         <Loader2 className="h-8 w-8 animate-spin text-[#FF7F00]" />
       </div>
     );
