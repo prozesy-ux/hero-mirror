@@ -236,7 +236,7 @@ export const useAuth = () => {
   const signInWithGoogle = async () => {
     const { lovable } = await import('@/integrations/lovable/index');
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: window.location.origin + '/signin',
     });
     if (result.error) {
       return { data: null, error: result.error };
@@ -247,7 +247,7 @@ export const useAuth = () => {
   const signInWithApple = async () => {
     const { lovable } = await import('@/integrations/lovable/index');
     const result = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: window.location.origin,
+      redirect_uri: window.location.origin + '/signin',
     });
     if (result.error) {
       return { data: null, error: result.error };
