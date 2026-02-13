@@ -1,73 +1,47 @@
 
 
-## Seller Analytics: Replace All Mock Data with Real Database Analytics
+## Apply Buyer Wallet Design to Seller Wallet
 
 ### Problem
-The current Analytics page has several hardcoded/mock values and doesn't leverage the existing analytics tables in the database:
+The Seller Wallet (`SellerWallet.tsx`) still uses old neobrutalism/pink design elements (black border shadows, `#FF90E8` accents) while the Buyer Wallet (`BuyerWallet.tsx`) has been updated to a clean, modern design with emerald accents, subtle hover effects, and advanced filters. These need to be unified.
 
-1. **Hardcoded "+9%" badge** on Product Views funnel item -- not computed from real data
-2. **Active Users section** shows only "Product Views 100%" -- doesn't use `seller_traffic_analytics` table (which has `page_views`, `unique_visitors`, `source` data per day)
-3. **Product views change %** is hardcoded to `0` -- not computed week-over-week
-4. **No product_analytics table usage** -- the `product_analytics` table has daily `views`, `clicks`, `purchases`, `revenue` per product but is never queried
-5. **Buyer country data exists** (`profiles.country` column) but isn't used for the Active Users country breakdown
-6. **Average rating** is fetched but never displayed anywhere
-7. **Clicks data** from `product_analytics` is never shown
+### Changes (1 file: `src/components/seller/SellerWallet.tsx`)
 
-### Available Database Tables (Currently Unused)
+#### 1. OTP Modal -- Replace pink neobrutalism with clean emerald
+- **Current**: `bg-[#FF90E8] border border-black` shield icon container, black text
+- **New**: `bg-emerald-100` container with `text-emerald-600` icon (matching BuyerWallet)
 
-```text
-product_analytics:    id, product_id, date, views, clicks, purchases, revenue
-seller_traffic_analytics: id, seller_id, date, page_views, unique_visitors, source
-profiles:             ... country (buyer country field)
-seller_products:      ... view_count (per-product lifetime views)
-```
+#### 2. Add Account Modal -- Step badges
+- **Current**: Steps 2/3/4 use `bg-[#FF90E8] text-black`
+- **New**: All step badges use `bg-emerald-500 text-white` (matching BuyerWallet)
 
-### Changes
+#### 3. Add Account Modal -- Hover styles on buttons
+- **Current**: Account type, bank, wallet, and "Other Bank" buttons use neobrutalism hover: `hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`
+- **New**: Clean hover: `hover:border-emerald-400 hover:shadow-sm` (matching BuyerWallet)
 
-**File 1: `supabase/functions/bff-seller-dashboard/index.ts`**
-Add 3 new parallel queries to the existing BFF endpoint:
+#### 4. "Other Bank" button
+- **Current**: `border-dashed border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFF5FB]`
+- **New**: `border-dashed border-slate-300 hover:shadow-sm hover:bg-slate-50` (matching BuyerWallet)
 
-- Fetch `product_analytics` for all seller products (last 90 days) -- provides daily views, clicks, purchases, revenue per product
-- Fetch `seller_traffic_analytics` for the seller (last 90 days) -- provides daily page_views, unique_visitors, and traffic source breakdown
-- Fetch buyer countries from `profiles.country` using buyer_ids from orders -- provides real country distribution for Active Users
+#### 5. Withdrawals Tab -- Add filters and status pills (from BuyerWallet)
+- **Current**: Basic list with no filtering capability
+- **New**: Add the same filter system as BuyerWallet:
+  - Status filter pills (All, Pending, Approved, Completed, Rejected) with colored active states
+  - Date filter popover (All Time, Today, This Week, This Month, Custom range)
+  - Status dropdown filter
+  - Clear filters button
+  - Better empty state with icon and contextual message
+  - Add new state variables: `withdrawalStatusFilter`, `withdrawalDatePreset`, `customDateRange`, `showDatePicker`
+  - Add `filteredWithdrawals` computed from filters
+  - Import additional components: `Popover`, `Calendar`, `Filter` icon
 
-Return these as `productAnalytics`, `trafficAnalytics`, and `buyerCountries` in the BFF response.
-
-**File 2: `src/contexts/SellerContext.tsx`**
-- Add `productAnalytics`, `trafficAnalytics`, and `buyerCountries` to the context state and type definitions
-- Parse the new BFF response fields and expose them to child components
-
-**File 3: `src/components/seller/SellerAnalytics.tsx`**
-Replace all mock/hardcoded data with computed values from the new context data:
-
-- **Product Views badge**: Compute real week-over-week % change from `product_analytics.views` data instead of hardcoded "+9%"
-- **Views change %**: Compute from `product_analytics` comparing this week vs last week views
-- **Active Users section**: Use `seller_traffic_analytics` for real `unique_visitors` count and `profiles.country` data for the country breakdown bars (e.g., "Bangladesh 45%", "India 30%", "USA 15%", "Others 10%")
-- **Traffic Sources**: Optionally add traffic source data (Direct, Social, Organic, Referral) from `seller_traffic_analytics.source` field alongside the order breakdown
-- **Average Rating**: Display the fetched `avgRating` value in the dashboard (either as a stat card or in the header)
-- **Clicks metric**: Add total clicks from `product_analytics.clicks` to the conversion funnel between Views and Orders
-
-### Data Flow
-
-```text
-BFF Edge Function
-  |-- product_analytics (daily views/clicks/purchases/revenue per product)
-  |-- seller_traffic_analytics (daily page_views/unique_visitors/source)
-  |-- profiles.country (buyer countries from order buyer_ids)
-  v
-SellerContext (new state fields)
-  v
-SellerAnalytics.tsx
-  |-- Real views % change badge (computed from product_analytics)
-  |-- Real country breakdown (from profiles.country)
-  |-- Real traffic source split (from seller_traffic_analytics.source)
-  |-- Real clicks in funnel (from product_analytics.clicks)
-  |-- Avg rating display (from product_reviews)
-```
+#### 6. Withdrawal method cards hover
+- **Current**: `hover:shadow-sm` (already clean but inconsistent)
+- **New**: `hover:bg-slate-50` (matching BuyerWallet exactly)
 
 ### What Stays the Same
-- The `EzMartDashboardGrid` component is NOT modified -- only the data passed to it changes
-- The header toolbar (date range picker, period selector, Export button) stays
-- Revenue chart, Monthly Target gauge, Order Breakdown, Recent Orders table -- all keep the same visual design
-- The SellerDashboard (home) page also benefits from the new context data
+- All wallet functionality (withdraw, OTP, add account, delete account, set primary)
+- Data fetching, real-time subscriptions, context usage
+- The overall layout structure (tabs, wallet card, accounts grid)
+- Emerald withdraw button and dialog styling (already matching)
 
