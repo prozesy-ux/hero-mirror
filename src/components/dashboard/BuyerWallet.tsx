@@ -775,7 +775,7 @@ const BuyerWallet = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 px-4 py-3 rounded font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-slate-900 text-white'
+                    ? 'bg-[#FF90E8] text-black border border-black'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
@@ -808,7 +808,7 @@ const BuyerWallet = () => {
               <button
                 onClick={() => setShowWithdrawDialog(true)}
                 disabled={!wallet?.balance || wallet.balance < 5 || savedAccounts.length === 0}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 disabled:border-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-all"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-[#FF90E8] text-black border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:bg-gray-200 disabled:border-gray-300 disabled:cursor-not-allowed font-medium rounded transition-all"
               >
                 <ArrowDownCircle size={20} />
                 Withdraw
@@ -868,7 +868,7 @@ const BuyerWallet = () => {
                   return (
                     <div 
                       key={method.id}
-                      className="p-4 bg-white border rounded text-center transition-colors hover:bg-slate-50"
+                      className="p-4 bg-white border rounded text-center transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                     >
                       {logoUrl ? (
                         <img 
@@ -909,7 +909,7 @@ const BuyerWallet = () => {
               return (
                 <div 
                   key={account.id}
-                  className="p-4 border rounded bg-white transition-colors hover:bg-slate-50 relative"
+                  className="p-4 border rounded bg-white transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative"
                 >
                   {account.is_primary && (
                     <Badge className="absolute -top-2 -right-2 bg-violet-600 text-white text-[10px]">
@@ -960,7 +960,7 @@ const BuyerWallet = () => {
             {/* Add Account Card */}
             <button 
               onClick={() => setShowAddAccountModal(true)}
-              className="p-6 border-2 border-dashed border-slate-300 rounded transition-colors flex flex-col items-center justify-center gap-2 min-h-[140px] hover:bg-slate-50"
+              className="p-6 border-2 border-dashed border-black rounded transition-all flex flex-col items-center justify-center gap-2 min-h-[140px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             >
               <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
                 <Plus className="text-emerald-600" size={24} />
@@ -1118,7 +1118,7 @@ const BuyerWallet = () => {
                 return (
                   <div
                     key={withdrawal.id}
-                    className="p-4 bg-white border rounded transition-all hover:shadow-sm"
+                    className="p-4 bg-white border rounded transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -1174,8 +1174,8 @@ const BuyerWallet = () => {
                     onClick={() => setWithdrawAmount(amount)}
                     className={`py-3 rounded font-semibold transition-all border ${
                       withdrawAmount === amount
-                        ? 'bg-emerald-500 text-white border-emerald-500'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400 hover:shadow-sm'
+                        ? 'bg-[#FF90E8] text-black border-black'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-black'
                     }`}
                   >
                     ${amount}
@@ -1203,8 +1203,8 @@ const BuyerWallet = () => {
                       onClick={() => setSelectedAccountForWithdraw(account.id)}
                       className={`p-4 rounded-xl border text-left transition-all ${
                         selectedAccountForWithdraw === account.id 
-                          ? 'border-violet-500 bg-violet-50' 
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-black bg-[#FF90E8]/10' 
+                          : 'border-gray-200 hover:border-black'
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -1252,7 +1252,7 @@ const BuyerWallet = () => {
             <Button 
               onClick={handleWithdraw} 
               disabled={!selectedAccountForWithdraw || submitting || otpSending || withdrawAmount < 5 || withdrawAmount > (wallet?.balance || 0)}
-              className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl"
+              className="bg-[#FF90E8] text-black border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded"
             >
               {otpSending ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
               Withdraw ${withdrawAmount}
@@ -1298,7 +1298,7 @@ const BuyerWallet = () => {
             <Button
               onClick={handleVerifyOTP}
               disabled={otpVerifying || otpValue.length !== 6}
-              className="w-full bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl"
+              className="w-full bg-[#FF90E8] text-black border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded"
             >
               {otpVerifying ? (
                 <>
@@ -1381,7 +1381,7 @@ const BuyerWallet = () => {
                     <button
                       key={country.code}
                       onClick={() => { setSelectedCountry(country.code); setAddAccountStep('type'); }}
-                      className="p-3 rounded border-2 border-slate-200 hover:border-emerald-400 hover:shadow-sm transition-all text-center"
+                      className="p-3 rounded border-2 border-slate-200 hover:border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
                     >
                       <img src={country.flag} alt={country.name} className="w-8 h-6 mx-auto mb-1 object-cover rounded" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w80/un.png'; }} />
                       <p className="text-gray-900 font-medium text-xs">{country.code}</p>
@@ -1396,7 +1396,7 @@ const BuyerWallet = () => {
                     <button
                       key={country.code}
                       onClick={() => { setSelectedCountry(country.code); setAddAccountStep('type'); }}
-                      className="p-2 rounded border border-slate-200 hover:border-emerald-400 hover:shadow-sm transition-all text-center"
+                      className="p-2 rounded border border-slate-200 hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
                     >
                       <img src={country.flag} alt={country.name} className="w-6 h-4 mx-auto mb-1 object-cover rounded" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w80/un.png'; }} />
                       <p className="text-gray-700 text-[10px]">{country.name}</p>
@@ -1427,7 +1427,7 @@ const BuyerWallet = () => {
                           setAddAccountStep('details');
                         }
                       }}
-                      className="p-4 rounded border-2 border-slate-200 hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
+                      className="p-4 rounded border-2 border-slate-200 hover:border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
                     >
                       <div className={`h-12 w-12 mx-auto mb-2 rounded-xl flex items-center justify-center ${
                         type.code === 'bank' ? 'bg-blue-50' : 
@@ -1461,7 +1461,7 @@ const BuyerWallet = () => {
                         setBankName(bank.name);
                         setAddAccountStep('details');
                       }}
-                      className="p-3 rounded border-2 border-slate-200 hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-left group"
+                      className="p-3 rounded border-2 border-slate-200 hover:border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all text-left group"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -1487,7 +1487,7 @@ const BuyerWallet = () => {
                     setBankName('');
                     setAddAccountStep('details');
                   }}
-                  className="w-full mt-3 p-4 rounded border-2 border-dashed border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFF5FB] transition-all text-center"
+                  className="w-full mt-3 p-4 rounded border-2 border-dashed border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFF5FB] transition-all text-center"
                 >
                   <span className="text-gray-600 font-medium">+ Other Bank (Enter Manually)</span>
                 </button>
@@ -1509,7 +1509,7 @@ const BuyerWallet = () => {
                         setSelectedDigitalWallet(wallet);
                         setAddAccountStep('details');
                       }}
-                      className="p-4 rounded border-2 border-slate-200 hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-center group"
+                      className="p-4 rounded border-2 border-slate-200 hover:border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all text-center group"
                       style={{ '--wallet-color': wallet.color } as React.CSSProperties}
                     >
                       <div className={`h-14 w-14 mx-auto mb-2 rounded-xl ${wallet.bgColor} flex items-center justify-center p-2 group-hover:scale-105 transition-transform`}>
@@ -1681,7 +1681,7 @@ const BuyerWallet = () => {
                   <Button 
                     onClick={handleAddAccount} 
                     disabled={!accountName || !accountNumber || submitting}
-                    className="flex-1 h-12 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600"
+                    className="flex-1 h-12 rounded bg-[#FF90E8] text-black border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                   >
                     {submitting ? (
                       <>
