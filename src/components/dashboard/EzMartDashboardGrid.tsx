@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MoreHorizontal, DollarSign, ShoppingCart, User, ChevronDown } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 
@@ -192,6 +193,13 @@ const Dashboard_TopCategories = ({
 );
 
 // ── Revenue Analytics (dynamic SVG chart using real data) ──────────────────
+const FILTER_OPTIONS = [
+  { label: 'Last 7 Days', days: 7 },
+  { label: 'Last 14 Days', days: 14 },
+  { label: 'Last 30 Days', days: 30 },
+  { label: 'All Time', days: 0 },
+];
+
 const Dashboard_RevenueChart = ({
   dailyRevenue,
   formatAmount,
@@ -199,14 +207,19 @@ const Dashboard_RevenueChart = ({
   dailyRevenue: DailyRevenueItem[];
   formatAmount: (v: number) => string;
 }) => {
-  // Use last 8 data points for display
-  const chartData = dailyRevenue.slice(-8);
+  const [filterDays, setFilterDays] = useState(7);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const selectedLabel = FILTER_OPTIONS.find(o => o.days === filterDays)?.label || `Last ${filterDays} Days`;
+
+  // Filter data based on selected range, then take last 8 points for display
+  const filteredData = filterDays === 0 ? dailyRevenue : dailyRevenue.slice(-filterDays);
+  const chartData = filteredData.slice(-8);
   const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1);
   
   // Generate SVG path from real data
   const width = 450;
   const height = 130;
-  const padding = 0;
   
   const points = chartData.map((d, i) => {
     const x = chartData.length > 1 ? (i / (chartData.length - 1)) * width : width / 2;
@@ -214,7 +227,6 @@ const Dashboard_RevenueChart = ({
     return { x, y, ...d };
   });
 
-  // Create smooth curve path
   const pathD = points.length > 1
     ? points.reduce((acc, p, i) => {
         if (i === 0) return `M${p.x},${p.y}`;
@@ -225,11 +237,9 @@ const Dashboard_RevenueChart = ({
       }, '')
     : `M${width / 2},${height / 2}`;
 
-  // Find peak point for tooltip
   const peakIdx = points.reduce((best, p, i) => p.revenue > points[best].revenue ? i : best, 0);
   const peak = points[peakIdx];
 
-  // Y axis labels
   const yLabels = [maxRevenue, maxRevenue * 0.75, maxRevenue * 0.5, maxRevenue * 0.25, 0];
   const formatYLabel = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v.toFixed(0);
 
@@ -245,19 +255,61 @@ const Dashboard_RevenueChart = ({
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Revenue Analytics</div>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '6px 12px',
-          backgroundColor: '#ff7f00',
-          color: 'white',
-          border: 'none',
-          borderRadius: '6px',
-          fontSize: '12px',
-        }}>
-          Last {chartData.length} Days
-          <ChevronDown style={{ width: 14, height: 14 }} />
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '6px 12px',
+              backgroundColor: '#ff7f00',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '12px',
+              cursor: 'pointer',
+            }}
+          >
+            {selectedLabel}
+            <ChevronDown style={{ width: 14, height: 14, transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+          </button>
+          {dropdownOpen && (
+            <div style={{
+              position: 'absolute',
+              right: 0,
+              top: '100%',
+              marginTop: '4px',
+              background: 'white',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              border: '1px solid #e5e7eb',
+              zIndex: 50,
+              minWidth: '140px',
+              overflow: 'hidden',
+            }}>
+              {FILTER_OPTIONS.map(opt => (
+                <button
+                  key={opt.days}
+                  onClick={() => { setFilterDays(opt.days); setDropdownOpen(false); }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '8px 14px',
+                    fontSize: '12px',
+                    textAlign: 'left',
+                    border: 'none',
+                    background: filterDays === opt.days ? '#fff7ed' : 'white',
+                    color: filterDays === opt.days ? '#ff7f00' : '#374151',
+                    fontWeight: filterDays === opt.days ? 600 : 400,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -279,7 +331,6 @@ const Dashboard_RevenueChart = ({
         </div>
 
         <div style={{ marginLeft: '30px', position: 'relative', height: '100%', borderBottom: '1px dashed #e5e7eb' }}>
-          {/* Grid lines */}
           {[20, 40, 60, 80].map(pct => (
             <div key={pct} style={{ position: 'absolute', width: '100%', top: `${pct}%`, borderTop: '1px dashed #f3f4f6' }} />
           ))}
@@ -291,7 +342,6 @@ const Dashboard_RevenueChart = ({
             )}
           </svg>
 
-          {/* Tooltip on peak */}
           {peak && chartData.length > 0 && (
             <div style={{
               position: 'absolute',
@@ -308,7 +358,6 @@ const Dashboard_RevenueChart = ({
             </div>
           )}
 
-          {/* X Axis */}
           <div style={{
             display: 'flex', justifyContent: 'space-between', marginTop: '10px',
             fontSize: '10px', color: '#9ca3af',
