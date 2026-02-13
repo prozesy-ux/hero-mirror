@@ -4,7 +4,7 @@ import { useSellerContext } from '@/contexts/SellerContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { 
   Wallet, 
   ArrowDownCircle, 
@@ -25,7 +25,9 @@ import {
   Mail,
   RefreshCw,
   ShieldCheck,
-  ChevronLeft
+  ChevronLeft,
+  Calendar,
+  Filter
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -36,6 +38,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { 
   ACCOUNT_TYPES, 
   getDigitalWalletsForCountry, 
@@ -87,6 +91,8 @@ interface SavedAccount {
 }
 
 type WalletTab = 'wallet' | 'withdrawals' | 'accounts';
+type WithdrawalStatus = 'all' | 'pending' | 'approved' | 'completed' | 'rejected';
+type DatePreset = 'all' | 'today' | 'week' | 'month' | 'custom';
 
 // Currency helper functions
 const getCurrencySymbol = (code: string | null): string => {
@@ -181,6 +187,12 @@ const SellerWallet = () => {
   // Delete confirmation state
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   const [deletingAccount, setDeletingAccount] = useState(false);
+
+  // Withdrawal filters
+  const [withdrawalStatusFilter, setWithdrawalStatusFilter] = useState<WithdrawalStatus>('all');
+  const [withdrawalDatePreset, setWithdrawalDatePreset] = useState<DatePreset>('all');
+  const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Derived state for country preview
   const availableCountries = useMemo(() => {
@@ -496,7 +508,36 @@ const SellerWallet = () => {
     );
   }, [withdrawals]);
 
-  // Send OTP for withdrawal verification (if 2FA enabled) or process directly
+  // Filter withdrawals
+  const filteredWithdrawals = useMemo(() => {
+    return withdrawals.filter(withdrawal => {
+      if (withdrawalStatusFilter !== 'all' && withdrawal.status !== withdrawalStatusFilter) {
+        return false;
+      }
+      if (withdrawalDatePreset !== 'all' && withdrawal.created_at) {
+        const withdrawalDate = new Date(withdrawal.created_at);
+        const today = new Date();
+        switch (withdrawalDatePreset) {
+          case 'today':
+            if (!isWithinInterval(withdrawalDate, { start: startOfDay(today), end: endOfDay(today) })) return false;
+            break;
+          case 'week':
+            if (!isWithinInterval(withdrawalDate, { start: startOfDay(subDays(today, 7)), end: endOfDay(today) })) return false;
+            break;
+          case 'month':
+            if (!isWithinInterval(withdrawalDate, { start: startOfDay(subDays(today, 30)), end: endOfDay(today) })) return false;
+            break;
+          case 'custom':
+            if (customDateRange.from && customDateRange.to) {
+              if (!isWithinInterval(withdrawalDate, { start: startOfDay(customDateRange.from), end: endOfDay(customDateRange.to) })) return false;
+            }
+            break;
+        }
+      }
+      return true;
+    });
+  }, [withdrawals, withdrawalStatusFilter, withdrawalDatePreset, customDateRange]);
+
   const handleWithdraw = async () => {
     console.log('[WITHDRAW] Starting withdrawal process...');
     
@@ -730,7 +771,8 @@ const SellerWallet = () => {
         return { icon: Clock, label: 'Pending', className: 'bg-amber-100 text-amber-700' };
       case 'approved':
         return { icon: CheckCircle, label: 'Approved', className: 'bg-violet-100 text-violet-700' };
-      case 'rejected':
+      case 'completed':
+        return { icon: CheckCircle, label: 'Completed', className: 'bg-emerald-100 text-emerald-700' };
         return { icon: XCircle, label: 'Rejected', className: 'bg-red-100 text-red-700' };
       default:
         return { icon: Clock, label: status, className: 'bg-gray-100 text-gray-700' };
@@ -869,7 +911,7 @@ const SellerWallet = () => {
                   return (
                     <div 
                       key={method.id}
-                      className="p-4 bg-white border rounded text-center transition-all hover:shadow-sm"
+                      className="p-4 bg-white border rounded text-center transition-colors hover:bg-slate-50"
                     >
                       {logoUrl ? (
                         <img 
@@ -976,15 +1018,145 @@ const SellerWallet = () => {
       {/* Withdrawals Tab */}
       {activeTab === 'withdrawals' && (
         <div className="bg-white border rounded p-8">
-          <h3 className="text-base text-slate-700 font-semibold mb-4">
-            Withdrawal History
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h3 className="text-base text-slate-700 font-semibold">
+              Withdrawal History
+              {filteredWithdrawals.length !== withdrawals.length && (
+                <Badge variant="secondary" className="ml-2">
+                  {filteredWithdrawals.length} of {withdrawals.length}
+                </Badge>
+              )}
+            </h3>
+            
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Date Filter */}
+              <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Calendar size={14} />
+                    {withdrawalDatePreset === 'all' ? 'All Time' : 
+                     withdrawalDatePreset === 'today' ? 'Today' :
+                     withdrawalDatePreset === 'week' ? 'This Week' :
+                     withdrawalDatePreset === 'month' ? 'This Month' :
+                     customDateRange.from && customDateRange.to ? 
+                       `${format(customDateRange.from, 'MMM d')} - ${format(customDateRange.to, 'MMM d')}` : 'Custom'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <div className="p-2 border-b border-gray-100">
+                    <div className="grid grid-cols-2 gap-1">
+                      {(['all', 'today', 'week', 'month'] as DatePreset[]).map((preset) => (
+                        <button
+                          key={preset}
+                          onClick={() => {
+                            setWithdrawalDatePreset(preset);
+                            if (preset !== 'custom') setShowDatePicker(false);
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                            withdrawalDatePreset === preset
+                              ? 'bg-violet-100 text-violet-700'
+                              : 'hover:bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {preset === 'all' ? 'All Time' : 
+                           preset === 'today' ? 'Today' :
+                           preset === 'week' ? 'This Week' : 'This Month'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="p-2 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Custom Range</p>
+                    <CalendarComponent
+                      mode="range"
+                      selected={{ from: customDateRange.from, to: customDateRange.to }}
+                      onSelect={(range) => {
+                        setCustomDateRange({ from: range?.from, to: range?.to });
+                        if (range?.from && range?.to) {
+                          setWithdrawalDatePreset('custom');
+                          setShowDatePicker(false);
+                        }
+                      }}
+                      numberOfMonths={1}
+                      className="rounded-lg pointer-events-auto"
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              {/* Status Filter */}
+              <Select value={withdrawalStatusFilter} onValueChange={(v) => setWithdrawalStatusFilter(v as WithdrawalStatus)}>
+                <SelectTrigger className="w-[130px] h-9">
+                  <Filter size={14} className="mr-1.5" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Clear Filters */}
+              {(withdrawalStatusFilter !== 'all' || withdrawalDatePreset !== 'all') && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setWithdrawalStatusFilter('all');
+                    setWithdrawalDatePreset('all');
+                    setCustomDateRange({ from: undefined, to: undefined });
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
           
-          {withdrawals.length === 0 ? (
-            <p className="text-gray-500 text-center py-12">No withdrawals yet</p>
+          {/* Status Pills */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {(['all', 'pending', 'approved', 'completed', 'rejected'] as WithdrawalStatus[]).map((status) => {
+              const count = status === 'all' ? withdrawals.length : withdrawals.filter(w => w.status === status).length;
+              return (
+                <button
+                  key={status}
+                  onClick={() => setWithdrawalStatusFilter(status)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    withdrawalStatusFilter === status
+                      ? status === 'pending' ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-200' :
+                        status === 'approved' ? 'bg-violet-100 text-violet-700 ring-2 ring-violet-200' :
+                        status === 'completed' ? 'bg-emerald-100 text-emerald-700 ring-2 ring-emerald-200' :
+                        status === 'rejected' ? 'bg-red-100 text-red-700 ring-2 ring-red-200' :
+                        'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)} {count > 0 && `(${count})`}
+                </button>
+              );
+            })}
+          </div>
+          
+          {filteredWithdrawals.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
+                <History className="text-gray-400" size={24} />
+              </div>
+              <p className="text-gray-500 font-medium">No withdrawals found</p>
+              <p className="text-gray-400 text-sm mt-1">
+                {withdrawalStatusFilter !== 'all' || withdrawalDatePreset !== 'all' 
+                  ? 'Try adjusting your filters' 
+                  : 'Make your first withdrawal'}
+              </p>
+            </div>
           ) : (
             <div className="space-y-3">
-              {withdrawals.map((withdrawal) => {
+              {filteredWithdrawals.map((withdrawal) => {
                 const statusConfig = getStatusConfig(withdrawal.status);
                 const walletInfo = getWalletByCode(withdrawal.payment_method);
                 return (
@@ -1262,7 +1434,7 @@ const SellerWallet = () => {
                 </Label>
                 <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
                   {getAvailableBanks().map((bank) => (
-                    <button key={bank.code} onClick={() => { setSelectedBank(bank); setBankName(bank.name); setAddAccountStep('details'); }} className="p-3 rounded border-2 border-slate-200 hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-left">
+                    <button key={bank.code} onClick={() => { setSelectedBank(bank); setBankName(bank.name); setAddAccountStep('details'); }} className="p-3 rounded border-2 border-slate-200 hover:border-emerald-400 hover:shadow-sm transition-all text-left">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
                           <img src={bank.logo} alt={bank.name} className="w-8 h-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -1481,8 +1653,8 @@ const SellerWallet = () => {
         <DialogContent className="max-w-sm p-0 overflow-hidden">
           {/* Clean Header */}
           <div className="bg-white border-b p-6 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#FF90E8] border border-black flex items-center justify-center">
-              <ShieldCheck className="w-8 h-8 text-black" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-emerald-100 flex items-center justify-center">
+              <ShieldCheck className="w-8 h-8 text-emerald-600" />
             </div>
             <h3 className="text-xl font-semibold text-slate-900">Verify Withdrawal</h3>
             <p className="text-slate-600 text-sm mt-2">
