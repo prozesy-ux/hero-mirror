@@ -235,18 +235,18 @@ const SellerDeliveryInventory = () => {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
         </div>
-        <Skeleton className="h-96 rounded-xl" />
+        <Skeleton className="h-96 rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-black">Auto-Delivery Manager</h1>
@@ -263,32 +263,29 @@ const SellerDeliveryInventory = () => {
         ].map(card => {
           const Icon = card.icon;
           return (
-            <div key={card.label} className="bg-white border border-black/10 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon className={`w-4 h-4 ${card.color}`} />
-                <span className="text-[10px] text-black/40 uppercase tracking-widest font-bold">{card.label}</span>
-              </div>
-              <p className={`text-2xl font-extrabold ${card.color}`}>{card.value}</p>
-            </div>
+         <div key={card.label} className="bg-white rounded-2xl shadow-sm p-6">
+               <p className="text-sm text-[#6B7280] mb-2">{card.label}</p>
+               <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
+             </div>
           );
         })}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-black/[0.03] p-1 rounded-xl w-fit">
-        {TABS.map(tab => {
-          const Icon = tab.icon;
-          const count = totalByTab(tab.id);
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === tab.id 
-                  ? 'bg-black text-white shadow-sm' 
-                  : 'text-black/50 hover:text-black/80'
-              }`}
-            >
+       {/* Tabs */}
+       <div className="flex gap-2 w-fit">
+         {TABS.map(tab => {
+           const Icon = tab.icon;
+           const count = totalByTab(tab.id);
+           return (
+             <button
+               key={tab.id}
+               onClick={() => setActiveTab(tab.id)}
+               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                 activeTab === tab.id 
+                   ? 'bg-[#FF7F00] text-white' 
+                   : 'bg-white border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'
+               }`}
+             >
               <Icon className="w-4 h-4" />
               {tab.label}
               {count > 0 && (
@@ -301,8 +298,8 @@ const SellerDeliveryInventory = () => {
         })}
       </div>
 
-      {/* Add Item Section */}
-      <div className="bg-white border border-black/10 rounded-xl p-5 space-y-4">
+       {/* Add Item Section */}
+       <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-[10px] text-black/40 uppercase tracking-widest font-bold">
             Add {activeTab === 'account' ? 'Accounts' : activeTab === 'license_key' ? 'License Keys' : 'Downloads'}
@@ -374,8 +371,8 @@ const SellerDeliveryInventory = () => {
         )}
 
         {/* Usage Guide */}
-        {selectedProduct && (
-          <div className="border-t border-black/5 pt-4 space-y-2">
+         {selectedProduct && (
+           <div className="border-t border-[#E5E7EB] pt-4 space-y-2">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-black/40" />
               <span className="text-[10px] text-black/40 uppercase tracking-widest font-bold">Usage Guide for Buyers</span>
