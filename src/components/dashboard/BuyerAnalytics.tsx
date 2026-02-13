@@ -266,7 +266,7 @@ const BuyerAnalytics = () => {
   }
 
   return (
-    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>

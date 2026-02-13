@@ -298,7 +298,7 @@ const SellerDashboard = () => {
   }
 
   return (
-    <div className="space-y-5" style={{ backgroundColor: '#F3EAE0', minHeight: '100vh', padding: '32px' }}>
+    <div className="space-y-5" style={{ backgroundColor: '#F3EAE0', minHeight: '100vh', padding: '32px', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       <AnnouncementBanner audience="seller" />
 
       {/* Header with Share Store & Export */}

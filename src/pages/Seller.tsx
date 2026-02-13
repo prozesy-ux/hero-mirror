@@ -597,7 +597,7 @@ const SellerMainContent = () => {
 const SellerContent = () => {
   return (
     <SellerSidebarProvider>
-      <div className="min-h-screen bg-[#F3EAE0] overflow-x-hidden">
+      <div className="min-h-screen bg-[#F3EAE0] overflow-x-hidden" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         
         {/* Desktop Sidebar */}
         <SellerSidebar />

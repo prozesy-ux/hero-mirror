@@ -65,7 +65,7 @@ const SellerServiceBookings = () => {
   const filtered = getFilteredBookings();
 
   return (
-    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-[#1F2937]">Service Bookings</h2>
