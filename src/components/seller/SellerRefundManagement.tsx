@@ -47,7 +47,7 @@ const SellerRefundManagement = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-4" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-4 dashboard-inter">
         <div className="grid grid-cols-3 gap-4">
           {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
         </div>
@@ -63,7 +63,7 @@ const SellerRefundManagement = () => {
   ];
 
   return (
-    <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6 dashboard-inter">
       <div>
         <h2 className="text-2xl font-bold text-[#1F2937]">Refund Management</h2>
         <p className="text-sm text-[#6B7280]">Track and manage refund requests</p>

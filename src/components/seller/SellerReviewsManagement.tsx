@@ -72,7 +72,7 @@ const SellerReviewsManagement = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-4" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-4 dashboard-inter">
         <Skeleton className="h-32 rounded-2xl" />
         <Skeleton className="h-48 rounded-2xl" />
       </div>
@@ -80,7 +80,7 @@ const SellerReviewsManagement = () => {
   }
 
   return (
-    <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6 dashboard-inter">
       <div>
         <h2 className="text-2xl font-bold text-[#1F2937]">Reviews</h2>
         <p className="text-sm text-[#6B7280]">Manage customer reviews and respond</p>

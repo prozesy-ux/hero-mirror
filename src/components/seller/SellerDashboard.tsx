@@ -282,7 +282,7 @@ const SellerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="space-y-5" style={{ backgroundColor: '#f1f5f9', padding: '32px', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <div className="space-y-5 dashboard-inter" style={{ backgroundColor: '#f1f5f9', padding: '32px' }}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-32 rounded" />
@@ -298,7 +298,7 @@ const SellerDashboard = () => {
   }
 
   return (
-    <div className="space-y-5" style={{ backgroundColor: '#f1f5f9', minHeight: '100vh', padding: '32px', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div className="space-y-5 dashboard-inter" style={{ backgroundColor: '#f1f5f9', minHeight: '100vh', padding: '32px' }}>
       <AnnouncementBanner audience="seller" />
 
       {/* Header with Share Store & Export */}
