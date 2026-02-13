@@ -61,31 +61,31 @@ const SellerNotificationCenter = () => {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-lg" />)}
+      <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-4">
+        {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-2xl" />)}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Notifications</h2>
-          <p className="text-sm text-slate-500">{unreadCount} unread</p>
+          <h2 className="text-2xl font-bold text-[#1F2937]">Notifications</h2>
+          <p className="text-sm text-[#6B7280]">{unreadCount} unread</p>
         </div>
         {unreadCount > 0 && (
-          <Button size="sm" variant="outline" onClick={markAllRead}>
+          <Button size="sm" className="bg-[#FF7F00] hover:bg-[#e67200] text-white rounded-xl" onClick={markAllRead}>
             <Check className="h-3 w-3 mr-1" /> Mark all read
           </Button>
         )}
       </div>
 
-      <div className="bg-white border rounded-lg divide-y">
+      <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-100">
         {notifications.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
-            <Bell className="h-10 w-10 mx-auto mb-2 text-slate-200" />
-            <p>No notifications yet</p>
+          <div className="p-12 text-center">
+            <Bell className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+            <p className="text-sm text-gray-400">No notifications yet</p>
           </div>
         ) : (
           notifications.map(n => {
@@ -93,18 +93,18 @@ const SellerNotificationCenter = () => {
             return (
               <div
                 key={n.id}
-                className={`p-4 flex items-start gap-3 cursor-pointer hover:bg-slate-50 transition-colors ${!n.is_read ? 'bg-blue-50/50' : ''}`}
+                className={`p-4 flex items-start gap-3 cursor-pointer hover:bg-gray-50 transition-colors ${!n.is_read ? 'bg-[#FF7F00]/5' : ''}`}
                 onClick={() => !n.is_read && markAsRead(n.id)}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${!n.is_read ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
-                  <Icon className="h-4 w-4" />
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${!n.is_read ? 'bg-orange-100 text-[#FF7F00]' : 'bg-gray-100 text-gray-400'}`}>
+                  <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${!n.is_read ? 'font-medium text-slate-900' : 'text-slate-700'}`}>{n.title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.message}</p>
-                  <p className="text-xs text-slate-400 mt-1">{format(new Date(n.created_at), 'MMM d, h:mm a')}</p>
+                  <p className={`text-sm ${!n.is_read ? 'font-semibold text-[#1F2937]' : 'text-[#6B7280]'}`}>{n.title}</p>
+                  <p className="text-xs text-[#6B7280] mt-0.5 line-clamp-2">{n.message}</p>
+                  <p className="text-xs text-gray-400 mt-1">{format(new Date(n.created_at), 'MMM d, h:mm a')}</p>
                 </div>
-                {!n.is_read && <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />}
+                {!n.is_read && <div className="w-2.5 h-2.5 rounded-full bg-[#FF7F00] mt-2 flex-shrink-0" />}
               </div>
             );
           })
