@@ -1,47 +1,47 @@
 
 
-## Apply Buyer Wallet Design to Seller Wallet
+## Apply Billing Section Hover/Select Design to Both Wallets
 
-### Problem
-The Seller Wallet (`SellerWallet.tsx`) still uses old neobrutalism/pink design elements (black border shadows, `#FF90E8` accents) while the Buyer Wallet (`BuyerWallet.tsx`) has been updated to a clean, modern design with emerald accents, subtle hover effects, and advanced filters. These need to be unified.
+### What Changes
+Copy the Gumroad-style hover effects, transitions, and select states from `BillingSection.tsx` into both `BuyerWallet.tsx` and `SellerWallet.tsx`.
 
-### Changes (1 file: `src/components/seller/SellerWallet.tsx`)
+### Design Elements Being Applied
 
-#### 1. OTP Modal -- Replace pink neobrutalism with clean emerald
-- **Current**: `bg-[#FF90E8] border border-black` shield icon container, black text
-- **New**: `bg-emerald-100` container with `text-emerald-600` icon (matching BuyerWallet)
+| Element | Current Wallet Style | Billing Style (Target) |
+|---------|---------------------|----------------------|
+| Tab navigation (active) | `bg-slate-900 text-white` | `bg-[#FF90E8] text-black border border-black` |
+| Tab navigation (hover) | `hover:bg-slate-50` | `hover:text-slate-900 hover:bg-slate-50` (same) |
+| Withdrawal/transaction rows hover | `hover:shadow-sm` | `hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
+| Payment method cards hover | `hover:bg-slate-50` | `hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
+| Account cards hover | `hover:bg-slate-50` | `hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
+| Quick amount buttons (selected) | `bg-emerald-500 text-white` | `bg-[#FF90E8] text-black border-black` |
+| Quick amount buttons (hover) | `hover:border-emerald-400` | `hover:border-black` |
+| Withdraw/Add Funds button | `bg-emerald-500 text-white rounded-xl` | `bg-[#FF90E8] text-black border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
+| Account select in withdraw modal | `border-violet-500 bg-violet-50` | `border-black bg-[#FF90E8]/10` |
+| Add Account dashed card | `border-slate-300 hover:bg-slate-50` | `border-dashed border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` |
 
-#### 2. Add Account Modal -- Step badges
-- **Current**: Steps 2/3/4 use `bg-[#FF90E8] text-black`
-- **New**: All step badges use `bg-emerald-500 text-white` (matching BuyerWallet)
+### Files Modified (2 files)
 
-#### 3. Add Account Modal -- Hover styles on buttons
-- **Current**: Account type, bank, wallet, and "Other Bank" buttons use neobrutalism hover: `hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`
-- **New**: Clean hover: `hover:border-emerald-400 hover:shadow-sm` (matching BuyerWallet)
+**File 1: `src/components/dashboard/BuyerWallet.tsx`**
+- Tab active state: `bg-slate-900 text-white` to `bg-[#FF90E8] text-black border border-black`
+- Wallet card withdraw button: `bg-emerald-500 hover:bg-emerald-600 rounded-xl` to `bg-[#FF90E8] text-black border border-black rounded hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`
+- Withdrawal method cards: `hover:bg-slate-50` to `hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`
+- Account cards: `hover:bg-slate-50` to `hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`
+- Withdrawal history rows: `hover:shadow-sm` to `hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`
+- Add Account dashed card: `border-slate-300 hover:bg-slate-50` to `border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`
+- Withdraw modal quick amounts: `bg-emerald-500 text-white border-emerald-500` to `bg-[#FF90E8] text-black border-black`; hover: `hover:border-emerald-400` to `hover:border-black`
+- Withdraw modal account select: `border-violet-500 bg-violet-50` to `border-black bg-[#FF90E8]/10`; hover: `hover:border-gray-300` to `hover:border-black`
+- Withdraw button in modal: `bg-emerald-500 hover:bg-emerald-600 rounded-xl` to `bg-[#FF90E8] text-black border border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded`
+- OTP verify button: Same Gumroad style update
 
-#### 4. "Other Bank" button
-- **Current**: `border-dashed border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFF5FB]`
-- **New**: `border-dashed border-slate-300 hover:shadow-sm hover:bg-slate-50` (matching BuyerWallet)
-
-#### 5. Withdrawals Tab -- Add filters and status pills (from BuyerWallet)
-- **Current**: Basic list with no filtering capability
-- **New**: Add the same filter system as BuyerWallet:
-  - Status filter pills (All, Pending, Approved, Completed, Rejected) with colored active states
-  - Date filter popover (All Time, Today, This Week, This Month, Custom range)
-  - Status dropdown filter
-  - Clear filters button
-  - Better empty state with icon and contextual message
-  - Add new state variables: `withdrawalStatusFilter`, `withdrawalDatePreset`, `customDateRange`, `showDatePicker`
-  - Add `filteredWithdrawals` computed from filters
-  - Import additional components: `Popover`, `Calendar`, `Filter` icon
-
-#### 6. Withdrawal method cards hover
-- **Current**: `hover:shadow-sm` (already clean but inconsistent)
-- **New**: `hover:bg-slate-50` (matching BuyerWallet exactly)
+**File 2: `src/components/seller/SellerWallet.tsx`**
+- Exact same changes as BuyerWallet (same elements exist in both files)
+- Tab active state, withdrawal rows, method cards, account cards, add account card, withdraw modal amounts/select/button, OTP modal -- all updated to Gumroad hover style
 
 ### What Stays the Same
-- All wallet functionality (withdraw, OTP, add account, delete account, set primary)
+- All wallet functionality (withdraw, OTP, add account, delete, set primary, filters)
+- Status pills and filter system (date picker, status dropdown)
 - Data fetching, real-time subscriptions, context usage
-- The overall layout structure (tabs, wallet card, accounts grid)
-- Emerald withdraw button and dialog styling (already matching)
+- Layout structure (tabs, wallet card, accounts grid)
+- The emerald color on the Add Account circle icon remains (it's an icon bg, not a hover/select)
 
