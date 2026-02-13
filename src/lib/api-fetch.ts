@@ -299,6 +299,9 @@ export const bffApi = {
     withdrawals: any[];
     withdrawalMethods: any[];
     sellerLevels: any[];
+    productAnalytics: any[];
+    trafficAnalytics: any[];
+    buyerCountries: Array<{ country: string; count: number }>;
     sellerCountry: string;
     _meta: { fetchedAt: string; userId: string; sellerId: string };
   }>('bff-seller-dashboard'),

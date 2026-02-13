@@ -64,7 +64,9 @@ serve(async (req) => {
     const sellerId = profile.id;
 
     // 4. Fetch all seller data in parallel
-    const [walletResult, productsResult, ordersResult, withdrawalsResult, withdrawalConfigResult, sellerLevelResult, allLevelsResult] = await Promise.all([
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const [walletResult, productsResult, ordersResult, withdrawalsResult, withdrawalConfigResult, sellerLevelResult, allLevelsResult, trafficResult] = await Promise.all([
       // Wallet
       supabase
         .from('seller_wallets')
@@ -115,17 +117,26 @@ serve(async (req) => {
       supabase
         .from('seller_levels')
         .select('*')
-        .order('display_order', { ascending: true })
+        .order('display_order', { ascending: true }),
+
+      // Seller traffic analytics (last 90 days)
+      supabase
+        .from('seller_traffic_analytics')
+        .select('*')
+        .eq('seller_id', sellerId)
+        .gte('date', ninetyDaysAgo)
+        .order('date', { ascending: false }),
     ]);
 
     // 5. Fetch buyer info for orders (batch to avoid N+1)
     let ordersWithBuyers = ordersResult.data || [];
+    let buyerCountries: Array<{ country: string; count: number }> = [];
     if (ordersResult.data && ordersResult.data.length > 0) {
       const buyerIds = [...new Set(ordersResult.data.map(o => o.buyer_id))];
       
       const { data: buyers } = await supabase
         .from('profiles')
-        .select('user_id, email, full_name')
+        .select('user_id, email, full_name, country')
         .in('user_id', buyerIds);
 
       const buyerMap = new Map(buyers?.map(b => [b.user_id, b]) || []);
@@ -134,6 +145,29 @@ serve(async (req) => {
         ...order,
         buyer: buyerMap.get(order.buyer_id) || null
       }));
+
+      // Aggregate buyer countries
+      const countryMap: Record<string, number> = {};
+      buyers?.forEach(b => {
+        const c = b.country || 'Unknown';
+        countryMap[c] = (countryMap[c] || 0) + 1;
+      });
+      buyerCountries = Object.entries(countryMap)
+        .map(([country, count]) => ({ country, count }))
+        .sort((a, b) => b.count - a.count);
+    }
+
+    // 5b. Fetch product analytics for all seller products (last 90 days)
+    const productIds = (productsResult.data || []).map(p => p.id);
+    let productAnalyticsData: any[] = [];
+    if (productIds.length > 0) {
+      const { data: paData } = await supabase
+        .from('product_analytics')
+        .select('*')
+        .in('product_id', productIds)
+        .gte('date', ninetyDaysAgo)
+        .order('date', { ascending: false });
+      productAnalyticsData = paData || [];
     }
 
     // Attach level to profile
@@ -151,6 +185,9 @@ serve(async (req) => {
       withdrawals: withdrawalsResult.data || [],
       withdrawalMethods: withdrawalConfigResult.data || [],
       sellerLevels: allLevelsResult.data || [],
+      productAnalytics: productAnalyticsData,
+      trafficAnalytics: trafficResult.data || [],
+      buyerCountries,
       sellerCountry,
       _meta: {
         fetchedAt: new Date().toISOString(),
