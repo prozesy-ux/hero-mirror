@@ -106,19 +106,16 @@ const SellerAnalytics = () => {
     const todayStart = startOfDay(now);
     const yesterdayStart = subDays(todayStart, 1);
     
-    // Today's orders
     const todayOrders = orders.filter(order => {
       const orderDate = new Date(order.created_at);
       return orderDate >= todayStart;
     });
 
-    // Yesterday's orders for comparison
     const yesterdayOrders = orders.filter(order => {
       const orderDate = new Date(order.created_at);
       return orderDate >= yesterdayStart && orderDate < todayStart;
     });
 
-    // Today's stats
     const todayOrderCount = todayOrders.length;
     const yesterdayOrderCount = yesterdayOrders.length;
     const ordersChange = yesterdayOrderCount > 0 
@@ -131,10 +128,8 @@ const SellerAnalytics = () => {
       ? ((todaySales - yesterdaySales) / yesterdaySales) * 100 
       : (todaySales > 0 ? 100 : 0);
 
-    // Returns & Refunds
     const returnsRefunds = filteredOrders.filter(o => o.status === 'refunded').length;
 
-    // Daily data for chart from filtered orders
     const dailyData = dateRange.from && dateRange.to 
       ? eachDayOfInterval({ start: dateRange.from, end: dateRange.to }).map(day => {
           const dayStart = startOfDay(day);
@@ -155,14 +150,12 @@ const SellerAnalytics = () => {
         })
       : [];
 
-    // For percentage-based Y-axis display
     const maxRevenue = Math.max(...dailyData.map(d => d.value), 1);
     const percentageData = dailyData.map(d => ({
       ...d,
       percentage: (d.value / maxRevenue) * 100
     }));
 
-    // Day of week breakdown
     const dayOfWeekData = dayNames.map((name, index) => {
       const dayOrders = filteredOrders.filter(order => getDay(new Date(order.created_at)) === index);
       return {
@@ -172,7 +165,6 @@ const SellerAnalytics = () => {
       };
     });
 
-    // Order status breakdown
     const statusBreakdown = [
       { name: 'Completed', value: filteredOrders.filter(o => o.status === 'completed').length, color: '#10B981' },
       { name: 'Delivered', value: filteredOrders.filter(o => o.status === 'delivered').length, color: '#3B82F6' },
@@ -180,7 +172,6 @@ const SellerAnalytics = () => {
       { name: 'Refunded', value: filteredOrders.filter(o => o.status === 'refunded').length, color: '#EF4444' }
     ].filter(s => s.value > 0);
 
-    // Top products
     const productSales: Record<string, { name: string; sold: number; revenue: number }> = {};
     filteredOrders.forEach(order => {
       const productId = order.product_id;
@@ -193,7 +184,6 @@ const SellerAnalytics = () => {
     });
     const topProducts = Object.values(productSales).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
-    // Real metrics from data
     const conversionRate = todayOrders.length > 0 
       ? Math.min((todayOrders.length / Math.max(products.length * 10, 1)) * 100, 100) 
       : 0;
@@ -247,179 +237,147 @@ const SellerAnalytics = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-lg border" />)}
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
         </div>
-        <Skeleton className="h-80 rounded-lg border" />
+        <Skeleton className="h-80 rounded-2xl" />
       </div>
     );
   }
 
-  // Stat Card Component - Gumroad Style
-  const StatCard = ({ 
-    title, 
-    value, 
-    change
-  }: { 
-    title: string; 
-    value: string | number; 
-    change?: number;
-    icon?: React.ElementType;
-  }) => (
-    <div className="bg-white border rounded p-8">
-      <div className="flex items-center gap-2 text-base mb-2">
-        <span className="text-slate-700">{title}</span>
-      </div>
-      <div className="text-4xl font-semibold text-slate-900">{value}</div>
-      {change !== undefined && (
-        <p className="text-sm text-slate-500 mt-2">
-          {change >= 0 ? '+' : ''}{change.toFixed(1)}% from yesterday
-        </p>
-      )}
-    </div>
-  );
+  const statCards = [
+    { title: "Today's Order", value: analyticsData.todayOrders.toString().padStart(2, '0'), change: analyticsData.ordersChange, icon: ShoppingCart, iconBg: 'bg-orange-100', iconColor: 'text-[#FF7F00]' },
+    { title: "Today's Sale", value: formatAmountOnly(analyticsData.todaySales), change: analyticsData.salesChange, icon: DollarSign, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+    { title: "Total Balance", value: formatAmountOnly(analyticsData.totalBalance), icon: Wallet, iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+    { title: "Returns & Refunds", value: analyticsData.returnsRefunds.toString().padStart(2, '0'), icon: RotateCcw, iconBg: 'bg-red-100', iconColor: 'text-red-600' },
+  ];
 
-  // Quick Stat Item Component - Gumroad Style
-  const QuickStatItem = ({ 
-    icon: Icon, 
-    iconColor, 
-    value, 
-    label 
-  }: { 
-    icon: React.ElementType; 
-    iconColor: string; 
-    value: React.ReactNode; 
-    label: string; 
-  }) => (
-    <div className="bg-white border rounded p-8">
-      <div className="flex items-center gap-2 text-base mb-2">
-        <span className="text-slate-700">{label}</span>
-      </div>
-      <div className="text-4xl font-semibold text-slate-900">{value}</div>
-    </div>
-  );
+  const quickStats = [
+    { icon: Package, iconBg: 'bg-blue-100', iconColor: 'text-blue-600', value: products.length.toString().padStart(2, '0'), label: 'Total Products' },
+    { icon: TrendingUp, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', value: `${analyticsData.conversionRate.toFixed(0)}%`, label: 'Conversion Rate' },
+    { icon: Star, iconBg: 'bg-amber-100', iconColor: 'text-amber-600', value: analyticsData.avgRating > 0 ? analyticsData.avgRating.toFixed(1) : '—', label: 'Avg Rating' },
+    { icon: MessageSquare, iconBg: 'bg-blue-100', iconColor: 'text-blue-600', value: filteredOrders.filter(o => o.status === 'completed').length.toString().padStart(2, '0'), label: 'Completed' },
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Header - No Title, Just Date Filter + Export (Shopeers Style) */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
-        {/* Date Range Picker */}
-        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-          <PopoverTrigger asChild>
-            <Button 
-              variant="outline" 
-              className="bg-white border-slate-200 rounded-xl h-9 px-3 text-sm font-medium text-slate-800"
-            >
-              <CalendarIcon className="w-4 h-4 mr-2 text-slate-600" />
-              {dateRange.from && dateRange.to ? (
-                <span>
-                  {format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}
-                </span>
-              ) : (
-                <span>Pick a date range</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-white" align="end">
-            <Calendar
-              mode="range"
-              selected={dateRange}
-              onSelect={(range) => {
-                setDateRange(range || { from: undefined, to: undefined });
-                if (range?.from && range?.to) {
-                  setPeriod('custom');
-                  setCalendarOpen(false);
-                }
-              }}
-              numberOfMonths={2}
-              className="pointer-events-auto"
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-[#1F2937]">Analytics</h2>
+          <p className="text-sm text-[#6B7280]">Track your store performance</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="bg-white border-gray-200 rounded-xl h-9 px-3 text-sm font-medium text-[#1F2937]"
+              >
+                <CalendarIcon className="w-4 h-4 mr-2 text-[#6B7280]" />
+                {dateRange.from && dateRange.to ? (
+                  <span>{format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}</span>
+                ) : (
+                  <span>Pick a date range</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 bg-white" align="end">
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={(range) => {
+                  setDateRange(range || { from: undefined, to: undefined });
+                  if (range?.from && range?.to) {
+                    setPeriod('custom');
+                    setCalendarOpen(false);
+                  }
+                }}
+                numberOfMonths={2}
+                className="pointer-events-auto"
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
 
-        {/* Period Dropdown */}
-        <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
-          <SelectTrigger className="w-[130px] bg-white border-slate-200 rounded-xl h-9 text-sm font-medium">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-slate-200 rounded-xl">
-            <SelectItem value="7d">Last 7 days</SelectItem>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="90d">Last 90 days</SelectItem>
-            <SelectItem value="custom">Custom</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+            <SelectTrigger className="w-[130px] bg-white border-gray-200 rounded-xl h-9 text-sm font-medium">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-white border-gray-200 rounded-xl">
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
+            </SelectContent>
+          </Select>
 
-        {/* Export Button */}
-        <Button 
-          onClick={handleExport}
-          className="bg-emerald-500 hover:bg-emerald-600 rounded-xl h-9 px-4"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export
-        </Button>
+          <Button 
+            onClick={handleExport}
+            className="bg-[#FF7F00] hover:bg-[#e67200] text-white rounded-xl h-9 px-4"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+        </div>
       </div>
 
-      {/* Top Stats Grid - Amazon Seller Central Style */}
+      {/* Top Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          title="Today's Order" 
-          value={analyticsData.todayOrders.toString().padStart(2, '0')} 
-          change={analyticsData.ordersChange}
-          icon={ShoppingCart}
-        />
-        <StatCard 
-          title="Today's Sale" 
-          value={formatAmountOnly(analyticsData.todaySales)} 
-          change={analyticsData.salesChange}
-          icon={DollarSign}
-        />
-        <StatCard 
-          title="Total Balance" 
-          value={formatAmountOnly(analyticsData.totalBalance)}
-          icon={Wallet}
-        />
-        <StatCard 
-          title="Returns & Refunds" 
-          value={analyticsData.returnsRefunds.toString().padStart(2, '0')}
-          icon={RotateCcw}
-        />
+        {statCards.map((card, i) => {
+          const Icon = card.icon;
+          return (
+            <div key={i} className="bg-white rounded-2xl shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-10 h-10 rounded-full ${card.iconBg} flex items-center justify-center`}>
+                  <Icon className={`w-5 h-5 ${card.iconColor}`} />
+                </div>
+                <span className="text-sm text-[#6B7280]">{card.title}</span>
+              </div>
+              <div className="text-3xl font-bold text-[#1F2937]">{card.value}</div>
+              {card.change !== undefined && (
+                <div className={`flex items-center gap-1 mt-2 text-sm ${card.change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {card.change >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                  {card.change >= 0 ? '+' : ''}{card.change.toFixed(1)}% from yesterday
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Main Content Row */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Sales Details Chart - 2/3 width */}
-        <div className="lg:col-span-2 bg-white rounded-lg border p-6">
+        {/* Sales Details Chart */}
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-800">Sales Details</h3>
+            <h3 className="text-lg font-semibold text-[#1F2937]">Sales Details</h3>
           </div>
-          {/* Chart Legend */}
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-orange-500" />
-              <span className="text-xs text-slate-600">Revenue</span>
+              <div className="w-3 h-3 rounded-full bg-[#FF7F00]" />
+              <span className="text-xs text-[#6B7280]">Revenue</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-slate-400" />
-              <span className="text-xs text-slate-600">Orders</span>
+              <div className="w-3 h-3 rounded-full bg-gray-300" />
+              <span className="text-xs text-[#6B7280]">Orders</span>
             </div>
           </div>
           
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analyticsData.dailyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 11, fill: '#64748B' }} 
+                  tick={{ fontSize: 11, fill: '#6B7280' }} 
                   axisLine={false} 
                   tickLine={false}
                   interval="preserveStartEnd"
                 />
                 <YAxis 
-                  tick={{ fontSize: 11, fill: '#64748B' }} 
+                  tick={{ fontSize: 11, fill: '#6B7280' }} 
                   axisLine={false} 
                   tickLine={false}
                   tickFormatter={(v) => {
@@ -431,9 +389,9 @@ const SellerAnalytics = () => {
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    borderRadius: 12, 
+                    borderRadius: 16, 
                     border: 'none', 
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
                     padding: '12px 16px', 
                     fontSize: 12,
                     backgroundColor: 'white'
@@ -446,7 +404,7 @@ const SellerAnalytics = () => {
                 />
                 <Bar 
                   dataKey="percentage" 
-                  fill="#F97316" 
+                  fill="#FF7F00" 
                   radius={[6, 6, 0, 0]} 
                 />
               </BarChart>
@@ -454,34 +412,24 @@ const SellerAnalytics = () => {
           </div>
         </div>
 
-        {/* Quick Stats 2x2 Grid - 1/3 width */}
+        {/* Quick Stats 2x2 Grid */}
         <div className="space-y-4">
-          <h3 className="text-base font-semibold text-slate-800">Quick Stats</h3>
+          <h3 className="text-lg font-semibold text-[#1F2937]">Quick Stats</h3>
           <div className="grid grid-cols-2 gap-4">
-            <QuickStatItem 
-              icon={Package} 
-              iconColor="text-blue-500" 
-              value={products.length.toString().padStart(2, '0')} 
-              label="Total Products" 
-            />
-            <QuickStatItem 
-              icon={TrendingUp} 
-              iconColor="text-emerald-500" 
-              value={`${analyticsData.conversionRate.toFixed(0)}%`} 
-              label="Conversion Rate" 
-            />
-            <QuickStatItem 
-              icon={Star} 
-              iconColor="text-amber-500" 
-              value={analyticsData.avgRating > 0 ? analyticsData.avgRating.toFixed(1) : '—'} 
-              label="Avg Rating" 
-            />
-            <QuickStatItem 
-              icon={MessageSquare} 
-              iconColor="text-blue-500" 
-              value={filteredOrders.filter(o => o.status === 'completed').length.toString().padStart(2, '0')} 
-              label="Completed" 
-            />
+            {quickStats.map((stat, i) => {
+              const Icon = stat.icon;
+              return (
+                <div key={i} className="bg-white rounded-2xl shadow-sm p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`w-8 h-8 rounded-full ${stat.iconBg} flex items-center justify-center`}>
+                      <Icon className={`w-4 h-4 ${stat.iconColor}`} />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-[#1F2937]">{stat.value}</div>
+                  <p className="text-sm text-[#6B7280] mt-1">{stat.label}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -489,8 +437,8 @@ const SellerAnalytics = () => {
       {/* Second Row */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Order Status Donut Chart */}
-        <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Order Status</h3>
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Order Status</h3>
           {analyticsData.statusBreakdown.length > 0 ? (
             <>
               <div className="h-48 flex items-center justify-center">
@@ -512,7 +460,7 @@ const SellerAnalytics = () => {
                     </Pie>
                     <Tooltip 
                       contentStyle={{ 
-                        borderRadius: 12, 
+                        borderRadius: 16, 
                         border: 'none', 
                         boxShadow: '0 4px 20px rgba(0,0,0,0.1)', 
                         fontSize: 12,
@@ -524,58 +472,64 @@ const SellerAnalytics = () => {
               </div>
               <div className="grid grid-cols-2 gap-2 mt-4">
                 {analyticsData.statusBreakdown.map((item) => (
-                  <div key={item.name} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
+                  <div key={item.name} className="flex items-center gap-2 p-2 bg-gray-50 rounded-xl">
                     <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                    <span className="text-xs text-slate-600">{item.name}</span>
-                    <span className="text-xs font-bold text-slate-800 ml-auto">{item.value}</span>
+                    <span className="text-xs text-[#6B7280]">{item.name}</span>
+                    <span className="text-xs font-bold text-[#1F2937] ml-auto">{item.value}</span>
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
-              No orders yet
+            <div className="h-48 flex items-center justify-center text-gray-300 text-sm">
+              <div className="text-center">
+                <ShoppingCart className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm text-gray-400">No orders yet</p>
+              </div>
             </div>
           )}
         </div>
 
         {/* Top Products */}
-        <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Top Products</h3>
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Top Products</h3>
           {analyticsData.topProducts.length > 0 ? (
             <div className="space-y-3">
               {analyticsData.topProducts.map((product, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
+                <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div className="w-8 h-8 rounded-full bg-[#FF7F00]/10 flex items-center justify-center text-xs font-bold text-[#FF7F00]">
                     {i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800 truncate">{product.name}</p>
-                    <p className="text-xs text-slate-500">{product.sold} sold</p>
+                    <p className="text-sm font-medium text-[#1F2937] truncate">{product.name}</p>
+                    <p className="text-xs text-[#6B7280]">{product.sold} sold</p>
                   </div>
-                  <span className="text-sm font-bold text-slate-800">{formatAmountOnly(product.revenue)}</span>
+                  <span className="text-sm font-bold text-[#1F2937]">{formatAmountOnly(product.revenue)}</span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
-              No sales yet
+            <div className="h-48 flex items-center justify-center">
+              <div className="text-center">
+                <Package className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm text-gray-400">No sales yet</p>
+              </div>
             </div>
           )}
         </div>
 
         {/* Revenue by Day */}
-        <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Revenue by Day</h3>
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Revenue by Day</h3>
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analyticsData.dayOfWeekData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="day" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} width={35} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="day" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} width={35} />
                 <Tooltip 
                   contentStyle={{ 
-                    borderRadius: 12, 
+                    borderRadius: 16, 
                     border: 'none', 
                     boxShadow: '0 4px 20px rgba(0,0,0,0.1)', 
                     fontSize: 12,
@@ -583,7 +537,7 @@ const SellerAnalytics = () => {
                   }}
                   formatter={(value: number) => [formatAmountOnly(value), 'Revenue']}
                 />
-                <Bar dataKey="revenue" fill="#3B82F6" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="revenue" fill="#3B82F6" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

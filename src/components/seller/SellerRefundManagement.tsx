@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSellerContext } from '@/contexts/SellerContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
-import { RotateCcw, Check, X, Loader2, Clock } from 'lucide-react';
+import { RotateCcw, Check, X, Loader2, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -21,12 +21,6 @@ interface RefundRequest {
   resolved_at: string | null;
   order?: { product?: { name: string } };
 }
-
-const statusColors: Record<string, string> = {
-  pending: 'bg-amber-50 text-amber-700',
-  approved: 'bg-emerald-50 text-emerald-700',
-  rejected: 'bg-red-50 text-red-700',
-};
 
 const SellerRefundManagement = () => {
   const { profile } = useSellerContext();
@@ -53,60 +47,79 @@ const SellerRefundManagement = () => {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-4">
         <div className="grid grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-lg" />)}
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
         </div>
-        <Skeleton className="h-64 rounded-lg" />
+        <Skeleton className="h-64 rounded-2xl" />
       </div>
     );
   }
 
+  const statCards = [
+    { title: 'Total Requests', value: refunds.length, icon: RotateCcw, iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+    { title: 'Pending', value: pendingCount, icon: Clock, iconBg: 'bg-amber-100', iconColor: 'text-amber-600', valueColor: 'text-amber-600' },
+    { title: 'Total Refunded', value: formatAmountOnly(totalRefunded), icon: AlertCircle, iconBg: 'bg-red-100', iconColor: 'text-red-600', valueColor: 'text-red-600' },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-[#1F2937]">Refund Management</h2>
+        <p className="text-sm text-[#6B7280]">Track and manage refund requests</p>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border rounded-lg p-6">
-          <p className="text-sm text-slate-500">Total Requests</p>
-          <p className="text-3xl font-bold text-slate-900 mt-1">{refunds.length}</p>
-        </div>
-        <div className="bg-white border rounded-lg p-6">
-          <p className="text-sm text-slate-500">Pending</p>
-          <p className="text-3xl font-bold text-amber-600 mt-1">{pendingCount}</p>
-        </div>
-        <div className="bg-white border rounded-lg p-6">
-          <p className="text-sm text-slate-500">Total Refunded</p>
-          <p className="text-3xl font-bold text-red-600 mt-1">{formatAmountOnly(totalRefunded)}</p>
-        </div>
+        {statCards.map((card, i) => {
+          const Icon = card.icon;
+          return (
+            <div key={i} className="bg-white rounded-2xl shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-10 h-10 rounded-full ${card.iconBg} flex items-center justify-center`}>
+                  <Icon className={`w-5 h-5 ${card.iconColor}`} />
+                </div>
+                <span className="text-sm text-[#6B7280]">{card.title}</span>
+              </div>
+              <div className={`text-3xl font-bold ${card.valueColor || 'text-[#1F2937]'}`}>{card.value}</div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Refunds List */}
-      <div className="bg-white border rounded-lg">
-        <div className="p-4 border-b">
-          <h3 className="font-semibold text-slate-900">Refund Requests</h3>
+      <div className="bg-white rounded-2xl shadow-sm">
+        <div className="p-6 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-[#1F2937]">Refund Requests</h3>
         </div>
         {refunds.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
-            <RotateCcw className="h-10 w-10 mx-auto mb-2 text-slate-200" />
-            <p>No refund requests</p>
+          <div className="p-12 text-center">
+            <RotateCcw className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+            <p className="text-sm text-gray-400">No refund requests</p>
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y divide-gray-100">
             {refunds.map(r => (
               <div key={r.id} className="p-4 flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
-                  {r.status === 'pending' ? <Clock className="h-4 w-4 text-amber-500" /> :
-                   r.status === 'approved' ? <Check className="h-4 w-4 text-emerald-500" /> :
-                   <X className="h-4 w-4 text-red-500" />}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  r.status === 'pending' ? 'bg-amber-100' : r.status === 'approved' ? 'bg-emerald-100' : 'bg-red-100'
+                }`}>
+                  {r.status === 'pending' ? <Clock className="h-5 w-5 text-amber-600" /> :
+                   r.status === 'approved' ? <Check className="h-5 w-5 text-emerald-600" /> :
+                   <X className="h-5 w-5 text-red-600" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">{(r as any).order?.product?.name || 'Order #' + r.order_id.slice(0, 8)}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{r.reason}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{format(new Date(r.created_at), 'MMM d, yyyy')}</p>
+                  <p className="text-sm font-medium text-[#1F2937] truncate">{(r as any).order?.product?.name || 'Order #' + r.order_id.slice(0, 8)}</p>
+                  <p className="text-xs text-[#6B7280] mt-0.5">{r.reason}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{format(new Date(r.created_at), 'MMM d, yyyy')}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-slate-800">{formatAmountOnly(r.amount)}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded ${statusColors[r.status] || 'bg-slate-50 text-slate-600'}`}>
+                  <p className="text-sm font-semibold text-[#1F2937]">{formatAmountOnly(r.amount)}</p>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    r.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                    r.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
                     {r.status}
                   </span>
                 </div>
