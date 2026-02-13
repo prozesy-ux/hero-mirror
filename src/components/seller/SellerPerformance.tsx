@@ -81,7 +81,7 @@ const SellerPerformance = () => {
 
   if (loading || contextLoading) {
     return (
-      <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6 dashboard-inter">
         <Skeleton className="h-40 rounded-2xl" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
@@ -98,7 +98,7 @@ const SellerPerformance = () => {
   ];
 
   return (
-    <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6 dashboard-inter">
       <div>
         <h2 className="text-2xl font-bold text-[#1F2937]">Performance</h2>
         <p className="text-sm text-[#6B7280]">Monitor your store health and metrics</p>

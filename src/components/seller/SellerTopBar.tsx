@@ -151,10 +151,9 @@ const SellerTopBar = () => {
 
   return (
     <header 
-      className={`fixed top-0 right-0 h-16 bg-[#f1f5f9] border-b border-black/10 z-40 transition-all duration-300 hidden lg:flex items-center justify-between px-6 ${
+      className={`fixed top-0 right-0 h-16 bg-[#f1f5f9] border-b border-black/10 z-40 transition-all duration-300 hidden lg:flex items-center justify-between px-6 dashboard-inter ${
         isCollapsed ? 'left-[72px]' : 'left-52'
       }`}
-      style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
     >
       {/* Left Section - Search */}
       <div className="flex items-center gap-6">

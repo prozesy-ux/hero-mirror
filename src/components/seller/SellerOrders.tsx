@@ -301,7 +301,7 @@ const SellerOrders = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6 dashboard-inter">
         <Skeleton className="h-8 w-48 mb-6 rounded-2xl" />
         <div className="space-y-4">
           {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
@@ -318,7 +318,7 @@ const SellerOrders = () => {
   ];
 
   return (
-    <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6 seller-dashboard" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6 dashboard-inter">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

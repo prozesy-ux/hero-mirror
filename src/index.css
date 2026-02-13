@@ -615,3 +615,9 @@
     box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
   }
 }
+
+/* Dashboard Inter Font Override - forces Inter on all dashboard descendants */
+.dashboard-inter,
+.dashboard-inter * {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}

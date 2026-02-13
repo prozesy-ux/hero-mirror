@@ -388,7 +388,7 @@ const SellerSettings = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 max-w-3xl seller-dashboard">
+      <div className="space-y-6 max-w-3xl dashboard-inter">
         <Skeleton className="h-32 rounded-lg border-2 border-black" />
         <Skeleton className="h-64 rounded-lg border-2 border-black" />
       </div>
@@ -396,7 +396,7 @@ const SellerSettings = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-3 sm:px-0 pb-24 space-y-4 seller-dashboard">
+    <div className="max-w-2xl mx-auto px-3 sm:px-0 pb-24 space-y-4 dashboard-inter">
       {/* Hidden file inputs */}
       <input
         ref={logoInputRef}
