@@ -57,7 +57,7 @@ const SellerServiceBookings = () => {
   };
 
   if (loading) return (
-    <div className="bg-[#FCFCFC] min-h-screen p-8 space-y-4">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-4">
       {[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
     </div>
   );
@@ -65,7 +65,7 @@ const SellerServiceBookings = () => {
   const filtered = getFilteredBookings();
 
   return (
-    <div className="bg-[#FCFCFC] min-h-screen p-8 space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-[#1F2937]">Service Bookings</h2>

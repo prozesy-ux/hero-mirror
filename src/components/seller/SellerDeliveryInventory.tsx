@@ -235,7 +235,7 @@ const SellerDeliveryInventory = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#FCFCFC] min-h-screen p-8 space-y-6">
+      <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid grid-cols-4 gap-4">
           {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
@@ -246,7 +246,7 @@ const SellerDeliveryInventory = () => {
   }
 
   return (
-    <div className="bg-[#FCFCFC] min-h-screen p-8 space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-black">Auto-Delivery Manager</h1>

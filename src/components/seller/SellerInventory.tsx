@@ -110,7 +110,7 @@ const SellerInventory = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#FCFCFC] min-h-screen p-8 space-y-6">
+      <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-2xl" />
@@ -122,7 +122,7 @@ const SellerInventory = () => {
   }
 
   return (
-    <div className="bg-[#FCFCFC] min-h-screen p-8 space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
         <div className="flex items-center gap-2">
