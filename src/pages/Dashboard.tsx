@@ -88,7 +88,7 @@ const DashboardLayout = () => {
   const { isCollapsed } = useSidebarContext();
 
   return (
-    <div className="min-h-screen bg-[#F3EAE0] overflow-x-hidden">
+    <div className="min-h-screen bg-[#F3EAE0] overflow-x-hidden" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* Mobile Header removed - elements moved to bottom nav */}
       
       {/* Desktop Sidebar */}

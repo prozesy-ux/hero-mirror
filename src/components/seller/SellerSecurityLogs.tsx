@@ -44,7 +44,7 @@ const SellerSecurityLogs = () => {
   }
 
   return (
-    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       <div>
         <h2 className="text-2xl font-bold text-[#1F2937]">Security & Login History</h2>
         <p className="text-sm text-[#6B7280]">Recent login activity for your account</p>
