@@ -1,38 +1,62 @@
 
 
-## Update Dashboard Background to #FCFCFC and Unify Font to Inter
+## Apply "Inter" Font to All Dashboard Sections
 
-### What Changes
-1. Replace ALL page background colors (`#f1f5f9` and `#F3EAE0`) with `#FCFCFC` across both Buyer and Seller dashboard sections
-2. Ensure the "Inter" font is used consistently in all dashboard content areas (sidebar is NOT touched)
+### Problem
+The uploaded HTML design uses `"Inter"` as the primary font. Currently, only the `EzMartDashboardGrid` component explicitly sets Inter. All other dashboard pages inherit "DM Sans" from the global CSS (`src/index.css`), so the font doesn't match the design.
 
-### Files Modified (4 files)
+### Solution
+Add `fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'` to every dashboard section wrapper. The sidebar is NOT touched.
 
-**File 1: `src/components/dashboard/EzMartDashboardGrid.tsx`**
-- Change `fontFamily` from `"Inter", system-ui, sans-serif` -- already Inter, confirmed correct
-- No background change needed here (grid itself has no page bg)
+### Files to Update (24 files)
 
-**File 2: `src/components/dashboard/BuyerDashboardHome.tsx`**
-- Line 408: Loading skeleton bg `#f1f5f9` to `#FCFCFC`
-- Line 439: Main page bg `#f1f5f9` to `#FCFCFC`
+**Page Layouts (2 files)**
+1. `src/pages/Dashboard.tsx` - Add Inter font to main wrapper
+2. `src/pages/Seller.tsx` - Add Inter font to main wrapper
 
-**File 3: `src/components/seller/SellerDashboard.tsx`**
-- Line 285: Loading skeleton bg `#f1f5f9` to `#FCFCFC`
-- Line 301: Main page bg `#f1f5f9` to `#FCFCFC`
+**Top Bars (2 files)**
+3. `src/components/dashboard/DashboardTopBar.tsx` - Add Inter font
+4. `src/components/seller/SellerTopBar.tsx` - Add Inter font
 
-**File 4: `src/components/dashboard/BuyerAnalytics.tsx`**
-- Line 259: Loading bg `#F3EAE0` to `#FCFCFC`
-- Line 269: Main page bg `#F3EAE0` to `#FCFCFC`
+**Dashboard Home Pages (2 files)**
+5. `src/components/dashboard/BuyerDashboardHome.tsx` - Add Inter font to outer div
+6. `src/components/seller/SellerDashboard.tsx` - Add Inter font to outer div
 
-**File 5: `src/components/seller/SellerAnalytics.tsx`**
-- Line 360: Loading bg `#F3EAE0` to `#FCFCFC`
-- Line 377: Main page bg `#F3EAE0` to `#FCFCFC`
+**Analytics (2 files)**
+7. `src/components/dashboard/BuyerAnalytics.tsx` - Add Inter font
+8. `src/components/seller/SellerAnalytics.tsx` - Add Inter font
 
-### Font
-The HTML reference uses "Inter" as the primary font. The `EzMartDashboardGrid` already uses `fontFamily: '"Inter", system-ui, sans-serif'` -- this is correct and stays. The BuyerAnalytics and SellerAnalytics pages will inherit this font since they use the same grid component. No font changes needed -- Inter is already applied.
+**Seller Sub-Sections (16 files)**
+9. `src/components/seller/SellerOrders.tsx`
+10. `src/components/seller/SellerInventory.tsx`
+11. `src/components/seller/SellerPerformance.tsx`
+12. `src/components/seller/SellerReports.tsx`
+13. `src/components/seller/SellerMarketing.tsx`
+14. `src/components/seller/SellerCustomers.tsx`
+15. `src/components/seller/SellerSupport.tsx`
+16. `src/components/seller/SellerSecurityLogs.tsx`
+17. `src/components/seller/SellerNotificationCenter.tsx`
+18. `src/components/seller/SellerProductAnalytics.tsx`
+19. `src/components/seller/SellerServiceBookings.tsx`
+20. `src/components/seller/SellerReviewsManagement.tsx`
+21. `src/components/seller/SellerFeatureRequests.tsx`
+22. `src/components/seller/SellerRefundManagement.tsx`
+23. `src/components/seller/SellerFlashSales.tsx`
+24. `src/components/seller/SellerDeliveryInventory.tsx`
 
-### Summary
-- Background: `#f1f5f9` / `#F3EAE0` replaced with `#FCFCFC` everywhere
-- Font: Already "Inter" -- no changes needed
-- Sidebar: NOT touched
-- Data logic: NOT touched
+### What Changes Per File
+Each file's outermost dashboard `div` gets the style attribute updated to include:
+```
+fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+```
+
+This matches exactly what the HTML design uses:
+```css
+font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+```
+
+### What Stays the Same
+- Background color (`#F3EAE0`) -- stays as is
+- Sidebar/left panel -- NOT touched
+- All data logic, contexts, BFF endpoints -- NOT touched
+- Card styles, colors, layout -- NOT touched
