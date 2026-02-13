@@ -71,7 +71,7 @@ const SellerProductAnalytics = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#f1f5f9] min-h-screen p-8 flex items-center justify-center">
+      <div className="bg-[#f1f5f9] min-h-screen p-8 flex items-center justify-center" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         <Loader2 className="h-8 w-8 animate-spin text-[#FF7F00]" />
       </div>
     );
@@ -79,7 +79,7 @@ const SellerProductAnalytics = () => {
 
   if (products.length === 0) {
     return (
-      <div className="bg-[#f1f5f9] min-h-screen p-8">
+      <div className="bg-[#f1f5f9] min-h-screen p-8" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
           <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-[#6B7280]">No products to analyze</p>

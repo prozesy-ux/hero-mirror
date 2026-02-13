@@ -183,7 +183,7 @@ const SellerMarketing = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6">
+      <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-2xl" />
