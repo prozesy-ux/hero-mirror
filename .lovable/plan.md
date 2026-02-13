@@ -1,19 +1,60 @@
 
 
-## Fix: Floating Label Overlapping Placeholder in Digital Wallet Input Fields
+## Add Recent Orders Table and Recent Activity Section to Both Dashboards
 
-### Problem
-In the "Add Payment Account" modal, the digital wallet number input (e.g., Nagad Number) shows both the floating label text AND the placeholder text ("01XXXXXXXXX") at the same time, causing them to overlap. This happens because the input uses `placeholder={selectedDigitalWallet.placeholder}` instead of `placeholder=" "` which the floating label CSS pattern requires.
+### What Gets Added
 
-### Root Cause
-The floating label pattern uses CSS `peer-placeholder-shown` to detect if the input is empty. When a real placeholder like "01XXXXXXXXX" is set, the browser treats the field as "placeholder shown" even though text is visible, so the label drops down into the input area and overlaps with the placeholder.
+A new row below the existing analytics grid on **both** the Seller Dashboard and Buyer Dashboard, containing two side-by-side panels matching the screenshot design:
 
-### Fix (2 files)
-Change the digital wallet input in both **BuyerWallet.tsx** and **SellerWallet.tsx** to use `placeholder=" "` (like all other inputs in the form), so the floating label works correctly. The placeholder hint ("01XXXXXXXXX") will be removed since the floating label already tells the user what to enter.
+**Left panel (75% width): Recent Orders Table**
+- Header with "Recent Orders" title, search input ("Search product, customer"), and orange "All Categories" dropdown filter
+- Table columns: No, Order ID, Customer (with avatar), Product (with icon), Qty, Total, Status (colored badge)
+- Shows the 5 most recent orders
+- Status badges: Shipped (blue), Processing (gray), Delivered (green), Pending (orange)
 
-**Files to change:**
-1. `src/components/dashboard/BuyerWallet.tsx` (line 1620): Change `placeholder={selectedDigitalWallet.placeholder}` to `placeholder=" "`
-2. `src/components/seller/SellerWallet.tsx` (line 1389): Change `placeholder={selectedDigitalWallet.placeholder}` to `placeholder=" "`
+**Right panel (25% width): Recent Activity**
+- Header with "Recent Activity" title and "..." menu
+- Activity items with colored icons, description text, and timestamp
+- Shows purchase events, price updates, reviews, and stock alerts
 
-This is a one-line fix in each file -- no other changes needed.
+### Design Specs (from screenshot)
+- White rounded cards on the beige (#F3EAE0) background
+- Orange accent color for badges and category filter button
+- Clean table with subtle row dividers
+- Avatar circles for customers, small product thumbnails
+- Activity icons in orange/amber circle backgrounds
 
+### Technical Plan
+
+**File 1: `src/components/dashboard/EzMartDashboardGrid.tsx`**
+- Add two new sub-components at the bottom of the file:
+  - `Dashboard_RecentOrders`: Table with search, category filter, and 5 order rows
+  - `Dashboard_RecentActivity`: Activity feed with icon + description + time
+- Add new props to `DashboardStatData` interface:
+  - `recentOrders`: array of `{ id, orderId, customerName, customerAvatar, productName, productIcon, qty, total, status }`
+  - `recentActivity`: array of `{ id, icon, message, time }`
+- Render both components as a new row in the main grid (3 cols + 1 col layout)
+
+**File 2: `src/components/seller/SellerDashboard.tsx`**
+- Build `recentOrders` from `filteredOrders` (map first 5 orders with buyer info from context)
+- Build `recentActivity` from orders/products data (recent purchases, status changes)
+- Pass both arrays into `dashboardData`
+
+**File 3: `src/components/dashboard/BuyerDashboardHome.tsx`**
+- Build `recentOrders` from `filteredOrders` (map first 5 orders with seller info)
+- Build `recentActivity` from orders data (recent purchases, reviews)
+- Pass both arrays into `dashboardData`
+
+### Layout Structure
+```text
++------------------------------------------+
+|  Existing EzMartDashboardGrid content    |
+|  (stat cards, charts, funnels)           |
++------------------------------------------+
+|  Recent Orders (3 cols)  | Activity (1c) |
+|  - Search + Filter       | - Feed items  |
+|  - Table with 5 rows     |               |
++------------------------------------------+
+```
+
+This adds the section inline within the existing grid component, keeping both dashboards visually identical in structure while showing context-appropriate data (seller sees buyer names, buyer sees seller/store names).
