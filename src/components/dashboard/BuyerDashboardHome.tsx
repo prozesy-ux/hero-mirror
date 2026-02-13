@@ -405,16 +405,16 @@ const BuyerDashboardHome = () => {
 
   if (loading) {
     return (
-      <div className="space-y-5" style={{ backgroundColor: '#F3EAE0', padding: '32px' }}>
+      <div className="space-y-5" style={{ backgroundColor: '#f1f5f9', padding: '32px' }}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-2xl" />
+            <Skeleton key={i} className="h-32 rounded" />
           ))}
         </div>
         <div className="grid grid-cols-4 gap-5">
-          <Skeleton className="h-72 rounded-2xl col-span-2" />
-          <Skeleton className="h-72 rounded-2xl" />
-          <Skeleton className="h-72 rounded-2xl" />
+          <Skeleton className="h-72 rounded col-span-2" />
+          <Skeleton className="h-72 rounded" />
+          <Skeleton className="h-72 rounded" />
         </div>
       </div>
     );
@@ -436,7 +436,7 @@ const BuyerDashboardHome = () => {
   }
 
   return (
-    <div className="space-y-5" style={{ backgroundColor: '#F3EAE0', minHeight: '100vh', padding: '32px' }}>
+    <div className="space-y-5" style={{ backgroundColor: '#f1f5f9', minHeight: '100vh', padding: '32px' }}>
       {sessionExpiredLocal && !isReconnecting && <SessionExpiredBanner onDismiss={() => setSessionExpiredLocal(false)} />}
       
       {isReconnecting && (
@@ -458,10 +458,10 @@ const BuyerDashboardHome = () => {
       {/* Header with greeting, date filter, export */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#1F2937]">
+          <h1 className="text-2xl font-bold text-[#0f172a]">
             Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ''}! 👋
           </h1>
-          <p className="text-[#6B7280] mt-1">Here's your purchase activity overview.</p>
+          <p className="text-[#64748b] mt-1">Here's your purchase activity overview.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -505,7 +505,7 @@ const BuyerDashboardHome = () => {
             </SelectContent>
           </Select>
 
-          <Button onClick={handleExport} className="bg-[#FF7F00] text-white hover:bg-[#FF7F00]/90 rounded-lg h-9">
+          <Button onClick={handleExport} className="bg-[#3b82f6] text-white hover:bg-[#3b82f6]/90 rounded-lg h-9">
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
