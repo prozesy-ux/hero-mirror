@@ -332,6 +332,37 @@ const BuyerDashboardHome = () => {
     toast.success('Report exported!');
   };
 
+  // Recent orders for table
+  const recentOrders = useMemo(() => {
+    return filteredOrders.slice(0, 5).map((order) => ({
+      id: order.id,
+      orderId: order.id.slice(0, 8).toUpperCase(),
+      customerName: order.seller?.store_name || 'Store',
+      customerAvatar: undefined,
+      productName: order.product?.name || 'Unknown Product',
+      productIcon: order.product?.icon_url || undefined,
+      qty: 1,
+      total: formatAmountOnly(order.amount),
+      status: order.status,
+    }));
+  }, [filteredOrders, formatAmountOnly]);
+
+  // Recent activity feed
+  const recentActivity = useMemo(() => {
+    const activities: Array<{ id: string; icon: string; message: string; time: string; color?: string }> = [];
+    filteredOrders.slice(0, 6).forEach(order => {
+      const productName = order.product?.name || 'a product';
+      if (order.status === 'completed' || order.status === 'delivered') {
+        activities.push({ id: `act-${order.id}`, icon: 'purchase', message: `Your order for "${productName}" was ${order.status}`, time: format(new Date(order.created_at), 'MMM d, h:mm a'), color: '#ecfdf5' });
+      } else if (order.status === 'pending') {
+        activities.push({ id: `act-${order.id}`, icon: 'order', message: `Order placed for "${productName}"`, time: format(new Date(order.created_at), 'MMM d, h:mm a'), color: '#fff7ed' });
+      } else if (order.status === 'cancelled' || order.status === 'refunded') {
+        activities.push({ id: `act-${order.id}`, icon: 'stock', message: `Order for "${productName}" was ${order.status}`, time: format(new Date(order.created_at), 'MMM d, h:mm a'), color: '#fef2f2' });
+      }
+    });
+    return activities.slice(0, 5);
+  }, [filteredOrders]);
+
   const dashboardData: DashboardStatData = useMemo(() => ({
     totalSales: stats.totalSpent,
     totalSalesChange: weeklyChanges.salesChange,
@@ -339,7 +370,6 @@ const BuyerDashboardHome = () => {
     totalOrdersChange: weeklyChanges.ordersChange,
     totalVisitors: data?.wishlistCount || 0,
     totalVisitorsChange: 0,
-    // Override 3rd card to show Wallet Balance
     thirdCardLabel: 'Wallet Balance',
     thirdCardValue: formatAmountOnly(wallet.balance),
     thirdCardIcon: 'dollar',
@@ -356,7 +386,6 @@ const BuyerDashboardHome = () => {
     ],
     conversionFunnel,
     trafficSources: (() => {
-      // Buyer spending breakdown by order status
       const total = stats.total || 1;
       return [
         { name: 'Completed', percent: Math.round((stats.completed / total) * 100), color: '#10b981' },
@@ -370,7 +399,9 @@ const BuyerDashboardHome = () => {
     monthlyTarget: monthlyMetrics.monthlyTarget,
     monthlyRevenue: monthlyMetrics.thisMonthSpent,
     monthlyTargetChange: monthlyMetrics.monthlyChange,
-  }), [wallet.balance, stats, formatAmountOnly, topCategories, conversionFunnel, dailyRevenue, monthlyMetrics, data?.wishlistCount, weeklyChanges]);
+    recentOrders,
+    recentActivity,
+  }), [wallet.balance, stats, formatAmountOnly, topCategories, conversionFunnel, dailyRevenue, monthlyMetrics, data?.wishlistCount, weeklyChanges, recentOrders, recentActivity]);
 
   if (loading) {
     return (

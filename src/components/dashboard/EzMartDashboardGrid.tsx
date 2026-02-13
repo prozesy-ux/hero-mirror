@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreHorizontal, DollarSign, ShoppingCart, User, ChevronDown } from 'lucide-react';
+import { MoreHorizontal, DollarSign, ShoppingCart, User, ChevronDown, Search, Package, Clock } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -36,6 +36,26 @@ export interface DailyRevenueItem {
   revenue: number;
 }
 
+export interface RecentOrderItem {
+  id: string;
+  orderId: string;
+  customerName: string;
+  customerAvatar?: string;
+  productName: string;
+  productIcon?: string;
+  qty: number;
+  total: string;
+  status: string;
+}
+
+export interface RecentActivityItem {
+  id: string;
+  icon: string;
+  message: string;
+  time: string;
+  color?: string;
+}
+
 export interface DashboardStatData {
   totalSales: number;
   totalSalesChange: number;
@@ -43,7 +63,6 @@ export interface DashboardStatData {
   totalOrdersChange: number;
   totalVisitors: number;
   totalVisitorsChange: number;
-  // Optional custom 3rd stat card
   thirdCardLabel?: string;
   thirdCardValue?: string;
   thirdCardIcon?: 'dollar' | 'cart' | 'user';
@@ -54,11 +73,12 @@ export interface DashboardStatData {
   conversionFunnel: ConversionItem[];
   trafficSources: TrafficItem[];
   formatAmount: (v: number) => string;
-  // Real data for charts
   dailyRevenue?: DailyRevenueItem[];
   monthlyTarget?: number;
   monthlyRevenue?: number;
   monthlyTargetChange?: number;
+  recentOrders?: RecentOrderItem[];
+  recentActivity?: RecentActivityItem[];
 }
 
 // ── Stat Card (matches HTML exactly) ───────────────────────────────────────
@@ -608,9 +628,201 @@ const Dashboard_TrafficSources = ({
   </div>
 );
 
+// ── Recent Orders Table ────────────────────────────────────────────────────
+const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+  completed: { bg: '#ecfdf5', text: '#10b981' },
+  delivered: { bg: '#eff6ff', text: '#3b82f6' },
+  shipped: { bg: '#eff6ff', text: '#3b82f6' },
+  pending: { bg: '#fff7ed', text: '#f59e0b' },
+  processing: { bg: '#f3f4f6', text: '#6b7280' },
+  cancelled: { bg: '#fef2f2', text: '#ef4444' },
+  refunded: { bg: '#fef2f2', text: '#ef4444' },
+};
+
+const Dashboard_RecentOrders = ({ orders }: { orders: RecentOrderItem[] }) => {
+  const [search, setSearch] = useState('');
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+
+  const categories = ['All Categories', ...Array.from(new Set(orders.map(o => o.status.charAt(0).toUpperCase() + o.status.slice(1))))];
+
+  const filtered = orders.filter(o => {
+    const matchesSearch = !search || o.customerName.toLowerCase().includes(search.toLowerCase()) || o.productName.toLowerCase().includes(search.toLowerCase()) || o.orderId.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = selectedCategory === 'All Categories' || o.status.toLowerCase() === selectedCategory.toLowerCase();
+    return matchesSearch && matchesCategory;
+  }).slice(0, 5);
+
+  return (
+    <div style={{
+      background: '#ffffff', borderRadius: '16px', padding: '24px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)', gridColumn: 'span 3',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Recent Orders</div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
+            <Search style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#9ca3af' }} />
+            <input
+              type="text"
+              placeholder="Search product, customer"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                paddingLeft: '32px', paddingRight: '12px', height: '36px',
+                border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px',
+                outline: 'none', width: '200px', color: '#374151', background: '#fff',
+              }}
+            />
+          </div>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setCategoryOpen(!categoryOpen)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 14px', backgroundColor: '#ff7f00', color: 'white',
+                border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: 500,
+              }}
+            >
+              {selectedCategory}
+              <ChevronDown style={{ width: 14, height: 14, transform: categoryOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+            {categoryOpen && (
+              <div style={{
+                position: 'absolute', right: 0, top: '100%', marginTop: '4px',
+                background: 'white', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                border: '1px solid #e5e7eb', zIndex: 50, minWidth: '140px', overflow: 'hidden',
+              }}>
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => { setSelectedCategory(cat); setCategoryOpen(false); }}
+                    style={{
+                      display: 'block', width: '100%', padding: '8px 14px', fontSize: '12px',
+                      textAlign: 'left', border: 'none',
+                      background: selectedCategory === cat ? '#fff7ed' : 'white',
+                      color: selectedCategory === cat ? '#ff7f00' : '#374151',
+                      fontWeight: selectedCategory === cat ? 600 : 400, cursor: 'pointer',
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
+              {['No', 'Order ID', 'Customer', 'Product', 'Qty', 'Total', 'Status'].map(h => (
+                <th key={h} style={{ textAlign: 'left', padding: '10px 12px', fontSize: '11px', color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: '#9ca3af', fontSize: '13px' }}>No orders found</td></tr>
+            ) : filtered.map((order, idx) => {
+              const statusStyle = STATUS_COLORS[order.status.toLowerCase()] || STATUS_COLORS.pending;
+              return (
+                <tr key={order.id} style={{ borderBottom: '1px solid #f9fafb' }}>
+                  <td style={{ padding: '12px', color: '#6b7280' }}>{idx + 1}</td>
+                  <td style={{ padding: '12px', fontWeight: 500, color: '#1f2937' }}>#{order.orderId}</td>
+                  <td style={{ padding: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{
+                        width: '28px', height: '28px', borderRadius: '50%',
+                        background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '11px', fontWeight: 600, color: '#6b7280', overflow: 'hidden', flexShrink: 0,
+                      }}>
+                        {order.customerAvatar ? <img src={order.customerAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : order.customerName.charAt(0).toUpperCase()}
+                      </div>
+                      <span style={{ color: '#374151', fontSize: '12px' }}>{order.customerName}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{
+                        width: '28px', height: '28px', borderRadius: '6px',
+                        background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>
+                        {order.productIcon ? <img src={order.productIcon} alt="" style={{ width: '20px', height: '20px', objectFit: 'cover', borderRadius: '4px' }} /> : <Package style={{ width: 14, height: 14, color: '#ff7f00' }} />}
+                      </div>
+                      <span style={{ color: '#374151', fontSize: '12px' }}>{order.productName}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '12px', color: '#6b7280' }}>{order.qty}</td>
+                  <td style={{ padding: '12px', fontWeight: 600, color: '#1f2937' }}>{order.total}</td>
+                  <td style={{ padding: '12px' }}>
+                    <span style={{
+                      padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 500,
+                      background: statusStyle.bg, color: statusStyle.text,
+                    }}>
+                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ── Recent Activity Feed ───────────────────────────────────────────────────
+const ACTIVITY_ICONS: Record<string, string> = {
+  purchase: '🛒',
+  price: '💰',
+  review: '⭐',
+  stock: '📦',
+  order: '📋',
+  delivery: '🚚',
+};
+
+const Dashboard_RecentActivity = ({ activities }: { activities: RecentActivityItem[] }) => (
+  <div style={{
+    background: '#ffffff', borderRadius: '16px', padding: '24px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)', gridColumn: 'span 1',
+    display: 'flex', flexDirection: 'column',
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>Recent Activity</div>
+      <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
+    </div>
+
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {activities.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '24px', color: '#9ca3af', fontSize: '13px' }}>No recent activity</div>
+      ) : activities.map(a => (
+        <div key={a.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: a.color || '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '16px', flexShrink: 0,
+          }}>
+            {ACTIVITY_ICONS[a.icon] || '📌'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '12px', color: '#374151', lineHeight: 1.4 }}>{a.message}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+              <Clock style={{ width: 10, height: 10, color: '#9ca3af' }} />
+              <span style={{ fontSize: '10px', color: '#9ca3af' }}>{a.time}</span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 // ── Main Grid ──────────────────────────────────────────────────────────────
 const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => {
-  // Default daily revenue if not provided
   const defaultDaily: DailyRevenueItem[] = Array.from({ length: 8 }, (_, i) => ({
     date: format(subDays(new Date(), 7 - i), 'dd MMM'),
     revenue: 0,
@@ -625,7 +837,7 @@ const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => {
     <div style={{
       display: 'grid',
       gridTemplateColumns: 'repeat(4, 1fr)',
-      gridTemplateRows: 'auto auto auto',
+      gridTemplateRows: 'auto auto auto auto',
       gap: '24px',
       width: '100%',
       fontFamily: '"Inter", system-ui, sans-serif',
@@ -671,6 +883,14 @@ const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => {
       <Dashboard_ActiveUsers total={data.activeUsers} countries={data.activeUsersByCountry} />
       <Dashboard_ConversionRate funnel={data.conversionFunnel} />
       <Dashboard_TrafficSources sources={data.trafficSources} />
+
+      {/* Row 4: Recent Orders (3 cols) + Recent Activity (1 col) */}
+      {data.recentOrders && data.recentOrders.length > 0 && (
+        <Dashboard_RecentOrders orders={data.recentOrders} />
+      )}
+      {data.recentActivity && data.recentActivity.length > 0 && (
+        <Dashboard_RecentActivity activities={data.recentActivity} />
+      )}
     </div>
   );
 };

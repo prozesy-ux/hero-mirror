@@ -210,6 +210,38 @@ const SellerDashboard = () => {
     ];
   }, [metrics, filteredOrders]);
 
+  // Recent orders for table
+  const recentOrders = useMemo(() => {
+    return filteredOrders.slice(0, 5).map((order, idx) => ({
+      id: order.id,
+      orderId: order.id.slice(0, 8).toUpperCase(),
+      customerName: (order as any).buyer?.full_name || (order as any).buyer?.email || `Customer`,
+      customerAvatar: (order as any).buyer?.avatar_url || undefined,
+      productName: order.product?.name || 'Unknown Product',
+      productIcon: (order.product as any)?.icon_url || (order.product as any)?.thumbnail_url || undefined,
+      qty: 1,
+      total: formatAmountOnly(Number(order.seller_earning)),
+      status: order.status,
+    }));
+  }, [filteredOrders, formatAmountOnly]);
+
+  // Recent activity feed
+  const recentActivity = useMemo(() => {
+    const activities: Array<{ id: string; icon: string; message: string; time: string; color?: string }> = [];
+    // Build from recent orders
+    filteredOrders.slice(0, 6).forEach(order => {
+      const productName = order.product?.name || 'a product';
+      if (order.status === 'completed' || order.status === 'delivered') {
+        activities.push({ id: `act-${order.id}`, icon: 'purchase', message: `Order for "${productName}" was ${order.status}`, time: format(new Date(order.created_at), 'MMM d, h:mm a'), color: '#ecfdf5' });
+      } else if (order.status === 'pending') {
+        activities.push({ id: `act-${order.id}`, icon: 'order', message: `New order received for "${productName}"`, time: format(new Date(order.created_at), 'MMM d, h:mm a'), color: '#fff7ed' });
+      } else if (order.status === 'cancelled' || order.status === 'refunded') {
+        activities.push({ id: `act-${order.id}`, icon: 'stock', message: `Order for "${productName}" was ${order.status}`, time: format(new Date(order.created_at), 'MMM d, h:mm a'), color: '#fef2f2' });
+      }
+    });
+    return activities.slice(0, 5);
+  }, [filteredOrders]);
+
   const dashboardData: DashboardStatData = useMemo(() => ({
     totalSales: metrics.totalRevenue,
     totalSalesChange: metrics.revenueChange,
@@ -227,7 +259,6 @@ const SellerDashboard = () => {
     ],
     conversionFunnel,
     trafficSources: (() => {
-      // Real traffic breakdown from order statuses
       const total = filteredOrders.length || 1;
       const completed = filteredOrders.filter(o => o.status === 'completed').length;
       const delivered = filteredOrders.filter(o => o.status === 'delivered').length;
@@ -245,7 +276,9 @@ const SellerDashboard = () => {
     monthlyTarget: metrics.monthlyTarget,
     monthlyRevenue: metrics.thisMonthRevenue,
     monthlyTargetChange: metrics.monthlyTargetChange,
-  }), [metrics, formatAmountOnly, topCategories, totalCategorySales, conversionFunnel]);
+    recentOrders,
+    recentActivity,
+  }), [metrics, formatAmountOnly, topCategories, totalCategorySales, conversionFunnel, recentOrders, recentActivity]);
 
   if (loading) {
     return (
