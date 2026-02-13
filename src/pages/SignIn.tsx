@@ -72,7 +72,7 @@ const SignIn = () => {
     }
     
     // Priority 5: Default to dashboard
-    navigate("/dashboard");
+    navigate("/dashboard/marketplace");
   };
 
   // Auto-redirect after OAuth returns to /signin (no form submit happens)
