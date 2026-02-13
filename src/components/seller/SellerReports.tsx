@@ -202,7 +202,7 @@ const SellerReports = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#FCFCFC] min-h-screen p-8 space-y-6">
+      <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
         <Skeleton className="h-20 rounded-2xl" />
         <div className="grid grid-cols-2 gap-4">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-40 rounded-2xl" />)}
@@ -215,7 +215,7 @@ const SellerReports = () => {
   const currentConfig = reportConfigs.find(c => c.type === selectedReport)!;
 
   return (
-    <div className="bg-[#FCFCFC] min-h-screen p-8 space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
