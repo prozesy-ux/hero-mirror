@@ -20,9 +20,10 @@ import { DateRange } from 'react-day-picker';
 import EzMartDashboardGrid, { DashboardStatData } from '@/components/dashboard/EzMartDashboardGrid';
 
 const CATEGORY_COLORS = ['#ff7f00', '#fdba74', '#fed7aa', '#e5e7eb'];
+const COUNTRY_BAR_COLORS = ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#e5e7eb'];
 
 const SellerAnalytics = () => {
-  const { orders, products, wallet, loading } = useSellerContext();
+  const { orders, products, wallet, loading, productAnalytics, trafficAnalytics, buyerCountries } = useSellerContext();
   const { formatAmountOnly } = useCurrency();
   const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'custom'>('30d');
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -65,12 +66,30 @@ const SellerAnalytics = () => {
     });
   }, [orders, dateRange]);
 
+  // Filter product analytics by date range
+  const filteredAnalytics = useMemo(() => {
+    if (!dateRange.from || !dateRange.to) return productAnalytics;
+    return productAnalytics.filter(pa => {
+      const d = new Date(pa.date);
+      return d >= dateRange.from! && d <= dateRange.to!;
+    });
+  }, [productAnalytics, dateRange]);
+
+  // Filter traffic analytics by date range
+  const filteredTraffic = useMemo(() => {
+    if (!dateRange.from || !dateRange.to) return trafficAnalytics;
+    return trafficAnalytics.filter(ta => {
+      const d = new Date(ta.date);
+      return d >= dateRange.from! && d <= dateRange.to!;
+    });
+  }, [trafficAnalytics, dateRange]);
+
   const dashboardData = useMemo((): DashboardStatData => {
     const now = new Date();
     const weekAgo = subDays(now, 7);
     const twoWeeksAgo = subDays(now, 14);
 
-    // Current week vs last week
+    // Current week vs last week orders
     const thisWeekOrders = orders.filter(o => new Date(o.created_at) >= weekAgo);
     const lastWeekOrders = orders.filter(o => {
       const d = new Date(o.created_at);
@@ -84,6 +103,33 @@ const SellerAnalytics = () => {
     const ordersChange = lastWeekOrders.length > 0
       ? ((thisWeekOrders.length - lastWeekOrders.length) / lastWeekOrders.length) * 100
       : (thisWeekOrders.length > 0 ? 100 : 0);
+
+    // --- Real analytics data ---
+    const totalViews = filteredAnalytics.reduce((s, pa) => s + (pa.views || 0), 0);
+    const totalClicks = filteredAnalytics.reduce((s, pa) => s + (pa.clicks || 0), 0);
+
+    // Views week-over-week change
+    const thisWeekAnalytics = productAnalytics.filter(pa => new Date(pa.date) >= weekAgo);
+    const lastWeekAnalytics = productAnalytics.filter(pa => {
+      const d = new Date(pa.date);
+      return d >= twoWeeksAgo && d < weekAgo;
+    });
+    const thisWeekViews = thisWeekAnalytics.reduce((s, pa) => s + (pa.views || 0), 0);
+    const lastWeekViews = lastWeekAnalytics.reduce((s, pa) => s + (pa.views || 0), 0);
+    const viewsChange = lastWeekViews > 0
+      ? Math.round(((thisWeekViews - lastWeekViews) / lastWeekViews) * 100)
+      : (thisWeekViews > 0 ? 100 : 0);
+
+    // Unique visitors from traffic analytics
+    const totalUniqueVisitors = filteredTraffic.reduce((s, ta) => s + (ta.unique_visitors || 0), 0);
+    const totalPageViews = filteredTraffic.reduce((s, ta) => s + (ta.page_views || 0), 0);
+
+    // Traffic source breakdown from seller_traffic_analytics
+    const sourceMap: Record<string, number> = {};
+    filteredTraffic.forEach(ta => {
+      const src = ta.source || 'Direct';
+      sourceMap[src] = (sourceMap[src] || 0) + (ta.page_views || 0);
+    });
 
     // Unique buyers
     const uniqueBuyers = new Set(filteredOrders.map(o => o.buyer_id)).size;
@@ -142,25 +188,31 @@ const SellerAnalytics = () => {
       ? ((monthlyRevenue - prevMonthRevenue) / prevMonthRevenue) * 100
       : (monthlyRevenue > 0 ? 100 : 0);
 
-    // Conversion funnel
-    const totalViews = products.reduce((s, p) => s + ((p as any).view_count || 0), 0);
+    // Conversion funnel with real data
     const totalOrders = filteredOrders.length;
     const pendingOrders = filteredOrders.filter(o => o.status === 'pending').length;
     const completedOrders = filteredOrders.filter(o => o.status === 'completed' || o.status === 'delivered').length;
     const cancelledOrders = filteredOrders.filter(o => o.status === 'cancelled' || o.status === 'refunded').length;
 
-    const maxFunnel = Math.max(totalViews, totalOrders, 1);
+    const maxFunnel = Math.max(totalViews, totalClicks, totalOrders, 1);
+    const viewsBadge = viewsChange !== 0 ? `${viewsChange > 0 ? '+' : ''}${viewsChange}%` : '0%';
     const conversionFunnel = [
-      { label: 'Product', labelLine2: 'Views', value: totalViews.toLocaleString(), badge: '+9%', barHeight: '100%', barColor: '#ffe4c2' },
-      { label: 'Total', labelLine2: 'Orders', value: totalOrders.toLocaleString(), badge: `${totalOrders > 0 ? '+' : ''}${totalOrders}`, barHeight: `${Math.min(Math.max((totalOrders / maxFunnel) * 100 * 5, 15), 100)}%`, barColor: '#ffd4a2' },
-      { label: 'Pending', labelLine2: 'Orders', value: pendingOrders.toLocaleString(), badge: pendingOrders.toString(), barHeight: `${Math.min(Math.max((pendingOrders / Math.max(totalOrders, 1)) * 100, 10), 100)}%`, barColor: '#ffc482' },
+      { label: 'Product', labelLine2: 'Views', value: totalViews.toLocaleString(), badge: viewsBadge, barHeight: '100%', barColor: '#ffe4c2' },
+      { label: 'Total', labelLine2: 'Clicks', value: totalClicks.toLocaleString(), badge: totalClicks > 0 ? `${((totalClicks / Math.max(totalViews, 1)) * 100).toFixed(1)}%` : '0%', barHeight: `${Math.min(Math.max((totalClicks / maxFunnel) * 100 * 3, 15), 100)}%`, barColor: '#ffd4a2' },
+      { label: 'Total', labelLine2: 'Orders', value: totalOrders.toLocaleString(), badge: `${totalOrders > 0 ? '+' : ''}${totalOrders}`, barHeight: `${Math.min(Math.max((totalOrders / maxFunnel) * 100 * 5, 15), 100)}%`, barColor: '#ffc482' },
       { label: 'Completed', labelLine2: 'Orders', value: completedOrders.toLocaleString(), badge: `+${completedOrders}`, barHeight: `${Math.min(Math.max((completedOrders / Math.max(totalOrders, 1)) * 100, 10), 100)}%`, barColor: '#ffb362' },
       { label: 'Cancelled', labelLine2: '/ Refunded', value: cancelledOrders.toLocaleString(), badge: `-${cancelledOrders}`, isNegative: cancelledOrders > 0, barHeight: `${Math.min(Math.max((cancelledOrders / Math.max(totalOrders, 1)) * 100, 5), 100)}%`, barColor: '#ff9f42' },
     ];
 
-    const activeUsersByCountry = [
-      { country: 'Product Views', percent: 100, barColor: '#f97316' },
-    ];
+    // Active users by country from real buyer data
+    const totalBuyerCountry = buyerCountries.reduce((s, c) => s + c.count, 0);
+    const activeUsersByCountry = totalBuyerCountry > 0
+      ? buyerCountries.slice(0, 5).map((c, i) => ({
+          country: c.country,
+          percent: Math.round((c.count / totalBuyerCountry) * 100),
+          barColor: COUNTRY_BAR_COLORS[i] || '#e5e7eb',
+        }))
+      : [{ country: 'No buyer data', percent: 100, barColor: '#e5e7eb' }];
 
     // Traffic/Order breakdown
     const total = totalOrders || 1;
@@ -176,7 +228,7 @@ const SellerAnalytics = () => {
     ].filter(s => s.percent > 0);
 
     // Recent orders
-    const recentOrders = filteredOrders.slice(0, 10).map((o, i) => ({
+    const recentOrders = filteredOrders.slice(0, 10).map((o) => ({
       id: o.id,
       orderId: o.id.slice(0, 8).toUpperCase(),
       customerName: o.buyer?.full_name || o.buyer?.email || 'Customer',
@@ -200,14 +252,14 @@ const SellerAnalytics = () => {
       totalSalesChange: salesChange,
       totalOrders,
       totalOrdersChange: ordersChange,
-      totalVisitors: uniqueBuyers,
+      totalVisitors: totalUniqueVisitors || uniqueBuyers,
       totalVisitorsChange: visitorsChange,
-      thirdCardLabel: 'Total Balance',
-      thirdCardValue: formatAmountOnly(wallet?.balance || 0),
-      thirdCardIcon: 'dollar',
+      thirdCardLabel: 'Avg Rating',
+      thirdCardValue: avgRating > 0 ? `${avgRating.toFixed(1)} ⭐` : 'N/A',
+      thirdCardIcon: 'dollar' as const,
       topCategories,
       totalCategorySales: formatAmountOnly(totalFilteredSales),
-      activeUsers: uniqueBuyers,
+      activeUsers: totalUniqueVisitors || uniqueBuyers,
       activeUsersByCountry,
       conversionFunnel,
       trafficSources,
@@ -219,7 +271,7 @@ const SellerAnalytics = () => {
       recentOrders,
       recentActivity,
     };
-  }, [orders, filteredOrders, products, wallet, dateRange, formatAmountOnly]);
+  }, [orders, filteredOrders, products, wallet, dateRange, formatAmountOnly, filteredAnalytics, filteredTraffic, productAnalytics, buyerCountries, avgRating]);
 
   const handleExport = () => {
     if (filteredOrders.length === 0) {

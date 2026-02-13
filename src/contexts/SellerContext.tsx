@@ -99,6 +99,30 @@ interface SellerWithdrawal {
   created_at: string;
 }
 
+interface ProductAnalyticsEntry {
+  id: string;
+  product_id: string;
+  date: string;
+  views: number;
+  clicks: number;
+  purchases: number;
+  revenue: number;
+}
+
+interface TrafficAnalyticsEntry {
+  id: string;
+  seller_id: string;
+  date: string;
+  page_views: number;
+  unique_visitors: number;
+  source: string | null;
+}
+
+interface BuyerCountryEntry {
+  country: string;
+  count: number;
+}
+
 interface SellerContextType {
   profile: SellerProfile;
   wallet: SellerWallet | null;
@@ -106,6 +130,9 @@ interface SellerContextType {
   orders: SellerOrder[];
   withdrawals: SellerWithdrawal[];
   sellerLevels: SellerLevel[];
+  productAnalytics: ProductAnalyticsEntry[];
+  trafficAnalytics: TrafficAnalyticsEntry[];
+  buyerCountries: BuyerCountryEntry[];
   loading: boolean;
   error: string | null;
   sessionExpiredLocal: boolean;
@@ -134,6 +161,9 @@ export const SellerProvider = ({
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [withdrawals, setWithdrawals] = useState<SellerWithdrawal[]>([]);
   const [sellerLevels, setSellerLevels] = useState<SellerLevel[]>([]);
+  const [productAnalytics, setProductAnalytics] = useState<ProductAnalyticsEntry[]>([]);
+  const [trafficAnalytics, setTrafficAnalytics] = useState<TrafficAnalyticsEntry[]>([]);
+  const [buyerCountries, setBuyerCountries] = useState<BuyerCountryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sessionExpiredLocal, setSessionExpiredLocal] = useState(false);
@@ -253,6 +283,9 @@ export const SellerProvider = ({
       const newOrders = data.orders;
       const newWithdrawals = data.withdrawals;
       const newSellerLevels = data.sellerLevels;
+      const newProductAnalytics = data.productAnalytics;
+      const newTrafficAnalytics = data.trafficAnalytics;
+      const newBuyerCountries = data.buyerCountries;
 
       if (newProfile) setProfile(newProfile);
       setWallet(newWallet);
@@ -260,6 +293,9 @@ export const SellerProvider = ({
       setOrders(newOrders || []);
       setWithdrawals(newWithdrawals || []);
       setSellerLevels(newSellerLevels || []);
+      setProductAnalytics(newProductAnalytics || []);
+      setTrafficAnalytics(newTrafficAnalytics || []);
+      setBuyerCountries(newBuyerCountries || []);
       setUsingCachedData(false);
 
       // Cache for offline use
@@ -399,6 +435,9 @@ export const SellerProvider = ({
       orders,
       withdrawals,
       sellerLevels,
+      productAnalytics,
+      trafficAnalytics,
+      buyerCountries,
       loading,
       error,
       sessionExpiredLocal,
