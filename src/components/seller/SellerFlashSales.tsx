@@ -146,14 +146,14 @@ const SellerFlashSales = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      <div className="bg-[#F3EAE0] min-h-screen p-8 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#FF7F00]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-end">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -263,28 +263,24 @@ const SellerFlashSales = () => {
         </Dialog>
       </div>
 
-      {/* Flash Sales List */}
-      {flashSales.length === 0 ? (
-        <div className="text-center py-12 bg-white border rounded border-dashed">
-          <Zap className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500">No flash sales yet</p>
-          <p className="text-xs text-slate-400">Create your first flash sale to boost conversions</p>
-        </div>
-      ) : (
-        <div className="grid gap-3 sm:gap-4">
-          {flashSales.map((sale) => {
-            const isActive = sale.is_active && new Date(sale.ends_at) > new Date();
-            const isExpired = new Date(sale.ends_at) <= new Date();
-            
-            return (
-              <div 
-                key={sale.id}
-                className={`p-4 bg-white border rounded transition-colors ${
-                  isActive 
-                    ? 'bg-gradient-to-r from-red-50 to-orange-50' 
-                    : ''
-                }`}
-              >
+       {/* Flash Sales List */}
+       {flashSales.length === 0 ? (
+         <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
+           <Zap className="h-12 w-12 text-[#D1D5DB] mx-auto mb-3" />
+           <p className="text-[#6B7280] font-medium">No flash sales yet</p>
+           <p className="text-xs text-[#9CA3AF]">Create your first flash sale to boost conversions</p>
+         </div>
+       ) : (
+         <div className="grid gap-4">
+           {flashSales.map((sale) => {
+             const isActive = sale.is_active && new Date(sale.ends_at) > new Date();
+             const isExpired = new Date(sale.ends_at) <= new Date();
+             
+             return (
+               <div 
+                 key={sale.id}
+                 className="bg-white rounded-2xl shadow-sm p-6"
+               >
                 {/* Mobile: Vertical stack, Desktop: Horizontal */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   {/* Product Info */}

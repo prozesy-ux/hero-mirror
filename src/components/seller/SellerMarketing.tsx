@@ -183,28 +183,28 @@ const SellerMarketing = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-lg border" />
+            <Skeleton key={i} className="h-28 rounded-2xl" />
           ))}
         </div>
-        <Skeleton className="h-96 rounded-lg border" />
+        <Skeleton className="h-96 rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogTrigger asChild>
-            <Button className="bg-emerald-500 hover:bg-emerald-600 rounded-xl">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Discount
-            </Button>
-          </DialogTrigger>
+           <DialogTrigger asChild>
+             <Button className="bg-[#FF7F00] hover:bg-[#FF7F00]/90 text-white rounded-xl">
+               <Plus className="w-4 h-4 mr-2" />
+               Create Discount
+             </Button>
+           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Create Discount Code</DialogTitle>
@@ -316,32 +316,24 @@ const SellerMarketing = () => {
         </Dialog>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white border rounded p-8">
-          <div className="flex items-center gap-2 text-base mb-2">
-            <span className="text-slate-700">Total Codes</span>
-          </div>
-          <div className="text-4xl font-semibold text-slate-900">{discountCodes.length}</div>
-        </div>
+       {/* Stats Cards */}
+       <div className="grid grid-cols-3 gap-4">
+         <div className="bg-white rounded-2xl shadow-sm p-6">
+           <p className="text-sm text-[#6B7280] mb-2">Total Codes</p>
+           <p className="text-3xl font-bold text-[#1F2937]">{discountCodes.length}</p>
+         </div>
+         <div className="bg-white rounded-2xl shadow-sm p-6">
+           <p className="text-sm text-[#6B7280] mb-2">Active Codes</p>
+           <p className="text-3xl font-bold text-emerald-600">{activeCount}</p>
+         </div>
+         <div className="bg-white rounded-2xl shadow-sm p-6">
+           <p className="text-sm text-[#6B7280] mb-2">Total Uses</p>
+           <p className="text-3xl font-bold text-violet-600">{totalUses}</p>
+         </div>
+       </div>
 
-        <div className="bg-white border rounded p-8">
-          <div className="flex items-center gap-2 text-base mb-2">
-            <span className="text-slate-700">Active Codes</span>
-          </div>
-          <div className="text-4xl font-semibold text-emerald-600">{activeCount}</div>
-        </div>
-
-        <div className="bg-white border rounded p-8">
-          <div className="flex items-center gap-2 text-base mb-2">
-            <span className="text-slate-700">Total Uses</span>
-          </div>
-          <div className="text-4xl font-semibold text-violet-600">{totalUses}</div>
-        </div>
-      </div>
-
-      {/* Discount Codes Table */}
-      <div className="bg-white rounded-lg border overflow-hidden">
+       {/* Discount Codes Table */}
+       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">

@@ -110,19 +110,19 @@ const SellerInventory = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-lg border" />
+            <Skeleton key={i} className="h-28 rounded-2xl" />
           ))}
         </div>
-        <Skeleton className="h-96 rounded-lg border" />
+        <Skeleton className="h-96 rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
         <div className="flex items-center gap-2">
@@ -137,51 +137,32 @@ const SellerInventory = () => {
         </div>
       </div>
 
-      {/* Stats Cards - Gumroad Style */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Total Products */}
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-          <div className="flex items-center gap-2 text-base mb-2">
-            <span className="text-slate-700">Total Products</span>
-          </div>
-          <div className="text-4xl font-semibold text-slate-900">{inventoryStats.totalProducts}</div>
-        </div>
+       {/* Stats Cards */}
+       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+         <div className="bg-white rounded-2xl shadow-sm p-6">
+           <p className="text-sm text-[#6B7280] mb-2">Total Products</p>
+           <p className="text-3xl font-bold text-[#1F2937]">{inventoryStats.totalProducts}</p>
+         </div>
+         <div className="bg-white rounded-2xl shadow-sm p-6">
+           <p className="text-sm text-[#6B7280] mb-2">Total Units</p>
+           <p className="text-3xl font-bold text-[#1F2937]">{inventoryStats.totalUnits}</p>
+         </div>
+         <div className="bg-white rounded-2xl shadow-sm p-6">
+           <p className="text-sm text-[#6B7280] mb-2">In Stock</p>
+           <p className="text-3xl font-bold text-emerald-600">{inventoryStats.inStock}</p>
+         </div>
+         <div className="bg-white rounded-2xl shadow-sm p-6">
+           <p className="text-sm text-[#6B7280] mb-2">Low Stock</p>
+           <p className="text-3xl font-bold text-amber-600">{inventoryStats.lowStock}</p>
+         </div>
+         <div className="bg-white rounded-2xl shadow-sm p-6">
+           <p className="text-sm text-[#6B7280] mb-2">Out of Stock</p>
+           <p className="text-3xl font-bold text-red-600">{inventoryStats.outOfStock}</p>
+         </div>
+       </div>
 
-        {/* Total Units */}
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-          <div className="flex items-center gap-2 text-base mb-2">
-            <span className="text-slate-700">Total Units</span>
-          </div>
-          <div className="text-4xl font-semibold text-slate-900">{inventoryStats.totalUnits}</div>
-        </div>
-
-        {/* In Stock */}
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-          <div className="flex items-center gap-2 text-base mb-2">
-            <span className="text-slate-700">In Stock</span>
-          </div>
-          <div className="text-4xl font-semibold text-green-600">{inventoryStats.inStock}</div>
-        </div>
-
-        {/* Low Stock */}
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-          <div className="flex items-center gap-2 text-base mb-2">
-            <span className="text-slate-700">Low Stock</span>
-          </div>
-          <div className="text-4xl font-semibold text-orange-600">{inventoryStats.lowStock}</div>
-        </div>
-
-        {/* Out of Stock */}
-        <div className="bg-white border rounded p-8 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
-          <div className="flex items-center gap-2 text-base mb-2">
-            <span className="text-slate-700">Out of Stock</span>
-          </div>
-          <div className="text-4xl font-semibold text-red-600">{inventoryStats.outOfStock}</div>
-        </div>
-      </div>
-
-      {/* Inventory Health */}
-      <div className="bg-white rounded-lg p-8 border hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+       {/* Inventory Health */}
+       <div className="bg-white rounded-2xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-slate-800">Inventory Health Score</h3>
           <span className={`text-lg font-bold ${
@@ -227,8 +208,8 @@ const SellerInventory = () => {
         </Select>
       </div>
 
-      {/* Products Table */}
-      <div className="bg-white rounded-lg border overflow-hidden hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow">
+       {/* Products Table */}
+       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">
