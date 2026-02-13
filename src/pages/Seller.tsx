@@ -556,7 +556,7 @@ const SellerMainContent = () => {
   
   return (
     <main className={`
-      min-h-screen bg-[#F3EAE0] transition-all duration-300
+      min-h-screen bg-[#f1f5f9] transition-all duration-300
       pt-0 pb-20 lg:pb-0
       lg:pt-16 ${isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-52'}
     `}>
@@ -597,7 +597,7 @@ const SellerMainContent = () => {
 const SellerContent = () => {
   return (
     <SellerSidebarProvider>
-      <div className="min-h-screen bg-[#F3EAE0] overflow-x-hidden" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <div className="min-h-screen bg-[#f1f5f9] overflow-x-hidden" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         
         {/* Desktop Sidebar */}
         <SellerSidebar />

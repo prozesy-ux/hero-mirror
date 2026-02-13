@@ -419,7 +419,7 @@ const SellerSupport = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6">
+      <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6">
         <Skeleton className="h-8 w-48 mb-6" />
         <Skeleton className="h-[calc(100vh-200px)] rounded-2xl" />
       </div>
@@ -427,7 +427,7 @@ const SellerSupport = () => {
   }
 
   return (
-    <div className="bg-[#F3EAE0] min-h-screen p-8 space-y-6" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div className="bg-[#f1f5f9] min-h-screen p-8 space-y-6" style={{ fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
