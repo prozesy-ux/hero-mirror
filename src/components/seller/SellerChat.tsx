@@ -394,7 +394,7 @@ const SellerChat = () => {
       <aside className="w-[320px] border-r flex-col hidden lg:flex flex-shrink-0" style={{ borderColor: '#e2e8f0', background: '#fff' }}>
         <div style={{ padding: '24px 20px 16px' }}>
           <div className="flex justify-between items-center mb-4">
-            <span className="font-semibold" style={{ fontSize: '15px' }}>Conversations {tickets.length}</span>
+            <span className="font-semibold" style={{ fontSize: '15px' }}>Total ticket {tickets.length}</span>
             <button onClick={() => setSortOrder(s => s === 'newest' ? 'oldest' : 'newest')} className="flex items-center gap-1 cursor-pointer" style={{ fontSize: '13px', color: '#64748b' }}>
               {sortOrder === 'newest' ? 'Newest' : 'Oldest'} <ChevronDown size={14} />
             </button>
@@ -602,12 +602,6 @@ const SellerChat = () => {
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-white cursor-pointer" style={{ background: '#2563eb' }}><PenLine size={14} /></div>
           </div>
           <div className="flex-1 overflow-y-auto px-6 pb-6">
-            {/* Avatar + Name */}
-            <div className="mb-5 text-center">
-              {activeTicket.buyerAvatar ? <img src={activeTicket.buyerAvatar} className="w-16 h-16 rounded-full object-cover mx-auto mb-3" style={{ background: '#e2e8f0' }} /> : <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold" style={{ background: '#64748b', fontSize: '24px' }}>{activeTicket.buyerName.charAt(0).toUpperCase()}</div>}
-              <div className="font-semibold" style={{ fontSize: '15px' }}>{activeTicket.buyerName}</div>
-              <div style={{ fontSize: '12px', color: '#64748b' }}>{activeTicket.buyerEmail}</div>
-            </div>
             {/* Assignee */}
             <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Assignee</label><div className="w-full px-3 py-[10px] rounded-lg flex items-center justify-between" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}><div className="flex items-center gap-2"><div className="w-5 h-5 rounded-full flex items-center justify-center text-white" style={{ background: '#94a3b8', fontSize: '9px' }}>S</div>{getMetaForBuyer(activeTicket.id).assigned_to}</div></div></div>
             {/* Team */}
