@@ -1,82 +1,29 @@
 
 
-## Replace Both Chat Sections with Ticket Dashboard Design
+## Show Real User Name Instead of Ticket Number
 
-Replace the buyer `ChatSection.tsx` and seller `SellerChat.tsx` with the exact ticket-based chat design from the uploaded HTML file. Pure mock data only -- no database connections.
+### Problem
+In the **Buyer ChatSection**, the ticket list and chat header display ticket numbers like `#TC-0002` where the user's real name should appear. The ticket number should still exist but the primary display should be the user's name.
 
-### What Changes
+### Changes
 
-**Both files get the same new layout with 4 panels:**
+**File: `src/components/dashboard/ChatSection.tsx`**
 
-```text
-+------------------+------------------------+------------------+--------+
-| Ticket List      | Chat Area              | Ticket Details   | Strip  |
-| (320px)          | (flex-1)               | (300px)          | (56px) |
-|                  |                        |                  |        |
-| Search           | Header: #TC-0001       | Assignee         | Icons  |
-| Sort: Newest     | Back / Subject / Star  | Team             |        |
-|                  |                        | Type             |        |
-| #TC-0004 David   | Messages:              | Status           |        |
-| #TC-0001 Emily * | - Emily: text          | Priority: L/M/H  |        |
-| #TC-0003 (747)   | - AI reply             | Subject          |        |
-| #TC-0004 Brooklyn| - System events        | Tags             |        |
-| #TC-0007 (44)    | - Agent reply          | Attributes       |        |
-| #TC-0008 Guy     |                        |                  |        |
-|                  | Input: textarea +      |                  |        |
-|                  | toolbar + send         |                  |        |
-+------------------+------------------------+------------------+--------+
-```
+1. **Fetch the user's profile name** when loading tickets -- query the `profiles` table using `user.id` to get `full_name`
+2. **Store the user's name** in component state (e.g. `userName`)
+3. **Ticket list (line 266)**: Replace `{ticket.ticket_number}` with the user's real name as the primary label, and show ticket number as secondary text below it
+4. **Chat header (line 305)**: Replace `{activeTicket.ticket_number}` with the user's real name, keep ticket number as secondary info after the dot separator
 
-### Mock Data (from HTML, no DB)
-
-**6 Ticket contacts:**
-- David Newman (#TC-0004) - "System Login Failure" - 2 unread
-- Emily Johnson (#TC-0001) - "Request for Additional Storage..." - active
-- (747) 246-9411 (#TC-0003) - "Unable to access report"
-- Brooklyn Simmons (#TC-0004) - "File Upload Error" - 1 unread
-- (44) 1342 351 (#TC-0007) - "Unable to access report" - 1 unread
-- Guy Hawkins (#TC-0008) - "Unexpected App Crash"
-
-**5 Chat messages (for active ticket):**
-- Emily: "Hi, I need more storage and better server capacity."
-- AI reply: "Hello! I can assist with that..."
-- Emily: "Yes, sure."
-- AI reply: "Connecting you now..."
-- Agent (Raihan): "Hi, thanks for waiting!..."
-
-**2 System events:**
-- "Raihan Fikri has connected to take over ticket"
-- "Raihan Fikri Ticket change priority to Medium"
-
-**Ticket details panel:**
-- Assignee: Raihan Fikri
-- Team: Customer Service
-- Type: Problem
-- Status: Open
-- Priority: Low / Medium (active) / High
-- Tags: Question, Problem
-- Attributes: ID, Customer, Language, Date
-
-### Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/components/dashboard/ChatSection.tsx` | Complete rewrite with new ticket design, mock data only, no Supabase imports |
-| `src/components/seller/SellerChat.tsx` | Complete rewrite with same ticket design, mock data only, no Supabase imports |
-
-### What Stays the Same
-- All other components untouched
-- No database changes
-- No new files needed
-- Both components export the same default export name
-- Font: Inter (from the HTML CSS variables)
+**No changes needed for Seller SellerChat** -- it already displays `buyerName` correctly.
 
 ### Technical Details
-- All CSS uses Tailwind classes + inline styles matching the HTML exactly
-- Avatar images use the external URLs from the HTML (banani-avatars storage)
-- Icons use lucide-react (already installed) mapped from iconify icons in HTML
-- Ticket list clicking changes the active ticket (local state only)
-- Send button and textarea are visual only (no backend calls)
-- Responsive: ticket list hides on mobile, chat area takes full width
-- Details panel scrollable for all ticket metadata
-- Right toolbar strip with 4 icon buttons
+
+| Location | Currently Shows | Will Show |
+|----------|----------------|-----------|
+| Ticket list item title | `#TC-0002` | User's full name (e.g. "John Doe") |
+| Ticket list secondary line | Status badge | Ticket number + status badge |
+| Chat header bold text | `#TC-0002` | User's full name |
+| Chat header after dot | Subject | Ticket number + subject |
+
+The profile is fetched once on mount using the existing `user.id` from `useAuthContext()`. Falls back to the user's email or "You" if no profile name is set.
+
