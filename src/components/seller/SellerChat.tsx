@@ -32,6 +32,17 @@ const THEME_PRESETS: Record<string, { chatBg: string; userBubble: string; otherB
   sunset: { chatBg: '#fdf2f8', userBubble: '#fce7f3', otherBubble: '#fff1f2', userText: '#831843', otherText: '#881337', label: 'Sunset' },
 };
 
+interface SellerChatMeta {
+  status: string;
+  priority: string;
+  ticket_type: string;
+  assigned_to: string;
+  assigned_team: string;
+  subject: string;
+  tags: string[];
+  is_starred: boolean;
+}
+
 interface ChatTicket {
   id: string;
   buyerName: string;
@@ -113,9 +124,49 @@ const SellerChat = () => {
   const [noteTexts, setNoteTexts] = useState<Record<string, string>>({});
   const [editingNote, setEditingNote] = useState(false);
   const [currentNoteText, setCurrentNoteText] = useState('');
+  const [chatMeta, setChatMeta] = useState<Record<string, SellerChatMeta>>(() => {
+    try { return JSON.parse(localStorage.getItem('seller-chat-meta') || '{}'); } catch { return {}; }
+  });
+  const [newTagInput, setNewTagInput] = useState('');
 
   const activeTicket = tickets.find(t => t.id === activeTicketId);
   const currentTheme = THEME_PRESETS[chatSettings.theme] || THEME_PRESETS.default;
+
+  const getMetaForBuyer = (buyerId: string): SellerChatMeta => {
+    return chatMeta[buyerId] || { status: 'active', priority: 'medium', ticket_type: 'Inquiry', assigned_to: 'Unassigned', assigned_team: 'Customer Service', subject: 'General inquiry', tags: ['Question'], is_starred: false };
+  };
+
+  const updateMeta = (buyerId: string, patch: Partial<SellerChatMeta>) => {
+    setChatMeta(prev => {
+      const updated = { ...prev, [buyerId]: { ...getMetaForBuyer(buyerId), ...patch } };
+      localStorage.setItem('seller-chat-meta', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleStarToggle = () => {
+    if (!activeTicketId) return;
+    const meta = getMetaForBuyer(activeTicketId);
+    updateMeta(activeTicketId, { is_starred: !meta.is_starred });
+  };
+
+  const handlePriorityChange = (p: string) => {
+    if (!activeTicketId) return;
+    updateMeta(activeTicketId, { priority: p });
+  };
+
+  const handleAddTag = () => {
+    if (!activeTicketId || !newTagInput.trim()) return;
+    const meta = getMetaForBuyer(activeTicketId);
+    updateMeta(activeTicketId, { tags: [...meta.tags, newTagInput.trim()] });
+    setNewTagInput('');
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    if (!activeTicketId) return;
+    const meta = getMetaForBuyer(activeTicketId);
+    updateMeta(activeTicketId, { tags: meta.tags.filter(t => t !== tag) });
+  };
 
   // ── Get seller profile ──
   useEffect(() => {
@@ -366,7 +417,10 @@ const SellerChat = () => {
                   <span className="font-semibold" style={{ fontSize: '13px' }}>{ticket.buyerName}</span>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>{format(new Date(ticket.lastMessageTime), 'hh:mm a')}</span>
                 </div>
-                <div className="font-medium mb-1" style={{ fontSize: '12px', color: '#64748b' }}>{ticket.ticketNumber}</div>
+                <div className="font-medium mb-1 flex items-center gap-1" style={{ fontSize: '12px', color: '#64748b' }}>
+                  <span>{ticket.ticketNumber}</span><span>•</span>
+                  <span className="w-[6px] h-[6px] rounded-full inline-block" style={{ background: getMetaForBuyer(ticket.id).status === 'active' ? '#22c55e' : getMetaForBuyer(ticket.id).status === 'closed' ? '#64748b' : '#f59e0b' }} />{getMetaForBuyer(ticket.id).status}
+                </div>
                 <div className="font-medium truncate" style={{ fontSize: '13px' }}>{ticket.lastMessage}</div>
               </div>
               <button onClick={(e) => { e.stopPropagation(); handlePinChat(ticket.id); }} className="opacity-0 group-hover:opacity-100 absolute bottom-2 right-2 p-1 rounded" style={{ color: pinnedChats.includes(ticket.id) ? '#2563eb' : '#94a3b8' }}><Pin size={12} /></button>
@@ -388,7 +442,8 @@ const SellerChat = () => {
                 <div className="flex items-center gap-2">
                   <span className="font-bold" style={{ fontSize: '15px' }}>{activeTicket.buyerName}</span>
                   <span style={{ color: '#64748b' }}>•</span>
-                  <span className="truncate max-w-[200px] md:max-w-[300px]" style={{ color: '#64748b', fontSize: '14px' }}>{activeTicket.ticketNumber}</span>
+                  <span className="truncate max-w-[200px] md:max-w-[300px]" style={{ color: '#64748b', fontSize: '14px' }}>{activeTicket.ticketNumber} · {getMetaForBuyer(activeTicket.id).subject}</span>
+                  <Star size={16} onClick={handleStarToggle} className="cursor-pointer flex-shrink-0" style={{ color: getMetaForBuyer(activeTicket.id).is_starred ? '#f59e0b' : '#64748b', fill: getMetaForBuyer(activeTicket.id).is_starred ? '#f59e0b' : 'none' }} />
                 </div>
               </div>
               <div className="hidden md:flex items-center gap-[10px]">
@@ -543,17 +598,52 @@ const SellerChat = () => {
       {activeTicket && showDetailsPanel && (
         <aside className="w-[300px] border-l flex-col hidden xl:flex flex-shrink-0" style={{ borderColor: '#e2e8f0', background: '#fff' }}>
           <div className="flex justify-between items-center p-6">
-            <span className="font-semibold" style={{ fontSize: '16px' }}>Conversation details</span>
+            <span className="font-semibold" style={{ fontSize: '16px' }}>Ticket details</span>
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-white cursor-pointer" style={{ background: '#2563eb' }}><PenLine size={14} /></div>
           </div>
           <div className="flex-1 overflow-y-auto px-6 pb-6">
+            {/* Avatar + Name */}
             <div className="mb-5 text-center">
               {activeTicket.buyerAvatar ? <img src={activeTicket.buyerAvatar} className="w-16 h-16 rounded-full object-cover mx-auto mb-3" style={{ background: '#e2e8f0' }} /> : <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold" style={{ background: '#64748b', fontSize: '24px' }}>{activeTicket.buyerName.charAt(0).toUpperCase()}</div>}
               <div className="font-semibold" style={{ fontSize: '15px' }}>{activeTicket.buyerName}</div>
               <div style={{ fontSize: '12px', color: '#64748b' }}>{activeTicket.buyerEmail}</div>
             </div>
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Status</label><div className="w-full px-3 py-[10px] rounded-lg flex items-center gap-2" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}><div className="w-[6px] h-[6px] rounded-full" style={{ background: '#22c55e' }} />Active</div></div>
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Attributes</label><div className="rounded-lg p-4" style={{ background: '#f8fafc' }}>{[{ key: 'Ticket', val: activeTicket.ticketNumber }, { key: 'Customer', val: activeTicket.buyerName }, { key: 'Email', val: activeTicket.buyerEmail }, { key: 'Last active', val: format(new Date(activeTicket.lastMessageTime), 'dd MMM yyyy, HH:mm') }].map((attr, i, arr) => (<div key={attr.key} className="flex justify-between items-center" style={{ fontSize: '12px', marginBottom: i < arr.length - 1 ? '12px' : 0 }}><span style={{ color: '#64748b' }}>{attr.key}</span><span className="font-semibold text-right max-w-[140px] truncate">{attr.val}</span></div>))}</div></div>
+            {/* Assignee */}
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Assignee</label><div className="w-full px-3 py-[10px] rounded-lg flex items-center justify-between" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}><div className="flex items-center gap-2"><div className="w-5 h-5 rounded-full flex items-center justify-center text-white" style={{ background: '#94a3b8', fontSize: '9px' }}>S</div>{getMetaForBuyer(activeTicket.id).assigned_to}</div></div></div>
+            {/* Team */}
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Team</label><div className="w-full px-3 py-[10px] rounded-lg" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}>{getMetaForBuyer(activeTicket.id).assigned_team}</div></div>
+            {/* Ticket type */}
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Ticket type</label><div className="w-full px-3 py-[10px] rounded-lg" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}>{getMetaForBuyer(activeTicket.id).ticket_type}</div></div>
+            {/* Set status */}
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Set status</label><div className="w-full px-3 py-[10px] rounded-lg flex items-center gap-2 cursor-pointer" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }} onClick={() => { const meta = getMetaForBuyer(activeTicket.id); const next = meta.status === 'active' ? 'pending' : meta.status === 'pending' ? 'closed' : 'active'; updateMeta(activeTicket.id, { status: next }); }}><Flag size={14} /> {getMetaForBuyer(activeTicket.id).status}</div></div>
+            {/* Set priority */}
+            <div className="mb-5">
+              <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Set priority</label>
+              <div className="flex gap-2">
+                {[{ key: 'low', label: 'Low', color: '#22c55e' }, { key: 'medium', label: 'Medium', color: '#f59e0b' }, { key: 'high', label: 'High', color: '#ef4444' }].map((p) => (
+                  <div key={p.key} onClick={() => handlePriorityChange(p.key)} className="flex-1 flex items-center justify-center gap-[6px] py-2 rounded-md cursor-pointer" style={{ border: '1px solid', borderColor: getMetaForBuyer(activeTicket.id).priority === p.key ? '#fcd34d' : '#e2e8f0', background: getMetaForBuyer(activeTicket.id).priority === p.key ? '#fef3c7' : 'transparent', fontSize: '12px' }}>
+                    <div className="w-[6px] h-[6px] rounded-full" style={{ background: p.color }} />{p.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Subject */}
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Subject</label><div className="p-3 rounded-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '13px', lineHeight: '1.4' }}>{getMetaForBuyer(activeTicket.id).subject}</div></div>
+            {/* Tags */}
+            <div className="mb-5">
+              <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Tags</label>
+              <div className="flex gap-2 flex-wrap mb-2">
+                {getMetaForBuyer(activeTicket.id).tags.map((tag) => (
+                  <div key={tag} className="flex items-center gap-[6px] px-[10px] py-[6px] rounded-[20px] text-white font-medium" style={{ background: '#0f172a', fontSize: '11px' }}>{tag} <X size={10} className="cursor-pointer" onClick={() => handleRemoveTag(tag)} /></div>
+                ))}
+              </div>
+              <div className="flex gap-1">
+                <input type="text" placeholder="Add tag..." value={newTagInput} onChange={(e) => setNewTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddTag()} className="flex-1 h-7 rounded px-2 outline-none" style={{ border: '1px solid #e2e8f0', fontSize: '11px' }} />
+                <button onClick={handleAddTag} className="h-7 px-2 rounded text-white" style={{ background: '#2563eb', fontSize: '11px' }}>Add</button>
+              </div>
+            </div>
+            {/* Attributes */}
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Attributes</label><div className="rounded-lg p-4" style={{ background: '#f8fafc' }}>{[{ key: 'ID', val: activeTicket.ticketNumber }, { key: 'Status', val: getMetaForBuyer(activeTicket.id).status }, { key: 'Customer', val: activeTicket.buyerName }, { key: 'Email', val: activeTicket.buyerEmail }, { key: 'Last active', val: format(new Date(activeTicket.lastMessageTime), 'dd MMM yyyy, HH:mm') }].map((attr, i, arr) => (<div key={attr.key} className="flex justify-between items-center" style={{ fontSize: '12px', marginBottom: i < arr.length - 1 ? '12px' : 0 }}><span style={{ color: '#64748b' }}>{attr.key}</span><span className="font-semibold text-right max-w-[140px] truncate">{attr.val}</span></div>))}</div></div>
             {/* Editable Note */}
             <div>
               <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Note</label>
