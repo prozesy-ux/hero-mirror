@@ -792,6 +792,45 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_settings: {
+        Row: {
+          bg_color: string | null
+          bg_image_url: string | null
+          bubble_style: string
+          created_at: string
+          font_size: string
+          id: string
+          notification_sound: boolean
+          theme: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bg_color?: string | null
+          bg_image_url?: string | null
+          bubble_style?: string
+          created_at?: string
+          font_size?: string
+          id?: string
+          notification_sound?: boolean
+          theme?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bg_color?: string | null
+          bg_image_url?: string | null
+          bubble_style?: string
+          created_at?: string
+          font_size?: string
+          id?: string
+          notification_sound?: boolean
+          theme?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       course_lessons: {
         Row: {
           attachments: Json | null
@@ -1455,6 +1494,76 @@ export type Database = {
           withdrawal_enabled?: boolean | null
         }
         Relationships: []
+      }
+      pinned_chats: {
+        Row: {
+          buyer_id: string | null
+          id: string
+          pinned_at: string
+          seller_id: string | null
+          ticket_id: string | null
+          user_id: string
+        }
+        Insert: {
+          buyer_id?: string | null
+          id?: string
+          pinned_at?: string
+          seller_id?: string | null
+          ticket_id?: string | null
+          user_id: string
+        }
+        Update: {
+          buyer_id?: string | null
+          id?: string
+          pinned_at?: string
+          seller_id?: string | null
+          ticket_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinned_chats_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinned_messages: {
+        Row: {
+          chat_id: string | null
+          id: string
+          message_id: string
+          pinned_at: string
+          ticket_id: string | null
+          user_id: string
+        }
+        Insert: {
+          chat_id?: string | null
+          id?: string
+          message_id: string
+          pinned_at?: string
+          ticket_id?: string | null
+          user_id: string
+        }
+        Update: {
+          chat_id?: string | null
+          id?: string
+          message_id?: string
+          pinned_at?: string
+          ticket_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinned_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       platform_announcements: {
         Row: {
@@ -2327,10 +2436,15 @@ export type Database = {
       seller_chats: {
         Row: {
           admin_joined: boolean | null
+          attachment_name: string | null
+          attachment_type: string | null
+          attachment_url: string | null
           buyer_id: string
           created_at: string | null
           id: string
+          is_pinned: boolean | null
           is_read: boolean | null
+          is_voice_note: boolean | null
           message: string
           product_id: string | null
           seller_id: string
@@ -2338,10 +2452,15 @@ export type Database = {
         }
         Insert: {
           admin_joined?: boolean | null
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           buyer_id: string
           created_at?: string | null
           id?: string
+          is_pinned?: boolean | null
           is_read?: boolean | null
+          is_voice_note?: boolean | null
           message: string
           product_id?: string | null
           seller_id: string
@@ -2349,10 +2468,15 @@ export type Database = {
         }
         Update: {
           admin_joined?: boolean | null
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           buyer_id?: string
           created_at?: string | null
           id?: string
+          is_pinned?: boolean | null
           is_read?: boolean | null
+          is_voice_note?: boolean | null
           message?: string
           product_id?: string | null
           seller_id?: string
@@ -3371,29 +3495,79 @@ export type Database = {
           },
         ]
       }
+      snoozed_tickets: {
+        Row: {
+          buyer_id: string | null
+          created_at: string
+          id: string
+          snooze_until: string
+          ticket_id: string | null
+          user_id: string
+        }
+        Insert: {
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          snooze_until: string
+          ticket_id?: string | null
+          user_id: string
+        }
+        Update: {
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          snooze_until?: string
+          ticket_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snoozed_tickets_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_messages: {
         Row: {
+          attachment_name: string | null
+          attachment_type: string | null
+          attachment_url: string | null
           created_at: string | null
           id: string
+          is_pinned: boolean | null
           is_read: boolean | null
+          is_voice_note: boolean | null
           message: string
           sender_type: string
           ticket_id: string | null
           user_id: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           created_at?: string | null
           id?: string
+          is_pinned?: boolean | null
           is_read?: boolean | null
+          is_voice_note?: boolean | null
           message: string
           sender_type?: string
           ticket_id?: string | null
           user_id: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           created_at?: string | null
           id?: string
+          is_pinned?: boolean | null
           is_read?: boolean | null
+          is_voice_note?: boolean | null
           message?: string
           sender_type?: string
           ticket_id?: string | null
@@ -3415,11 +3589,13 @@ export type Database = {
           assigned_to: string | null
           created_at: string
           id: string
+          is_snoozed: boolean | null
           is_starred: boolean | null
           notes: string | null
           priority: string
           resolved_at: string | null
           seller_id: string | null
+          snooze_until: string | null
           status: string
           subject: string
           tags: string[] | null
@@ -3433,11 +3609,13 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           id?: string
+          is_snoozed?: boolean | null
           is_starred?: boolean | null
           notes?: string | null
           priority?: string
           resolved_at?: string | null
           seller_id?: string | null
+          snooze_until?: string | null
           status?: string
           subject: string
           tags?: string[] | null
@@ -3451,11 +3629,13 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           id?: string
+          is_snoozed?: boolean | null
           is_starred?: boolean | null
           notes?: string | null
           priority?: string
           resolved_at?: string | null
           seller_id?: string | null
+          snooze_until?: string | null
           status?: string
           subject?: string
           tags?: string[] | null
