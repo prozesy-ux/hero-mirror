@@ -47,7 +47,26 @@ const ChatSection = () => {
   const [sending, setSending] = useState(false);
   const [creatingTicket, setCreatingTicket] = useState(false);
   const [newSubject, setNewSubject] = useState('');
+  const [userName, setUserName] = useState<string>('You');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Fetch user's profile name
+  useEffect(() => {
+    if (!user) return;
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data?.full_name) {
+        setUserName(data.full_name);
+      } else if (user.email) {
+        setUserName(user.email.split('@')[0]);
+      }
+    };
+    fetchProfile();
+  }, [user]);
 
   const activeTicket = tickets.find(t => t.id === activeTicketId);
 
@@ -263,10 +282,12 @@ const ChatSection = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="font-semibold" style={{ fontSize: '13px' }}>{ticket.ticket_number}</span>
+                  <span className="font-semibold" style={{ fontSize: '13px' }}>{userName}</span>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>{format(new Date(ticket.updated_at), 'hh:mm a')}</span>
                 </div>
-                <div className="font-medium mb-1 flex items-center gap-1" style={{ fontSize: '13px', color: '#64748b' }}>
+                <div className="font-medium mb-1 flex items-center gap-1" style={{ fontSize: '12px', color: '#64748b' }}>
+                  <span>{ticket.ticket_number}</span>
+                  <span>•</span>
                   <span className="w-[6px] h-[6px] rounded-full inline-block" style={{ background: ticket.status === 'open' ? '#22c55e' : ticket.status === 'resolved' ? '#64748b' : '#f59e0b' }} />
                   {ticket.status}
                 </div>
@@ -302,9 +323,9 @@ const ChatSection = () => {
                   <ChevronLeft size={18} />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold" style={{ fontSize: '15px' }}>{activeTicket.ticket_number}</span>
+                  <span className="font-bold" style={{ fontSize: '15px' }}>{userName}</span>
                   <span style={{ color: '#64748b' }}>•</span>
-                  <span className="truncate max-w-[200px] md:max-w-[300px]" style={{ color: '#64748b', fontSize: '14px' }}>{activeTicket.subject}</span>
+                  <span className="truncate max-w-[200px] md:max-w-[300px]" style={{ color: '#64748b', fontSize: '14px' }}>{activeTicket.ticket_number} · {activeTicket.subject}</span>
                   <Star
                     size={16}
                     onClick={handleStarToggle}
