@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
+import ErrorBoundary from '@/components/ui/error-boundary';
 import { useState, useEffect } from 'react';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
@@ -49,33 +50,35 @@ const DashboardContent = () => {
       isCollapsed ? 'lg:ml-[72px]' : 'lg:ml-52'
     }`}>
       <div className="relative p-3 sm:p-4 lg:p-8">
-        <Routes>
-          <Route index element={<Navigate to="/dashboard/home" replace />} />
-          <Route path="home" element={<BuyerDashboardHome />} />
-          <Route path="prompts" element={<PromptsGrid />} />
-          <Route path="favorites" element={<Navigate to="/dashboard/prompts" replace />} />
-          <Route path="tools" element={<Navigate to="/dashboard/prompts" replace />} />
-          <Route path="marketplace" element={<AIAccountsSection />} />
-          <Route path="marketplace/:accountId" element={<AccountDetailPage />} />
-          <Route path="marketplace/product/:productSlug" element={<ProductFullViewPage />} />
-          <Route path="billing" element={<BillingSection />} />
-          <Route path="wallet" element={<BuyerWallet />} />
-          <Route path="orders" element={<BuyerOrders />} />
-          <Route path="wishlist" element={<BuyerWishlist />} />
-          <Route path="analytics" element={<BuyerAnalytics />} />
-          <Route path="reports" element={<BuyerReports />} />
-          <Route path="notifications" element={<BuyerNotifications />} />
-          <Route path="library" element={<BuyerLibrary />} />
-          <Route path="library/:productId" element={<DownloadManager />} />
-          <Route path="course/:productId" element={<CourseViewer />} />
-          <Route path="profile" element={<ProfileSection />} />
-          <Route path="chat" element={<ChatSection />} />
-           <Route path="my-reviews" element={<BuyerReviewsGiven />} />
-           <Route path="refunds" element={<BuyerRefundRequests />} />
-           <Route path="support" element={<BuyerSupportTickets />} />
-           <Route path="recently-viewed" element={<BuyerRecentlyViewed />} />
-           <Route path="service-bookings" element={<BuyerServiceBookings />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route index element={<Navigate to="/dashboard/home" replace />} />
+            <Route path="home" element={<BuyerDashboardHome />} />
+            <Route path="prompts" element={<PromptsGrid />} />
+            <Route path="favorites" element={<Navigate to="/dashboard/prompts" replace />} />
+            <Route path="tools" element={<Navigate to="/dashboard/prompts" replace />} />
+            <Route path="marketplace" element={<AIAccountsSection />} />
+            <Route path="marketplace/:accountId" element={<AccountDetailPage />} />
+            <Route path="marketplace/product/:productSlug" element={<ProductFullViewPage />} />
+            <Route path="billing" element={<BillingSection />} />
+            <Route path="wallet" element={<BuyerWallet />} />
+            <Route path="orders" element={<BuyerOrders />} />
+            <Route path="wishlist" element={<BuyerWishlist />} />
+            <Route path="analytics" element={<BuyerAnalytics />} />
+            <Route path="reports" element={<BuyerReports />} />
+            <Route path="notifications" element={<BuyerNotifications />} />
+            <Route path="library" element={<BuyerLibrary />} />
+            <Route path="library/:productId" element={<DownloadManager />} />
+            <Route path="course/:productId" element={<CourseViewer />} />
+            <Route path="profile" element={<ProfileSection />} />
+            <Route path="chat" element={<ChatSection />} />
+             <Route path="my-reviews" element={<BuyerReviewsGiven />} />
+             <Route path="refunds" element={<BuyerRefundRequests />} />
+             <Route path="support" element={<BuyerSupportTickets />} />
+             <Route path="recently-viewed" element={<BuyerRecentlyViewed />} />
+             <Route path="service-bookings" element={<BuyerServiceBookings />} />
+          </Routes>
+        </ErrorBoundary>
       </div>
       
       {/* Floating Chat Widget */}

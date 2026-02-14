@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, ComponentType } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,18 +15,35 @@ import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import NotFound from "./pages/NotFound";
 
-// Lazy load heavy pages for faster initial bundle
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Seller = lazy(() => import("./pages/Seller"));
-const Admin = lazy(() => import("./pages/Admin"));
-const Store = lazy(() => import("./pages/Store"));
-const ProductFullView = lazy(() => import("./pages/ProductFullView"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const Marketplace = lazy(() => import("./pages/Marketplace"));
-const NewProduct = lazy(() => import("./pages/NewProduct"));
-const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
-const TermsOfService = lazy(() => import("./pages/TermsOfService"));
-const Help = lazy(() => import("./pages/Help"));
+// Retry wrapper for lazy loading - handles flaky mobile connections
+const lazyWithRetry = (
+  importFn: () => Promise<{ default: ComponentType<any> }>,
+  retries = 3
+): React.LazyExoticComponent<ComponentType<any>> => {
+  return lazy(() =>
+    importFn().catch((err) => {
+      if (retries > 0) {
+        return new Promise<{ default: ComponentType<any> }>((resolve) =>
+          setTimeout(resolve, 1000)
+        ).then(() => lazyWithRetry(importFn, retries - 1) as any);
+      }
+      throw err;
+    })
+  );
+};
+
+// Lazy load heavy pages with auto-retry for chunk failures
+const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"));
+const Seller = lazyWithRetry(() => import("./pages/Seller"));
+const Admin = lazyWithRetry(() => import("./pages/Admin"));
+const Store = lazyWithRetry(() => import("./pages/Store"));
+const ProductFullView = lazyWithRetry(() => import("./pages/ProductFullView"));
+const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"));
+const Marketplace = lazyWithRetry(() => import("./pages/Marketplace"));
+const NewProduct = lazyWithRetry(() => import("./pages/NewProduct"));
+const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazyWithRetry(() => import("./pages/TermsOfService"));
+const Help = lazyWithRetry(() => import("./pages/Help"));
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -27,14 +27,28 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ErrorBoundary] Caught error:', error);
-    console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
+    // Always log errors (including production) for debugging
+    console.error('[ErrorBoundary] Caught error:', error?.message || error);
+    console.error('[ErrorBoundary] Error name:', error?.name);
+    console.error('[ErrorBoundary] Stack:', error?.stack);
+    console.error('[ErrorBoundary] Component stack:', errorInfo?.componentStack);
     
     // Check if this is a chunk loading error (dynamic import failure)
-    if (error.message?.includes('Failed to fetch dynamically imported module') ||
-        error.message?.includes('Loading chunk') ||
-        error.message?.includes('Loading CSS chunk')) {
-      console.log('[ErrorBoundary] Chunk loading error detected - will offer refresh');
+    const isChunkError = error?.message?.includes('Failed to fetch dynamically imported module') ||
+        error?.message?.includes('Loading chunk') ||
+        error?.message?.includes('Loading CSS chunk') ||
+        error?.message?.includes('Importing a module script failed');
+    
+    if (isChunkError) {
+      console.log('[ErrorBoundary] Chunk loading error detected - auto-refreshing');
+      // Auto-refresh once for chunk errors
+      const hasRefreshed = sessionStorage.getItem('chunk_error_refresh');
+      if (!hasRefreshed) {
+        sessionStorage.setItem('chunk_error_refresh', '1');
+        window.location.reload();
+        return;
+      }
+      sessionStorage.removeItem('chunk_error_refresh');
     }
   }
 
