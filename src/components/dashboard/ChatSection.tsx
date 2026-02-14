@@ -148,7 +148,7 @@ const ChatSection = () => {
       user_id: user.id,
       ticket_id: activeTicketId,
       message: messageText.trim(),
-      sender_type: 'buyer',
+      sender_type: 'user',
     });
     if (error) {
       toast.error('Failed to send');
@@ -353,7 +353,7 @@ const ChatSection = () => {
                   </div>
                 </div>
               ) : messages.map((msg) => {
-                const isMe = msg.sender_type === 'buyer';
+                const isMe = msg.sender_type === 'user';
                 return (
                   <div key={msg.id} className={cn("flex gap-4", isMe ? "self-end flex-row-reverse" : "")} style={{ maxWidth: '80%' }}>
                     {isMe ? (
