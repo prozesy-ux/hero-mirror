@@ -1,830 +1,488 @@
-import { useState, useEffect, useRef } from 'react';
-import { useSellerContext } from '@/contexts/SellerContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { 
-  Send, 
-  Search,
-  User,
-  Paperclip,
-  Phone,
-  MoreVertical,
-  ChevronDown,
-  Play,
-  Pause,
-  ChevronLeft
+import { useState } from 'react';
+import {
+  Search, ChevronDown, ChevronLeft, Star, MoreHorizontal, Sparkles,
+  Phone, Moon, User, ArrowRightLeft, Send, Type, Paperclip, Link,
+  Smile, Mic, PenLine, Flag, X, Shuffle, MessageSquarePlus, BookOpen,
+  MessageCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // =====================================================
-// EXACT DEMO DATA FROM HTML - DO NOT CHANGE
+// MOCK DATA - FROM HTML (no DB)
 // =====================================================
 
-const DEMO_CONTACTS = [
+const TICKETS = [
   {
-    id: 'demo-1',
-    name: 'Eten Hunt',
-    avatar: 'https://c.animaapp.com/mlcbgbe2563Pxt/img/photo.png',
-    role: 'Agents',
-    lastMessage: "Thank you very much. I'm glad ...",
-    unread: false,
-    active: true
+    id: 'tc-0004-1',
+    ticketId: '#TC-0004',
+    name: 'David Newman',
+    avatar: 'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F35-50%2FNorth%20American%2F3',
+    avatarType: 'img' as const,
+    subject: 'System Login Failure',
+    time: '09:46 am',
+    unread: 2,
   },
   {
-    id: 'demo-2',
-    name: 'Jakob Saris',
-    avatar: 'https://c.animaapp.com/mlcbgbe2563Pxt/img/people.png',
-    role: 'Property manager',
-    lastMessage: 'You : Sure! let me tell you about w…',
-    unread: false,
-    active: false
+    id: 'tc-0001',
+    ticketId: '#TC-0001',
+    name: 'Emily Johnson',
+    avatar: 'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FEuropean%2F5',
+    avatarType: 'img' as const,
+    subject: 'Request for Additional Storage...',
+    time: '09:46 am',
+    unread: 0,
   },
   {
-    id: 'demo-3',
-    name: 'Jeremy Zucker',
-    avatar: 'https://c.animaapp.com/mlcbgbe2563Pxt/img/people-1.png',
-    role: '4 m Ago',
-    lastMessage: 'You : Sure! let me teach you about  ...',
-    unread: false,
-    active: false
+    id: 'tc-0003',
+    ticketId: '#TC-0003',
+    name: '(747) 246-9411',
+    avatar: '747',
+    avatarType: 'text' as const,
+    subject: 'Unable to access report',
+    time: '09:46 am',
+    unread: 0,
   },
   {
-    id: 'demo-4',
-    name: 'Nadia Lauren',
-    avatar: 'https://c.animaapp.com/mlcbgbe2563Pxt/img/people-2.png',
-    role: '5 m Ago',
-    lastMessage: 'Is there anything I can help? Just ...',
-    unread: true,
-    active: false
+    id: 'tc-0004-2',
+    ticketId: '#TC-0004',
+    name: 'Brooklyn Simmons',
+    avatar: 'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F18-25%2FAfrican%2F2',
+    avatarType: 'img' as const,
+    subject: 'File Upload Error',
+    time: '09:46 am',
+    unread: 1,
   },
   {
-    id: 'demo-5',
-    name: 'Jeremy Zucker',
-    avatar: 'https://c.animaapp.com/mlcbgbe2563Pxt/img/people-3.png',
-    role: '4 m Ago',
-    lastMessage: 'You : Sure! let me teach you about  ...',
-    unread: false,
-    active: false
-  }
+    id: 'tc-0007',
+    ticketId: '#TC-0007',
+    name: '(44) 1342 351',
+    avatar: '44',
+    avatarType: 'text' as const,
+    subject: 'Unable to access report',
+    time: '09:46 am',
+    unread: 1,
+  },
+  {
+    id: 'tc-0008',
+    ticketId: '#TC-0008',
+    name: 'Guy Hawkins',
+    avatar: 'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSouth%20Asian%2F4',
+    avatarType: 'img' as const,
+    subject: 'Unexpected App Crash',
+    time: '09:46 am',
+    unread: 0,
+  },
 ];
 
-const DEMO_RECEIVED_MESSAGES = [
+const MESSAGES = [
   {
-    id: 'r1',
-    images: [
-      'https://c.animaapp.com/mlcbgbe2563Pxt/img/image-2.png',
-      'https://c.animaapp.com/mlcbgbe2563Pxt/img/image-3.png'
-    ],
-    text: 'Good question. How about just discussing it?',
-    time: 'Today 11:55'
+    id: 'm1',
+    type: 'customer' as const,
+    name: 'Emily Johnson',
+    avatar: 'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FEuropean%2F5',
+    text: 'Hi, I need more storage and better server capacity.',
+    time: '09:44 am',
+    channel: 'Whatsapp',
   },
   {
-    id: 'r2',
-    images: [],
-    text: 'Yes of course, Are there problems with your job?',
-    time: 'Today 11:53'
+    id: 'm2',
+    type: 'ai' as const,
+    name: 'EcomiqAI',
+    text: 'Hello! I can assist with that. Are you looking for both additional storage and server upgrades? Can I transfer you to a customer service agent for further assistance?',
+    time: '09:51 am',
+    channel: 'Whatsapp',
   },
   {
-    id: 'r3',
-    images: [
-      'https://c.animaapp.com/mlcbgbe2563Pxt/img/-----image-1.png',
-      'https://c.animaapp.com/mlcbgbe2563Pxt/img/-----image-1.png'
-    ],
-    text: 'Good question. How about just discussing it?',
-    time: 'Today 11:55'
-  }
+    id: 'm3',
+    type: 'customer' as const,
+    name: 'Emily Johnson',
+    avatar: 'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FEuropean%2F5',
+    text: 'Yes, sure.',
+    time: '09:44 am',
+    channel: 'Whatsapp',
+  },
+  {
+    id: 'm4',
+    type: 'ai' as const,
+    name: 'EcomiqAI',
+    text: 'Connecting you now... please hold for a moment.',
+    time: '09:51 am',
+    channel: 'Whatsapp',
+  },
+  {
+    id: 'sys1',
+    type: 'system' as const,
+    text: 'has connected to take over ticket',
+    actor: 'Raihan Fikri',
+    time: '09:52 AM',
+    icon: 'user' as const,
+  },
+  {
+    id: 'sys2',
+    type: 'system' as const,
+    text: 'Ticket change priority to',
+    actor: 'Raihan Fikri',
+    time: '09:52 AM',
+    icon: 'swap' as const,
+    pill: '• Medium',
+  },
+  {
+    id: 'm5',
+    type: 'agent' as const,
+    name: 'Raihan Fikri',
+    avatar: 'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSouth%20Asian%2F4',
+    text: "Hi, thanks for waiting! I see you're looking for more storage and server capacity. Can we schedule a quick assessment to recommend the right solution for you?",
+    time: '09:51 am',
+    channel: 'Whatsapp',
+  },
 ];
-
-const DEMO_SENT_MESSAGES = [
-  {
-    id: 's1',
-    hasVoice: true,
-    text: 'Of course. Thank you so much for taking your time.',
-    time: 'Today 11:56'
-  },
-  {
-    id: 's2',
-    hasVoice: false,
-    text: 'Morning Eten Hunt, I have a question about my job!',
-    time: 'Today 11:52'
-  }
-];
-
-interface ChatMessage {
-  id: string;
-  seller_id: string;
-  buyer_id: string;
-  product_id: string | null;
-  message: string;
-  sender_type: string;
-  is_read: boolean;
-  created_at: string;
-}
-
-interface ChatUser {
-  buyer_id: string;
-  email: string;
-  full_name: string | null;
-  last_message: string;
-  last_message_time: string;
-  unread_count: number;
-}
 
 // =====================================================
-// COMPONENT - EXACT HTML COPY
+// COMPONENT
 // =====================================================
 
 const SellerChat = () => {
-  const { profile } = useSellerContext();
-  const [chatUsers, setChatUsers] = useState<ChatUser[]>([]);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const [activeTicket, setActiveTicket] = useState('tc-0001');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showChatOnMobile, setShowChatOnMobile] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [selectedDemoContact, setSelectedDemoContact] = useState(DEMO_CONTACTS[0]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    fetchChatUsers();
-    const cleanup = subscribeToMessages();
-    return cleanup;
-  }, [profile.id]);
-
-  useEffect(() => {
-    if (chatUsers.length > 0 && !selectedUser && !loading) {
-      setSelectedUser(chatUsers[0].buyer_id);
-      setShowChatOnMobile(true);
-    }
-  }, [chatUsers, selectedUser, loading]);
-
-  useEffect(() => {
-    if (selectedUser) {
-      fetchMessages(selectedUser);
-      markAsRead(selectedUser);
-    }
-  }, [selectedUser]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  };
-
-  const fetchChatUsers = async () => {
-    try {
-      const { data: chats, error } = await supabase
-        .from('seller_chats')
-        .select('buyer_id, message, created_at, is_read, sender_type')
-        .eq('seller_id', profile.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const buyerMap = new Map<string, {
-        last_message: string;
-        last_message_time: string;
-        unread_count: number;
-      }>();
-
-      chats?.forEach((chat) => {
-        if (!buyerMap.has(chat.buyer_id)) {
-          buyerMap.set(chat.buyer_id, {
-            last_message: chat.message,
-            last_message_time: chat.created_at,
-            unread_count: 0
-          });
-        }
-        if (!chat.is_read && chat.sender_type === 'buyer') {
-          const existing = buyerMap.get(chat.buyer_id)!;
-          existing.unread_count++;
-        }
-      });
-
-      const buyerIds = Array.from(buyerMap.keys());
-      if (buyerIds.length === 0) {
-        setChatUsers([]);
-        setLoading(false);
-        return;
-      }
-
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, email, full_name')
-        .in('user_id', buyerIds);
-
-      const users: ChatUser[] = buyerIds.map((buyerId) => {
-        const buyerProfile = profiles?.find(p => p.user_id === buyerId);
-        const chatInfo = buyerMap.get(buyerId)!;
-        return {
-          buyer_id: buyerId,
-          email: buyerProfile?.email || 'Unknown',
-          full_name: buyerProfile?.full_name || null,
-          ...chatInfo
-        };
-      });
-
-      users.sort((a, b) => 
-        new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime()
-      );
-
-      setChatUsers(users);
-    } catch (error) {
-      console.error('Error fetching chat users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMessages = async (buyerId: string) => {
-    const { data, error } = await supabase
-      .from('seller_chats')
-      .select('*')
-      .eq('seller_id', profile.id)
-      .eq('buyer_id', buyerId)
-      .order('created_at', { ascending: true });
-
-    if (!error) setMessages(data || []);
-  };
-
-  const markAsRead = async (buyerId: string) => {
-    await supabase
-      .from('seller_chats')
-      .update({ is_read: true })
-      .eq('seller_id', profile.id)
-      .eq('buyer_id', buyerId)
-      .eq('sender_type', 'buyer');
-    
-    fetchChatUsers();
-  };
-
-  const subscribeToMessages = () => {
-    const channel = supabase
-      .channel('seller-chats')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'seller_chats',
-        filter: `seller_id=eq.${profile.id}`
-      }, (payload) => {
-        const newMsg = payload.new as ChatMessage;
-        if (newMsg.buyer_id === selectedUser) {
-          setMessages(prev => [...prev, newMsg]);
-          if (newMsg.sender_type === 'buyer') {
-            markAsRead(newMsg.buyer_id);
-          }
-        }
-        fetchChatUsers();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
-  const sendMessage = async () => {
-    if (!selectedUser || !newMessage.trim()) return;
-
-    setSending(true);
-    try {
-      const { error } = await supabase
-        .from('seller_chats')
-        .insert({
-          seller_id: profile.id,
-          buyer_id: selectedUser,
-          message: newMessage.trim(),
-          sender_type: 'seller'
-        });
-
-      if (error) throw error;
-      setNewMessage('');
-      await fetchMessages(selectedUser);
-      fetchChatUsers();
-    } catch (error: any) {
-      toast.error('Failed to send message');
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const totalUnread = chatUsers.reduce((sum, u) => sum + u.unread_count, 0);
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-32 mb-6 rounded-lg" />
-        <div className="grid grid-cols-3 gap-4 h-[calc(100vh-180px)]">
-          <Skeleton className="col-span-1 rounded-xl" />
-          <Skeleton className="col-span-2 rounded-xl" />
-        </div>
-      </div>
-    );
-  }
-
-  const selectedUserData = chatUsers.find(u => u.buyer_id === selectedUser);
-  const hasRealUsers = chatUsers.length > 0;
+  const [messageText, setMessageText] = useState('');
+  const [priority, setPriority] = useState('medium');
 
   return (
-    <div className="flex h-[882px]" style={{ fontFamily: "'Plus Jakarta Sans', Helvetica, sans-serif" }}>
-      {/* Hidden file input */}
-      <input ref={fileInputRef} type="file" multiple className="hidden" />
-
-      {/* =====================================================
-          CONTACTS SIDEBAR - width: 400px
-          ===================================================== */}
-      <aside className={cn(
-        "w-[400px] bg-white overflow-hidden flex-shrink-0",
-        showChatOnMobile ? "hidden lg:block" : "block"
-      )}>
-        {/* Contacts Header - padding: 24px 20px, gap: 12px */}
-        <div className="p-[24px_20px] flex flex-col gap-3">
-          {/* Title Row */}
-          <div className="flex items-center justify-between">
-            {/* Title with badge */}
-            <div className="flex items-center gap-1 px-1">
-              <h1 
-                className="text-[24px] font-semibold tracking-[-0.72px]" 
-                style={{ color: 'rgba(0, 9, 41, 1)' }}
-              >
-                Messaging
-              </h1>
-              <span 
-                className="text-[12px] font-normal px-[3px] py-1 rounded-[2px]"
-                style={{ 
-                  backgroundColor: '#ff3e46', 
-                  color: '#9b171c',
-                  fontFamily: "'Roboto', Helvetica"
-                }}
-              >
-                {hasRealUsers ? totalUnread || 137 : 137}
-              </span>
+    <div className="flex h-[calc(100vh-120px)] min-h-[600px]" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", fontSize: '14px', lineHeight: '1.5', color: '#0f172a' }}>
+      
+      {/* 2. Ticket List Sidebar */}
+      <aside className="w-[320px] border-r flex-col hidden lg:flex flex-shrink-0" style={{ borderColor: '#e2e8f0', background: '#fff' }}>
+        <div style={{ padding: '24px 20px 16px' }}>
+          <div className="flex justify-between items-center mb-4">
+            <span className="font-semibold" style={{ fontSize: '15px' }}>Total ticket 24</span>
+            <div className="flex items-center gap-1 cursor-pointer" style={{ fontSize: '13px', color: '#64748b' }}>
+              Newest
+              <ChevronDown size={14} />
             </div>
-            
-            {/* Filter button */}
-            <button 
-              className="flex items-center gap-1 p-1 bg-white rounded border cursor-pointer"
-              style={{ 
-                borderColor: '#f7f7fd',
-                fontFamily: "'Raleway', Helvetica",
-                fontWeight: 500,
-                fontSize: '14px',
-                color: 'rgba(0, 9, 41, 1)'
-              }}
-            >
-              <span>Agents</span>
-              <ChevronDown className="w-6 h-6" />
-            </button>
           </div>
-          
-          {/* Search - height: 46px, bg: #f7f7fd, radius: 4px */}
-          <div 
-            className="relative h-[46px] flex items-center px-4 rounded"
-            style={{ backgroundColor: 'rgba(247, 247, 253, 1)' }}
-          >
-            <Search className="w-5 h-5" style={{ color: '#92929d' }} />
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#64748b' }} />
             <input
               type="text"
-              placeholder="Search in dashboard..."
+              placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 border-none bg-transparent ml-3 text-[14px] outline-none"
-              style={{ 
-                fontFamily: "'Poppins', Helvetica",
-                color: '#92929d'
-              }}
+              className="w-full h-10 rounded-lg pl-[38px] pr-3 outline-none transition-colors"
+              style={{ border: '1px solid #e2e8f0', fontSize: '14px', color: '#0f172a' }}
+              onFocus={(e) => (e.target.style.borderColor = '#f97316')}
+              onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
             />
           </div>
         </div>
 
-        {/* Contacts List - height: 765px */}
-        <div className="h-[765px] overflow-y-auto">
-          {/* Show real users if available, otherwise show demo contacts */}
-          {hasRealUsers ? (
-            chatUsers.map((chatUser, index) => (
-              <div key={chatUser.buyer_id}>
-                <button
-                  onClick={() => {
-                    setSelectedUser(chatUser.buyer_id);
-                    setShowChatOnMobile(true);
-                  }}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-[10px_20px] text-left transition-colors border-none cursor-pointer",
-                    selectedUser === chatUser.buyer_id 
-                      ? "rounded-[10px]" 
-                      : "bg-transparent hover:bg-[rgba(247,247,253,1)]"
-                  )}
-                  style={{ 
-                    backgroundColor: selectedUser === chatUser.buyer_id ? 'rgba(247, 247, 253, 1)' : 'transparent'
-                  }}
-                >
-                  <Avatar className="w-[52px] h-[52px] rounded-[30px]">
-                    <AvatarFallback className="bg-[#2e3b5b] text-white">
-                      {(chatUser.full_name || chatUser.email).charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <span 
-                        className="font-medium text-[14px] tracking-[-0.28px] whitespace-nowrap"
-                        style={{ fontFamily: "'Inter', Helvetica", color: 'rgba(0, 9, 41, 1)' }}
-                      >
-                        {chatUser.full_name || chatUser.email.split('@')[0]}
-                      </span>
-                      <span 
-                        className="text-[12px] tracking-[-0.12px] whitespace-nowrap"
-                        style={{ color: 'rgba(118, 118, 124, 0.8)' }}
-                      >
-                        {format(new Date(chatUser.last_message_time), 'h:mm a')}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <p 
-                        className={cn(
-                          "text-[12px] tracking-[-0.24px] overflow-hidden text-ellipsis whitespace-nowrap",
-                          chatUser.unread_count > 0 && "font-medium"
-                        )}
-                        style={{ 
-                          color: chatUser.unread_count > 0 ? 'rgba(0, 9, 41, 1)' : 'rgba(118, 118, 124, 0.8)'
-                        }}
-                      >
-                        {chatUser.last_message}
-                      </p>
-                      {chatUser.unread_count > 0 ? (
-                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: 'rgba(216, 32, 39, 1)' }} />
-                      ) : (
-                        <img src="https://c.animaapp.com/mlcbgbe2563Pxt/img/done-all.svg" alt="Read" className="w-[18px] h-[18px] flex-shrink-0" />
-                      )}
-                    </div>
-                  </div>
-                </button>
-                {index < chatUsers.length - 1 && (
-                  <div className="w-[312px] h-[1px] mx-auto" style={{ backgroundColor: '#e5e5e5' }} />
-                )}
+        <div className="flex-1 overflow-y-auto px-3">
+          {TICKETS.map((ticket) => (
+            <div
+              key={ticket.id}
+              onClick={() => setActiveTicket(ticket.id)}
+              className={cn(
+                "flex gap-3 p-4 rounded-lg cursor-pointer mb-1 transition-colors",
+                activeTicket === ticket.id
+                  ? "border"
+                  : "border border-transparent hover:bg-[#f8fafc]"
+              )}
+              style={activeTicket === ticket.id ? { backgroundColor: '#eff6ff', borderColor: '#dbeafe' } : {}}
+            >
+              {ticket.avatarType === 'img' ? (
+                <img src={ticket.avatar} className="w-10 h-10 rounded-full object-cover flex-shrink-0" style={{ background: '#e2e8f0' }} />
+              ) : (
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-semibold" style={{ fontSize: '10px', background: '#f1f5f9', color: '#64748b' }}>
+                  {ticket.avatar}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-semibold" style={{ fontSize: '13px' }}>{ticket.ticketId}</span>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>{ticket.time}</span>
+                </div>
+                <div className="font-medium mb-1" style={{ fontSize: '13px', color: '#64748b' }}>{ticket.name}</div>
+                <div className="font-medium truncate" style={{ fontSize: '13px' }}>{ticket.subject}</div>
               </div>
-            ))
-          ) : (
-            DEMO_CONTACTS.map((contact, index) => (
-              <div key={contact.id}>
-                <button
-                  onClick={() => setSelectedDemoContact(contact)}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-[10px_20px] text-left transition-colors border-none cursor-pointer",
-                    selectedDemoContact.id === contact.id 
-                      ? "rounded-[10px]" 
-                      : "bg-transparent hover:bg-[rgba(247,247,253,1)]"
-                  )}
-                  style={{ 
-                    backgroundColor: selectedDemoContact.id === contact.id ? 'rgba(247, 247, 253, 1)' : 'transparent'
-                  }}
-                >
-                  <img 
-                    src={contact.avatar} 
-                    alt={contact.name}
-                    className="w-[52px] h-[52px] rounded-[30px] object-cover flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0 flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <span 
-                        className="font-medium text-[14px] tracking-[-0.28px] whitespace-nowrap"
-                        style={{ fontFamily: "'Inter', Helvetica", color: 'rgba(0, 9, 41, 1)' }}
-                      >
-                        {contact.name}
-                      </span>
-                      <span 
-                        className="text-[12px] tracking-[-0.12px] whitespace-nowrap"
-                        style={{ color: 'rgba(118, 118, 124, 0.8)' }}
-                      >
-                        {contact.role}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <p 
-                        className={cn(
-                          "text-[12px] tracking-[-0.24px] overflow-hidden text-ellipsis whitespace-nowrap",
-                          contact.unread && "font-medium"
-                        )}
-                        style={{ 
-                          color: contact.unread ? 'rgba(0, 9, 41, 1)' : 'rgba(118, 118, 124, 0.8)'
-                        }}
-                      >
-                        {contact.lastMessage}
-                      </p>
-                      {contact.unread ? (
-                        <div className="w-[18px] h-[18px] flex items-center justify-center flex-shrink-0">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'rgba(216, 32, 39, 1)' }} />
-                        </div>
-                      ) : (
-                        <img src="https://c.animaapp.com/mlcbgbe2563Pxt/img/done-all.svg" alt="Read" className="w-[18px] h-[18px] flex-shrink-0" />
-                      )}
-                    </div>
+              {ticket.unread > 0 && (
+                <div className="flex flex-col justify-end">
+                  <div className="flex items-center justify-center font-semibold text-white rounded-[9px]" style={{ background: '#ef4444', fontSize: '11px', height: '18px', minWidth: '18px', padding: '0 5px' }}>
+                    {ticket.unread}
                   </div>
-                </button>
-                {index < DEMO_CONTACTS.length - 1 && (
-                  <div className="w-[312px] h-[1px] mx-auto" style={{ backgroundColor: '#e5e5e5' }} />
-                )}
-              </div>
-            ))
-          )}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </aside>
 
-      {/* =====================================================
-          CHAT AREA - width: 881px, height: 882px
-          ===================================================== */}
-      <div className={cn(
-        "w-[881px] h-[882px] relative flex flex-col",
-        !showChatOnMobile ? "hidden lg:flex" : "flex"
-      )}>
-        {/* Chat Header - height: 100px, padding: 0 24px */}
-        <header 
-          className="h-[100px] flex items-center justify-between px-6 flex-shrink-0"
-          style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 1)',
-            borderBottom: '1px solid #e5e5e5'
-          }}
-        >
-          {/* User Info - gap: 12px */}
-          <div className="flex items-center gap-3">
-            {/* Back button for mobile */}
-            <button 
-              onClick={() => setShowChatOnMobile(false)}
-              className="lg:hidden p-2 -ml-2 hover:bg-[#f7f7fd] rounded-lg"
-            >
-              <ChevronLeft className="w-5 h-5" style={{ color: 'rgba(0, 9, 41, 1)' }} />
-            </button>
-            
-            {/* Avatar - 44x44, radius: 40px */}
-            {hasRealUsers && selectedUserData ? (
-              <Avatar className="w-[44px] h-[44px] rounded-[40px]">
-                <AvatarFallback className="bg-[#2e3b5b] text-white">
-                  <User className="h-5 w-5" />
-                </AvatarFallback>
-              </Avatar>
-            ) : (
-              <img 
-                src="https://c.animaapp.com/mlcbgbe2563Pxt/img/people-13.png"
-                alt={selectedDemoContact.name}
-                className="w-[44px] h-[44px] rounded-[40px] object-cover"
-              />
-            )}
-            
-            {/* User Details - gap: 8px */}
-            <div className="flex flex-col gap-2">
-              <h2 
-                className="text-[16px] font-semibold tracking-[-0.32px]"
-                style={{ color: 'rgba(0, 9, 41, 1)' }}
-              >
-                {hasRealUsers && selectedUserData 
-                  ? (selectedUserData.full_name || selectedUserData.email)
-                  : selectedDemoContact.name
-                }
-              </h2>
-              {/* Online Status - gap: 8px */}
-              <div className="flex items-center gap-2">
-                <div className="w-[18px] h-[18px] flex items-center justify-center">
-                  <div 
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: 'rgba(51, 184, 67, 1)' }}
-                  />
-                </div>
-                <span 
-                  className="text-[12px] tracking-[-0.24px] font-medium"
-                  style={{ color: 'rgba(186, 186, 186, 1)' }}
-                >
-                  Online
-                </span>
-              </div>
+      {/* 3. Chat Area */}
+      <main className="flex-1 flex flex-col min-w-0" style={{ background: '#ffffff' }}>
+        {/* Chat Header */}
+        <header className="flex items-center justify-between flex-shrink-0 px-8" style={{ height: '72px', borderBottom: '1px solid #e2e8f0' }}>
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer" style={{ border: '1px solid #e2e8f0', background: 'white' }}>
+              <ChevronLeft size={18} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold" style={{ fontSize: '15px' }}>#TC-0001</span>
+              <span style={{ color: '#64748b' }}>•</span>
+              <span className="truncate max-w-[300px]" style={{ color: '#64748b', fontSize: '14px' }}>Request for Additional Storage and more server</span>
+              <Star size={16} style={{ color: '#64748b', marginLeft: '4px', cursor: 'pointer' }} />
             </div>
           </div>
-          
-          {/* Action Buttons - gap: 24px */}
-          <div className="flex items-center gap-6">
-            <button className="p-0 bg-transparent border-none cursor-pointer">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M23 7L16 12L23 17V7Z" stroke="rgba(0, 9, 41, 1)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <rect x="1" y="5" width="15" height="14" rx="2" stroke="rgba(0, 9, 41, 1)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+          <div className="flex items-center gap-[10px]">
+            <div className="w-9 h-9 flex items-center justify-center cursor-pointer" style={{ background: 'transparent' }}>
+              <MoreHorizontal size={20} style={{ color: '#64748b' }} />
+            </div>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer" style={{ border: '1px solid #e2e8f0' }}>
+              <Sparkles size={16} style={{ color: '#f97316' }} />
+            </div>
+            <button className="h-9 px-4 rounded-lg flex items-center gap-2 font-medium cursor-pointer" style={{ border: '1px solid #e2e8f0', background: 'white', fontSize: '13px' }}>
+              <Phone size={16} /> Call
             </button>
-            <button className="p-0 bg-transparent border-none cursor-pointer">
-              <Phone className="w-6 h-6" style={{ color: 'rgba(0, 9, 41, 1)' }} />
+            <button className="h-9 px-4 rounded-lg flex items-center gap-2 font-medium cursor-pointer" style={{ border: '1px solid #e2e8f0', background: 'white', fontSize: '13px' }}>
+              <Moon size={16} /> Snooze
             </button>
-            <button className="p-0 bg-transparent border-none cursor-pointer">
-              <MoreVertical className="w-6 h-6" style={{ color: 'rgba(0, 9, 41, 1)' }} />
+            <button className="h-9 px-4 rounded-lg flex items-center gap-2 font-medium cursor-pointer text-white" style={{ background: '#f97316', border: '1px solid #f97316', fontSize: '13px' }}>
+              Close
             </button>
           </div>
         </header>
 
-        {/* Today Badge */}
-        <div className="flex justify-center pt-1" style={{ backgroundColor: 'white' }}>
-          <span 
-            className="py-2 px-3 rounded text-[14px] font-semibold tracking-[-0.28px]"
-            style={{ 
-              backgroundColor: 'rgba(255, 255, 255, 1)',
-              color: 'rgba(46, 42, 64, 1)',
-              boxShadow: '0px 1px 3px rgba(237, 98, 20, 0.1)'
-            }}
-          >
-            Today
-          </span>
+        {/* Chat Stream */}
+        <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-6">
+          {MESSAGES.map((msg) => {
+            if (msg.type === 'system') {
+              return (
+                <div key={msg.id} className="self-center flex items-center gap-2 px-4 py-2 rounded-[20px]" style={{ fontSize: '12px', color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: msg.icon === 'user' ? '#e0e7ff' : '#dbeafe', color: msg.icon === 'user' ? '#4338ca' : '#1d4ed8' }}>
+                    {msg.icon === 'user' ? <User size={12} /> : <ArrowRightLeft size={12} />}
+                  </div>
+                  <span><strong>{msg.actor}</strong> {msg.text}</span>
+                  {msg.pill && <span className="font-medium" style={{ background: '#fef3c7', color: '#d97706', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', border: '1px solid #fcd34d' }}>{msg.pill}</span>}
+                  <span style={{ opacity: 0.6 }}>{msg.time}</span>
+                </div>
+              );
+            }
+
+            const isMe = msg.type === 'ai' || msg.type === 'agent';
+
+            return (
+              <div key={msg.id} className={cn("flex gap-4", isMe ? "self-end flex-row-reverse" : "")} style={{ maxWidth: '80%' }}>
+                {msg.type === 'ai' ? (
+                  <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white" style={{ background: '#8b5cf6' }}>
+                    <Sparkles size={18} />
+                  </div>
+                ) : (
+                  <img src={msg.avatar} className="w-9 h-9 rounded-full flex-shrink-0 object-cover" />
+                )}
+                <div className={cn("flex flex-col gap-[6px]", isMe ? "items-end" : "")}>
+                  {msg.type === 'customer' && <div className="font-semibold" style={{ fontSize: '13px' }}>{msg.name}</div>}
+                  {msg.type === 'ai' && (
+                    <div className="flex items-center gap-[6px] font-medium" style={{ fontSize: '12px', color: '#7c3aed' }}>
+                      <Sparkles size={12} /> Reply by EcomiqAI
+                    </div>
+                  )}
+                  <div
+                    className="px-[18px] py-[14px] rounded-xl"
+                    style={{
+                      fontSize: '14px',
+                      lineHeight: '1.6',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                      maxWidth: isMe ? '500px' : undefined,
+                      ...(isMe
+                        ? { background: '#eff6ff', color: '#1e3a8a', borderTopRightRadius: '4px' }
+                        : { background: '#f1f5f9', borderTopLeftRadius: '4px' }),
+                    }}
+                  >
+                    {msg.text}
+                  </div>
+                  <div className="flex items-center gap-[6px]" style={{ fontSize: '11px', color: '#64748b' }}>
+                    {msg.time} • Via Whatsapp
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Messages Container - height: 700px, padding: 8px 24px */}
-        <div 
-          className="h-[700px] overflow-y-auto p-[8px_24px] flex-1"
-          style={{ backgroundColor: 'white' }}
-        >
-          {/* Show real messages if user selected, otherwise show demo */}
-          {hasRealUsers && selectedUser && messages.length > 0 ? (
-            <div className="space-y-4">
-              {messages.map((msg) => {
-                const isSeller = msg.sender_type === 'seller';
-                return (
-                  <div key={msg.id} className={`flex ${isSeller ? 'justify-end' : 'justify-start'}`}>
-                    <div className="flex flex-col gap-[10px]">
-                      <div 
-                        className={cn(
-                          "max-w-[303px] p-[8px_12px]",
-                          isSeller 
-                            ? "rounded-[10px_0px_10px_10px]" 
-                            : "rounded-[0px_10px_10px_10px]"
-                        )}
-                        style={{ 
-                          backgroundColor: isSeller ? 'rgba(46, 59, 91, 1)' : 'rgba(0, 9, 41, 1)',
-                          boxShadow: '0px 1px 3px rgba(237, 98, 20, 0.1)'
-                        }}
-                      >
-                        <p 
-                          className="font-medium text-[14px] tracking-[-0.28px] leading-[21px]"
-                          style={{ fontFamily: "'Raleway', Helvetica", color: 'rgba(255, 255, 255, 1)' }}
-                        >
-                          {msg.message}
-                        </p>
-                      </div>
-                      <span 
-                        className={cn("text-[12px] tracking-[-0.12px]", isSeller && "text-right")}
-                        style={{ color: 'rgba(117, 117, 117, 1)' }}
-                      >
-                        Today {format(new Date(msg.created_at), 'HH:mm')}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-          ) : (
-            /* Demo Messages - flex, justify-between, gap: 16px */
-            <div className="flex justify-between gap-4">
-              {/* ===== RECEIVED MESSAGES - LEFT SIDE ===== */}
-              <div className="flex flex-col gap-[53px]">
-                {DEMO_RECEIVED_MESSAGES.map((msg) => (
-                  <div key={msg.id} className="flex flex-col gap-[7px]">
-                    {msg.images.length > 0 && (
-                      <div className="flex gap-3">
-                        {msg.images.map((img, idx) => (
-                          <img 
-                            key={idx}
-                            src={img} 
-                            alt="Message attachment" 
-                            className="w-[112px] h-[120px] rounded-[12px] object-cover"
-                          />
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex flex-col gap-[10px] w-[272px]">
-                      <div 
-                        className="rounded-[0px_10px_10px_10px] p-[8px_12px]"
-                        style={{ 
-                          backgroundColor: 'rgba(0, 9, 41, 1)',
-                          boxShadow: '0px 1px 3px rgba(237, 98, 20, 0.1)'
-                        }}
-                      >
-                        <p 
-                          className="font-medium text-[14px] tracking-[-0.28px] leading-[21px]"
-                          style={{ fontFamily: "'Raleway', Helvetica", color: 'rgba(255, 255, 255, 1)' }}
-                        >
-                          {msg.text}
-                        </p>
-                      </div>
-                      <span className="text-[12px] tracking-[-0.12px]" style={{ color: 'rgba(117, 117, 117, 1)' }}>
-                        {msg.time}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+        {/* Chat Input */}
+        <div style={{ padding: '24px 32px', borderTop: '1px solid #e2e8f0' }}>
+          <div className="flex flex-col gap-4 p-4 rounded-xl" style={{ border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+            <div className="flex justify-between items-center">
+              <div className="flex gap-3">
+                <div className="flex items-center gap-2 px-3 py-[6px] rounded-md cursor-pointer" style={{ border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: 500, background: '#f8fafc' }}>
+                  Whatsapp <ChevronDown size={14} style={{ opacity: 0.5 }} />
+                </div>
+                <div className="flex items-center gap-2 px-3 py-[6px] rounded-md cursor-pointer" style={{ fontSize: '12px', fontWeight: 500, background: 'white' }}>
+                  <span style={{ opacity: 0.6 }}>From</span> <strong>CSFikri</strong> <ChevronDown size={14} style={{ opacity: 0.5 }} />
+                </div>
               </div>
-
-              {/* ===== SENT MESSAGES - RIGHT SIDE ===== */}
-              <div className="flex flex-col gap-[170px]">
-                {DEMO_SENT_MESSAGES.map((msg) => (
-                  <div key={msg.id} className="flex flex-col gap-[10px]">
-                    {msg.hasVoice && (
-                      <div 
-                        className="w-[264px] h-[53.05px] rounded-[10px_10px_4px_10px] flex items-center px-3 gap-2 self-end"
-                        style={{ backgroundColor: 'rgba(46, 59, 91, 1)' }}
-                      >
-                        <button 
-                          onClick={() => setIsPlaying(!isPlaying)}
-                          className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
-                        >
-                          {isPlaying ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-white ml-0.5" />}
-                        </button>
-                        <div className="flex items-center gap-[2px] flex-1">
-                          {[...Array(30)].map((_, i) => (
-                            <div key={i} className="w-[2px] rounded-full bg-white/60" style={{ height: `${Math.random() * 20 + 5}px` }} />
-                          ))}
-                        </div>
-                        <span className="text-white text-[12px]">10:12</span>
-                      </div>
-                    )}
-                    <div className="flex flex-col gap-[10px] w-[303px] items-end">
-                      <div 
-                        className="rounded-[10px_0px_10px_10px] p-[8px_12px] w-full"
-                        style={{ 
-                          backgroundColor: 'rgba(46, 59, 91, 1)',
-                          boxShadow: '0px 1px 3px rgba(115, 20, 237, 0.1)'
-                        }}
-                      >
-                        <p 
-                          className="font-medium text-[14px] tracking-[-0.28px] leading-[21px]"
-                          style={{ fontFamily: "'Raleway', Helvetica", color: 'rgba(255, 255, 255, 1)' }}
-                        >
-                          {msg.text}
-                        </p>
-                      </div>
-                      <span className="text-[12px] tracking-[-0.12px] text-right" style={{ color: 'rgba(117, 117, 117, 1)' }}>
-                        {msg.time}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center gap-2" style={{ fontSize: '13px', color: '#64748b' }}>
+                <Sparkles size={14} /> Instant reply with AI
+                <div className="w-9 h-5 rounded-[10px] relative cursor-pointer" style={{ background: '#e2e8f0' }}>
+                  <div className="w-4 h-4 rounded-full absolute top-[2px] left-[2px]" style={{ background: 'white', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
+                </div>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* ===== CHAT FOOTER ===== */}
-        <footer 
-          className="absolute bottom-0 left-0 w-full h-[80px] flex items-center gap-6 px-[15px]"
-          style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 1)',
-            borderTop: '1px solid #e5e5e5'
-          }}
-        >
-          <button className="p-0 bg-transparent border-none cursor-pointer">
-            <MoreVertical className="w-6 h-6" style={{ color: 'rgba(0, 9, 41, 1)' }} />
-          </button>
-
-          <div 
-            className="flex-1 h-[60px] rounded-[20px] flex items-center px-4"
-            style={{ backgroundColor: 'rgba(247, 247, 253, 1)' }}
-          >
-            <input
-              type="text"
-              placeholder="Type your message"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="flex-1 border-none bg-transparent text-[14px] outline-none"
-              style={{ fontFamily: "'Poppins', Helvetica", color: '#92929d' }}
+            <textarea
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              placeholder="Type messages here .."
+              className="w-full border-none outline-none resize-none"
+              style={{ fontFamily: 'inherit', fontSize: '14px', minHeight: '48px', color: '#0f172a' }}
             />
+            <div className="flex justify-between items-center">
+              <div className="flex gap-4" style={{ color: '#94a3b8' }}>
+                <Type size={18} className="cursor-pointer hover:text-[#0f172a] transition-colors" />
+                <Paperclip size={18} className="cursor-pointer hover:text-[#0f172a] transition-colors" />
+                <Link size={18} className="cursor-pointer hover:text-[#0f172a] transition-colors" />
+                <Smile size={18} className="cursor-pointer hover:text-[#0f172a] transition-colors" />
+                <Mic size={18} className="cursor-pointer hover:text-[#0f172a] transition-colors" />
+              </div>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer text-white transition-colors" style={{ background: '#0f172a' }}>
+                <Send size={18} />
+              </div>
+            </div>
           </div>
+        </div>
+      </main>
 
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="p-0 bg-transparent border-none cursor-pointer"
-          >
-            <Paperclip className="w-6 h-6" style={{ color: 'rgba(0, 9, 41, 1)' }} />
-          </button>
+      {/* 4. Details Panel */}
+      <aside className="w-[300px] border-l flex-col hidden xl:flex flex-shrink-0" style={{ borderColor: '#e2e8f0', background: '#fff' }}>
+        <div className="flex justify-between items-center p-6">
+          <span className="font-semibold" style={{ fontSize: '16px' }}>Ticket details</span>
+          <div className="w-7 h-7 rounded-full flex items-center justify-center text-white cursor-pointer" style={{ background: '#2563eb' }}>
+            <PenLine size={14} />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
+          {/* Assignee */}
+          <div className="mb-5">
+            <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Assignee</label>
+            <div className="w-full px-3 py-[10px] rounded-lg flex items-center justify-between cursor-pointer" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}>
+              <div className="flex items-center gap-2">
+                <img src="https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSouth%20Asian%2F4" className="w-5 h-5 rounded-full" />
+                Raihan Fikri
+              </div>
+              <ChevronDown size={14} style={{ opacity: 0.5 }} />
+            </div>
+          </div>
+          {/* Team */}
+          <div className="mb-5">
+            <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Team</label>
+            <div className="w-full px-3 py-[10px] rounded-lg flex items-center justify-between cursor-pointer" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}>
+              Customer Service
+              <ChevronDown size={14} style={{ opacity: 0.5 }} />
+            </div>
+          </div>
+          {/* Ticket type */}
+          <div className="mb-5">
+            <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Ticket type</label>
+            <div className="w-full px-3 py-[10px] rounded-lg flex items-center justify-between cursor-pointer" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}>
+              Problem
+              <ChevronDown size={14} style={{ opacity: 0.5 }} />
+            </div>
+          </div>
+          {/* Status */}
+          <div className="mb-5">
+            <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Set status</label>
+            <div className="w-full px-3 py-[10px] rounded-lg flex items-center justify-between cursor-pointer" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}>
+              <div className="flex items-center gap-2">
+                <Flag size={14} /> Open
+              </div>
+              <ChevronDown size={14} style={{ opacity: 0.5 }} />
+            </div>
+          </div>
+          {/* Priority */}
+          <div className="mb-5">
+            <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Set priority</label>
+            <div className="flex gap-2">
+              {[
+                { key: 'low', label: 'Low', color: '#22c55e' },
+                { key: 'medium', label: 'Medium', color: '#f59e0b' },
+                { key: 'high', label: 'High', color: '#ef4444' },
+              ].map((p) => (
+                <div
+                  key={p.key}
+                  onClick={() => setPriority(p.key)}
+                  className="flex-1 flex items-center justify-center gap-[6px] py-2 rounded-md cursor-pointer"
+                  style={{
+                    border: '1px solid',
+                    borderColor: priority === p.key ? '#fcd34d' : '#e2e8f0',
+                    background: priority === p.key ? '#fef3c7' : 'transparent',
+                    fontSize: '12px',
+                  }}
+                >
+                  <div className="w-[6px] h-[6px] rounded-full" style={{ background: p.color }} />
+                  {p.label}
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Subject */}
+          <div className="mb-5">
+            <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Subject</label>
+            <div className="p-3 rounded-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '13px', lineHeight: '1.4', color: '#1e293b' }}>
+              Request for Additional Storage and more server
+            </div>
+          </div>
+          {/* Tags */}
+          <div className="mb-5">
+            <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Tags</label>
+            <div className="flex gap-2 flex-wrap">
+              {['Question', 'Problem'].map((tag) => (
+                <div key={tag} className="flex items-center gap-[6px] px-[10px] py-[6px] rounded-[20px] text-white font-medium" style={{ background: '#0f172a', fontSize: '11px' }}>
+                  {tag} <X size={10} className="cursor-pointer" />
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Attributes */}
+          <div className="mb-5">
+            <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Attributes</label>
+            <div className="rounded-lg p-4" style={{ background: '#f8fafc' }}>
+              {[
+                { key: 'ID', val: 'TC-0001' },
+                { key: 'Customer', val: 'Emily Johnson', hasAvatar: true },
+                { key: 'Language', val: 'English UK' },
+                { key: 'Date submitted', val: '04 Feb 2024, 13:00' },
+              ].map((attr, i, arr) => (
+                <div key={attr.key} className="flex justify-between items-center" style={{ fontSize: '12px', marginBottom: i < arr.length - 1 ? '12px' : 0 }}>
+                  <span style={{ color: '#64748b' }}>{attr.key}</span>
+                  <span className="font-semibold flex items-center gap-[6px]">
+                    {attr.hasAvatar && (
+                      <div className="w-4 h-4 rounded-full flex items-center justify-center text-white" style={{ background: '#94a3b8', fontSize: '9px' }}>E</div>
+                    )}
+                    {attr.val}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Note */}
+          <div>
+            <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Note</label>
+          </div>
+        </div>
+      </aside>
 
-          <button 
-            onClick={sendMessage}
-            disabled={sending || !newMessage.trim() || !selectedUser}
-            className="p-[10px] rounded-[10px] border-none cursor-pointer flex items-center justify-center disabled:opacity-50"
-            style={{ backgroundColor: 'rgba(46, 59, 91, 1)' }}
+      {/* 5. Right Toolbar Strip */}
+      <div className="w-14 border-l flex-col items-center py-6 gap-6 hidden xl:flex flex-shrink-0" style={{ borderColor: '#e2e8f0', background: '#ffffff' }}>
+        {[
+          { icon: <Shuffle size={16} />, active: true },
+          { icon: <MessageSquarePlus size={18} />, active: false },
+          { icon: <BookOpen size={18} />, active: false },
+          { icon: <MessageCircle size={18} />, active: false },
+        ].map((btn, i) => (
+          <div
+            key={i}
+            className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-all"
+            style={btn.active ? { background: '#2563eb', color: 'white' } : { color: '#64748b' }}
           >
-            <Send className="w-6 h-6 text-white" />
-          </button>
-        </footer>
+            {btn.icon}
+          </div>
+        ))}
       </div>
     </div>
   );
