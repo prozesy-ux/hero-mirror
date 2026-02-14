@@ -395,8 +395,8 @@ const SellerChat = () => {
         <div style={{ padding: '24px 20px 16px' }}>
           <div className="flex justify-between items-center mb-4">
             <span className="font-semibold" style={{ fontSize: '15px' }}>Total ticket {tickets.length}</span>
-            <button onClick={() => setSortOrder(s => s === 'newest' ? 'oldest' : 'newest')} className="flex items-center gap-1 cursor-pointer" style={{ fontSize: '13px', color: '#64748b' }}>
-              {sortOrder === 'newest' ? 'Newest' : 'Oldest'} <ChevronDown size={14} />
+            <button onClick={() => setSortOrder(s => s === 'newest' ? 'oldest' : 'newest')} className="flex items-center gap-1 cursor-pointer px-2 py-1 rounded-md hover:bg-[#f1f5f9]" style={{ fontSize: '12px', color: '#64748b' }}>
+              {sortOrder === 'newest' ? 'Newest' : 'Oldest'} <ChevronDown size={12} />
             </button>
           </div>
           <div className="relative">
@@ -406,12 +406,12 @@ const SellerChat = () => {
         </div>
         <div className="flex-1 overflow-y-auto px-3">
           {filteredTickets.length === 0 ? (
-            <div className="text-center py-8" style={{ color: '#94a3b8', fontSize: '13px' }}><MessageCircle size={24} className="mx-auto mb-2" />No conversations yet</div>
+            <div className="text-center py-8" style={{ color: '#94a3b8', fontSize: '13px' }}><MessageCircle size={24} className="mx-auto mb-2" />No tickets yet</div>
           ) : filteredTickets.map((ticket) => (
             <div key={ticket.id} onClick={() => setActiveTicketId(ticket.id)} className={cn("flex gap-3 p-4 rounded-lg cursor-pointer mb-1 transition-colors relative group", activeTicketId === ticket.id ? "border" : "border border-transparent hover:bg-[#f8fafc]")} style={activeTicketId === ticket.id ? { backgroundColor: '#eff6ff', borderColor: '#dbeafe' } : {}}>
               {pinnedChats.includes(ticket.id) && <Pin size={10} className="absolute top-2 right-2" style={{ color: '#2563eb' }} />}
               {snoozedBuyers[ticket.id] && <Clock size={10} className="absolute top-2 right-6" style={{ color: '#f59e0b' }} />}
-              {ticket.buyerAvatar ? <img src={ticket.buyerAvatar} className="w-10 h-10 rounded-full object-cover flex-shrink-0" style={{ background: '#e2e8f0' }} /> : <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-semibold text-white" style={{ background: '#64748b', fontSize: '14px' }}>{ticket.buyerName.charAt(0).toUpperCase()}</div>}
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-semibold" style={{ fontSize: '10px', background: '#f1f5f9', color: '#64748b' }}><MessageCircle size={16} /></div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-1">
                   <span className="font-semibold" style={{ fontSize: '13px' }}>{ticket.buyerName}</span>
@@ -421,7 +421,7 @@ const SellerChat = () => {
                   <span>{ticket.ticketNumber}</span><span>•</span>
                   <span className="w-[6px] h-[6px] rounded-full inline-block" style={{ background: getMetaForBuyer(ticket.id).status === 'active' ? '#22c55e' : getMetaForBuyer(ticket.id).status === 'closed' ? '#64748b' : '#f59e0b' }} />{getMetaForBuyer(ticket.id).status}
                 </div>
-                <div className="font-medium truncate" style={{ fontSize: '13px' }}>{ticket.lastMessage}</div>
+                <div className="font-medium truncate" style={{ fontSize: '13px' }}>{getMetaForBuyer(ticket.id).subject}</div>
               </div>
               <button onClick={(e) => { e.stopPropagation(); handlePinChat(ticket.id); }} className="opacity-0 group-hover:opacity-100 absolute bottom-2 right-2 p-1 rounded" style={{ color: pinnedChats.includes(ticket.id) ? '#2563eb' : '#94a3b8' }}><Pin size={12} /></button>
               {ticket.unreadCount > 0 && <div className="flex flex-col justify-end"><div className="flex items-center justify-center font-semibold text-white rounded-[9px]" style={{ background: '#ef4444', fontSize: '11px', height: '18px', minWidth: '18px', padding: '0 5px' }}>{ticket.unreadCount}</div></div>}
@@ -433,7 +433,7 @@ const SellerChat = () => {
       {/* ── Chat Area ── */}
       <main className="flex-1 flex flex-col min-w-0" style={{ background: '#ffffff' }}>
         {!activeTicket ? (
-          <div className="flex-1 flex items-center justify-center" style={{ color: '#94a3b8' }}><div className="text-center"><MessageCircle size={40} className="mx-auto mb-3" /><p style={{ fontSize: '15px' }}>Select a conversation</p></div></div>
+          <div className="flex-1 flex items-center justify-center" style={{ color: '#94a3b8' }}><div className="text-center"><MessageCircle size={40} className="mx-auto mb-3" /><p style={{ fontSize: '15px' }}>Select a ticket or create a new one</p></div></div>
         ) : (
           <>
             <header className="flex items-center justify-between flex-shrink-0 px-4 md:px-8" style={{ height: '72px', borderBottom: '1px solid #e2e8f0' }}>
@@ -497,7 +497,7 @@ const SellerChat = () => {
               fontSize,
             }}>
               {messages.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center" style={{ color: '#94a3b8' }}><div className="text-center"><MessageCircle size={32} className="mx-auto mb-2" /><p style={{ fontSize: '13px' }}>No messages yet</p></div></div>
+                <div className="flex-1 flex items-center justify-center" style={{ color: '#94a3b8' }}><div className="text-center"><MessageCircle size={32} className="mx-auto mb-2" /><p style={{ fontSize: '13px' }}>No messages yet. Start the conversation!</p></div></div>
               ) : messages.map((msg) => {
                 const isMe = msg.sender_type === 'seller';
                 const isHighlighted = chatSearch && msg.message.toLowerCase().includes(chatSearch.toLowerCase());
@@ -507,10 +507,10 @@ const SellerChat = () => {
                     onContextMenu={(e) => { e.preventDefault(); setContextMenuMsg(msg.id); setContextMenuPos({ x: e.clientX, y: e.clientY }); }}>
                     {pinnedMessages.includes(msg.id) && <Pin size={10} className="absolute -top-2 right-0" style={{ color: '#ca8a04' }} />}
                     {isMe ? <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white" style={{ background: '#2563eb' }}><User size={16} /></div>
-                    : activeTicket.buyerAvatar ? <img src={activeTicket.buyerAvatar} className="w-9 h-9 rounded-full flex-shrink-0 object-cover" />
-                    : <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white" style={{ background: '#64748b', fontSize: '14px' }}>{activeTicket.buyerName.charAt(0).toUpperCase()}</div>}
+                    : <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white" style={{ background: '#8b5cf6' }}><Sparkles size={16} /></div>}
                     <div className={cn("flex flex-col gap-[6px]", isMe ? "items-end" : "")}>
-                      <div className="font-semibold" style={{ fontSize: '13px' }}>{isMe ? 'You' : activeTicket.buyerName}</div>
+                      {!isMe && <div className="flex items-center gap-[6px] font-medium" style={{ fontSize: '12px', color: '#7c3aed' }}><Sparkles size={12} /> {activeTicket.buyerName}</div>}
+                      {isMe && <div className="font-semibold" style={{ fontSize: '13px' }}>You</div>}
                       <div className="px-[18px] py-[14px] whitespace-pre-wrap break-words" style={{
                         lineHeight: '1.6', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', borderRadius: bubbleRadius,
                         ...(isMe ? { background: currentTheme.userBubble, color: currentTheme.userText } : { background: currentTheme.otherBubble, color: currentTheme.otherText }),
