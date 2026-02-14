@@ -1,64 +1,82 @@
 
 
-## Fix: "Something Went Wrong" Error on Mobile After Login
+## Replace Both Chat Sections with Ticket Dashboard Design
 
-### Root Cause Analysis
+Replace the buyer `ChatSection.tsx` and seller `SellerChat.tsx` with the exact ticket-based chat design from the uploaded HTML file. Pure mock data only -- no database connections.
 
-The ErrorBoundary (triangle icon with "Something went wrong") appears when the dashboard loads after login on mobile. This is a **React rendering crash**, not an API error (backend logs show no errors).
+### What Changes
 
-Two most likely causes:
+**Both files get the same new layout with 4 panels:**
 
-1. **Chunk loading failure**: The Dashboard page is lazy-loaded via `lazy(() => import("./pages/Dashboard"))`. On slower mobile networks, this dynamic import can fail, triggering the ErrorBoundary.
-
-2. **Component crash during initial render**: A null reference or missing data in one of the dashboard components causes a crash before data loads.
-
-### What We'll Fix
-
-**1. Add auto-retry for chunk loading failures in App.tsx**
-
-Replace the basic `lazy(() => import(...))` with a retry wrapper that automatically retries failed dynamic imports up to 3 times with a delay. This handles flaky mobile connections.
-
-```tsx
-// Retry wrapper for lazy loading
-const lazyWithRetry = (importFn, retries = 3) => {
-  return lazy(() =>
-    importFn().catch((err) => {
-      if (retries > 0) {
-        return new Promise(resolve => setTimeout(resolve, 1000))
-          .then(() => lazyWithRetry(importFn, retries - 1));
-      }
-      throw err;
-    })
-  );
-};
+```text
++------------------+------------------------+------------------+--------+
+| Ticket List      | Chat Area              | Ticket Details   | Strip  |
+| (320px)          | (flex-1)               | (300px)          | (56px) |
+|                  |                        |                  |        |
+| Search           | Header: #TC-0001       | Assignee         | Icons  |
+| Sort: Newest     | Back / Subject / Star  | Team             |        |
+|                  |                        | Type             |        |
+| #TC-0004 David   | Messages:              | Status           |        |
+| #TC-0001 Emily * | - Emily: text          | Priority: L/M/H  |        |
+| #TC-0003 (747)   | - AI reply             | Subject          |        |
+| #TC-0004 Brooklyn| - System events        | Tags             |        |
+| #TC-0007 (44)    | - Agent reply          | Attributes       |        |
+| #TC-0008 Guy     |                        |                  |        |
+|                  | Input: textarea +      |                  |        |
+|                  | toolbar + send         |                  |        |
++------------------+------------------------+------------------+--------+
 ```
 
-Apply to all lazy-loaded pages: Dashboard, Seller, Admin, Store, etc.
+### Mock Data (from HTML, no DB)
 
-**2. Add component-level error boundary inside the Dashboard**
+**6 Ticket contacts:**
+- David Newman (#TC-0004) - "System Login Failure" - 2 unread
+- Emily Johnson (#TC-0001) - "Request for Additional Storage..." - active
+- (747) 246-9411 (#TC-0003) - "Unable to access report"
+- Brooklyn Simmons (#TC-0004) - "File Upload Error" - 1 unread
+- (44) 1342 351 (#TC-0007) - "Unable to access report" - 1 unread
+- Guy Hawkins (#TC-0008) - "Unexpected App Crash"
 
-Wrap the `DashboardContent` (where routes render) with its own ErrorBoundary so that if a single section crashes, only that section shows an error -- not the entire app.
+**5 Chat messages (for active ticket):**
+- Emily: "Hi, I need more storage and better server capacity."
+- AI reply: "Hello! I can assist with that..."
+- Emily: "Yes, sure."
+- AI reply: "Connecting you now..."
+- Agent (Raihan): "Hi, thanks for waiting!..."
 
-**3. Add console logging to the ErrorBoundary**
+**2 System events:**
+- "Raihan Fikri has connected to take over ticket"
+- "Raihan Fikri Ticket change priority to Medium"
 
-The current ErrorBoundary logs errors only in development mode. Add a `console.error` that always runs so we can capture the exact error message in production via console logs.
+**Ticket details panel:**
+- Assignee: Raihan Fikri
+- Team: Customer Service
+- Type: Problem
+- Status: Open
+- Priority: Low / Medium (active) / High
+- Tags: Question, Problem
+- Attributes: ID, Customer, Language, Date
 
-**4. Add null safety guards in AIAccountsSection**
-
-Add defensive checks in the marketplace section (`AIAccountsSection.tsx`) for the initial render when data hasn't loaded yet, preventing potential null reference crashes.
-
-### Files to Change
+### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/App.tsx` | Add `lazyWithRetry` wrapper for all lazy imports |
-| `src/components/ui/error-boundary.tsx` | Always log errors (not just dev mode), add auto-retry for chunk errors |
-| `src/pages/Dashboard.tsx` | Wrap `DashboardContent` routes in a local ErrorBoundary |
+| `src/components/dashboard/ChatSection.tsx` | Complete rewrite with new ticket design, mock data only, no Supabase imports |
+| `src/components/seller/SellerChat.tsx` | Complete rewrite with same ticket design, mock data only, no Supabase imports |
 
 ### What Stays the Same
+- All other components untouched
+- No database changes
+- No new files needed
+- Both components export the same default export name
+- Font: Inter (from the HTML CSS variables)
 
-- All backend/API logic -- untouched
-- All styling and font changes -- preserved
-- Sidebar, mobile navigation -- untouched
-- Authentication flow -- untouched
-
+### Technical Details
+- All CSS uses Tailwind classes + inline styles matching the HTML exactly
+- Avatar images use the external URLs from the HTML (banani-avatars storage)
+- Icons use lucide-react (already installed) mapped from iconify icons in HTML
+- Ticket list clicking changes the active ticket (local state only)
+- Send button and textarea are visual only (no backend calls)
+- Responsive: ticket list hides on mobile, chat area takes full width
+- Details panel scrollable for all ticket metadata
+- Right toolbar strip with 4 icon buttons
