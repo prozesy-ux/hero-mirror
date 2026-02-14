@@ -3003,6 +3003,7 @@ export type Database = {
           message: string
           seller_id: string
           sender_type: string
+          ticket_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -3011,6 +3012,7 @@ export type Database = {
           message: string
           seller_id: string
           sender_type?: string
+          ticket_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -3019,6 +3021,7 @@ export type Database = {
           message?: string
           seller_id?: string
           sender_type?: string
+          ticket_id?: string | null
         }
         Relationships: [
           {
@@ -3033,6 +3036,13 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
             referencedColumns: ["id"]
           },
         ]
@@ -3368,6 +3378,7 @@ export type Database = {
           is_read: boolean | null
           message: string
           sender_type: string
+          ticket_id: string | null
           user_id: string
         }
         Insert: {
@@ -3376,6 +3387,7 @@ export type Database = {
           is_read?: boolean | null
           message: string
           sender_type?: string
+          ticket_id?: string | null
           user_id: string
         }
         Update: {
@@ -3384,7 +3396,73 @@ export type Database = {
           is_read?: boolean | null
           message?: string
           sender_type?: string
+          ticket_id?: string | null
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_team: string | null
+          assigned_to: string | null
+          created_at: string
+          id: string
+          is_starred: boolean | null
+          notes: string | null
+          priority: string
+          resolved_at: string | null
+          seller_id: string | null
+          status: string
+          subject: string
+          tags: string[] | null
+          ticket_number: string
+          ticket_type: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_team?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          is_starred?: boolean | null
+          notes?: string | null
+          priority?: string
+          resolved_at?: string | null
+          seller_id?: string | null
+          status?: string
+          subject: string
+          tags?: string[] | null
+          ticket_number: string
+          ticket_type?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_team?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          is_starred?: boolean | null
+          notes?: string | null
+          priority?: string
+          resolved_at?: string | null
+          seller_id?: string | null
+          status?: string
+          subject?: string
+          tags?: string[] | null
+          ticket_number?: string
+          ticket_type?: string | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
