@@ -1,67 +1,64 @@
 
-## Fix: Force "Inter" Font on All Dashboard Elements
 
-### Root Cause
-The inline `fontFamily: "Inter"` on dashboard wrapper divs is being **overridden** by:
-1. `src/index.css` line 208: `html { font-family: "DM Sans" }` -- sets DM Sans globally
-2. `tailwind.config.ts` line 17: `font-sans: ['DM Sans']` -- Tailwind's default sans maps to DM Sans
-3. `seller-dashboard` CSS class: forces "Plus Jakarta Sans" on some seller components
-4. Browser default: child elements (buttons, inputs) inherit from `html`, not from parent divs
+## Fix: "Something Went Wrong" Error on Mobile After Login
 
-The inline style on the wrapper only affects that specific div. All children (text, buttons, inputs, headings) still inherit "DM Sans" from the `html` rule.
+### Root Cause Analysis
 
-### Solution
-Add a single CSS class `.dashboard-inter` in `src/index.css` that forces Inter on the element AND all descendants:
+The ErrorBoundary (triangle icon with "Something went wrong") appears when the dashboard loads after login on mobile. This is a **React rendering crash**, not an API error (backend logs show no errors).
 
-```css
-.dashboard-inter,
-.dashboard-inter * {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-}
+Two most likely causes:
+
+1. **Chunk loading failure**: The Dashboard page is lazy-loaded via `lazy(() => import("./pages/Dashboard"))`. On slower mobile networks, this dynamic import can fail, triggering the ErrorBoundary.
+
+2. **Component crash during initial render**: A null reference or missing data in one of the dashboard components causes a crash before data loads.
+
+### What We'll Fix
+
+**1. Add auto-retry for chunk loading failures in App.tsx**
+
+Replace the basic `lazy(() => import(...))` with a retry wrapper that automatically retries failed dynamic imports up to 3 times with a delay. This handles flaky mobile connections.
+
+```tsx
+// Retry wrapper for lazy loading
+const lazyWithRetry = (importFn, retries = 3) => {
+  return lazy(() =>
+    importFn().catch((err) => {
+      if (retries > 0) {
+        return new Promise(resolve => setTimeout(resolve, 1000))
+          .then(() => lazyWithRetry(importFn, retries - 1));
+      }
+      throw err;
+    })
+  );
+};
 ```
 
-Then replace the inline `style={{ fontFamily: ... }}` on all 24 dashboard files with this CSS class instead.
+Apply to all lazy-loaded pages: Dashboard, Seller, Admin, Store, etc.
+
+**2. Add component-level error boundary inside the Dashboard**
+
+Wrap the `DashboardContent` (where routes render) with its own ErrorBoundary so that if a single section crashes, only that section shows an error -- not the entire app.
+
+**3. Add console logging to the ErrorBoundary**
+
+The current ErrorBoundary logs errors only in development mode. Add a `console.error` that always runs so we can capture the exact error message in production via console logs.
+
+**4. Add null safety guards in AIAccountsSection**
+
+Add defensive checks in the marketplace section (`AIAccountsSection.tsx`) for the initial render when data hasn't loaded yet, preventing potential null reference crashes.
 
 ### Files to Change
 
-**1. `src/index.css`** -- Add the `.dashboard-inter` class (1 addition, ~4 lines)
-
-**2. All 24 dashboard files** -- Replace inline font style with `className="dashboard-inter"`:
-- `src/pages/Dashboard.tsx` (main wrapper)
-- `src/pages/Seller.tsx` (main wrapper)
-- `src/components/dashboard/DashboardTopBar.tsx`
-- `src/components/seller/SellerTopBar.tsx`
-- `src/components/dashboard/BuyerDashboardHome.tsx` (loading + main)
-- `src/components/seller/SellerDashboard.tsx` (loading + main)
-- `src/components/dashboard/BuyerAnalytics.tsx` (loading + main)
-- `src/components/seller/SellerAnalytics.tsx` (loading + main)
-- `src/components/seller/SellerOrders.tsx` (also remove `seller-dashboard` class)
-- `src/components/seller/SellerInventory.tsx`
-- `src/components/seller/SellerPerformance.tsx`
-- `src/components/seller/SellerReports.tsx`
-- `src/components/seller/SellerMarketing.tsx`
-- `src/components/seller/SellerCustomers.tsx`
-- `src/components/seller/SellerSupport.tsx`
-- `src/components/seller/SellerSecurityLogs.tsx`
-- `src/components/seller/SellerNotificationCenter.tsx`
-- `src/components/seller/SellerProductAnalytics.tsx`
-- `src/components/seller/SellerServiceBookings.tsx`
-- `src/components/seller/SellerReviewsManagement.tsx`
-- `src/components/seller/SellerFeatureRequests.tsx`
-- `src/components/seller/SellerRefundManagement.tsx`
-- `src/components/seller/SellerFlashSales.tsx`
-- `src/components/seller/SellerDeliveryInventory.tsx`
-
-**3. `src/components/seller/SellerSettings.tsx`** -- Replace `seller-dashboard` class with `dashboard-inter`
-
-### Why This Works
-- The `!important` flag overrides both `html { font-family: "DM Sans" }` and the `seller-dashboard` class
-- The `*` wildcard selector ensures ALL child elements (buttons, inputs, spans, headings) use Inter
-- A single CSS class is cleaner than inline styles on every component
-- Only affects dashboard sections -- landing page, marketplace, and other pages keep their existing fonts
+| File | Change |
+|------|--------|
+| `src/App.tsx` | Add `lazyWithRetry` wrapper for all lazy imports |
+| `src/components/ui/error-boundary.tsx` | Always log errors (not just dev mode), add auto-retry for chunk errors |
+| `src/pages/Dashboard.tsx` | Wrap `DashboardContent` routes in a local ErrorBoundary |
 
 ### What Stays the Same
-- Sidebar (left panel) -- NOT touched
-- Background color `#f1f5f9` -- stays
-- All data logic and backend -- NOT touched
-- Non-dashboard pages keep "DM Sans"
+
+- All backend/API logic -- untouched
+- All styling and font changes -- preserved
+- Sidebar, mobile navigation -- untouched
+- Authentication flow -- untouched
+
