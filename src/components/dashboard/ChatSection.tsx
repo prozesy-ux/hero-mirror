@@ -409,7 +409,7 @@ const ChatSection = () => {
       <aside className="w-[320px] border-r flex-col hidden lg:flex flex-shrink-0" style={{ borderColor: '#e2e8f0', background: '#fff' }}>
         <div style={{ padding: '24px 20px 16px' }}>
           <div className="flex justify-between items-center mb-4">
-            <span className="font-semibold" style={{ fontSize: '15px' }}>Total ticket {tickets.length}</span>
+            <span className="font-semibold" style={{ fontSize: '15px' }}>Chats {tickets.length}</span>
             <div className="flex items-center gap-2">
               <button onClick={() => setSortOrder(s => s === 'newest' ? 'oldest' : 'newest')} className="flex items-center gap-1 cursor-pointer px-2 py-1 rounded-md hover:bg-[#f1f5f9]" style={{ fontSize: '12px', color: '#64748b' }}>
                 {sortOrder === 'newest' ? 'Newest' : 'Oldest'} <ChevronDown size={12} />
