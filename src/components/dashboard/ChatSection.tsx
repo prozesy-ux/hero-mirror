@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Search, ChevronDown, ChevronLeft, Star, MoreHorizontal, Sparkles,
   Phone, Moon, User, Send, Type, Paperclip, Link,
   Smile, Mic, PenLine, Flag, X, Shuffle, MessageSquarePlus, BookOpen,
-  MessageCircle, Loader2, Pin, PanelRightClose, PanelRightOpen,
+  MessageCircle, Loader2, Plus, Pin, PanelRightClose, PanelRightOpen,
   Settings, ChevronUp, Clock, Download, FileText, Image as ImageIcon,
-  Square, ArrowUp, ArrowDown
+  Play, Pause, Square, MicOff, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +24,7 @@ const EMOJI_CATEGORIES: Record<string, string[]> = {
   'Symbols': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','❣️','✨','⭐','🌟','💫','⚡','🔥','💯','✅','❌','⚠️','♻️','🔴','🟢','🔵','⬛'],
 };
 
+// ── Theme Presets ──
 const THEME_PRESETS: Record<string, { chatBg: string; userBubble: string; otherBubble: string; userText: string; otherText: string; label: string }> = {
   default: { chatBg: '#ffffff', userBubble: '#eff6ff', otherBubble: '#f1f5f9', userText: '#1e3a8a', otherText: '#0f172a', label: 'Default' },
   dark: { chatBg: '#1e293b', userBubble: '#1e40af', otherBubble: '#334155', userText: '#e0e7ff', otherText: '#e2e8f0', label: 'Dark' },
@@ -32,28 +33,26 @@ const THEME_PRESETS: Record<string, { chatBg: string; userBubble: string; otherB
   sunset: { chatBg: '#fdf2f8', userBubble: '#fce7f3', otherBubble: '#fff1f2', userText: '#831843', otherText: '#881337', label: 'Sunset' },
 };
 
-interface BuyerChatMeta {
+interface Ticket {
+  id: string;
+  ticket_number: string;
+  subject: string;
   status: string;
   priority: string;
-  ticket_type: string;
-  assigned_to: string;
-  assigned_team: string;
-  subject: string;
-  tags: string[];
+  ticket_type: string | null;
+  assigned_to: string | null;
+  assigned_team: string | null;
+  tags: string[] | null;
+  notes: string | null;
   is_starred: boolean;
-}
-
-interface ChatTicket {
-  id: string;
-  sellerName: string;
-  sellerStoreName: string;
-  lastMessage: string;
-  lastMessageTime: string;
+  created_at: string;
+  updated_at: string;
   unreadCount: number;
-  ticketNumber: string;
+  is_snoozed?: boolean;
+  snooze_until?: string | null;
 }
 
-interface ChatMessage {
+interface Message {
   id: string;
   message: string;
   sender_type: string;
@@ -77,13 +76,16 @@ interface ChatSettingsData {
 
 const ChatSection = () => {
   const { user } = useAuthContext();
-  const [tickets, setTickets] = useState<ChatTicket[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [creatingTicket, setCreatingTicket] = useState(false);
+  const [newSubject, setNewSubject] = useState('');
+  const [userName, setUserName] = useState<string>('You');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -106,9 +108,11 @@ const ChatSection = () => {
   const [showPinnedBar, setShowPinnedBar] = useState(false);
   const [pinnedChats, setPinnedChats] = useState<string[]>([]);
   const [showDetailsPanel, setShowDetailsPanel] = useState(() => {
-    const saved = localStorage.getItem('buyer-chat-details-panel');
+    const saved = localStorage.getItem('chat-details-panel');
     return saved !== 'false';
   });
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesText, setNotesText] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [chatSettings, setChatSettings] = useState<ChatSettingsData>({
     theme: 'default', bg_image_url: null, bg_color: null, bubble_style: 'rounded', font_size: 'medium', notification_sound: true,
@@ -117,53 +121,20 @@ const ChatSection = () => {
   const [contextMenuMsg, setContextMenuMsg] = useState<string | null>(null);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
   const bgUploadRef = useRef<HTMLInputElement>(null);
-  const [snoozedSellers, setSnoozedSellers] = useState<Record<string, string>>({});
-  const [noteTexts, setNoteTexts] = useState<Record<string, string>>({});
-  const [editingNote, setEditingNote] = useState(false);
-  const [currentNoteText, setCurrentNoteText] = useState('');
-  const [chatMeta, setChatMeta] = useState<Record<string, BuyerChatMeta>>(() => {
-    try { return JSON.parse(localStorage.getItem('buyer-chat-meta') || '{}'); } catch { return {}; }
-  });
-  const [newTagInput, setNewTagInput] = useState('');
 
   const activeTicket = tickets.find(t => t.id === activeTicketId);
   const currentTheme = THEME_PRESETS[chatSettings.theme] || THEME_PRESETS.default;
 
-  const getMetaForSeller = (sellerId: string): BuyerChatMeta => {
-    return chatMeta[sellerId] || { status: 'active', priority: 'medium', ticket_type: 'Inquiry', assigned_to: 'Unassigned', assigned_team: 'Customer Service', subject: 'General inquiry', tags: ['Question'], is_starred: false };
-  };
-
-  const updateMeta = (sellerId: string, patch: Partial<BuyerChatMeta>) => {
-    setChatMeta(prev => {
-      const updated = { ...prev, [sellerId]: { ...getMetaForSeller(sellerId), ...patch } };
-      localStorage.setItem('buyer-chat-meta', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const handleStarToggle = () => {
-    if (!activeTicketId) return;
-    const meta = getMetaForSeller(activeTicketId);
-    updateMeta(activeTicketId, { is_starred: !meta.is_starred });
-  };
-
-  const handlePriorityChange = (p: string) => {
-    if (!activeTicketId) return;
-    updateMeta(activeTicketId, { priority: p });
-  };
-
-  const handleAddTag = () => {
-    if (!activeTicketId || !newTagInput.trim()) return;
-    const meta = getMetaForSeller(activeTicketId);
-    updateMeta(activeTicketId, { tags: [...meta.tags, newTagInput.trim()] });
-    setNewTagInput('');
-  };
-
-  const handleRemoveTag = (tag: string) => {
-    if (!activeTicketId) return;
-    const meta = getMetaForSeller(activeTicketId);
-    updateMeta(activeTicketId, { tags: meta.tags.filter(t => t !== tag) });
-  };
+  // ── Fetch profile ──
+  useEffect(() => {
+    if (!user) return;
+    const fetchProfile = async () => {
+      const { data } = await supabase.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle();
+      if (data?.full_name) setUserName(data.full_name);
+      else if (user.email) setUserName(user.email.split('@')[0]);
+    };
+    fetchProfile();
+  }, [user]);
 
   // ── Fetch chat settings ──
   useEffect(() => {
@@ -179,73 +150,98 @@ const ChatSection = () => {
   useEffect(() => {
     if (!user) return;
     const fetch = async () => {
-      const { data } = await supabase.from('pinned_chats').select('seller_id').eq('user_id', user.id);
-      if (data) setPinnedChats(data.map(d => d.seller_id).filter(Boolean) as string[]);
+      const { data } = await supabase.from('pinned_chats').select('ticket_id').eq('user_id', user.id);
+      if (data) setPinnedChats(data.map(d => d.ticket_id).filter(Boolean) as string[]);
     };
     fetch();
   }, [user]);
 
-  // ── Fetch conversations (buyer perspective: group by seller_id) ──
+  // ── Fetch tickets ──
   useEffect(() => {
     if (!user) return;
-    const fetchConversations = async () => {
-      const { data: chats } = await supabase.from('seller_chats').select('*').eq('buyer_id', user.id).order('created_at', { ascending: false });
-      if (!chats || chats.length === 0) { setLoading(false); return; }
-      const sellerMap = new Map<string, any[]>();
-      (chats as any[]).forEach(chat => { if (!sellerMap.has(chat.seller_id)) sellerMap.set(chat.seller_id, []); sellerMap.get(chat.seller_id)!.push(chat); });
-      const sellerIds = Array.from(sellerMap.keys());
-      // Fetch seller profiles for store names
-      const { data: sellerProfiles } = await supabase.from('seller_profiles').select('id, store_name, user_id').in('id', sellerIds);
-      const sellerProfileMap = new Map<string, any>();
-      (sellerProfiles || []).forEach(p => sellerProfileMap.set(p.id, p));
-      let ticketCounter = 1;
-      const conversationTickets: ChatTicket[] = sellerIds.map(sellerId => {
-        const msgs = sellerMap.get(sellerId)!;
-        const lastMsg = msgs[0];
-        const profile = sellerProfileMap.get(sellerId);
-        const unread = msgs.filter(m => m.sender_type === 'seller' && !m.is_read).length;
-        return { id: sellerId, sellerName: profile?.store_name || 'Unknown Store', sellerStoreName: profile?.store_name || 'Unknown Store', lastMessage: lastMsg.message, lastMessageTime: lastMsg.created_at, unreadCount: unread, ticketNumber: `#TC-${String(ticketCounter++).padStart(4, '0')}` };
-      });
-      conversationTickets.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
-      setTickets(conversationTickets);
-      if (!activeTicketId && conversationTickets.length > 0) setActiveTicketId(conversationTickets[0].id);
+    const fetchTickets = async () => {
+      const { data: ticketsData } = await supabase.from('support_tickets').select('*').eq('user_id', user.id).order('updated_at', { ascending: false });
+      if (ticketsData) {
+        const ticketsWithUnread = await Promise.all(
+          (ticketsData as any[]).map(async (t) => {
+            const { count } = await supabase.from('support_messages').select('*', { count: 'exact', head: true }).eq('ticket_id', t.id).eq('sender_type', 'admin').eq('is_read', false);
+            // Auto-unsnooze
+            if (t.is_snoozed && t.snooze_until && new Date(t.snooze_until) <= new Date()) {
+              await supabase.from('support_tickets').update({ is_snoozed: false, snooze_until: null }).eq('id', t.id);
+              t.is_snoozed = false;
+              t.snooze_until = null;
+            }
+            return { ...t, unreadCount: count || 0 };
+          })
+        );
+        setTickets(ticketsWithUnread);
+        if (!activeTicketId && ticketsWithUnread.length > 0) setActiveTicketId(ticketsWithUnread[0].id);
+      }
       setLoading(false);
     };
-    fetchConversations();
+    fetchTickets();
   }, [user]);
 
   // ── Fetch messages + pinned messages ──
   useEffect(() => {
     if (!activeTicketId || !user) return;
     const fetchMessages = async () => {
-      const { data } = await supabase.from('seller_chats').select('*').eq('seller_id', activeTicketId).eq('buyer_id', user.id).order('created_at', { ascending: true });
+      const { data } = await supabase.from('support_messages').select('*').eq('ticket_id', activeTicketId).order('created_at', { ascending: true });
       if (data) setMessages(data as any[]);
-      await supabase.from('seller_chats').update({ is_read: true }).eq('seller_id', activeTicketId).eq('buyer_id', user.id).eq('sender_type', 'seller').eq('is_read', false);
+      await supabase.from('support_messages').update({ is_read: true }).eq('ticket_id', activeTicketId).eq('sender_type', 'admin').eq('is_read', false);
       setTickets(prev => prev.map(t => t.id === activeTicketId ? { ...t, unreadCount: 0 } : t));
     };
     const fetchPinned = async () => {
-      const { data } = await supabase.from('pinned_messages').select('message_id').eq('user_id', user.id).eq('chat_id', activeTicketId);
+      const { data } = await supabase.from('pinned_messages').select('message_id').eq('user_id', user.id).eq('ticket_id', activeTicketId);
       if (data) setPinnedMessages(data.map(d => d.message_id));
     };
     fetchMessages();
     fetchPinned();
-    const channel = supabase.channel(`buyer-chat-${user.id}-${activeTicketId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'seller_chats', filter: `buyer_id=eq.${user.id}` }, (payload) => { const msg = payload.new as any; if (msg?.seller_id === activeTicketId) fetchMessages(); }).subscribe();
+    const channel = supabase.channel(`support-msgs-${activeTicketId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages', filter: `ticket_id=eq.${activeTicketId}` }, () => { fetchMessages(); }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [activeTicketId, user]);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-  useEffect(() => { localStorage.setItem('buyer-chat-details-panel', String(showDetailsPanel)); }, [showDetailsPanel]);
+
+  useEffect(() => { localStorage.setItem('chat-details-panel', String(showDetailsPanel)); }, [showDetailsPanel]);
 
   // ── Send message ──
   const handleSend = async (attachmentData?: { url: string; name: string; type: string; isVoice?: boolean }) => {
     if ((!messageText.trim() && !attachmentData) || !user || !activeTicketId || sending) return;
     setSending(true);
-    const insertData: any = { seller_id: activeTicketId, buyer_id: user.id, message: messageText.trim() || (attachmentData?.isVoice ? '🎤 Voice note' : `📎 ${attachmentData?.name || 'File'}`), sender_type: 'buyer' };
-    if (attachmentData) { insertData.attachment_url = attachmentData.url; insertData.attachment_name = attachmentData.name; insertData.attachment_type = attachmentData.type; insertData.is_voice_note = attachmentData.isVoice || false; }
-    const { error } = await supabase.from('seller_chats').insert(insertData);
+    const insertData: any = { user_id: user.id, ticket_id: activeTicketId, message: messageText.trim() || (attachmentData?.isVoice ? '🎤 Voice note' : `📎 ${attachmentData?.name || 'File'}`), sender_type: 'user' };
+    if (attachmentData) {
+      insertData.attachment_url = attachmentData.url;
+      insertData.attachment_name = attachmentData.name;
+      insertData.attachment_type = attachmentData.type;
+      insertData.is_voice_note = attachmentData.isVoice || false;
+    }
+    const { error } = await supabase.from('support_messages').insert(insertData);
     if (error) toast.error('Failed to send');
-    else setMessageText('');
+    else { setMessageText(''); await supabase.from('support_tickets').update({ updated_at: new Date().toISOString() }).eq('id', activeTicketId); }
     setSending(false);
+  };
+
+  const handleCreateTicket = async () => {
+    if (!newSubject.trim() || !user) return;
+    setCreatingTicket(true);
+    const { data, error } = await supabase.from('support_tickets').insert({ user_id: user.id, subject: newSubject.trim(), status: 'open', priority: 'medium', ticket_number: '' }).select().single();
+    if (error) toast.error('Failed to create ticket');
+    else if (data) { const newTicket = { ...(data as any), unreadCount: 0 }; setTickets(prev => [newTicket, ...prev]); setActiveTicketId(newTicket.id); setNewSubject(''); }
+    setCreatingTicket(false);
+  };
+
+  const handlePriorityChange = async (p: string) => {
+    if (!activeTicket) return;
+    await supabase.from('support_tickets').update({ priority: p }).eq('id', activeTicket.id);
+    setTickets(prev => prev.map(t => t.id === activeTicket.id ? { ...t, priority: p } : t));
+  };
+
+  const handleStarToggle = async () => {
+    if (!activeTicket) return;
+    const newVal = !activeTicket.is_starred;
+    await supabase.from('support_tickets').update({ is_starred: newVal }).eq('id', activeTicket.id);
+    setTickets(prev => prev.map(t => t.id === activeTicket.id ? { ...t, is_starred: newVal } : t));
   };
 
   // ── File Upload ──
@@ -254,21 +250,24 @@ const ChatSection = () => {
     if (!file || !user || !activeTicketId) return;
     if (file.size > 10 * 1024 * 1024) { toast.error('File must be under 10MB'); return; }
     setUploadingFile(true);
-    const path = `${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
-    const { error } = await supabase.storage.from('chat-attachments').upload(path, file);
-    if (error) { toast.error('Upload failed'); setUploadingFile(false); return; }
-    const { data } = supabase.storage.from('chat-attachments').getPublicUrl(path);
-    await handleSend({ url: data.publicUrl, name: file.name, type: file.type });
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from('chat-attachments').upload(path, file);
+    if (uploadError) { toast.error('Upload failed'); setUploadingFile(false); return; }
+    const { data: urlData } = supabase.storage.from('chat-attachments').getPublicUrl(path);
+    await handleSend({ url: urlData.publicUrl, name: file.name, type: file.type });
     setUploadingFile(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // ── Emoji ──
+  // ── Emoji Insert ──
   const insertEmoji = (emoji: string) => {
     setMessageText(prev => prev + emoji);
     textareaRef.current?.focus();
+    // Save to recent
     const recent = JSON.parse(localStorage.getItem('recent-emojis') || '[]');
-    localStorage.setItem('recent-emojis', JSON.stringify([emoji, ...recent.filter((e: string) => e !== emoji)].slice(0, 20)));
+    const updated = [emoji, ...recent.filter((e: string) => e !== emoji)].slice(0, 20);
+    localStorage.setItem('recent-emojis', JSON.stringify(updated));
   };
 
   // ── Voice Recording ──
@@ -285,8 +284,8 @@ const ChatSection = () => {
         const path = `${user.id}/voice-${Date.now()}.webm`;
         const { error } = await supabase.storage.from('chat-attachments').upload(path, audioBlob);
         if (error) { toast.error('Voice upload failed'); return; }
-        const { data } = supabase.storage.from('chat-attachments').getPublicUrl(path);
-        await handleSend({ url: data.publicUrl, name: 'Voice note', type: 'audio/webm', isVoice: true });
+        const { data: urlData } = supabase.storage.from('chat-attachments').getPublicUrl(path);
+        await handleSend({ url: urlData.publicUrl, name: 'Voice note', type: 'audio/webm', isVoice: true });
       };
       mediaRecorder.start();
       mediaRecorderRef.current = mediaRecorder;
@@ -295,8 +294,32 @@ const ChatSection = () => {
       recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
     } catch { toast.error('Microphone access denied'); }
   };
-  const stopRecording = () => { mediaRecorderRef.current?.stop(); setIsRecording(false); if (recordingTimerRef.current) clearInterval(recordingTimerRef.current); };
-  const cancelRecording = () => { if (mediaRecorderRef.current) { mediaRecorderRef.current.ondataavailable = null; mediaRecorderRef.current.onstop = null; mediaRecorderRef.current.stream?.getTracks().forEach(t => t.stop()); mediaRecorderRef.current.stop(); } setIsRecording(false); if (recordingTimerRef.current) clearInterval(recordingTimerRef.current); };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.ondataavailable = null;
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stream?.getTracks().forEach(t => t.stop());
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+  };
+
+  // ── Snooze ──
+  const handleSnooze = async (until: Date) => {
+    if (!activeTicket || !user) return;
+    await supabase.from('support_tickets').update({ is_snoozed: true, snooze_until: until.toISOString() }).eq('id', activeTicket.id);
+    setTickets(prev => prev.map(t => t.id === activeTicket.id ? { ...t, is_snoozed: true, snooze_until: until.toISOString() } : t));
+    setShowSnoozeMenu(false);
+    toast.success('Snoozed until ' + format(until, 'MMM dd, hh:mm a'));
+  };
 
   // ── Pin Message ──
   const handlePinMessage = async (msgId: string) => {
@@ -307,7 +330,7 @@ const ChatSection = () => {
       toast.success('Unpinned');
     } else {
       if (pinnedMessages.length >= 10) { toast.error('Max 10 pinned messages'); return; }
-      await supabase.from('pinned_messages').insert({ user_id: user.id, chat_id: activeTicketId, message_id: msgId });
+      await supabase.from('pinned_messages').insert({ user_id: user.id, ticket_id: activeTicketId, message_id: msgId });
       setPinnedMessages(prev => [...prev, msgId]);
       toast.success('Pinned');
     }
@@ -315,22 +338,24 @@ const ChatSection = () => {
   };
 
   // ── Pin Chat ──
-  const handlePinChat = async (sellerId: string) => {
+  const handlePinChat = async (ticketId: string) => {
     if (!user) return;
-    if (pinnedChats.includes(sellerId)) {
-      await supabase.from('pinned_chats').delete().eq('user_id', user.id).eq('seller_id', sellerId);
-      setPinnedChats(prev => prev.filter(id => id !== sellerId));
+    if (pinnedChats.includes(ticketId)) {
+      await supabase.from('pinned_chats').delete().eq('user_id', user.id).eq('ticket_id', ticketId);
+      setPinnedChats(prev => prev.filter(id => id !== ticketId));
     } else {
-      await supabase.from('pinned_chats').insert({ user_id: user.id, seller_id: sellerId });
-      setPinnedChats(prev => [...prev, sellerId]);
+      await supabase.from('pinned_chats').insert({ user_id: user.id, ticket_id: ticketId });
+      setPinnedChats(prev => [...prev, ticketId]);
     }
   };
 
-  // ── Snooze (client-side) ──
-  const handleSnooze = (sellerId: string, until: Date) => {
-    setSnoozedSellers(prev => ({ ...prev, [sellerId]: until.toISOString() }));
-    setShowSnoozeMenu(false);
-    toast.success('Snoozed until ' + format(until, 'MMM dd, hh:mm a'));
+  // ── Notes save ──
+  const handleSaveNotes = async () => {
+    if (!activeTicket) return;
+    await supabase.from('support_tickets').update({ notes: notesText }).eq('id', activeTicket.id);
+    setTickets(prev => prev.map(t => t.id === activeTicket.id ? { ...t, notes: notesText } : t));
+    setEditingNotes(false);
+    toast.success('Notes saved');
   };
 
   // ── Save chat settings ──
@@ -340,6 +365,7 @@ const ChatSection = () => {
     await supabase.from('chat_settings').upsert({ user_id: user.id, ...newSettings, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
   };
 
+  // ── BG Image Upload ──
   const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -350,21 +376,22 @@ const ChatSection = () => {
     saveChatSettings({ ...chatSettings, bg_image_url: data.publicUrl });
   };
 
+  // ── Chat message search results ──
   const chatSearchResults = chatSearch.trim() ? messages.filter(m => m.message.toLowerCase().includes(chatSearch.toLowerCase())) : [];
 
+  // ── Sort & filter tickets ──
   const filteredTickets = tickets
-    .filter(t => t.sellerName.toLowerCase().includes(searchQuery.toLowerCase()) || t.ticketNumber.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter(t => t.subject.toLowerCase().includes(searchQuery.toLowerCase()) || t.ticket_number.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       const aPinned = pinnedChats.includes(a.id);
       const bPinned = pinnedChats.includes(b.id);
       if (aPinned && !bPinned) return -1;
       if (!aPinned && bPinned) return 1;
-      const aSnoozed = !!snoozedSellers[a.id];
-      const bSnoozed = !!snoozedSellers[b.id];
-      if (aSnoozed && !bSnoozed) return 1;
-      if (!aSnoozed && bSnoozed) return -1;
-      const timeA = new Date(a.lastMessageTime).getTime();
-      const timeB = new Date(b.lastMessageTime).getTime();
+      // Snoozed to bottom
+      if (a.is_snoozed && !b.is_snoozed) return 1;
+      if (!a.is_snoozed && b.is_snoozed) return -1;
+      const timeA = new Date(a.updated_at).getTime();
+      const timeB = new Date(b.updated_at).getTime();
       return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
     });
 
@@ -383,10 +410,21 @@ const ChatSection = () => {
         <div style={{ padding: '24px 20px 16px' }}>
           <div className="flex justify-between items-center mb-4">
             <span className="font-semibold" style={{ fontSize: '15px' }}>Total ticket {tickets.length}</span>
-            <button onClick={() => setSortOrder(s => s === 'newest' ? 'oldest' : 'newest')} className="flex items-center gap-1 cursor-pointer px-2 py-1 rounded-md hover:bg-[#f1f5f9]" style={{ fontSize: '12px', color: '#64748b' }}>
-              {sortOrder === 'newest' ? 'Newest' : 'Oldest'} <ChevronDown size={12} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setSortOrder(s => s === 'newest' ? 'oldest' : 'newest')} className="flex items-center gap-1 cursor-pointer px-2 py-1 rounded-md hover:bg-[#f1f5f9]" style={{ fontSize: '12px', color: '#64748b' }}>
+                {sortOrder === 'newest' ? 'Newest' : 'Oldest'} <ChevronDown size={12} />
+              </button>
+              <button onClick={() => setCreatingTicket(!creatingTicket)} className="flex items-center gap-1 cursor-pointer px-2 py-1 rounded-md hover:bg-[#f1f5f9]" style={{ fontSize: '13px', color: '#2563eb' }}>
+                <Plus size={14} /> New
+              </button>
+            </div>
           </div>
+          {creatingTicket && (
+            <div className="mb-3 flex gap-2">
+              <input type="text" placeholder="Subject..." value={newSubject} onChange={(e) => setNewSubject(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateTicket()} className="flex-1 h-9 rounded-lg px-3 outline-none" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }} />
+              <button onClick={handleCreateTicket} className="h-9 px-3 rounded-lg text-white" style={{ background: '#2563eb', fontSize: '12px' }}>Create</button>
+            </div>
+          )}
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#64748b' }} />
             <input type="text" placeholder="Search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full h-10 rounded-lg pl-[38px] pr-3 outline-none" style={{ border: '1px solid #e2e8f0', fontSize: '14px', color: '#0f172a' }} />
@@ -398,19 +436,20 @@ const ChatSection = () => {
           ) : filteredTickets.map((ticket) => (
             <div key={ticket.id} onClick={() => setActiveTicketId(ticket.id)} className={cn("flex gap-3 p-4 rounded-lg cursor-pointer mb-1 transition-colors relative group", activeTicketId === ticket.id ? "border" : "border border-transparent hover:bg-[#f8fafc]")} style={activeTicketId === ticket.id ? { backgroundColor: '#eff6ff', borderColor: '#dbeafe' } : {}}>
               {pinnedChats.includes(ticket.id) && <Pin size={10} className="absolute top-2 right-2" style={{ color: '#2563eb' }} />}
-              {snoozedSellers[ticket.id] && <Clock size={10} className="absolute top-2 right-6" style={{ color: '#f59e0b' }} />}
+              {ticket.is_snoozed && <Clock size={10} className="absolute top-2 right-6" style={{ color: '#f59e0b' }} />}
               <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-semibold" style={{ fontSize: '10px', background: '#f1f5f9', color: '#64748b' }}><MessageCircle size={16} /></div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="font-semibold" style={{ fontSize: '13px' }}>{ticket.sellerName}</span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>{format(new Date(ticket.lastMessageTime), 'hh:mm a')}</span>
+                  <span className="font-semibold" style={{ fontSize: '13px' }}>{userName}</span>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>{format(new Date(ticket.updated_at), 'hh:mm a')}</span>
                 </div>
                 <div className="font-medium mb-1 flex items-center gap-1" style={{ fontSize: '12px', color: '#64748b' }}>
-                  <span>{ticket.ticketNumber}</span><span>•</span>
-                  <span className="w-[6px] h-[6px] rounded-full inline-block" style={{ background: getMetaForSeller(ticket.id).status === 'active' ? '#22c55e' : getMetaForSeller(ticket.id).status === 'closed' ? '#64748b' : '#f59e0b' }} />{getMetaForSeller(ticket.id).status}
+                  <span>{ticket.ticket_number}</span><span>•</span>
+                  <span className="w-[6px] h-[6px] rounded-full inline-block" style={{ background: ticket.status === 'open' ? '#22c55e' : ticket.status === 'resolved' ? '#64748b' : '#f59e0b' }} />{ticket.status}
                 </div>
-                <div className="font-medium truncate" style={{ fontSize: '13px' }}>{getMetaForSeller(ticket.id).subject}</div>
+                <div className="font-medium truncate" style={{ fontSize: '13px' }}>{ticket.subject}</div>
               </div>
+              {/* Pin chat button on hover */}
               <button onClick={(e) => { e.stopPropagation(); handlePinChat(ticket.id); }} className="opacity-0 group-hover:opacity-100 absolute bottom-2 right-2 p-1 rounded" style={{ color: pinnedChats.includes(ticket.id) ? '#2563eb' : '#94a3b8' }}><Pin size={12} /></button>
               {ticket.unreadCount > 0 && <div className="flex flex-col justify-end"><div className="flex items-center justify-center font-semibold text-white rounded-[9px]" style={{ background: '#ef4444', fontSize: '11px', height: '18px', minWidth: '18px', padding: '0 5px' }}>{ticket.unreadCount}</div></div>}
             </div>
@@ -424,14 +463,15 @@ const ChatSection = () => {
           <div className="flex-1 flex items-center justify-center" style={{ color: '#94a3b8' }}><div className="text-center"><MessageCircle size={40} className="mx-auto mb-3" /><p style={{ fontSize: '15px' }}>Select a ticket or create a new one</p></div></div>
         ) : (
           <>
+            {/* Chat Header */}
             <header className="flex items-center justify-between flex-shrink-0 px-4 md:px-8" style={{ height: '72px', borderBottom: '1px solid #e2e8f0' }}>
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer lg:hidden" style={{ border: '1px solid #e2e8f0' }} onClick={() => setActiveTicketId(null)}><ChevronLeft size={18} /></div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold" style={{ fontSize: '15px' }}>{activeTicket.sellerName}</span>
+                  <span className="font-bold" style={{ fontSize: '15px' }}>{userName}</span>
                   <span style={{ color: '#64748b' }}>•</span>
-                  <span className="truncate max-w-[200px] md:max-w-[300px]" style={{ color: '#64748b', fontSize: '14px' }}>{activeTicket.ticketNumber} · {getMetaForSeller(activeTicket.id).subject}</span>
-                  <Star size={16} onClick={handleStarToggle} className="cursor-pointer flex-shrink-0" style={{ color: getMetaForSeller(activeTicket.id).is_starred ? '#f59e0b' : '#64748b', fill: getMetaForSeller(activeTicket.id).is_starred ? '#f59e0b' : 'none' }} />
+                  <span className="truncate max-w-[200px] md:max-w-[300px]" style={{ color: '#64748b', fontSize: '14px' }}>{activeTicket.ticket_number} · {activeTicket.subject}</span>
+                  <Star size={16} onClick={handleStarToggle} className="cursor-pointer flex-shrink-0" style={{ color: activeTicket.is_starred ? '#f59e0b' : '#64748b', fill: activeTicket.is_starred ? '#f59e0b' : 'none' }} />
                 </div>
               </div>
               <div className="hidden md:flex items-center gap-[10px]">
@@ -441,7 +481,7 @@ const ChatSection = () => {
                   <button onClick={() => setShowSnoozeMenu(!showSnoozeMenu)} className="h-9 px-4 rounded-lg flex items-center gap-2 font-medium cursor-pointer" style={{ border: '1px solid #e2e8f0', background: 'white', fontSize: '13px' }}><Moon size={16} /> Snooze</button>
                   {showSnoozeMenu && (
                     <div className="absolute right-0 top-11 w-48 rounded-lg shadow-lg z-50 py-1" style={{ background: '#fff', border: '1px solid #e2e8f0' }}>
-                      {[{ label: '1 hour', fn: () => handleSnooze(activeTicketId!, addHours(new Date(), 1)) }, { label: '4 hours', fn: () => handleSnooze(activeTicketId!, addHours(new Date(), 4)) }, { label: 'Tomorrow 9am', fn: () => { const t = startOfTomorrow(); t.setHours(9); handleSnooze(activeTicketId!, t); } }, { label: 'Next week', fn: () => handleSnooze(activeTicketId!, addDays(new Date(), 7)) }].map(opt => (
+                      {[{ label: '1 hour', fn: () => handleSnooze(addHours(new Date(), 1)) }, { label: '4 hours', fn: () => handleSnooze(addHours(new Date(), 4)) }, { label: 'Tomorrow 9am', fn: () => { const t = startOfTomorrow(); t.setHours(9); handleSnooze(t); } }, { label: 'Next week', fn: () => handleSnooze(addDays(new Date(), 7)) }].map(opt => (
                         <button key={opt.label} onClick={opt.fn} className="w-full text-left px-4 py-2 hover:bg-[#f1f5f9]" style={{ fontSize: '13px' }}>{opt.label}</button>
                       ))}
                     </div>
@@ -451,6 +491,7 @@ const ChatSection = () => {
               </div>
             </header>
 
+            {/* Chat Search Bar */}
             {showChatSearch && (
               <div className="flex items-center gap-2 px-4 py-2" style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
                 <Search size={14} style={{ color: '#64748b' }} />
@@ -462,9 +503,11 @@ const ChatSection = () => {
               </div>
             )}
 
+            {/* Pinned Messages Bar */}
             {pinnedMessages.length > 0 && (
               <div className="px-4 py-2 cursor-pointer flex items-center gap-2" style={{ borderBottom: '1px solid #e2e8f0', background: '#fefce8' }} onClick={() => setShowPinnedBar(!showPinnedBar)}>
-                <Pin size={12} style={{ color: '#ca8a04' }} /><span style={{ fontSize: '12px', color: '#854d0e' }}>{pinnedMessages.length} pinned message{pinnedMessages.length > 1 ? 's' : ''}</span>
+                <Pin size={12} style={{ color: '#ca8a04' }} />
+                <span style={{ fontSize: '12px', color: '#854d0e' }}>{pinnedMessages.length} pinned message{pinnedMessages.length > 1 ? 's' : ''}</span>
                 {showPinnedBar ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </div>
             )}
@@ -487,17 +530,16 @@ const ChatSection = () => {
               {messages.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center" style={{ color: '#94a3b8' }}><div className="text-center"><MessageCircle size={32} className="mx-auto mb-2" /><p style={{ fontSize: '13px' }}>No messages yet. Start the conversation!</p></div></div>
               ) : messages.map((msg) => {
-                const isMe = msg.sender_type === 'buyer';
+                const isMe = msg.sender_type === 'user';
                 const isHighlighted = chatSearch && msg.message.toLowerCase().includes(chatSearch.toLowerCase());
                 const isCurrentSearch = chatSearchResults[chatSearchIndex]?.id === msg.id;
                 return (
                   <div key={msg.id} className={cn("flex gap-4 relative group", isMe ? "self-end flex-row-reverse" : "")} style={{ maxWidth: '80%' }}
                     onContextMenu={(e) => { e.preventDefault(); setContextMenuMsg(msg.id); setContextMenuPos({ x: e.clientX, y: e.clientY }); }}>
                     {pinnedMessages.includes(msg.id) && <Pin size={10} className="absolute -top-2 right-0" style={{ color: '#ca8a04' }} />}
-                    {isMe ? <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white" style={{ background: '#2563eb' }}><User size={16} /></div>
-                    : <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white" style={{ background: '#8b5cf6' }}><Sparkles size={16} /></div>}
+                    {isMe ? <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white" style={{ background: '#2563eb' }}><User size={16} /></div> : <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white" style={{ background: '#8b5cf6' }}><Sparkles size={16} /></div>}
                     <div className={cn("flex flex-col gap-[6px]", isMe ? "items-end" : "")}>
-                      {!isMe && <div className="flex items-center gap-[6px] font-medium" style={{ fontSize: '12px', color: '#7c3aed' }}><Sparkles size={12} /> {activeTicket.sellerName}</div>}
+                      {!isMe && <div className="flex items-center gap-[6px] font-medium" style={{ fontSize: '12px', color: '#7c3aed' }}><Sparkles size={12} /> Support Agent</div>}
                       {isMe && <div className="font-semibold" style={{ fontSize: '13px' }}>You</div>}
                       <div className="px-[18px] py-[14px] whitespace-pre-wrap break-words" style={{
                         lineHeight: '1.6', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', borderRadius: bubbleRadius,
@@ -505,17 +547,24 @@ const ChatSection = () => {
                         ...(isHighlighted ? { outline: '2px solid #f59e0b' } : {}),
                         ...(isCurrentSearch ? { outline: '3px solid #ef4444' } : {}),
                       }}>
-                        {msg.is_voice_note && msg.attachment_url ? <audio controls src={msg.attachment_url} style={{ maxWidth: '240px' }} />
-                        : msg.attachment_url ? (
+                        {msg.is_voice_note && msg.attachment_url ? (
+                          <audio controls src={msg.attachment_url} style={{ maxWidth: '240px' }} />
+                        ) : msg.attachment_url ? (
                           <div>
-                            {msg.attachment_type?.startsWith('image/') ? <img src={msg.attachment_url} alt={msg.attachment_name || 'Image'} className="rounded-lg max-w-[240px] max-h-[180px] object-cover cursor-pointer mb-2" onClick={() => window.open(msg.attachment_url!, '_blank')} />
-                            : <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 rounded-lg mb-2" style={{ background: 'rgba(0,0,0,0.05)' }}><FileText size={16} /> <span style={{ fontSize: '12px' }}>{msg.attachment_name || 'File'}</span> <Download size={14} /></a>}
+                            {msg.attachment_type?.startsWith('image/') ? (
+                              <img src={msg.attachment_url} alt={msg.attachment_name || 'Image'} className="rounded-lg max-w-[240px] max-h-[180px] object-cover cursor-pointer mb-2" onClick={() => window.open(msg.attachment_url!, '_blank')} />
+                            ) : (
+                              <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 rounded-lg mb-2" style={{ background: 'rgba(0,0,0,0.05)' }}>
+                                <FileText size={16} /> <span style={{ fontSize: '12px' }}>{msg.attachment_name || 'File'}</span> <Download size={14} />
+                              </a>
+                            )}
                             {msg.message && !msg.message.startsWith('📎') && !msg.message.startsWith('🎤') && <div>{msg.message}</div>}
                           </div>
                         ) : msg.message}
                       </div>
                       <div className="flex items-center gap-[6px]" style={{ fontSize: '11px', color: '#64748b' }}>{format(new Date(msg.created_at), 'hh:mm a')}</div>
                     </div>
+                    {/* Pin button on hover */}
                     <button onClick={() => handlePinMessage(msg.id)} className="opacity-0 group-hover:opacity-100 self-center p-1 rounded" style={{ color: pinnedMessages.includes(msg.id) ? '#ca8a04' : '#94a3b8' }}><Pin size={12} /></button>
                   </div>
                 );
@@ -523,11 +572,14 @@ const ChatSection = () => {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Context Menu */}
             {contextMenuMsg && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setContextMenuMsg(null)} />
                 <div className="fixed z-50 rounded-lg shadow-lg py-1" style={{ left: contextMenuPos.x, top: contextMenuPos.y, background: '#fff', border: '1px solid #e2e8f0', minWidth: '140px' }}>
-                  <button onClick={() => handlePinMessage(contextMenuMsg)} className="w-full text-left px-4 py-2 hover:bg-[#f1f5f9] flex items-center gap-2" style={{ fontSize: '13px' }}><Pin size={14} /> {pinnedMessages.includes(contextMenuMsg) ? 'Unpin' : 'Pin message'}</button>
+                  <button onClick={() => handlePinMessage(contextMenuMsg)} className="w-full text-left px-4 py-2 hover:bg-[#f1f5f9] flex items-center gap-2" style={{ fontSize: '13px' }}>
+                    <Pin size={14} /> {pinnedMessages.includes(contextMenuMsg) ? 'Unpin' : 'Pin message'}
+                  </button>
                 </div>
               </>
             )}
@@ -590,56 +642,37 @@ const ChatSection = () => {
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-white cursor-pointer" style={{ background: '#2563eb' }}><PenLine size={14} /></div>
           </div>
           <div className="flex-1 overflow-y-auto px-6 pb-6">
-            {/* Assignee */}
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Assignee</label><div className="w-full px-3 py-[10px] rounded-lg flex items-center justify-between" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}><div className="flex items-center gap-2"><div className="w-5 h-5 rounded-full flex items-center justify-center text-white" style={{ background: '#94a3b8', fontSize: '9px' }}>S</div>{getMetaForSeller(activeTicket.id).assigned_to}</div></div></div>
-            {/* Team */}
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Team</label><div className="w-full px-3 py-[10px] rounded-lg" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}>{getMetaForSeller(activeTicket.id).assigned_team}</div></div>
-            {/* Ticket type */}
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Ticket type</label><div className="w-full px-3 py-[10px] rounded-lg" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}>{getMetaForSeller(activeTicket.id).ticket_type}</div></div>
-            {/* Set status */}
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Set status</label><div className="w-full px-3 py-[10px] rounded-lg flex items-center gap-2 cursor-pointer" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }} onClick={() => { const meta = getMetaForSeller(activeTicket.id); const next = meta.status === 'active' ? 'pending' : meta.status === 'pending' ? 'closed' : 'active'; updateMeta(activeTicket.id, { status: next }); }}><Flag size={14} /> {getMetaForSeller(activeTicket.id).status}</div></div>
-            {/* Set priority */}
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Assignee</label><div className="w-full px-3 py-[10px] rounded-lg flex items-center justify-between" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}><div className="flex items-center gap-2"><div className="w-5 h-5 rounded-full flex items-center justify-center text-white" style={{ background: '#94a3b8', fontSize: '9px' }}>S</div>{activeTicket.assigned_to || 'Unassigned'}</div></div></div>
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Team</label><div className="w-full px-3 py-[10px] rounded-lg" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}>{activeTicket.assigned_team || 'Customer Service'}</div></div>
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Ticket type</label><div className="w-full px-3 py-[10px] rounded-lg" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}>{activeTicket.ticket_type || 'Problem'}</div></div>
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Set status</label><div className="w-full px-3 py-[10px] rounded-lg flex items-center gap-2" style={{ border: '1px solid #e2e8f0', fontSize: '13px' }}><Flag size={14} /> {activeTicket.status}</div></div>
             <div className="mb-5">
               <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Set priority</label>
               <div className="flex gap-2">
                 {[{ key: 'low', label: 'Low', color: '#22c55e' }, { key: 'medium', label: 'Medium', color: '#f59e0b' }, { key: 'high', label: 'High', color: '#ef4444' }].map((p) => (
-                  <div key={p.key} onClick={() => handlePriorityChange(p.key)} className="flex-1 flex items-center justify-center gap-[6px] py-2 rounded-md cursor-pointer" style={{ border: '1px solid', borderColor: getMetaForSeller(activeTicket.id).priority === p.key ? '#fcd34d' : '#e2e8f0', background: getMetaForSeller(activeTicket.id).priority === p.key ? '#fef3c7' : 'transparent', fontSize: '12px' }}>
+                  <div key={p.key} onClick={() => handlePriorityChange(p.key)} className="flex-1 flex items-center justify-center gap-[6px] py-2 rounded-md cursor-pointer" style={{ border: '1px solid', borderColor: activeTicket.priority === p.key ? '#fcd34d' : '#e2e8f0', background: activeTicket.priority === p.key ? '#fef3c7' : 'transparent', fontSize: '12px' }}>
                     <div className="w-[6px] h-[6px] rounded-full" style={{ background: p.color }} />{p.label}
                   </div>
                 ))}
               </div>
             </div>
-            {/* Subject */}
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Subject</label><div className="p-3 rounded-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '13px', lineHeight: '1.4' }}>{getMetaForSeller(activeTicket.id).subject}</div></div>
-            {/* Tags */}
-            <div className="mb-5">
-              <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Tags</label>
-              <div className="flex gap-2 flex-wrap mb-2">
-                {getMetaForSeller(activeTicket.id).tags.map((tag) => (
-                  <div key={tag} className="flex items-center gap-[6px] px-[10px] py-[6px] rounded-[20px] text-white font-medium" style={{ background: '#0f172a', fontSize: '11px' }}>{tag} <X size={10} className="cursor-pointer" onClick={() => handleRemoveTag(tag)} /></div>
-                ))}
-              </div>
-              <div className="flex gap-1">
-                <input type="text" placeholder="Add tag..." value={newTagInput} onChange={(e) => setNewTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddTag()} className="flex-1 h-7 rounded px-2 outline-none" style={{ border: '1px solid #e2e8f0', fontSize: '11px' }} />
-                <button onClick={handleAddTag} className="h-7 px-2 rounded text-white" style={{ background: '#2563eb', fontSize: '11px' }}>Add</button>
-              </div>
-            </div>
-            {/* Attributes */}
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Attributes</label><div className="rounded-lg p-4" style={{ background: '#f8fafc' }}>{[{ key: 'ID', val: activeTicket.ticketNumber }, { key: 'Status', val: getMetaForSeller(activeTicket.id).status }, { key: 'Seller', val: activeTicket.sellerName }, { key: 'Last active', val: format(new Date(activeTicket.lastMessageTime), 'dd MMM yyyy, HH:mm') }].map((attr, i, arr) => (<div key={attr.key} className="flex justify-between items-center" style={{ fontSize: '12px', marginBottom: i < arr.length - 1 ? '12px' : 0 }}><span style={{ color: '#64748b' }}>{attr.key}</span><span className="font-semibold text-right max-w-[140px] truncate">{attr.val}</span></div>))}</div></div>
-            {/* Editable Note */}
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Subject</label><div className="p-3 rounded-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '13px', lineHeight: '1.4' }}>{activeTicket.subject}</div></div>
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Tags</label><div className="flex gap-2 flex-wrap">{(activeTicket.tags || ['Question']).map((tag) => (<div key={tag} className="flex items-center gap-[6px] px-[10px] py-[6px] rounded-[20px] text-white font-medium" style={{ background: '#0f172a', fontSize: '11px' }}>{tag} <X size={10} className="cursor-pointer" /></div>))}</div></div>
+            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Attributes</label><div className="rounded-lg p-4" style={{ background: '#f8fafc' }}>{[{ key: 'ID', val: activeTicket.ticket_number }, { key: 'Status', val: activeTicket.status }, { key: 'Date submitted', val: format(new Date(activeTicket.created_at), 'dd MMM yyyy, HH:mm') }].map((attr, i, arr) => (<div key={attr.key} className="flex justify-between items-center" style={{ fontSize: '12px', marginBottom: i < arr.length - 1 ? '12px' : 0 }}><span style={{ color: '#64748b' }}>{attr.key}</span><span className="font-semibold">{attr.val}</span></div>))}</div></div>
+            {/* Editable Notes */}
             <div>
               <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Note</label>
-              {editingNote ? (
+              {editingNotes ? (
                 <div>
-                  <textarea value={currentNoteText} onChange={(e) => setCurrentNoteText(e.target.value)} className="w-full p-3 rounded-lg outline-none resize-none" style={{ background: '#f8fafc', border: '1px solid #2563eb', fontSize: '12px', minHeight: '60px' }} autoFocus />
+                  <textarea value={notesText} onChange={(e) => setNotesText(e.target.value)} className="w-full p-3 rounded-lg outline-none resize-none" style={{ background: '#f8fafc', border: '1px solid #2563eb', fontSize: '12px', minHeight: '60px' }} autoFocus />
                   <div className="flex gap-2 mt-2">
-                    <button onClick={() => { setNoteTexts(prev => ({ ...prev, [activeTicket.id]: currentNoteText })); setEditingNote(false); toast.success('Note saved'); }} className="px-3 py-1 rounded text-white" style={{ background: '#2563eb', fontSize: '11px' }}>Save</button>
-                    <button onClick={() => setEditingNote(false)} className="px-3 py-1 rounded" style={{ border: '1px solid #e2e8f0', fontSize: '11px' }}>Cancel</button>
+                    <button onClick={handleSaveNotes} className="px-3 py-1 rounded text-white" style={{ background: '#2563eb', fontSize: '11px' }}>Save</button>
+                    <button onClick={() => setEditingNotes(false)} className="px-3 py-1 rounded" style={{ border: '1px solid #e2e8f0', fontSize: '11px' }}>Cancel</button>
                   </div>
                 </div>
               ) : (
-                <div onClick={() => { setEditingNote(true); setCurrentNoteText(noteTexts[activeTicket.id] || ''); }} className="p-3 rounded-lg cursor-pointer hover:border-[#2563eb]" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '12px', color: '#64748b', minHeight: '40px' }}>
-                  {noteTexts[activeTicket.id] || 'Click to add notes...'}
+                <div onClick={() => { setEditingNotes(true); setNotesText(activeTicket.notes || ''); }} className="p-3 rounded-lg cursor-pointer hover:border-[#2563eb]" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '12px', color: '#64748b', minHeight: '40px' }}>
+                  {activeTicket.notes || 'Click to add notes...'}
                 </div>
               )}
             </div>
@@ -664,16 +697,60 @@ const ChatSection = () => {
         <>
           <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setShowSettings(false)} />
           <div className="fixed right-20 top-20 w-[340px] rounded-xl shadow-2xl z-50 p-6" style={{ background: '#fff', border: '1px solid #e2e8f0' }}>
-            <div className="flex justify-between items-center mb-6"><span className="font-semibold" style={{ fontSize: '16px' }}>Chat Settings</span><X size={18} className="cursor-pointer" style={{ color: '#64748b' }} onClick={() => setShowSettings(false)} /></div>
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Theme</label><div className="grid grid-cols-3 gap-2">{Object.entries(THEME_PRESETS).map(([key, theme]) => (<button key={key} onClick={() => saveChatSettings({ ...chatSettings, theme: key })} className={cn("p-2 rounded-lg text-center", chatSettings.theme === key ? 'ring-2 ring-blue-500' : '')} style={{ border: '1px solid #e2e8f0', fontSize: '11px' }}><div className="w-full h-6 rounded mb-1" style={{ background: theme.chatBg, border: '1px solid #e2e8f0' }} />{theme.label}</button>))}</div></div>
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Background Image</label><div className="flex gap-2"><button onClick={() => bgUploadRef.current?.click()} className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1" style={{ border: '1px solid #e2e8f0', fontSize: '12px' }}><ImageIcon size={14} /> Upload</button>{chatSettings.bg_image_url && <button onClick={() => saveChatSettings({ ...chatSettings, bg_image_url: null })} className="h-9 px-3 rounded-lg" style={{ border: '1px solid #e2e8f0', fontSize: '12px', color: '#ef4444' }}>Remove</button>}</div></div>
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Bubble Style</label><div className="flex gap-2">{['rounded', 'sharp', 'minimal'].map(style => (<button key={style} onClick={() => saveChatSettings({ ...chatSettings, bubble_style: style })} className={cn("flex-1 py-2 rounded-lg capitalize", chatSettings.bubble_style === style ? 'ring-2 ring-blue-500' : '')} style={{ border: '1px solid #e2e8f0', fontSize: '12px' }}>{style}</button>))}</div></div>
-            <div className="mb-5"><label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Font Size</label><div className="flex gap-2">{['small', 'medium', 'large'].map(size => (<button key={size} onClick={() => saveChatSettings({ ...chatSettings, font_size: size })} className={cn("flex-1 py-2 rounded-lg capitalize", chatSettings.font_size === size ? 'ring-2 ring-blue-500' : '')} style={{ border: '1px solid #e2e8f0', fontSize: '12px' }}>{size}</button>))}</div></div>
-            <div className="flex items-center justify-between"><label className="font-medium" style={{ fontSize: '13px' }}>Notification Sound</label><button onClick={() => saveChatSettings({ ...chatSettings, notification_sound: !chatSettings.notification_sound })} className="w-10 h-6 rounded-full relative transition-colors" style={{ background: chatSettings.notification_sound ? '#2563eb' : '#e2e8f0' }}><div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-transform" style={{ left: chatSettings.notification_sound ? '22px' : '4px' }} /></button></div>
+            <div className="flex justify-between items-center mb-6">
+              <span className="font-semibold" style={{ fontSize: '16px' }}>Chat Settings</span>
+              <X size={18} className="cursor-pointer" style={{ color: '#64748b' }} onClick={() => setShowSettings(false)} />
+            </div>
+            {/* Theme */}
+            <div className="mb-5">
+              <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Theme</label>
+              <div className="grid grid-cols-3 gap-2">
+                {Object.entries(THEME_PRESETS).map(([key, theme]) => (
+                  <button key={key} onClick={() => saveChatSettings({ ...chatSettings, theme: key })} className={cn("p-2 rounded-lg text-center", chatSettings.theme === key ? 'ring-2 ring-blue-500' : '')} style={{ border: '1px solid #e2e8f0', fontSize: '11px' }}>
+                    <div className="w-full h-6 rounded mb-1" style={{ background: theme.chatBg, border: '1px solid #e2e8f0' }} />
+                    {theme.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* BG Image */}
+            <div className="mb-5">
+              <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Background Image</label>
+              <div className="flex gap-2">
+                <button onClick={() => bgUploadRef.current?.click()} className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1" style={{ border: '1px solid #e2e8f0', fontSize: '12px' }}><ImageIcon size={14} /> Upload</button>
+                {chatSettings.bg_image_url && <button onClick={() => saveChatSettings({ ...chatSettings, bg_image_url: null })} className="h-9 px-3 rounded-lg" style={{ border: '1px solid #e2e8f0', fontSize: '12px', color: '#ef4444' }}>Remove</button>}
+              </div>
+            </div>
+            {/* Bubble Style */}
+            <div className="mb-5">
+              <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Bubble Style</label>
+              <div className="flex gap-2">
+                {['rounded', 'sharp', 'minimal'].map(style => (
+                  <button key={style} onClick={() => saveChatSettings({ ...chatSettings, bubble_style: style })} className={cn("flex-1 py-2 rounded-lg capitalize", chatSettings.bubble_style === style ? 'ring-2 ring-blue-500' : '')} style={{ border: '1px solid #e2e8f0', fontSize: '12px' }}>{style}</button>
+                ))}
+              </div>
+            </div>
+            {/* Font Size */}
+            <div className="mb-5">
+              <label className="block font-medium mb-2" style={{ fontSize: '13px' }}>Font Size</label>
+              <div className="flex gap-2">
+                {['small', 'medium', 'large'].map(size => (
+                  <button key={size} onClick={() => saveChatSettings({ ...chatSettings, font_size: size })} className={cn("flex-1 py-2 rounded-lg capitalize", chatSettings.font_size === size ? 'ring-2 ring-blue-500' : '')} style={{ border: '1px solid #e2e8f0', fontSize: '12px' }}>{size}</button>
+                ))}
+              </div>
+            </div>
+            {/* Notification Sound */}
+            <div className="flex items-center justify-between">
+              <label className="font-medium" style={{ fontSize: '13px' }}>Notification Sound</label>
+              <button onClick={() => saveChatSettings({ ...chatSettings, notification_sound: !chatSettings.notification_sound })} className="w-10 h-6 rounded-full relative transition-colors" style={{ background: chatSettings.notification_sound ? '#2563eb' : '#e2e8f0' }}>
+                <div className="w-4 h-4 rounded-full bg-white absolute top-1 transition-transform" style={{ left: chatSettings.notification_sound ? '22px' : '4px' }} />
+              </button>
+            </div>
           </div>
         </>
       )}
 
+      {/* Close emoji picker on outside click */}
       {showEmojiPicker && <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />}
       {showSnoozeMenu && <div className="fixed inset-0 z-30" onClick={() => setShowSnoozeMenu(false)} />}
     </div>
