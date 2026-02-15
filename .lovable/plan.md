@@ -1,41 +1,50 @@
 
 
-## Fix Dashboard Marketplace: Keep Product Views Inside Dashboard
+## Add Google Sign-In Popup on Public Pages
 
-### Problem
-When browsing the marketplace inside the buyer dashboard (`/dashboard/marketplace`), clicking products in the **Hot Products**, **Top Rated**, and **New Arrivals** sections navigates to the public guest marketplace URL (`/marketplace/slug`) instead of staying within the dashboard. This happens because:
+### What This Does
+When any visitor (not logged in) lands on public pages like the homepage, marketplace, 404 page, etc., a small floating popup will appear in the top-right corner prompting them to sign in with Google -- similar to the Tencent Cloud reference image. One click takes them straight to the dashboard.
 
-1. The `ProductHoverCard` component (used by all three sections) has hardcoded navigation to `/marketplace/{slug}` in two places
-2. On mobile, tapping any product card triggers this navigation directly
-3. The "Full View" button inside the hover preview also navigates to the public marketplace
+### How It Works
+1. A new `GoogleSignInPopup` component renders on all public pages for unauthenticated users
+2. It shows a clean card with the user-friendly "Continue with Google" button
+3. After successful sign-in, the user is redirected to `/dashboard/marketplace`
+4. The popup can be dismissed (closed) and won't reappear for that browser session
+5. It does NOT show if the user is already logged in or is on the `/signin` page
 
-### Solution
-Add a `basePath` prop to `ProductHoverCard` so the dashboard can tell it to navigate to `/dashboard/marketplace/product/{slug}` instead of `/marketplace/{slug}`.
+### Design
+- Fixed position: top-right corner (like the reference image)
+- Dark card with border, subtle shadow
+- Google icon + "Sign in with Google" button
+- Small "x" close button
+- Smooth fade-in animation
+- Dismissal saved to sessionStorage so it doesn't keep reappearing
 
 ### Changes
 
-**File: `src/components/marketplace/ProductHoverCard.tsx`**
-- Add optional `basePath` prop (default: `'/marketplace'`)
-- Line 113: Change `navigate('/marketplace/${slug}')` to `navigate('${basePath}/${slug}')`
-- Line 286: Same change for the "Full View" button
+**New File: `src/components/GoogleSignInPopup.tsx`**
+- Floating popup component
+- Uses `useAuthContext()` to check if user is already logged in (if yes, don't render)
+- Uses `signInWithGoogle()` from auth context for the sign-in action
+- Checks `sessionStorage` for dismissal state
+- Shows on all pages except `/signin` and `/signup`
+- After successful Google sign-in, redirects to `/dashboard/marketplace`
 
-**File: `src/components/marketplace/HotProductsSection.tsx`**
-- Add optional `basePath` prop, pass it down to `ProductHoverCard`
+**File: `src/App.tsx`**
+- Add `<GoogleSignInPopup />` inside the `BrowserRouter` so it has access to routing context
+- Renders globally -- the component itself handles visibility logic (hides when logged in, on signin page, or dismissed)
 
-**File: `src/components/marketplace/TopRatedSection.tsx`**
-- Add optional `basePath` prop, pass it down to `ProductHoverCard`
+### Technical Details
 
-**File: `src/components/marketplace/NewArrivalsSection.tsx`**
-- Add optional `basePath` prop, pass it down to `ProductHoverCard`
+| Aspect | Detail |
+|--------|--------|
+| Trigger | Appears 2 seconds after page load (delay for non-intrusive UX) |
+| Visibility | Only for unauthenticated users, not on /signin or /signup |
+| Dismiss | Close button saves to sessionStorage (resets on new browser session) |
+| Auth flow | Uses existing `signInWithGoogle()` which redirects to Google OAuth |
+| Post-auth | OAuth returns to `/signin` which handles redirect to dashboard |
+| Position | Fixed top-right, z-50, responsive (smaller on mobile) |
 
-**File: `src/components/dashboard/AIAccountsSection.tsx`**
-- Pass `basePath="/dashboard/marketplace/product"` to all three discovery sections (`HotProductsSection`, `TopRatedSection`, `NewArrivalsSection`)
-
-### How It Works
-
-| Context | basePath | Resulting URL |
-|---------|----------|---------------|
-| Public marketplace | `/marketplace` (default) | `/marketplace/netflix-premium` |
-| Buyer dashboard | `/dashboard/marketplace/product` | `/dashboard/marketplace/product/netflix-premium` |
-
-This is a 5-file change with minimal code -- just threading a single prop through the component tree. The existing `ProductFullViewPage` component already handles the `/dashboard/marketplace/product/:productSlug` route.
+### Files
+- **New**: `src/components/GoogleSignInPopup.tsx`
+- **Modified**: `src/App.tsx` (add one line to render the popup)
