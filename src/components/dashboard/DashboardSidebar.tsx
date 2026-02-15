@@ -40,7 +40,7 @@ const activitySubItems = [
 ];
 
 const bottomNavItems = [
-  { to: '/dashboard/chat', icon: GumroadHelpIcon, label: 'Support' },
+  { to: '/dashboard/chat', icon: GumroadHelpIcon, label: 'Chat' },
   { to: '/dashboard/profile', icon: GumroadSettingsIcon, label: 'Settings' },
 ];
 

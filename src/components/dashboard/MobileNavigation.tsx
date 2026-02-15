@@ -160,7 +160,7 @@ const MobileNavigation = () => {
 
   const bottomSidebarItems = [
     { to: '/dashboard/notifications', icon: GumroadEmailsIcon, label: 'Notifications' },
-    { to: '/dashboard/chat', icon: GumroadHelpIcon, label: 'Support' },
+    { to: '/dashboard/chat', icon: GumroadHelpIcon, label: 'Chat' },
     { to: '/dashboard/profile', icon: GumroadSettingsIcon, label: 'Settings' },
   ];
 
