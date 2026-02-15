@@ -1,62 +1,44 @@
 
+## Fix Product Full View Navigation in Dashboard Marketplace
 
-## Fix Buyer Chat to Load Actual Conversations (Like Seller Chat)
+### Problem
+When clicking products in the "Hot Right Now", "Top Rated", and "New Arrivals" sections on the buyer dashboard marketplace, they open a modal instead of navigating to the full view page at `/dashboard/marketplace/product/:slug`. This is inconsistent with how other product views work (e.g., from the cart or QuickView's "Full View" button).
 
-### The Problem
-The buyer chat section (`ChatSection.tsx`) only queries `support_tickets` -- which has **0 tickets**. Meanwhile, the actual buyer-seller conversations live in the `seller_chats` table (99 messages exist). The seller side loads these conversations correctly, but the buyer side never queries them -- so the buyer sees nothing.
+### Root Cause
+In `AIAccountsSection.tsx` (lines 1244-1276), the `onProductClick` handlers for all three sections call `setSelectedSellerProduct` + `setShowSellerDetailsModal(true)` (modal) instead of using `navigate()` to go to the full view page.
 
-### The Fix
-Rewrite the buyer `ChatSection.tsx` data-fetching to mirror the seller chat approach:
-- Query `seller_chats` where `buyer_id = user.id` instead of `support_tickets`
-- Group messages by `seller_id` to create conversation threads (same pattern as seller groups by `buyer_id`)
-- Look up seller names from `seller_profiles` and `profiles` tables
-- Show seller name, last message, unread count in the conversation list
-- Keep all existing features (emoji, voice, file attachments, pinning, themes, search, snooze)
+### Fix
+**File: `src/components/dashboard/AIAccountsSection.tsx`**
 
-### What Changes
+Replace the `onProductClick` handlers for all three sections to navigate to the dashboard product full view:
 
-**File: `src/components/dashboard/ChatSection.tsx`**
+**HotProductsSection** (line 1244):
+```tsx
+onProductClick={product => {
+  const slug = product.slug || product.id;
+  navigate(`/dashboard/marketplace/product/${slug}`);
+}}
+```
 
-1. **Replace ticket-based data model with conversation-based model** (matching seller pattern):
-   - Change `Ticket` interface to `ChatTicket` with `sellerName`, `sellerAvatar`, `lastMessage`, `lastMessageTime` fields (mirror of seller's `ChatTicket` which has `buyerName`)
-   - Conversation ID = `seller_id` (just like seller uses `buyer_id` as conversation ID)
+**TopRatedSection** (line 1253):
+```tsx
+onProductClick={product => {
+  const slug = product.slug || product.id;
+  navigate(`/dashboard/marketplace/product/${slug}`);
+}}
+```
 
-2. **Replace ticket fetch logic** (lines 160-183):
-   - Query `seller_chats` where `buyer_id = user.id` grouped by `seller_id`
-   - Fetch seller profiles for display names
-   - Count unread messages where `sender_type = 'seller'` and `is_read = false`
-   - Auto-select first conversation on load
+**NewArrivalsSection** (line 1262):
+```tsx
+onProductClick={product => {
+  const slug = product.slug || product.id;
+  navigate(`/dashboard/marketplace/product/${slug}`);
+}}
+```
 
-3. **Replace message fetch logic** (lines 186-202):
-   - Query `seller_chats` where `buyer_id = user.id` AND `seller_id = activeTicketId`
-   - Mark seller messages as read
-   - Real-time subscription on `seller_chats` filtered by buyer_id
+This matches the existing pattern used in the QuickView modal's "Full View" button (line 1987-1988).
 
-4. **Replace send message logic** (lines 209-225):
-   - Insert into `seller_chats` with `buyer_id = user.id`, `seller_id = activeTicketId`, `sender_type = 'buyer'`
-
-5. **Update conversation list UI** (lines 443-463):
-   - Show seller name instead of user's own name
-   - Show last message preview and time
-   - Remove ticket_number display (no tickets involved)
-
-6. **Remove "Create Ticket" flow**:
-   - Remove the "New" button and subject input (conversations are created organically when buyer messages a seller, not manually)
-   - Keep the empty state but change text to "No conversations yet -- browse the marketplace to start chatting with sellers"
-
-7. **Update pinned chats/messages to use `seller_id`** context instead of `ticket_id`
-
-### Technical Summary
-
-| Aspect | Current (Broken) | Fixed |
-|--------|------------------|-------|
-| Data source | `support_tickets` + `support_messages` | `seller_chats` table |
-| Conversation key | `ticket.id` | `seller_id` (grouped) |
-| Contact name shown | User's own name | Seller's name from profiles |
-| Message query | `support_messages` by `ticket_id` | `seller_chats` by `buyer_id + seller_id` |
-| Send message | Insert to `support_messages` | Insert to `seller_chats` with `sender_type: 'buyer'` |
-| Create chat | Manual "New Ticket" button | Organic (from marketplace interaction) |
-| Real-time | `support_messages` channel | `seller_chats` channel |
-
-### Files Modified
-- `src/components/dashboard/ChatSection.tsx` -- complete data layer rewrite, UI stays the same design
+### Summary
+- 1 file modified: `src/components/dashboard/AIAccountsSection.tsx`
+- 3 click handlers updated from modal-open to navigate
+- Uses the same `/dashboard/marketplace/product/:slug` pattern already in use elsewhere
