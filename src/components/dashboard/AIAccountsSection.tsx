@@ -1241,7 +1241,7 @@ const AIAccountsSection = () => {
             {searchQuery.length === 0 && selectedTags.length === 0 && categoryFilter === 'all' && <div className="space-y-8 mb-8">
 
                 {/* Hot Products */}
-                <HotProductsSection onProductClick={product => {
+                <HotProductsSection basePath="/dashboard/marketplace/product" onProductClick={product => {
               const sellerProduct = sellerProducts.find(p => p.id === product.id);
               if (sellerProduct) {
                 setSelectedSellerProduct(sellerProduct);
@@ -1250,7 +1250,7 @@ const AIAccountsSection = () => {
             }} />
 
                 {/* Top Rated */}
-                <TopRatedSection onProductClick={product => {
+                <TopRatedSection basePath="/dashboard/marketplace/product" onProductClick={product => {
               const sellerProduct = sellerProducts.find(p => p.id === product.id);
               if (sellerProduct) {
                 setSelectedSellerProduct(sellerProduct);
@@ -1259,7 +1259,7 @@ const AIAccountsSection = () => {
             }} />
 
                 {/* New Arrivals */}
-                <NewArrivalsSection onProductClick={product => {
+                <NewArrivalsSection basePath="/dashboard/marketplace/product" onProductClick={product => {
               if (product.type === 'seller') {
                 const sellerProduct = sellerProducts.find(p => p.id === product.id);
                 if (sellerProduct) {

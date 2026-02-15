@@ -27,9 +27,10 @@ interface TopRatedSectionProps {
   onChat?: (product: TopRatedProduct) => void;
   isAuthenticated?: boolean;
   className?: string;
+  basePath?: string;
 }
 
-export function TopRatedSection({ onProductClick, onBuy, onChat, isAuthenticated = false, className }: TopRatedSectionProps) {
+export function TopRatedSection({ onProductClick, onBuy, onChat, isAuthenticated = false, className, basePath }: TopRatedSectionProps) {
   const [products, setProducts] = useState<TopRatedProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -169,6 +170,7 @@ export function TopRatedSection({ onProductClick, onBuy, onChat, isAuthenticated
         {products.map((product) => (
           <ProductHoverCard
             key={product.id}
+            basePath={basePath}
             product={{
               id: product.id,
               name: product.name,

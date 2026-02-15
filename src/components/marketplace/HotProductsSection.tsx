@@ -27,9 +27,10 @@ interface HotProductsSectionProps {
   onChat?: (product: HotProduct) => void;
   isAuthenticated?: boolean;
   className?: string;
+  basePath?: string;
 }
 
-export function HotProductsSection({ onProductClick, onBuy, onChat, isAuthenticated = false, className }: HotProductsSectionProps) {
+export function HotProductsSection({ onProductClick, onBuy, onChat, isAuthenticated = false, className, basePath }: HotProductsSectionProps) {
   const [products, setProducts] = useState<HotProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -153,6 +154,7 @@ export function HotProductsSection({ onProductClick, onBuy, onChat, isAuthentica
         {products.map((product) => (
           <ProductHoverCard
             key={product.id}
+            basePath={basePath}
             product={{
               id: product.id,
               name: product.name,

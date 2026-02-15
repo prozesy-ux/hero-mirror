@@ -47,6 +47,7 @@ interface ProductHoverCardProps {
   walletBalance?: number;
   purchasing?: boolean;
   navigateOnClick?: boolean;
+  basePath?: string;
 }
 
 const ProductHoverCard = ({
@@ -58,6 +59,7 @@ const ProductHoverCard = ({
   walletBalance = 0,
   purchasing = false,
   navigateOnClick = true,
+  basePath = '/marketplace',
 }: ProductHoverCardProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -110,7 +112,7 @@ const ProductHoverCard = ({
   const handleNavigate = () => {
     if (!navigateOnClick) return;
     const slug = slugify(product.name);
-    navigate(`/marketplace/${slug}`);
+    navigate(`${basePath}/${slug}`);
   };
 
   // On mobile, don't use hover - just navigate on click
@@ -283,7 +285,7 @@ const ProductHoverCard = ({
           <Button
             onClick={(e) => { 
               e.stopPropagation(); 
-              navigate(`/marketplace/${slugify(product.name)}`);
+              navigate(`${basePath}/${slugify(product.name)}`);
             }}
             variant="outline"
             className="w-full h-10 rounded-lg border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors mb-3 text-sm"
