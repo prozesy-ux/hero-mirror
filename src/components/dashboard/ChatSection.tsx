@@ -406,7 +406,7 @@ const ChatSection = () => {
       <input type="file" ref={bgUploadRef} className="hidden" accept="image/*" onChange={handleBgUpload} />
 
       {/* ── Ticket List Sidebar ── */}
-      <aside className="w-[320px] border-r flex-col hidden lg:flex flex-shrink-0" style={{ borderColor: '#e2e8f0', background: '#fff' }}>
+      <aside className={cn("w-full lg:w-[320px] border-r flex-col flex-shrink-0", activeTicketId ? "hidden lg:flex" : "flex")} style={{ borderColor: '#e2e8f0', background: '#fff' }}>
         <div style={{ padding: '24px 20px 16px' }}>
           <div className="flex justify-between items-center mb-4">
             <span className="font-semibold" style={{ fontSize: '15px' }}>Chats {tickets.length}</span>
@@ -432,7 +432,14 @@ const ChatSection = () => {
         </div>
         <div className="flex-1 overflow-y-auto px-3">
           {filteredTickets.length === 0 ? (
-            <div className="text-center py-8" style={{ color: '#94a3b8', fontSize: '13px' }}><MessageCircle size={24} className="mx-auto mb-2" />No tickets yet</div>
+            <div className="flex-1 flex items-center justify-center py-16">
+              <div className="text-center">
+                <MessageCircle size={48} className="mx-auto mb-4" style={{ color: '#cbd5e1' }} />
+                <p className="font-semibold mb-1" style={{ fontSize: '15px', color: '#475569' }}>No conversations yet</p>
+                <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '16px' }}>Start chatting with our support team</p>
+                <button onClick={() => setCreatingTicket(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium" style={{ background: '#2563eb', fontSize: '13px' }}><Plus size={14} /> Start a new chat</button>
+              </div>
+            </div>
           ) : filteredTickets.map((ticket) => (
             <div key={ticket.id} onClick={() => setActiveTicketId(ticket.id)} className={cn("flex gap-3 p-4 rounded-lg cursor-pointer mb-1 transition-colors relative group", activeTicketId === ticket.id ? "border" : "border border-transparent hover:bg-[#f8fafc]")} style={activeTicketId === ticket.id ? { backgroundColor: '#eff6ff', borderColor: '#dbeafe' } : {}}>
               {pinnedChats.includes(ticket.id) && <Pin size={10} className="absolute top-2 right-2" style={{ color: '#2563eb' }} />}
@@ -458,9 +465,16 @@ const ChatSection = () => {
       </aside>
 
       {/* ── Chat Area ── */}
-      <main className="flex-1 flex flex-col min-w-0" style={{ background: '#ffffff' }}>
+      <main className={cn("flex-1 flex flex-col min-w-0", !activeTicketId ? "hidden lg:flex" : "flex")} style={{ background: '#ffffff' }}>
         {!activeTicket ? (
-          <div className="flex-1 flex items-center justify-center" style={{ color: '#94a3b8' }}><div className="text-center"><MessageCircle size={40} className="mx-auto mb-3" /><p style={{ fontSize: '15px' }}>Select a ticket or create a new one</p></div></div>
+          <div className="flex-1 flex items-center justify-center" style={{ color: '#94a3b8' }}>
+            <div className="text-center">
+              <MessageCircle size={48} className="mx-auto mb-4" style={{ color: '#cbd5e1' }} />
+              <p className="font-semibold mb-1" style={{ fontSize: '16px', color: '#475569' }}>Select a conversation</p>
+              <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px' }}>Choose a chat from the sidebar or start a new one</p>
+              <button onClick={() => setCreatingTicket(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium" style={{ background: '#2563eb', fontSize: '13px' }}><Plus size={14} /> New Chat</button>
+            </div>
+          </div>
         ) : (
           <>
             {/* Chat Header */}
