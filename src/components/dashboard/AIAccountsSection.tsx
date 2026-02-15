@@ -1242,20 +1242,37 @@ const AIAccountsSection = () => {
 
                 {/* Hot Products */}
                 <HotProductsSection onProductClick={product => {
-              const slug = product.slug || product.id;
-              navigate(`/dashboard/marketplace/product/${slug}`);
+              const sellerProduct = sellerProducts.find(p => p.id === product.id);
+              if (sellerProduct) {
+                setSelectedSellerProduct(sellerProduct);
+                setShowSellerDetailsModal(true);
+              }
             }} />
 
                 {/* Top Rated */}
                 <TopRatedSection onProductClick={product => {
-              const slug = product.slug || product.id;
-              navigate(`/dashboard/marketplace/product/${slug}`);
+              const sellerProduct = sellerProducts.find(p => p.id === product.id);
+              if (sellerProduct) {
+                setSelectedSellerProduct(sellerProduct);
+                setShowSellerDetailsModal(true);
+              }
             }} />
 
                 {/* New Arrivals */}
                 <NewArrivalsSection onProductClick={product => {
-              const slug = product.slug || product.id;
-              navigate(`/dashboard/marketplace/product/${slug}`);
+              if (product.type === 'seller') {
+                const sellerProduct = sellerProducts.find(p => p.id === product.id);
+                if (sellerProduct) {
+                  setSelectedSellerProduct(sellerProduct);
+                  setShowSellerDetailsModal(true);
+                }
+              } else {
+                const aiAccount = accounts.find(a => a.id === product.id);
+                if (aiAccount) {
+                  setSelectedAccount(aiAccount);
+                  setShowDetailsModal(true);
+                }
+              }
             }} />
               </div>}
 
