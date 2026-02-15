@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ErrorBoundary from "@/components/ui/error-boundary";
 import RoutePrefetcher from "@/components/ui/route-prefetcher";
 import AppShell from "@/components/ui/app-shell";
+import GoogleSignInPopup from "@/components/GoogleSignInPopup";
 
 // Eager load critical pages
 import Index from "./pages/Index";
@@ -67,6 +68,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <RoutePrefetcher />
+            <GoogleSignInPopup />
             <Routes>
               <Route path="/" element={
                 isHelpSubdomain ? (
