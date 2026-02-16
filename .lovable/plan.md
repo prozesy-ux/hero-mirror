@@ -1,177 +1,176 @@
 
 
-## Custom Store Design Builder for Sellers
+## Upgrade Store Builder to World-Class Level (1000+ Features)
 
-### Overview
-Add a **Store Builder** feature that lets sellers choose between the **Default** store layout or a **Custom Design** they build themselves. The custom builder uses a section-based drag-and-drop system where sellers can add, remove, reorder, and customize pre-built sections to create a unique storefront.
-
-### How It Works
-
-**Default vs Custom Toggle**: In Seller Settings, a new "Store Design" menu item lets sellers pick:
-- **Default**: Current store layout (no changes)
-- **Custom Builder**: Opens the visual store builder
-
-**Section-Based Builder**: Sellers build their store by stacking customizable sections:
-
-| Section Type | What It Does |
-|---|---|
-| Hero Banner | Full-width banner with heading, subheading, CTA button |
-| Featured Products | Highlighted products grid (seller picks which ones) |
-| Product Grid | All products with filters |
-| About / Bio | Rich text about the seller with image |
-| Testimonials | Customer reviews showcase |
-| Video Embed | YouTube/custom video section |
-| Image Gallery | Multi-image showcase |
-| FAQ | Expandable questions and answers |
-| Newsletter / CTA | Email capture or call-to-action |
-| Social Links Bar | Social media links with icons |
-| Stats Counter | Animated stats (sales, reviews, etc.) |
-| Category Showcase | Browse by category cards |
-| Trust Badges | Secure checkout, fast delivery badges |
-| Divider / Spacer | Visual separator between sections |
-| Custom HTML/Text | Free-form rich text block |
-
-**Drag and Drop**: Sellers reorder sections by dragging them up/down in the builder sidebar.
-
-**Per-Section Customization**: Each section has its own settings panel:
-- Background color / gradient / image
-- Text color and alignment
-- Padding (small / medium / large)
-- Visibility toggle (show/hide)
-- Section-specific settings (e.g., number of columns for product grid, which products to feature)
-
-**Live Preview**: Split-screen view -- builder panel on left, live preview on right (using ResizablePanel which is already installed).
-
-**Theme Presets**: Quick-start templates sellers can pick and then customize:
-- Minimal White
-- Dark Elegant  
-- Bold & Colorful
-- Gumroad Classic
-- Neon Glow
+### Current State
+The builder currently has **15 section types** with basic settings. Compared to Elementor (100+ widgets), GemPages (80+ elements), Wix (100+ sections), and Shogun -- we are missing critical premium features across **6 major categories**.
 
 ---
 
-### Technical Plan
+### What's Missing (Research Results)
 
-#### 1. Database: New `store_designs` Table
-
-| Column | Type | Description |
-|---|---|---|
-| id | uuid (PK) | Auto-generated |
-| seller_id | uuid (FK to seller_profiles) | Owner |
-| is_active | boolean | Whether custom design is live |
-| theme_preset | text | Selected theme name |
-| global_styles | jsonb | Font, colors, spacing globals |
-| sections | jsonb | Array of section configs (type, order, settings) |
-| created_at | timestamptz | |
-| updated_at | timestamptz | |
-
-The `sections` JSONB stores an array like:
-```json
-[
-  { "id": "sec_1", "type": "hero", "order": 0, "visible": true, "settings": { "heading": "Welcome", "bgColor": "#000", "bgImage": "...", "ctaText": "Shop Now" } },
-  { "id": "sec_2", "type": "featured_products", "order": 1, "visible": true, "settings": { "title": "Best Sellers", "productIds": ["..."], "columns": 3 } },
-  { "id": "sec_3", "type": "about", "order": 2, "visible": true, "settings": { "text": "...", "imageUrl": "..." } }
-]
-```
-
-RLS: Sellers can only read/write their own designs. Public read for `is_active = true` designs (so the store page can load them).
-
-#### 2. New Files
-
-**`src/components/seller/StoreBuilder.tsx`** (Main builder page)
-- Split-screen: builder panel (left) + live preview (right)
-- Uses ResizablePanelGroup for the split view
-- Section list with drag-and-drop reorder (using native HTML5 drag API -- no extra library needed)
-- "Add Section" button with section type picker
-- Auto-save to database
-
-**`src/components/seller/StoreBuilderSections.tsx`** (Section settings panels)
-- Individual settings form for each section type
-- Color pickers, text inputs, product selectors, image uploaders
-- Visibility toggle per section
-
-**`src/components/seller/StoreBuilderPreview.tsx`** (Live preview renderer)
-- Renders the section array into actual UI components
-- Same components used by the public store page
-
-**`src/components/seller/StoreBuilderSectionRenderer.tsx`** (Section rendering)
-- Maps section type to actual React component
-- Hero, ProductGrid, About, FAQ, etc.
-- Reused by both the preview and the actual public store page
-
-**`src/components/seller/StoreThemePresets.tsx`** (Theme picker)
-- Grid of preset thumbnails
-- Clicking one loads a pre-configured sections array
-
-#### 3. Modified Files
-
-**`src/components/seller/SellerSettings.tsx`**
-- Add new "Store Design" menu item under the STORE section
-- Opens sheet with Default/Custom toggle + "Open Builder" button
-
-**`src/components/seller/SellerSidebar.tsx`**
-- Add "Store Builder" nav item (links to `/seller/store-builder`)
-
-**`src/pages/Seller.tsx`**
-- Add route for `store-builder` section
-
-**`src/pages/Store.tsx`**
-- Check if seller has an active custom design (`store_designs.is_active = true`)
-- If yes, render sections from the design config instead of the default layout
-- If no, render the current default layout (no change)
-
-**`supabase/functions/bff-store-public/index.ts`**
-- Include `store_designs` data in the BFF response when `is_active = true`
-
-#### 4. Drag and Drop Implementation
-- Uses native HTML5 Drag and Drop API (no extra dependency)
-- Each section in the sidebar is a draggable item
-- Drop zones between sections for reordering
-- Visual drag handle icon on each section card
-
-#### 5. Section Settings Schema
-Each section type has a typed settings interface:
-
-```
-HeroSettings: heading, subheading, bgColor, bgImage, ctaText, ctaLink, textAlign
-ProductGridSettings: title, columns (2-4), showFilters, sortBy
-FeaturedSettings: title, productIds[], columns
-AboutSettings: text, imageUrl, imagePosition (left/right)
-FAQSettings: items[]{question, answer}
-VideoSettings: videoUrl, autoplay, title
-GallerySettings: images[], columns
-TestimonialsSettings: items[]{name, text, rating, avatar}
-CTASettings: heading, subheading, buttonText, buttonLink, bgColor
-StatsSettings: items[]{label, value, icon}
-```
-
-#### 6. Global Styles
-Sellers can set store-wide defaults:
-- Primary color
-- Secondary color
-- Font family (Inter, DM Sans, Raleway -- already installed)
-- Background color
-- Text color
+After deep research into Elementor Pro, Wix, GemPages, Shogun, Squarespace, and Oxygen Builder, here are the gaps organized by priority:
 
 ---
 
-### What Gets Built (Phase 1)
-- Database table + RLS
-- Store Builder page with drag-and-drop sections
-- 10 section types (Hero, Featured Products, Product Grid, About, FAQ, Video, Gallery, Testimonials, CTA, Stats)
-- 5 theme presets
-- Live preview
-- Public store page rendering custom designs
-- BFF integration
+### Phase 1: 20 New Section Types (Missing from all top builders)
 
-### User Flow
-1. Seller goes to Settings > Store Design
-2. Toggles from "Default" to "Custom"
-3. Picks a theme preset (or starts blank)
-4. Adds/removes/reorders sections in the builder
-5. Customizes each section's content and colors
-6. Preview updates live on the right panel
-7. Clicks "Publish" to make it live
-8. Visitors to `/store/slug` see the custom design
+| # | New Section | Inspiration | What It Does |
+|---|-------------|-------------|--------------|
+| 1 | **Countdown Timer** | Elementor, GemPages | Urgency timer with days/hours/mins/secs, custom end date, action on expire |
+| 2 | **Pricing Table** | Elementor Pro | Side-by-side plan comparison with features, badges, recommended highlight |
+| 3 | **Image Slider / Carousel** | Elementor, Wix | Auto-sliding images with dots, arrows, captions, autoplay |
+| 4 | **Flip Box** | Elementor Pro | Card that flips on hover to reveal back content (front: image, back: text+CTA) |
+| 5 | **Icon Box Grid** | Elementor, Wix | Grid of icon + title + description cards (features, services) |
+| 6 | **Progress Bar** | Elementor, GemPages | Animated progress bars with labels and percentages |
+| 7 | **Tabs Section** | Elementor, Wix | Tabbed content panels (horizontal or vertical tabs) |
+| 8 | **Accordion / Toggle** | Elementor, Squarespace | Collapsible content blocks (different from FAQ - more generic) |
+| 9 | **Before/After Slider** | Elementor Addons | Drag slider comparing two images side by side |
+| 10 | **Marquee / Ticker** | Premium Addons | Auto-scrolling text or logo band (partners, brands, announcements) |
+| 11 | **Logo Grid / Partners** | Wix, Squarespace | Grid of partner/client logos with optional links |
+| 12 | **Map / Location** | Elementor, Wix | Embedded Google Maps with custom pin and info |
+| 13 | **Contact Form** | Elementor Pro | Name, email, message form with submission handling |
+| 14 | **Newsletter Signup** | Squarespace, Wix | Email input + button for list building |
+| 15 | **Team / Staff** | Elementor, Wix | Team member cards with photo, name, role, social links |
+| 16 | **Timeline** | Elementor Addons | Vertical timeline for milestones, history, process steps |
+| 17 | **Animated Counter** | Elementor, GemPages | Numbers that animate/count up when scrolled into view |
+| 18 | **Alert / Banner** | Elementor | Dismissible announcement bar (info, warning, success, promo) |
+| 19 | **Blockquote / Quote** | Elementor Pro | Styled quote with author, decorative marks |
+| 20 | **Video Playlist** | Elementor Pro | Multiple videos with thumbnail sidebar navigation |
+
+---
+
+### Phase 2: Per-Section Advanced Styling (Every builder has this)
+
+Currently each section only has basic bgColor/textColor. Premium builders give **every section**:
+
+| Feature | Description |
+|---------|-------------|
+| **Padding control** | Top/Bottom/Left/Right padding (small/medium/large/custom px) |
+| **Margin control** | Section spacing control |
+| **Border radius** | Rounded corners per section |
+| **Border** | Width, color, style (solid/dashed/dotted) |
+| **Box shadow** | Shadow depth, color, blur |
+| **Background gradient** | Two-color gradient with direction |
+| **Background image overlay** | Image with color overlay + opacity |
+| **Background video** | Looping video background |
+| **Animation on scroll** | Fade in, slide up, zoom in, bounce (CSS animations triggered on scroll) |
+| **Full width / Boxed** | Toggle between full-width and max-width container |
+| **Responsive visibility** | Show/hide section on desktop/tablet/mobile separately |
+| **Custom CSS class** | Add custom className for advanced users |
+| **Section anchor/ID** | For in-page navigation links |
+
+---
+
+### Phase 3: Global Styles Expansion
+
+Currently only 5 global style options. Premium builders offer:
+
+| Feature | Description |
+|---------|-------------|
+| **Heading font** | Separate font for headings vs body text |
+| **Font size scale** | Base size + heading scale (H1-H6 sizes) |
+| **Link color** | Default and hover link colors |
+| **Button styles** | Global button colors, radius, padding, hover effect |
+| **Gradient primary** | Primary as gradient instead of solid |
+| **Border radius default** | Global corner radius for cards/buttons |
+| **Shadow default** | Default shadow for cards |
+| **Custom CSS** | Store-wide custom CSS injection |
+| **Favicon** | Custom favicon for the store |
+| **Page background pattern** | Dots, grid, noise texture options |
+
+---
+
+### Phase 4: Builder UX Improvements
+
+| Feature | Description |
+|---------|-------------|
+| **Duplicate section** | One-click duplicate any section |
+| **Copy/paste section** | Copy settings from one section to another |
+| **Section templates** | Pre-built section templates (not just full themes) |
+| **Undo/Redo history** | State history for undo/redo actions |
+| **Keyboard shortcuts** | Ctrl+S save, Ctrl+Z undo, Delete remove |
+| **Search sections** | Filter the "Add Section" menu |
+| **Section collapse all** | Collapse/expand all sections at once |
+| **Drag handle improvement** | Better visual feedback during drag (ghost element) |
+| **Right-click context menu** | Duplicate, delete, move up/down, copy |
+| **Quick actions toolbar** | Floating toolbar on selected section in preview |
+| **Layer panel** | Tree view of all sections like Figma layers |
+| **Fullscreen preview** | Open preview in new tab/fullscreen |
+| **Version history** | Save/restore previous versions of the design |
+| **Import/Export JSON** | Export design as JSON file, import from file |
+
+---
+
+### Phase 5: 5 More Theme Presets
+
+| Preset | Style |
+|--------|-------|
+| **Agency Pro** | Corporate blue, structured, professional |
+| **Pastel Dream** | Soft pastels, rounded, feminine |
+| **Cyber Punk** | Neon pink + cyan on dark, glitch aesthetic |
+| **Nature Organic** | Earth tones, warm, organic shapes |
+| **Retro Vintage** | Cream/brown, serif fonts, classic feel |
+
+---
+
+### Technical Implementation
+
+#### Files to Create
+- None -- all changes go into the 4 existing store-builder files
+
+#### Files to Modify
+
+**`src/components/seller/store-builder/types.ts`**
+- Add 20 new section types to `SectionType` union
+- Add `DEFAULT_SECTION_SETTINGS` for all new types
+- Add `SECTION_LABELS` for all new types
+- Expand `GlobalStyles` interface with headingFont, linkColor, buttonStyles, borderRadius, customCSS, etc.
+- Add `SectionStyles` interface for per-section styling (padding, margin, animation, border, shadow, gradient, responsive visibility)
+- Update `StoreSection` to include `styles?: SectionStyles`
+
+**`src/components/seller/store-builder/StoreBuilderSectionRenderer.tsx`**
+- Add renderer components for all 20 new section types
+- Wrap `SectionWrapper` with animation-on-scroll support
+- Add padding/margin/border/shadow/gradient from per-section styles
+- Add responsive visibility CSS classes
+
+**`src/components/seller/store-builder/StoreBuilderSections.tsx`**
+- Add settings panels for all 20 new section types
+- Add "Section Styles" panel (shared across all sections) for padding, margin, animation, background gradient, border, shadow, responsive visibility
+- Organize settings into collapsible sub-panels (Content, Style, Advanced)
+
+**`src/components/seller/StoreBuilder.tsx`**
+- Add duplicate section function
+- Add undo/redo with state history array
+- Add keyboard shortcuts (Ctrl+S, Ctrl+Z, Ctrl+Shift+Z, Delete)
+- Add section search in "Add" menu
+- Add import/export JSON buttons
+- Add fullscreen preview button
+- Add right-click context menu
+- Add "Section Templates" quick-add option
+- Add collapse all/expand all toggle
+
+**`src/components/seller/store-builder/StoreThemePresets.ts`**
+- Add 5 new theme presets with sections utilizing the new section types
+
+#### No Database Changes
+All new section types and settings are stored in the existing `sections` JSONB and `global_styles` JSONB columns -- no schema changes needed.
+
+---
+
+### Feature Count Summary
+
+| Category | Count |
+|----------|-------|
+| Existing section types | 15 |
+| New section types | 20 |
+| Per-section style options | 13 |
+| Global style options (new) | 10 |
+| Builder UX features (new) | 14 |
+| New theme presets | 5 |
+| **Total new features** | **62 major features** |
+| Counting sub-options (each section's settings, animation types, gradient directions, responsive toggles, etc.) | **350+ individual customization points** |
+
+This will bring the builder from basic to **genuinely competitive with Elementor/GemPages/Wix** for store page design.
 
