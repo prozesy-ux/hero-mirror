@@ -16,21 +16,26 @@ import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import NotFound from "./pages/NotFound";
 
-// Retry wrapper for lazy loading - handles flaky mobile connections
-const lazyWithRetry = (
+// Recursive import retry - returns a Promise, not a LazyExoticComponent
+const retryImport = (
   importFn: () => Promise<{ default: ComponentType<any> }>,
   retries = 3
+): Promise<{ default: ComponentType<any> }> => {
+  return importFn().catch((err) => {
+    if (retries > 0) {
+      return new Promise<{ default: ComponentType<any> }>((resolve) =>
+        setTimeout(resolve, 1000)
+      ).then(() => retryImport(importFn, retries - 1));
+    }
+    throw err;
+  });
+};
+
+// Lazy load wrapper using the fixed retry logic
+const lazyWithRetry = (
+  importFn: () => Promise<{ default: ComponentType<any> }>
 ): React.LazyExoticComponent<ComponentType<any>> => {
-  return lazy(() =>
-    importFn().catch((err) => {
-      if (retries > 0) {
-        return new Promise<{ default: ComponentType<any> }>((resolve) =>
-          setTimeout(resolve, 1000)
-        ).then(() => lazyWithRetry(importFn, retries - 1) as any);
-      }
-      throw err;
-    })
-  );
+  return lazy(() => retryImport(importFn));
 };
 
 // Lazy load heavy pages with auto-retry for chunk failures
@@ -108,9 +113,11 @@ const App = () => (
               } />
               <Route path="/dashboard/*" element={
                 <ProtectedRoute>
-                  <Suspense fallback={<AppShell variant="dashboard" />}>
-                    <Dashboard />
-                  </Suspense>
+                  <ErrorBoundary>
+                    <Suspense fallback={<AppShell variant="dashboard" />}>
+                      <Dashboard />
+                    </Suspense>
+                  </ErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/seller/*" element={
