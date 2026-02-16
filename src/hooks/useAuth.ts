@@ -37,6 +37,9 @@ export const useAuth = () => {
   // Keep last known good values to survive transient null states
   const lastKnownUserRef = useRef<User | null>(null);
   const lastKnownSessionRef = useRef<Session | null>(null);
+  
+  // Prevent onAuthStateChange from setting loading=false before getSession finishes
+  const didInitialLoad = useRef(false);
 
   const checkAdminRole = async (userId: string) => {
     try {
@@ -159,47 +162,69 @@ export const useAuth = () => {
         
         if (session?.user) {
           // Check admin role (will re-fetch if cache was cleared)
-          const adminStatus = await checkAdminRole(session.user.id);
-          setIsAdmin(adminStatus);
+          try {
+            const adminStatus = await checkAdminRole(session.user.id);
+            setIsAdmin(adminStatus);
+          } catch (err) {
+            console.warn('[useAuth] Admin check error (non-critical):', err);
+          }
           
           // Fetch profile using setTimeout to avoid race condition
           setTimeout(async () => {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .maybeSingle();
-            
-            setProfile(profileData);
+            try {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', session.user.id)
+                .maybeSingle();
+              
+              setProfile(profileData);
+            } catch (err) {
+              console.warn('[useAuth] Profile fetch error (non-critical):', err);
+            }
           }, 0);
         }
         
-        setLoading(false);
+        // Only set loading=false from onAuthStateChange AFTER initial load is done
+        // This prevents the race condition where onAuthStateChange fires before getSession
+        if (didInitialLoad.current) {
+          setLoading(false);
+        }
       }
     );
 
-    // THEN check for existing session
+    // THEN check for existing session - this controls initial loading state
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        // Check admin role
-        const adminStatus = await checkAdminRole(session.user.id);
-        setIsAdmin(adminStatus);
+        lastKnownUserRef.current = session.user;
+        lastKnownSessionRef.current = session;
         
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            setProfile(data);
-            setLoading(false);
-          });
-      } else {
-        setLoading(false);
+        try {
+          // Check admin role
+          const adminStatus = await checkAdminRole(session.user.id);
+          setIsAdmin(adminStatus);
+        } catch (err) {
+          console.warn('[useAuth] Initial admin check error:', err);
+        }
+        
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          setProfile(data);
+        } catch (err) {
+          console.warn('[useAuth] Initial profile fetch error:', err);
+        }
       }
+      
+      // Mark initial load complete and set loading false
+      didInitialLoad.current = true;
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
