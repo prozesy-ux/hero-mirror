@@ -224,3 +224,218 @@ export const DEFAULT_SECTION_SETTINGS: Record<SectionType, Record<string, any>> 
     { title: 'Tutorial', url: '', thumbnail: '' },
   ], layout: 'sidebar', autoplay: false },
 };
+
+// =====================
+// Section Templates
+// =====================
+
+export interface SectionTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  thumbnail: string;
+  section: Omit<StoreSection, 'id' | 'order'>;
+}
+
+export const SECTION_TEMPLATES: SectionTemplate[] = [
+  {
+    id: 'tpl_sales_hero',
+    name: 'Sales Hero',
+    description: 'Dark bg, bold heading, countdown CTA',
+    category: 'Conversion',
+    thumbnail: '🔥',
+    section: {
+      type: 'hero',
+      visible: true,
+      settings: { heading: '🔥 Flash Sale — 50% OFF Everything', subheading: 'Limited time only. Don\'t miss out!', bgColor: '#0f172a', textColor: '#ffffff', ctaText: 'Grab the Deal', ctaLink: '#products', textAlign: 'center', bgImage: '' },
+      styles: { ...DEFAULT_SECTION_STYLES, padding: { top: '80', bottom: '80', left: '24', right: '24' } },
+    },
+  },
+  {
+    id: 'tpl_product_showcase',
+    name: 'Product Showcase 3-Col',
+    description: 'Featured products with clean grid',
+    category: 'Commerce',
+    thumbnail: '🛍️',
+    section: {
+      type: 'featured_products',
+      visible: true,
+      settings: { title: '🌟 Best Sellers', productIds: [], columns: 3 },
+      styles: { ...DEFAULT_SECTION_STYLES, backgroundGradient: { enabled: true, from: '#f8fafc', to: '#e2e8f0', direction: '180deg' } },
+    },
+  },
+  {
+    id: 'tpl_trust_strip',
+    name: 'Trust Strip',
+    description: 'Badges + stats in one compact row',
+    category: 'Social Proof',
+    thumbnail: '🛡️',
+    section: {
+      type: 'stats',
+      visible: true,
+      settings: { items: [
+        { label: 'Secure Checkout', value: '🔒', icon: '' },
+        { label: 'Instant Delivery', value: '⚡', icon: '' },
+        { label: 'Money Back', value: '💰', icon: '' },
+        { label: '24/7 Support', value: '💬', icon: '' },
+      ] },
+      styles: { ...DEFAULT_SECTION_STYLES, padding: { top: '24', bottom: '24', left: '24', right: '24' }, backgroundGradient: { enabled: true, from: '#1e293b', to: '#0f172a', direction: '90deg' } },
+    },
+  },
+  {
+    id: 'tpl_video_testimonials',
+    name: 'Video + Testimonials',
+    description: 'Video embed with social proof',
+    category: 'Social Proof',
+    thumbnail: '🎥',
+    section: {
+      type: 'testimonials',
+      visible: true,
+      settings: { title: '⭐ What Our Customers Say', items: [
+        { name: 'Sarah K.', text: 'Absolutely incredible products! Fast delivery and premium quality.', rating: 5 },
+        { name: 'Mike R.', text: 'Best purchase I\'ve made this year. Highly recommend!', rating: 5 },
+        { name: 'Emily L.', text: 'Outstanding customer service and beautiful products.', rating: 5 },
+      ] },
+      styles: DEFAULT_SECTION_STYLES,
+    },
+  },
+  {
+    id: 'tpl_pricing_comparison',
+    name: 'Pricing Comparison',
+    description: '3-tier pricing with popular badge',
+    category: 'Commerce',
+    thumbnail: '💎',
+    section: {
+      type: 'pricing_table',
+      visible: true,
+      settings: { title: 'Simple, Transparent Pricing', plans: [
+        { name: 'Starter', price: '$9', period: '/mo', features: ['1 Product', 'Basic Support', 'Email Delivery'], recommended: false, ctaText: 'Start Free', ctaLink: '#' },
+        { name: 'Professional', price: '$29', period: '/mo', features: ['Unlimited Products', 'Priority Support', 'Analytics Dashboard', 'Custom Domain'], recommended: true, ctaText: 'Go Pro', ctaLink: '#', badge: '⭐ Most Popular' },
+        { name: 'Enterprise', price: '$99', period: '/mo', features: ['Everything in Pro', 'API Access', 'Dedicated Manager', 'Custom Integrations'], recommended: false, ctaText: 'Contact Sales', ctaLink: '#' },
+      ] },
+      styles: DEFAULT_SECTION_STYLES,
+    },
+  },
+  {
+    id: 'tpl_newsletter_dark',
+    name: 'Newsletter Dark',
+    description: 'Email capture with gradient bg',
+    category: 'Conversion',
+    thumbnail: '📧',
+    section: {
+      type: 'newsletter',
+      visible: true,
+      settings: { title: '📬 Join 10,000+ Subscribers', subtitle: 'Get exclusive deals, early access, and free resources delivered to your inbox.', placeholder: 'Your best email...', buttonText: 'Subscribe Free', bgColor: '#0f172a', textColor: '#ffffff' },
+      styles: { ...DEFAULT_SECTION_STYLES, backgroundGradient: { enabled: true, from: '#1e1b4b', to: '#0f172a', direction: '135deg' }, padding: { top: '64', bottom: '64', left: '24', right: '24' } },
+    },
+  },
+  {
+    id: 'tpl_faq_minimal',
+    name: 'FAQ Minimal',
+    description: 'Clean accordion Q&A',
+    category: 'Content',
+    thumbnail: '❓',
+    section: {
+      type: 'faq',
+      visible: true,
+      settings: { title: 'Frequently Asked Questions', items: [
+        { question: 'How do I access my purchase?', answer: 'After payment, you\'ll receive instant access via email and your dashboard.' },
+        { question: 'Do you offer refunds?', answer: 'Yes, we offer a 30-day money-back guarantee on all products.' },
+        { question: 'Can I upgrade my plan later?', answer: 'Absolutely! You can upgrade anytime and only pay the difference.' },
+        { question: 'Is my payment secure?', answer: 'Yes, all payments are processed through secure, encrypted channels.' },
+      ] },
+      styles: DEFAULT_SECTION_STYLES,
+    },
+  },
+  {
+    id: 'tpl_team_grid',
+    name: 'Team Grid',
+    description: 'Photo cards with social links',
+    category: 'Content',
+    thumbnail: '👥',
+    section: {
+      type: 'team',
+      visible: true,
+      settings: { title: 'Meet the Team', members: [
+        { name: 'Alex Johnson', role: 'CEO & Founder', image: '', socials: { twitter: '#', linkedin: '#' } },
+        { name: 'Sarah Williams', role: 'Head of Design', image: '', socials: { twitter: '#', linkedin: '#' } },
+        { name: 'Michael Chen', role: 'Lead Developer', image: '', socials: { twitter: '#', linkedin: '#' } },
+      ], columns: 3, variant: 'card' },
+      styles: DEFAULT_SECTION_STYLES,
+    },
+  },
+  {
+    id: 'tpl_countdown_urgency',
+    name: 'Urgency Countdown',
+    description: 'Red countdown with bold CTA',
+    category: 'Conversion',
+    thumbnail: '⏰',
+    section: {
+      type: 'countdown_timer',
+      visible: true,
+      settings: { title: '⚡ This Deal Expires Soon!', endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), expireAction: 'hide', bgColor: '#dc2626', textColor: '#ffffff', showDays: true, showHours: true, showMinutes: true, showSeconds: true },
+      styles: { ...DEFAULT_SECTION_STYLES, padding: { top: '48', bottom: '48', left: '24', right: '24' } },
+    },
+  },
+  {
+    id: 'tpl_about_story',
+    name: 'Brand Story',
+    description: 'About section with image',
+    category: 'Content',
+    thumbnail: '📖',
+    section: {
+      type: 'about',
+      visible: true,
+      settings: { title: 'Our Story', text: 'We started with a simple mission: to create products that make a difference. Today, we serve thousands of customers worldwide with passion and dedication.', imageUrl: '', imagePosition: 'right' },
+      styles: DEFAULT_SECTION_STYLES,
+    },
+  },
+  {
+    id: 'tpl_counter_impact',
+    name: 'Impact Numbers',
+    description: 'Animated counters showing achievements',
+    category: 'Social Proof',
+    thumbnail: '🔢',
+    section: {
+      type: 'animated_counter',
+      visible: true,
+      settings: { items: [
+        { value: 50000, suffix: '+', label: 'Downloads', icon: '📥' },
+        { value: 120, suffix: '+', label: 'Countries', icon: '🌍' },
+        { value: 4.9, suffix: '⭐', label: 'Rating', icon: '' },
+        { value: 99, suffix: '%', label: 'Uptime', icon: '✅' },
+      ], duration: 2500, columns: 4 },
+      styles: { ...DEFAULT_SECTION_STYLES, backgroundGradient: { enabled: true, from: '#0f172a', to: '#1e293b', direction: '180deg' } },
+    },
+  },
+  {
+    id: 'tpl_timeline_journey',
+    name: 'Company Journey',
+    description: 'Milestone timeline',
+    category: 'Content',
+    thumbnail: '📅',
+    section: {
+      type: 'timeline',
+      visible: true,
+      settings: { title: 'Our Journey', items: [
+        { year: '2020', title: 'The Beginning', description: 'Started from a small apartment with big dreams' },
+        { year: '2021', title: 'First 1000 Customers', description: 'Reached our first major milestone' },
+        { year: '2022', title: 'International Launch', description: 'Expanded to 50+ countries worldwide' },
+        { year: '2023', title: 'Award Winning', description: 'Recognized as industry leader' },
+        { year: '2024', title: 'The Future', description: 'Continuing to innovate and grow' },
+      ], variant: 'alternating' },
+      styles: DEFAULT_SECTION_STYLES,
+    },
+  },
+];
+
+// Version history snapshot
+export interface VersionSnapshot {
+  id: string;
+  name: string;
+  timestamp: string;
+  sections: StoreSection[];
+  globalStyles: GlobalStyles;
+  themePreset: string;
+}
