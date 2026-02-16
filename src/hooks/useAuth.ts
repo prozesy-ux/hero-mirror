@@ -102,6 +102,11 @@ export const useAuth = () => {
           markSessionStart();
           console.log('[useAuth] Session marked - 12h window started');
           
+          // Re-trigger loading during sign-in transition so Dashboard waits
+          if (didInitialLoad.current) {
+            setLoading(true);
+          }
+          
           // Prefetch dashboard data for instant page loads
           // Small delay to ensure session is fully established
           setTimeout(prefetchDashboardData, 100);
@@ -187,6 +192,8 @@ export const useAuth = () => {
         
         // Only set loading=false from onAuthStateChange AFTER initial load is done
         // This prevents the race condition where onAuthStateChange fires before getSession
+        // For SIGNED_IN events, loading was re-triggered above, so this correctly
+        // sets it false after profile/admin checks complete
         if (didInitialLoad.current) {
           setLoading(false);
         }

@@ -111,13 +111,14 @@ const DashboardLayout = () => {
 };
 
 const Dashboard = () => {
-  const { sessionExpired, sessionWarning, loading } = useAuthContext();
+  const { sessionExpired, sessionWarning, loading, user } = useAuthContext();
   
   // Start background session monitoring
   const { refreshSession } = useSessionHeartbeat();
   
-  // Don't render dashboard children until auth is fully settled
-  if (loading) {
+  // Don't render dashboard children until auth is fully settled AND user is available
+  // This prevents crashes when navigating to dashboard before onAuthStateChange fires
+  if (loading || !user) {
     return <AppLoader message="Loading dashboard..." />;
   }
   
