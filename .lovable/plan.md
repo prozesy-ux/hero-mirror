@@ -1,58 +1,42 @@
 
 
-## Fix: Dashboard Crash After Email Login (Root Cause Found)
+## Fix: iOS-Only Dashboard Crash After Login
 
-### The Actual Root Cause
+### Problem
+The dashboard crash after login only happens on iOS (Safari and Chrome/WebKit). Android and desktop work fine. This is a known issue where `supabase.auth.getSession()` briefly returns `null` on iOS even when the user is authenticated.
 
-The previous fix (didInitialLoad ref) only solves the **page refresh/OAuth redirect** race condition. The **email login** crash has a different root cause:
+### Why iOS is Different
+- WebKit cookie/session initialization is slower than other browsers
+- After OAuth redirect or sign-in, the session may be `null` for a brief period
+- The Supabase JS client's authorization headers may not be set immediately
+- The session often only "appears" after the tab is backgrounded and reopened
 
-In `SignIn.tsx`, after a successful `signIn()` call, the code navigates to `/dashboard` **immediately** (line 119: `handlePostAuthRedirect()`). But at this point, `onAuthStateChange` hasn't fired yet, so `user` is still `null` in the auth context. The dashboard components then render with a null user and crash.
+### Solution (1 file: `src/hooks/useAuth.ts`)
 
-### Timeline of the Bug
+**1. iOS Detection Helper**
+- Add a simple `isIosBrowser()` check using `navigator.userAgent`
 
-```text
-1. User on /signin, loading=false, user=null (correct - not logged in)
-2. signIn(email, password) succeeds
-3. Token saved to localStorage by Supabase SDK
-4. handlePostAuthRedirect() navigates to /dashboard IMMEDIATELY
-5. ProtectedRoute checks localStorage -> token exists -> allows through
-6. Dashboard checks loading -> false (was set during initial mount)
-7. Dashboard renders children with user=null
-8. Components crash -> "Something went wrong"
-9. onAuthStateChange fires (too late - crash already happened)
-```
+**2. iOS Session Retry on SIGNED_IN**
+- When `onAuthStateChange` fires `SIGNED_IN` on iOS, wait 500ms then re-fetch the session via `supabase.auth.getSession()` to ensure headers are initialized
+- This gives WebKit time to finalize cookie/session storage
 
-### Solution (3 files)
+**3. Visibility Change Listener**
+- Add a `visibilitychange` event listener that re-fetches the session when the tab becomes visible
+- This handles the iOS case where the session only populates after backgrounding/foregrounding
+- Clean up listener on unmount
 
-**1. `src/pages/SignIn.tsx` -- Stop racing the auth state**
-- Remove the direct `handlePostAuthRedirect()` call after `signIn()` and `signUp()` success
-- Instead, show a "Signing in..." state and let the existing `useEffect` (lines 78-86) handle navigation AFTER `user` is populated by `onAuthStateChange`
-- This is the PRIMARY fix -- it eliminates the race entirely
+**4. iOS Retry Before Giving Up on Null Session**
+- When `onAuthStateChange` reports a null session on iOS (and it's not a SIGNED_OUT event), retry up to 3 times with 500ms delays before accepting the null
+- Uses a ref counter to prevent infinite loops
 
-**2. `src/pages/Dashboard.tsx` -- Add user guard as safety net**
-- Change `if (loading)` to `if (loading || !user)` before rendering dashboard children
-- This ensures the dashboard NEVER renders with a null user, regardless of how the user arrived
-- Shows AppLoader until user is fully available
+### What This Does NOT Change
+- All existing logic (didInitialLoad, optimistic auth, loading guards) stays intact
+- Android and desktop behavior is unchanged -- the retry/visibility logic only activates on iOS
+- SignIn.tsx and Dashboard.tsx remain as-is from previous fixes
 
-**3. `src/hooks/useAuth.ts` -- Re-trigger loading on sign-in**
-- When `onAuthStateChange` fires with `SIGNED_IN` event and `didInitialLoad` is true (meaning user just signed in, not page load), briefly set `loading = true` while fetching profile/admin role
-- Set `loading = false` only after profile and admin checks complete
-- This gives Dashboard the correct signal to wait
-
-### Why Previous Fixes Didn't Work
-
-The `didInitialLoad` ref only prevents premature `setLoading(false)` during **initial page load** (OAuth redirect). For email login:
-- The user is already on the page
-- `loading` was already set to `false` during initial mount (no session at that point)
-- `signIn()` returns before `onAuthStateChange` fires
-- Nothing re-sets `loading = true` during the sign-in transition
-- Dashboard renders immediately with null user
-
-### Why This Fix is Permanent
-
-- **SignIn.tsx**: Navigation only happens after `user` is confirmed in auth context (useEffect dependency)
-- **Dashboard.tsx**: Double guard (`loading || !user`) catches any edge case where user is null
-- **useAuth.ts**: Loading state accurately reflects auth transitions, not just initial load
-- Works for ALL login methods: email, Google, Apple, magic link
-- No timing dependency -- purely state-driven navigation
+### Why This is the Permanent Fix
+- Directly addresses the known iOS WebKit timing issue
+- Retry mechanism gives iOS time to initialize the session
+- Visibility listener catches the case where session appears after tab switch
+- Combined with existing guards (loading || !user), the dashboard never renders with null user on any platform
 
