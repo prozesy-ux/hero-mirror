@@ -84,35 +84,43 @@ const MobileNavigation = () => {
   const fetchUnreadCount = async () => {
     if (!user) return;
     
-    // Count unread support messages from admin
-    const { count: supportCount } = await supabase
-      .from('support_messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('sender_type', 'admin')
-      .eq('is_read', false);
-    
-    // Count unread notifications
-    const { count: notifCount } = await supabase
-      .from('notifications')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('is_read', false);
-    
-    setUnreadCount((supportCount || 0) + (notifCount || 0));
+    try {
+      // Count unread support messages from admin
+      const { count: supportCount } = await supabase
+        .from('support_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('sender_type', 'admin')
+        .eq('is_read', false);
+      
+      // Count unread notifications
+      const { count: notifCount } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+      
+      setUnreadCount((supportCount || 0) + (notifCount || 0));
+    } catch (err) {
+      console.warn('[MobileNav] Unread count fetch error:', err);
+    }
   };
 
   const fetchNotifications = async () => {
     if (!user) return;
     
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    
-    if (data) setNotifications(data);
+    try {
+      const { data } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (data) setNotifications(data);
+    } catch (err) {
+      console.warn('[MobileNav] Notifications fetch error:', err);
+    }
   };
 
   const markAsRead = async (notificationId: string) => {

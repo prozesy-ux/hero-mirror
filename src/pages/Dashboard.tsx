@@ -39,6 +39,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useSessionHeartbeat } from '@/hooks/useSessionHeartbeat';
 import { Button } from '@/components/ui/button';
 import { Crown, Bell, BellRing, X } from 'lucide-react';
+import AppLoader from '@/components/ui/app-loader';
 
 // MobileHeader removed - logo and notification moved to MobileNavigation
 
@@ -110,10 +111,15 @@ const DashboardLayout = () => {
 };
 
 const Dashboard = () => {
-  const { sessionExpired, sessionWarning } = useAuthContext();
+  const { sessionExpired, sessionWarning, loading } = useAuthContext();
   
   // Start background session monitoring
   const { refreshSession } = useSessionHeartbeat();
+  
+  // Don't render dashboard children until auth is fully settled
+  if (loading) {
+    return <AppLoader message="Loading dashboard..." />;
+  }
   
   return (
     <CurrencyProvider>

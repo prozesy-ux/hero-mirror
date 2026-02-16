@@ -58,13 +58,17 @@ const DashboardTopBar = ({
   useEffect(() => {
     if (!user) return;
     const fetchUnreadCount = async () => {
-      const {
-        count
-      } = await supabase.from('support_messages').select('*', {
-        count: 'exact',
-        head: true
-      }).eq('user_id', user.id).eq('sender_type', 'admin').eq('is_read', false);
-      setUnreadCount(count || 0);
+      try {
+        const {
+          count
+        } = await supabase.from('support_messages').select('*', {
+          count: 'exact',
+          head: true
+        }).eq('user_id', user.id).eq('sender_type', 'admin').eq('is_read', false);
+        setUnreadCount(count || 0);
+      } catch (err) {
+        console.warn('[TopBar] Unread count fetch error:', err);
+      }
     };
     fetchUnreadCount();
     const channel = supabase.channel('topbar-unread').on('postgres_changes', {
@@ -84,20 +88,24 @@ const DashboardTopBar = ({
   useEffect(() => {
     if (!user) return;
     const fetchWallet = async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('user_wallets').select('balance').eq('user_id', user.id).single();
-      if (error && error.code === 'PGRST116') {
+      try {
         const {
-          data: newWallet
-        } = await supabase.from('user_wallets').insert({
-          user_id: user.id,
-          balance: 0
-        }).select('balance').single();
-        setWallet(newWallet);
-      } else if (data) {
-        setWallet(data);
+          data,
+          error
+        } = await supabase.from('user_wallets').select('balance').eq('user_id', user.id).single();
+        if (error && error.code === 'PGRST116') {
+          const {
+            data: newWallet
+          } = await supabase.from('user_wallets').insert({
+            user_id: user.id,
+            balance: 0
+          }).select('balance').single();
+          setWallet(newWallet);
+        } else if (data) {
+          setWallet(data);
+        }
+      } catch (err) {
+        console.warn('[TopBar] Wallet fetch error:', err);
       }
     };
     fetchWallet();
@@ -116,14 +124,18 @@ const DashboardTopBar = ({
   useEffect(() => {
     if (!user) return;
     const fetchNotifications = async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', {
-        ascending: false
-      }).limit(20);
-      if (!error && data) {
-        setNotifications(data);
+      try {
+        const {
+          data,
+          error
+        } = await supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', {
+          ascending: false
+        }).limit(20);
+        if (!error && data) {
+          setNotifications(data);
+        }
+      } catch (err) {
+        console.warn('[TopBar] Notifications fetch error:', err);
       }
     };
     fetchNotifications();
