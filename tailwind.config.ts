@@ -163,10 +163,6 @@ export default {
           "0%": { transform: "scale(1)" },
           "100%": { transform: "scale(1.05)" },
         },
-        "stagger-fade-in": {
-          "0%": { opacity: "0", transform: "translateY(8px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -186,7 +182,6 @@ export default {
         "beam-pulse": "beam-pulse 2s ease-in-out infinite",
         "float-product": "float-product 3s ease-in-out infinite",
         "image-zoom": "image-zoom 0.5s ease-out forwards",
-        "stagger-fade-in": "stagger-fade-in 0.4s ease-out forwards",
       },
     },
   },

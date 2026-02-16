@@ -298,16 +298,16 @@ const SellerDashboard = () => {
   }
 
   return (
-    <div className="space-y-5 dashboard-inter" style={{ backgroundColor: '#f1f5f9', minHeight: '100vh', padding: '36px' }}>
+    <div className="space-y-5 dashboard-inter" style={{ backgroundColor: '#f1f5f9', minHeight: '100vh', padding: '32px' }}>
       <AnnouncementBanner audience="seller" />
 
       {/* Header with Share Store & Export */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#0f172a]">
-            Welcome back, {profile?.store_name || 'Seller'}
+          <h1 className="text-2xl font-bold text-[#0f172a]">
+            Welcome back, {profile?.store_name || 'Seller'}! 🎉
           </h1>
-          <p className="text-[#64748b] mt-1 font-normal">Here's how your store is performing.</p>
+          <p className="text-[#64748b] mt-1">Here's how your store is performing.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>

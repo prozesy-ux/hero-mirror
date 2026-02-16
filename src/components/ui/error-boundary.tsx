@@ -12,15 +12,9 @@ interface State {
   error: Error | null;
 }
 
-const RELOAD_KEY = 'eb_auto_reload';
-const RELOAD_RESET_MS = 60 * 1000; // Reset after 1 minute
-
 /**
- * Global Error Boundary - PERMANENT FIX v2
- * 
- * Strategy: On ANY first error, clear all caches and do a full page reload.
- * Only show "Something went wrong" if the reload ALSO fails (second crash).
- * This catches stale SW cache errors, chunk errors, type errors — everything.
+ * Global Error Boundary - Catches React errors and shows recovery UI
+ * Prevents white screens and provides graceful degradation
  */
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
@@ -28,63 +22,58 @@ class ErrorBoundary extends Component<Props, State> {
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: Error): Partial<State> {
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ErrorBoundary] Caught:', error?.message);
-
-    // Check if we already tried an auto-reload recently
-    const stored = sessionStorage.getItem(RELOAD_KEY);
-    if (stored) {
-      const ts = parseInt(stored, 10);
-      // If the reload was recent and we crashed again, show error UI (don't loop)
-      if (Date.now() - ts < RELOAD_RESET_MS) {
-        console.error('[ErrorBoundary] Already reloaded recently, showing error UI');
-        sessionStorage.removeItem(RELOAD_KEY);
+    // Always log errors (including production) for debugging
+    console.error('[ErrorBoundary] Caught error:', error?.message || error);
+    console.error('[ErrorBoundary] Error name:', error?.name);
+    console.error('[ErrorBoundary] Stack:', error?.stack);
+    console.error('[ErrorBoundary] Component stack:', errorInfo?.componentStack);
+    
+    // Check if this is a chunk loading error (dynamic import failure)
+    const isChunkError = error?.message?.includes('Failed to fetch dynamically imported module') ||
+        error?.message?.includes('Loading chunk') ||
+        error?.message?.includes('Loading CSS chunk') ||
+        error?.message?.includes('Importing a module script failed');
+    
+    if (isChunkError) {
+      console.log('[ErrorBoundary] Chunk loading error detected - auto-refreshing');
+      // Auto-refresh once for chunk errors
+      const hasRefreshed = sessionStorage.getItem('chunk_error_refresh');
+      if (!hasRefreshed) {
+        sessionStorage.setItem('chunk_error_refresh', '1');
+        window.location.reload();
         return;
       }
-    }
-
-    // First crash: mark timestamp, clear caches, reload
-    sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
-    console.log('[ErrorBoundary] First error — clearing caches and reloading');
-
-    const reload = () => { window.location.reload(); };
-
-    // Clear SW caches then reload
-    if ('caches' in window) {
-      caches.keys()
-        .then(names => Promise.all(names.map(n => caches.delete(n))))
-        .then(reload)
-        .catch(reload);
-    } else {
-      reload();
+      sessionStorage.removeItem('chunk_error_refresh');
     }
   }
 
   handleRefresh = () => {
-    sessionStorage.removeItem(RELOAD_KEY);
+    // Clear any stale caches and reload
     if ('caches' in window) {
       caches.keys().then(names => {
         names.forEach(name => caches.delete(name));
-      }).catch(() => {});
+      });
     }
     window.location.reload();
   };
 
   handleRetry = () => {
-    sessionStorage.removeItem(RELOAD_KEY);
     this.setState({ hasError: false, error: null });
   };
 
   render() {
     if (this.state.hasError) {
+      // Custom fallback if provided
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
+      // Default error UI
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <div className="max-w-md w-full text-center space-y-6">

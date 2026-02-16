@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { lazy, Suspense, ComponentType } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,12 +10,28 @@ import ErrorBoundary from "@/components/ui/error-boundary";
 import RoutePrefetcher from "@/components/ui/route-prefetcher";
 import AppShell from "@/components/ui/app-shell";
 import GoogleSignInPopup from "@/components/GoogleSignInPopup";
-import { lazyWithRetry } from "@/lib/lazy-with-retry";
 
 // Eager load critical pages
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import NotFound from "./pages/NotFound";
+
+// Retry wrapper for lazy loading - handles flaky mobile connections
+const lazyWithRetry = (
+  importFn: () => Promise<{ default: ComponentType<any> }>,
+  retries = 3
+): React.LazyExoticComponent<ComponentType<any>> => {
+  return lazy(() =>
+    importFn().catch((err) => {
+      if (retries > 0) {
+        return new Promise<{ default: ComponentType<any> }>((resolve) =>
+          setTimeout(resolve, 1000)
+        ).then(() => lazyWithRetry(importFn, retries - 1) as any);
+      }
+      throw err;
+    })
+  );
+};
 
 // Lazy load heavy pages with auto-retry for chunk failures
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"));
@@ -33,8 +49,8 @@ const Help = lazyWithRetry(() => import("./pages/Help"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,
-      gcTime: 1000 * 60 * 30,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
       refetchOnWindowFocus: true,
       retry: 2,
     },
@@ -43,152 +59,87 @@ const queryClient = new QueryClient({
 
 const isHelpSubdomain = window.location.hostname.startsWith('help.');
 
-const App = () => {
-  // Global safety net + Force SW update on every app load
-  useEffect(() => {
-    // === Force Service Worker update to prevent stale cache ===
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistration().then((reg) => {
-        if (reg) {
-          // Force check for updates
-          reg.update().catch(() => {});
-          // If a new SW is waiting, tell it to activate immediately
-          if (reg.waiting) {
-            reg.waiting.postMessage('skipWaiting');
-          }
-          // Listen for future waiting workers
-          reg.addEventListener('updatefound', () => {
-            const newSW = reg.installing;
-            if (newSW) {
-              newSW.addEventListener('statechange', () => {
-                if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-                  newSW.postMessage('skipWaiting');
-                }
-              });
-            }
-          });
-        }
-      }).catch(() => {});
-
-      // When a new SW takes over, reload to get fresh code
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
-        }
-      });
-    }
-
-    // === Suppress unhandled rejections and errors ===
-    const rejectionHandler = (event: PromiseRejectionEvent) => {
-      event.preventDefault();
-      console.warn('[App] Suppressed rejection:', event?.reason?.message || String(event?.reason || ''));
-    };
-
-    const errorHandler = (event: ErrorEvent) => {
-      const msg = event?.message || '';
-      const isFatal = msg.includes('Failed to fetch dynamically imported module') ||
-        msg.includes('Loading chunk') ||
-        msg.includes('Importing a module script failed');
-      if (isFatal) {
-        event.preventDefault();
-        console.warn('[App] Suppressed chunk error:', msg);
-      }
-    };
-
-    window.addEventListener('unhandledrejection', rejectionHandler);
-    window.addEventListener('error', errorHandler);
-    return () => {
-      window.removeEventListener('unhandledrejection', rejectionHandler);
-      window.removeEventListener('error', errorHandler);
-    };
-  }, []);
-
-  return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <RoutePrefetcher />
-              <GoogleSignInPopup />
-              <Routes>
-                <Route path="/" element={
-                  isHelpSubdomain ? (
-                    <Suspense fallback={<AppShell />}>
-                      <Help />
-                    </Suspense>
-                  ) : (
-                    <Index />
-                  )
-                } />
-                <Route path="/marketplace" element={
+const App = () => (
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <RoutePrefetcher />
+            <GoogleSignInPopup />
+            <Routes>
+              <Route path="/" element={
+                isHelpSubdomain ? (
                   <Suspense fallback={<AppShell />}>
-                    <Marketplace />
+                    <Help />
                   </Suspense>
-                } />
-                <Route path="/marketplace/:productSlug" element={
-                  <Suspense fallback={<AppShell />}>
-                    <Marketplace />
-                  </Suspense>
-                } />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/signup" element={<SignIn />} />
-                <Route path="/reset-password" element={
-                  <Suspense fallback={<AppShell />}>
-                    <ResetPassword />
-                  </Suspense>
-                } />
-                <Route path="/store/:storeSlug" element={
-                  <Suspense fallback={<AppShell variant="store" />}>
-                    <Store />
-                  </Suspense>
-                } />
-                <Route path="/store/:storeSlug/product/:productId" element={
-                  <Suspense fallback={<AppShell variant="store" />}>
-                    <ProductFullView />
-                  </Suspense>
-                } />
-                <Route path="/dashboard/*" element={
-                  <ProtectedRoute>
-                    <ErrorBoundary>
-                      <Suspense fallback={<AppShell variant="dashboard" />}>
-                        <Dashboard />
-                      </Suspense>
-                    </ErrorBoundary>
-                  </ProtectedRoute>
-                } />
-                <Route path="/seller/*" element={
-                  <Suspense fallback={<AppShell variant="seller" />}>
-                    <Seller />
-                  </Suspense>
-                } />
-                <Route path="/admin/*" element={
+                ) : (
+                  <Index />
+                )
+              } />
+              <Route path="/marketplace" element={
+                <Suspense fallback={<AppShell />}>
+                  <Marketplace />
+                </Suspense>
+              } />
+              <Route path="/marketplace/:productSlug" element={
+                <Suspense fallback={<AppShell />}>
+                  <Marketplace />
+                </Suspense>
+              } />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<SignIn />} />
+              <Route path="/reset-password" element={
+                <Suspense fallback={<AppShell />}>
+                  <ResetPassword />
+                </Suspense>
+              } />
+              <Route path="/store/:storeSlug" element={
+                <Suspense fallback={<AppShell variant="store" />}>
+                  <Store />
+                </Suspense>
+              } />
+              <Route path="/store/:storeSlug/product/:productId" element={
+                <Suspense fallback={<AppShell variant="store" />}>
+                  <ProductFullView />
+                </Suspense>
+              } />
+              <Route path="/dashboard/*" element={
+                <ProtectedRoute>
                   <Suspense fallback={<AppShell variant="dashboard" />}>
-                    <Admin />
+                    <Dashboard />
                   </Suspense>
-                } />
-                <Route path="/privacy" element={
-                  <Suspense fallback={<AppShell />}>
-                    <PrivacyPolicy />
-                  </Suspense>
-                } />
-                <Route path="/terms" element={
-                  <Suspense fallback={<AppShell />}>
-                    <TermsOfService />
-                  </Suspense>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </AuthProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
-  );
-};
+                </ProtectedRoute>
+              } />
+              <Route path="/seller/*" element={
+                <Suspense fallback={<AppShell variant="seller" />}>
+                  <Seller />
+                </Suspense>
+              } />
+              <Route path="/admin/*" element={
+                <Suspense fallback={<AppShell variant="dashboard" />}>
+                  <Admin />
+                </Suspense>
+              } />
+              <Route path="/privacy" element={
+                <Suspense fallback={<AppShell />}>
+                  <PrivacyPolicy />
+                </Suspense>
+              } />
+              <Route path="/terms" element={
+                <Suspense fallback={<AppShell />}>
+                  <TermsOfService />
+                </Suspense>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
+);
 
 export default App;
