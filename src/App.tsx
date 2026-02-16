@@ -44,21 +44,54 @@ const queryClient = new QueryClient({
 const isHelpSubdomain = window.location.hostname.startsWith('help.');
 
 const App = () => {
-  // Global safety net: suppress ALL unhandled rejections and errors
-  // that could crash the app on mobile (network failures, auth issues, etc.)
+  // Global safety net + Force SW update on every app load
   useEffect(() => {
+    // === Force Service Worker update to prevent stale cache ===
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (reg) {
+          // Force check for updates
+          reg.update().catch(() => {});
+          // If a new SW is waiting, tell it to activate immediately
+          if (reg.waiting) {
+            reg.waiting.postMessage('skipWaiting');
+          }
+          // Listen for future waiting workers
+          reg.addEventListener('updatefound', () => {
+            const newSW = reg.installing;
+            if (newSW) {
+              newSW.addEventListener('statechange', () => {
+                if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                  newSW.postMessage('skipWaiting');
+                }
+              });
+            }
+          });
+        }
+      }).catch(() => {});
+
+      // When a new SW takes over, reload to get fresh code
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
+
+    // === Suppress unhandled rejections and errors ===
     const rejectionHandler = (event: PromiseRejectionEvent) => {
-      event.preventDefault(); // Prevent ALL unhandled rejections from crashing
-      const msg = event?.reason?.message || String(event?.reason || '');
-      console.warn('[App] Suppressed unhandled rejection:', msg);
+      event.preventDefault();
+      console.warn('[App] Suppressed rejection:', event?.reason?.message || String(event?.reason || ''));
     };
 
     const errorHandler = (event: ErrorEvent) => {
       const msg = event?.message || '';
-      const isChunkError = msg.includes('Failed to fetch dynamically imported module') ||
+      const isFatal = msg.includes('Failed to fetch dynamically imported module') ||
         msg.includes('Loading chunk') ||
         msg.includes('Importing a module script failed');
-      if (isChunkError) {
+      if (isFatal) {
         event.preventDefault();
         console.warn('[App] Suppressed chunk error:', msg);
       }
