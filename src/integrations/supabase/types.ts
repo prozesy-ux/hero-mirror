@@ -3530,6 +3530,54 @@ export type Database = {
           },
         ]
       }
+      store_designs: {
+        Row: {
+          created_at: string
+          global_styles: Json | null
+          id: string
+          is_active: boolean
+          sections: Json | null
+          seller_id: string
+          theme_preset: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          global_styles?: Json | null
+          id?: string
+          is_active?: boolean
+          sections?: Json | null
+          seller_id: string
+          theme_preset?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          global_styles?: Json | null
+          id?: string
+          is_active?: boolean
+          sections?: Json | null
+          seller_id?: string
+          theme_preset?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_designs_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: true
+            referencedRelation: "seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_designs_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: true
+            referencedRelation: "seller_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_messages: {
         Row: {
           attachment_name: string | null
