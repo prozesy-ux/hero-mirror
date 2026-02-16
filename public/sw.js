@@ -1,6 +1,6 @@
 // Uptoza Service Worker - Performance + Push Notifications
-// Version for cache busting - MUST match APP_VERSION in cache-utils.ts
-const CACHE_VERSION = 'v1.0.4';
+// PERMANENT FIX: JS/CSS use network-first to prevent stale cache crashes on mobile
+const CACHE_VERSION = 'v2.0.0';
 const STATIC_CACHE = `uptoza-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `uptoza-dynamic-${CACHE_VERSION}`;
 const API_CACHE = `uptoza-api-${CACHE_VERSION}`;
@@ -13,17 +13,19 @@ const STATIC_ASSETS = [
 
 // Cache strategies
 const CACHE_STRATEGIES = {
-  // Cache first for static assets (JS, CSS, images)
-  cacheFirst: ['assets/', '.js', '.css', '.woff2', '.png', '.jpg', '.webp', '.svg', '.avif'],
+  // Network-first for JS/CSS (CRITICAL: prevents stale code crashes after deploys)
+  networkFirstCode: ['.js', '.css'],
+  // Cache first for static non-code assets (images, fonts)
+  cacheFirst: ['.woff2', '.png', '.jpg', '.webp', '.svg', '.avif', '.ico', '.mp4'],
   // Stale-while-revalidate ONLY for PUBLIC BFF endpoints (anonymous)
   staleWhileRevalidate: ['/functions/v1/bff-marketplace-home', '/functions/v1/bff-store-public', '/functions/v1/bff-flash-sales'],
   // Network only for auth-related calls AND authenticated BFF endpoints
   networkOnly: ['/auth/', 'validate-session', 'admin-login', '/functions/v1/bff-buyer', '/functions/v1/bff-seller'],
 };
 
-// Install - cache critical assets
+// Install - cache critical assets, skip waiting immediately
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker');
+  console.log('[SW] Installing service worker', CACHE_VERSION);
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => cache.addAll(STATIC_ASSETS))
@@ -31,9 +33,9 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate - clean old caches
+// Activate - clean ALL old caches aggressively
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker');
+  console.log('[SW] Activating service worker', CACHE_VERSION);
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
@@ -42,7 +44,10 @@ self.addEventListener('activate', (event) => {
                           key !== STATIC_CACHE && 
                           key !== DYNAMIC_CACHE && 
                           key !== API_CACHE)
-          .map((key) => caches.delete(key))
+          .map((key) => {
+            console.log('[SW] Deleting old cache:', key);
+            return caches.delete(key);
+          })
       );
     }).then(() => self.clients.claim())
   );
@@ -60,10 +65,8 @@ self.addEventListener('fetch', (event) => {
   // Skip chrome-extension and other non-http(s) requests
   if (!url.protocol.startsWith('http')) return;
 
-  // CRITICAL: If request has Authorization header, bypass cache entirely (network only)
-  // This prevents caching authenticated user data
+  // CRITICAL: If request has Authorization header, bypass cache entirely
   if (request.headers.has('Authorization')) {
-    // Let the browser handle it naturally - no cache interception
     return;
   }
 
@@ -72,14 +75,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-while-revalidate ONLY for PUBLIC BFF API calls (no auth header)
+  // CRITICAL FIX: Network-first for JS and CSS files
+  // This prevents stale code from being served after deployments
+  if (CACHE_STRATEGIES.networkFirstCode.some(ext => url.pathname.endsWith(ext))) {
+    event.respondWith(networkFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  // Stale-while-revalidate ONLY for PUBLIC BFF API calls
   if (CACHE_STRATEGIES.staleWhileRevalidate.some(pattern => url.pathname.includes(pattern) || url.href.includes(pattern))) {
     event.respondWith(staleWhileRevalidate(request, API_CACHE));
     return;
   }
 
-  // Cache first for static assets
-  if (CACHE_STRATEGIES.cacheFirst.some(pattern => url.pathname.includes(pattern) || url.href.includes(pattern))) {
+  // Cache first for static non-code assets (images, fonts, etc.)
+  if (CACHE_STRATEGIES.cacheFirst.some(ext => url.pathname.endsWith(ext) || url.pathname.includes('assets/'))) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));
     return;
   }
@@ -88,12 +98,10 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(networkFirst(request, DYNAMIC_CACHE));
 });
 
-// Cache first strategy
+// Cache first strategy (for images/fonts only)
 async function cacheFirst(request, cacheName) {
   const cached = await caches.match(request);
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
   
   try {
     const response = await fetch(request);
@@ -103,12 +111,11 @@ async function cacheFirst(request, cacheName) {
     }
     return response;
   } catch (error) {
-    console.log('[SW] Cache first fetch failed:', error);
     return new Response('Offline', { status: 503 });
   }
 }
 
-// Network first strategy
+// Network first strategy (for JS/CSS and default)
 async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request);
@@ -119,9 +126,7 @@ async function networkFirst(request, cacheName) {
     return response;
   } catch (error) {
     const cached = await caches.match(request);
-    if (cached) {
-      return cached;
-    }
+    if (cached) return cached;
     return new Response('Offline', { status: 503 });
   }
 }
@@ -131,7 +136,6 @@ async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
   
-  // Fetch in background
   const fetchPromise = fetch(request).then((response) => {
     if (response.ok) {
       cache.put(request, response.clone());
@@ -139,14 +143,11 @@ async function staleWhileRevalidate(request, cacheName) {
     return response;
   }).catch(() => cached);
 
-  // Return cached immediately, or wait for network
   return cached || fetchPromise;
 }
 
 // Push notification handling
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push received:', event);
-  
   let data = {
     title: 'Uptoza',
     message: 'You have a new notification',
@@ -188,14 +189,11 @@ self.addEventListener('push', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event);
-  
   event.notification.close();
 
   const action = event.action;
   const notificationData = event.notification.data || {};
 
-  // Track click if logId exists
   if (notificationData.logId) {
     fetch('/functions/v1/manage-push', {
       method: 'POST',
@@ -207,9 +205,7 @@ self.addEventListener('notificationclick', (event) => {
     }).catch((err) => console.error('[SW] Track click error:', err));
   }
 
-  if (action === 'dismiss') {
-    return;
-  }
+  if (action === 'dismiss') return;
 
   const urlToOpen = notificationData.url || '/dashboard';
 
@@ -230,11 +226,8 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-self.addEventListener('notificationclose', (event) => {
-  console.log('[SW] Notification closed:', event);
-});
+self.addEventListener('notificationclose', () => {});
 
-// Background sync for offline actions
 self.addEventListener('sync', (event) => {
   console.log('[SW] Background sync:', event.tag);
 });

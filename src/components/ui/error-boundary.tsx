@@ -10,28 +10,22 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
-  renderRetryCount: number;
 }
 
-const MAX_RENDER_RETRIES = 3;
-const MAX_CHUNK_REFRESHES = 3;
-const CHUNK_RESET_MS = 5 * 60 * 1000;
+const RELOAD_KEY = 'eb_auto_reload';
+const RELOAD_RESET_MS = 60 * 1000; // Reset after 1 minute
 
 /**
- * Global Error Boundary - PERMANENT FIX
+ * Global Error Boundary - PERMANENT FIX v2
  * 
- * Strategy:
- * 1. For ANY error: silently retry rendering up to 3 times before showing UI
- * 2. For chunk errors specifically: also auto-refresh the page (clears caches)
- * 3. Only shows "Something went wrong" if ALL retries exhausted
- * 4. "Try Again" fully resets all counters for fresh start
+ * Strategy: On ANY first error, clear all caches and do a full page reload.
+ * Only show "Something went wrong" if the reload ALSO fails (second crash).
+ * This catches stale SW cache errors, chunk errors, type errors — everything.
  */
 class ErrorBoundary extends Component<Props, State> {
-  private retryTimeout: ReturnType<typeof setTimeout> | null = null;
-
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null, renderRetryCount: 0 };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
@@ -39,77 +33,39 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ErrorBoundary] Caught error:', error?.message || error);
-    console.error('[ErrorBoundary] Component stack:', errorInfo?.componentStack);
+    console.error('[ErrorBoundary] Caught:', error?.message);
 
-    const isChunkError = error?.message?.includes('Failed to fetch dynamically imported module') ||
-      error?.message?.includes('Loading chunk') ||
-      error?.message?.includes('Loading CSS chunk') ||
-      error?.message?.includes('Importing a module script failed');
-
-    // === STEP 1: For chunk errors, try page refresh with cache bust ===
-    if (isChunkError) {
-      const stored = sessionStorage.getItem('chunk_error_refresh');
-      let count = 0;
-      let firstAttempt = Date.now();
-
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          count = parsed.count || 0;
-          firstAttempt = parsed.ts || Date.now();
-        } catch { /* ignore */ }
-      }
-
-      if (Date.now() - firstAttempt > CHUNK_RESET_MS) {
-        count = 0;
-        firstAttempt = Date.now();
-      }
-
-      if (count < MAX_CHUNK_REFRESHES) {
-        sessionStorage.setItem('chunk_error_refresh', JSON.stringify({ count: count + 1, ts: firstAttempt }));
-        console.log(`[ErrorBoundary] Chunk error - auto-refresh attempt ${count + 1}/${MAX_CHUNK_REFRESHES}`);
-        const reload = () => { window.location.reload(); };
-        if ('caches' in window) {
-          caches.keys().then(names => {
-            Promise.all(names.map(n => caches.delete(n))).then(reload).catch(reload);
-          }).catch(reload);
-        } else {
-          reload();
-        }
+    // Check if we already tried an auto-reload recently
+    const stored = sessionStorage.getItem(RELOAD_KEY);
+    if (stored) {
+      const ts = parseInt(stored, 10);
+      // If the reload was recent and we crashed again, show error UI (don't loop)
+      if (Date.now() - ts < RELOAD_RESET_MS) {
+        console.error('[ErrorBoundary] Already reloaded recently, showing error UI');
+        sessionStorage.removeItem(RELOAD_KEY);
         return;
       }
-      sessionStorage.removeItem('chunk_error_refresh');
     }
 
-    // === STEP 2: For ALL errors, silently retry rendering ===
-    if (this.state.renderRetryCount < MAX_RENDER_RETRIES) {
-      const nextCount = this.state.renderRetryCount + 1;
-      console.log(`[ErrorBoundary] Auto-retry render attempt ${nextCount}/${MAX_RENDER_RETRIES}`);
-      
-      // Small delay to let transient issues (network, race conditions) resolve
-      this.retryTimeout = setTimeout(() => {
-        this.setState({
-          hasError: false,
-          error: null,
-          renderRetryCount: nextCount,
-        });
-      }, 500 * nextCount); // 500ms, 1000ms, 1500ms progressive delay
-      return;
-    }
+    // First crash: mark timestamp, clear caches, reload
+    sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+    console.log('[ErrorBoundary] First error — clearing caches and reloading');
 
-    // === STEP 3: All retries exhausted — show error UI ===
-    console.error('[ErrorBoundary] All render retries exhausted, showing error UI');
-  }
+    const reload = () => { window.location.reload(); };
 
-  componentWillUnmount() {
-    if (this.retryTimeout) {
-      clearTimeout(this.retryTimeout);
+    // Clear SW caches then reload
+    if ('caches' in window) {
+      caches.keys()
+        .then(names => Promise.all(names.map(n => caches.delete(n))))
+        .then(reload)
+        .catch(reload);
+    } else {
+      reload();
     }
   }
 
   handleRefresh = () => {
-    sessionStorage.removeItem('chunk_error_refresh');
+    sessionStorage.removeItem(RELOAD_KEY);
     if ('caches' in window) {
       caches.keys().then(names => {
         names.forEach(name => caches.delete(name));
@@ -119,19 +75,12 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   handleRetry = () => {
-    sessionStorage.removeItem('chunk_error_refresh');
-    this.setState({ hasError: false, error: null, renderRetryCount: 0 });
+    sessionStorage.removeItem(RELOAD_KEY);
+    this.setState({ hasError: false, error: null });
   };
 
   render() {
     if (this.state.hasError) {
-      // If we're still within retry count, don't show error UI yet
-      // (componentDidCatch will reset hasError after timeout)
-      if (this.state.renderRetryCount < MAX_RENDER_RETRIES) {
-        // Show nothing while waiting for auto-retry
-        return <div className="min-h-screen bg-background" />;
-      }
-
       if (this.props.fallback) {
         return this.props.fallback;
       }
