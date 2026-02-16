@@ -9,12 +9,22 @@
  * - OPTIMISTIC AUTH: Keeps last known session to survive transient nulls
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { markSessionStart, clearSessionTimestamp } from '@/lib/session-persistence';
 import { hasLocalSession, isDefinitelyExpired } from '@/lib/session-detector';
 import { bffApi } from '@/lib/api-fetch';
+
+/** Detect iOS browsers (Safari, Chrome on iOS uses WebKit) */
+const isIosBrowser = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+
+const IOS_RETRY_DELAY = 500; // ms
+const IOS_MAX_RETRIES = 3;
 
 interface Profile {
   id: string;
@@ -107,9 +117,21 @@ export const useAuth = () => {
             setLoading(true);
           }
           
+          // iOS WebKit fix: session/headers may not be ready immediately
+          // Wait and re-fetch to ensure auth headers are initialized
+          if (isIosBrowser()) {
+            console.log('[useAuth] iOS detected - waiting for WebKit session init...');
+            await new Promise(r => setTimeout(r, IOS_RETRY_DELAY));
+            const { data: { session: iosSession } } = await supabase.auth.getSession();
+            if (iosSession) {
+              session = iosSession; // Update the local variable for downstream use
+              console.log('[useAuth] iOS session confirmed after retry');
+            }
+          }
+          
           // Prefetch dashboard data for instant page loads
           // Small delay to ensure session is fully established
-          setTimeout(prefetchDashboardData, 100);
+          setTimeout(prefetchDashboardData, isIosBrowser() ? 600 : 100);
         }
         
         // Clear session timestamp and admin cache on signout
@@ -154,14 +176,42 @@ export const useAuth = () => {
           lastKnownUserRef.current = session.user;
         } else {
           // Session is null - this could be INITIAL_SESSION with no session, or transient null
-          // Keep last known values if we have local tokens within grace period
-          if (hasLocalSession() && !isDefinitelyExpired()) {
-            console.log('[useAuth] Session null but within grace - keeping last known state');
-            // Don't clear state - keep the last known values
+          
+          // iOS WebKit fix: retry before accepting null session (SIGNED_OUT already returned above)
+          if (isIosBrowser()) {
+            console.log('[useAuth] iOS null session - retrying before accepting...');
+            let recovered = false;
+            for (let i = 0; i < IOS_MAX_RETRIES; i++) {
+              await new Promise(r => setTimeout(r, IOS_RETRY_DELAY));
+              const { data: { session: retrySession } } = await supabase.auth.getSession();
+              if (retrySession) {
+                console.log(`[useAuth] iOS session recovered on retry ${i + 1}`);
+                setSession(retrySession);
+                setUser(retrySession.user);
+                lastKnownSessionRef.current = retrySession;
+                lastKnownUserRef.current = retrySession.user;
+                session = retrySession;
+                recovered = true;
+                break;
+              }
+            }
+            if (!recovered) {
+              console.log('[useAuth] iOS retries exhausted - checking grace period');
+              if (hasLocalSession() && !isDefinitelyExpired()) {
+                console.log('[useAuth] iOS within grace - keeping last known state');
+              } else {
+                setSession(null);
+                setUser(null);
+              }
+            }
           } else {
-            // Really no session and outside grace period
-            setSession(null);
-            setUser(null);
+            // Non-iOS: Keep last known values if we have local tokens within grace period
+            if (hasLocalSession() && !isDefinitelyExpired()) {
+              console.log('[useAuth] Session null but within grace - keeping last known state');
+            } else {
+              setSession(null);
+              setUser(null);
+            }
           }
         }
         
@@ -235,6 +285,28 @@ export const useAuth = () => {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // iOS visibility change listener: re-fetch session when tab becomes visible
+  // iOS WebKit often populates session only after backgrounding/foregrounding
+  useEffect(() => {
+    if (!isIosBrowser()) return;
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[useAuth] iOS tab visible - re-checking session');
+        const { data: { session: freshSession } } = await supabase.auth.getSession();
+        if (freshSession) {
+          setSession(freshSession);
+          setUser(freshSession.user);
+          lastKnownSessionRef.current = freshSession;
+          lastKnownUserRef.current = freshSession.user;
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
