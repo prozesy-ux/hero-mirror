@@ -1,0 +1,1 @@
+ALTER TABLE store_designs ADD COLUMN IF NOT EXISTS version_history jsonb DEFAULT '[]';

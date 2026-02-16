@@ -3540,6 +3540,7 @@ export type Database = {
           seller_id: string
           theme_preset: string | null
           updated_at: string
+          version_history: Json | null
         }
         Insert: {
           created_at?: string
@@ -3550,6 +3551,7 @@ export type Database = {
           seller_id: string
           theme_preset?: string | null
           updated_at?: string
+          version_history?: Json | null
         }
         Update: {
           created_at?: string
@@ -3560,6 +3562,7 @@ export type Database = {
           seller_id?: string
           theme_preset?: string | null
           updated_at?: string
+          version_history?: Json | null
         }
         Relationships: [
           {
