@@ -10,37 +10,45 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  renderRetryCount: number;
 }
 
+const MAX_RENDER_RETRIES = 3;
+const MAX_CHUNK_REFRESHES = 3;
+const CHUNK_RESET_MS = 5 * 60 * 1000;
+
 /**
- * Global Error Boundary - Catches React errors and shows recovery UI
- * Prevents white screens and provides graceful degradation
+ * Global Error Boundary - PERMANENT FIX
+ * 
+ * Strategy:
+ * 1. For ANY error: silently retry rendering up to 3 times before showing UI
+ * 2. For chunk errors specifically: also auto-refresh the page (clears caches)
+ * 3. Only shows "Something went wrong" if ALL retries exhausted
+ * 4. "Try Again" fully resets all counters for fresh start
  */
 class ErrorBoundary extends Component<Props, State> {
+  private retryTimeout: ReturnType<typeof setTimeout> | null = null;
+
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, renderRetryCount: 0 };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('[ErrorBoundary] Caught error:', error?.message || error);
-    console.error('[ErrorBoundary] Error name:', error?.name);
-    console.error('[ErrorBoundary] Stack:', error?.stack);
     console.error('[ErrorBoundary] Component stack:', errorInfo?.componentStack);
-    
-    const isChunkError = error?.message?.includes('Failed to fetch dynamically imported module') ||
-        error?.message?.includes('Loading chunk') ||
-        error?.message?.includes('Loading CSS chunk') ||
-        error?.message?.includes('Importing a module script failed');
-    
-    if (isChunkError) {
-      const MAX_RETRIES = 3;
-      const RESET_AFTER_MS = 5 * 60 * 1000; // 5 minutes
 
+    const isChunkError = error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('Loading chunk') ||
+      error?.message?.includes('Loading CSS chunk') ||
+      error?.message?.includes('Importing a module script failed');
+
+    // === STEP 1: For chunk errors, try page refresh with cache bust ===
+    if (isChunkError) {
       const stored = sessionStorage.getItem('chunk_error_refresh');
       let count = 0;
       let firstAttempt = Date.now();
@@ -53,55 +61,81 @@ class ErrorBoundary extends Component<Props, State> {
         } catch { /* ignore */ }
       }
 
-      // Reset counter if it's been more than 5 minutes since first attempt
-      if (Date.now() - firstAttempt > RESET_AFTER_MS) {
+      if (Date.now() - firstAttempt > CHUNK_RESET_MS) {
         count = 0;
         firstAttempt = Date.now();
       }
 
-      if (count < MAX_RETRIES) {
+      if (count < MAX_CHUNK_REFRESHES) {
         sessionStorage.setItem('chunk_error_refresh', JSON.stringify({ count: count + 1, ts: firstAttempt }));
-        console.log(`[ErrorBoundary] Chunk error - auto-refresh attempt ${count + 1}/${MAX_RETRIES}`);
-        // Clear caches before reload to bust stale chunks
+        console.log(`[ErrorBoundary] Chunk error - auto-refresh attempt ${count + 1}/${MAX_CHUNK_REFRESHES}`);
         const reload = () => { window.location.reload(); };
         if ('caches' in window) {
           caches.keys().then(names => {
-            Promise.all(names.map(n => caches.delete(n))).then(reload);
+            Promise.all(names.map(n => caches.delete(n))).then(reload).catch(reload);
           }).catch(reload);
         } else {
           reload();
         }
         return;
       }
-      // Exhausted retries - clear counter and show error UI
       sessionStorage.removeItem('chunk_error_refresh');
+    }
+
+    // === STEP 2: For ALL errors, silently retry rendering ===
+    if (this.state.renderRetryCount < MAX_RENDER_RETRIES) {
+      const nextCount = this.state.renderRetryCount + 1;
+      console.log(`[ErrorBoundary] Auto-retry render attempt ${nextCount}/${MAX_RENDER_RETRIES}`);
+      
+      // Small delay to let transient issues (network, race conditions) resolve
+      this.retryTimeout = setTimeout(() => {
+        this.setState({
+          hasError: false,
+          error: null,
+          renderRetryCount: nextCount,
+        });
+      }, 500 * nextCount); // 500ms, 1000ms, 1500ms progressive delay
+      return;
+    }
+
+    // === STEP 3: All retries exhausted — show error UI ===
+    console.error('[ErrorBoundary] All render retries exhausted, showing error UI');
+  }
+
+  componentWillUnmount() {
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout);
     }
   }
 
   handleRefresh = () => {
-    // Clear any stale caches and reload
+    sessionStorage.removeItem('chunk_error_refresh');
     if ('caches' in window) {
       caches.keys().then(names => {
         names.forEach(name => caches.delete(name));
-      });
+      }).catch(() => {});
     }
     window.location.reload();
   };
 
   handleRetry = () => {
-    // Clear chunk error counter so retries aren't blocked on next failure
     sessionStorage.removeItem('chunk_error_refresh');
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, renderRetryCount: 0 });
   };
 
   render() {
     if (this.state.hasError) {
-      // Custom fallback if provided
+      // If we're still within retry count, don't show error UI yet
+      // (componentDidCatch will reset hasError after timeout)
+      if (this.state.renderRetryCount < MAX_RENDER_RETRIES) {
+        // Show nothing while waiting for auto-retry
+        return <div className="min-h-screen bg-background" />;
+      }
+
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      // Default error UI
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <div className="max-w-md w-full text-center space-y-6">

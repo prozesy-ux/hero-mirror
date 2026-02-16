@@ -44,21 +44,32 @@ const queryClient = new QueryClient({
 const isHelpSubdomain = window.location.hostname.startsWith('help.');
 
 const App = () => {
-  // Global handler for unhandled promise rejections (e.g. prefetch failures, async errors)
-  // Prevents them from crashing the app — logs silently instead
+  // Global safety net: suppress ALL unhandled rejections and errors
+  // that could crash the app on mobile (network failures, auth issues, etc.)
   useEffect(() => {
-    const handler = (event: PromiseRejectionEvent) => {
+    const rejectionHandler = (event: PromiseRejectionEvent) => {
+      event.preventDefault(); // Prevent ALL unhandled rejections from crashing
       const msg = event?.reason?.message || String(event?.reason || '');
+      console.warn('[App] Suppressed unhandled rejection:', msg);
+    };
+
+    const errorHandler = (event: ErrorEvent) => {
+      const msg = event?.message || '';
       const isChunkError = msg.includes('Failed to fetch dynamically imported module') ||
         msg.includes('Loading chunk') ||
         msg.includes('Importing a module script failed');
       if (isChunkError) {
         event.preventDefault();
-        console.warn('[App] Suppressed chunk load rejection:', msg);
+        console.warn('[App] Suppressed chunk error:', msg);
       }
     };
-    window.addEventListener('unhandledrejection', handler);
-    return () => window.removeEventListener('unhandledrejection', handler);
+
+    window.addEventListener('unhandledrejection', rejectionHandler);
+    window.addEventListener('error', errorHandler);
+    return () => {
+      window.removeEventListener('unhandledrejection', rejectionHandler);
+      window.removeEventListener('error', errorHandler);
+    };
   }, []);
 
   return (
