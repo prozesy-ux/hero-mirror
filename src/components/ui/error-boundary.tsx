@@ -89,6 +89,8 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   handleRetry = () => {
+    // Clear chunk error counter so retries aren't blocked on next failure
+    sessionStorage.removeItem('chunk_error_refresh');
     this.setState({ hasError: false, error: null });
   };
 
