@@ -27,27 +27,53 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Always log errors (including production) for debugging
     console.error('[ErrorBoundary] Caught error:', error?.message || error);
     console.error('[ErrorBoundary] Error name:', error?.name);
     console.error('[ErrorBoundary] Stack:', error?.stack);
     console.error('[ErrorBoundary] Component stack:', errorInfo?.componentStack);
     
-    // Check if this is a chunk loading error (dynamic import failure)
     const isChunkError = error?.message?.includes('Failed to fetch dynamically imported module') ||
         error?.message?.includes('Loading chunk') ||
         error?.message?.includes('Loading CSS chunk') ||
         error?.message?.includes('Importing a module script failed');
     
     if (isChunkError) {
-      console.log('[ErrorBoundary] Chunk loading error detected - auto-refreshing');
-      // Auto-refresh once for chunk errors
-      const hasRefreshed = sessionStorage.getItem('chunk_error_refresh');
-      if (!hasRefreshed) {
-        sessionStorage.setItem('chunk_error_refresh', '1');
-        window.location.reload();
+      const MAX_RETRIES = 3;
+      const RESET_AFTER_MS = 5 * 60 * 1000; // 5 minutes
+
+      const stored = sessionStorage.getItem('chunk_error_refresh');
+      let count = 0;
+      let firstAttempt = Date.now();
+
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          count = parsed.count || 0;
+          firstAttempt = parsed.ts || Date.now();
+        } catch { /* ignore */ }
+      }
+
+      // Reset counter if it's been more than 5 minutes since first attempt
+      if (Date.now() - firstAttempt > RESET_AFTER_MS) {
+        count = 0;
+        firstAttempt = Date.now();
+      }
+
+      if (count < MAX_RETRIES) {
+        sessionStorage.setItem('chunk_error_refresh', JSON.stringify({ count: count + 1, ts: firstAttempt }));
+        console.log(`[ErrorBoundary] Chunk error - auto-refresh attempt ${count + 1}/${MAX_RETRIES}`);
+        // Clear caches before reload to bust stale chunks
+        const reload = () => { window.location.reload(); };
+        if ('caches' in window) {
+          caches.keys().then(names => {
+            Promise.all(names.map(n => caches.delete(n))).then(reload);
+          }).catch(reload);
+        } else {
+          reload();
+        }
         return;
       }
+      // Exhausted retries - clear counter and show error UI
       sessionStorage.removeItem('chunk_error_refresh');
     }
   }
