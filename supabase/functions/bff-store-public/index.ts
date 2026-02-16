@@ -16,6 +16,7 @@ interface StoreData {
   products: unknown[];
   categories: unknown[];
   flashSales: unknown[];
+  storeDesign: unknown | null;
   cachedAt: string;
   fromRedis?: boolean;
 }
@@ -80,9 +81,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch products, categories, and flash sales in parallel
+    // Fetch products, categories, flash sales, and custom design in parallel
     const now = new Date().toISOString();
-    const [productsResult, categoriesResult, flashSalesResult] = await Promise.all([
+    const [productsResult, categoriesResult, flashSalesResult, storeDesignResult] = await Promise.all([
       supabase
         .from('seller_products')
         .select('id, name, slug, description, price, icon_url, category_id, is_available, is_approved, tags, stock, sold_count, chat_allowed, seller_id, view_count, images, product_type, product_metadata')
@@ -102,21 +103,22 @@ Deno.serve(async (req) => {
         .eq('is_active', true)
         .lte('starts_at', now)
         .gt('ends_at', now),
+      supabase
+        .from('store_designs')
+        .select('id, is_active, theme_preset, global_styles, sections')
+        .eq('seller_id', seller.id)
+        .eq('is_active', true)
+        .maybeSingle(),
     ]);
 
-    if (productsResult.error) {
-      console.error('[BFF-StorePublic] Products query error:', productsResult.error);
-    }
-    if (categoriesResult.error) {
-      console.error('[BFF-StorePublic] Categories query error:', categoriesResult.error);
-    }
-    if (flashSalesResult.error) {
-      console.error('[BFF-StorePublic] Flash sales query error:', flashSalesResult.error);
-    }
+    if (productsResult.error) console.error('[BFF-StorePublic] Products query error:', productsResult.error);
+    if (categoriesResult.error) console.error('[BFF-StorePublic] Categories query error:', categoriesResult.error);
+    if (flashSalesResult.error) console.error('[BFF-StorePublic] Flash sales query error:', flashSalesResult.error);
 
     const products = productsResult.data || [];
     const categories = categoriesResult.data || [];
     const flashSales = flashSalesResult.data || [];
+    const storeDesign = storeDesignResult.data || null;
 
     // Get product IDs and fetch reviews
     const productIds = products.map(p => p.id);
@@ -145,6 +147,7 @@ Deno.serve(async (req) => {
       products,
       categories,
       flashSales,
+      storeDesign,
       cachedAt: new Date().toISOString(),
     };
 
