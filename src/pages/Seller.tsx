@@ -41,7 +41,6 @@ import SellerNotificationCenter from '@/components/seller/SellerNotificationCent
 import SellerRefundManagement from '@/components/seller/SellerRefundManagement';
 import SellerSecurityLogs from '@/components/seller/SellerSecurityLogs';
 import SellerServiceBookings from '@/components/seller/SellerServiceBookings';
-import StoreBuilder from '@/components/seller/StoreBuilder';
 import NewProduct from './NewProduct';
 import signinBackground from '@/assets/signin-background.webp';
 import uptozaLogo from '@/assets/uptoza-logo.png';
@@ -587,7 +586,6 @@ const SellerMainContent = () => {
            <Route path="/refunds" element={<SellerRefundManagement />} />
            <Route path="/security" element={<SellerSecurityLogs />} />
            <Route path="/service-bookings" element={<SellerServiceBookings />} />
-           <Route path="/store-builder" element={<StoreBuilder />} />
            <Route path="/settings" element={<SellerSettings />} />
         </Routes>
       </div>

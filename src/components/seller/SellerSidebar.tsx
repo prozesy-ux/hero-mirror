@@ -78,7 +78,6 @@ const performanceSubItems = [
 // Standalone items
 const standaloneAfterItems = [
   { to: '/seller/chat', icon: GumroadChatIcon, label: 'Chat' },
-  { to: '/seller/store-builder', icon: GumroadSettingsIcon, label: 'Store Builder' },
 ];
 
 const bottomNavItems = [
