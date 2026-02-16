@@ -102,21 +102,23 @@ const SignIn = () => {
 
     if (isSignUp) {
       const { error } = await signUp(email, password, fullName);
-      setLoading(false);
       if (error) {
+        setLoading(false);
         toast.error(error.message);
       } else {
         toast.success("Account created successfully!");
-        handlePostAuthRedirect();
+        // Don't navigate here - let useEffect handle it after user is populated
+        // Keep loading=true to show "Signing in..." state
       }
     } else {
       const { error } = await signIn(email, password);
-      setLoading(false);
       if (error) {
+        setLoading(false);
         toast.error(error.message);
       } else {
         toast.success("Welcome back!");
-        handlePostAuthRedirect();
+        // Don't navigate here - let useEffect handle it after user is populated
+        // Keep loading=true to show "Signing in..." state
       }
     }
   };
