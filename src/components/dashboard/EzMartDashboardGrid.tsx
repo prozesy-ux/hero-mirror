@@ -84,10 +84,11 @@ export interface DashboardStatData {
 // ── eShop Design Tokens ────────────────────────────────────────────────────
 const CARD_STYLE = {
   background: '#ffffff',
-  borderRadius: '4px',
-  padding: '24px',
-  border: '1px solid #e2e8f0',
-  boxShadow: 'none',
+  borderRadius: '12px',
+  padding: '28px',
+  border: '1px solid #f1f5f9',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)',
+  transition: 'all 0.2s ease',
 } as const;
 
 const TEXT = {
@@ -121,21 +122,26 @@ const Dashboard_StatCard = ({
   const config = STAT_CARD_CONFIG[iconType] || STAT_CARD_CONFIG.dollar;
 
   return (
-    <div style={{
-      ...CARD_STYLE,
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-      overflow: 'hidden',
-      minHeight: '140px',
-    }}>
+    <div
+      style={{
+        ...CARD_STYLE,
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        overflow: 'hidden',
+        minHeight: '152px',
+        cursor: 'default',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.04)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)'; }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
         <span style={{
-          fontSize: '11px',
+          fontSize: '12px',
           color: TEXT.secondary,
           fontWeight: 600,
           textTransform: 'uppercase' as const,
-          letterSpacing: '0.05em',
+          letterSpacing: '0.06em',
         }}>{label}</span>
         <span style={{
           fontSize: '11px',
@@ -148,19 +154,22 @@ const Dashboard_StatCard = ({
           {isPositive ? '↑' : '↓'} {isPositive ? '+' : ''}{change.toFixed(2)} %
         </span>
       </div>
-      <div style={{ fontSize: '24px', fontWeight: 600, color: TEXT.primary, marginBottom: '8px' }}>
+      <div style={{ fontSize: '28px', fontWeight: 700, color: TEXT.primary, marginBottom: '10px', letterSpacing: '-0.01em' }}>
         {value}
       </div>
-      <div style={{ fontSize: '12px', color: TEXT.accent, textDecoration: 'underline', cursor: 'pointer' }}>
+      <div style={{ fontSize: '12px', color: TEXT.accent, fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}
+        onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }}
+        onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}
+      >
         {config.linkText}
       </div>
       <div style={{
         position: 'absolute',
         bottom: '16px',
         right: '16px',
-        width: '40px',
-        height: '40px',
-        borderRadius: '4px',
+        width: '44px',
+        height: '44px',
+        borderRadius: '10px',
         backgroundColor: config.iconBg,
         display: 'flex',
         alignItems: 'center',
@@ -188,7 +197,7 @@ const Dashboard_TopCategories = ({
     gridRow: 'span 2',
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-      <div style={{ fontSize: '16px', fontWeight: 600, color: TEXT.primary }}>Top Categories</div>
+      <div style={{ fontSize: '17px', fontWeight: 600, color: TEXT.primary }}>Top Categories</div>
       <div style={{ fontSize: '12px', color: TEXT.accent, cursor: 'pointer' }}>See All</div>
     </div>
 
@@ -280,7 +289,7 @@ const Dashboard_RevenueChart = ({
     }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <div style={{ fontSize: '16px', fontWeight: 600, color: TEXT.primary }}>Revenue Status</div>
+        <div style={{ fontSize: '17px', fontWeight: 600, color: TEXT.primary }}>Revenue Status</div>
         <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', borderRadius: '4px', padding: '2px' }}>
           {TIME_FILTERS.map(f => (
             <button
@@ -309,24 +318,24 @@ const Dashboard_RevenueChart = ({
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '16px',
-        padding: '12px 0',
+        padding: '16px 0',
         marginBottom: '16px',
         borderBottom: '1px solid #f1f5f9',
       }}>
         <div>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: TEXT.primary }}>{totalOrders.toLocaleString()}</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: TEXT.primary }}>{totalOrders.toLocaleString()}</div>
           <div style={{ fontSize: '11px', color: TEXT.secondary }}>Orders</div>
         </div>
         <div>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: TEXT.primary }}>{formatAmount(totalEarning)}</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: TEXT.primary }}>{formatAmount(totalEarning)}</div>
           <div style={{ fontSize: '11px', color: TEXT.secondary }}>Earning</div>
         </div>
         <div>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: TEXT.primary }}>{formatAmount(0)}</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: TEXT.primary }}>{formatAmount(0)}</div>
           <div style={{ fontSize: '11px', color: TEXT.secondary }}>Refunds</div>
         </div>
         <div>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: TEXT.accent }}>{conversionRatio}%</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: TEXT.accent }}>{conversionRatio}%</div>
           <div style={{ fontSize: '11px', color: TEXT.secondary }}>Conversation Ratio</div>
         </div>
       </div>
@@ -460,7 +469,7 @@ const Dashboard_MonthlyTarget = ({
       gridColumn: 'span 1',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '24px' }}>
-        <div style={{ fontSize: '16px', fontWeight: 600, color: TEXT.primary }}>Monthly Target</div>
+        <div style={{ fontSize: '17px', fontWeight: 600, color: TEXT.primary }}>Monthly Target</div>
         <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
       </div>
 
@@ -530,7 +539,7 @@ const Dashboard_ActiveUsers = ({
     gridColumn: 'span 1',
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-      <div style={{ fontSize: '16px', fontWeight: 600, color: TEXT.primary }}>Sales by Locations</div>
+      <div style={{ fontSize: '17px', fontWeight: 600, color: TEXT.primary }}>Sales by Locations</div>
       <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
     </div>
 
@@ -578,7 +587,7 @@ const Dashboard_ConversionRate = ({
     gridColumn: 'span 2',
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-      <div style={{ fontSize: '16px', fontWeight: 600, color: TEXT.primary }}>Conversion Rate</div>
+      <div style={{ fontSize: '17px', fontWeight: 600, color: TEXT.primary }}>Conversion Rate</div>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '8px',
         padding: '6px 12px', backgroundColor: '#fff', border: '1px solid #e2e8f0',
@@ -589,7 +598,7 @@ const Dashboard_ConversionRate = ({
       </div>
     </div>
 
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginTop: '12px', position: 'relative', zIndex: 2 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginTop: '12px', position: 'relative', zIndex: 2 }}>
       {funnel.map((item) => (
         <div key={item.label} style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ fontSize: '11px', color: TEXT.secondary, marginBottom: '8px', height: '28px', lineHeight: 1.2 }}
@@ -632,7 +641,7 @@ const Dashboard_TrafficSources = ({
     gridColumn: 'span 1',
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-      <div style={{ fontSize: '16px', fontWeight: 600, color: TEXT.primary }}>Order Breakdown</div>
+      <div style={{ fontSize: '17px', fontWeight: 600, color: TEXT.primary }}>Order Breakdown</div>
       <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
     </div>
 
@@ -688,7 +697,7 @@ const Dashboard_RecentOrders = ({ orders }: { orders: RecentOrderItem[] }) => {
       flexDirection: 'column',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ fontSize: '16px', fontWeight: 600, color: TEXT.primary }}>Recent Orders</div>
+        <div style={{ fontSize: '17px', fontWeight: 600, color: TEXT.primary }}>Recent Orders</div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
             <Search style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#9ca3af' }} />
@@ -822,11 +831,11 @@ const Dashboard_RecentActivity = ({ activities }: { activities: RecentActivityIt
     flexDirection: 'column',
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-      <div style={{ fontSize: '16px', fontWeight: 600, color: TEXT.primary }}>Recent Activity</div>
+      <div style={{ fontSize: '17px', fontWeight: 600, color: TEXT.primary }}>Recent Activity</div>
       <MoreHorizontal style={{ width: 18, height: 18, color: '#9ca3af', cursor: 'pointer' }} />
     </div>
 
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {activities.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '13px' }}>No recent activity</div>
       ) : activities.map(a => (
@@ -868,7 +877,7 @@ const EzMartDashboardGrid = ({ data }: { data: DashboardStatData }) => {
       display: 'grid',
       gridTemplateColumns: 'repeat(4, 1fr)',
       gridTemplateRows: 'auto auto auto auto',
-      gap: '24px',
+      gap: '28px',
       width: '100%',
       fontFamily: '"Inter", system-ui, sans-serif',
     }}>
