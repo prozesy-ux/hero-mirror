@@ -65,11 +65,11 @@ const DashboardSidebar = () => {
           <TooltipTrigger asChild>
             <Link
               to={item.to}
-              className={`flex items-center justify-center w-full py-4 transition-colors border-t border-white/50 ${isLast ? 'border-b' : ''} ${
-                active ? 'text-[#FF90E8]' : 'text-white/70 hover:text-[#FF90E8]'
+              className={`flex items-center justify-center w-full py-3.5 transition-all duration-200 ${
+                active ? 'text-[#FF90E8] border-l-2 border-[#FF90E8]' : 'text-white/70 hover:text-[#FF90E8] border-l-2 border-transparent'
               }`}
             >
-              <Icon size={16} />
+              <Icon size={18} />
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right" className="bg-black text-white border border-white/20">
@@ -83,11 +83,11 @@ const DashboardSidebar = () => {
       <Link
         key={item.to}
         to={item.to}
-        className={`flex items-center gap-4 px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${isLast ? 'border-b' : ''} ${
-          active ? 'text-[#FF90E8]' : 'text-white/70 hover:text-[#FF90E8]'
+        className={`flex items-center gap-4 px-6 py-3.5 text-sm font-normal transition-all duration-200 ${
+          active ? 'text-[#FF90E8] border-l-2 border-[#FF90E8]' : 'text-white/70 hover:text-[#FF90E8] border-l-2 border-transparent'
         }`}
       >
-        <Icon size={16} />
+        <Icon size={18} />
         <span>{item.label}</span>
       </Link>
     );
@@ -106,7 +106,7 @@ const DashboardSidebar = () => {
     if (isCollapsed) {
       return (
         <div>
-          {items.map((item, idx) => {
+          {items.map((item) => {
             const active = isActive(item.to);
             const Icon = item.icon;
             return (
@@ -114,11 +114,11 @@ const DashboardSidebar = () => {
                 <TooltipTrigger asChild>
                   <Link
                     to={item.to}
-                    className={`flex items-center justify-center w-full py-4 transition-colors border-t border-white/50 ${idx === items.length - 1 ? 'border-b' : ''} ${
-                      active ? 'text-[#FF90E8]' : 'text-white/70 hover:text-[#FF90E8]'
+                    className={`flex items-center justify-center w-full py-3.5 transition-all duration-200 ${
+                      active ? 'text-[#FF90E8] border-l-2 border-[#FF90E8]' : 'text-white/70 hover:text-[#FF90E8] border-l-2 border-transparent'
                     }`}
                   >
-                    <Icon size={16} />
+                    <Icon size={18} />
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="bg-black text-white border border-white/20">
@@ -133,10 +133,10 @@ const DashboardSidebar = () => {
 
     return (
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger className={`flex items-center gap-4 px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 w-full text-left ${
+        <CollapsibleTrigger className={`flex items-center gap-4 px-6 py-3.5 text-sm font-normal transition-all duration-200 w-full text-left ${
           isGroupActive ? 'text-[#FF90E8]' : 'text-white/70 hover:text-[#FF90E8]'
         }`}>
-          <GroupIcon size={16} />
+          <GroupIcon size={18} />
           <span className="flex-1">{label}</span>
           <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </CollapsibleTrigger>
@@ -148,11 +148,11 @@ const DashboardSidebar = () => {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex items-center gap-4 pl-10 pr-6 py-3 text-sm font-normal transition-colors ${
+                className={`flex items-center gap-4 pl-10 pr-6 py-3 text-sm font-normal transition-all duration-200 ${
                   active ? 'text-[#FF90E8]' : 'text-white/50 hover:text-[#FF90E8]'
                 }`}
               >
-                <Icon size={14} />
+                <Icon size={16} />
                 <span>{item.label}</span>
               </Link>
             );
@@ -178,23 +178,28 @@ const DashboardSidebar = () => {
 
         {/* Core Nav */}
         <nav className="flex-1">
+          <div className="py-1">
           {coreNavItems.map((item, index) =>
             renderNavItem(item, index === 0, index === coreNavItems.length - 1)
           )}
+          </div>
 
           {/* Insights Group */}
+          <div className="border-t border-white/10 py-1">
           {renderCollapsibleGroup('Insights', insightsSubItems, insightsOpen, setInsightsOpen, isInsightsActive, GumroadAnalyticsIcon)}
+          </div>
 
           {/* Activity Group */}
+          <div className="border-t border-white/10 py-1">
           {renderCollapsibleGroup('Activity', activitySubItems, activityOpen, setActivityOpen, isActivityActive, GumroadCheckoutIcon)}
+          </div>
         </nav>
 
         {/* Bottom Nav */}
-        <section className="mb-6">
-          {bottomNavItems.map((item, index) => {
+        <section className="mb-6 border-t border-white/10">
+          {bottomNavItems.map((item) => {
             const active = isActive(item.to);
             const Icon = item.icon;
-            const isLast = index === bottomNavItems.length - 1;
 
             if (isCollapsed) {
               return (
@@ -202,11 +207,11 @@ const DashboardSidebar = () => {
                   <TooltipTrigger asChild>
                     <Link
                       to={item.to}
-                      className={`flex items-center justify-center w-full py-4 transition-colors border-t border-white/50 ${isLast ? 'border-b' : ''} ${
-                        active ? 'text-[#FF90E8]' : 'text-white/70 hover:text-[#FF90E8]'
+                      className={`flex items-center justify-center w-full py-3.5 transition-all duration-200 ${
+                        active ? 'text-[#FF90E8] border-l-2 border-[#FF90E8]' : 'text-white/70 hover:text-[#FF90E8] border-l-2 border-transparent'
                       }`}
                     >
-                      <Icon size={16} />
+                      <Icon size={18} />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-black text-white border border-white/20">
@@ -220,11 +225,11 @@ const DashboardSidebar = () => {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex items-center gap-4 px-6 py-4 text-sm font-normal transition-colors border-t border-white/50 ${isLast ? 'border-b' : ''} ${
-                  active ? 'text-[#FF90E8]' : 'text-white/70 hover:text-[#FF90E8]'
+                className={`flex items-center gap-4 px-6 py-3.5 text-sm font-normal transition-all duration-200 ${
+                  active ? 'text-[#FF90E8] border-l-2 border-[#FF90E8]' : 'text-white/70 hover:text-[#FF90E8] border-l-2 border-transparent'
                 }`}
               >
-                <Icon size={16} />
+                <Icon size={18} />
                 <span>{item.label}</span>
               </Link>
             );
@@ -235,7 +240,7 @@ const DashboardSidebar = () => {
         <footer className="mt-auto">
           <button
             onClick={toggleSidebar}
-            className={`flex items-center gap-4 w-full py-4 text-white/50 hover:text-white transition-colors border-t border-white/50 ${
+            className={`flex items-center gap-4 w-full py-3.5 text-white/50 hover:text-white transition-all duration-200 border-t border-white/10 ${
               isCollapsed ? 'justify-center' : 'px-6'
             }`}
           >
@@ -249,7 +254,7 @@ const DashboardSidebar = () => {
             )}
           </button>
 
-          <div className={`py-4 border-t border-white/50 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+          <div className={`py-4 border-t border-white/10 ${isCollapsed ? 'px-3' : 'px-6'}`}>
             <Link
               to="/dashboard/profile"
               className={`flex items-center gap-3 py-2 rounded-lg hover:bg-white/5 transition-colors ${
